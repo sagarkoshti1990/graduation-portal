@@ -9,7 +9,6 @@ interface PlayerConfigProps {
 const WebComponentPlayer = ({ playerConfig }: PlayerConfigProps) => {
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef<any>(null);
-
   useEffect(() => {
     // Wait a bit for WebView to be ready, then inject the player config
     const timer = setTimeout(() => {

@@ -8,6 +8,7 @@ import UploadExampleScreen from '../screens/UploadExampleScreen';
 import SyncStatusScreen from '../screens/SyncStatusScreen';
 import WebComponentScreen from '../screens/WebComponentScreen';
 import { useLanguage } from '../contexts/LanguageContext';
+import '../styles/style.css';
 
 const Stack = createStackNavigator();
 
