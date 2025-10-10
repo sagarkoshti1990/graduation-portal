@@ -188,9 +188,9 @@ const WebComponentScreen: React.FC<WebComponentScreenProps> = ({
       navigation.goBack();
     }
   };
-
   // If a example is selected, show the player
   if (selected === 'project-web-component') {
+    console.log(projectPlayerConfig, 'playerConfig 123');
     return (
       <View style={styles.playerContainer}>
         <Text>Project Web Component</Text>
@@ -511,17 +511,17 @@ export default WebComponentScreen;
 
 const projectPlayerConfig = {
   config: {
-    maxFileSize: 50,
-    baseUrl: '',
+    maxFileSize: 60, // max file size in file upload limit
+    baseUrl: '', // base url for sync offline task data to server end points for get project data ${baseUrl}/project/v1/project/getProjectData task sync end url /
     accessToken: 'edniddwdwdwdwduwdvwdwddwd',
     profileInfo: {},
     redirectionLinks: {
-      contentPolicyLink: '',
-      profilePage: '',
-      unauthorizedRedirectUrl: '',
+      contentPolicyLink: '', // file upload policy
+      profilePage: '', // profile page
+      unauthorizedRedirectUrl: '', // unauthorized redirect url
     },
-    language: 'en',
-    isPreview: true,
+    language: 'en', // language
+    isPreview: true, // is preview
   },
   projectData: {
     _id: '685e84523e09080008326f31',
