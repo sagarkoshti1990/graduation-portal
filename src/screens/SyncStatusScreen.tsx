@@ -8,14 +8,13 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { SyncService } from '../services/SyncService';
 import { SyncStatusData, Task, Evidence } from '../types';
 import { UploadedFile } from '../services/FileUploadService';
 import { StorageService } from '../services/StorageService';
 import FileUploadModal from '../components/FileUploadModal';
-
+import Alert from '../components/ui/alert';
 interface SyncStatusScreenProps {
   navigation: any;
 }

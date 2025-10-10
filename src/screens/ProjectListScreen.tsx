@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { Project, Task, Evidence } from '../types';
 import { StorageService } from '../services/StorageService';
@@ -17,7 +16,7 @@ import ProjectCard from '../components/ProjectCard';
 import Layout from '../components/layout/Layout';
 import { useLanguage } from '../contexts/LanguageContext';
 import { createRTLStyle } from '../utils/rtlUtils';
-
+import Alert from '../components/ui/alert';
 interface ProjectListScreenProps {
   navigation: any;
 }
@@ -173,18 +172,8 @@ const ProjectListScreen: React.FC<ProjectListScreenProps> = ({
   const checkAsyncStorage = useCallback(async () => {
     try {
       // Check async storage for pending sync items
-      console.log('Checking async storage for pending items...');
       const syncData = await SyncService.getSyncStatusData();
       setPendingSyncCount(syncData.pendingItems);
-      console.log(`Found ${syncData.pendingItems} items pending sync`);
-      console.log('Async Storage Content:', {
-        totalTasks: syncData.tasks.length,
-        totalEvidence: syncData.evidence.length,
-        pendingItems: syncData.pendingItems,
-        syncedItems: syncData.syncedItems,
-        failedItems: syncData.failedItems,
-      });
-
       // Generate sample data if none exists
       if (syncData.totalItems === 0) {
         console.log('No sync data found, generating sample data...');
@@ -223,7 +212,6 @@ const ProjectListScreen: React.FC<ProjectListScreenProps> = ({
       setIsConnected(status.isConnected);
       if (status.isConnected) {
         // Check async storage when connection is restored
-        console.log('Network connected! Checking async storage...');
         checkAsyncStorage();
       }
     });

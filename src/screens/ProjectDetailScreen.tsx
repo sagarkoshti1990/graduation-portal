@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Alert,
   Modal,
   TextInput,
   ScrollView,
@@ -17,7 +16,7 @@ import { StorageService } from '../services/StorageService';
 import { NetworkService } from '../services/NetworkService';
 import { UploadedFile } from '../services/FileUploadService';
 import FileUploadModal from '../components/FileUploadModal';
-
+import Alert from '../components/ui/alert';
 interface ProjectDetailScreenProps {
   navigation: any;
   route: any;

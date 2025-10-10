@@ -6,11 +6,10 @@ import {
   Modal,
   StyleSheet,
   Platform,
-  Alert,
 } from 'react-native';
 import { useLanguage } from '../contexts/LanguageContext';
 import { createRTLStyle } from '../utils/rtlUtils';
-
+import Alert from '../components/ui/alert';
 interface Language {
   code: string;
   name: string;
