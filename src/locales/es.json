@@ -1,0 +1,93 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "submit": "Enviar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "error": "Error",
+    "success": "Éxito",
+    "confirm": "Confirmar",
+    "offline": "Modo sin conexión",
+    "online": "En línea"
+  },
+  "navigation": {
+    "menu": "Menú",
+    "myProjects": "Mis Proyectos",
+    "projectDetails": "Detalles del Proyecto",
+    "fileUpload": "Ejemplo de Carga de Archivos",
+    "syncStatus": "Estado de Sincronización",
+    "webComponentDemo": "Demo del Reproductor de Componentes Web",
+    "upload": "Cargar",
+    "sync": "Sincronizar",
+    "closeMenu": "✕ Cerrar Menú"
+  },
+  "projectList": {
+    "title": "Mis Proyectos",
+    "searchPlaceholder": "Buscar por nombre o ID...",
+    "filters": {
+      "all": "Todos",
+      "notEnrolled": "No Inscrito",
+      "enrolled": "Inscrito",
+      "inProgress": "En Progreso",
+      "completed": "Completado"
+    },
+    "offlineMessage": "Modo sin conexión - Los cambios se sincronizarán al conectarse",
+    "loadingProjects": "Cargando proyectos...",
+    "noProjects": "No se encontraron proyectos",
+    "errorLoading": "Error al cargar proyectos"
+  },
+  "projectDetail": {
+    "title": "Detalles del Proyecto",
+    "description": "Descripción",
+    "status": "Estado",
+    "progress": "Progreso",
+    "tasks": "Tareas",
+    "evidence": "Evidencia",
+    "addTask": "Agregar Tarea",
+    "addEvidence": "Agregar Evidencia",
+    "noTasks": "No hay tareas disponibles",
+    "noEvidence": "No se ha cargado evidencia"
+  },
+  "sync": {
+    "title": "Estado de Sincronización",
+    "pending": "Pendiente",
+    "synced": "Sincronizado",
+    "failed": "Fallido",
+    "syncNow": "Sincronizar Ahora",
+    "lastSynced": "Última sincronización",
+    "pendingItems": "{{count}} elementos pendientes de sincronización",
+    "syncInProgress": "Sincronizando...",
+    "syncComplete": "Sincronización completada exitosamente",
+    "syncFailed": "Sincronización fallida"
+  },
+  "upload": {
+    "title": "Cargar Archivos",
+    "selectFile": "Seleccionar Archivo",
+    "uploadFile": "Cargar",
+    "uploadSuccess": "Archivo cargado exitosamente",
+    "uploadFailed": "Carga fallida",
+    "selectFromGallery": "Seleccionar de la Galería",
+    "takePhoto": "Tomar Foto"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": "Idioma",
+    "selectLanguage": "Seleccionar Idioma",
+    "theme": "Tema",
+    "notifications": "Notificaciones",
+    "about": "Acerca de"
+  },
+  "languages": {
+    "en": "English",
+    "ar": "العربية",
+    "es": "Español",
+    "hi": "हिन्दी"
+  }
+}
