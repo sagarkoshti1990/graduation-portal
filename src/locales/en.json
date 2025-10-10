@@ -1,0 +1,93 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "offline": "Offline Mode",
+    "online": "Online"
+  },
+  "navigation": {
+    "menu": "Menu",
+    "myProjects": "My Projects",
+    "projectDetails": "Project Details",
+    "fileUpload": "File Upload Example",
+    "syncStatus": "Sync Status",
+    "webComponentDemo": "Web Component Player Demo",
+    "upload": "Upload",
+    "sync": "Sync",
+    "closeMenu": "✕ Close Menu"
+  },
+  "projectList": {
+    "title": "My Projects",
+    "searchPlaceholder": "Search by name or ID...",
+    "filters": {
+      "all": "All",
+      "notEnrolled": "Not Enrolled",
+      "enrolled": "Enrolled",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "offlineMessage": "Offline Mode - Changes will sync when connected",
+    "loadingProjects": "Loading projects...",
+    "noProjects": "No projects found",
+    "errorLoading": "Failed to load projects"
+  },
+  "projectDetail": {
+    "title": "Project Details",
+    "description": "Description",
+    "status": "Status",
+    "progress": "Progress",
+    "tasks": "Tasks",
+    "evidence": "Evidence",
+    "addTask": "Add Task",
+    "addEvidence": "Add Evidence",
+    "noTasks": "No tasks available",
+    "noEvidence": "No evidence uploaded"
+  },
+  "sync": {
+    "title": "Sync Status",
+    "pending": "Pending",
+    "synced": "Synced",
+    "failed": "Failed",
+    "syncNow": "Sync Now",
+    "lastSynced": "Last synced",
+    "pendingItems": "{{count}} items pending sync",
+    "syncInProgress": "Syncing...",
+    "syncComplete": "Sync completed successfully",
+    "syncFailed": "Sync failed"
+  },
+  "upload": {
+    "title": "Upload Files",
+    "selectFile": "Select File",
+    "uploadFile": "Upload",
+    "uploadSuccess": "File uploaded successfully",
+    "uploadFailed": "Upload failed",
+    "selectFromGallery": "Select from Gallery",
+    "takePhoto": "Take Photo"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "about": "About"
+  },
+  "languages": {
+    "en": "English",
+    "ar": "العربية",
+    "es": "Español",
+    "hi": "हिन्दी"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "close": "बंद करें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "submit": "जमा करें",
+    "back": "वापस",
+    "next": "अगला",
+    "error": "त्रुटि",
+    "success": "सफल",
+    "confirm": "पुष्टि करें",
+    "offline": "ऑफ़लाइन मोड",
+    "online": "ऑनलाइन"
+  },
+  "navigation": {
+    "menu": "मेनू",
+    "myProjects": "मेरी परियोजनाएं",
+    "projectDetails": "परियोजना विवरण",
+    "fileUpload": "फ़ाइल अपलोड उदाहरण",
+    "syncStatus": "सिंक स्थिति",
+    "webComponentDemo": "वेब कंपोनेंट प्लेयर डेमो",
+    "upload": "अपलोड",
+    "sync": "सिंक",
+    "closeMenu": "✕ मेनू बंद करें"
+  },
+  "projectList": {
+    "title": "मेरी परियोजनाएं",
+    "searchPlaceholder": "नाम या आईडी से खोजें...",
+    "filters": {
+      "all": "सभी",
+      "notEnrolled": "नामांकित नहीं",
+      "enrolled": "नामांकित",
+      "inProgress": "प्रगति में",
+      "completed": "पूर्ण"
+    },
+    "offlineMessage": "ऑफ़लाइन मोड - कनेक्ट होने पर परिवर्तन सिंक होंगे",
+    "loadingProjects": "परियोजनाएं लोड हो रही हैं...",
+    "noProjects": "कोई परियोजना नहीं मिली",
+    "errorLoading": "परियोजनाएं लोड करने में विफल"
+  },
+  "projectDetail": {
+    "title": "परियोजना विवरण",
+    "description": "विवरण",
+    "status": "स्थिति",
+    "progress": "प्रगति",
+    "tasks": "कार्य",
+    "evidence": "साक्ष्य",
+    "addTask": "कार्य जोड़ें",
+    "addEvidence": "साक्ष्य जोड़ें",
+    "noTasks": "कोई कार्य उपलब्ध नहीं",
+    "noEvidence": "कोई साक्ष्य अपलोड नहीं किया गया"
+  },
+  "sync": {
+    "title": "सिंक स्थिति",
+    "pending": "लंबित",
+    "synced": "सिंक किया गया",
+    "failed": "विफल",
+    "syncNow": "अभी सिंक करें",
+    "lastSynced": "अंतिम सिंक",
+    "pendingItems": "{{count}} आइटम सिंक के लिए लंबित",
+    "syncInProgress": "सिंक हो रहा है...",
+    "syncComplete": "सिंक सफलतापूर्वक पूर्ण हुआ",
+    "syncFailed": "सिंक विफल रहा"
+  },
+  "upload": {
+    "title": "फ़ाइलें अपलोड करें",
+    "selectFile": "फ़ाइल चुनें",
+    "uploadFile": "अपलोड करें",
+    "uploadSuccess": "फ़ाइल सफलतापूर्वक अपलोड की गई",
+    "uploadFailed": "अपलोड विफल",
+    "selectFromGallery": "गैलरी से चुनें",
+    "takePhoto": "फोटो लें"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "language": "भाषा",
+    "selectLanguage": "भाषा चुनें",
+    "theme": "थीम",
+    "notifications": "सूचनाएं",
+    "about": "के बारे में"
+  },
+  "languages": {
+    "en": "English",
+    "ar": "العربية",
+    "es": "Español",
+    "hi": "हिन्दी"
+  }
+}

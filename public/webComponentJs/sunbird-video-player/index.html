@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./styles.css">
+    <title>Document</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        height: 100vh;
+      }
+      .player-grid {
+        width: 100%;
+        height: 'auto';
+        margin: 0 auto;
+        display: grid;
+        gap: 1.5rem;
+        padding-top: 0rem;
+
+        @media screen and (max-width:768px) {
+          grid-template-columns: 100%;
+          gap: 0px;
+        }
+      }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+      integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+      crossorigin="anonymous"></script>
+
+  </head>
+
+  <body>
+    <div class="player-grid" id="my-player">
+    </div>
+    <script type="text/javascript" src="sunbird-video-player.js"></script>
+    <script type="text/javascript">
+      function setData(playerConfig) 
+      {
+        //alert(JSON.stringify(playerConfig?.context));
+        //alert(playerConfig);
+        const videoElement = document.createElement('sunbird-video-player');
+        //videoElement.setAttribute('player-config', JSON.stringify(playerConfig));
+        videoElement.setAttribute('player-config', playerConfig);
+        videoElement.addEventListener('playerEvent', (event) => {
+          console.log("On playerEvent", event);
+          try {
+            const data = event?.detail;
+                let result_submit={data:data, event:"playerevent"};
+                window.ReactNativeWebView.postMessage(JSON.stringify(result_submit));
+              } catch (error) {
+                console.error("Error submitting assessment:", error);
+              }
+        });
+
+        videoElement.addEventListener('telemetryEvent', (event) => {
+          console.log("On telemetryEvent", event);
+          try {
+            const data = event?.detail;
+                let result_submit={data:data};
+                window.ReactNativeWebView.postMessage(JSON.stringify(result_submit));
+              } catch (error) {
+                console.error("Error submitting assessment:", error);
+              }
+        });
+
+        const myPlayer = document.getElementById("my-player");
+        myPlayer.appendChild(videoElement);
+    }
+    </script>
+  </body>
+
+</html>

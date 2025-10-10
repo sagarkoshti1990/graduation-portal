@@ -1,0 +1,93 @@
+{
+  "common": {
+    "loading": "جار التحميل...",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "close": "إغلاق",
+    "search": "بحث",
+    "filter": "تصفية",
+    "submit": "إرسال",
+    "back": "رجوع",
+    "next": "التالي",
+    "error": "خطأ",
+    "success": "نجح",
+    "confirm": "تأكيد",
+    "offline": "وضع عدم الاتصال",
+    "online": "متصل"
+  },
+  "navigation": {
+    "menu": "القائمة",
+    "myProjects": "مشاريعي",
+    "projectDetails": "تفاصيل المشروع",
+    "fileUpload": "مثال تحميل الملف",
+    "syncStatus": "حالة المزامنة",
+    "webComponentDemo": "عرض مشغل مكون الويب",
+    "upload": "تحميل",
+    "sync": "مزامنة",
+    "closeMenu": "✕ إغلاق القائمة"
+  },
+  "projectList": {
+    "title": "مشاريعي",
+    "searchPlaceholder": "البحث بالاسم أو المعرف...",
+    "filters": {
+      "all": "الكل",
+      "notEnrolled": "غير مسجل",
+      "enrolled": "مسجل",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    },
+    "offlineMessage": "وضع عدم الاتصال - سيتم مزامنة التغييرات عند الاتصال",
+    "loadingProjects": "جار تحميل المشاريع...",
+    "noProjects": "لم يتم العثور على مشاريع",
+    "errorLoading": "فشل تحميل المشاريع"
+  },
+  "projectDetail": {
+    "title": "تفاصيل المشروع",
+    "description": "الوصف",
+    "status": "الحالة",
+    "progress": "التقدم",
+    "tasks": "المهام",
+    "evidence": "الأدلة",
+    "addTask": "إضافة مهمة",
+    "addEvidence": "إضافة دليل",
+    "noTasks": "لا توجد مهام متاحة",
+    "noEvidence": "لم يتم تحميل أي دليل"
+  },
+  "sync": {
+    "title": "حالة المزامنة",
+    "pending": "قيد الانتظار",
+    "synced": "متزامن",
+    "failed": "فشل",
+    "syncNow": "مزامنة الآن",
+    "lastSynced": "آخر مزامنة",
+    "pendingItems": "{{count}} عنصر في انتظار المزامنة",
+    "syncInProgress": "جارٍ المزامنة...",
+    "syncComplete": "اكتملت المزامنة بنجاح",
+    "syncFailed": "فشلت المزامنة"
+  },
+  "upload": {
+    "title": "تحميل الملفات",
+    "selectFile": "اختر ملف",
+    "uploadFile": "تحميل",
+    "uploadSuccess": "تم تحميل الملف بنجاح",
+    "uploadFailed": "فشل التحميل",
+    "selectFromGallery": "اختر من المعرض",
+    "takePhoto": "التقط صورة"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "selectLanguage": "اختر اللغة",
+    "theme": "السمة",
+    "notifications": "الإشعارات",
+    "about": "حول"
+  },
+  "languages": {
+    "en": "English",
+    "ar": "العربية",
+    "es": "Español",
+    "hi": "हिन्दी"
+  }
+}
