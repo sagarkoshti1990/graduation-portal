@@ -15,16 +15,11 @@ import {
   SafeAreaView,
   StatusBar,
   Image,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import {
-  FileUploadService,
-  UploadedFile,
-  PermissionStatus,
-} from '../services/FileUploadService';
-
+import { FileUploadService, UploadedFile } from '../services/FileUploadService';
+import Alert from '../components/ui/alert';
 interface UploadExampleScreenProps {
   navigation: any;
 }

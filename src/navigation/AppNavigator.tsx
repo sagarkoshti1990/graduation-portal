@@ -1,16 +1,32 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { I18nManager } from 'react-native';
+import { I18nManager, Platform } from 'react-native';
 import ProjectListScreen from '../screens/ProjectListScreen';
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
-import UploadExampleScreen from '../screens/UploadExampleScreen';
 import SyncStatusScreen from '../screens/SyncStatusScreen';
 import WebComponentScreen from '../screens/WebComponentScreen';
 import { useLanguage } from '../contexts/LanguageContext';
 import '../styles/style.css';
+import FileUploadExample from '../examples/FileUploadExample';
+import UploadExampleScreen from '../screens/UploadExampleScreen';
 
 const Stack = createStackNavigator();
+
+// Linking configuration for web URL routing
+const linking = {
+  prefixes: ['http://localhost:3000', 'https://yourapp.com'],
+  config: {
+    screens: {
+      ProjectList: '',
+      ProjectDetail: 'project/:id',
+      UploadExample: 'upload',
+      UploadExampleScreen: 'upload-example',
+      SyncStatus: 'sync',
+      WebComponentDemo: 'demo',
+    },
+  },
+};
 
 const AppNavigator: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -26,8 +42,16 @@ const AppNavigator: React.FC = () => {
     }
   }, [isRTL]);
 
+  // Log current URL on web for debugging
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      console.log('Current URL:', window.location.href);
+      console.log('Pathname:', window.location.pathname);
+    }
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking} fallback={<div>Loading...</div>}>
       <Stack.Navigator
         initialRouteName="ProjectList"
         screenOptions={{
@@ -51,9 +75,16 @@ const AppNavigator: React.FC = () => {
         />
         <Stack.Screen
           name="UploadExample"
-          component={UploadExampleScreen}
+          component={FileUploadExample}
           options={{
             title: t('navigation.fileUpload'),
+          }}
+        />
+        <Stack.Screen
+          name="UploadExampleScreen"
+          component={UploadExampleScreen}
+          options={{
+            title: t('navigation.uploadExample'),
           }}
         />
         <Stack.Screen

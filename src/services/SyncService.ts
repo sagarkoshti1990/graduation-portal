@@ -15,10 +15,16 @@ export class SyncService {
       const lastSyncAt = await StorageService.getLastSyncTimestamp();
 
       const pendingTasks = allTasks.filter(
-        task => task.needsSync || task.syncStatus === 'pending' || task.syncStatus === 'failed',
+        task =>
+          task.needsSync ||
+          task.syncStatus === 'pending' ||
+          task.syncStatus === 'failed',
       );
       const pendingEvidence = allEvidence.filter(
-        evidence => evidence.needsSync || evidence.syncStatus === 'pending' || evidence.syncStatus === 'failed',
+        evidence =>
+          evidence.needsSync ||
+          evidence.syncStatus === 'pending' ||
+          evidence.syncStatus === 'failed',
       );
 
       const syncedTasks = allTasks.filter(task => task.syncStatus === 'synced');
@@ -247,4 +253,3 @@ export class SyncService {
     return { isSyncing: this.isSyncing };
   }
 }
-

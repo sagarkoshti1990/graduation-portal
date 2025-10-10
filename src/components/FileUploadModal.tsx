@@ -4,7 +4,7 @@
  * Can be used anywhere in the app by passing onFileSelect callback
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,102 +12,364 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { FileUploadService, UploadedFile } from '../services/FileUploadService';
-
+import { FileStorageService } from '../services/FileStorageService';
+import Alert from '../components/ui/alert';
+import { checkPermissions } from '../utils/permision';
 interface FileUploadModalProps {
   visible: boolean;
   onClose: () => void;
-  onFileSelect: (file: UploadedFile) => void | Promise<void>;
+  // Legacy prop for backward compatibility
+  onFileSelect?: (file: UploadedFile) => void | Promise<void>;
+  // New props
+  file?: (fileData: UploadedFile | { fileId: string }) => void | Promise<void>; // Function to receive file
+  fileId?: string; // If provided, file will be saved to storage
   title?: string;
   description?: string;
+  maxFileSize?: number; // Optional max file size override
 }
 
 const FileUploadModal: React.FC<FileUploadModalProps> = ({
   visible,
   onClose,
   onFileSelect,
+  file,
+  fileId,
   title = 'Upload File',
   description,
+  maxFileSize,
 }) => {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const abortControllerRef = useRef<{ cancelled: boolean }>({
+    cancelled: false,
+  });
 
+  /**
+   * Reset upload state
+   */
+  const resetState = useCallback(() => {
+    setUploading(false);
+    setUploadProgress(0);
+    setUploadStatus('');
+    abortControllerRef.current.cancelled = false;
+  }, []);
+
+  /**
+   * Handle cancel - reset state and close
+   */
+  const handleCancel = useCallback(() => {
+    if (uploading) {
+      abortControllerRef.current.cancelled = true;
+      setUploadStatus('Cancelling...');
+    }
+    resetState();
+    onClose();
+  }, [uploading, onClose, resetState]);
+
+  /**
+   * Handle file processing: either store or pass to function
+   */
+  const processFile = useCallback(
+    async (uploadedFile: UploadedFile) => {
+      try {
+        // Check for cancellation
+        if (abortControllerRef.current.cancelled) {
+          return null;
+        }
+
+        // If file function is provided, pass the file to it (don't store)
+        if (file) {
+          setUploadStatus('Processing file...');
+          setUploadProgress(60);
+
+          // If fileId is also provided, store the file and pass the fileId
+          if (fileId) {
+            setUploadStatus('Saving to storage...');
+            setUploadProgress(70);
+
+            const result = await FileStorageService.saveFile(
+              uploadedFile.base64Data || uploadedFile.uri,
+              uploadedFile.name,
+              uploadedFile.type,
+              uploadedFile.size,
+              { originalId: uploadedFile.id },
+            );
+
+            if (abortControllerRef.current.cancelled) {
+              return null;
+            }
+
+            setUploadProgress(90);
+
+            if (result.success && result.fileId) {
+              await file({ fileId: result.fileId });
+              return result.fileId;
+            } else {
+              throw new Error(result.error || 'Failed to save file');
+            }
+          } else {
+            // Just pass the file data without storing
+            setUploadProgress(80);
+            await file(uploadedFile);
+            return uploadedFile.id;
+          }
+        }
+        // If fileId is provided without file function, just store
+        else if (fileId) {
+          setUploadStatus('Saving to storage...');
+          setUploadProgress(70);
+
+          const result = await FileStorageService.saveFile(
+            uploadedFile.base64Data || uploadedFile.uri,
+            uploadedFile.name,
+            uploadedFile.type,
+            uploadedFile.size,
+            { originalId: uploadedFile.id },
+          );
+
+          if (abortControllerRef.current.cancelled) {
+            return null;
+          }
+
+          setUploadProgress(90);
+
+          if (result.success && result.fileId) {
+            // Call legacy onFileSelect if provided
+            if (onFileSelect) {
+              await onFileSelect({ ...uploadedFile, id: result.fileId });
+            }
+            return result.fileId;
+          } else {
+            throw new Error(result.error || 'Failed to save file');
+          }
+        }
+        // Legacy behavior: just call onFileSelect
+        else if (onFileSelect) {
+          setUploadProgress(80);
+          await onFileSelect(uploadedFile);
+          return uploadedFile.id;
+        }
+
+        return uploadedFile.id;
+      } catch (error) {
+        console.error('Error processing file:', error);
+        throw error;
+      }
+    },
+    [file, fileId, onFileSelect],
+  );
+
+  /**
+   * Handle camera upload (Web & Mobile)
+   */
   const handleUploadCamera = useCallback(async () => {
     try {
+      abortControllerRef.current.cancelled = false;
       setUploading(true);
-      const file = await FileUploadService.openCamera({
-        maxSize: 5 * 1024 * 1024, // 5MB
+      setUploadProgress(0);
+      setUploadStatus('Opening camera...');
+      const permissions = await checkPermissions('camera');
+
+      if (!permissions.camera) {
+        Alert.alert('Error', 'Camera permission denied');
+        resetState();
+        return;
+      }
+
+      if (abortControllerRef.current.cancelled) {
+        resetState();
+        return;
+      }
+
+      const uploadedFile = await FileUploadService.openCamera({
+        maxSize: maxFileSize || 10 * 1024 * 1024, // 10MB default
         quality: 0.8,
+        includeBase64: true,
+        onProgress: progress => {
+          if (!abortControllerRef.current.cancelled) {
+            setUploadProgress(progress);
+            setUploadStatus(`Capturing photo... ${progress}%`);
+          }
+        },
       });
 
-      if (file) {
-        await onFileSelect(file);
-        onClose();
-        Alert.alert('Success', 'Photo captured successfully');
+      // Check if cancelled after file picker returns
+      if (abortControllerRef.current.cancelled) {
+        resetState();
+        return;
+      }
+
+      if (uploadedFile) {
+        // processFile will handle progress updates from here
+        await processFile(uploadedFile);
+
+        if (!abortControllerRef.current.cancelled) {
+          setUploadProgress(100);
+          setUploadStatus('Complete!');
+          // Small delay to show 100% before closing
+          await new Promise(resolve => setTimeout(resolve, 300));
+          resetState();
+          onClose();
+          Alert.alert('Success', 'Photo captured and saved successfully');
+        } else {
+          resetState();
+        }
+      } else {
+        // User cancelled from native picker
+        resetState();
       }
     } catch (error) {
       console.error('Camera error:', error);
-      Alert.alert('Error', 'Failed to capture photo');
-    } finally {
-      setUploading(false);
+      if (!abortControllerRef.current.cancelled) {
+        Alert.alert(
+          'Error',
+          error instanceof Error ? error.message : 'Failed to capture photo',
+        );
+      }
+      resetState();
     }
-  }, [onFileSelect, onClose]);
+  }, [maxFileSize, processFile, onClose, resetState]);
 
   const handleUploadGallery = useCallback(async () => {
     try {
+      abortControllerRef.current.cancelled = false;
       setUploading(true);
-      const file = await FileUploadService.openImageLibrary({
-        maxSize: 10 * 1024 * 1024, // 10MB
+      setUploadProgress(0);
+      setUploadStatus('Opening gallery...');
+
+      if (abortControllerRef.current.cancelled) {
+        resetState();
+        return;
+      }
+
+      const uploadedFile = await FileUploadService.openImageLibrary({
+        maxSize: maxFileSize || 15 * 1024 * 1024, // 15MB default
         quality: 0.9,
+        includeBase64: true,
+        onProgress: progress => {
+          if (!abortControllerRef.current.cancelled) {
+            setUploadProgress(progress);
+            setUploadStatus(`Loading image... ${progress}%`);
+          }
+        },
       });
 
-      if (file) {
-        await onFileSelect(file);
-        onClose();
-        Alert.alert('Success', 'Image selected successfully');
+      // Check if cancelled after file picker returns
+      if (abortControllerRef.current.cancelled) {
+        resetState();
+        return;
+      }
+
+      if (uploadedFile) {
+        // processFile will handle progress updates from here
+        await processFile(uploadedFile);
+
+        if (!abortControllerRef.current.cancelled) {
+          setUploadProgress(100);
+          setUploadStatus('Complete!');
+          // Small delay to show 100% before closing
+          await new Promise(resolve => setTimeout(resolve, 300));
+          resetState();
+          onClose();
+          Alert.alert('Success', 'Image selected and saved successfully');
+        } else {
+          resetState();
+        }
+      } else {
+        // User cancelled from native picker
+        resetState();
       }
     } catch (error) {
       console.error('Gallery error:', error);
-      Alert.alert('Error', 'Failed to select image');
-    } finally {
-      setUploading(false);
+      if (!abortControllerRef.current.cancelled) {
+        Alert.alert(
+          'Error',
+          error instanceof Error ? error.message : 'Failed to select image',
+        );
+      }
+      resetState();
     }
-  }, [onFileSelect, onClose]);
+  }, [maxFileSize, processFile, onClose, resetState]);
 
   const handleUploadDocument = useCallback(async () => {
     try {
+      abortControllerRef.current.cancelled = false;
       setUploading(true);
-      const file = await FileUploadService.openDocumentPicker(undefined, {
-        maxSize: 15 * 1024 * 1024, // 15MB
-      });
+      setUploadProgress(0);
+      setUploadStatus('Opening file picker...');
 
-      if (file) {
-        await onFileSelect(file);
-        onClose();
-        Alert.alert('Success', 'Document selected successfully');
+      if (abortControllerRef.current.cancelled) {
+        resetState();
+        return;
+      }
+
+      const uploadedFile = await FileUploadService.openDocumentPicker(
+        undefined,
+        {
+          maxSize: maxFileSize || 20 * 1024 * 1024, // 20MB default
+          includeBase64: true,
+          onProgress: progress => {
+            if (!abortControllerRef.current.cancelled) {
+              setUploadProgress(progress);
+              setUploadStatus(`Loading document... ${progress}%`);
+            }
+          },
+        },
+      );
+
+      // Check if cancelled after file picker returns
+      if (abortControllerRef.current.cancelled) {
+        resetState();
+        return;
+      }
+
+      if (uploadedFile) {
+        // processFile will handle progress updates from here
+        await processFile(uploadedFile);
+
+        if (!abortControllerRef.current.cancelled) {
+          setUploadProgress(100);
+          setUploadStatus('Complete!');
+          // Small delay to show 100% before closing
+          await new Promise(resolve => setTimeout(resolve, 300));
+          resetState();
+          onClose();
+          Alert.alert('Success', 'Document selected and saved successfully');
+        } else {
+          resetState();
+        }
+      } else {
+        // User cancelled from native picker
+        resetState();
       }
     } catch (error) {
       console.error('Document error:', error);
-      Alert.alert('Error', 'Failed to select document');
-    } finally {
-      setUploading(false);
+      if (!abortControllerRef.current.cancelled) {
+        Alert.alert(
+          'Error',
+          error instanceof Error ? error.message : 'Failed to select document',
+        );
+      }
+      resetState();
     }
-  }, [onFileSelect, onClose]);
+  }, [maxFileSize, processFile, onClose, resetState]);
 
   return (
     <Modal
       visible={visible}
       transparent={true}
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleCancel}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose} disabled={uploading}>
+            <TouchableOpacity onPress={handleCancel} disabled={uploading}>
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -172,21 +434,35 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             </View>
           </TouchableOpacity>
 
-          {/* Loading Indicator */}
+          {/* Loading Indicator with Progress */}
           {uploading && (
             <View style={styles.modalLoadingContainer}>
               <ActivityIndicator size="large" color="#8B0000" />
-              <Text style={styles.modalLoadingText}>Processing...</Text>
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${uploadProgress}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>{uploadProgress}%</Text>
+              </View>
+              <Text style={styles.modalLoadingText}>
+                {uploadStatus || 'Processing...'}
+              </Text>
             </View>
           )}
 
           {/* Cancel Button */}
           <TouchableOpacity
             style={styles.modalCancelButton}
-            onPress={onClose}
-            disabled={uploading}
+            onPress={handleCancel}
           >
-            <Text style={styles.modalCancelText}>Cancel</Text>
+            <Text style={styles.modalCancelText}>
+              {uploading ? 'Cancel Upload' : 'Cancel'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -286,8 +562,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 20,
   },
+  progressContainer: {
+    width: '100%',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  progressBarBackground: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#E9ECEF',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#8B0000',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C3E50',
+    textAlign: 'center',
+  },
   modalLoadingText: {
-    marginTop: 12,
+    marginTop: 8,
     fontSize: 14,
     color: '#6C757D',
   },

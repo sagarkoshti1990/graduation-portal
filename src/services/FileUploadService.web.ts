@@ -3,7 +3,7 @@
  * Handles file uploads, camera access, and file picking for Web platform only
  */
 
-import { Alert } from 'react-native';
+import Alert from '../components/ui/alert';
 
 export interface UploadedFile {
   id: string;
@@ -12,12 +12,15 @@ export interface UploadedFile {
   type: string;
   size: number;
   uploadedAt: Date;
+  base64Data?: string; // Optional Base64 data
 }
 
 export interface UploadOptions {
   maxSize?: number; // in bytes
   allowedTypes?: string[];
   quality?: number; // 0-1 for images
+  onProgress?: (progress: number) => void; // Progress callback (0-100)
+  includeBase64?: boolean; // Whether to include base64 data
 }
 
 export interface PermissionStatus {
@@ -26,7 +29,28 @@ export interface PermissionStatus {
 }
 
 class FileUploadServiceClass {
-  private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB default
+  private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB default
+
+  /**
+   * Validate file size
+   */
+  validateFileSize(
+    fileSize: number,
+    maxSize?: number,
+  ): { valid: boolean; message?: string } {
+    const limit = maxSize || this.MAX_FILE_SIZE;
+    if (fileSize > limit) {
+      return {
+        valid: false,
+        message: `File size (${this.formatFileSize(
+          fileSize,
+        )}) exceeds the maximum allowed size of ${this.formatFileSize(
+          limit,
+        )}. Please select a smaller file.`,
+      };
+    }
+    return { valid: true };
+  }
 
   /**
    * Check if running on desktop browser
@@ -64,7 +88,7 @@ class FileUploadServiceClass {
   private async openCameraStream(
     options?: UploadOptions,
   ): Promise<UploadedFile | null> {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       // Create modal overlay
       const overlay = document.createElement('div');
       overlay.style.cssText = `
@@ -322,28 +346,44 @@ class FileUploadServiceClass {
           return;
         }
 
-        const maxSize = options?.maxSize || this.MAX_FILE_SIZE;
-        if (file.size > maxSize) {
+        const validation = this.validateFileSize(file.size, options?.maxSize);
+        if (!validation.valid) {
           Alert.alert(
             'File Too Large',
-            `File size exceeds ${this.formatFileSize(maxSize)}`,
+            validation.message || 'File size exceeds limit',
           );
           resolve(null);
           return;
         }
 
         const reader = new FileReader();
+
+        // Track progress
+        reader.onprogress = event => {
+          if (event.lengthComputable && options?.onProgress) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            options.onProgress(progress);
+          }
+        };
+
         reader.onload = event => {
-          const uri = event.target?.result as string;
+          const base64Data = event.target?.result as string;
           resolve({
             id: Date.now().toString(),
             name: file.name,
-            uri: uri,
+            uri: base64Data,
             type: file.type,
             size: file.size,
             uploadedAt: new Date(),
+            base64Data,
           });
         };
+
+        reader.onerror = () => {
+          Alert.alert('Error', 'Failed to read file');
+          resolve(null);
+        };
+
         reader.readAsDataURL(file);
       };
 
@@ -375,14 +415,14 @@ class FileUploadServiceClass {
   /**
    * Delete file from storage (Web - no-op)
    */
-  async deleteFile(filePath: string): Promise<boolean> {
+  async deleteFile(_filePath: string): Promise<boolean> {
     return true; // Web doesn't need explicit file deletion
   }
 
   /**
    * Get file info (Web - not applicable)
    */
-  async getFileInfo(filePath: string): Promise<{
+  async getFileInfo(_filePath: string): Promise<{
     size: number;
     exists: boolean;
   } | null> {
@@ -415,6 +455,7 @@ class FileUploadServiceClass {
    */
   showUploadNotification(fileName: string, progress: number): void {
     if ('Notification' in window && Notification.permission === 'granted') {
+      // eslint-disable-next-line no-new
       new Notification(`Uploading ${fileName}`, {
         body: `Upload progress: ${progress}%`,
         icon: '/icon.png',

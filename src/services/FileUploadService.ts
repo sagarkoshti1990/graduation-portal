@@ -4,7 +4,7 @@
  * Provides consistent API with platform-specific implementations
  */
 
-import { Platform, PermissionsAndroid, Alert } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import {
   launchCamera,
   launchImageLibrary,
@@ -12,7 +12,7 @@ import {
   CameraOptions,
   ImageLibraryOptions,
 } from 'react-native-image-picker';
-
+import Alert from '../components/ui/alert';
 export interface UploadedFile {
   id: string;
   name: string;
@@ -20,12 +20,15 @@ export interface UploadedFile {
   type: string;
   size: number;
   uploadedAt: Date;
+  base64Data?: string; // Optional Base64 data
 }
 
 export interface UploadOptions {
   maxSize?: number; // in bytes
   allowedTypes?: string[];
   quality?: number; // 0-1 for images
+  onProgress?: (progress: number) => void; // Progress callback (0-100)
+  includeBase64?: boolean; // Whether to include base64 data
 }
 
 export interface PermissionStatus {
@@ -34,7 +37,28 @@ export interface PermissionStatus {
 }
 
 class FileUploadServiceClass {
-  private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB default
+  private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB default
+
+  /**
+   * Validate file size
+   */
+  validateFileSize(
+    fileSize: number,
+    maxSize?: number,
+  ): { valid: boolean; message?: string } {
+    const limit = maxSize || this.MAX_FILE_SIZE;
+    if (fileSize > limit) {
+      return {
+        valid: false,
+        message: `File size (${this.formatFileSize(
+          fileSize,
+        )}) exceeds the maximum allowed size of ${this.formatFileSize(
+          limit,
+        )}. Please select a smaller file.`,
+      };
+    }
+    return { valid: true };
+  }
 
   /**
    * Request camera permission (Android/iOS)
@@ -146,9 +170,9 @@ class FileUploadServiceClass {
 
     const cameraOptions: CameraOptions = {
       mediaType: 'photo',
-      quality: options?.quality || 0.8,
+      quality: (options?.quality || 0.8) as any, // Type assertion for quality
       saveToPhotos: true,
-      includeBase64: false,
+      includeBase64: options?.includeBase64 || true, // Include base64 by default for storage
     };
 
     try {
@@ -172,13 +196,36 @@ class FileUploadServiceClass {
 
       // Check file size
       const fileSize = asset.fileSize || 0;
-      const maxSize = options?.maxSize || this.MAX_FILE_SIZE;
-      if (fileSize > maxSize) {
+      const validation = this.validateFileSize(fileSize, options?.maxSize);
+      if (!validation.valid) {
         Alert.alert(
           'File Too Large',
-          `File size exceeds ${this.formatFileSize(maxSize)}`,
+          validation.message || 'File size exceeds limit',
         );
         return null;
+      }
+
+      // Base64 is already included in the response from react-native-image-picker
+      // Simulate progress based on file size for better UX
+      if (options?.onProgress) {
+        // Smaller files: faster progress
+        // Larger files: show incremental progress
+        const progressSteps = fileSize > 5 * 1024 * 1024 ? 5 : 3;
+        const interval = 50; // ms between updates
+
+        for (let i = 1; i <= progressSteps; i++) {
+          await new Promise(resolve => setTimeout(resolve, interval));
+          const progress = Math.floor((i / progressSteps) * 100);
+          options.onProgress(progress);
+        }
+      }
+
+      // Prepare base64 data
+      let base64Data: string | undefined;
+      if (asset.base64) {
+        base64Data = `data:${asset.type || 'image/jpeg'};base64,${
+          asset.base64
+        }`;
       }
 
       return {
@@ -188,6 +235,7 @@ class FileUploadServiceClass {
         type: asset.type || 'image/jpeg',
         size: fileSize,
         uploadedAt: new Date(),
+        base64Data,
       };
     } catch (error) {
       console.error('Camera error:', error);
@@ -217,28 +265,44 @@ class FileUploadServiceClass {
         }
 
         // Check file size
-        const maxSize = options?.maxSize || this.MAX_FILE_SIZE;
-        if (file.size > maxSize) {
+        const validation = this.validateFileSize(file.size, options?.maxSize);
+        if (!validation.valid) {
           Alert.alert(
             'File Too Large',
-            `File size exceeds ${this.formatFileSize(maxSize)}`,
+            validation.message || 'File size exceeds limit',
           );
           resolve(null);
           return;
         }
 
         const reader = new FileReader();
+
+        // Track progress
+        reader.onprogress = event => {
+          if (event.lengthComputable && options?.onProgress) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            options.onProgress(progress);
+          }
+        };
+
         reader.onload = event => {
-          const uri = event.target?.result as string;
+          const base64Data = event.target?.result as string;
           resolve({
             id: Date.now().toString(),
             name: file.name,
-            uri: uri,
+            uri: base64Data,
             type: file.type,
             size: file.size,
             uploadedAt: new Date(),
+            base64Data,
           });
         };
+
+        reader.onerror = () => {
+          Alert.alert('Error', 'Failed to read file');
+          resolve(null);
+        };
+
         reader.readAsDataURL(file);
       };
 
@@ -267,9 +331,9 @@ class FileUploadServiceClass {
 
     const libraryOptions: ImageLibraryOptions = {
       mediaType: 'photo',
-      quality: options?.quality || 0.8,
+      quality: (options?.quality || 0.8) as any, // Type assertion for quality
       selectionLimit: 1,
-      includeBase64: false,
+      includeBase64: options?.includeBase64 || true, // Include base64 by default
     };
 
     try {
@@ -294,13 +358,36 @@ class FileUploadServiceClass {
       }
 
       const fileSize = asset.fileSize || 0;
-      const maxSize = options?.maxSize || this.MAX_FILE_SIZE;
-      if (fileSize > maxSize) {
+      const validation = this.validateFileSize(fileSize, options?.maxSize);
+      if (!validation.valid) {
         Alert.alert(
           'File Too Large',
-          `File size exceeds ${this.formatFileSize(maxSize)}`,
+          validation.message || 'File size exceeds limit',
         );
         return null;
+      }
+
+      // Base64 is already included in the response from react-native-image-picker
+      // Simulate progress based on file size for better UX
+      if (options?.onProgress) {
+        // Smaller files: faster progress
+        // Larger files: show incremental progress
+        const progressSteps = fileSize > 5 * 1024 * 1024 ? 5 : 3;
+        const interval = 50; // ms between updates
+
+        for (let i = 1; i <= progressSteps; i++) {
+          await new Promise(resolve => setTimeout(resolve, interval));
+          const progress = Math.floor((i / progressSteps) * 100);
+          options.onProgress(progress);
+        }
+      }
+
+      // Prepare base64 data
+      let base64Data: string | undefined;
+      if (asset.base64) {
+        base64Data = `data:${asset.type || 'image/jpeg'};base64,${
+          asset.base64
+        }`;
       }
 
       return {
@@ -310,6 +397,7 @@ class FileUploadServiceClass {
         type: asset.type || 'image/jpeg',
         size: fileSize,
         uploadedAt: new Date(),
+        base64Data,
       };
     } catch (error) {
       console.error('Image library error:', error);
@@ -322,8 +410,8 @@ class FileUploadServiceClass {
    * Open document picker (Mobile - uses image picker for all files)
    */
   async openDocumentPicker(
-    documentTypes?: string[],
-    options?: UploadOptions,
+    _documentTypes?: string[],
+    _options?: UploadOptions,
   ): Promise<UploadedFile | null> {
     // On mobile, use image picker which supports various file types
     Alert.alert(
@@ -353,28 +441,44 @@ class FileUploadServiceClass {
           return;
         }
 
-        const maxSize = options?.maxSize || this.MAX_FILE_SIZE;
-        if (file.size > maxSize) {
+        const validation = this.validateFileSize(file.size, options?.maxSize);
+        if (!validation.valid) {
           Alert.alert(
             'File Too Large',
-            `File size exceeds ${this.formatFileSize(maxSize)}`,
+            validation.message || 'File size exceeds limit',
           );
           resolve(null);
           return;
         }
 
         const reader = new FileReader();
+
+        // Track progress
+        reader.onprogress = event => {
+          if (event.lengthComputable && options?.onProgress) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            options.onProgress(progress);
+          }
+        };
+
         reader.onload = event => {
-          const uri = event.target?.result as string;
+          const base64Data = event.target?.result as string;
           resolve({
             id: Date.now().toString(),
             name: file.name,
-            uri: uri,
+            uri: base64Data,
             type: file.type,
             size: file.size,
             uploadedAt: new Date(),
+            base64Data,
           });
         };
+
+        reader.onerror = () => {
+          Alert.alert('Error', 'Failed to read file');
+          resolve(null);
+        };
+
         reader.readAsDataURL(file);
       };
 
@@ -387,7 +491,7 @@ class FileUploadServiceClass {
    */
   async saveToStorage(
     fileUri: string,
-    fileName: string,
+    _fileName: string,
   ): Promise<{ success: boolean; path?: string; error?: string }> {
     // Files from camera/image picker are already saved to gallery
     Alert.alert(
@@ -400,7 +504,7 @@ class FileUploadServiceClass {
   /**
    * Delete file from storage
    */
-  async deleteFile(filePath: string): Promise<boolean> {
+  async deleteFile(_filePath: string): Promise<boolean> {
     // Images are managed by the system gallery
     return true;
   }
@@ -408,7 +512,7 @@ class FileUploadServiceClass {
   /**
    * Get file info
    */
-  async getFileInfo(filePath: string): Promise<{
+  async getFileInfo(_filePath: string): Promise<{
     size: number;
     exists: boolean;
   } | null> {
@@ -493,6 +597,7 @@ class FileUploadServiceClass {
   showUploadNotification(fileName: string, progress: number): void {
     if (Platform.OS === 'web' && 'Notification' in window) {
       if (Notification.permission === 'granted') {
+        // eslint-disable-next-line no-new
         new Notification(`Uploading ${fileName}`, {
           body: `Upload progress: ${progress}%`,
           icon: '/icon.png',

@@ -6,13 +6,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
-  Alert,
   Platform,
 } from 'react-native';
 import WebComponentPlayer from '../components/webComponents/WebComponentPlayer';
 import ProjectWebComponentPlayer from '../components/webComponents/ProjectWebComponentPlayer';
 import { useLanguage } from '../contexts/LanguageContext';
-
+import Alert from '../components/ui/alert';
 interface WebComponentScreenProps {
   navigation: any;
 }
