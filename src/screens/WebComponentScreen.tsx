@@ -189,10 +189,17 @@ const WebComponentScreen: React.FC<WebComponentScreenProps> = ({
   };
   // If a example is selected, show the player
   if (selected === 'project-web-component') {
-    console.log(projectPlayerConfig, 'playerConfig 123');
     return (
       <View style={styles.playerContainer}>
         <Text>Project Web Component</Text>
+        <TouchableOpacity
+          style={styles.floatingBackButton}
+          onPress={handleGoBack}
+          accessibilityLabel="Exit example"
+          accessibilityRole="button"
+        >
+          <Text style={styles.floatingBackButtonText}>✕ Exit Example</Text>
+        </TouchableOpacity>
         <ProjectWebComponentPlayer playerConfig={projectPlayerConfig} />
       </View>
     );

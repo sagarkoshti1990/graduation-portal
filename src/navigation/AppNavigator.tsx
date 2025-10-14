@@ -1,13 +1,19 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { I18nManager, Platform } from 'react-native';
+import {
+  I18nManager,
+  Platform,
+  View,
+  Text,
+  ActivityIndicator,
+} from 'react-native';
 import ProjectListScreen from '../screens/ProjectListScreen';
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import SyncStatusScreen from '../screens/SyncStatusScreen';
 import WebComponentScreen from '../screens/WebComponentScreen';
 import { useLanguage } from '../contexts/LanguageContext';
-import '../styles/style.css';
+// import '../styles/style.css';
 import FileUploadExample from '../examples/FileUploadExample';
 import UploadExampleScreen from '../screens/UploadExampleScreen';
 
@@ -51,7 +57,17 @@ const AppNavigator: React.FC = () => {
   }, []);
 
   return (
-    <NavigationContainer linking={linking} fallback={<div>Loading...</div>}>
+    <NavigationContainer
+      linking={linking}
+      fallback={
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text>Loading...</Text>
+        </View>
+      }
+    >
       <Stack.Navigator
         initialRouteName="ProjectList"
         screenOptions={{

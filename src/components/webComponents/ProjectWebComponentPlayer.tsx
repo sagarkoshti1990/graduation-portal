@@ -16,41 +16,18 @@ const WebComponentPlayer = ({ playerConfig }: PlayerConfigProps) => {
         const injectedJS = `
           (function() {
             try {
-              const videoElement = document.createElement('project-player');
-              videoElement.setAttribute('config', '${JSON.stringify(
+              const webComponentElement = document.createElement('project-player');
+              webComponentElement.setAttribute('config', '${JSON.stringify(
                 playerConfig.config,
               ).replace(/'/g, "\\'")}');
-              videoElement.setAttribute('projectData', '${JSON.stringify(
+              webComponentElement.setAttribute('data', '${JSON.stringify(
                 playerConfig.projectData,
               ).replace(/'/g, "\\'")}');
-              
-              // Send events back to React Native
-              videoElement.addEventListener('playerEvent', function(event) {
-                if (event && event.detail) {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'playerEvent',
-                    data: event.detail
-                  }));
-                  
-                  if (event.detail.edata && event.detail.edata.type === 'EXIT') {
-                    event.preventDefault();
-                  }
-                }
-              });
-              
-              videoElement.addEventListener('telemetryEvent', function(event) {
-                if (event && event.detail) {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'telemetryEvent',
-                    data: event.detail
-                  }));
-                }
-              });
-              
+             
               const myPlayer = document.getElementById('my-player');
               if (myPlayer) {
                 myPlayer.innerHTML = '';
-                myPlayer.appendChild(videoElement);
+                myPlayer.appendChild(webComponentElement);
               } else {
                 console.error('my-player element not found');
               }
