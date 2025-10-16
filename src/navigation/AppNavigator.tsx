@@ -15,6 +15,7 @@ import WebComponentScreen from '../screens/WebComponentScreen';
 import { useLanguage } from '../contexts/LanguageContext';
 // import '../styles/style.css';
 import FileUploadExample from '../examples/FileUploadExample';
+import GluestackUIExample from '../examples/GluestackUIExample';
 import UploadExampleScreen from '../screens/UploadExampleScreen';
 
 const Stack = createStackNavigator();
@@ -28,6 +29,7 @@ const linking = {
       ProjectDetail: 'project/:id',
       UploadExample: 'upload',
       UploadExampleScreen: 'upload-example',
+      GluestackUIExample: 'gluestack-ui',
       SyncStatus: 'sync',
       WebComponentDemo: 'demo',
     },
@@ -101,6 +103,13 @@ const AppNavigator: React.FC = () => {
           component={UploadExampleScreen}
           options={{
             title: t('navigation.uploadExample'),
+          }}
+        />
+        <Stack.Screen
+          name="GluestackUIExample"
+          component={GluestackUIExample}
+          options={{
+            title: t('navigation.gluestackUI'),
           }}
         />
         <Stack.Screen

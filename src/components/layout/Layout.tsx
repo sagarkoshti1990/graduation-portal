@@ -135,6 +135,24 @@ const Layout: React.FC<LayoutProps> = ({
                     <TouchableOpacity
                       style={styles.menuDropdownItem}
                       onPress={() => {
+                        navigation.navigate('GluestackUIExample');
+                        setShowMenuDropdown?.(false);
+                      }}
+                      accessibilityLabel={t('navigation.gluestackUI')}
+                      accessibilityRole="menuitem"
+                    >
+                      <Text
+                        style={[
+                          styles.menuDropdownItemText,
+                          createRTLStyle(styles.menuDropdownItemText),
+                        ]}
+                      >
+                        🎓 {t('navigation.gluestackUI')}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.menuDropdownItem}
+                      onPress={() => {
                         navigation.navigate('UploadExample');
                         setShowMenuDropdown?.(false);
                       }}

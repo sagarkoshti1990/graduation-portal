@@ -30,6 +30,13 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({
       textStyle: styles.webComponentText,
     },
     {
+      label: t('navigation.gluestackUI'),
+      icon: '🎨',
+      route: 'GluestackUIExample',
+      style: styles.gluestackItem,
+      textStyle: styles.gluestackText,
+    },
+    {
       label: t('navigation.upload'),
       icon: '📤',
       route: 'UploadExample',
@@ -61,7 +68,11 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({
         {menuItems.map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={[styles.menuItem, item.style, createRTLStyle(styles.menuItem)]}
+            style={[
+              styles.menuItem,
+              item.style,
+              createRTLStyle(styles.menuItem),
+            ]}
             onPress={() => {
               navigation.navigate(item.route);
               if (navigation.closeDrawer) {
@@ -74,7 +85,13 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({
             <Text style={[styles.menuIcon, createRTLStyle(styles.menuIcon)]}>
               {item.icon}
             </Text>
-            <Text style={[styles.menuText, item.textStyle, createRTLStyle(styles.menuText)]}>
+            <Text
+              style={[
+                styles.menuText,
+                item.textStyle,
+                createRTLStyle(styles.menuText),
+              ]}
+            >
               {item.label}
             </Text>
             {item.badge && item.badge > 0 && (
@@ -105,7 +122,12 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({
         accessibilityLabel={t('common.close')}
         accessibilityRole="button"
       >
-        <Text style={[styles.closeButtonText, createRTLStyle(styles.closeButtonText)]}>
+        <Text
+          style={[
+            styles.closeButtonText,
+            createRTLStyle(styles.closeButtonText),
+          ]}
+        >
           {t('navigation.closeMenu')}
         </Text>
       </TouchableOpacity>
@@ -163,6 +185,13 @@ const styles = StyleSheet.create({
   },
   webComponentText: {
     color: '#7B1FA2',
+  },
+  gluestackItem: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  gluestackText: {
+    color: '#388E3C',
   },
   uploadItem: {
     backgroundColor: '#E3F2FD',

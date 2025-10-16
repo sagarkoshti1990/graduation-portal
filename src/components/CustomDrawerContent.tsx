@@ -22,6 +22,13 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = props => {
       textStyle: styles.webComponentText,
     },
     {
+      label: t('navigation.gluestackUI'),
+      icon: '🎨',
+      route: 'GluestackUIExample',
+      style: styles.gluestackItem,
+      textStyle: styles.gluestackText,
+    },
+    {
       label: t('navigation.upload'),
       icon: '📤',
       route: 'UploadExample',
@@ -166,6 +173,13 @@ const styles = StyleSheet.create({
   },
   webComponentText: {
     color: '#7B1FA2',
+  },
+  gluestackItem: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  gluestackText: {
+    color: '#388E3C',
   },
   uploadItem: {
     backgroundColor: '#E3F2FD',

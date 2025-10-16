@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   entry: './index.web.js',
@@ -48,7 +49,7 @@ module.exports = {
       {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude:
-          /node_modules\/(?!(@react-navigation|react-native-reanimated))/,
+          /node_modules\/(?!(@react-navigation|react-native-reanimated|@gluestack-ui|@gluestack-style|@gluestack|@expo))/,
         use: {
           loader: 'babel-loader',
           options: {
@@ -91,9 +92,11 @@ module.exports = {
     extensions: [
       '.web.tsx',
       '.web.ts',
+      '.web.jsx',
       '.web.js',
       '.tsx',
       '.ts',
+      '.jsx',
       '.js',
       '.json',
     ],
@@ -102,6 +105,9 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './public/index.html',
       inject: true,
+    }),
+    new webpack.DefinePlugin({
+      __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),
     }),
   ],
   output: {
