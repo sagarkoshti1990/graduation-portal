@@ -8,7 +8,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Switch,
@@ -20,7 +19,6 @@ const GluestackUIExample: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [textValue, setTextValue] = useState('');
   const [selectedTab, setSelectedTab] = useState('components');
-  const [showAlert, setShowAlert] = useState(false);
   const [selectedChip, setSelectedChip] = useState<string>('all');
 
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
