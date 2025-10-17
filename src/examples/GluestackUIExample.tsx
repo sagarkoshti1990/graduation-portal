@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Layout from '../components/layout/Layout';
 import Alert from '../components/ui/alert';
+import ResponsiveCardList from '../components/responsive-card-list';
 
 const GluestackUIExample: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState(false);
@@ -35,6 +36,82 @@ const GluestackUIExample: React.FC = () => {
     { id: 'react', label: 'React' },
     { id: 'native', label: 'Native' },
     { id: 'web', label: 'Web' },
+  ];
+
+  // Sample data for ResponsiveCardList
+  const sampleUsers = [
+    {
+      id: '1',
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      role: 'Admin',
+      status: 'active',
+      age: 32,
+      isVerified: true,
+      joinedDate: '2023-01-15',
+      projects: 12,
+    },
+    {
+      id: '2',
+      name: 'Jane Smith',
+      email: 'jane.smith@example.com',
+      role: 'Developer',
+      status: 'active',
+      age: 28,
+      isVerified: true,
+      joinedDate: '2023-03-22',
+      projects: 8,
+    },
+    {
+      id: '3',
+      name: 'Mike Johnson',
+      email: 'mike.j@example.com',
+      role: 'Designer',
+      status: 'inactive',
+      age: 35,
+      isVerified: false,
+      joinedDate: '2023-02-10',
+      projects: 5,
+    },
+    {
+      id: '4',
+      name: 'Sarah Williams',
+      email: 'sarah.w@example.com',
+      role: 'Manager',
+      status: 'active',
+      age: 40,
+      isVerified: true,
+      joinedDate: '2022-11-05',
+      projects: 15,
+    },
+    {
+      id: '5',
+      name: 'Tom Brown',
+      email: 'tom.brown@example.com',
+      role: 'Developer',
+      status: 'active',
+      age: 26,
+      isVerified: true,
+      joinedDate: '2023-06-18',
+      projects: 6,
+    },
+    {
+      id: '6',
+      name: 'Emily Davis',
+      email: 'emily.d@example.com',
+      role: 'Tester',
+      status: 'active',
+      age: 29,
+      isVerified: true,
+      joinedDate: '2023-04-12',
+      projects: 10,
+    },
+  ];
+
+  // Item key map configuration
+  const userKeyMap = [
+    { key: 'name', label: 'Name', type: 'string' as const, sortable: true },
+    { key: 'email', label: 'Email', type: 'string' as const, sortable: true },
   ];
 
   return (
@@ -82,6 +159,19 @@ const GluestackUIExample: React.FC = () => {
             ]}
           >
             Feedback
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'responsive' && styles.activeTab]}
+          onPress={() => setSelectedTab('responsive')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              selectedTab === 'responsive' && styles.activeTabText,
+            ]}
+          >
+            Responsive
           </Text>
         </TouchableOpacity>
       </View>
@@ -355,6 +445,31 @@ const GluestackUIExample: React.FC = () => {
               <Text style={styles.primaryButtonText}>Show Alert Dialog</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {/* Responsive Tab */}
+      {selectedTab === 'responsive' && (
+        <View style={{ flex: 1 }}>
+          <ResponsiveCardList
+            data={sampleUsers}
+            itemKeyMap={userKeyMap}
+            storage_key_name="example_users_list"
+            card_title="List of Users"
+            showDownload={true}
+            enableSearch={true}
+            enableFilter={true}
+            enableSort={true}
+            enableOfflineMode={true}
+            onItemClick={item => {
+              Alert.alert('User Selected', `You clicked on ${item.name}`, [
+                { text: 'OK' },
+              ]);
+            }}
+            onDownload={item => {
+              console.log('Downloading user:', item);
+            }}
+          />
         </View>
       )}
     </Layout>
