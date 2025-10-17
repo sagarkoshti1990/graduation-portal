@@ -1,0 +1,36 @@
+# MyApp Project Rules
+
+## 1. Library and Package Selection - Native and Web Compatibility
+
+Whenever choosing or recommending any new library or package for this project:
+
+- Always verify compatibility with both React Native (iOS/Android) and React Web platforms
+- Check that the library has native and web implementations or appropriate fallbacks
+- Consider platform-specific alternatives when a single library doesn't support both platforms
+- Test on both platforms before finalizing the integration
+
+## 2. Documentation File Creation
+
+Before creating any documentation (.md) files:
+
+- Always ask the user first: "Do you want to create this documentation file or skip it?"
+- Only proceed with file creation if the user explicitly agrees
+- This includes README files, guides, and any markdown documentation
+
+## 3. Package Manager Selection
+
+Before installing or adding any npm or yarn package:
+
+- Always ask the user: "Which package manager do you want to use — yarn or npm?"
+- Use the selected package manager for the installation
+- Maintain consistency with the project's existing setup (note: this project uses yarn.lock)
+
+## 4. UI Component Styling - Gluestack UI Priority
+
+Whenever creating any UI component:
+
+- **Always use Gluestack UI components and styling first** (from `@gluestack-ui/themed`)
+- Gluestack UI should be the default choice for all UI elements (Box, Button, Text, Input, VStack, HStack, etc.)
+- Only if the desired UI/styling **cannot be achieved** using Gluestack UI, then ask the user: "This styling cannot be achieved with Gluestack UI. Do you want me to use React Native StyleSheet instead?"
+- Wait for user confirmation before falling back to `StyleSheet.create()`
+- This ensures consistency with the project's design system and maintainability

@@ -5,13 +5,19 @@
 
 import React, { useState } from 'react';
 import {
-  View,
+  Box,
+  VStack,
+  HStack,
   Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
+  Button,
+  ButtonText,
+  Input,
+  InputField,
   Switch,
-} from 'react-native';
+  Pressable,
+  Heading,
+} from '@gluestack-ui/themed';
+import { ViewStyle, TextStyle } from 'react-native';
 import Layout from '../components/layout/Layout';
 import Alert from '../components/ui/alert';
 import ResponsiveCardList from '../components/responsive-card-list';
@@ -114,6 +120,46 @@ const GluestackUIExample: React.FC = () => {
     { key: 'email', label: 'Email', type: 'string' as const, sortable: true },
   ];
 
+  const tabContainerStyle: ViewStyle = {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  };
+
+  const getTabStyle = (isActive: boolean): ViewStyle => ({
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: isActive ? 'red' : 'transparent',
+    alignItems: 'center',
+  });
+
+  const getTabTextStyle = (isActive: boolean): TextStyle => ({
+    fontSize: 14,
+    fontWeight: '600',
+    color: isActive ? '#fff' : '#6C757D',
+  });
+
+  const sectionStyle: ViewStyle = {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  };
+
   return (
     <Layout
       title="Gluestack UI Examples"
@@ -121,336 +167,866 @@ const GluestackUIExample: React.FC = () => {
       statusBarBackgroundColor="#FFFFFF"
     >
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'components' && styles.activeTab]}
+      <HStack style={tabContainerStyle}>
+        <Pressable
+          style={getTabStyle(selectedTab === 'components')}
           onPress={() => setSelectedTab('components')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              selectedTab === 'components' && styles.activeTabText,
-            ]}
-          >
+          <Text style={getTabTextStyle(selectedTab === 'components')}>
             Components
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'forms' && styles.activeTab]}
+        </Pressable>
+        <Pressable
+          style={getTabStyle(selectedTab === 'forms')}
           onPress={() => setSelectedTab('forms')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              selectedTab === 'forms' && styles.activeTabText,
-            ]}
-          >
-            Forms
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'feedback' && styles.activeTab]}
+          <Text style={getTabTextStyle(selectedTab === 'forms')}>Forms</Text>
+        </Pressable>
+        <Pressable
+          style={getTabStyle(selectedTab === 'feedback')}
           onPress={() => setSelectedTab('feedback')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              selectedTab === 'feedback' && styles.activeTabText,
-            ]}
-          >
+          <Text style={getTabTextStyle(selectedTab === 'feedback')}>
             Feedback
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'responsive' && styles.activeTab]}
+        </Pressable>
+        <Pressable
+          style={getTabStyle(selectedTab === 'responsive')}
           onPress={() => setSelectedTab('responsive')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              selectedTab === 'responsive' && styles.activeTabText,
-            ]}
-          >
+          <Text style={getTabTextStyle(selectedTab === 'responsive')}>
             Responsive
           </Text>
-        </TouchableOpacity>
-      </View>
+        </Pressable>
+      </HStack>
 
       {/* Components Tab */}
       {selectedTab === 'components' && (
-        <View>
+        <VStack style={{ gap: 16 }}>
           {/* Cards Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Cards</Text>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Cards
+            </Heading>
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Simple Card</Text>
-              <Text style={styles.cardDescription}>
+            <Box
+              style={{
+                backgroundColor: '#F8F9FA',
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: '#E9ECEF',
+              }}
+            >
+              <Heading
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#2C3E50',
+                  marginBottom: 8,
+                }}
+              >
+                Simple Card
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: '#6C757D',
+                }}
+              >
                 This is a basic card component with title and description.
               </Text>
-            </View>
+            </Box>
 
-            <View style={[styles.card, styles.elevatedCard]}>
-              <Text style={styles.cardTitle}>Elevated Card</Text>
-              <Text style={styles.cardDescription}>
+            <Box
+              style={{
+                backgroundColor: '#fff',
+                borderRadius: 8,
+                padding: 16,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+            >
+              <Heading
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#2C3E50',
+                  marginBottom: 8,
+                }}
+              >
+                Elevated Card
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: '#6C757D',
+                  marginBottom: 16,
+                }}
+              >
                 This card has elevation/shadow for depth.
               </Text>
-              <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.cardButton}>
-                  <Text style={styles.cardButtonText}>Action 1</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.cardButton, styles.secondaryButton]}
+              <HStack style={{ gap: 8 }}>
+                <Button
+                  style={{
+                    flex: 1,
+                    backgroundColor: 'red',
+                    borderRadius: 8,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                  }}
                 >
-                  <Text style={styles.secondaryButtonText}>Action 2</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+                  <ButtonText style={{ color: '#fff' }}>Action 1</ButtonText>
+                </Button>
+                <Button
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#6C757D',
+                    borderRadius: 8,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                  }}
+                >
+                  <ButtonText style={{ color: '#fff' }}>Action 2</ButtonText>
+                </Button>
+              </HStack>
+            </Box>
+          </Box>
 
           {/* Buttons Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Buttons</Text>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Buttons
+            </Heading>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Primary</Text>
-              </TouchableOpacity>
+            <HStack style={{ gap: 8, marginBottom: 12 }}>
+              <Button
+                style={{
+                  flex: 1,
+                  backgroundColor: 'red',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                }}
+              >
+                <ButtonText
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: '600',
+                  }}
+                >
+                  Primary
+                </ButtonText>
+              </Button>
+              <Button
+                style={{
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderWidth: 2,
+                  borderColor: '#6C757D',
+                }}
+              >
+                <ButtonText
+                  style={{
+                    color: '#6C757D',
+                    fontSize: 16,
+                    fontWeight: '600',
+                  }}
+                >
+                  Secondary
+                </ButtonText>
+              </Button>
+            </HStack>
 
-              <TouchableOpacity style={styles.secondaryButtonOutline}>
-                <Text style={styles.secondaryButtonOutlineText}>Secondary</Text>
-              </TouchableOpacity>
-            </View>
+            <HStack style={{ gap: 8, marginBottom: 12 }}>
+              <Button
+                style={{
+                  flex: 1,
+                  backgroundColor: '#28A745',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                }}
+              >
+                <ButtonText
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: '600',
+                  }}
+                >
+                  Success
+                </ButtonText>
+              </Button>
+              <Button
+                style={{
+                  flex: 1,
+                  backgroundColor: '#DC3545',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                }}
+              >
+                <ButtonText
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: '600',
+                  }}
+                >
+                  Danger
+                </ButtonText>
+              </Button>
+            </HStack>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.successButton}>
-                <Text style={styles.primaryButtonText}>Success</Text>
-              </TouchableOpacity>
+            <Button
+              style={{
+                backgroundColor: 'transparent',
+                borderRadius: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+                borderWidth: 2,
+                borderColor: 'red',
+                marginBottom: 12,
+              }}
+            >
+              <ButtonText
+                style={{
+                  color: 'red',
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}
+              >
+                Outlined Button
+              </ButtonText>
+            </Button>
 
-              <TouchableOpacity style={styles.dangerButton}>
-                <Text style={styles.primaryButtonText}>Danger</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.outlinedButton}>
-              <Text style={styles.outlinedButtonText}>Outlined Button</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.disabledButton} disabled>
-              <Text style={styles.disabledButtonText}>Disabled Button</Text>
-            </TouchableOpacity>
-          </View>
+            <Button
+              isDisabled
+              style={{
+                backgroundColor: '#E9ECEF',
+                borderRadius: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+              }}
+            >
+              <ButtonText
+                style={{
+                  color: '#6C757D',
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}
+              >
+                Disabled Button
+              </ButtonText>
+            </Button>
+          </Box>
 
           {/* Chips Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Chips / Badges</Text>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Chips / Badges
+            </Heading>
 
-            <View style={styles.chipContainer}>
+            <HStack
+              style={{
+                flexWrap: 'wrap',
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
               {chips.map(chip => (
-                <TouchableOpacity
+                <Pressable
                   key={chip.id}
-                  style={[
-                    styles.chip,
-                    selectedChip === chip.id && styles.chipSelected,
-                  ]}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 20,
+                    backgroundColor:
+                      selectedChip === chip.id ? 'red' : '#E9ECEF',
+                    borderWidth: 1,
+                    borderColor: selectedChip === chip.id ? 'red' : '#DEE2E6',
+                  }}
                   onPress={() => setSelectedChip(chip.id)}
                 >
                   <Text
-                    style={[
-                      styles.chipText,
-                      selectedChip === chip.id && styles.chipTextSelected,
-                    ]}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: selectedChip === chip.id ? '#fff' : '#2C3E50',
+                    }}
                   >
                     {chip.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
-            </View>
+            </HStack>
 
-            <View style={styles.badgeRow}>
-              <View style={[styles.badge, styles.badgePrimary]}>
-                <Text style={styles.badgeText}>Primary</Text>
-              </View>
-              <View style={[styles.badge, styles.badgeSuccess]}>
-                <Text style={styles.badgeText}>Success</Text>
-              </View>
-              <View style={[styles.badge, styles.badgeWarning]}>
-                <Text style={styles.badgeText}>Warning</Text>
-              </View>
-              <View style={[styles.badge, styles.badgeDanger]}>
-                <Text style={styles.badgeText}>Danger</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+            <HStack style={{ flexWrap: 'wrap', gap: 8 }}>
+              <Box
+                style={{
+                  paddingVertical: 4,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  backgroundColor: 'red',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: '#fff',
+                  }}
+                >
+                  Primary
+                </Text>
+              </Box>
+              <Box
+                style={{
+                  paddingVertical: 4,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  backgroundColor: '#28A745',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: '#fff',
+                  }}
+                >
+                  Success
+                </Text>
+              </Box>
+              <Box
+                style={{
+                  paddingVertical: 4,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  backgroundColor: '#FFC107',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: '#fff',
+                  }}
+                >
+                  Warning
+                </Text>
+              </Box>
+              <Box
+                style={{
+                  paddingVertical: 4,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  backgroundColor: '#DC3545',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: '#fff',
+                  }}
+                >
+                  Danger
+                </Text>
+              </Box>
+            </HStack>
+          </Box>
+        </VStack>
       )}
 
       {/* Forms Tab */}
       {selectedTab === 'forms' && (
-        <View>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Form Controls</Text>
+        <VStack style={{ gap: 16 }}>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Form Controls
+            </Heading>
 
             {/* Text Input */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Email Address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                value={textValue}
-                onChangeText={setTextValue}
-                keyboardType="email-address"
-              />
-              <Text style={styles.helperText}>
+            <VStack style={{ gap: 4, marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#2C3E50',
+                }}
+              >
+                Email Address
+              </Text>
+              <Input
+                style={{
+                  backgroundColor: '#F8F9FA',
+                  borderWidth: 1,
+                  borderColor: '#DEE2E6',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                }}
+              >
+                <InputField
+                  placeholder="Enter your email"
+                  placeholderTextColor={'#999'}
+                  value={textValue}
+                  onChangeText={setTextValue}
+                  keyboardType="email-address"
+                  style={{
+                    fontSize: 14,
+                    color: '#2C3E50',
+                  }}
+                />
+              </Input>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6C757D',
+                }}
+              >
                 We'll never share your email.
               </Text>
-            </View>
+            </VStack>
 
             {/* Password Input */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter password"
-                placeholderTextColor="#999"
-                secureTextEntry
-              />
-            </View>
+            <VStack style={{ gap: 4, marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#2C3E50',
+                }}
+              >
+                Password
+              </Text>
+              <Input
+                style={{
+                  backgroundColor: '#F8F9FA',
+                  borderWidth: 1,
+                  borderColor: '#DEE2E6',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                }}
+              >
+                <InputField
+                  placeholder="Enter password"
+                  placeholderTextColor={'#999'}
+                  secureTextEntry
+                  style={{
+                    fontSize: 14,
+                    color: '#2C3E50',
+                  }}
+                />
+              </Input>
+            </VStack>
 
             {/* Text Area */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Message</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Enter your message"
-                placeholderTextColor="#999"
-                multiline
-                numberOfLines={4}
-              />
-            </View>
+            <VStack style={{ gap: 4, marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#2C3E50',
+                }}
+              >
+                Message
+              </Text>
+              <Input
+                style={{
+                  backgroundColor: '#F8F9FA',
+                  borderWidth: 1,
+                  borderColor: '#DEE2E6',
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  height: 100,
+                }}
+              >
+                <InputField
+                  placeholder="Enter your message"
+                  placeholderTextColor={'#999'}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  style={{
+                    fontSize: 14,
+                    color: '#2C3E50',
+                  }}
+                />
+              </Input>
+            </VStack>
 
             {/* Switch */}
-            <View style={styles.formGroup}>
-              <View style={styles.switchContainer}>
-                <Text style={styles.label}>Enable notifications</Text>
-                <Switch
-                  trackColor={{ false: '#767577', true: '#81b0ff' }}
-                  thumbColor={isEnabled ? '#007AFF' : '#f4f3f4'}
-                  ios_backgroundColor="#3e3e3e"
-                  onValueChange={toggleSwitch}
-                  value={isEnabled}
-                />
-              </View>
-              <Text style={styles.helperText}>
+            <VStack style={{ gap: 4, marginBottom: 32 }}>
+              <HStack
+                style={{
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: '#2C3E50',
+                  }}
+                >
+                  Enable notifications
+                </Text>
+                <Switch value={isEnabled} onValueChange={toggleSwitch} />
+              </HStack>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6C757D',
+                }}
+              >
                 {isEnabled
                   ? 'Notifications are enabled'
                   : 'Notifications are disabled'}
               </Text>
-            </View>
+            </VStack>
 
             {/* Submit Button */}
-            <TouchableOpacity
-              style={styles.submitButton}
+            <Button
+              style={{
+                backgroundColor: '#28A745',
+                borderRadius: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+              }}
               onPress={showSuccessAlert}
             >
-              <Text style={styles.primaryButtonText}>Submit Form</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <ButtonText
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}
+              >
+                Submit Form
+              </ButtonText>
+            </Button>
+          </Box>
+        </VStack>
       )}
 
       {/* Feedback Tab */}
       {selectedTab === 'feedback' && (
-        <View>
+        <VStack style={{ gap: 16 }}>
           {/* Alerts Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Alerts & Notifications</Text>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Alerts & Notifications
+            </Heading>
 
-            <View style={[styles.alert, styles.alertInfo]}>
-              <Text style={styles.alertTitle}>ℹ️ Information</Text>
-              <Text style={styles.alertDescription}>
+            <Box
+              style={{
+                backgroundColor: '#E3F2FD',
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 12,
+                borderLeftWidth: 4,
+                borderLeftColor: '#2196F3',
+              }}
+            >
+              <Heading
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#2C3E50',
+                  marginBottom: 4,
+                }}
+              >
+                ℹ️ Information
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: '#6C757D',
+                }}
+              >
                 This is an informational alert message.
               </Text>
-            </View>
+            </Box>
 
-            <View style={[styles.alert, styles.alertSuccess]}>
-              <Text style={styles.alertTitle}>✓ Success</Text>
-              <Text style={styles.alertDescription}>
+            <Box
+              style={{
+                backgroundColor: '#E8F5E9',
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 12,
+                borderLeftWidth: 4,
+                borderLeftColor: '#4CAF50',
+              }}
+            >
+              <Heading
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#2C3E50',
+                  marginBottom: 4,
+                }}
+              >
+                ✓ Success
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: '#6C757D',
+                }}
+              >
                 Your action was completed successfully!
               </Text>
-            </View>
+            </Box>
 
-            <View style={[styles.alert, styles.alertWarning]}>
-              <Text style={styles.alertTitle}>⚠️ Warning</Text>
-              <Text style={styles.alertDescription}>
+            <Box
+              style={{
+                backgroundColor: '#FFF3E0',
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 12,
+                borderLeftWidth: 4,
+                borderLeftColor: '#FF9800',
+              }}
+            >
+              <Heading
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#2C3E50',
+                  marginBottom: 4,
+                }}
+              >
+                ⚠️ Warning
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: '#6C757D',
+                }}
+              >
                 Please review your input carefully.
               </Text>
-            </View>
+            </Box>
 
-            <View style={[styles.alert, styles.alertError]}>
-              <Text style={styles.alertTitle}>✕ Error</Text>
-              <Text style={styles.alertDescription}>
+            <Box
+              style={{
+                backgroundColor: '#FFEBEE',
+                borderRadius: 8,
+                padding: 16,
+                borderLeftWidth: 4,
+                borderLeftColor: '#F44336',
+              }}
+            >
+              <Heading
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#2C3E50',
+                  marginBottom: 4,
+                }}
+              >
+                ✕ Error
+              </Heading>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: '#6C757D',
+                }}
+              >
                 Something went wrong. Please try again.
               </Text>
-            </View>
-          </View>
+            </Box>
+          </Box>
 
           {/* Progress Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Progress Indicators</Text>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Progress Indicators
+            </Heading>
 
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressLabel}>25% Complete</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: '25%' }]} />
-              </View>
-            </View>
-
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressLabel}>50% Complete</Text>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    styles.progressSuccess,
-                    { width: '50%' },
-                  ]}
+            <VStack style={{ gap: 8, marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#2C3E50',
+                }}
+              >
+                25% Complete
+              </Text>
+              <Box
+                style={{
+                  height: 8,
+                  backgroundColor: '#F8F9FA',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  style={{
+                    width: '25%',
+                    height: '100%',
+                    backgroundColor: 'red',
+                    borderRadius: 4,
+                  }}
                 />
-              </View>
-            </View>
+              </Box>
+            </VStack>
 
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressLabel}>75% Complete</Text>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    styles.progressWarning,
-                    { width: '75%' },
-                  ]}
+            <VStack style={{ gap: 8, marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#2C3E50',
+                }}
+              >
+                50% Complete
+              </Text>
+              <Box
+                style={{
+                  height: 8,
+                  backgroundColor: '#F8F9FA',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  style={{
+                    width: '50%',
+                    height: '100%',
+                    backgroundColor: '#28A745',
+                    borderRadius: 4,
+                  }}
                 />
-              </View>
-            </View>
-          </View>
+              </Box>
+            </VStack>
+
+            <VStack style={{ gap: 8 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#2C3E50',
+                }}
+              >
+                75% Complete
+              </Text>
+              <Box
+                style={{
+                  height: 8,
+                  backgroundColor: '#F8F9FA',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  style={{
+                    width: '75%',
+                    height: '100%',
+                    backgroundColor: '#FFC107',
+                    borderRadius: 4,
+                  }}
+                />
+              </Box>
+            </VStack>
+          </Box>
 
           {/* Dialog Trigger */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Dialogs & Modals</Text>
+          <Box style={sectionStyle}>
+            <Heading
+              style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: '#2C3E50',
+                marginBottom: 16,
+              }}
+            >
+              Dialogs & Modals
+            </Heading>
 
-            <TouchableOpacity
-              style={styles.primaryButton}
+            <Button
+              style={{
+                backgroundColor: 'red',
+                borderRadius: 8,
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+              }}
               onPress={showSuccessAlert}
             >
-              <Text style={styles.primaryButtonText}>Show Alert Dialog</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <ButtonText
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}
+              >
+                Show Alert Dialog
+              </ButtonText>
+            </Button>
+          </Box>
+        </VStack>
       )}
 
       {/* Responsive Tab */}
       {selectedTab === 'responsive' && (
-        <View style={{ flex: 1 }}>
+        <Box style={{ flex: 1 }}>
           <ResponsiveCardList
             data={sampleUsers}
             itemKeyMap={userKeyMap}
@@ -470,342 +1046,10 @@ const GluestackUIExample: React.FC = () => {
               console.log('Downloading user:', item);
             }}
           />
-        </View>
+        </Box>
       )}
     </Layout>
   );
 };
-
-const styles = StyleSheet.create({
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#007AFF',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#FFFFFF',
-  },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  elevatedCard: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#6C757D',
-    lineHeight: 20,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    marginTop: 16,
-    gap: 8,
-  },
-  cardButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    flex: 1,
-  },
-  cardButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  primaryButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: '#6C757D',
-  },
-  secondaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  secondaryButtonOutline: {
-    backgroundColor: 'transparent',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#6C757D',
-  },
-  secondaryButtonOutlineText: {
-    color: '#6C757D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  successButton: {
-    backgroundColor: '#28A745',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-  },
-  dangerButton: {
-    backgroundColor: '#DC3545',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-  },
-  outlinedButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    marginBottom: 12,
-  },
-  outlinedButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabledButton: {
-    backgroundColor: '#E9ECEF',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  disabledButtonText: {
-    color: '#ADB5BD',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#E9ECEF',
-    borderWidth: 1,
-    borderColor: '#DEE2E6',
-  },
-  chipSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#495057',
-  },
-  chipTextSelected: {
-    color: '#FFFFFF',
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  badge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  badgePrimary: {
-    backgroundColor: '#007AFF',
-  },
-  badgeSuccess: {
-    backgroundColor: '#28A745',
-  },
-  badgeWarning: {
-    backgroundColor: '#FFC107',
-  },
-  badgeDanger: {
-    backgroundColor: '#DC3545',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#F8F9FA',
-    borderWidth: 1,
-    borderColor: '#DEE2E6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#2C3E50',
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#6C757D',
-    marginTop: 4,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  submitButton: {
-    backgroundColor: '#28A745',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  alert: {
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-  },
-  alertInfo: {
-    backgroundColor: '#E3F2FD',
-    borderLeftColor: '#2196F3',
-  },
-  alertSuccess: {
-    backgroundColor: '#E8F5E9',
-    borderLeftColor: '#4CAF50',
-  },
-  alertWarning: {
-    backgroundColor: '#FFF3E0',
-    borderLeftColor: '#FF9800',
-  },
-  alertError: {
-    backgroundColor: '#FFEBEE',
-    borderLeftColor: '#F44336',
-  },
-  alertTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 4,
-  },
-  alertDescription: {
-    fontSize: 14,
-    color: '#495057',
-  },
-  progressContainer: {
-    marginBottom: 20,
-  },
-  progressLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#E9ECEF',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 4,
-  },
-  progressSuccess: {
-    backgroundColor: '#28A745',
-  },
-  progressWarning: {
-    backgroundColor: '#FFC107',
-  },
-});
 
 export default GluestackUIExample;
