@@ -1,4 +1,4 @@
-const prefix = '/api';
+const prefix = '';
 export const API_ENDPOINTS = {
   LOGIN: `${prefix}/user/v1/account/login`,
   ADMIN_LOGIN: `${prefix}/user/v1/admin/login`,
