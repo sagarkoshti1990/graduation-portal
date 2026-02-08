@@ -1,5 +1,5 @@
 import React from 'react';
-import { VStack, HStack, Text, Button, ButtonText, ButtonIcon } from '@ui';
+import { VStack, HStack, Text, Button, ButtonText, ButtonIcon, Box } from '@ui';
 import { LucideIcon } from '@ui';
 import { Container } from '@ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -64,7 +64,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               )}
             </VStack>
           </HStack>
-          {rightSection && rightSection}
+          {rightSection ? <Box {...pageHeaderStyles.rightSection}>{rightSection}</Box> : null}
         </HStack>
         {children}
       </Container>

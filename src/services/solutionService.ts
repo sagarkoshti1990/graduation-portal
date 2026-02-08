@@ -262,12 +262,14 @@ export const getObservationSolution = async ({
 export const getObservationSubmissions = async ({
   observationId,
   entityId,
+  filterAnswerValue,
 }: {
   observationId: string;
   entityId: string;
+  filterAnswerValue?: any;
 }): Promise<any> => {
   try {
-    const response = await api.post (`${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}`);
+    const response = await api.post (`${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}` + (filterAnswerValue ? `&filterAnswerValue=${filterAnswerValue}` : ''));
     return response.data;
   } catch (error) {
     logger.error('Error fetching observation:', error);

@@ -12,6 +12,7 @@
         "site": "Site"
       }
     },
+    "comingSoon": "Coming Soon",
     "settings": "Settings",
     "logout": "Logout",
     "loading": "Loading...",
@@ -330,7 +331,7 @@
       "dropoutMessage": "Mark {{name}} as dropout from the program",
       "dropoutReasonLabel": "Reason for Dropout",
       "dropoutReasonPlaceholder": "Enter reason for dropout...",
-      "dropoutHint": "This will change the participant's status to \"Not Onboarded\" and log the action in their history.",
+      "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
       "dropoutSuccess": "Participant marked as dropout",
       "dropoutError": "Failed to mark participant as dropout",
       "observationLogs": "Observation Logs",
@@ -836,7 +837,7 @@
   "participants": {
     "myParticipants": "My Participants",
     "dashboard": "Dashboard",
-    "searchByNameOrId": "Search by name or ID...",
+    "searchByNameOrId": "Search by name",
     "notEnrolled": "Not Onboarded",
     "enrolled": "Onboarded",
     "inProgress": "In Progress",
@@ -873,7 +874,7 @@
     "dropoutMessage": "Mark {{name}} as dropout from the program",
     "dropoutReasonLabel": "Reason for Dropout",
     "dropoutReasonPlaceholder": "Enter reason for dropout...",
-    "dropoutHint": "This will change the participant's status to \"Not Onboarded\" and log the action in their history.",
+    "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
     "dropoutSuccess": "Participant marked as dropout",
     "dropoutError": "Failed to mark participant as dropout",
     "observationLogs": "Observation Logs"

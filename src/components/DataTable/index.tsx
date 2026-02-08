@@ -21,6 +21,9 @@ import { styles } from './Styles';
 interface TableHeaderProps<T> {
   columns: ColumnDef<T>[];
   minWidth?: number;
+  _tableHeader?: any;
+  _th?: any;
+  _thText?: any;
 }
 
 interface TableRowProps<T> {
@@ -170,18 +173,20 @@ function prepareCardLayout<T>(
  * TableHeader Component
  * Pure presentational component that renders pre-computed column headers.
  */
-const TableHeader = <T,>({ columns, minWidth }: TableHeaderProps<T>) => {
+const TableHeader = <T,>({ columns, minWidth,_tableHeader,_th,_thText}: TableHeaderProps<T>) => {
   const { t } = useLanguage();
   
   return (
     <HStack
       {...styles.tableHeader}
       minWidth={minWidth}
+      {..._tableHeader}
     >
       {columns.map(column => {
         const showLabel = column.desktopConfig?.showLabel ?? true;
         return (
           <Box
+            {..._th}
             key={column.key}
             flex={column.flex}
             width={column.width}
@@ -194,7 +199,7 @@ const TableHeader = <T,>({ columns, minWidth }: TableHeaderProps<T>) => {
             }
           >
             {showLabel && (
-              <Text {...TYPOGRAPHY.label} color="$textForeground">
+              <Text {...TYPOGRAPHY.label} color="$textForeground" {..._thText}>
                 {t(column.label)}
               </Text>
             )}
@@ -424,6 +429,7 @@ const DataTable = <T,>({
   onPageSizeChange,
   responsive = true,
   minWidth,
+  _css,
 }: DataTableProps<T>) => {
   // ========================================================================
   // HOOKS & INITIAL STATE
@@ -572,7 +578,7 @@ const DataTable = <T,>({
   const tableContent = (
     <VStack {...styles.tableContentContainer} minWidth={minTableWidth}>
       {showHeader && (
-        <TableHeader columns={visibleDesktopColumns} minWidth={minTableWidth} />
+        <TableHeader columns={visibleDesktopColumns} minWidth={minTableWidth} {..._css?._header} />
       )}
       <Box>
         {renderDataContent((item, index) => (
@@ -609,7 +615,8 @@ const DataTable = <T,>({
         bg={theme.tokens.colors.backgroundPrimary.light}
         {...styles.tableWrapper}
         {...(!isMobile ? styles.tableWrapperWeb : {})}
-        overflow={shouldShowCardView ? 'hidden' : isMobile ? 'hidden' : 'hidden'}
+        overflow={shouldShowCardView ? 'hidden' : isMobile ? 'hidden' : 'visible'}
+        {..._css?._table}
       >
         {shouldShowCardView ? (
           // Mobile: Show card view when responsive is enabled

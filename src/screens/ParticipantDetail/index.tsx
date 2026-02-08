@@ -168,7 +168,7 @@ export default function ParticipantDetail() {
       !editedAddress.site
     ) {
       showAlert('warning', t('participantDetail.profileModal.fillAllFields'), {
-        placement: 'bottom-right',
+        placement: 'bottom',
       });
       return;
     }
@@ -183,11 +183,11 @@ export default function ParticipantDetail() {
       );
       setIsEditingAddress(false);
       showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
-        placement: 'bottom-right',
+        placement: 'bottom',
       });
     } catch (error) {
       showAlert('error', t('common.error'), {
-        placement: 'bottom-right',
+        placement: 'bottom',
       });
     }
   };

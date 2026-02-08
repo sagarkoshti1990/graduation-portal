@@ -19,6 +19,7 @@ export const pageHeaderStyles = {
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
     '$md-alignItems': 'flex-start' as const,
+    flexWrap: 'wrap' as const,
     px: '$4' as const,
     py: '$4' as const,
     '$md-px': '$6' as const,
@@ -27,10 +28,18 @@ export const pageHeaderStyles = {
   leftSection: {
     alignItems: 'center' as const,
     gap: '$3' as const,
-    flex: 1 as const,
+    width: '$full' as const,
+    '$md-width': 'auto' as const,
+    '$md-flex': 1 as const,
   },
   textSection: {
     flex: 1 as const,
+  },
+  rightSection: {
+    width: '$full' as const,
+    mt: '$2' as const,
+    '$md-width': 'auto' as const,
+    '$md-mt': '$0' as const,
   },
 } as const;
 

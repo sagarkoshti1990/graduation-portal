@@ -9,7 +9,7 @@ export const taskCardStyles = {
     size: 'md' as const,
     variant: 'elevated' as const,
     bg: '#F6F7FB',
-    borderRadius: '$md',
+    borderRadius: '$xl',
     marginBottom: '$0.5',
     borderWidth: 1,
     borderColor: '$borderLight300',
@@ -30,7 +30,7 @@ export const taskCardStyles = {
   // Default inline style for regular tasks
   regularTaskContainer: {
     bg: '$backgroundPrimary.light',
-    padding: '$5',
+    padding: '$2',
   },
   statusIndicatorContainer: {
     width: 40,
@@ -41,11 +41,20 @@ export const taskCardStyles = {
 
   // Status circle
   statusCircle: {
+    width: '$4',
+    height: '$4',
     borderRadius: '$full',
-    borderWidth: 2,
+    borderWidth: 1,
+    borderStyle: 'solid' as const,
+    borderColor: '$borderColor',
+    bg: '$white',
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
-    padding: '$1',
+    shadowColor: '$shadowColor',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 1,
   },
 
   // Divider
@@ -56,13 +65,14 @@ export const taskCardStyles = {
 
   // Action button styles
   actionButton: {
-    size: 'sm' as const,
+    size: 'xs' as const,
     variant: 'outline' as const,
     bg: '$backgroundPrimary.light',
     ml: '$3',
+    height: 32,
   },
   actionButtonCard: {
-    borderColor: '$textSecondary',
+    borderColor: '$mutedBorder',
     hoverBg: '$primary100' as const,
   },
   actionButtonInline: {
@@ -133,35 +143,49 @@ export const taskCardStyles = {
     whiteSpace: 'normal',
   } as const,
 
-  // Onboarding step card - very light grey box (almost white)
+  // Onboarding step card - very light grey box with gradient
   onboardingStepCard: {
     bg: '$gray50',
-    borderRadius: '$lg',
+    backgroundImage: 'linear-gradient(to right bottom, oklch(0.984 0.003 247.858) 0%, oklab(0.984 -0.00113071 -0.00277876 / 0.5) 100%)',
+    borderRadius: '$xl',
     borderWidth: 1,
-    borderColor: '$borderLight300',
+    borderStyle: 'solid' as const,
+    borderColor: '$gray300',
     padding: '$4',
-    marginBottom: '$3',
+    marginBottom: '$2',
+    marginTop: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    gap: '$3',
   },
   // First onboarding task (Capture Consent) - simple outline button
   onboardingPrimaryButton: {
     bg: '$backgroundPrimary.light',
-    borderColor: '$borderLight300',
-    hoverBg: '$hoverPink',
+    borderColor: '$mutedBorder',
+    borderRadius: '$lg',
+    borderWidth: 1,
+    height: '$8',
+    paddingHorizontal: '$3',
+    hoverBg: '$primary100',
     hoverBorderColor: '$primary500',
     textColor: '$textPrimary',
   },
   // Other onboarding tasks - simple outline button
   onboardingActionButton: {
     bg: '$backgroundPrimary.light',
-    borderColor: '$borderLight300',
-    hoverBg: '$hoverPink',
+    borderColor: '$mutedBorder',
+    borderRadius: '$lg',
+    borderWidth: 1,
+    height: '$8',
+    paddingHorizontal: '$3',
+    hoverBg: '$primary100',
     hoverBorderColor: '$primary500',
     textColor: '$textPrimary',
   },
   // Onboarding card responsive padding
-  onboardingCardPaddingMobile: '$3',
+  onboardingCardPaddingMobile: '$4',
   onboardingCardPaddingDesktop: '$4',
-  onboardingCardMarginBottomMobile: '$4',
+  onboardingCardMarginBottomMobile: '$3',
   onboardingCardMarginBottomDesktop: '$3',
   // Onboarding mobile layout
   onboardingMobileContainer: {
@@ -200,39 +224,47 @@ export const taskCardStyles = {
   // Onboarding text styles
   onboardingTitleText: {
     color: '$textPrimary',
-    fontWeight: '$semibold' as const,
+    fontWeight: '$medium' as const,
+    fontSize: '$md',
   },
   onboardingDescriptionText: {
     color: '$textSecondary',
+    fontWeight: '$normal' as const,
+    fontSize: '$sm',
     lineHeight: '$lg',
   },
 } as const;
 
 export const taskAccordionStyles = {
   container: {
-    marginBottom: '$4',
+    marginBottom: '$6',
   },
   card: {
     size: 'md' as const,
     variant: 'elevated' as const,
     bg: '$backgroundPrimary.light',
-    borderRadius: '$lg',
+    borderRadius: '$2xl',
     borderWidth: 1,
     borderColor: '$mutedBorder',
   },
   cardHeader: {
-    padding: '$3',
-    paddingTop:'$1',
-    paddingVertical: '$2',
+    padding: 0,
     borderBottomWidth: 1,
     borderBottomColor: '$mutedBorder',
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+  },
+  cardHeaderInner: {
+    padding: '$4',
   },
   cardHeaderContent: {
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
   },
   cardContent: {
-    padding: '$2',
+    paddingHorizontal: '$5',
+    paddingVertical: '$4',
   },
   cardContentStack: {
     space: 'md' as const,
@@ -644,9 +676,9 @@ export const fileUploadModalStyles = {
   fileItemCard: {
     padding: '$3',
     borderRadius: '$md',
-    bg: '$badgeSuccessBg',
+    bg: '$accent200',
     borderWidth: 1,
-    borderColor: '$badgeSuccessBg',
+    borderColor: '$accent200',
   },
   fileItemContent: {
     space: 'md' as const,

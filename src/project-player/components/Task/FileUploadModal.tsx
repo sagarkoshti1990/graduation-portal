@@ -18,6 +18,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { LucideIcon } from '@ui';
 import { theme } from '../../../config/theme';
 import { requestCameraPermission, requestStoragePermission } from '@utils/permissions';
+import { usePlatform } from '@utils/platform';
 import Modal from '@components/ui/Modal';
 import { fileUploadModalStyles } from './Styles';
 import { UploadMethodOptionProps, FileUploadModalProps } from '../../types/components.types';
@@ -91,6 +92,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
 
 }) => {
     const { t } = useLanguage();
+    const { isMobile } = usePlatform();
     const [selectedMethod, setSelectedMethod] = useState<'camera' | 'device' | null>(null);
     const [hoveredOption, setHoveredOption] = useState<'camera' | 'device' | null>(null);
     const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
@@ -200,7 +202,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                                         <LucideIcon
                                             name="FileText"
                                             size={fileUploadModalStyles.fileIconSize}
-                                            color={theme.tokens.colors.success500}
+                                            color={theme.tokens.colors.textMutedForeground}
                                         />
                                     </Box>
                                     <VStack {...fileUploadModalStyles.fileItemTextContainer}>
@@ -268,12 +270,11 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={handleCancel}
-            size="lg"
+            size={isMobile ? 'lg' : 'md'}
             headerTitle={t('projectPlayer.chooseUploadMethod')}
             headerDescription={t('projectPlayer.uploadDocumentationFor', { name: displayName })}
             showCloseButton={true}
             headerAlignment="baseline"
-            maxWidth={420}
             footerContent={footerContent}
         >
             <VStack space="md">

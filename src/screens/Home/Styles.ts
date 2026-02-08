@@ -1,10 +1,45 @@
 export const dashboardStyles = {
   scrollView: {
     p: '$4',
-    bg: '$backgroundLight0',
+    bg: '$backgroundColor',
+    flex: 1,
   },
   mainVStack: {
     space: 'lg',
+  },
+  contentContainer: {
+    space: 'lg',
+  },
+  metricsRow: {
+    flexWrap: 'wrap',
+    gap: '$4',
+    $md: {
+      flexWrap: 'nowrap',
+    },
+  },
+  cardsRow: {
+    flexWrap: 'wrap',
+    gap: '$4',
+    $md: {
+      flexWrap: 'nowrap',
+    },
+  },
+  cardColumn: {
+    flex: 1,
+    minWidth: '100%',
+    $md: {
+      minWidth: '48%',
+    },
+  },
+  placeholderBox: {
+    p: '$8',
+    bg: '$white',
+    borderRadius: '$xl',
+    borderWidth: 1,
+    borderColor: '$borderColor',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
   },
   titleText: {
     fontSize: '$2xl',

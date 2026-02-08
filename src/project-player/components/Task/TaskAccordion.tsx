@@ -97,12 +97,10 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
 
     return (
       <Box {...taskAccordionStyles.container}>
-        <Card {...taskAccordionStyles.card}>
-          {/* Card Header with Progress on right */}
-          <Box
-            {...taskAccordionStyles.cardHeader}
-            padding={isMobile ? '0' : 'auto'}
-          >
+       <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
+         {/* Card Header with Progress on right */}
+         <Box {...taskAccordionStyles.cardHeader}>
+           <Box {...taskAccordionStyles.cardHeaderInner}>
             {isMobile ? (
               <VStack space="sm">
                 <HStack {...taskAccordionStyles.pillarHeaderRow}>
@@ -172,13 +170,12 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
                 </HStack>
               </HStack>
             )}
+            </Box>
           </Box>
 
           {/* Card Content - Always visible (no accordion) */}
           <Box
             {...taskAccordionStyles.cardContent}
-            // paddingHorizontal={isWeb ? '$5' : '$2'}
-            px={isMobile ? '0' : 'auto'}
           >
             <VStack {...taskAccordionStyles.cardContentStack}>
               {(task?.children?.length ? task.children : task.tasks)?.map(

@@ -46,12 +46,12 @@ export const QUICK_ACTION_MENU_ITEMS: SidebarItem[] = [
     icon: 'Upload', // Lucide icon name
     route: 'UploadUsers',
   },
-  {
-    key: 'new-lc',
-    label: 'admin.menu.createUser',
-    icon: 'UserPlus', // Lucide icon name
-    route: 'NewLC',
-  },
+  // {
+  //   key: 'new-lc',
+  //   label: 'admin.menu.createUser',
+  //   icon: 'UserPlus', // Lucide icon name
+  //   route: 'NewLC',
+  // },
 ];
 
 export const MORE_INFORMATION_MENU_ITEMS: SidebarItem[] = [

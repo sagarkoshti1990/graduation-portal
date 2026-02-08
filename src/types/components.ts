@@ -9,6 +9,7 @@ export interface FeatureCardData {
   navigationUrl?: string;
   isDisabled?: boolean;
   pressableActionText?: string;
+  isComingSoon?: boolean;
 }
 
 export interface FeatureCardProps {
@@ -95,6 +96,7 @@ export interface DataTableProps<T> {
   // Responsive props
   responsive?: boolean;  // Enable responsive card view on mobile (default: true)
   minWidth?: number;  // Minimum width of the table
+  _css?: any; // Additional styling props
 }
 
 export interface PaginationControlsProps {

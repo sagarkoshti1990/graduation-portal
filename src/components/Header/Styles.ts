@@ -1,14 +1,14 @@
 export const stylesHeader = {
   container: {
-    px: '$4',
-    py: '$3',
+    px: '$4' as const,
+    py: '$3' as const,
     justifyContent: 'center' as const,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
     shadowRadius: 3,
     elevation: 3,
-    borderBottomWidth: '$1',
-    borderBottomColor: '$borderDark200',
+    borderBottomWidth: '$1' as const,
+    borderBottomColor: '$borderDark200' as const,
     zIndex: 1,
   },
   title: {
@@ -123,4 +123,4 @@ export const stylesHeader = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
-};
+} as const;

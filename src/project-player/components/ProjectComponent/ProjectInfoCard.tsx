@@ -93,42 +93,41 @@ const hasChildren =
                 </Box>
               </VStack>
             ) : (
-              // Web: Horizontal layout with title/description on left, badge on right
-              <HStack space="md" flex={1} justifyContent="space-between" alignItems="flex-start">
-                <VStack space="sm" flex={1}>
-                  {/* Title */}
+              // Web: Title with badge inline, description below
+              <VStack space="sm" flex={1}>
+                {/* Title row with badge */}
+                <HStack space="md" alignItems="center" justifyContent="space-between">
                   <Text {...TYPOGRAPHY.h3} color="$textPrimary">
                     {t('projectPlayer.onboarding')} {t('projectPlayer.participant')}
                   </Text>
 
-                  {/* Description */}
-                  <Text
-                    {...TYPOGRAPHY.paragraph}
-                    color="$textSecondary"
-                    lineHeight="$lg"
+                  {/* Badge - to the right of title */}
+                  <Box
+                    {...projectInfoCardStyles.stepsCompleteBadge}
+                    marginLeft="$4"
                   >
-                    {t('projectPlayer.onboardingDescription')}
-                  </Text>
-                </VStack>
+                    <HStack {...projectInfoCardStyles.stepsCompleteText}>
+                      <Text
+                        {...TYPOGRAPHY.caption}
+                        color="$modalBackground"
+                        fontWeight="$semibold"
+                      >
+                        {completedTasks} of {totalTasks}{' '}
+                        {t('projectPlayer.stepsComplete')}
+                      </Text>
+                    </HStack>
+                  </Box>
+                </HStack>
 
-                {/* Badge - on the right side */}
-                <Box
-                  {...projectInfoCardStyles.stepsCompleteBadge}
-                  marginLeft="$4"
-                  alignSelf="center"
+                {/* Description */}
+                <Text
+                  {...TYPOGRAPHY.paragraph}
+                  color="$textSecondary"
+                  lineHeight="$lg"
                 >
-                  <HStack {...projectInfoCardStyles.stepsCompleteText}>
-                    <Text
-                      {...TYPOGRAPHY.caption}
-                      color="$modalBackground"
-                      fontWeight="$semibold"
-                    >
-                      {completedTasks} of {totalTasks}{' '}
-                      {t('projectPlayer.stepsComplete')}
-                    </Text>
-                  </HStack>
-                </Box>
-              </HStack>
+                  {t('projectPlayer.onboardingDescription')}
+                </Text>
+              </VStack>
             )
           ) : (
             // Only show title in preview mode when there are children/pillars

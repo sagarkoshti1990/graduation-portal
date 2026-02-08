@@ -108,7 +108,7 @@ export const styles = {
   tableContainer: {
     bg: '$white' as const,
     padding: '$4' as const,
-    borderRadius: '$lg' as const,
+    borderRadius: '$xl' as const,
     borderWidth: 1,
     borderColor: '$borderColor' as const,
     mt: '$3' as const,
