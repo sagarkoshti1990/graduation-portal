@@ -658,6 +658,7 @@ const mappedParticipantsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.assignUsers.participant',
     align: 'left',
     flex: 2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 0 },
     render: (item: any) => (
       <HStack {...(AssignUsersStyles.avatarHStack as ViewProps)}>
         <Box {...(AssignUsersStyles.avatarBgStyles as ViewProps)}>
@@ -681,6 +682,7 @@ const mappedParticipantsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.assignUsers.email',
     align: 'left',
     flex: 2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 1 },
     render: (item: any) => (
       <Text {...(AssignUsersStyles.tableRowDataText as TextProps)}>
         {item.email || '-'}
@@ -692,6 +694,7 @@ const mappedParticipantsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.users.province',
     align: 'left',
     flex: 1.2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 2 },
     render: (item: any) => (
       <Text {...(AssignUsersStyles.tableRowDataText as TextProps)}>
         {item.province || '-'}
@@ -703,6 +706,7 @@ const mappedParticipantsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.users.site',
     align: 'left',
     flex: 1.2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 3 },
     render: (item: any) => (
       <Text {...(AssignUsersStyles.tableRowDataText as TextProps)}>
         {item.site || '-'}
@@ -718,6 +722,7 @@ const mappedLCsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.assignUsers.linkageChampion',
     align: 'left',
     flex: 2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 0 },
     render: (lc: any) => (
       <HStack {...(AssignUsersStyles.avatarHStack as ViewProps)}>
         <Box {...(AssignUsersStyles.avatarBgStyles as ViewProps)}>
@@ -741,6 +746,7 @@ const mappedLCsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.assignUsers.email',
     align: 'left',
     flex: 2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 1 },
     render: (lc: any) => (
       <Text {...(AssignUsersStyles.tableRowDataText as TextProps)}>
         {lc.email || '-'}
@@ -752,6 +758,7 @@ const mappedLCsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.users.province',
     align: 'left',
     flex: 2,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 2 },
     render: (lc: any) => (
       lc.province ? (
         <HStack {...(AssignUsersStyles.locationHStack as ViewProps)}>
@@ -772,6 +779,7 @@ const mappedLCsColumns: ColumnDef<any>[] = useMemo(() => [
     label: 'admin.assignUsers.site',
     align: 'left',
     flex: 1,
+    mobileConfig: { showColumn: true, showLabel: true, leftRank: 3 },
     render: (lc: any) => (
       <Text {...(AssignUsersStyles.tableRowDataText as TextProps)}>
         {lc.site || '-'}
