@@ -235,25 +235,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     </>
   );
 
-  // Render as Drawer (using Modal) for mobile, as fixed sidebar for desktop
+  // Render as Drawer (using custom Drawer) for mobile, as fixed sidebar for desktop
   if (isMobile) {
     return (
       <Drawer isOpen={isOpen} onClose={handleClose}>
-        {/* Drawer Header */}
-        <Box {...sidebarStyles.drawerHeader}>
-          <HStack
-            alignItems="center"
-            justifyContent="space-between"
-            width="100%"
-          >
+        <Drawer.Backdrop />
+        <Drawer.Content>
+          <Drawer.Header>
             <Text {...sidebarStyles.drawerTitle}>{t('navigation.menu')}</Text>
-            <Pressable onPress={handleClose} {...sidebarStyles.closeButton}>
-              <Icon as={CloseIcon} size="md" />
-            </Pressable>
-          </HStack>
-        </Box>
-        {/* Drawer Body */}
-        <Box {...sidebarStyles.drawerBody}>{sidebarContent}</Box>
+            <Drawer.CloseButton>
+              <Box {...sidebarStyles.closeButton}>
+                <Icon as={CloseIcon} size="md" />
+              </Box>
+            </Drawer.CloseButton>
+          </Drawer.Header>
+          <Drawer.Body>
+            <Box {...sidebarStyles.drawerBody}>{sidebarContent}</Box>
+          </Drawer.Body>
+        </Drawer.Content>
       </Drawer>
     );
   }
