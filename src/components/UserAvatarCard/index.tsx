@@ -86,15 +86,22 @@ const UserAvatarCard = ({
 
   const participantColumns: ColumnDef<any>[] = useMemo(() => [
     {
-      key: 'checkbox',
-      label: '',
+      key: 'name',
+      label: 'admin.assignUsers.participant',
       align: 'left',
-      render: (item: any) => {
-        const isChecked = selectedLCs.has(item.value);
-        return (
+      flex: 1,
+      render: (item: any) => (
+        <HStack
+          {...(AssignUsersStyles.viewstyles as ViewProps)}
+          flex={1}
+          width="100%"
+          alignItems="center"
+          space="sm"
+        >
+          {/* Checkbox + Avatar managed inside name (no separate columns) */}
           <Checkbox
             value={item.value}
-            isChecked={isChecked}
+            isChecked={selectedLCs.has(item.value)}
             onChange={(checked: boolean) => {
               setSelectedLCs((prev) => {
                 const newSet = new Set(prev);
@@ -108,67 +115,72 @@ const UserAvatarCard = ({
               <CheckboxIcon as={CheckIcon} color="$modalBackground" />
             </CheckboxIndicator>
           </Checkbox>
-        );
-      },
-      desktopConfig: { showColumn: true, showLabel: false },
-      mobileConfig: { showColumn: true, showLabel: false, leftRank: 0 },
-    },
-    {
-      key: 'avatar',
-      label: '',
-      align: 'left',
-      render: (item: any) => (
-        <Box
-          {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}
-        >
-          <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
-            {getInitials(item.labelKey)}
-          </Text>
-        </Box>
-      ),
-      desktopConfig: { showColumn: true, showLabel: false },
-      mobileConfig: { showColumn: true, showLabel: false, leftRank: 1 },
-    },
-    {
-      key: 'name',
-      label: 'admin.assignUsers.participant',
-      align: 'left',
-      flex: 1,
-      render: (item: any) => (
-        <VStack space="xs">
-          <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
-            {item.labelKey}
-          </Text>
-          {item.location && (
-            <HStack gap="$1" alignItems="center">
-              <LucideIcon
-                name="MapPin"
-                size={12}
-                color={theme.tokens.colors.textMutedForeground}
-              />
-              <Text {...(AssignUsersStyles.provinceName as TextProps)} fontSize="$xs">
-                {item.location}
-              </Text>
-            </HStack>
-          )}
-        </VStack>
+
+          <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
+            <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
+              {getInitials(item.labelKey)}
+            </Text>
+          </Box>
+
+          <VStack space="xs" flexShrink={1}>
+            <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
+              {item.labelKey}
+            </Text>
+            {item.location && (
+              <HStack gap="$1" alignItems="center">
+                <LucideIcon
+                  name="MapPin"
+                  size={12}
+                  color={theme.tokens.colors.textMutedForeground}
+                />
+                <Text {...(AssignUsersStyles.provinceName as TextProps)} fontSize="$xs">
+                  {item.location}
+                </Text>
+              </HStack>
+            )}
+          </VStack>
+
+          <Badge
+            ml="auto"
+            variant="outline"
+            bg="$white"
+            borderColor="$borderColor"
+            px="$2"
+            py="$1"
+            borderRadius="$lg"
+            mr="$2"
+          >
+            <BadgeText color="$textForeground" fontSize="$xs" textTransform="none">
+              {t(`admin.assignUsers.status.${item.status || 'unassigned'}`) ||
+                item.status ||
+                t('admin.assignUsers.status.unassigned')}
+            </BadgeText>
+          </Badge>
+        </HStack>
       ),
       desktopConfig: { showColumn: true, showLabel: false },
       mobileConfig: { showColumn: true, showLabel: false, fullWidthRank: 0 },
     },
-  ], [selectedLCs]);
+  ], [selectedLCs, t]);
 
   const linkageChampionColumns: ColumnDef<any>[] = useMemo(() => [
     {
-      key: 'checkbox',
-      label: '',
+      key: 'lcInfo',
+      label: 'admin.assignUsers.linkageChampion',
       align: 'left',
-      render: (lc: any) => {
-        const isChecked = selectedLCs.has(lc.value);
-        return (
+      flex: 1,
+      render: (lc: any) => (
+        <HStack
+          {...(AssignUsersStyles.viewstyles as ViewProps)}
+          flex={1}
+          width="100%"
+          alignItems="center"
+          space="sm"
+        >
+          {/* Checkbox managed inside lcInfo (no separate checkbox column) */}
           <Checkbox
             value={lc.value}
-            isChecked={isChecked}
+            isChecked={selectedLCs.has(lc.value)}
             onChange={(checked: boolean) => {
               setSelectedLCs((prev) => {
                 const newSet = new Set(prev);
@@ -182,39 +194,13 @@ const UserAvatarCard = ({
               <CheckboxIcon as={CheckIcon} color="$modalBackground" />
             </CheckboxIndicator>
           </Checkbox>
-        );
-      },
-      desktopConfig: { showColumn: true, showLabel: false },
-      mobileConfig: { showColumn: true, showLabel: false, leftRank: 0 },
-    },
-    {
-      key: 'avatar',
-      label: '',
-      align: 'left',
-      render: (lc: any) => (
-        <Box
-          {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}
-        >
-          <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
-            {getInitials(lc.labelKey)}
-          </Text>
-        </Box>
-      ),
-      desktopConfig: { showColumn: true, showLabel: false },
-      mobileConfig: { showColumn: true, showLabel: false, leftRank: 1 },
-    },
-    {
-      key: 'lcInfo',
-      label: 'admin.assignUsers.linkageChampion',
-      align: 'left',
-      flex: 1,
-      render: (lc: any) => (
-        <HStack
-          {...(AssignUsersStyles.viewstyles as ViewProps)}
-          flex={1}
-          width="100%"
-          alignItems="center"
-        >
+
+          <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
+            <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
+              {getInitials(lc.labelKey)}
+            </Text>
+          </Box>
+
           <VStack space="xs" flexShrink={1}>
             <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
               {lc.labelKey}
@@ -232,9 +218,20 @@ const UserAvatarCard = ({
               </HStack>
             )}
           </VStack>
-
+        </HStack>
+      ),
+      desktopConfig: { showColumn: true, showLabel: false },
+      // On mobile card view, show LC info as the main full-width row
+      mobileConfig: { showColumn: true, showLabel: false, leftRank: 0 },
+    },
+    {
+      key: 'status',
+      label: '',
+      align: 'right',
+      flex: 1,
+      render: (lc: any) => (
+        <HStack width="100%" justifyContent="flex-end">
           <Badge
-            ml="auto"
             variant="outline"
             bg="$white"
             borderColor="$borderColor"
@@ -252,7 +249,8 @@ const UserAvatarCard = ({
         </HStack>
       ),
       desktopConfig: { showColumn: true, showLabel: false },
-      mobileConfig: { showColumn: true, showLabel: false, fullWidthRank: 0 },
+      // On mobile card view, place status on the right side of the first row (paired with LC info on the left)
+      mobileConfig: { showColumn: true, showLabel: false, rightRank: 0 },
     },
   ], [selectedLCs, t]);
  // Handler to receive filter changes from FilterButton and pass to parent
