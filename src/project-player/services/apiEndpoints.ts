@@ -17,4 +17,5 @@ export const API_ENDPOINTS = {
   GET_SOLUTION_DETAILS: (solutionId: string, taskId: string) =>
     `${prefix}/project/v1/userProjects/solutionDetails/${solutionId}?taskId=${taskId}`,
   PRE_SIGNED_URLS: `${prefix}/project/v1/cloud-services/files/preSignedUrls`,
+  UPDATE_PROJECT_INFO: (id: string) => `${prefix}/project/v1/userProjects/update/${id}`,
 } as const;

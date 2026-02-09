@@ -30,6 +30,7 @@ import logger from '@utils/logger';
 import { PageHeader } from '@components/PageHeader';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Status key type (keys of STATUS object)
 type StatusKey = keyof typeof STATUS;
@@ -151,6 +152,11 @@ const ParticipantsList: React.FC = () => {
         if (response.total !== undefined) {
           setTotalItems(response.total);
         }
+
+        if (response.result.data && response.result.data.length > 0) {
+          await AsyncStorage.setItem('my_program_user_ref', response.result?.details._id);
+        }
+        
       } catch (err: any) {
         const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch participants';
         logger.error('Error fetching participants:', errorMessage, err);

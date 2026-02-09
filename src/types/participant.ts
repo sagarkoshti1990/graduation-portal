@@ -128,6 +128,7 @@ export interface ParticipantSearchResponse {
   result: {
     data: any[];
     overview?: ParticipantOverview;
+    details:any;
   };
   count?: number;
   total?: number;
