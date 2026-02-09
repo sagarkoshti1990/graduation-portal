@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, HStack, Toast, ToastTitle } from '@gluestack-ui/themed';
+import { Box, HStack, Toast, ToastDescription, VStack } from '@gluestack-ui/themed';
 import type { ToastPlacement } from '@app-types/components';
 import LucideIcon from '../LucideIcon';
 import { successToastStyles } from './Styles';
+import { theme } from '@config/theme';
 
 export type SuccessToastStyles = {
   toast?: Record<string, unknown>;
@@ -30,8 +31,8 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   id,
   message,
   styles,
-  iconName = 'Check',
-  iconColor = 'white',
+  iconName = 'CheckCircle',
+  iconColor = (theme.tokens.colors.success600 as any) || '#00a63e',
 }) => {
   const mergedStyles = {
     toast: { ...successToastStyles.toast, ...styles?.toast },
@@ -44,7 +45,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
 
   return (
     <Toast nativeID={id} action="success" variant="solid" {...mergedStyles.toast}>
-      <HStack {...mergedStyles.content}>
+      <HStack space="md" alignItems="center" {...mergedStyles.content}>
         <Box {...mergedStyles.icon}>
           <LucideIcon
             name={iconName}
@@ -53,7 +54,9 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
             strokeWidth={3}
           />
         </Box>
-        <ToastTitle {...mergedStyles.title}>{message}</ToastTitle>
+        <VStack space="xs" flex={1}>
+          <ToastDescription {...mergedStyles.title}>{message}</ToastDescription>
+        </VStack>
       </HStack>
     </Toast>
   );
@@ -66,7 +69,7 @@ export const showSuccessToast = (
   options?: ShowSuccessToastOptions,
 ) => {
   toast.show({
-    placement: options?.placement ?? 'bottom right',
+    placement: options?.placement ?? 'bottom',
     render: ({ id }: { id: string }) => (
       <SuccessToast
         id={id}
