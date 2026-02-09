@@ -34,7 +34,7 @@ import PasswordPolicy from '../screens/PasswordPolicy';
 import AuditLogScreen from '../screens/AuditLog';
 import AssignUsersScreen from '../screens/AssignUsers';
 import AdminDashboard from '../screens/AdminDashboard';
-
+import ProfilePermissions from '../screens/ProfilePermissions';
 // Error Boundary for Navigation
 class NavigationErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode },
@@ -94,6 +94,11 @@ const getAccessPages = (
           name: 'csv-templates',
           path: '/csv-templates',
           component: CsvImportTemplates,
+        },
+       {
+          name: 'ProfilePermissions',
+          path: '/profile-permissions',
+          component: ProfilePermissions,
         },
         {
           name: 'PasswordPolicy',
