@@ -1,36 +1,17 @@
 export const successToastStyles = {
   toast: {
-    bg: '$white',
-    borderRadius: '$lg',
-    marginBottom: '$4',
-    marginRight: '$4',
-    borderWidth: 1,
-    borderColor: '$borderLight200',
-    shadowColor: '$backgroundLight900',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    // Intentionally minimal so Gluestack's `Toast` (action="success", variant="solid")
+    // matches the same styling used by `useAlert()`.
   },
   content: {
-    space: 'sm' as const,
-    alignItems: 'center' as const,
-    padding: '$3',
-    paddingHorizontal: '$4',
+    // keep empty by default; layout is controlled in `SuccessToast.tsx`
   },
   icon: {
-    width: 24,
-    height: 24,
-    borderRadius: '$full',
-    bg: '$primary500',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    // keep empty by default; matches `useAlert()` which doesn't wrap icon in a colored circle
   },
-  iconSize: 14,
+  iconSize: 16,
   title: {
-    color: '$textPrimary',
-    fontSize: '$sm',
-    fontWeight: '$medium',
+    // keep empty by default; text color should come from Gluestack toast variant/action
   },
 };
 
