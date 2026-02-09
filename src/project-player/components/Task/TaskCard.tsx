@@ -286,11 +286,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const renderTaskInfo = () => {
     const textStyle = uiConfig.showCheckbox
       ? {
-          textDecorationLine: (isCompleted ? 'line-through' : 'none') as
-            | 'line-through'
-            | 'none',
-          opacity: isCompleted ? 0.6 : 1,
-        }
+        textDecorationLine: (isCompleted ? 'line-through' : 'none') as
+          | 'line-through'
+          | 'none',
+        opacity: isCompleted ? 0.6 : 1,
+      }
       : {};
 
     const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.bodySmall : TYPOGRAPHY.h3;
@@ -340,17 +340,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isEditModeOnly = isInterventionPlanEditMode;
     const statusBadge =
       isEditModeOnly && uiConfig.showAsCard ? (
-        <Box
-          bg={isCompleted ? '$accent200' : '$textSecondary'}
-          paddingHorizontal="$3"
-          paddingVertical="$0.5"
-          borderRadius="$full"
-          alignSelf="flex-start"
-        >
-          <Text fontSize="$xs" fontWeight="$semibold" color={isCompleted ? '$textPrimary' : '$white'}>
-            {isCompleted ? t('projectPlayer.done') : t('projectPlayer.toDo')}
-          </Text>
-        </Box>
+        <Pressable>
+          {(state: any) => {
+            const isHovered = state?.hovered || state?.pressed || false;
+            const isDone = isCompleted;
+            return (
+              <Box
+                {...taskCardStyles.statusBadge}
+                {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
+              >
+                <Text
+                  {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
+                >
+                  {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
+                </Text>
+              </Box>
+            );
+          }}
+        </Pressable>
       ) : null;
 
     // In Edit mode only (non-preview), hide description
@@ -408,31 +415,25 @@ const TaskCard: React.FC<TaskCardProps> = ({
                         state?.hovered || state?.pressed || false;
                       return (
                         <Box
-                          bg={isHovered ? '$hoverPink' : '$backgroundLight100'}
-                          paddingHorizontal="$2"
-                          paddingVertical="$1"
-                          borderRadius="$sm"
-                          borderWidth={1}
-                          borderColor={
-                            isHovered ? '$primary300' : '$borderLight300'
-                          }
-                          $web-cursor="pointer"
+                          {...taskCardStyles.fileCountTag}
+                          {...(isHovered ? taskCardStyles.fileCountTagHover : {})}
                         >
                           <HStack space="xs" alignItems="center">
                             <LucideIcon
                               name="Paperclip"
-                              size={12}
+                              size={taskCardStyles.fileCountIcon.size}
                               color={
                                 isHovered
                                   ? theme.tokens.colors.primary500
-                                  : theme.tokens.colors.textSecondary
+                                  : theme.tokens.colors.textPrimary
                               }
                             />
                             <Text
-                              fontSize="$xs"
+                              {...taskCardStyles.fileCountText}
                               color={
-                                isHovered ? '$primary500' : '$textSecondary'
+                                isHovered ? '$primary500' : '$textPrimary'
                               }
+                              style={isHovered ? (taskCardStyles.fileCountTextHover as any) : undefined}
                             >
                               {task.attachments?.length}{' '}
                               {task.attachments?.length === 1

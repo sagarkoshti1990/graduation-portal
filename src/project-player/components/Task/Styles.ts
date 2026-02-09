@@ -7,12 +7,12 @@ export const taskCardStyles = {
   // Card style for children of project tasks
   childCard: {
     size: 'md' as const,
-    variant: 'elevated' as const,
+    variant: 'outline' as const,
     bg: '#F6F7FB',
     borderRadius: '$xl',
     marginBottom: '$0.5',
     borderWidth: 1,
-    borderColor: '$borderLight300',
+    borderColor: 'rgb(226, 232, 240)',
   },
   childCardContent: {
     padding: '$0.5',
@@ -186,6 +186,74 @@ export const taskCardStyles = {
   onboardingCardPaddingDesktop: '$4',
   onboardingCardMarginBottomMobile: '$3',
   onboardingCardMarginBottomDesktop: '$3',
+
+  // Status Badge (Done/To Do)
+  statusBadge: {
+    paddingHorizontal: '$2',
+    paddingVertical: '$0.3',
+    borderRadius: '$full',
+    alignSelf: 'flex-start' as const,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  statusBadgeDone: {
+    bg: '$accent200', // Subtle grey/blue
+    borderColor: 'rgb(226, 232, 240)',
+  },
+  statusBadgeDoneHover: {
+    bg: '$primary100', // Light pink/red from theme
+    borderColor: '$primary500',
+  },
+  statusBadgeDoneText: {
+    color: '$textPrimary',
+    fontSize: '$xs',
+    fontWeight: '$semibold',
+  },
+  statusBadgeDoneTextHover: {
+    color: '$primary500',
+    fontSize: '$xs',
+    fontWeight: '$semibold',
+  },
+  statusBadgeToDo: {
+    bg: '$textSecondary',
+    borderColor: '$textSecondary',
+  },
+  statusBadgeToDoText: {
+    color: '$white',
+    fontSize: '$xs',
+    fontWeight: '$semibold',
+  },
+
+  // File Count Tag
+  fileCountTag: {
+    paddingHorizontal: '$2',
+    paddingVertical: '$0.3',
+    borderRadius: '$full',
+    borderWidth: 1,
+    borderColor: 'rgb(226, 232, 240)',
+    bg: '$accent200', // Subtle grey/blue
+    $web: {
+      cursor: 'pointer' as const,
+      transition: 'all 0.2s',
+    },
+  },
+  fileCountTagHover: {
+    bg: '$primary100', // Light pink/red from theme
+    borderColor: '$primary500',
+  },
+  fileCountIcon: {
+    size: 12,
+  },
+  fileCountText: {
+    fontSize: '$xs',
+    color: '$textPrimary',
+    fontWeight: '$semibold',
+  },
+  fileCountTextHover: {
+    color: '$primary500',
+    fontSize: '$xs',
+  },
+
   // Onboarding mobile layout
   onboardingMobileContainer: {
     space: 'sm' as const,
