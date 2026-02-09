@@ -143,7 +143,7 @@ const LoginScreen: React.FC = () => {
       <Box {...loginStyles.container}
        $web-backgroundImage={'linear-gradient(148.729deg, rgba(117, 0, 63, 0.05) 0%, rgba(117, 0, 63, 0.1) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)'}>
         {/* @ts-ignore - LanguageSelector accepts menuTriggerProps */}
-        <LanguageSelector menuTriggerProps={loginStyles.languageSelector} />
+        {/* <LanguageSelector menuTriggerProps={loginStyles.languageSelector} /> */}
         <Animated.View
             style={{...loginStyles.imageSpinLogo, transform: [{ rotate: spin }] }}
         >
