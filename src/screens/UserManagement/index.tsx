@@ -338,7 +338,7 @@ const UserManagementScreen = () => {
         onClose={() => setIsUploadModalOpen(false)}
         headerTitle={t('admin.actions.uploadUsers')}
         headerDescription={t('admin.actions.uploadUsersDescription')}
-        size="md"
+        size="lg"
         borderRadius="$lg"
       >
         <VStack space="md" width="100%">
