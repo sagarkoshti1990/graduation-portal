@@ -2,33 +2,32 @@ import { theme } from '@config/theme';
 
 export const drawerStyles = {
     container: {
-        justifyContent: 'flex-start' as const,
-        margin: 0,
-        width: '$full' as const,
-        height: '$full' as const,
-    },
-    content: {
-        height: '$full' as const,
-        width: 300,
-        maxWidth: '85%' as const,
-        bg: '$backgroundLight0' as const,
-        borderRadius: 0,
-        padding: 0,
-        sx: {
-            '_web': {
-                position: 'fixed' as const,
-                left: 0,
-                top: 0,
-                height: '100vh',
-            },
-        },
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1000,
     },
     backdrop: {
-        bg: '$backgroundLight900',
-        opacity: 0.5,
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
     },
-    body: {
-        flex: 1,
-        padding: 0,
-    },
+    content: (anchor: 'left' | 'right', width: number) => ({
+        position: 'absolute' as const,
+        top: 0,
+        [anchor]: 0,
+        width: width,
+        maxWidth: '85%' as const,
+        height: '100%' as const,
+        elevation: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 0 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+    }),
 };

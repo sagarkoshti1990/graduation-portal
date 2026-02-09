@@ -4,6 +4,7 @@ import {
     Pressable,
 } from '@gluestack-ui/themed';
 import { Platform, Animated, Dimensions } from 'react-native';
+import { drawerStyles } from './Styles';
 
 interface DrawerProps {
     isOpen: boolean;
@@ -64,46 +65,30 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     return (
         <Box
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            zIndex={1000}
+            {...drawerStyles.container}
             // @ts-ignore
             style={Platform.OS === 'web' ? { position: 'fixed' } : {}}
         >
             {/* Backdrop */}
             <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                    opacity: opacityAnim,
-                }}
+                style={[
+                    drawerStyles.backdrop,
+                    {
+                        opacity: opacityAnim,
+                    }
+                ]}
             >
                 <Pressable onPress={onClose} flex={1} />
             </Animated.View>
 
             {/* Drawer Content */}
             <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    [anchor]: 0,
-                    width: DRAWER_WIDTH,
-                    maxWidth: '85%',
-                    height: '100%',
-                    transform: [{ translateX: slideAnim }],
-                    elevation: 16,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 2, height: 0 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 10,
-                }}
+                style={[
+                    drawerStyles.content(anchor, DRAWER_WIDTH),
+                    {
+                        transform: [{ translateX: slideAnim }],
+                    }
+                ]}
             >
                 <Box flex={1} bg="$backgroundLight0">
                     {children}
