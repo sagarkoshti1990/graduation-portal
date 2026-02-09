@@ -207,8 +207,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
             />
           ) : undefined
         }
-        size={modalType === 'dropout' ? 'md' : 'full'}
-        maxWidth={modalType === 'dropout' ? 500 : 1200}
+        size="lg"
+        maxWidth={500}
         showCloseButton={modalType !== 'dropout'}
         cancelButtonText={modalType === 'dropout' ? t('common.cancel') || 'Cancel' : undefined}
         confirmButtonText={modalType === 'dropout' ? (dropoutLoading ? (t('common.loading') || 'Loading...') : (t('actions.confirmDropout') || 'Confirm Dropout')) : undefined}
