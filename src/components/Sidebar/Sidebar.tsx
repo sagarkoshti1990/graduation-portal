@@ -8,14 +8,12 @@ import {
   Icon,
   Divider,
   ScrollView,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
   Image,
   ChevronDownIcon,
   ChevronUpIcon,
   CloseIcon,
   LucideIcon,
+  Drawer,
 } from '@ui';
 import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import { useNavigation } from '@react-navigation/native';
@@ -240,29 +238,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   // Render as Drawer (using Modal) for mobile, as fixed sidebar for desktop
   if (isMobile) {
     return (
-      <Modal isOpen={isOpen}>
-        <ModalBackdrop />
-        <ModalContent
-          {...sidebarStyles.drawerContent}
-          height={isWeb ? 'auto' : '100%'}
-        >
-          {/* Drawer Header */}
-          <Box {...sidebarStyles.drawerHeader}>
-            <HStack
-              alignItems="center"
-              justifyContent="space-between"
-              width="100%"
-            >
-              <Text {...sidebarStyles.drawerTitle}>{t('navigation.menu')}</Text>
-              <Pressable onPress={handleClose} {...sidebarStyles.closeButton}>
-                <Icon as={CloseIcon} size="md" />
-              </Pressable>
-            </HStack>
-          </Box>
-          {/* Drawer Body */}
-          <Box {...sidebarStyles.drawerBody}>{sidebarContent}</Box>
-        </ModalContent>
-      </Modal>
+      <Drawer isOpen={isOpen} onClose={handleClose}>
+        {/* Drawer Header */}
+        <Box {...sidebarStyles.drawerHeader}>
+          <HStack
+            alignItems="center"
+            justifyContent="space-between"
+            width="100%"
+          >
+            <Text {...sidebarStyles.drawerTitle}>{t('navigation.menu')}</Text>
+            <Pressable onPress={handleClose} {...sidebarStyles.closeButton}>
+              <Icon as={CloseIcon} size="md" />
+            </Pressable>
+          </HStack>
+        </Box>
+        {/* Drawer Body */}
+        <Box {...sidebarStyles.drawerBody}>{sidebarContent}</Box>
+      </Drawer>
     );
   }
 
