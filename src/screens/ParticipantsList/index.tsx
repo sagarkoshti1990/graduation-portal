@@ -153,9 +153,9 @@ const ParticipantsList: React.FC = () => {
           setTotalItems(response.total);
         }
 
-        if (response.result.data && response.result.data.length > 0) {
-          await AsyncStorage.setItem('my_program_user_ref', response.result?.details._id);
-        }
+        // if (response.result.data && response.result.data.length > 0) {
+        //   await AsyncStorage.setItem('my_program_user_ref', response.result?.details._id);
+        // }
         
       } catch (err: any) {
         const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch participants';
