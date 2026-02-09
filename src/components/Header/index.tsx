@@ -131,27 +131,27 @@ const Header: React.FC<{
           - Uses MenuIcon as trigger, opens menu at "bottom left" placement
           - Falls back to default rightSideContent if LC props not provided (Admin layout)
         */}
-          {rightSideContent && hamburgerMenuItems && onHamburgerMenuSelect ? (
-            <Menu
-              items={hamburgerMenuItems}
-              placement="bottom left"
-              offset={15}
-              trigger={triggerProps => (
-                <Pressable {...triggerProps} px="$3">
-                  <LucideIcon name="Menu" size={16} color={isDark ? '$textLight100' : '$textDark900'} />
-                </Pressable>
-              )}
-              onSelect={handleHamburgerMenuSelect}
-            />
+        {rightSideContent && hamburgerMenuItems && onHamburgerMenuSelect ? (
+          <Menu
+            items={hamburgerMenuItems}
+            placement="bottom left"
+            offset={15}
+            trigger={triggerProps => (
+              <Pressable {...triggerProps} px="$3">
+                <LucideIcon name="Menu" size={16} color={isDark ? '$textLight100' : '$textDark900'} />
+              </Pressable>
+            )}
+            onSelect={handleHamburgerMenuSelect}
+          />
           ) : onToggleSidebar ? (
             <Pressable onPress={onToggleSidebar} px="$3" $hover-opacity={0.7}>
               <LucideIcon name="Menu" size={24} color={isDark ? '$textLight100' : '$textDark900'} />
-            </Pressable>
-          ) : (
-            rightSideContent
-          )}
-
-          {/* 
+            </Pressable>          
+        ) : (
+          rightSideContent
+        )}
+        
+        {/* 
           Left: Avatar with User Info (only if userMenuPosition is 'left' - LC layout)
           - Displays avatar with gradient background on web, solid color on native
           - Gradient: Uses $web-style prop for CSS linear-gradient (web only)
@@ -179,259 +179,259 @@ const Header: React.FC<{
                   {user?.role || ''}
                 </Text>
               </HStack> */}
-              </VStack>
-            </HStack>
-          )}
-
-          {/* Title */}
-          {title && (
-            <Text
-              {...TYPOGRAPHY.h4}
-              color={isDark ? '$textLight100' : '$textDark900'}
-            >
-              {title}
-            </Text>
-          )}
-          {/* Center: Search Bar */}
-          {setSearch && (
-            <>
-              <Box {...stylesHeader.searchContainer}>
-                <Input {...stylesHeader.searchInput}>
-                  <InputSlot pl="$3">
-                    <InputIcon as={SearchIcon} />
-                  </InputSlot>
-                  <InputField
-                    placeholder={t('common.search')}
-                    {...stylesHeader.searchInputField}
-                    value={search || ''}
-                    onChangeText={text => setSearch(text)}
-                  />
-                </Input>
-              </Box>
-            </>
-          )}
-          {/* Right: Notifications, Language & Theme */}
-          <HStack {...stylesHeader.rightActionsContainer}>
-            {/* Notifications */}
-            {showNotification && (
-              <Pressable position="relative">
-                <Icon as={BellIcon} {...stylesHeader.notificationIcon} />
-                <Badge {...stylesHeader.notificationBadge}>
-                  <Text {...stylesHeader.notificationBadgeText}>3</Text>
-                </Badge>
-              </Pressable>
-            )}
-            {showLanguage && <LanguageSelector />}
-            {showTheme && (
-              <Icon
-                {...stylesHeader.rightColorModeIcon}
-                as={colorMode === 'dark' ? MoonIcon : SunIcon}
-                onPress={() => {
-                  const newMode = colorMode === 'dark' ? 'light' : 'dark';
-                  setColorMode(newMode);
-                }}
-              />
-            )}
-            {/* Right: User Menu (only if userMenuPosition is 'right' or default) */}
-            {isLoggedIn && userMenuPosition === 'right' && (
-              <Menu
-                items={PROFILE_MENU_OPTIONS}
-                placement="bottom right"
-                offset={5}
-                trigger={triggerProps => (
-                  <Pressable {...triggerProps} {...stylesHeader.userMenuTrigger}>
-                    <Avatar {...stylesHeader.userAvatar}>
-                      <AvatarFallbackText>
-                        {user?.name
-                          ?.split(' ')
-                          .map(n => n[0])
-                          .join('')
-                          .toUpperCase() || 'AD'}
-                      </AvatarFallbackText>
-                    </Avatar>
-                    {!isMobile && (
-                      <>
-                        <VStack {...stylesHeader.userInfoContainer}>
-                          <Text {...stylesHeader.userNameText}>
-                            {user?.name || ''}
-                          </Text>
-                          <HStack {...stylesHeader.userRoleContainer}>
-                            <Text {...stylesHeader.userRoleText}>
-                              {user?.role || ''}
-                            </Text>
-                          </HStack>
-                        </VStack>
-                        <Icon
-                          as={ChevronDownIcon}
-                          {...stylesHeader.chevronIcon}
-                        />
-                      </>
-                    )}
-                  </Pressable>
-                )}
-                onSelect={handleMenuSelect}
-              />
-            )}
+            </VStack>
           </HStack>
-          {leftSideContent && leftSideContent}
-        </HStack>
-
-        {/* Profile Modal */}
-        <Modal
-          isOpen={!!authUser}
-          onClose={() => setAuthUser(null)}
-          headerTitle={t('lcProfile.myProfile')}
-          headerDescription={t('lcProfile.linkageChampionProfile')}
-          headerIcon={
-            <Box {...stylesHeader.headerIcon}>
-              <LucideIcon name="User" size={24} color="#ffffff" />
-            </Box>
-          }
-          size="lg"
-
-        >
-          <VStack
-            {...LCProfileStyles.lcProfileCard}
-            $md-p="$6"
+        )}
+        
+        {/* Title */}
+        {title && (
+          <Text
+            {...TYPOGRAPHY.h4}
+            color={isDark ? '$textLight100' : '$textDark900'}
           >
-            <Box
-              {...LCProfileStyles.lcFieldWrapper}
-              $md-flexDirection="row"
-              $md-gap="$6"
-            >
-              {/* Full Name */}
-              <Box {...LCProfileStyles.lcItem} $md-width="auto">
-                <HStack mb="$2" space="sm">
-                  <LucideIcon name="User" size={16} color={theme.tokens.colors.textMutedForeground} />
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.fullName')}</Text>
-                </HStack>
-                <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                  <Text
-                    {...profileStyles.fieldLabel}
-                    flexShrink={1}
-                  >
-                    {authUser?.name}
-                  </Text>
-                </Box>
-              </Box>
+            {title}
+          </Text>
+        )}
+        {/* Center: Search Bar */}
+        {setSearch && (
+          <>
+            <Box {...stylesHeader.searchContainer}>
+              <Input {...stylesHeader.searchInput}>
+                <InputSlot pl="$3">
+                  <InputIcon as={SearchIcon} />
+                </InputSlot>
+                <InputField
+                  placeholder={t('common.search')}
+                  {...stylesHeader.searchInputField}
+                  value={search || ''}
+                  onChangeText={text => setSearch(text)}
+                />
+              </Input>
+            </Box>
+          </>
+        )}
+        {/* Right: Notifications, Language & Theme */}
+        <HStack {...stylesHeader.rightActionsContainer}>
+          {/* Notifications */}
+          {showNotification && (
+            <Pressable position="relative">
+              <Icon as={BellIcon} {...stylesHeader.notificationIcon} />
+              <Badge {...stylesHeader.notificationBadge}>
+                <Text {...stylesHeader.notificationBadgeText}>3</Text>
+              </Badge>
+            </Pressable>
+          )}
+          {showLanguage && <LanguageSelector />}
+          {showTheme && (
+            <Icon
+              {...stylesHeader.rightColorModeIcon}
+              as={colorMode === 'dark' ? MoonIcon : SunIcon}
+              onPress={() => {
+                const newMode = colorMode === 'dark' ? 'light' : 'dark';
+                setColorMode(newMode);
+              }}
+            />
+          )}
+          {/* Right: User Menu (only if userMenuPosition is 'right' or default) */}
+          {isLoggedIn && userMenuPosition === 'right' && (
+            <Menu
+              items={PROFILE_MENU_OPTIONS}
+              placement="bottom right"
+              offset={5}
+              trigger={triggerProps => (
+                <Pressable {...triggerProps} {...stylesHeader.userMenuTrigger}>
+                  <Avatar {...stylesHeader.userAvatar}>
+                    <AvatarFallbackText>
+                      {user?.name
+                        ?.split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase() || 'AD'}
+                    </AvatarFallbackText>
+                  </Avatar>
+                  {!isMobile && (
+                    <>
+                      <VStack {...stylesHeader.userInfoContainer}>
+                        <Text {...stylesHeader.userNameText}>
+                          {user?.name || ''}
+                        </Text>
+                        <HStack {...stylesHeader.userRoleContainer}>
+                          <Text {...stylesHeader.userRoleText}>
+                            {user?.role || ''}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                      <Icon
+                        as={ChevronDownIcon}
+                        {...stylesHeader.chevronIcon}
+                      />
+                    </>
+                  )}
+                </Pressable>
+              )}
+              onSelect={handleMenuSelect}
+            />
+          )}
+        </HStack>
+        {leftSideContent && leftSideContent}
+      </HStack>
 
-              {/* LC ID */}
-              <Box {...LCProfileStyles.lcItem} $md-width="auto">
-                <HStack mb="$2" space="sm">
-                  <LucideIcon name="Award" size={16} color={theme.tokens.colors.textMutedForeground} />
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.lcId')}</Text>
-                </HStack>
-                <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                  <Text
-                    {...profileStyles.fieldLabel}
-                    flexShrink={1}
-                  >
-                    {authUser?.id}
-                  </Text>
-                </Box>
+      {/* Profile Modal */}
+      <Modal
+        isOpen={!!authUser}
+        onClose={() => setAuthUser(null)}
+        headerTitle={t('lcProfile.myProfile')}
+        headerDescription={t('lcProfile.linkageChampionProfile')}
+        headerIcon={
+          <Box {...stylesHeader.headerIcon}>
+            <LucideIcon name="User" size={24} color="#ffffff" />
+          </Box>
+        }
+        size="lg"
+        
+      >
+        <VStack
+          {...LCProfileStyles.lcProfileCard}
+          $md-p="$6"
+        >
+          <Box
+            {...LCProfileStyles.lcFieldWrapper}
+            $md-flexDirection="row"
+            $md-gap="$6"
+          >
+            {/* Full Name */}
+            <Box {...LCProfileStyles.lcItem} $md-width="auto">
+              <HStack mb="$2" space="sm">
+                <LucideIcon name="User" size={16} color={theme.tokens.colors.textMutedForeground} />
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.fullName')}</Text>
+              </HStack>
+              <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
+                <Text 
+                  {...profileStyles.fieldLabel}
+                  flexShrink={1}
+                >
+                  {authUser?.name}
+                </Text>
               </Box>
+            </Box>
 
-              {/* Email Address */}
-              <Box {...LCProfileStyles.lcItem} $md-width="auto">
-                <HStack mb="$2" space="sm">
-                  <LucideIcon name="Mail" size={16} color={theme.tokens.colors.textMutedForeground} />
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.emailAddress')}</Text>
-                </HStack>
-                <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                  <Text
-                    {...profileStyles.fieldLabel}
-                    flexShrink={1}
-                  >
-                    {authUser?.email}
-                  </Text>
-                </Box>
+            {/* LC ID */}
+            <Box {...LCProfileStyles.lcItem} $md-width="auto">
+              <HStack mb="$2" space="sm">
+                <LucideIcon name="Award" size={16} color={theme.tokens.colors.textMutedForeground} />
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.lcId')}</Text>
+              </HStack>
+              <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
+                <Text 
+                  {...profileStyles.fieldLabel}
+                  flexShrink={1}
+                >
+                  {authUser?.id}
+                </Text>
               </Box>
+            </Box>
 
-              {/* Phone Number */}
-              <Box {...LCProfileStyles.lcItem} $md-width="auto">
-                <HStack mb="$2" space="sm">
-                  <LucideIcon name="Phone" size={16} color={theme.tokens.colors.textMutedForeground} />
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.phoneNumber')}</Text>
-                </HStack>
-                <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                  <Text
-                    {...profileStyles.fieldLabel}
-                    flexShrink={1}
-                  >
-                    {`${authUser?.phone_code} ${authUser?.phone}`}
-                  </Text>
-                </Box>
+            {/* Email Address */}
+            <Box {...LCProfileStyles.lcItem} $md-width="auto">
+              <HStack mb="$2" space="sm">
+                <LucideIcon name="Mail" size={16} color={theme.tokens.colors.textMutedForeground} />
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.emailAddress')}</Text>
+              </HStack>
+              <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
+                <Text 
+                  {...profileStyles.fieldLabel}
+                  flexShrink={1}
+                >
+                  {authUser?.email}
+                </Text>
               </Box>
+            </Box>
 
-              {/* Service Area - Full Width */}
-              <Box width="$full">
-                <HStack mb="$2" space="sm">
-                  <LucideIcon name="MapPin" size={16} color={theme.tokens.colors.textMutedForeground} />
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.serviceArea')}</Text>
-                </HStack>
-                <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                  <Text
-                    {...profileStyles.fieldLabel}
-                    flexShrink={1}
-                  >
-                    {authUser?.location}
-                  </Text>
-                </Box>
+            {/* Phone Number */}
+            <Box {...LCProfileStyles.lcItem} $md-width="auto">
+              <HStack mb="$2" space="sm">
+                <LucideIcon name="Phone" size={16} color={theme.tokens.colors.textMutedForeground} />
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.phoneNumber')}</Text>
+              </HStack>
+              <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
+                <Text 
+                  {...profileStyles.fieldLabel}
+                  flexShrink={1}
+                >
+                  {`${authUser?.phone_code} ${authUser?.phone}`}
+                </Text>
               </Box>
+            </Box>
 
-              {/* Start Date */}
-              <Box {...LCProfileStyles.lcItem} $md-width="auto">
-                <HStack mb="$2" space="sm">
-                  <LucideIcon name="Calendar" size={16} color={theme.tokens.colors.textMutedForeground} />
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.startDate')}</Text>
-                </HStack>
-                <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                  <Text
-                    {...profileStyles.fieldLabel}
-                    flexShrink={1}
-                  >
-                    {authUser?.created_at
-                      ? new Date(authUser.created_at).toLocaleDateString('en-GB')
-                      : ''}
-                  </Text>
-                </Box>
+            {/* Service Area - Full Width */}
+            <Box width="$full">
+              <HStack mb="$2" space="sm">
+                <LucideIcon name="MapPin" size={16} color={theme.tokens.colors.textMutedForeground} />
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.serviceArea')}</Text>
+              </HStack>
+              <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
+                <Text 
+                  {...profileStyles.fieldLabel}
+                  flexShrink={1}
+                >
+                  {authUser?.location}
+                </Text>
               </Box>
+            </Box>
 
-              {/* Language Preference */}
-              <Box {...LCProfileStyles.lcItem} $md-width="auto">
-                <HStack mb="$2" space="sm">
-                  <Text {...profileStyles.fieldValue}>{t('lcProfile.languagePreference')}</Text>
-                </HStack>
-                <HStack space="sm">
-                  {languageCodes.map((langCode) => {
-                    const isActive = currentLanguage === langCode;
-                    return (
-                      <Pressable key={langCode} onPress={() => changeLanguage(langCode)}>
-                        <Box
-                          {...profileStyles.languageButton}
+            {/* Start Date */}
+            <Box {...LCProfileStyles.lcItem} $md-width="auto">
+              <HStack mb="$2" space="sm">
+                <LucideIcon name="Calendar" size={16} color={theme.tokens.colors.textMutedForeground} />
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.startDate')}</Text>
+              </HStack>
+              <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
+                <Text 
+                  {...profileStyles.fieldLabel}
+                  flexShrink={1}
+                >
+                  {authUser?.created_at 
+                    ? new Date(authUser.created_at).toLocaleDateString('en-GB')
+                    : ''}
+                </Text>
+              </Box>
+            </Box>
+
+            {/* Language Preference */}
+            <Box {...LCProfileStyles.lcItem} $md-width="auto">
+              <HStack mb="$2" space="sm">
+                <Text {...profileStyles.fieldValue}>{t('lcProfile.languagePreference')}</Text>
+              </HStack>
+              <HStack space="sm">
+                {languageCodes.map((langCode) => {
+                  const isActive = currentLanguage === langCode;
+                  return (
+                    <Pressable key={langCode} onPress={() => changeLanguage(langCode)}>
+                      <Box
+                        {...profileStyles.languageButton}
+                        {...(isActive
+                          ? profileStyles.languageButtonActive
+                          : profileStyles.languageButtonInactive)}
+                      >
+                        <Text
+                          {...profileStyles.languageButtonText}
                           {...(isActive
                             ? profileStyles.languageButtonTextActive
                             : profileStyles.languageButtonTextInactive)}
                         >
-                          <Text
-                            {...profileStyles.languageButtonText}
-                            {...(isActive
-                              ? profileStyles.languageButtonTextActive
-                              : profileStyles.languageButtonTextInactive)}
-                          >
-                            {t(`languages.${langCode}`)}
-                          </Text>
-                        </Box>
-                      </Pressable>
-                    );
-                  })}
-                </HStack>
-              </Box>
+                          {t(`languages.${langCode}`)}
+                        </Text>
+                      </Box>
+                    </Pressable>
+                  );
+                })}
+              </HStack>
             </Box>
-          </VStack>
-        </Modal>
-      </Box>
-    );
-  };
+          </Box>
+        </VStack>
+      </Modal>
+    </Box>
+  );
+};
 
 export default Header;
