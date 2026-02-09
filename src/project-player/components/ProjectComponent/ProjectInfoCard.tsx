@@ -22,9 +22,9 @@ const ProjectInfoCard: React.FC<ProjectInfoCardProps> = ({ project }) => {
   const totalTasks = project.tasks?.length || 0;
 
   // Check if any task is a project type (has children)
-  const hasChildren =
-    !!project?.children?.length ||
-    project?.tasks?.some(task => task?.children?.length);
+const hasChildren =
+  !!project?.children?.length ||
+  project?.tasks?.some(task => task?.children?.length);
   // Count total pillars (project type tasks)
   const totalPillars = project?.children?.length || 0;
 
