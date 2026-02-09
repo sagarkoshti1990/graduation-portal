@@ -13,11 +13,11 @@ const ProjectInfoCard: React.FC<ProjectInfoCardProps> = ({ project }) => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
 
-  // For onboarding tasks, count based on file uploads (attachments), not completion status
+  // Count completed tasks based on status
   const completedTasks =
     project?.tasks?.filter(task => {
-      // Check if task has uploaded files
-      return task.attachments && task.attachments.length > 0;
+      // Check if task status is completed
+      return task.status === TASK_STATUS.COMPLETED;
     }).length || 0;
   const totalTasks = project.tasks?.length || 0;
 

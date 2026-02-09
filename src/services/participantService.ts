@@ -205,3 +205,29 @@ export const updateEntityDetails = async ({
     throw error;
   }
 };
+
+export const createOrUpdateProgramUserMapping = async ({
+  userId,
+  programId,
+  metaInformation,
+  status
+}): Promise<any> => {
+  try {
+
+    const requestBody = {
+      userId,
+      programId,
+      metaInformation,
+      status
+    };
+
+    const response = await api.post(
+      API_ENDPOINTS.UPDATE_ENTITY_DETAILS,
+      requestBody,
+    );
+
+    return { data: response.data.result };
+  } catch (error) {
+    throw error;
+  }
+};

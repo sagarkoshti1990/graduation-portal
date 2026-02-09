@@ -58,13 +58,15 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   };
 
   // Handle successful IDP creation
-  const handleIdpCreationSuccess = useCallback((newProjectId?: string) => {
+  const handleIdpCreationSuccess = useCallback((newProjectId: string) => {
+    console.log('newProject', newProjectId);
     if (newProjectId) {
       setProjectId(newProjectId);
     }
     if (onIdpCreation) {
       onIdpCreation(newProjectId);
     }
+
   }, [onIdpCreation]);
 
   // Memoize ProjectPlayer config based on status and edit mode

@@ -18,7 +18,7 @@ import Select from '@components/ui/Inputs/Select';
 import templateStyles from './styles';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
-import { getParticipantById, getParticipantsList } from '../../services/participantService';
+import { createOrUpdateProgramUserMapping, getParticipantById, getParticipantsList , updateEntityDetails} from '../../services/participantService';
 import {
   getProjectCategoryList,
 } from '../../services/projectService';
@@ -30,10 +30,11 @@ import {
   PROJECT_PLAYER_CONFIGS,
 } from '@constants/PROJECTDATA';
 import { ProjectPlayerData } from 'src/project-player/types/components.types';
-import { getCategoryList } from '../../project-player/services/projectPlayerService';
+import { getCategoryList, getProjectDetails} from '../../project-player/services/projectPlayerService';
 import { useAuth } from '@contexts/AuthContext';
 import { STATUS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
+
 
 const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
@@ -99,11 +100,43 @@ const DevelopInterventionPlan: React.FC = () => {
     return selectedCategory?.subcategories || [];
   };
 
-  const handleIdpCreation = useCallback((newProjectId?: string) => {
-    console.log('idp created successfully', newProjectId);
+  const handleIdpCreation = useCallback(async (newProjectId: any) => {
+    console.log('handleIdpCreation -  Project ID:', newProjectId);
     setIdpCreated(true);
     if (newProjectId) {
-      setProjectId(newProjectId);
+      // Extract project ID from the response
+      setProjectId(projectId);
+    
+
+     const response = await getProjectDetails(newProjectId);
+     const project = response?.data;
+      // update entity to IN_PROGRESS
+      const res = await updateEntityDetails({
+        userId: user?.userId,
+        entityId: participantId,
+        entityUpdates: {
+          idpProjectId: newProjectId,
+          status: STATUS.IN_PROGRESS,
+        },
+      });
+
+     // create user program Mapping for the participant
+      const userProgramMapping = await createOrUpdateProgramUserMapping({
+        userId: participantId,
+        programId: project.programId,
+        metaInformation: {
+          idpProjectId: newProjectId,
+        },
+        status: STATUS.IN_PROGRESS
+      });
+
+      // await updateEntityDetails({
+      //   userId: participantId,
+      //   entityId: participantId,
+      //   entityUpdates: {
+      //     status: STATUS.IN_PROGRESS,
+      //   },
+      // });
     }
   }, []);
 
