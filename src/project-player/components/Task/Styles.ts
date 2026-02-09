@@ -146,11 +146,10 @@ export const taskCardStyles = {
   // Onboarding step card - very light grey box with gradient
   onboardingStepCard: {
     bg: '$gray50',
-    backgroundImage: 'linear-gradient(to right bottom, oklch(0.984 0.003 247.858) 0%, oklab(0.984 -0.00113071 -0.00277876 / 0.5) 100%)',
     borderRadius: '$xl',
     borderWidth: 1,
     borderStyle: 'solid' as const,
-    borderColor: '$gray300',
+    borderColor: 'rgb(226, 232, 240)',
     padding: '$4',
     marginBottom: '$2',
     marginTop: 0,
@@ -224,7 +223,7 @@ export const taskCardStyles = {
   // Onboarding text styles
   onboardingTitleText: {
     color: '$textPrimary',
-    fontWeight: '$medium' as const,
+    fontWeight: '$normal' as const,
     fontSize: '$md',
   },
   onboardingDescriptionText: {
@@ -388,7 +387,7 @@ export const addCustomTaskStyles = {
     borderStyle: 'dashed' as const,
     borderColor: '$mutedBorder',
     padding: '$1',
-    marginTop: '$3',
+    marginTop: '$1',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     bg: '$accent100',

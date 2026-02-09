@@ -12,7 +12,7 @@ export const projectComponentStyles = {
     bg: '$white',
     borderRadius: '$3xl',
     borderWidth: 1,
-    borderColor: '$borderLight300',
+    borderColor: 'rgb(226, 232, 240)',
     maxWidth: 1200,
     width: '$full',
     alignSelf: 'center' as const,
@@ -78,7 +78,7 @@ export const projectComponentStyles = {
   // Add Custom Task button
   addCustomTaskContainer: {
     paddingHorizontal: '$5',
-    paddingVertical: '$4',
+    paddingVertical: '$1',
   },
   addCustomTaskButton: {
     borderWidth: 1,
@@ -169,6 +169,8 @@ export const projectInfoCardStyles = {
     shadowRadius: 2,
     elevation: 2,
     marginLeft: '$8',
+    '$hover-bg': '$gray500',
+    '$hover-opacity': 0.8,
   },
   stepsCompleteText: {
     space: 'xs' as const,

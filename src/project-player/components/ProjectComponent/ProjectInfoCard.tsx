@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, VStack, Text, HStack } from '@gluestack-ui/themed';
+import { Box, VStack, Text, HStack, Pressable } from '@gluestack-ui/themed';
 import { ProjectInfoCardProps } from '../../types/components.types';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { useProjectContext } from '../../context/ProjectContext';
@@ -22,9 +22,9 @@ const ProjectInfoCard: React.FC<ProjectInfoCardProps> = ({ project }) => {
   const totalTasks = project.tasks?.length || 0;
 
   // Check if any task is a project type (has children)
-const hasChildren =
-  !!project?.children?.length ||
-  project?.tasks?.some(task => task?.children?.length);
+  const hasChildren =
+    !!project?.children?.length ||
+    project?.tasks?.some(task => task?.children?.length);
   // Count total pillars (project type tasks)
   const totalPillars = project?.children?.length || 0;
 
@@ -61,13 +61,13 @@ const hasChildren =
               // Mobile: Vertical layout with badge at bottom right
               <VStack space="sm" flex={1}>
                 {/* Title */}
-                <Text {...TYPOGRAPHY.h3} color="$textPrimary">
+                <Text {...TYPOGRAPHY.h4} color="$textPrimary" fontWeight="$normal">
                   {t('projectPlayer.onboarding')} {t('projectPlayer.participant')}
                 </Text>
 
                 {/* Description */}
                 <Text
-                  {...TYPOGRAPHY.paragraph}
+                  {...TYPOGRAPHY.bodySmall}
                   color="$textSecondary"
                   lineHeight="$lg"
                 >
@@ -75,7 +75,7 @@ const hasChildren =
                 </Text>
 
                 {/* Badge - positioned on right side */}
-                <Box
+                <Pressable
                   {...projectInfoCardStyles.stepsCompleteBadge}
                   marginLeft="$0"
                   alignSelf="flex-end"
@@ -90,19 +90,19 @@ const hasChildren =
                       {t('projectPlayer.stepsComplete')}
                     </Text>
                   </HStack>
-                </Box>
+                </Pressable>
               </VStack>
             ) : (
               // Web: Title with badge inline, description below
               <VStack space="sm" flex={1}>
                 {/* Title row with badge */}
                 <HStack space="md" alignItems="center" justifyContent="space-between">
-                  <Text {...TYPOGRAPHY.h3} color="$textPrimary">
+                  <Text {...TYPOGRAPHY.h4} color="$textPrimary" fontWeight="$normal">
                     {t('projectPlayer.onboarding')} {t('projectPlayer.participant')}
                   </Text>
 
                   {/* Badge - to the right of title */}
-                  <Box
+                  <Pressable
                     {...projectInfoCardStyles.stepsCompleteBadge}
                     marginLeft="$4"
                   >
@@ -116,12 +116,12 @@ const hasChildren =
                         {t('projectPlayer.stepsComplete')}
                       </Text>
                     </HStack>
-                  </Box>
+                  </Pressable>
                 </HStack>
 
                 {/* Description */}
                 <Text
-                  {...TYPOGRAPHY.paragraph}
+                  {...TYPOGRAPHY.bodySmall}
                   color="$textSecondary"
                   lineHeight="$lg"
                 >
@@ -155,7 +155,7 @@ const hasChildren =
 
         {/* ✅ Steps Complete Badge - only for non-onboarding projects now */}
         {!hasChildren && !(ONBOARDING_PROJECT_TITLES.includes(project?.title || '') || ONBOARDING_PROJECT_TITLES.includes(project?.name || '')) && (
-          <Box
+          <Pressable
             {...projectInfoCardStyles.stepsCompleteBadge}
             alignSelf={isMobile ? 'flex-end' : 'auto'}
           >
@@ -169,7 +169,7 @@ const hasChildren =
                 {t('projectPlayer.stepsComplete')}
               </Text>
             </HStack>
-          </Box>
+          </Pressable>
         )}
         {!hasChildren && isPreview && (
           <Box {...projectInfoCardStyles.taskCountPreview}>
