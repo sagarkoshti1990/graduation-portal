@@ -57,6 +57,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <Box {...layoutStyles.headerContent}>
             <AdminHeader
               showNotification={true}
+              onToggleSidebar={() => setIsDrawerOpen(!isDrawerOpen)}
             />
           </Box>
           {/* Main Content */}

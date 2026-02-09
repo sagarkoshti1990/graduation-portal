@@ -61,6 +61,8 @@ const Header: React.FC<{
   // For LC: menu items and handler for hamburger menu
   hamburgerMenuItems?: MenuItemData[];
   onHamburgerMenuSelect?: (key: string | undefined) => void;
+  // Generic toggle for sidebar visibility
+  onToggleSidebar?: () => void;
 }> = ({
   title,
   rightSideContent,
@@ -73,6 +75,7 @@ const Header: React.FC<{
   userMenuPosition = 'right',
   hamburgerMenuItems,
   onHamburgerMenuSelect,
+  onToggleSidebar,
 }) => {
   const { colorMode, setColorMode } = useGlobal();
   const isDark = colorMode === 'dark';
@@ -140,6 +143,10 @@ const Header: React.FC<{
             )}
             onSelect={handleHamburgerMenuSelect}
           />
+          ) : onToggleSidebar ? (
+            <Pressable onPress={onToggleSidebar} px="$3" $hover-opacity={0.7}>
+              <LucideIcon name="Menu" size={24} color={isDark ? '$textLight100' : '$textDark900'} />
+            </Pressable>          
         ) : (
           rightSideContent
         )}
