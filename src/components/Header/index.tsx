@@ -77,55 +77,55 @@ const Header: React.FC<{
   onHamburgerMenuSelect,
   onToggleSidebar,
 }) => {
-    const { colorMode, setColorMode } = useGlobal();
-    const isDark = colorMode === 'dark';
-    const { user, logout, isLoggedIn } = useAuth();
-    const { isMobile } = usePlatform();
-    const { t, currentLanguage, changeLanguage } = useLanguage();
-    const [authUser, setAuthUser] = useState<User | null>(null);
+  const { colorMode, setColorMode } = useGlobal();
+  const isDark = colorMode === 'dark';
+  const { user, logout, isLoggedIn } = useAuth();
+  const { isMobile } = usePlatform();
+  const { t, currentLanguage, changeLanguage } = useLanguage();
+  const [authUser, setAuthUser] = useState<User | null>(null);
 
-    const languageCodes =
-      Array.isArray(authUser?.languages) && authUser.languages.filter(Boolean).length > 0
-        ? (authUser.languages.filter(Boolean) as string[])
-        : (['en'] as string[]);
+  const languageCodes =
+    Array.isArray(authUser?.languages) && authUser.languages.filter(Boolean).length > 0
+      ? (authUser.languages.filter(Boolean) as string[])
+      : (['en'] as string[]);
 
-    const handleMenuSelect = async (key: string | undefined) => {
-      // Handle menu item selection
-      logger.log('Menu selected:', key);
-      if (key === 'myProfile') {
-        const userProfile = await getUserProfile();
-        setAuthUser(userProfile);
-      } else if (key === 'logout') {
-        logout();
-      }
-    };
-    // Wrapper for hamburger menu selection - handles myProfile in Header, passes others to parent
-    const handleHamburgerMenuSelect = async (key: string | undefined) => {
-      // Check if the selected menu item is coming soon
-      const selectedItem = hamburgerMenuItems?.find(item => item.key === key);
-      if (selectedItem?.isComingSoon) {
-        // Don't proceed if item is coming soon
-        return;
-      }
+  const handleMenuSelect = async (key: string | undefined) => {
+    // Handle menu item selection
+    logger.log('Menu selected:', key);
+    if (key === 'myProfile') {
+      const userProfile = await getUserProfile();
+      setAuthUser(userProfile);
+    } else if (key === 'logout') {
+      logout();
+    }
+  };
+  // Wrapper for hamburger menu selection - handles myProfile in Header, passes others to parent
+  const handleHamburgerMenuSelect = async (key: string | undefined) => {
+    // Check if the selected menu item is coming soon
+    const selectedItem = hamburgerMenuItems?.find(item => item.key === key);
+    if (selectedItem?.isComingSoon) {
+      // Don't proceed if item is coming soon
+      return;
+    }
 
-      if (key === 'myProfile') {
-        const userProfile = await getUserProfile();
-        setAuthUser(userProfile);
-      } else if (onHamburgerMenuSelect) {
-        // Pass other menu items to parent handler (for navigation, logout, etc.)
-        onHamburgerMenuSelect(key);
-      }
-    };
+    if (key === 'myProfile') {
+      const userProfile = await getUserProfile();
+      setAuthUser(userProfile);
+    } else if (onHamburgerMenuSelect) {
+      // Pass other menu items to parent handler (for navigation, logout, etc.)
+      onHamburgerMenuSelect(key);
+    }
+  };
 
-    return (
-      <Box
-        {...stylesHeader.container}
-        borderBottomColor={isDark ? '$borderDark200' : '$borderLight200'}
-        bg={isDark ? '$backgroundDark950' : '$white'}
-        shadowColor={isDark ? '$backgroundDark950' : '$shadowColor'}
-      >
-        <HStack {...stylesHeader.hStack}>
-          {/* 
+  return (
+    <Box
+      {...stylesHeader.container}
+      borderBottomColor={isDark ? '$borderDark200' : '$borderLight200'}
+      bg={isDark ? '$backgroundDark950' : '$white'}
+      shadowColor={isDark ? '$backgroundDark950' : '$shadowColor'}
+    >
+      <HStack {...stylesHeader.hStack}>
+        {/* 
           Hamburger Menu with Dropdown (for LC)
           - Conditionally renders hamburger menu when LC props (hamburgerMenuItems, onHamburgerMenuSelect) are provided
           - Uses MenuIcon as trigger, opens menu at "bottom left" placement
@@ -158,23 +158,23 @@ const Header: React.FC<{
           - Avatar contains User icon overlay positioned absolutely in center
           - Shows user name next to avatar (role commented out for future use)
         */}
-          {isLoggedIn && userMenuPosition === 'left' && (
-            <HStack {...stylesHeader.userMenuTrigger} alignItems="center" space="sm">
-              <Avatar {...stylesHeader.userAvatar} $web-style={{
-                backgroundImage: 'linear-gradient(to right bottom, rgb(139, 40, 66) 0%, oklab(0.999994 0.0000455678 0.0000200868 / 0.9) 100%)',
-              }}>
-                <AvatarFallbackText>
-                  {' '}
-                </AvatarFallbackText>
-                <Box position="absolute" justifyContent="center" alignItems="center" width="100%" height="100%">
-                  <LucideIcon name="User" size={20} color="#fff" />
-                </Box>
-              </Avatar>
-              <VStack {...stylesHeader.userInfoContainer}>
-                <Text {...stylesHeader.userNameText}>
-                  {user?.name || ''}
-                </Text>
-                {/* <HStack {...stylesHeader.userRoleContainer}>
+        {isLoggedIn && userMenuPosition === 'left' && (
+          <HStack {...stylesHeader.userMenuTrigger} alignItems="center" space="sm">
+            <Avatar {...stylesHeader.userAvatar} $web-style={{
+              backgroundImage: 'linear-gradient(to right bottom, rgb(139, 40, 66) 0%, oklab(0.999994 0.0000455678 0.0000200868 / 0.9) 100%)',
+            }}>
+              <AvatarFallbackText>
+                {' '}
+              </AvatarFallbackText>
+              <Box position="absolute" justifyContent="center" alignItems="center" width="100%" height="100%">
+                <LucideIcon name="User" size={20} color="#fff" />
+              </Box>
+            </Avatar>
+            <VStack {...stylesHeader.userInfoContainer}>
+              <Text {...stylesHeader.userNameText}>
+                {user?.name || ''}
+              </Text>
+              {/* <HStack {...stylesHeader.userRoleContainer}>
                 <Text {...stylesHeader.userRoleText}>
                   {user?.role || ''}
                 </Text>
@@ -410,8 +410,8 @@ const Header: React.FC<{
                         <Box
                           {...profileStyles.languageButton}
                           {...(isActive
-                            ? profileStyles.languageButtonActive
-                            : profileStyles.languageButtonInactive)}
+                            ? profileStyles.languageButtonTextActive
+                            : profileStyles.languageButtonTextInactive)}
                         >
                           <Text
                             {...profileStyles.languageButtonText}
