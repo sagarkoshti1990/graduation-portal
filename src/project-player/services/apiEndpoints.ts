@@ -1,4 +1,4 @@
-const prefix = '';
+const prefix = '/api';
 const templateId = process.env.PROJECT_TEMPLATE_EXTERNAL_ID;
 
 export const API_ENDPOINTS = {
