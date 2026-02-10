@@ -82,6 +82,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   // Common Logic Variables
   const isInterventionPlanEditMode = isEdit && !isPreview && isChildOfProject;
+  const hasUploadedFiles = !!(task.attachments && task.attachments.length > 0);
+  const isOnboardingCompletedUI = isOnboardingTask && (task.isDeletable ? hasUploadedFiles : isCompleted);
 
   const uiConfig = useMemo(
     () => ({
@@ -137,7 +139,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         return;
       }
       const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
-      
+
       if(solutionDetails.data._id) {
         // @ts-ignore Navigate to observation screen - task will be marked as completed on return
         navigation.navigate('observation', {
@@ -200,21 +202,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     // Onboarding: empty circle initially, brown tick only when document uploaded / task completed
     if (isOnboardingTask) {
-      if (isOptional && task?.isDeletable) {
-        // Show tick when files are uploaded (check attachments array)
-        const hasUploadedFiles = task.attachments && task.attachments.length > 0;
-        const showTick = hasUploadedFiles;
-        circleBorderColor = showTick ? '$primary500' : '$textMuted';
-        circleBg = showTick ? '$primary500' : '$backgroundPrimary.light';
-        checkColor = theme.tokens.colors.backgroundPrimary.light;
-        showCheck = showTick;
-      } else {
-        // Mandatory onboarding tasks - show tick when files are uploaded
-        showCheck = isCompleted;
-        circleBorderColor = showCheck ? '$primary500' : '$textMuted';
-        circleBg = showCheck ? '$primary500' : '$backgroundPrimary.light';
-        checkColor = theme.tokens.colors.backgroundPrimary.light;
-      }
+      showCheck = isOnboardingCompletedUI;
+      circleBorderColor = showCheck ? '$primary500' : '$textMuted';
+      circleBg = showCheck ? '$primary500' : '$backgroundPrimary.light';
+      checkColor = theme.tokens.colors.backgroundPrimary.light;
     } else if (isChildOfProject) {
       if (isOptional) {
         // Preview mode: Show orange circle initially, green with tick when added, red with X when rejected
@@ -269,6 +260,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         borderColor={isPreview && isRejected ? 'transparent' : circleBorderColor}
         borderWidth={isPreview && isRejected ? 0 : taskCardStyles.statusCircle.borderWidth}
         bg={isPreview && isRejected ? 'transparent' : circleBg}
+        opacity={isOnboardingCompletedUI ? 0.6 : 1}
       >
         {showCheck && (
           <LucideIcon
@@ -292,7 +284,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           opacity: isCompleted ? 0.6 : 1,
         }
       : {};
-
+      
     const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.bodySmall : TYPOGRAPHY.h3;
 
     // Task badge rendering (Evidence Required / Optional)
@@ -311,8 +303,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
           task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED
             ? '$warning100'
             : task.metaInformation?.badgeType === BADGE_TYPES.OPTIONAL || (isPreview && task?.isDeletable)
-            ? '$optionalBadgeBg'
-            : '$backgroundLight100'
+              ? '$optionalBadgeBg'
+              : '$backgroundLight100'
         }
         paddingHorizontal="$3"
         paddingVertical="$1"
@@ -326,8 +318,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
             task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED
               ? '$warning900'
               : task.metaInformation?.badgeType === BADGE_TYPES.OPTIONAL || (isPreview && task?.isDeletable)
-              ? '$optionalBadgeText'
-              : '$textMuted'
+                ? '$optionalBadgeText'
+                : '$textMuted'
           }
         >
           {task.metaInformation?.badgeText || (isPreview && task?.isDeletable ? 'Optional' : '')}
@@ -371,7 +363,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Text
               {...titleTypography}
               color="$textPrimary"
-              {...textStyle}
+                {...textStyle}
               fontSize={
                 (!isWeb && !uiConfig.showAsCard
                   ? '$sm'
@@ -546,38 +538,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     return (
       <Button
-        {...taskCardStyles.actionButton}
-        variant={(isInterventionPlanEditMode || isOnboardingTask) ? 'outline' : 'solid'}
+        variant={(isInterventionPlanEditMode || isOnboardingTask) ? 'outlineghost' : 'solid'}
         onPress={handleTaskClick}
-        ml="$0"
         isDisabled={isReadOnly}
         size={isWeb ? (uiConfig.showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
         borderRadius="$lg"
-        bg={isOnboardingTask ? (buttonStyles as any).bg : undefined}
-        borderColor={(buttonStyles as any).borderColor}
         opacity={isReadOnly ? 0.5 : 1}
-        $hover-bg={
-          isEdit ? ((buttonStyles as any).hoverBg ?? '$primary100') : 'transparent'
-        }
-        $hover-borderColor={
-          isEdit && (buttonStyles as any).hoverBorderColor
-            ? (buttonStyles as any).hoverBorderColor
-            : isEdit
-              ? '$primary500'
-              : 'transparent'
-        }
         $web-cursor={isEdit ? 'pointer' : undefined}
-        sx={
-          isOnboardingTask && isWeb
-            ? {
-              transition: 'background-color 0.2s, border-color 0.2s',
-              ':hover': {
-                backgroundColor: (buttonStyles as any).hoverBg ?? theme.tokens.colors.onboardingFormBtnBgHover,
-                borderColor: (buttonStyles as any).hoverBorderColor ?? theme.tokens.colors.primary500,
-              },
-            }
-            : undefined
-        }
       >
         {(state: any) => {
           const isHovered = state?.hovered || state?.pressed || false;

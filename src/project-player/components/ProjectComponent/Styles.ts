@@ -12,7 +12,7 @@ export const projectComponentStyles = {
     bg: '$white',
     borderRadius: '$3xl',
     borderWidth: 2,
-    borderColor: 'rgb(226, 232, 240)',
+    borderColor: '$borderColor',
     maxWidth: 1200,
     width: '$full',
     alignSelf: 'center' as const,
@@ -25,7 +25,7 @@ export const projectComponentStyles = {
   },
   // Main container stays white; padding for Onboarding Participants
   onboardingCard: {
-    padding: '$1',
+    padding: 0,
   },
   addTaskButtonContainer: {
     padding: '$3',
@@ -141,7 +141,7 @@ export const projectInfoCardStyles = {
   container: {
     bg: '$backgroundPrimary.light',
     paddingTop: '$6',
-    paddingLeft: '$6',
+    paddingLeft: '$2',
     paddingRight: '$6',
     paddingBottom: 0,
     borderTopLeftRadius: '$3xl',
@@ -161,17 +161,17 @@ export const projectInfoCardStyles = {
     marginLeft: '$4',
   },
   stepsCompleteBadge: {
-    bg: '$mutedForeground',
+    bg: '$badgeColor',
     borderRadius: '$full',
-    paddingHorizontal: '$3',
-    paddingVertical: '$1',
+    paddingHorizontal: '$2',
+    paddingVertical: '$0.5',
     shadowColor: '$backgroundLight900',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
     marginLeft: '$8',
-    '$hover-bg': '$gray500',
+    '$hover-bg': '$badgeBackground',
     '$hover-opacity': 0.8,
   },
   stepsCompleteText: {

@@ -209,7 +209,7 @@ export default function ParticipantDetail() {
           setStatus(newStatus);
         }}
       />
-      <Container px="$4" py="$6" $md-px="$6">
+      <Container px="$4" py="$3" $md-px="$3">
         {status === STATUS.NOT_ENROLLED ? (
           // NOT_ENROLLED: Show ProjectPlayer directly with editMode
           <ProjectPlayer
@@ -222,7 +222,7 @@ export default function ParticipantDetail() {
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
           <>
             {/* Tabs */}
-            <Box width="$full" mt="$4" mb="$2">
+            <Box width="$full" mt="$4" mb="$0">
               <Box width="$full">
                 <HStack
                   width="$full"
@@ -246,7 +246,7 @@ export default function ParticipantDetail() {
             </Box>
 
             {/* Tab Content */}
-            <Box flex={1} mt="$0" mb="$6" bg="transparent">
+            <Box flex={1} mt="$0" mb="$4" bg="transparent">
               <Box width="$full">
                 <Box width="$full">
                   {activeTab ===

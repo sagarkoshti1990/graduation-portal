@@ -12,7 +12,7 @@ export const taskCardStyles = {
     borderRadius: '$xl',
     marginBottom: '$0.5',
     borderWidth: 1,
-    borderColor: 'rgb(226, 232, 240)',
+    borderColor: '$borderColor',
   },
   childCardContent: {
     padding: '$0.5',
@@ -149,7 +149,7 @@ export const taskCardStyles = {
     borderRadius: '$xl',
     borderWidth: 1,
     borderStyle: 'solid' as const,
-    borderColor: 'rgb(226, 232, 240)',
+    borderColor: '$borderColor',
     padding: '$4',
     marginBottom: '$2',
     marginTop: 0,
@@ -198,7 +198,7 @@ export const taskCardStyles = {
   },
   statusBadgeDone: {
     bg: '$accent200', // Subtle grey/blue
-    borderColor: 'rgb(226, 232, 240)',
+    borderColor: '$borderColor',
   },
   statusBadgeDoneHover: {
     bg: '$primary100', // Light pink/red from theme
@@ -230,7 +230,7 @@ export const taskCardStyles = {
     paddingVertical: '$0.3',
     borderRadius: '$full',
     borderWidth: 1,
-    borderColor: 'rgb(226, 232, 240)',
+    borderColor: '$borderColor',
     bg: '$accent200', // Subtle grey/blue
     $web: {
       cursor: 'pointer' as const,
