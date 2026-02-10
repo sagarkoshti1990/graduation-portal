@@ -251,7 +251,8 @@ export const uploadFiles = async (
           name: file.name,
           sourcePath: presignedUrl?.payload?.sourcePath,
           type: file?.type,
-          url: presignedUrl?.url ? presignedUrl.url.split('?')[0] : undefined
+          url: presignedUrl?.url ? presignedUrl.url.split('?')[0] : undefined,
+          size:file?.size
         }
       }));
       
