@@ -55,14 +55,14 @@ const Observation: React.FC = () => {
       const newData = userDataResponse?.result?.data?.[0];
       const preFillData = {
         "Facilitator Name":user?.name,
-        // "Province":newData?.lc_province,
-        // "Pilot Site":newData?.lc_site,
+        "Province":{value:newData?.province?.value, readonly: newData?.province?.value ? true : false},
+        "Pilot Site":{value:newData?.site?.value, readonly: newData?.site?.value ? true : false},
         "Date of Collection":new Date().toISOString().split('T')[0],
-        "What is your name?":newData?.name,
+        "What is your name?":{value:newData?.name, readonly: false},
         "What is your ID number?":newData?.userId,
         // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
-        "What is your cell phone number?":newData?.phone,
-        "And what is your email address?":newData?.email,
+        "What is your cell phone number?":{value:newData?.phone, readonly: false},
+        "And what is your email address?":{value:newData?.email, readonly: true},
       };
       setUserData(preFillData);
       setIsLoading(false);
