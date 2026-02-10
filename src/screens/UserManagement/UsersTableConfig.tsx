@@ -39,7 +39,7 @@ const getSite = (user: any): string => {
 /**
  * Role Badge Component
  */
-const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
+export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
   const isParticipant = role === 'Participant';
 
   return (
@@ -140,22 +140,22 @@ const getUserMenuItems = (t: (key: string) => string): MenuItemData[] => [
     iconColor: theme.tokens.colors.textForeground,
     iconSizeValue: 20,
   },
-  {
-    key: 'edit',
-    label: 'admin.users.actionMenu.edit',
-    textValue: 'Edit',
-    iconName: 'Pencil',
-    iconColor: theme.tokens.colors.textForeground,
-    iconSizeValue: 20,
-  },
-  {
-    key: 'reset-password',
-    label: 'admin.users.actionMenu.resetPassword',
-    textValue: 'Reset Password',
-    iconName: 'RotateCcw',
-    iconColor: theme.tokens.colors.textForeground,
-    iconSizeValue: 20,
-  },
+  // {
+  //   key: 'edit',
+  //   label: 'admin.users.actionMenu.edit',
+  //   textValue: 'Edit',
+  //   iconName: 'Pencil',
+  //   iconColor: theme.tokens.colors.textForeground,
+  //   iconSizeValue: 20,
+  // },
+  // {
+  //   key: 'reset-password',
+  //   label: 'admin.users.actionMenu.resetPassword',
+  //   textValue: 'Reset Password',
+  //   iconName: 'RotateCcw',
+  //   iconColor: theme.tokens.colors.textForeground,
+  //   iconSizeValue: 20,
+  // },
   {
     key: 'deactivate',
     label: 'admin.users.actionMenu.deactivate',
@@ -170,14 +170,16 @@ const getUserMenuItems = (t: (key: string) => string): MenuItemData[] => [
 /**
  * Actions Column Component
  */
-const ActionsColumn: React.FC<{ user: AdminUserManagementData }> = ({ user }) => {
+const ActionsColumn: React.FC<{
+  user: AdminUserManagementData;
+  onViewProfile?: (user: AdminUserManagementData) => void;
+}> = ({ user, onViewProfile }) => {
   const { t } = useLanguage();
 
   const handleMenuSelect = (key: string) => {
     switch (key) {
       case 'view-profile':
-        console.log('View profile for user:', user.id);
-        // TODO: Navigate to user profile
+        onViewProfile?.(user);
         break;
       case 'edit':
         console.log('Edit user:', user.id);
@@ -212,7 +214,9 @@ const ActionsColumn: React.FC<{ user: AdminUserManagementData }> = ({ user }) =>
 /**
  * All possible columns for Users Table
  */
-export const getUsersColumns = (): ColumnDef<AdminUserManagementData>[] => [
+export const getUsersColumns = (handlers?: {
+  onViewProfile?: (user: AdminUserManagementData) => void;
+}): ColumnDef<AdminUserManagementData>[] => [
   {
     key: 'id',
     label: 'admin.users.id',
@@ -356,7 +360,9 @@ export const getUsersColumns = (): ColumnDef<AdminUserManagementData>[] => [
     key: 'actions',
     label: 'admin.users.actions',
     flex: 0.8,
-    render: (user) => <ActionsColumn user={user} />,
+    render: (user) => (
+      <ActionsColumn user={user} onViewProfile={handlers?.onViewProfile} />
+    ),
     mobileConfig: {
       fullWidthRank: 2,
       showLabel: false,
