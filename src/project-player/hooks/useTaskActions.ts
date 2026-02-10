@@ -19,12 +19,13 @@ export const useTaskActions = () => {
           attachments = data.data;
         }
       }
-      if(attachments.length < 0) {
-        return updateTask(taskId, { status, attachments });
+      if(attachments.length > 0) {
+        const response = await updateTask(taskId, { status, attachments });
+        return {success: true, data: response};
       } else {
         return {
           success: false,
-          message: "No attachments uploaded",
+          data: null,
         };
       }
     },
