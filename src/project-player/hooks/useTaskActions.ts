@@ -19,7 +19,14 @@ export const useTaskActions = () => {
           attachments = data.data;
         }
       }
-      updateTask(taskId, { status, attachments });
+      if(attachments.length < 0) {
+        return updateTask(taskId, { status, attachments });
+      } else {
+        return {
+          success: false,
+          message: "No attachments uploaded",
+        };
+      }
     },
     [canEdit, updateTask],
   );

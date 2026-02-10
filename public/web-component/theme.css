@@ -13,6 +13,7 @@
   --mdc-icon-button-state-layer-size: '32px';
   --mdc-outlined-text-field-outline-color: #e2e8f0;
   --text-color: #1e293b;
+  --mat-select-trigger-text-size: 14px;
 }
 
 .page-header {
@@ -313,24 +314,24 @@ lib-checkbox-input .mat-mdc-checkbox-checked .mdc-checkbox__background {
   gap: 1rem !important;
 }
 
-.btn-draft, .btn-draft + .btn-primary, .btn-outline-primary {
-  background-color: white !important;
+.btn-draft, .btn-draft + .btn-primary, .btn-outline-primary, lib-matrix-questions .btn-primary {
+  background-color: var(--primary-color) !important;
   border: 1px solid #e2e8f0 !important;
-  color: var(--text-color) !important;
+  color:  white !important;
   border-radius: 10px !important;
   margin-left: 0 !important;
   padding: 8px 12px !important;
   font-size: 14px !important;
+  font-weight: 500 !important;
 }
 
 .btn-draft, .btn-draft + .btn-primary {
   width: 100% !important;
 }
 
-.btn-draft + .btn-primary {
-  background-color: var(--primary-color) !important;
-  border: 1px solid #e2e8f0 !important;
-  color:  white !important;
+.btn-draft, .btn-outline-primary {
+  background-color: white !important;
+  color: var(--text-color) !important;
 }
 
 /* Mobile: add spacing between stacked footer buttons (Save Progress / Submit) */
@@ -374,10 +375,17 @@ lib-checkbox-input .mat-mdc-checkbox-checked .mdc-checkbox__background {
 .mat-mdc-dialog-content.mdc-dialog__content.ng-star-inserted {
   padding: 20px !important;
 }
+.mdc-dialog__actions {
+  gap: 1rem !important;
+}
 .mat-mdc-dialog-actions.mdc-dialog__actions.d-flex.flex-jc-space-around.ng-star-inserted {
   flex-direction: row-reverse !important;
   justify-content: space-between !important;
   padding: 0.5rem 1rem 1rem 1rem !important;
+}
+.mdc-dialog__actions button.btn-primary {
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
 }
 .mat-mdc-dialog-title {
   padding: 1rem !important;

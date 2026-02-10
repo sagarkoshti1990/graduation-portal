@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import {
   VStack,
   HStack,
@@ -86,26 +86,42 @@ export default function ParticipantDetail() {
     undefined,
   );
   const [hasProgressBaseline, setHasProgressBaseline] = useState(false);
+  const [configData, setConfigData] = useState<any>(null);
+  const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
+  const isFetchingRef = useRef(false);
 
-  useEffect(() => {
-    const fetchEntityDetails = async () => {
-      if (participantId && user?.id) {
-        try {
-          setIsLoading(true);
-          const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
-          const { userDetails, ...rest } = response?.result?.data?.[0]
-          const participantData = { ...(userDetails || {}), ...rest }
-          setParticipant(participantData);
-          setStatus(participantData?.status);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setIsLoading(false);
-        }
+  const fetchEntityDetails = useCallback(async () => {
+    if (participantId && user?.id && !isFetchingRef.current) {
+      try {
+        isFetchingRef.current = true;
+        setIsLoading(true);
+        const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
+        const { userDetails, ...rest } = response?.result?.data?.[0]
+        const participantData = { ...(userDetails || {}), ...rest }
+        setParticipant(participantData);
+        setStatus(participantData?.status);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setIsLoading(false);
+        isFetchingRef.current = false;
       }
-    };
-    fetchEntityDetails();
-  }, [participantId, user?.id, idpCreated]);
+    }
+  }, [participantId, user?.id]);
+
+  // Re-fetch data when screen comes into focus (e.g., navigating back)
+  useFocusEffect(
+    useCallback(() => {
+      fetchEntityDetails();
+    }, [fetchEntityDetails])
+  );
+
+  // Re-fetch when idpCreated changes
+  useEffect(() => {
+    if (idpCreated) {
+      fetchEntityDetails();
+    }
+  }, [idpCreated, fetchEntityDetails]);
 
   const handleIdpCreated = () => {
     setIdpCreated(true)
@@ -115,6 +131,46 @@ export default function ParticipantDetail() {
     setUpdatedProgress(undefined);
     setHasProgressBaseline(false);
   }, [participantId]);
+
+  // Update configData and ProjectPlayerConfigData when participant or status changes
+  useEffect(() => {
+    if (!participant) {
+      setConfigData(null);
+      setProjectPlayerConfigData(null);
+      return;
+    }
+
+    // Determine ProjectPlayer config and data based on participant status
+    const config = PROJECT_PLAYER_CONFIGS;
+    const selectedMode = MODE.editMode;
+
+    const newConfigData = {
+      ...config,
+      ...selectedMode,
+      showAddCustomTaskButton: false,
+      profileInfo: participant,
+    };
+
+    const newProjectPlayerConfigData: ProjectPlayerData = {
+      projectId: status === STATUS.IN_PROGRESS
+        ? participant?.idpProjectId
+        : status === STATUS.NOT_ENROLLED
+          ? participant?.onBoardedProjectId
+          : participant?.onBoardedProjectId,
+      entityId: participant?.entityId,
+      userStatus: participant?.status,
+      province: participant?.province?.value
+    };
+
+    setConfigData(newConfigData);
+    setProjectPlayerConfigData(newProjectPlayerConfigData);
+
+    // Cleanup function: clear state when component unmounts or dependencies change
+    return () => {
+      setConfigData(null);
+      setProjectPlayerConfigData(null);
+    };
+  }, [participant, status]);
 
   const handleProgressChange = (progress: number) => {
     if (!hasProgressBaseline) {
@@ -132,34 +188,6 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-
-
-  const {
-    name: participantName,
-    id,
-  } = participant;
-
-  // Determine ProjectPlayer config and data based on participant status
-  const config = PROJECT_PLAYER_CONFIGS;
-  const selectedMode = MODE.editMode;
-
-  const configData = {
-    ...config,
-    ...selectedMode,
-    showAddCustomTaskButton: false,
-    profileInfo: participant,
-  };
-
-  const ProjectPlayerConfigData: ProjectPlayerData = {
-    projectId: status === STATUS.IN_PROGRESS
-      ? participant?.idpProjectId
-      : status === STATUS.NOT_ENROLLED
-        ? participant?.onBoardedProjectId
-        : participant?.onBoardedProjectId,
-    entityId: participant?.entityId,
-    userStatus: participant?.status,
-    province:participant?.province?.value
-  };
 
   const handleSaveAddress = async () => {
     if (
@@ -196,15 +224,12 @@ export default function ParticipantDetail() {
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
       <ParticipantHeader
-        participantName={participantName}
-        participantId={id}
-        status={participant.status as ParticipantStatus}
+        participant={participant}
         pathway={'employment'}
         graduationDate={''}
         updatedProgress={updatedProgress}
         onViewProfile={() => setIsProfileModalOpen(true)}
         areAllTasksCompleted={areAllTasksCompleted}
-        userEntityId={participant?.entityId}
         onStatusUpdate={newStatus => {
           setStatus(newStatus);
         }}
@@ -212,15 +237,18 @@ export default function ParticipantDetail() {
       <Container px="$4" py="$6" $md-px="$6">
         {status === STATUS.NOT_ENROLLED ? (
           // NOT_ENROLLED: Show ProjectPlayer directly with editMode
-          <ProjectPlayer
-            config={configData}
-            data={ProjectPlayerConfigData}
-            onTaskCompletionChange={setAreAllTasksCompleted}
-            onProgressChange={handleProgressChange}
-          />
+          configData && projectPlayerConfigData && (
+            <ProjectPlayer
+              key={`project-player-${participantId}`}
+              config={configData}
+              data={projectPlayerConfigData}
+              onTaskCompletionChange={setAreAllTasksCompleted}
+              onProgressChange={handleProgressChange}
+            />
+          )
         ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
-          <>
+          <Box>
             {/* Tabs */}
             <Box width="$full" mt="$4" mb="$2">
               <Box width="$full">
@@ -253,7 +281,7 @@ export default function ParticipantDetail() {
                     PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
                       <InterventionPlan
                         participantStatus={status as ParticipantStatus}
-                        participantId={id}
+                        participantId={participant?.id}
                         participantProfile={participant}
                         onIdpCreation={handleIdpCreated}
                         onProgressChange={handleProgressChange}
@@ -268,7 +296,7 @@ export default function ParticipantDetail() {
                 </Box>
               </Box>
             </Box>
-          </>
+          </Box>
         )}
       </Container>
 
@@ -286,7 +314,7 @@ export default function ParticipantDetail() {
         }}
         headerTitle={t('participantDetail.profileModal.title')}
         headerDescription={t('participantDetail.profileModal.subtitle', {
-          name: participantName,
+          name: participant?.name,
         })}
         size={isWeb ? 'sm' : 'lg'}
         cancelButtonText={isEditingAddress ? t('common.cancel') : undefined}

@@ -72,16 +72,13 @@ export interface TemplateData {
 }
 
 export interface ParticipantHeaderProps {
-  participantName: string;
-  participantId: string;
-  status?: ParticipantStatus;
+  participant: Participant | User | undefined;
   pathway?: PathwayType;
   graduationProgress?: number;
   updatedProgress?: number;
   graduationDate?: string;
   onViewProfile?: () => void;
-  areAllTasksCompleted?: boolean; 
-  userEntityId?: string;
+  areAllTasksCompleted?: boolean;
   onStatusUpdate?: (newStatus: string) => void;
 }
 

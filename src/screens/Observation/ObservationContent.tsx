@@ -95,7 +95,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       let observationSubmissionsLast;
       let observationSolution: any = null;
       if(submissionNumberInput) {
-        observationSubmissionsLast = observationSubmissions.result.find((submissionItem: any) => submissionItem.submissionNumber === submissionNumberInput);
+        observationSubmissionsLast = observationSubmissions.result.find((submissionItem: any) => submissionItem.submissionNumber == submissionNumberInput);
         if(!observationSubmissionsLast && submissionNumberInput !== 1) {
           showAlert( 'error', `${t('logVisit.thisFormNotFound')} ${submissionNumberInput}`,
             {duration: 10000},
@@ -144,6 +144,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
 
       if(userData) {
         const defaultValues = buildDefaultValuesFromObservation(observationSolution, userData);
+        console.log('defaultValues', defaultValues);
         setDefaultValuesLocal(defaultValues);
       }
       setMockData(observationSolution);
@@ -400,13 +401,13 @@ const buildDefaultValuesFromObservation = (
           for (const pageQuestion of question.pageQuestions) {
             const keyFound = userDataKeys.find(key => pageQuestion.question.includes(key));
             if (keyFound !== undefined) {
-              defaultValues[pageQuestion._id] = { value: userData[keyFound], readonly: true };
+              defaultValues[pageQuestion._id] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
             }
           }
         } else {
           const keyFound = userDataKeys.find(key => question.question.includes(key));
           if (keyFound !== undefined && question.externalId) {
-            defaultValues[question.externalId] = { value: userData[keyFound], readonly: true };
+            defaultValues[question.externalId] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
           }
         }
       }

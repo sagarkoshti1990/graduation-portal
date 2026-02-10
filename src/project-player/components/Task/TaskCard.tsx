@@ -3,7 +3,6 @@ import {
   Box,
   HStack,
   Card,
-  useToast,
   Checkbox,
   CheckboxIndicator,
   CheckboxIcon,
@@ -13,7 +12,7 @@ import {
   ButtonText,
   Pressable,
   CheckIcon,
-  showSuccessToast,
+  useAlert,
 } from '@ui';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useTaskActions } from '../../hooks/useTaskActions';
@@ -49,15 +48,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const route = useRoute();
   const navigation = useNavigation();
   // Retrieve updateTask from context
-  const { mode, config, addedToPlanTaskIds } =
+  const { mode, config, addedToPlanTaskIds, deleteTask } =
     useProjectContext();
-  const { deleteTask } = useProjectContext();
   // handleOpenForm
   const { handleStatusChange, handleAddToPlan } =
     useTaskActions();
   const { isWeb, isMobile } = usePlatform();
   const { t } = useLanguage();
-  const toast = useToast();
+  const { showAlert } = useAlert();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isAddedToPlan, setIsAddedToPlan] = useState(
@@ -95,7 +93,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   );
 
   const showSuccess = (message: string) => {
-    showSuccessToast(toast, message);
+    showAlert("success", message);
+  };
+
+  const showError = (message: string) => {
+    showAlert("error", message);
   };
 
   // Modal actions (Incoming)
@@ -646,10 +648,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
         console.log('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
-        await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
-        setShowUploadModal(false);
-        // Show success toast with task-specific message
-        showSuccess(t('projectPlayer.evidenceUploaded'));
+        const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
+        if(data?.success) {
+          // Show success toast with task-specific message
+          showSuccess(t('projectPlayer.evidenceUploaded'));
+          setShowUploadModal(false);
+        } else {
+          showError(t('projectPlayer.evidenceUploadFailed'));
+        }
       }}
     />
   );
