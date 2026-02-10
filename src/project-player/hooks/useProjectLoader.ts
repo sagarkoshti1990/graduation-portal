@@ -8,11 +8,12 @@ import {
   createProjectForEntity,
   getProjectDetails,
   getTaskDetails,
+  updateProjectInfo
 } from '../services/projectPlayerService';
 import { updateEntityDetails } from '../../../src/services/participantService';
-import { getProjectCategoryList } from '../../../src/services/projectService';
+import { getProjectCategoryList} from '../../../src/services/projectService';
 import { useAuth } from '@contexts/AuthContext';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
   data: ProjectPlayerData,
@@ -33,7 +34,6 @@ export const useProjectLoader = (
 
           try {
             let projectData;
-
             if (projectId) {
               const res = await getProjectDetails(projectId);
               projectData = res.data;
@@ -49,9 +49,13 @@ export const useProjectLoader = (
                    onBoardedProjectId: projectData._id,
                  }
                 });
+                const ref = await AsyncStorage.getItem('my_program_user_ref');
+                if (ref) {
+                  await updateProjectInfo(projectData._id, ref);
+                }
               }
               } catch (error) {
-                console.log(error)
+                console.log(error as Error)
               }
              
             }

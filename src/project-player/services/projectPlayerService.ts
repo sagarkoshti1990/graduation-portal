@@ -117,12 +117,23 @@ export const updateTask = async (
       requestBody,
     );
 
-    return { data: response };
+    return response.data.result;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
+
+export const updateProjectInfo = async (projectId: string, programUsersRef: string): Promise<any> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.UPDATE_PROJECT_INFO(projectId), {
+      programUserMappingReference: programUsersRef
+    });
+    return response.data.result;
+  } catch (error: any) {
+    throw error;
+  }
+};
 export const getCategoryList = async (
   parentId: string,
 ): Promise<ApiResponse<any>> => {

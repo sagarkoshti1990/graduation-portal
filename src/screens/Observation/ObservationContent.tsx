@@ -82,7 +82,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         observationId,
         entityId,
       });
-      if(!observationSubmissions.result || observationSubmissions.result.length === 0) { 
+      if(!observationSubmissions.result || observationSubmissions.result.length === 0) {
         await createObservationSubmission({
           observationId: observationId,
           entityId: entityId,
@@ -135,7 +135,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         });
         observationSolution = response.result;
       }
-      
+
       if(!observationSubmissionsLast?.status) {
         setSubmission({status:CARD_STATUS.IN_PROGRESS});
       } else {
@@ -301,7 +301,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     },
     [],
   );
-  
+
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
     () => ({
@@ -325,12 +325,12 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     }),
     [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
   );
-  
+
   const handleAfterSubmit = (event?: any) => {
     logger.info('event', event);
     handleBackPress();
   };
-  
+
   return (
     <>
       <VStack
