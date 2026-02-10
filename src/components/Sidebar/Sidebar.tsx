@@ -8,14 +8,12 @@ import {
   Icon,
   Divider,
   ScrollView,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
   Image,
   ChevronDownIcon,
   ChevronUpIcon,
   CloseIcon,
   LucideIcon,
+  Drawer,
 } from '@ui';
 import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import { useNavigation } from '@react-navigation/native';
@@ -219,50 +217,42 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </ScrollView>
 
       {/* Bottom: Language & System Status */}
-      <Box {...sidebarStyles.bottomSection}>
-        <VStack {...sidebarStyles.bottomContent}>
+      {/* <Box {...sidebarStyles.bottomSection}>
+        <VStack {...sidebarStyles.bottomContent}> */}
           {/* Language Selector */}
-
-          <LanguageSelector
+          {/* <LanguageSelector
             menuTriggerProps={sidebarStyles.languageSelectorContainer}
-          />
+          /> */}
 
           {/* System Status */}
-          <HStack {...sidebarStyles.statusContainer}>
+          {/* <HStack {...sidebarStyles.statusContainer}>
             <Box {...sidebarStyles.statusIndicator} />
             <Text {...sidebarStyles.statusText}>{t('system.online')}</Text>
-          </HStack>
-        </VStack>
-      </Box>
+          </HStack> */}
+        {/* </VStack>
+      </Box> */}
     </>
   );
 
-  // Render as Drawer (using Modal) for mobile, as fixed sidebar for desktop
+  // Render as Drawer (using custom Drawer) for mobile, as fixed sidebar for desktop
   if (isMobile) {
     return (
-      <Modal isOpen={isOpen}>
-        <ModalBackdrop />
-        <ModalContent
-          {...sidebarStyles.drawerContent}
-          height={isWeb ? 'auto' : '100%'}
-        >
-          {/* Drawer Header */}
-          <Box {...sidebarStyles.drawerHeader}>
-            <HStack
-              alignItems="center"
-              justifyContent="space-between"
-              width="100%"
-            >
-              <Text {...sidebarStyles.drawerTitle}>{t('navigation.menu')}</Text>
-              <Pressable onPress={handleClose} {...sidebarStyles.closeButton}>
+      <Drawer isOpen={isOpen} onClose={handleClose}>
+        <Drawer.Backdrop />
+        <Drawer.Content>
+          <Drawer.Header>
+            <Text {...sidebarStyles.drawerTitle}>{t('navigation.menu')}</Text>
+            <Drawer.CloseButton>
+              <Box {...sidebarStyles.closeButton}>
                 <Icon as={CloseIcon} size="md" />
-              </Pressable>
-            </HStack>
-          </Box>
-          {/* Drawer Body */}
-          <Box {...sidebarStyles.drawerBody}>{sidebarContent}</Box>
-        </ModalContent>
-      </Modal>
+              </Box>
+            </Drawer.CloseButton>
+          </Drawer.Header>
+          <Drawer.Body>
+            <Box {...sidebarStyles.drawerBody}>{sidebarContent}</Box>
+          </Drawer.Body>
+        </Drawer.Content>
+      </Drawer>
     );
   }
 

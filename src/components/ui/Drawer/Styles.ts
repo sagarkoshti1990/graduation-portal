@@ -1,0 +1,61 @@
+import { theme } from '@config/theme';
+
+export const drawerStyles = {
+    container: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1000,
+    },
+    backdrop: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+    content: (anchor: 'left' | 'right', width: number) => ({
+        position: 'absolute' as const,
+        top: 0,
+        [anchor]: 0,
+        width: width,
+        maxWidth: '85%' as const,
+        height: '100%' as const,
+        backgroundColor: '#fff',
+        elevation: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 0 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+    }),
+    header: {
+        px: '$2',
+        py: '$2',
+        borderBottomWidth: 1,
+        borderBottomColor: '$borderLight300',
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+    },
+    body: {
+        flex: 1,
+        px: '$2',
+        py: '$2',
+    },
+    footer: {
+        px: '$2',
+        py: '$2',
+        borderTopWidth: 1,
+        borderTopColor: '$borderLight300',
+        flexDirection: 'row' as const,
+        justifyContent: 'flex-end' as const,
+        gap: '$3',
+    },
+    closeButton: {
+        p: '$1',
+        borderRadius: '$sm',
+    },
+};
