@@ -284,7 +284,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           opacity: isCompleted ? 0.6 : 1,
         }
       : {};
-      
+
     const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.bodySmall : TYPOGRAPHY.h3;
 
     // Task badge rendering (Evidence Required / Optional)
@@ -303,8 +303,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
           task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED
             ? '$warning100'
             : task.metaInformation?.badgeType === BADGE_TYPES.OPTIONAL || (isPreview && task?.isDeletable)
-              ? '$optionalBadgeBg'
-              : '$backgroundLight100'
+            ? '$optionalBadgeBg'
+            : '$backgroundLight100'
         }
         paddingHorizontal="$3"
         paddingVertical="$1"
@@ -318,8 +318,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
             task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED
               ? '$warning900'
               : task.metaInformation?.badgeType === BADGE_TYPES.OPTIONAL || (isPreview && task?.isDeletable)
-                ? '$optionalBadgeText'
-                : '$textMuted'
+              ? '$optionalBadgeText'
+              : '$textMuted'
           }
         >
           {task.metaInformation?.badgeText || (isPreview && task?.isDeletable ? 'Optional' : '')}
