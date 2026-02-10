@@ -123,6 +123,7 @@ export interface PaginationControlsProps {
  */
 export interface ModalProps extends Omit<ComponentProps<typeof GluestackModalType>, 'children'> {
   // Header props
+  headerContent?: ReactNode; // Custom header content (renders inside ModalHeader)
   headerTitle?: string | ReactNode; // Title (string will be translated, ReactNode for custom content)
   headerDescription?: string | ReactNode; // Description (string will be translated, ReactNode for custom content)
   headerIcon?: ReactNode; // Icon section (can be any ReactNode)

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { VStack, HStack, Button, Text, Box, Pressable, Card, Modal, useAlert, ButtonIcon, ButtonText } from '@ui';
+import { VStack, HStack, Button, Text, Box, Pressable, Card, Modal, useAlert, ButtonIcon, ButtonText, Badge, BadgeText, Divider } from '@ui';
 import { Platform } from 'react-native';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -8,7 +8,7 @@ import FilterButton from '@components/Filter';
 import TitleHeader from '@components/TitleHeader';
 import { titleHeaderStyles } from '@components/TitleHeader/Styles';
 import DataTable from '@components/DataTable';
-import { getUsersColumns } from './UsersTableConfig';
+import { getUsersColumns, RoleBadge } from './UsersTableConfig';
 import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
@@ -17,6 +17,8 @@ import { getUsersList } from '../../services/usersService';
 import type { UserSearchParams, Role } from '@app-types/Users';
 import { getSignedUrl, uploadFileToSignedUrl, bulkUserCreate } from '../../services/bulkUploadService';
 import { theme } from '@config/theme';
+import { getUserProfile } from '../../services/authenticationService';
+import { TabButton } from '@components/Tabs';
 
 /**
  * UserManagementScreen - Layout is automatically applied by navigation based on user role
@@ -39,7 +41,42 @@ const UserManagementScreen = () => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const columns = useMemo(() => getUsersColumns(), []);
+  // View Profile modal state
+  type ProfileTab = 'DETAILS' | 'ACTIVITY' | 'PERMISSIONS';
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState<ProfileTab>('DETAILS');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [selectedUserBase, setSelectedUserBase] = useState<AdminUserManagementData | null>(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
+
+  const closeProfileModal = useCallback(() => {
+    setIsProfileModalOpen(false);
+    setProfileTab('DETAILS');
+    setSelectedUserBase(null);
+    setSelectedUserProfile(null);
+    setProfileLoading(false);
+  }, []);
+
+  const openProfileModal = useCallback(async (user: AdminUserManagementData) => {
+    setSelectedUserBase(user);
+    setSelectedUserProfile(null);
+    setProfileTab('DETAILS');
+    setIsProfileModalOpen(true);
+    setProfileLoading(true);
+    try {
+      const profile = await getUserProfile(user.id);
+      setSelectedUserProfile(profile);
+    } catch (error: any) {
+      showAlert('error', error?.message || t('common.somethingWentWrong'));
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [showAlert, t]);
+
+  const columns = useMemo(
+    () => getUsersColumns({ onViewProfile: openProfileModal }),
+    [openProfileModal]
+  );
 
   // Ref to track previous roles length to detect when roles are first loaded
   const prevRolesLengthRef = useRef(0);
@@ -373,7 +410,7 @@ const UserManagementScreen = () => {
                   </Text>
                   <Text
                     {...TYPOGRAPHY.caption}
-                    color={theme.tokens.colors.textMutedForeground}
+                    color="$textMutedForeground"
                   >
                     {t('admin.actions.uploadCSVDescription')}
                   </Text>
@@ -411,7 +448,7 @@ const UserManagementScreen = () => {
                   </Text>
                   <Text
                     {...TYPOGRAPHY.caption}
-                    color={theme.tokens.colors.textMutedForeground}
+                    color="$textMutedForeground"
                   >
                     {t('admin.actions.addUserDescription')}
                   </Text>
@@ -419,6 +456,277 @@ const UserManagementScreen = () => {
               </HStack>
             </Card>
           </Pressable>
+        </VStack>
+      </Modal>
+
+      {/* View Profile Modal */}
+      <Modal
+        isOpen={isProfileModalOpen}
+        onClose={closeProfileModal}
+        size="lg"
+        showCloseButton={true}
+        contentProps={{ bg: '$white' }}
+        headerContent={(
+          (() => {
+            const roles =
+              (selectedUserBase as any)?.user_organizations?.[0]?.roles
+                ?.map((r: any) => r?.role?.label)
+                .filter(Boolean) || [];
+
+            // Ensure we never render an object as text (prevents React error #31)
+            const profileRole =
+              typeof (selectedUserProfile as any)?.role === 'string'
+                ? (selectedUserProfile as any)?.role
+                : (selectedUserProfile as any)?.role?.label;
+
+            const roleLabel =
+              roles[0] ||
+              profileRole ||
+              selectedUserBase?.role ||
+              t('admin.users.profileModal.defaultRole');
+
+            const badges = (
+              <HStack space="sm" alignItems="center">
+                <RoleBadge role={roleLabel} />
+                <Badge
+                  bg={(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
+                    ? '$success600'
+                    : '$textMutedForeground'}
+                  borderRadius="$md"
+                  px="$2"
+                  py="$0.5"
+                >
+                  <BadgeText color="$white" fontSize="$xs" textTransform="none">
+                    {(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
+                      ? t('admin.filters.active')
+                      : t('admin.filters.deactivated')}
+                  </BadgeText>
+                </Badge>
+              </HStack>
+            );
+
+            // Mobile: stack name/email above badges
+            if (isMobile) {
+              return (
+                <VStack space="sm" flex={1} flexShrink={1}>
+                  <VStack space="xs">
+                    <Text {...TYPOGRAPHY.h1} color="$textForeground">
+                      {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+                    </Text>
+                    <HStack space="xs" alignItems="center">
+                      <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                        {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+                      </Text>
+                    </HStack>
+                  </VStack>
+                  {badges}
+                </VStack>
+              );
+            }
+
+            // Desktop: left/right layout
+            return (
+              <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1}>
+                <VStack space="xs" flex={1}>
+                  <Text {...TYPOGRAPHY.h1} color="$textForeground">
+                    {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+                  </Text>
+                  <HStack space="xs" alignItems="center">
+                    <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
+                    <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                      {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+                    </Text>
+                  </HStack>
+                </VStack>
+                {badges}
+              </HStack>
+            );
+          })()
+        )}
+      >
+        <VStack space="md" width="100%">
+          {/* Tabs */}
+          <HStack bg="$bgSidebar" borderRadius="$lg" p="$1" space="xs">
+            {([
+              { key: 'DETAILS', label: 'admin.users.details' },
+              { key: 'ACTIVITY', label: 'admin.users.activity' },
+              { key: 'PERMISSIONS', label: 'admin.users.permissions' },
+            ] as const).map(tab => (
+              <TabButton
+                key={tab.key}
+                tab={tab}
+                isActive={profileTab === tab.key}
+                onPress={(tabKey) => setProfileTab(tabKey as ProfileTab)}
+                variant="ButtonTab"
+              />
+            ))}
+          </HStack>
+
+          {/* Content */}
+          {profileLoading ? (
+            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+              {t('common.loading')}
+            </Text>
+          ) : profileTab !== 'DETAILS' ? (
+            <VStack space="sm" alignItems="center" py="$8">
+              <Text {...TYPOGRAPHY.h4} color="$textForeground">
+                {t('common.comingSoon')}
+              </Text>
+              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                {profileTab === 'ACTIVITY'
+                  ? t('admin.users.profileModal.activityComingSoonDescription')
+                  : t('admin.users.profileModal.permissionsComingSoonDescription')}
+              </Text>
+            </VStack>
+          ) : (
+            <VStack space="lg">
+              {/* Personal Information */}
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon name="User" size={16} color="$textMutedForeground" />
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                    {t('admin.users.profileModal.personalInformation')}
+                  </Text>
+                </HStack>
+                <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                  <HStack space="lg" justifyContent="space-between">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.fullName')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.email')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.phoneNumber')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.phoneNumber || selectedUserProfile?.phone_number || selectedUserProfile?.phone || '-'}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.idNumber')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.idNumber || selectedUserProfile?.id_number || selectedUserProfile?.id || '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Card>
+              </VStack>
+
+              <Divider />
+
+              {/* Geographic Assignment */}
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon name="MapPin" size={16} color="$textMutedForeground" />
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                    {t('admin.users.profileModal.geographicAssignment')}
+                  </Text>
+                </HStack>
+                <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                  <HStack space="lg" justifyContent="space-between">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.province')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.province?.label ||
+                          (typeof (selectedUserProfile as any)?.province === 'string'
+                            ? (selectedUserProfile as any)?.province
+                            : '') ||
+                          (selectedUserBase as any)?.province?.label ||
+                          (typeof (selectedUserBase as any)?.province === 'string'
+                            ? (selectedUserBase as any)?.province
+                            : '') ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.site')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.site?.label ||
+                          (typeof (selectedUserProfile as any)?.site === 'string'
+                            ? (selectedUserProfile as any)?.site
+                            : '') ||
+                          (selectedUserBase as any)?.site?.label ||
+                          (typeof (selectedUserBase as any)?.site === 'string'
+                            ? (selectedUserBase as any)?.site
+                            : '') ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Card>
+              </VStack>
+
+              <Divider />
+
+              {/* Role & Assignment */}
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon name="Shield" size={16} color="$textMutedForeground" />
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                    {t('admin.users.profileModal.roleAndAssignment')}
+                  </Text>
+                </HStack>
+                <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                  <HStack space="lg" justifyContent="space-between">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.role')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const roles =
+                            (selectedUserBase as any)?.user_organizations?.[0]?.roles
+                              ?.map((r: any) => r?.role?.label)
+                              .filter(Boolean) || [];
+
+                          // Ensure we never render an object as text (prevents React error #31)
+                          const profileRole =
+                            typeof (selectedUserProfile as any)?.role === 'string'
+                              ? (selectedUserProfile as any)?.role
+                              : (selectedUserProfile as any)?.role?.label;
+
+                          return (
+                            roles[0] ||
+                            profileRole ||
+                            selectedUserBase?.role ||
+                            '-'
+                          );
+                        })()}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.dateJoined')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {selectedUserProfile?.createdAt || selectedUserProfile?.created_at || '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Card>
+              </VStack>
+            </VStack>
+          )}
+
+          {/* Footer */}
+          <HStack space="md" alignItems="center" justifyContent="flex-end" mt="$4">
+            <Button variant={"outlineghost" as any}
+              onPress={closeProfileModal}
+            >
+              <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close')}</ButtonText>
+            </Button>
+            <Button variant={"solid" as any}
+              onPress={() => showAlert('info', t('common.comingSoon'))}
+            >
+              <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.editUser')}</ButtonText>
+            </Button>
+          </HStack>
         </VStack>
       </Modal>
 
