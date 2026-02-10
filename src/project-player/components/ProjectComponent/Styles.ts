@@ -140,8 +140,8 @@ export const projectComponentStyles = {
 export const projectInfoCardStyles = {
   container: {
     bg: '$backgroundPrimary.light',
-    paddingTop: '$6',
-    paddingLeft: '$2',
+    paddingTop: '$4',
+    paddingLeft: '$5',
     paddingRight: '$6',
     paddingBottom: 0,
     borderTopLeftRadius: '$3xl',

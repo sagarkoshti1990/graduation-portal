@@ -209,7 +209,11 @@ export default function ParticipantDetail() {
           setStatus(newStatus);
         }}
       />
-      <Container px="$4" py="$3" $md-px="$3">
+      <Container
+        px="$4"
+        py={status === STATUS.NOT_ENROLLED ? '$5' : '$2'}
+        $md-px="$3"
+      >
         {status === STATUS.NOT_ENROLLED ? (
           // NOT_ENROLLED: Show ProjectPlayer directly with editMode
           <ProjectPlayer
