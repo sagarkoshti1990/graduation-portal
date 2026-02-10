@@ -117,28 +117,28 @@ const UserAvatarCard = ({
           </Checkbox>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
-          <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
-            {getInitials(item.labelKey)}
-          </Text>
-        </Box>
+            <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
+              {getInitials(item.labelKey)}
+            </Text>
+          </Box>
 
           <VStack space="xs" flexShrink={1}>
-          <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
-            {item.labelKey}
-          </Text>
-          {item.location && (
-            <HStack gap="$1" alignItems="center">
-              <LucideIcon
-                name="MapPin"
-                size={12}
-                color={theme.tokens.colors.textMutedForeground}
-              />
-              <Text {...(AssignUsersStyles.provinceName as TextProps)} fontSize="$xs">
-                {item.location}
-              </Text>
-            </HStack>
-          )}
-        </VStack>
+            <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
+              {item.labelKey}
+            </Text>
+            {item.location && (
+              <HStack gap="$1" alignItems="center">
+                <LucideIcon
+                  name="MapPin"
+                  size={12}
+                  color={theme.tokens.colors.textMutedForeground}
+                />
+                <Text {...(AssignUsersStyles.provinceName as TextProps)} fontSize="$xs">
+                  {item.location}
+                </Text>
+              </HStack>
+            )}
+          </VStack>
 
           <Badge
             ml="auto"
@@ -196,10 +196,10 @@ const UserAvatarCard = ({
           </Checkbox>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
-          <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
-            {getInitials(lc.labelKey)}
-          </Text>
-        </Box>
+            <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
+              {getInitials(lc.labelKey)}
+            </Text>
+          </Box>
 
           <VStack space="xs" flexShrink={1}>
             <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
