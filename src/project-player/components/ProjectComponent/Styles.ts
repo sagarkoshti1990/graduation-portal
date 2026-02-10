@@ -11,7 +11,7 @@ export const projectComponentStyles = {
     variant: 'elevated' as const,
     bg: '$white',
     borderRadius: '$3xl',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgb(226, 232, 240)',
     maxWidth: 1200,
     width: '$full',
@@ -144,6 +144,8 @@ export const projectInfoCardStyles = {
     paddingLeft: '$6',
     paddingRight: '$6',
     paddingBottom: 0,
+    borderTopLeftRadius: '$3xl',
+    borderTopRightRadius: '$3xl',
   },
   header: {
     justifyContent: 'space-between' as const,

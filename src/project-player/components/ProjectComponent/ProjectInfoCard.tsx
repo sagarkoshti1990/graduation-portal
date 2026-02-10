@@ -41,7 +41,7 @@ const hasChildren =
       {...projectInfoCardStyles.container}
       borderWidth={hasChildren && isPreview ? 1 : 0}
       borderColor={hasChildren && isPreview ? '$primary500' : 'transparent'}
-      borderRadius={hasChildren && isPreview ? '$2xl' : 0}
+      borderRadius={hasChildren && isPreview ? '$2xl' : undefined}
       marginBottom={hasChildren && isPreview ? '$4' : 0}
     >
       <HStack {...projectInfoCardStyles.header}
