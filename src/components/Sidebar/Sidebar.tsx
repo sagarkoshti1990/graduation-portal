@@ -217,21 +217,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </ScrollView>
 
       {/* Bottom: Language & System Status */}
-      <Box {...sidebarStyles.bottomSection}>
-        <VStack {...sidebarStyles.bottomContent}>
+      {/* <Box {...sidebarStyles.bottomSection}>
+        <VStack {...sidebarStyles.bottomContent}> */}
           {/* Language Selector */}
-
-          <LanguageSelector
+          {/* <LanguageSelector
             menuTriggerProps={sidebarStyles.languageSelectorContainer}
-          />
+          /> */}
 
           {/* System Status */}
-          <HStack {...sidebarStyles.statusContainer}>
+          {/* <HStack {...sidebarStyles.statusContainer}>
             <Box {...sidebarStyles.statusIndicator} />
             <Text {...sidebarStyles.statusText}>{t('system.online')}</Text>
-          </HStack>
-        </VStack>
-      </Box>
+          </HStack> */}
+        {/* </VStack>
+      </Box> */}
     </>
   );
 
