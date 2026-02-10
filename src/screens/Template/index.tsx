@@ -352,10 +352,12 @@ const DevelopInterventionPlan: React.FC = () => {
               if (category?.hasChildCategories) {
                 const subCategoryList = await getCategoryList(category._id);
                 // const subCategoryList = subCategoryDetailsMockData.result;
-                subcategories = subCategoryList.data.map((sc: any) => ({
-                  id: sc._id,
-                  label: sc.name,
-                }));
+                subcategories = Array.isArray(subCategoryList?.data)
+                  ? subCategoryList.data.map((sc: any) => ({
+                      id: sc?._id ?? '',
+                      label: sc?.name ?? '',
+                    }))
+                  : [];
               }
 
               return {
