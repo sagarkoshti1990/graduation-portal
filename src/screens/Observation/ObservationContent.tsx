@@ -144,7 +144,6 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
 
       if(userData) {
         const defaultValues = buildDefaultValuesFromObservation(observationSolution, userData);
-        console.log('defaultValues', defaultValues);
         setDefaultValuesLocal(defaultValues);
       }
       setMockData(observationSolution);

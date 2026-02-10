@@ -141,6 +141,7 @@
     "addToPlan": "Add to Plan",
     "remove": "Remove",
     "evidenceUploaded": "Evidence uploaded successfully",
+    "evidenceUploadFailed": "Evidence upload failed. Please try again.",
     "consentUploaded": "Consent uploaded successfully",
     "slaUploaded": "SLA uploaded successfully",
     "selectedFiles": "Selected Files",
