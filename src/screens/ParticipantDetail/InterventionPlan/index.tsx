@@ -104,14 +104,14 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
        const baseConfig =  MODE.editMode;
       const showAddCustomTaskButton = status === STATUS.IN_PROGRESS;
       
-    return {
-      ...baseConfig,
-      profileInfo: participantProfile,
-      showSubmitButton: true,
-      onSubmitInterventionPlan: handleIdpCreationSuccess,
-      isSubmitDisabled: !areAllOptionalTasksAdded,
-      showAddCustomTaskButton
-    };
+        return {
+          ...baseConfig,
+          profileInfo: participantProfile,
+          showSubmitButton: true,
+          onSubmitInterventionPlan: handleIdpCreationSuccess,
+          isSubmitDisabled: !areAllOptionalTasksAdded,
+          showAddCustomTaskButton
+        };
     
     }
 
