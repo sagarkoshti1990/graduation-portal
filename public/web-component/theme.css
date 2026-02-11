@@ -193,8 +193,7 @@ mat-form-field + button {
   border: none !important;
   width: 100% !important;
 }
-.attachment-btn button {
-  width: 100% !important;
+.attachment-btn button, .btn-outline-secondary {
   background-color: #fafbfc !important;
   color: var(--text-color) !important;
   border: 1px solid #e2e8f0 !important;
@@ -211,6 +210,15 @@ mat-form-field + button {
     color: var(--primary-color) !important;
   }
 }
+.btn-outline-secondary {
+  padding: 0rem 0.75rem !important;
+  min-height: auto !important;
+  border-radius: 0.675rem !important;
+}
+.attachment-btn button {
+  width: 100% !important;
+}
+
 /* end atachment styles */
 
 /* start checkbox */
@@ -417,3 +425,53 @@ mat-select {
   color: var(--text-color) !important;
   font-size: 14px !important;
 }
+
+/* entyty droup down styles */
+.entity-tag {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 8px !important;
+  background-color: #64748b !important;
+  border-radius: 10px !important;
+  font-size: .75rem !important;
+  font-weight: 500 !important;
+  line-height: 1rem !important;
+  transition: background-color .2s !important;
+}
+.entity-tag:hover {
+  background-color: #4b5563 !important;
+}
+.entity-tag .tag-remove-btn {
+  background-color: transparent !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+.tags-wrapper {
+  padding: 1rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #fbfcfe00 !important;
+}
+/* end entyty droup down styles */
+
+/* start toast styles */
+.success.custom-toast .mdc-snackbar__surface,
+.danger.custom-toast .mdc-snackbar__surface {
+  background-color: var(--colors-backgroundLightSuccess) !important;
+  border-radius: 0.25rem !important;
+}
+.success.custom-toast .mdc-snackbar__surface .mdc-snackbar__label,
+.danger.custom-toast .mdc-snackbar__surface .mdc-snackbar__label {
+  color: var(--colors-textLight700) !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  line-height: 1.125rem !important;
+}
+.mat-mdc-snack-bar-container {
+  margin: 0.75rem !important;
+}
+.danger.custom-toast .mdc-snackbar__surface{
+  background-color: var(--colors-backgroundLightError) !important;
+}
+/* end toast styles */
