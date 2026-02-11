@@ -79,6 +79,7 @@ export const theme = {
       success300: '#7bf1a8',
       success700: '#008236',
       bgSecondary: '#f0f2f5',
+      badgeColor: '#64748b',
       hoverBorder: '#C593A0',
       iconBgCyan: '#e0f7fa',
       iconCyan: '#00bcd4',
