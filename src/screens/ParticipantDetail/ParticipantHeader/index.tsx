@@ -114,7 +114,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         },
       });
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-
+      // Reload page
+      window.location.reload();
       // Notify parent component about status update
       if (onStatusUpdate) {
         onStatusUpdate(STATUS.ENROLLED);

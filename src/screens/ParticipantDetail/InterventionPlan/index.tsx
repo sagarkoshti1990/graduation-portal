@@ -110,9 +110,9 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
           showSubmitButton: true,
           onSubmitInterventionPlan: handleIdpCreationSuccess,
           isSubmitDisabled: !areAllOptionalTasksAdded,
-         showAddCustomTaskButton
+          showAddCustomTaskButton
         };
-      
+    
     }
 
     // Map other statuses to their respective configs
@@ -136,7 +136,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   // Show empty state for ENROLLED status when player is not shown yet
   if (currentStatus === STATUS.ENROLLED) {
     return (
-      <Box {...interventionPlanStyles.container}>
+      <Box {...interventionPlanStyles.container} mt="$6">
         <VStack {...interventionPlanStyles.content}>
           <Box {...interventionPlanStyles.iconContainer}>
             <LucideIcon
@@ -173,7 +173,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     currentStatus === STATUS.DROPOUT
   ) {
     return (
-      <Box flex={1}>
+      <Box flex={1} mt="$1">
         <ProjectPlayer
           config={config}
           data={projectPlayerData}
@@ -186,7 +186,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
   // Fallback: render ProjectPlayer for any other status
   return (
-    <Box flex={1}>
+    <Box flex={1} mt="$1">
       <ProjectPlayer
         config={config}
         data={projectPlayerData}
