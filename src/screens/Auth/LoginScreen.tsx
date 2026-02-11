@@ -24,8 +24,10 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { loginStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
 import logo500Image from '../../assets/images/logo500.png';
-import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
+// import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import logger from '@utils/logger';
+import offlineStorage from '../../services/offlineStorage';
+import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 
 const LoginScreen: React.FC = () => {
   const { login } = useAuth();
@@ -39,6 +41,26 @@ const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const flashAnim = useRef(new Animated.Value(1)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
+
+  // Load saved rememberMe preference on mount
+  useEffect(() => {
+    const loadRememberMePreference = async () => {
+      try {
+        const savedRememberMe = await offlineStorage.read<boolean>(
+          STORAGE_KEYS.AUTH_REMEMBER_ME
+        );
+        if (savedRememberMe !== null && savedRememberMe !== undefined) {
+          setRememberMe(savedRememberMe);
+          logger.info(
+            `Loaded Remember Me preference from storage: ${savedRememberMe}`
+          );
+        }
+      } catch (error) {
+        logger.error('Error loading Remember Me preference:', error);
+      }
+    };
+    loadRememberMePreference();
+  }, []);
 
   // Spin animation for logo - slow 120s linear infinite rotation
   useEffect(() => {
@@ -69,8 +91,8 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      // Use the login function from AuthContext with isAdmin flag based on current mode
-      const result = await login(email, password, isAdminMode);
+      // Use the login function from AuthContext with isAdmin flag and rememberMe based on current mode
+      const result = await login(email, password, isAdminMode, rememberMe);
       if (!result.success) {
         // Use the message from the login function, or fallback to default messages
         setError(
@@ -226,7 +248,7 @@ const LoginScreen: React.FC = () => {
                   aria-label={t('login.rememberMe')}
                 >
                   <CheckboxIndicator mr="$2">
-                    <CheckboxIcon as={CheckIcon} />
+                    <CheckboxIcon as={CheckIcon} color="$modalBackground" />
                   </CheckboxIndicator>
                   <CheckboxLabel>{t('login.rememberMe')}</CheckboxLabel>
                 </Checkbox>

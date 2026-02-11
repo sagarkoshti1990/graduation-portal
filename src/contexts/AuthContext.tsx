@@ -12,6 +12,7 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
 import { ADMIN_ROLES, LC_ROLES } from '@constants/ROLES';
 import { useLanguage } from './LanguageContext';
+import { setupTabCloseHandler } from '@utils/tabCloseHandler';
 
 export type UserRole = 'Admin' | 'Supervisor' | 'LC';
 
@@ -31,6 +32,7 @@ interface AuthContextType {
     email: string,
     password: string,
     isAdmin?: boolean,
+    rememberMe?: boolean,
   ) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   setIsLoggedIn: (value: boolean) => void;
@@ -90,13 +92,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Setup tab close handler for web platform (config-driven)
+    const cleanupTabCloseHandler = setupTabCloseHandler();
+
     const loadUser = async () => {
       try {
         // Check for both user data and token
         // Both must exist for user to be considered logged in
-        const [storedUser, token] = await Promise.all([
+        const [storedUser, token, rememberMe] = await Promise.all([
           offlineStorage.read<User>(STORAGE_KEYS.AUTH_USER),
           getToken(),
+          offlineStorage.read<boolean>(STORAGE_KEYS.AUTH_REMEMBER_ME),
         ]);
 
         // Validate that user object has required fields and token exists
@@ -108,6 +114,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
         // Only set logged in if both user and token exist and user is valid
         if (isValidUser && token) {
+          // Check if rememberMe is false - if so, we should clear on tab close
+          // But for now, just log it
+          if (rememberMe === false) {
+            logger.info(
+              'User logged in with Remember Me = false. Auth data will be cleared on tab close.',
+            );
+          }
           setUser(storedUser);
           setIsLoggedIn(true);
           logger.info(
@@ -127,6 +140,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           // Clear all auth data
           await offlineStorage.remove(STORAGE_KEYS.AUTH_USER);
           await offlineStorage.remove(STORAGE_KEYS.AUTH_REFRESH_TOKEN);
+          await offlineStorage.remove(STORAGE_KEYS.AUTH_REMEMBER_ME);
           if (token) {
             await removeToken();
           }
@@ -143,13 +157,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setLoading(false);
       }
     };
+    
     loadUser();
+
+    // Cleanup on unmount
+    return () => {
+      cleanupTabCloseHandler();
+    };
   }, []);
 
   const login = async (
     email: string,
     password: string,
     isAdmin: boolean = false,
+    rememberMe: boolean = false,
   ): Promise<{ success: boolean; message: string }> => {
     try {
       if (!email || !password) {
@@ -160,8 +181,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         return { success: false, message };
       }
 
-      // Call the authentication service with the isAdmin flag
-      const loginResponse = await loginService(email, password, isAdmin);
+      // Call the authentication service with the isAdmin flag and rememberMe
+      const loginResponse = await loginService(email, password, isAdmin, rememberMe);
       // Check if login response has user data
       if (loginResponse.result?.user) {
         const userData = loginResponse.result.user;
@@ -222,6 +243,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Remove user data from storage
       await offlineStorage.remove(STORAGE_KEYS.AUTH_USER);
       await offlineStorage.remove(STORAGE_KEYS.AUTH_REFRESH_TOKEN);
+      await offlineStorage.remove(STORAGE_KEYS.AUTH_REMEMBER_ME);
 
       // Clear context state
       setUser(null);

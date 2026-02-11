@@ -40,6 +40,12 @@ const Observation: React.FC = () => {
   const {user} = useAuth();
   const { showAlert } = useAlert();
   const handleBackPress = () => {
+      // @ts-ignore
+    if (routeParams?.redirectUrl) {
+      // @ts-ignore
+      navigation.navigate(routeParams.redirectUrl);
+      return;
+    }
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
     } else {
@@ -68,6 +74,11 @@ const Observation: React.FC = () => {
       setIsLoading(false);
     };
     fetchUserData();
+
+    return () => {
+      setUserData(null);
+      setIsLoading(true);
+    };
   }, [id,user]);
   
   if (isLoading) {

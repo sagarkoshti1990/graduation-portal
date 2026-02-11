@@ -788,6 +788,10 @@
     "adminLogin": "Login as Admin / Supervisor",
     "adminLoginFailed": "Admin / Supervisor login failed"
   },
+  "logout": {
+    "sessionExpired": "Session Expired",
+    "sessionExpiredMessage": "Your session has expired. Please log in again to continue."
+  },
   "auth": {
     "loginAttemptedEmptyCredentials": "Login attempted with empty credentials",
     "loginAttemptedEmptyCredentialsAdmin": "Admin Login attempted with empty credentials",

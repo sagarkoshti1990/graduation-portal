@@ -10,6 +10,8 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 // import { API_BASE_URL, ORIGIN } from '@config/env';
 import offlineStorage from './offlineStorage';
 import { isAndroid } from '@utils/platform';
+import { refreshToken } from './authenticationService';
+import { resetToScreen } from '@utils/navigationRef';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -48,13 +50,18 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      // Get token from storage
-      const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+      // Skip adding Authorization header for refresh token endpoint
+      const isRefreshTokenRequest = config.url?.includes('/account/refresh');
+      
+      if (!isRefreshTokenRequest) {
+        // Get token from storage
+        const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
 
-      // Add token to Authorization header if available
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-        config.headers['x-auth-token'] = token;
+        // Add token to Authorization header if available
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+          config.headers['x-auth-token'] = token;
+        }
       }
 
       // Add internal-access-token header if available - Required for entity-management API endpoints
@@ -115,29 +122,100 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
+      _isRefreshTokenCall?: boolean;
     };
+
+    // Don't try to refresh if the failed request is already a refresh token request
+    const isRefreshTokenRequest = originalRequest.url?.includes(
+      '/account/refresh'
+    );
 
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshTokenRequest) {
+        // Refresh token itself is invalid, redirect to logout page
+        logger.warn(
+          'Refresh token request failed with 401. Refresh token is invalid. Redirecting to logout page.'
+        );
+        resetToScreen('logout');
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
-        // Clear stored token and user data to force re-login
-        await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+        // Check if refresh token exists (Remember Me was checked)
+        const storedRefreshToken = await offlineStorage.read<string>(
+          STORAGE_KEYS.AUTH_REFRESH_TOKEN
+        );
 
-        // Clear user data from offline storage
-        await offlineStorage.remove(STORAGE_KEYS.AUTH_USER);
-        await offlineStorage.remove(STORAGE_KEYS.AUTH_REFRESH_TOKEN);
+        if (storedRefreshToken && typeof storedRefreshToken === 'string') {
+          // Try to refresh the token
+          try {
+            logger.info('Attempting to refresh access token using refresh token');
+            logger.info('Refresh token value:', storedRefreshToken.substring(0, 20) + '...');
+            
+            const refreshResponse = await refreshToken(storedRefreshToken);
+            logger.info('Refresh token call completed successfully');
 
-        // Log out user or redirect to login
-        logger.warn('Session expired. User needs to login again.');
+            // Get the new token
+            const newToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+            logger.info('New token retrieved:', newToken ? 'Token exists' : 'Token missing');
 
-        // Note: AuthContext will detect missing token/user on next check/reload
-        // and automatically redirect to login screen
+            if (newToken && originalRequest.headers) {
+              // Update the original request with new token
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              originalRequest.headers['x-auth-token'] = newToken;
 
-        return Promise.reject(error);
+              // Retry the original request
+              logger.info('Retrying original request with new access token');
+              return api(originalRequest);
+            } else {
+              logger.error('Failed to get new token after refresh', {
+                refreshResponse,
+                newToken,
+              });
+              throw new Error('Failed to get new token after refresh');
+            }
+          } catch (refreshError: any) {
+            // Log detailed error information
+            logger.error('Refresh token error details:', {
+              message: refreshError?.message,
+              response: refreshError?.response?.data,
+              status: refreshError?.response?.status,
+              statusText: refreshError?.response?.statusText,
+              url: refreshError?.config?.url,
+            });
+            
+            // Only redirect to logout if refresh token is actually invalid/expired
+            // Check if it's a 401 or 403 error (token invalid/expired)
+            const isTokenInvalid = refreshError?.response?.status === 401 || 
+                                   refreshError?.response?.status === 403;
+            
+            if (isTokenInvalid) {
+              logger.warn(
+                'Refresh token is invalid or expired. Redirecting to logout page.'
+              );
+              resetToScreen('logout');
+            } else {
+              // For other errors (network, server errors), don't logout - just reject
+              logger.error('Refresh token failed with non-auth error:', refreshError);
+            }
+            return Promise.reject(error);
+          }
+        } else {
+          // No refresh token found (Remember Me was not checked)
+          // Redirect to logout page
+          logger.warn(
+            'Session expired. No refresh token available. Redirecting to logout page.'
+          );
+          resetToScreen('logout');
+          return Promise.reject(error);
+        }
       } catch (storageError) {
-        logger.error('Error clearing authentication data:', storageError);
+        logger.error('Error handling token refresh:', storageError);
+        // Redirect to logout page
+        resetToScreen('logout');
         return Promise.reject(error);
       }
     }
