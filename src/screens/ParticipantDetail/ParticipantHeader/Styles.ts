@@ -59,7 +59,22 @@ export const participantHeaderStyles = {
     width: '$full' as const,
     "$md-px":'$6' as const,
     px:"$4",
-    py:"$6"
+    py: "$6",
+  },
+
+  // Progress card wrapper (rendered after PageHeader)
+  progressStickyContainer: {
+    bg: '$white' as const,
+    px: '$4' as const,
+    '$md-px': '$6' as const,
+    pb: '$4' as const,
+    shadowColor: '$shadowColor' as const,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 3,
+    borderBottomWidth: '$1',
+    borderBottomColor: '$borderDark200',
   },
 
   // Back navigation link

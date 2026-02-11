@@ -25,6 +25,8 @@ export interface PageHeaderProps {
   _content?: any;
   /** Container styles */
   _container?: any;
+  /** Root (outer) styles - overrides `pageHeaderStyles.container` (shadow/border, etc.) */
+  _css?: any;
 }
 
 /**
@@ -39,10 +41,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   rightSection,
   children,
   _content,
-  _container
+  _container,
+  _css,
 }) => {
   return (
-    <VStack {...pageHeaderStyles.container}>
+    <VStack {...pageHeaderStyles.container} {..._css}>
       <Container {..._container}>
         <HStack {...pageHeaderStyles.content} {..._content}>
           <HStack {...pageHeaderStyles.leftSection}>

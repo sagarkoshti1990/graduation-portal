@@ -12,6 +12,7 @@ import {
   useToast,
   useAlert,
   ButtonIcon,
+  Container,
 } from '@ui';
 import { participantHeaderStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -22,6 +23,7 @@ import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
 import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
+import { usePlatform } from '@utils/platform';
 import { getProjectDetails } from '../../../project-player/services/projectPlayerService';
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
@@ -37,6 +39,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { user } = useAuth()
+  const { isWeb, isMobile } = usePlatform();
   const toast = useToast();
   const { showAlert } = useAlert();
 
@@ -220,57 +223,83 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   };
 
   return (
-    <PageHeader
-      onBackPress={handleBackPress}
-      backButtonText={t('participantDetail.header.backToCaseload')}
-      _content={participantHeaderStyles.backLinkContainer}
-      _container={participantHeaderStyles.container}
-    >
-      {/* Participant Info and Actions Row */}
-      <HStack
-        {...participantHeaderStyles.participantInfoRow}
-        // Responsive: stack on mobile, row on desktop
-        $md-flexDirection="row"
-        $md-justifyContent="space-between"
+    <>
+      <PageHeader
+        onBackPress={handleBackPress}
+        backButtonText={t('participantDetail.header.backToCaseload')}
+        _content={participantHeaderStyles.backLinkContainer}
+        _container={
+          {
+            pb: 0,
+            px:"$4",
+            pt:"$6",
+          }
+        }
+        // Remove shadow + bottom border for this screen
+        _css={{
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
+          borderBottomWidth: 0,
+        }}
       >
-        {/* Left: Participant Name and ID */}
-        <VStack {...participantHeaderStyles.participantInfoContainer}>
-          <HStack {...participantHeaderStyles.participantNameRow}>
-            <Text {...participantHeaderStyles.participantName}>
-              {participantProp?.name}
-            </Text>
-            {renderStatusBadge()}
-          </HStack>
+        {/* Participant Info and Actions Row */}
+        <HStack
+          {...participantHeaderStyles.participantInfoRow}
+          // Responsive: stack on mobile, row on desktop
+          $md-flexDirection="row"
+          $md-justifyContent="space-between"
+        >
+          {/* Left: Participant Name and ID */}
+          <VStack {...participantHeaderStyles.participantInfoContainer}>
+            <HStack {...participantHeaderStyles.participantNameRow}>
+              <Text {...participantHeaderStyles.participantName}>
+                {participantProp?.name}
+              </Text>
+              {renderStatusBadge()}
+            </HStack>
 
-          <HStack {...participantHeaderStyles.participantIdRow}>
-            <Text {...participantHeaderStyles.participantId}>
-              {(participantProp as User)?.id || (participantProp as any)?.id}
-            </Text>
-            {status === STATUS.IN_PROGRESS && pathway && (
-              <>
-                <Text {...participantHeaderStyles.pathwaySeparator}>•</Text>
-                <Text {...participantHeaderStyles.pathway}>
-                  {t(`participantDetail.pathways.${pathway}`)}
-                </Text>
-              </>
-            )}
-          </HStack>
-        </VStack>
+            <HStack {...participantHeaderStyles.participantIdRow}>
+              <Text {...participantHeaderStyles.participantId}>
+                {(participantProp as User)?.id || (participantProp as any)?.id}
+              </Text>
+              {status === STATUS.IN_PROGRESS && pathway && (
+                <>
+                  <Text {...participantHeaderStyles.pathwaySeparator}>•</Text>
+                  <Text {...participantHeaderStyles.pathway}>
+                    {t(`participantDetail.pathways.${pathway}`)}
+                  </Text>
+                </>
+              )}
+            </HStack>
+          </VStack>
 
-        {/* Right: Action Buttons */}
-        <Box width="$full" $md-width="auto">
-          {renderActionButtons()}
-        </Box>
-      </HStack>
+          {/* Right: Action Buttons */}
+          <Box width="$full" $md-width="auto">
+            {renderActionButtons()}
+          </Box>
+        </HStack>
+      </PageHeader>
 
-      {/* Participant Status Card/Warning */}
-      <ParticipantProgressCard
-        status={status as ParticipantStatus}
-        graduationProgress={graduationProgressProp ?? graduationProgress}
-        updatedProgress={updatedProgress}
-        graduationDate={graduationDate}
-      />
-    </PageHeader>
+      {/* Participant Status Card/Warning (after PageHeader) */}
+      <Box
+        {...participantHeaderStyles.progressStickyContainer}
+        style={
+          isWeb && isMobile
+            ? ({ position: 'sticky', top: 0, zIndex: 10 } as any)
+            : undefined
+        }
+      >
+        <Container>
+          <ParticipantProgressCard
+            status={status as ParticipantStatus}
+            graduationProgress={graduationProgressProp ?? graduationProgress}
+            updatedProgress={updatedProgress}
+            graduationDate={graduationDate}
+          />
+        </Container>
+      </Box>
+    </>
   );
 };
 
