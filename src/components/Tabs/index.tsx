@@ -4,6 +4,7 @@ import { theme } from '@config/theme';
 import { Text, Pressable, HStack } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { usePlatform } from '@utils/platform';
 import { tabButtonStyles } from './Styles';
 
 export const TabButton: React.FC<TabButtonProps> = ({
@@ -13,7 +14,11 @@ export const TabButton: React.FC<TabButtonProps> = ({
   variant = 'default',
 }) => {
   const { t } = useLanguage();
-  const { key, label, icon, isDisabled = false } = tab;
+  const { isMobile } = usePlatform();
+  const { key, label, mobileLabel, icon, isDisabled = false } = tab;
+  
+  // Use mobileLabel on mobile (plain string), otherwise translate regular label
+  const displayText = isMobile && mobileLabel ? mobileLabel : t(label);
 
   const isButtonTabVariant = variant === 'ButtonTab';
 
@@ -40,10 +45,10 @@ export const TabButton: React.FC<TabButtonProps> = ({
       {icon ? (
         <HStack alignItems="center" justifyContent="center" gap="$2" p="$1">
           <LucideIcon name={icon} size={20} color={iconColor} />
-          <Text {...textStyles}>{t(label)}</Text>
+          <Text {...textStyles}>{displayText}</Text>
         </HStack>
       ) : (
-        <Text {...textStyles}>{t(label)}</Text>
+        <Text {...textStyles}>{displayText}</Text>
       )}
     </Pressable>
   );
