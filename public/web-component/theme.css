@@ -93,13 +93,15 @@ form.main {
 }
 
 .mat-mdc-tab:not(.mdc-tab--active) .mdc-tab__text-label {
-  color: rgba(0, 0, 0, 0.6) !important;
-  font-weight: 600;
+  color: var(--text-color) !important;
+  font-weight: 500;
 }
 .section-tabs {
   margin-bottom: 1rem;
 }
-
+.mat-mdc-tab.mdc-tab {
+  margin: 4px !important;
+}
 /* Mobile: max-width for tabs with text ellipsis - 4 tabs per line */
 @media (max-width: 768px) {
   .mat-mdc-tab-labels {
@@ -112,7 +114,6 @@ form.main {
     flex: 0 1 calc(33.333% - 8px) !important;
     min-width: 0 !important;
     max-width: calc(33.333% - 8px) !important;
-    margin: 4px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
     box-sizing: border-box !important;

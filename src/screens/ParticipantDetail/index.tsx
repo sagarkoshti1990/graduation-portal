@@ -290,9 +290,11 @@ export default function ParticipantDetail() {
                     )}
                   {activeTab ===
                     PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
-                      <AssessmentSurveys
-                        participant={participant as ParticipantData}
-                      />
+                      <Box mt="$6">
+                        <AssessmentSurveys
+                          participant={participant as ParticipantData}
+                        />
+                      </Box>
                     )}
                 </Box>
               </Box>
