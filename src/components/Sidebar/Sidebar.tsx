@@ -165,10 +165,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </VStack>
         </Box>
 
-        <Divider my="$4" />
+        {/* <Divider my="$4" /> */}
 
         {/* QUICK ACTIONS Section */}
-        <Box>
+        {/* <Box>
           <Pressable
             onPress={() => setExpandedQuickActions(!expandedQuickActions)}
             {...sidebarStyles.quickActionsHeader}
@@ -188,7 +188,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               {QUICK_ACTION_MENU_ITEMS.map(item => renderSidebarItem(item))}
             </VStack>
           )}
-        </Box>
+        </Box> */}
 
         <Divider my="$4" />
 
