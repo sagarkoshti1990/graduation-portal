@@ -16,11 +16,13 @@ export const ADMIN_MENU_OPTIONS: MenuItemData[] = [
     key: 'profile',
     label: 'common.profile',
     textValue: 'profile',
+    isComingSoon: true,
   },
   {
     key: 'settings',
     label: 'common.settings',
     textValue: 'settings',
+    isComingSoon: true,
   },
   {
     key: 'logout',

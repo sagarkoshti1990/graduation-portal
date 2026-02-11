@@ -79,12 +79,13 @@ form.main {
 }
 .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
   color: var(--text-color) !important;
-  font-weight: 700;
+  font-weight: 500 !important;
 }
 .mat-mdc-tab-labels {
   background-color: #f1f5f9 !important;
   border-radius: 1rem !important;
   align-items: center !important;
+  flex-wrap: wrap !important;
 }
 
 .mat-mdc-tab.mdc-tab--active .mdc-tab-indicator {
@@ -92,11 +93,66 @@ form.main {
 }
 
 .mat-mdc-tab:not(.mdc-tab--active) .mdc-tab__text-label {
-  color: rgba(0, 0, 0, 0.6) !important;
-  font-weight: 600;
+  color: var(--text-color) !important;
+  font-weight: 500;
 }
 .section-tabs {
   margin-bottom: 1rem;
+}
+.mat-mdc-tab.mdc-tab {
+  margin: 4px !important;
+}
+/* Mobile: max-width for tabs with text ellipsis - 4 tabs per line */
+@media (max-width: 768px) {
+  .mat-mdc-tab-labels {
+    gap: 0 !important;
+    justify-content: flex-start !important;
+  }
+  
+  /* Default: max 3 tabs per line (for <= 6 tabs) */
+  .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(33.333% - 8px) !important;
+    min-width: 0 !important;
+    max-width: calc(33.333% - 8px) !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* When more than 6 tabs: max 4 tabs per line */
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(7)) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(25% - 8px) !important;
+    max-width: calc(25% - 8px) !important;
+  }
+  
+  .mdc-tab__text-label {
+    font-size: 12px !important;
+  }
+  
+  /* When fewer than 3 tabs, allow them to grow proportionally */
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(2):last-child) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(50% - 8px) !important;
+    max-width: calc(50% - 8px) !important;
+  }
+  
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(1):last-child) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(100% - 8px) !important;
+    max-width: calc(100% - 8px) !important;
+  }
+  
+  .mat-mdc-tab.mdc-tab .mdc-tab__content {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  
+  .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label,
+  .mat-mdc-tab:not(.mdc-tab--active) .mdc-tab__text-label {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
 }
 
 /* end tab styles */
@@ -193,8 +249,7 @@ mat-form-field + button {
   border: none !important;
   width: 100% !important;
 }
-.attachment-btn button {
-  width: 100% !important;
+.attachment-btn button, .btn-outline-secondary {
   background-color: #fafbfc !important;
   color: var(--text-color) !important;
   border: 1px solid #e2e8f0 !important;
@@ -211,6 +266,15 @@ mat-form-field + button {
     color: var(--primary-color) !important;
   }
 }
+.btn-outline-secondary {
+  padding: 0rem 0.75rem !important;
+  min-height: auto !important;
+  border-radius: 0.675rem !important;
+}
+.attachment-btn button {
+  width: 100% !important;
+}
+
 /* end atachment styles */
 
 /* start checkbox */
@@ -417,3 +481,53 @@ mat-select {
   color: var(--text-color) !important;
   font-size: 14px !important;
 }
+
+/* entyty droup down styles */
+.entity-tag {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 8px !important;
+  background-color: #64748b !important;
+  border-radius: 10px !important;
+  font-size: .75rem !important;
+  font-weight: 500 !important;
+  line-height: 1rem !important;
+  transition: background-color .2s !important;
+}
+.entity-tag:hover {
+  background-color: #4b5563 !important;
+}
+.entity-tag .tag-remove-btn {
+  background-color: transparent !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+.tags-wrapper {
+  padding: 1rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #fbfcfe00 !important;
+}
+/* end entyty droup down styles */
+
+/* start toast styles */
+.success.custom-toast .mdc-snackbar__surface,
+.danger.custom-toast .mdc-snackbar__surface {
+  background-color: var(--colors-backgroundLightSuccess) !important;
+  border-radius: 0.25rem !important;
+}
+.success.custom-toast .mdc-snackbar__surface .mdc-snackbar__label,
+.danger.custom-toast .mdc-snackbar__surface .mdc-snackbar__label {
+  color: var(--colors-textLight700) !important;
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  line-height: 1.125rem !important;
+}
+.mat-mdc-snack-bar-container {
+  margin: 0.75rem !important;
+}
+.danger.custom-toast .mdc-snackbar__surface{
+  background-color: var(--colors-backgroundLightError) !important;
+}
+/* end toast styles */

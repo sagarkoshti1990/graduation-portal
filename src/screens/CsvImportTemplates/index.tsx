@@ -110,7 +110,7 @@ const CsvImportTemplates = () => {
                             <Text {...csvImportStyles.sectionSubtitle}>{t('admin.csvTemplatePage.sectionSubtitle')}</Text>
                         </Box>
 
-                        <HStack {...csvImportStyles.gridContainer}>
+                        <HStack {...csvImportStyles.gridContainer} justifyContent="center"> 
                             {TEMPLATE_DATA.map((item) => (
                                 <TemplateCard
                                     key={item.id}
