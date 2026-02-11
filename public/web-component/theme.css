@@ -85,6 +85,7 @@ form.main {
   background-color: #f1f5f9 !important;
   border-radius: 1rem !important;
   align-items: center !important;
+  flex-wrap: wrap !important;
 }
 
 .mat-mdc-tab.mdc-tab--active .mdc-tab-indicator {
@@ -97,6 +98,54 @@ form.main {
 }
 .section-tabs {
   margin-bottom: 1rem;
+}
+
+/* Mobile: max-width for tabs with text ellipsis - 4 tabs per line */
+@media (max-width: 768px) {
+  .mat-mdc-tab-labels {
+    gap: 0 !important;
+    justify-content: flex-start !important;
+  }
+  
+  .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(25% - 8px) !important;
+    min-width: 0 !important;
+    max-width: calc(25% - 8px) !important;
+    margin: 4px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* When fewer than 4 tabs, allow them to grow proportionally */
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(3):last-child) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(33.333% - 8px) !important;
+    max-width: calc(33.333% - 8px) !important;
+  }
+  
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(2):last-child) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(50% - 8px) !important;
+    max-width: calc(50% - 8px) !important;
+  }
+  
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(1):last-child) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(100% - 8px) !important;
+    max-width: calc(100% - 8px) !important;
+  }
+  
+  .mat-mdc-tab.mdc-tab .mdc-tab__content {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  
+  .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label,
+  .mat-mdc-tab:not(.mdc-tab--active) .mdc-tab__text-label {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
 }
 
 /* end tab styles */
