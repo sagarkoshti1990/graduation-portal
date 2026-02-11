@@ -15,7 +15,7 @@ export const sidebarStyles = {
   },
   sectionTitle: {
     fontSize: '$xs' as const,
-    fontWeight: '$normal' as const,
+    fontWeight: '$medium' as const,
     color: '$textLight500' as const,
     textTransform: 'uppercase' as const,
     //px: '$4' as const,
