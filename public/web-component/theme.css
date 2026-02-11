@@ -79,7 +79,7 @@ form.main {
 }
 .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
   color: var(--text-color) !important;
-  font-weight: 700;
+  font-weight: 500 !important;
 }
 .mat-mdc-tab-labels {
   background-color: #f1f5f9 !important;
@@ -107,22 +107,28 @@ form.main {
     justify-content: flex-start !important;
   }
   
+  /* Default: max 3 tabs per line (for <= 6 tabs) */
   .mat-mdc-tab.mdc-tab {
-    flex: 0 1 calc(25% - 8px) !important;
+    flex: 0 1 calc(33.333% - 8px) !important;
     min-width: 0 !important;
-    max-width: calc(25% - 8px) !important;
+    max-width: calc(33.333% - 8px) !important;
     margin: 4px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
     box-sizing: border-box !important;
   }
   
-  /* When fewer than 4 tabs, allow them to grow proportionally */
-  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(3):last-child) .mat-mdc-tab.mdc-tab {
-    flex: 0 1 calc(33.333% - 8px) !important;
-    max-width: calc(33.333% - 8px) !important;
+  /* When more than 6 tabs: max 4 tabs per line */
+  .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(7)) .mat-mdc-tab.mdc-tab {
+    flex: 0 1 calc(25% - 8px) !important;
+    max-width: calc(25% - 8px) !important;
   }
   
+  .mdc-tab__text-label {
+    font-size: 12px !important;
+  }
+  
+  /* When fewer than 3 tabs, allow them to grow proportionally */
   .mat-mdc-tab-labels:has(.mat-mdc-tab.mdc-tab:nth-child(2):last-child) .mat-mdc-tab.mdc-tab {
     flex: 0 1 calc(50% - 8px) !important;
     max-width: calc(50% - 8px) !important;
