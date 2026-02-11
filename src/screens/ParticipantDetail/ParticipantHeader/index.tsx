@@ -17,22 +17,20 @@ import { participantHeaderStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import ParticipantProgressCard from './ParticipantProgressCard';
 import { STATUS, TASK_STATUS } from '@constants/app.constant';
-import { getParticipantsList, updateEntityDetails } from '../../../services/participantService';
-import { useAuth } from '@contexts/AuthContext';
-import { Participant, ParticipantHeaderProps, ParticipantStatus } from '@app-types/screens';
+import { updateEntityDetails } from '../../../services/participantService';
+import { useAuth, User } from '@contexts/AuthContext';
+import { ParticipantHeaderProps } from '@app-types/screens';
+import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
 import { getProjectDetails } from '../../../project-player/services/projectPlayerService';
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
-  participantName,
-  participantId,
-  // status,
+  participant: participantProp,
   pathway,
   graduationDate,
   graduationProgress: graduationProgressProp,
   onViewProfile,
   areAllTasksCompleted = false,
-  userEntityId,
   onStatusUpdate,
   updatedProgress
 }) => {
@@ -42,36 +40,25 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const toast = useToast();
   const { showAlert } = useAlert();
 
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
-  const [participant, setParticipant] = useState<Participant | null>(null);
   const showSuccess = (message: string) => {
     showSuccessToast(toast, message);
   };
 
+  // Update status when participant prop changes
   useEffect(() => {
-    const fetchEntityDetails = async () => {
-      if (participantId && user?.id) {
-        try {
-          const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
-          const { userDetails, ...rest } = response?.result?.data?.[0]
-          const participantData = { ...(userDetails || {}), ...rest }
-          setParticipant(participantData);
-          setStatus(participantData?.status);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-    };
-    fetchEntityDetails();
-  }, [participantId, user?.id]);
+    if (participantProp?.status) {
+      setStatus(participantProp.status);
+    }
+  }, [participantProp?.status, onStatusUpdate]);
 
   useEffect(() => {
     const fetchProjectProgress = async () => {
-      if (participant?.idpProjectId) {
+      if (participantProp?.idpProjectId) {
         try {
-          if (participant?.idpProjectId) {
-            const res = await getProjectDetails(participant?.idpProjectId);
+          if (participantProp?.idpProjectId) {
+            const res = await getProjectDetails(participantProp?.idpProjectId);
             const tasks = res.data?.tasks || [];
             let totalChildTasks = 0;
             let completedChildTasks = 0;
@@ -104,7 +91,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       }
     };
     fetchProjectProgress();
-  }, [participant?.idpProjectId]);
+  }, [participantProp?.idpProjectId]);
 
   const handleBackPress = () => {
     // @ts-ignore
@@ -112,18 +99,20 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   };
 
   const handleEnrollParticipant = async () => {
-    if (!userEntityId) return;
+    const entityId = (participantProp as User)?.entityId;
+    if (!entityId) return;
 
     try {
       await updateEntityDetails({
         userId: `${user?.id}`,
-        entityId: userEntityId,
+        entityId: entityId,
         entityUpdates: {
           status: STATUS.ENROLLED,
         },
       });
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-
+      // Reload page
+      window.location.reload();
       // Notify parent component about status update
       if (onStatusUpdate) {
         onStatusUpdate(STATUS.ENROLLED);
@@ -134,6 +123,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   };
 
   const handleLogVisitPress = () => {
+    const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
     // @ts-ignore
     navigation.push('log-visit', { id: participantId });
   };
@@ -173,7 +163,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
     if (status === STATUS.NOT_ENROLLED) {
       return (
-        <Button variant="solid"
+        <Button
           onPress={handleEnrollParticipant}
           isDisabled={!areAllTasksCompleted}
           {...participantHeaderStyles.solidButtonPrimary}
@@ -248,14 +238,14 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         <VStack {...participantHeaderStyles.participantInfoContainer}>
           <HStack {...participantHeaderStyles.participantNameRow}>
             <Text {...participantHeaderStyles.participantName}>
-              {participantName}
+              {participantProp?.name}
             </Text>
             {renderStatusBadge()}
           </HStack>
 
           <HStack {...participantHeaderStyles.participantIdRow}>
             <Text {...participantHeaderStyles.participantId}>
-              {participantId}
+              {(participantProp as User)?.id || (participantProp as any)?.id}
             </Text>
             {status === STATUS.IN_PROGRESS && pathway && (
               <>

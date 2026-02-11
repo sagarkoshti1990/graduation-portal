@@ -55,6 +55,7 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   size = 'md',
   // Header props
+  headerContent,
   headerTitle,
   headerDescription,
   headerIcon,
@@ -105,37 +106,47 @@ const Modal: React.FC<ModalProps> = ({
         {...contentProps} maxHeight="90%"
       >
         {/* Header with Title, Description, and Icon */}
-        {(headerTitle || headerDescription || headerIcon || showCloseButton) && (
+        {(headerContent || headerTitle || headerDescription || headerIcon || showCloseButton) && (
           <ModalHeader borderBottomWidth={0} padding="$6" paddingBottom="$4" {...headerProps}>
             <HStack space="md" alignItems={headerAlignment} flex={1}>
-              {/* Header Icon Section */}
-              {headerIcon && (
-                <Box {...profileStyles.headerIconContainer}>
-                  {headerIcon}
-                </Box>
-              )}
+              {headerContent ? (
+                headerContent
+              ) : (
+                <>
+                  {/* Header Icon Section */}
+                  {headerIcon && (
+                    <Box {...profileStyles.headerIconContainer}>
+                      {headerIcon}
+                    </Box>
+                  )}
 
-              {/* Title and Description */}
-              {(headerTitle || headerDescription) && (
-                <VStack flex={1} space="xs">
-                  {headerTitle && (
-                    <Heading
-                      {...TYPOGRAPHY.h3}
-                      color={theme.tokens.colors.textPrimary}
-                    >
-                      {typeof headerTitle === 'string' ? t(headerTitle) : headerTitle}
-                    </Heading>
+                  {/* Title and Description */}
+                  {(headerTitle || headerDescription) && (
+                    <VStack flex={1} space="xs">
+                      {headerTitle && (
+                        <Heading
+                          {...TYPOGRAPHY.h3}
+                          color={theme.tokens.colors.textPrimary}
+                        >
+                          {typeof headerTitle === 'string'
+                            ? t(headerTitle)
+                            : headerTitle}
+                        </Heading>
+                      )}
+                      {headerDescription && (
+                        <Text
+                          {...TYPOGRAPHY.paragraph}
+                          color={theme.tokens.colors.textSecondary}
+                          fontSize="$sm"
+                        >
+                          {typeof headerDescription === 'string'
+                            ? t(headerDescription)
+                            : headerDescription}
+                        </Text>
+                      )}
+                    </VStack>
                   )}
-                  {headerDescription && (
-                    <Text
-                      {...TYPOGRAPHY.paragraph}
-                      color={theme.tokens.colors.textSecondary}
-                      fontSize="$sm"
-                    >
-                      {typeof headerDescription === 'string' ? t(headerDescription) : headerDescription}
-                    </Text>
-                  )}
-                </VStack>
+                </>
               )}
 
               {/* Close Button */}
@@ -160,7 +171,7 @@ const Modal: React.FC<ModalProps> = ({
         )}
 
         {/* Flexible Body Content */}
-        <ModalBody padding="$6" paddingTop={headerTitle || headerDescription || headerIcon ? "$2" : "$6"} paddingBottom={hasFooter ? "$4" : "$6"} {...bodyProps}>
+        <ModalBody padding="$6" paddingTop={headerContent || headerTitle || headerDescription || headerIcon ? "$2" : "$6"} paddingBottom={hasFooter ? "$4" : "$6"} {...bodyProps}>
           <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ flexGrow: 1 }}>{children}</ScrollView>
         </ModalBody>
 

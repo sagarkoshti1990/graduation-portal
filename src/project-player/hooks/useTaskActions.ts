@@ -19,7 +19,15 @@ export const useTaskActions = () => {
           attachments = data.data;
         }
       }
-      updateTask(taskId, { status, attachments });
+      if(attachments.length > 0) {
+        const response = await updateTask(taskId, { status, attachments });
+        return {success: true, data: response};
+      } else {
+        return {
+          success: false,
+          data: null,
+        };
+      }
     },
     [canEdit, updateTask],
   );

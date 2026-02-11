@@ -141,6 +141,7 @@
     "addToPlan": "Add to Plan",
     "remove": "Remove",
     "evidenceUploaded": "Evidence uploaded successfully",
+    "evidenceUploadFailed": "Evidence upload failed. Please try again.",
     "consentUploaded": "Consent uploaded successfully",
     "slaUploaded": "SLA uploaded successfully",
     "selectedFiles": "Selected Files",
@@ -391,6 +392,22 @@
       "site": "Site",
       "lastLogin": "Last Login",
       "details": "Details",
+      "activity": "Activity",
+      "permissions": "Permissions",
+      "profileModal": {
+        "personalInformation": "Personal Information",
+        "geographicAssignment": "Geographic Assignment",
+        "roleAndAssignment": "Role & Assignment",
+        "fullName": "Full Name",
+        "phoneNumber": "Phone Number",
+        "idNumber": "ID Number",
+        "dateJoined": "Date Joined",
+        "close": "Close",
+        "editUser": "Edit User",
+        "defaultRole": "Admin",
+        "activityComingSoonDescription": "Activity tab will be available soon.",
+        "permissionsComingSoonDescription": "Permissions tab will be available soon."
+      },
       "actions": "Actions",
       "noUsersFound": "No users found",
       "loadingUsers": "Loading users...",
@@ -770,6 +787,10 @@
     "title": "Generating Better Livelihoods",
     "adminLogin": "Login as Admin / Supervisor",
     "adminLoginFailed": "Admin / Supervisor login failed"
+  },
+  "logout": {
+    "sessionExpired": "Session Expired",
+    "sessionExpiredMessage": "Your session has expired. Please log in again to continue."
   },
   "auth": {
     "loginAttemptedEmptyCredentials": "Login attempted with empty credentials",

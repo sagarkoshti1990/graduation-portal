@@ -57,8 +57,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     const collectAddedToPlanIds = (tasks: Task[] = []): string[] =>
       tasks.flatMap(task => {
         const nested = [
-          ...(task.children ? collectAddedToPlanIds(task.children) : []),
-          ...(task.tasks ? collectAddedToPlanIds(task.tasks) : []),
+          ...(task?.children ? collectAddedToPlanIds(task.children) : []),
+          ...(task?.tasks ? collectAddedToPlanIds(task.tasks) : []),
         ];
         const isAdded = task?.metaInformation?.addedToPlan === true;
         return [...(isAdded ? [task._id] : []), ...nested];

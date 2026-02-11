@@ -9,7 +9,9 @@ import logger from '@utils/logger';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 // import { API_BASE_URL, ORIGIN } from '@config/env';
 import offlineStorage from './offlineStorage';
-import { isAndroid } from '@utils/platform';
+import { isAndroid, isWeb } from '@utils/platform';
+import { refreshToken } from './authenticationService';
+import { resetToScreen } from '@utils/navigationRef';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -48,13 +50,18 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      // Get token from storage
-      const token = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+      // Skip adding Authorization header for refresh token endpoint
+      const isRefreshTokenRequest = config.url?.includes('/account/refresh');
+      
+      if (!isRefreshTokenRequest) {
+        // Get token from storage (checks both localStorage and sessionStorage on web)
+        const token = await getToken();
 
-      // Add token to Authorization header if available
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-        config.headers['x-auth-token'] = token;
+        // Add token to Authorization header if available
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+          config.headers['x-auth-token'] = token;
+        }
       }
 
       // Add internal-access-token header if available - Required for entity-management API endpoints
@@ -115,29 +122,100 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
+      _isRefreshTokenCall?: boolean;
     };
+
+    // Don't try to refresh if the failed request is already a refresh token request
+    const isRefreshTokenRequest = originalRequest.url?.includes(
+      '/account/refresh'
+    );
 
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshTokenRequest) {
+        // Refresh token itself is invalid, redirect to logout page
+        logger.warn(
+          'Refresh token request failed with 401. Refresh token is invalid. Redirecting to logout page.'
+        );
+        resetToScreen('logout');
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
-        // Clear stored token and user data to force re-login
-        await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+        // Check if refresh token exists (Remember Me was checked)
+        const storedRefreshToken = await offlineStorage.read<string>(
+          STORAGE_KEYS.AUTH_REFRESH_TOKEN
+        );
 
-        // Clear user data from offline storage
-        await offlineStorage.remove(STORAGE_KEYS.AUTH_USER);
-        await offlineStorage.remove(STORAGE_KEYS.AUTH_REFRESH_TOKEN);
+        if (storedRefreshToken && typeof storedRefreshToken === 'string') {
+          // Try to refresh the token
+          try {
+            logger.info('Attempting to refresh access token using refresh token');
+            logger.info('Refresh token value:', storedRefreshToken.substring(0, 20) + '...');
+            
+            const refreshResponse = await refreshToken(storedRefreshToken);
+            logger.info('Refresh token call completed successfully');
 
-        // Log out user or redirect to login
-        logger.warn('Session expired. User needs to login again.');
+            // Get the new token
+            const newToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+            logger.info('New token retrieved:', newToken ? 'Token exists' : 'Token missing');
 
-        // Note: AuthContext will detect missing token/user on next check/reload
-        // and automatically redirect to login screen
+            if (newToken && originalRequest.headers) {
+              // Update the original request with new token
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              originalRequest.headers['x-auth-token'] = newToken;
 
-        return Promise.reject(error);
+              // Retry the original request
+              logger.info('Retrying original request with new access token');
+              return api(originalRequest);
+            } else {
+              logger.error('Failed to get new token after refresh', {
+                refreshResponse,
+                newToken,
+              });
+              throw new Error('Failed to get new token after refresh');
+            }
+          } catch (refreshError: any) {
+            // Log detailed error information
+            logger.error('Refresh token error details:', {
+              message: refreshError?.message,
+              response: refreshError?.response?.data,
+              status: refreshError?.response?.status,
+              statusText: refreshError?.response?.statusText,
+              url: refreshError?.config?.url,
+            });
+            
+            // Only redirect to logout if refresh token is actually invalid/expired
+            // Check if it's a 401 or 403 error (token invalid/expired)
+            const isTokenInvalid = refreshError?.response?.status === 401 || 
+                                   refreshError?.response?.status === 403;
+            
+            if (isTokenInvalid) {
+              logger.warn(
+                'Refresh token is invalid or expired. Redirecting to logout page.'
+              );
+              resetToScreen('logout');
+            } else {
+              // For other errors (network, server errors), don't logout - just reject
+              logger.error('Refresh token failed with non-auth error:', refreshError);
+            }
+            return Promise.reject(error);
+          }
+        } else {
+          // No refresh token found (Remember Me was not checked)
+          // Redirect to logout page
+          logger.warn(
+            'Session expired. No refresh token available. Redirecting to logout page.'
+          );
+          resetToScreen('logout');
+          return Promise.reject(error);
+        }
       } catch (storageError) {
-        logger.error('Error clearing authentication data:', storageError);
+        logger.error('Error handling token refresh:', storageError);
+        // Redirect to logout page
+        resetToScreen('logout');
         return Promise.reject(error);
       }
     }
@@ -180,10 +258,47 @@ api.interceptors.response.use(
 
 /**
  * Helper function to save token
+ * Uses localStorage if rememberMe is true, sessionStorage if false (web only)
+ * On native platforms, always uses AsyncStorage
  */
-export const saveToken = async (token: string): Promise<void> => {
+export const saveToken = async (token: string, rememberMe?: boolean): Promise<void> => {
   try {
-    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+    // On web platform, use localStorage or sessionStorage based on rememberMe
+    if (isWeb) {
+      // Get rememberMe preference if not provided
+      if (rememberMe === undefined) {
+        const storedRememberMe = await offlineStorage.read<boolean>(
+          STORAGE_KEYS.AUTH_REMEMBER_ME
+        );
+        rememberMe = storedRememberMe === true;
+      }
+
+      if (rememberMe) {
+        // Save to localStorage (persistent)
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+          logger.info('Token saved to localStorage (Remember Me enabled)');
+        }
+        // Also remove from sessionStorage if it exists
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+      } else {
+        // Save to sessionStorage (temporary, cleared when tab closes)
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+          logger.info('Token saved to sessionStorage (Remember Me disabled)');
+        }
+        // Also remove from localStorage if it exists
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+      }
+    } else {
+      // On native platforms, use AsyncStorage (always persistent)
+      await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+      logger.info('Token saved to AsyncStorage');
+    }
   } catch (error) {
     logger.error('Error saving token:', error);
     throw error;
@@ -192,10 +307,30 @@ export const saveToken = async (token: string): Promise<void> => {
 
 /**
  * Helper function to get token
+ * Checks both localStorage and sessionStorage on web
+ * On native platforms, uses AsyncStorage
  */
 export const getToken = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+    if (isWeb) {
+      // On web, check both localStorage and sessionStorage
+      if (typeof window !== 'undefined') {
+        // First check localStorage (persistent)
+        const localStorageToken = window.localStorage?.getItem(TOKEN_STORAGE_KEY);
+        if (localStorageToken) {
+          return localStorageToken;
+        }
+        // Then check sessionStorage (temporary)
+        const sessionStorageToken = window.sessionStorage?.getItem(TOKEN_STORAGE_KEY);
+        if (sessionStorageToken) {
+          return sessionStorageToken;
+        }
+      }
+      return null;
+    } else {
+      // On native platforms, use AsyncStorage
+      return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+    }
   } catch (error) {
     logger.error('Error getting token:', error);
     return null;
@@ -204,10 +339,27 @@ export const getToken = async (): Promise<string | null> => {
 
 /**
  * Helper function to remove token
+ * Removes from both localStorage and sessionStorage on web
+ * On native platforms, removes from AsyncStorage
  */
 export const removeToken = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+    if (isWeb) {
+      // On web, remove from both localStorage and sessionStorage
+      if (typeof window !== 'undefined') {
+        if (window.localStorage) {
+          window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+        if (window.sessionStorage) {
+          window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+        logger.info('Token removed from localStorage and sessionStorage');
+      }
+    } else {
+      // On native platforms, remove from AsyncStorage
+      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+      logger.info('Token removed from AsyncStorage');
+    }
   } catch (error) {
     logger.error('Error removing token:', error);
     throw error;

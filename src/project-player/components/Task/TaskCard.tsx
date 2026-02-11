@@ -3,7 +3,6 @@ import {
   Box,
   HStack,
   Card,
-  useToast,
   Checkbox,
   CheckboxIndicator,
   CheckboxIcon,
@@ -13,7 +12,7 @@ import {
   ButtonText,
   Pressable,
   CheckIcon,
-  showSuccessToast,
+  useAlert,
 } from '@ui';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useTaskActions } from '../../hooks/useTaskActions';
@@ -49,15 +48,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const route = useRoute();
   const navigation = useNavigation();
   // Retrieve updateTask from context
-  const { mode, config, addedToPlanTaskIds } =
+  const { mode, config, addedToPlanTaskIds, deleteTask } =
     useProjectContext();
-  const { deleteTask } = useProjectContext();
   // handleOpenForm
   const { handleStatusChange, handleAddToPlan } =
     useTaskActions();
   const { isWeb, isMobile } = usePlatform();
   const { t } = useLanguage();
-  const toast = useToast();
+  const { showAlert } = useAlert();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isAddedToPlan, setIsAddedToPlan] = useState(
@@ -97,7 +95,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   );
 
   const showSuccess = (message: string) => {
-    showSuccessToast(toast, message);
+    showAlert("success", message);
+  };
+
+  const showError = (message: string) => {
+    showAlert("error", message);
   };
 
   // Modal actions (Incoming)
@@ -292,17 +294,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isEditModeForBadge = isEdit && !isPreview;
     // In preview mode, show badge for deletable tasks even if metaInformation is not set
     const shouldShowBadge =
-      (task.metaInformation?.badgeText &&
+      (!task?.isDeletable &&
         (!isEditModeForBadge ||
-          task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED)) ||
+          !task.isDeletable)) ||
       (isPreview && task?.isDeletable);
 
     const taskBadge = shouldShowBadge ? (
       <Box
         bg={
-          task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED
+          task?.isDeletable === false
             ? '$warning100'
-            : task.metaInformation?.badgeType === BADGE_TYPES.OPTIONAL || (isPreview && task?.isDeletable)
+            : task?.isDeletable === true || (isPreview && task?.isDeletable)
             ? '$optionalBadgeBg'
             : '$backgroundLight100'
         }
@@ -315,14 +317,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
           fontSize="$xs"
           fontWeight="$medium"
           color={
-            task.metaInformation?.badgeType === BADGE_TYPES.REQUIRED
+             task?.isDeletable === false
               ? '$warning900'
-              : task.metaInformation?.badgeType === BADGE_TYPES.OPTIONAL || (isPreview && task?.isDeletable)
+              :  task?.isDeletable === true || (isPreview && task?.isDeletable)
               ? '$optionalBadgeText'
               : '$textMuted'
           }
         >
-          {task.metaInformation?.badgeText || (isPreview && task?.isDeletable ? 'Optional' : '')}
+          {!task?.isDeletable || (isPreview && task?.isDeletable ? 'Optional' : '')}
         </Text>
       </Box>
     ) : null;
@@ -371,7 +373,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               }
               style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
             >
-              {task.name}
+              {task?.name}
             </Text>
             {taskBadge}
           </HStack>
@@ -441,7 +443,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </HStack>
           </>
         )}
-        {showDescription && task.description && (
+        {showDescription && task?.description && (
           <Text
             {...(uiConfig.showAsCard
               ? TYPOGRAPHY.bodySmall
@@ -607,17 +609,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <FileUploadModal
       isOpen={showUploadModal}
       onClose={() => setShowUploadModal(false)}
-      taskName={task.name}
+      taskName={task?.name}
       participantName={!isChildOfProject ? config.profileInfo?.name : undefined}
-      existingAttachments={task.attachments}
+      existingAttachments={task?.attachments}
       onUpload={method => {
         console.log('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
-        await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
-        setShowUploadModal(false);
-        // Show success toast with task-specific message
-        showSuccess(t('projectPlayer.evidenceUploaded'));
+        const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
+        if(data?.success) {
+          // Show success toast with task-specific message
+          showSuccess(t('projectPlayer.evidenceUploaded'));
+          setShowUploadModal(false);
+        } else {
+          showError(t('projectPlayer.evidenceUploadFailed'));
+        }
       }}
     />
   );
@@ -627,8 +633,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <EvidencePreviewModal
       isOpen={showPreviewModal}
       onClose={() => setShowPreviewModal(false)}
-      taskName={task.name}
-      attachments={task.attachments || []}
+      taskName={task?.name}
+      attachments={task?.attachments || []}
     />
   );
 
@@ -656,15 +662,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   {...taskCardStyles.onboardingTitleText}
                   style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
                 >
-                  {task.name}
+                  {task?.name}
                 </Text>
-                {task.description && (
+                {task?.description && (
                   <Text
                     {...TYPOGRAPHY.bodySmall}
                     {...taskCardStyles.onboardingDescriptionText}
                     style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
                   >
-                    {task.description}
+                    {task?.description}
                   </Text>
                 )}
               </VStack>
@@ -673,7 +679,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Box>
               {renderActionButton()}
               {renderCustomTaskActions({
-                isCustomTask: task.isCustomTask || false,
+                isCustomTask: task?.isCustomTask || false,
                 onEdit: openEditModal,
                 onDelete: openDeleteModal,
               })}
@@ -690,15 +696,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 {...taskCardStyles.onboardingTitleText}
                 style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
               >
-                {task.name}
+                {task?.name}
               </Text>
-              {task.description && (
+              {task?.description && (
                 <Text
                   {...TYPOGRAPHY.bodySmall}
                   {...taskCardStyles.onboardingDescriptionText}
                   style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
                 >
-                  {task.description}
+                  {task?.description}
                 </Text>
               )}
             </VStack>
@@ -766,7 +772,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     <HStack space="xs" alignItems="center">
                       {renderActionButton()}
                       {renderCustomTaskActions({
-                        isCustomTask: task.isCustomTask || false,
+                        isCustomTask: task?.isCustomTask || false,
                         onEdit: openEditModal,
                         onDelete: openDeleteModal,
                       })}
@@ -783,7 +789,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                       {renderTaskInfo()}
                     </Box>
                     {renderCustomTaskActions({
-                      isCustomTask: task.isCustomTask || false,
+                      isCustomTask: task?.isCustomTask || false,
                       onEdit: openEditModal,
                       onDelete: openDeleteModal,
                     })}
@@ -805,7 +811,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   <HStack space="xs" alignItems="center">
                     {renderActionButton()}
                     {renderCustomTaskActions({
-                      isCustomTask: task.isCustomTask || false,
+                      isCustomTask: task?.isCustomTask || false,
                       onEdit: openEditModal,
                       onDelete: openDeleteModal,
                     })}
@@ -852,7 +858,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <Box flexShrink={0}>
           {renderActionButton()}
           {renderCustomTaskActions({
-            isCustomTask: task.isCustomTask || false,
+            isCustomTask: task?.isCustomTask || false,
             onEdit: openEditModal,
             onDelete: openDeleteModal,
           })}
@@ -896,7 +902,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           <Box flexShrink={0} width={isMobile ? '100%' : 'auto'}>
             {renderActionButton()}
             {renderCustomTaskActions({
-              isCustomTask: task.isCustomTask || false,
+              isCustomTask: task?.isCustomTask || false,
               onEdit: openEditModal,
               onDelete: openDeleteModal,
             })}
@@ -916,7 +922,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         modalState,
         onCloseModal: closeModal,
         onConfirmDelete: handleConfirmDelete,
-        taskName: task.name,
+        taskName: task?.name,
         t,
       })}
     </>
