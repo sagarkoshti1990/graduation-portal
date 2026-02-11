@@ -11,7 +11,6 @@ import {
   Container,
 } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
-import { participantDetailStyles } from './Styles';
 import {
   getParticipantsList,
   getSitesByProvince
@@ -172,6 +171,7 @@ export default function ParticipantDetail() {
     };
   }, [participant, status]);
 
+
   const handleProgressChange = (progress: number) => {
     if (!hasProgressBaseline) {
       setHasProgressBaseline(true);
@@ -234,11 +234,8 @@ export default function ParticipantDetail() {
           setStatus(newStatus);
         }}
       />
-      <Container
-        px="$4"
-        py={status === STATUS.NOT_ENROLLED ? '$5' : '$2'}
-        $md-px="$3"
-      >
+      
+      <Container px="$4" py="$6" $md-px="$6">
         {status === STATUS.NOT_ENROLLED ? (
           // NOT_ENROLLED: Show ProjectPlayer directly with editMode
           configData && projectPlayerConfigData && (

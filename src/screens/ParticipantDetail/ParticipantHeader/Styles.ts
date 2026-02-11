@@ -12,7 +12,10 @@ type StatusCardStatus = typeof STATUS.IN_PROGRESS | typeof STATUS.COMPLETED | ty
 const statusCardBase = {
   borderWidth: 1,
   borderRadius: '$2xl' as const,
-  p: '$5' as const,
+  // Mobile padding
+  p: '$3' as const,
+  // Desktop padding
+  '$md-p': '$5' as const,
 };
 
 // Common card title style
@@ -59,7 +62,22 @@ export const participantHeaderStyles = {
     width: '$full' as const,
     "$md-px":'$6' as const,
     px:"$4",
-    py:"$6"
+    py: "$6",
+  },
+
+  // Progress card wrapper (rendered after PageHeader)
+  progressStickyContainer: {
+    bg: '$white' as const,
+    px: '$4' as const,
+    '$md-px': '$6' as const,
+    pb: '$4' as const,
+    shadowColor: '$shadowColor' as const,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 3,
+    borderBottomWidth: '$1',
+    borderBottomColor: '$borderDark200',
   },
 
   // Back navigation link
