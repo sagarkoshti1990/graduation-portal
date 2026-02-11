@@ -165,7 +165,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return (
         <Button
           onPress={handleEnrollParticipant}
-          isDisabled={areAllTasksCompleted}
+          isDisabled={!areAllTasksCompleted}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
         >
