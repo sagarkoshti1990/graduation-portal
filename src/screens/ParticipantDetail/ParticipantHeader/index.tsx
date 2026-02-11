@@ -51,7 +51,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     if (participantProp?.status) {
       setStatus(participantProp.status);
     }
-  }, [participantProp?.status]);
+  }, [participantProp?.status, onStatusUpdate]);
 
   useEffect(() => {
     const fetchProjectProgress = async () => {
