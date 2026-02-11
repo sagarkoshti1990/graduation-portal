@@ -111,7 +111,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         },
       });
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-
+      // Reload page
+      window.location.reload();
       // Notify parent component about status update
       if (onStatusUpdate) {
         onStatusUpdate(STATUS.ENROLLED);
@@ -164,7 +165,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return (
         <Button
           onPress={handleEnrollParticipant}
-          isDisabled={!areAllTasksCompleted}
+          isDisabled={areAllTasksCompleted}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
         >
