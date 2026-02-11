@@ -291,7 +291,7 @@ const ProjectComponent: React.FC = () => {
                 paddingHorizontal={
                   isSingleContainer ? 0 : { base: '$1', md: '$3' }
                 }
-                paddingTop={isSingleContainer ? 0 : '$2'}
+                paddingTop={isSingleContainer ? 0 : '$4'}
                 space="xs"
               >
                 {header}

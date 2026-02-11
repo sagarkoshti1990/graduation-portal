@@ -116,6 +116,16 @@ export const theme = {
       'bgPrimary/10' : '#8B28421A',
       'bgPrimary/30' : '#f9fafb4d',
       previewBackground: '#E2E8F0',
+      // Preview mode - Social Protection accordion
+      socialProtectionAccordionBg: '#fff1f2',
+      // Preview mode - optional task card states
+      optionalTaskYellowBg: '#fffbeb',
+      optionalTaskYellowBorder: '#fde68a',
+      optionalTaskGreenBg: '#f0fdf4',
+      optionalTaskGreenBorder: '#bbf7d0',
+      optionalTaskRedBg: '#fee2e2',
+      // Preview mode - tick button active state
+      tickButtonActiveBg: '#16a34a',
     },
     fonts: {
       ...((gluestackConfig.tokens as any).fonts || {}),

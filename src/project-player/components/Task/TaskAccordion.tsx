@@ -96,11 +96,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return (
-      <Box {...taskAccordionStyles.container} marginBottom="$3">
+      <Box {...taskAccordionStyles.container} marginBottom="$6">
         <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
           {/* Card Header with Progress on right */}
           <Box {...taskAccordionStyles.cardHeader}>
-            <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$6">
+            <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$5">
               {isMobile ? (
                 <VStack space="sm">
                   <HStack {...taskAccordionStyles.pillarHeaderRow}>
@@ -205,7 +205,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
           {...taskAccordionStyles.accordionItem}
           bg={
             isSocialProtection
-              ? '$error50'
+              ? '$socialProtectionAccordionBg'
               : '$white'
           }
           borderColor={
@@ -213,6 +213,10 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
               ? '$error200'
               : taskAccordionStyles.accordionItem.borderColor
           }
+          borderLeftWidth={isSocialProtection ? 2 : 1}
+          borderRightWidth={isSocialProtection ? 2 : 1}
+          borderTopWidth={isSocialProtection ? 2 : 1}
+          borderBottomWidth={isSocialProtection ? 0 : 1}
           borderRadius="$2xl"
         >
           {/* Accordion Header */}
