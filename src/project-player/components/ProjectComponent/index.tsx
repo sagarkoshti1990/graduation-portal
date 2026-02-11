@@ -22,6 +22,7 @@ import { LucideIcon, useAlert } from '@ui';
 import { theme } from '@config/theme';
 import { submitInterventionPlan } from '../../services/projectPlayerService';
 import { addCustomTaskStyles } from '../Task/Styles';
+import { PLAYER_MODE } from '@constants/app.constant';
 
 const ProjectComponent: React.FC = () => {
   const {
@@ -189,6 +190,7 @@ const ProjectComponent: React.FC = () => {
       <VStack flex={1}>
         <ScrollView
           {...projectComponentStyles.scrollView}
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
 
           {/* Shared content logic - pillars or onboarding tasks */}
@@ -276,28 +278,32 @@ const ProjectComponent: React.FC = () => {
               </Box>
             );
 
-            // Wrap in Card for preview mode or onboarding tasks (no children)
-            if (mode !== 'edit' || !hasChildren) {
-              return (
-                <Card
-                  {...projectComponentStyles.card}
-                  {...(hasChildren ? {} : projectComponentStyles.onboardingCard)}
-                >
-                  <VStack>
-                   {/* Render ProjectInfoCard inside the card for onboarding */}
-                   {!hasChildren && <ProjectInfoCard project={projectData} />}
-                   {pillarContent}
-                 </VStack>
-                </Card>
-              );
-            }
+            // Render ProjectInfoCard (only for onboarding or preview top-level)
+            // Remove from edit mode as per user request (Image 2 feedback)
+            const header = !hasChildren || mode === PLAYER_MODE.PREVIEW ? (
+              <ProjectInfoCard project={projectData} />
+            ) : null;
 
-            return (
-             <>
-               <ProjectInfoCard project={projectData} />
-               {pillarContent}
-             </>
-           );
+            const isSingleContainer = !hasChildren;
+
+            const content = (
+              <VStack
+                paddingHorizontal={
+                  isSingleContainer ? 0 : { base: '$1', md: '$3' }
+                }
+                paddingTop={isSingleContainer ? 0 : '$2'}
+                space="xs"
+              >
+                {header}
+                {pillarContent}
+              </VStack>
+            );
+
+            return isSingleContainer ? (
+              <Card {...projectComponentStyles.card} {...projectComponentStyles.onboardingCard}>
+                {content}
+              </Card>
+            ) : content;
           })()}
         </ScrollView>
 
@@ -306,9 +312,9 @@ const ProjectComponent: React.FC = () => {
           <VStack
             space="md"
             padding="$4"
+            bg={mode === PLAYER_MODE.PREVIEW ? 'transparent' : '$white'}
             borderTopWidth={1}
             borderTopColor="$borderLight300"
-            bg="$backgroundPrimary.light"
           >
             {(() => {
               const deletableTaskIds = getDeletableTaskIds(
@@ -322,76 +328,66 @@ const ProjectComponent: React.FC = () => {
 
               return (
                 <>
-            {/* Warning Banner - Show when Submit is disabled */}
-            {isSubmitDisabled && config.submitWarningMessage && (
-              <Box
-                bg="$warning50"
-                borderWidth={1}
-                borderColor="$warning300"
-                borderRadius="$md"
-                padding="$3"
-              >
-                <HStack space="sm" alignItems="center">
-                  <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
-                  <Text fontSize="$sm" color="$warning700">
-                    {config.submitWarningMessage}
-                  </Text>
-                </HStack>
-              </Box>
-            )}
-
-            {/* Responsive Button Container - stacks on mobile, row on web */}
-            <Box {...projectComponentStyles.footerButtonContainer}>
-              {/* Change Pathway Button */}
-              <Button
-                variant="outline"
-                borderColor="$borderLight300"
-                borderRadius="$md"
-                paddingHorizontal="$4"
-                paddingVertical="$2"
-                onPress={() => {
-                  if (config.onChangePathway) {
-                    config.onChangePathway();
-                    return;
-                  }
-                }}
-                $hover-borderColor="$primary500"
-                $hover-bg="$error50"
-                {...projectComponentStyles.changePathwayButton}
-              >
-                <ButtonText
-                  color="$textPrimary"
-                  {...TYPOGRAPHY.button}
-                  fontWeight="$medium"
-                >
-                  {t('participantDetail.interventionPlan.changePathway')}
-                </ButtonText>
-              </Button>
-
-              {/* Submit Intervention Plan Button */}
-              <Button
-                bg="$primary500"
-                borderRadius="$md"
-                paddingHorizontal="$6"
-                paddingVertical="$2"
-                onPress={onSubmitInterventionPlan}
-                isDisabled={isSubmitDisabled}
-                opacity={isSubmitDisabled ? 0.5 : 1}
-                $hover-bg="$primary600"
-                $web-cursor="pointer"
-                {...projectComponentStyles.submitButton}
-              >
-                <ButtonText
-                  color="$backgroundPrimary.light"
-                  {...TYPOGRAPHY.button}
-                  fontWeight="$semibold"
-                >
-                  {t(
-                    'participantDetail.interventionPlan.submitInterventionPlan',
+                  {/* Warning Banner - Show when message exists */}
+                  {config.submitWarningMessage && (
+                    <Box {...projectComponentStyles.footerWarning}>
+                      <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
+                      <Text {...projectComponentStyles.footerWarningText}>
+                        {config.submitWarningMessage}
+                      </Text>
+                    </Box>
                   )}
-                </ButtonText>
-              </Button>
-            </Box>
+
+                  {/* Responsive Button Container - stacks on mobile, row on web */}
+                  <Box {...projectComponentStyles.footerButtonContainer}>
+                    {/* Change Pathway Button */}
+                    <Button
+                      borderRadius="$md"
+                      paddingHorizontal="$4"
+                      paddingVertical="$2"
+                      onPress={() => {
+                        if (config.onChangePathway) {
+                          config.onChangePathway();
+                          return;
+                        }
+                      }}
+                      $hover-borderColor="$primary500"
+                      $hover-bg="$error50"
+                      {...projectComponentStyles.changePathwayButton}
+                    >
+                      <ButtonText
+                        color="$textPrimary"
+                        {...TYPOGRAPHY.button}
+                        fontWeight="$medium"
+                      >
+                        {t('participantDetail.interventionPlan.changePathway')}
+                      </ButtonText>
+                    </Button>
+
+                    {/* Submit Intervention Plan Button */}
+                    <Button
+                      bg="$primary500"
+                      borderRadius="$md"
+                      paddingHorizontal="$6"
+                      paddingVertical="$2"
+                      onPress={onSubmitInterventionPlan}
+                      isDisabled={isSubmitDisabled}
+                      opacity={isSubmitDisabled ? 0.5 : 1}
+                      $hover-bg="$primary600"
+                      $web-cursor="pointer"
+                      {...projectComponentStyles.submitButton}
+                    >
+                      <ButtonText
+                        color="$backgroundPrimary.light"
+                        {...TYPOGRAPHY.button}
+                        fontWeight="$semibold"
+                      >
+                        {t(
+                          'participantDetail.interventionPlan.submitInterventionPlan',
+                        )}
+                      </ButtonText>
+                    </Button>
+                  </Box>
                 </>
               );
             })()}

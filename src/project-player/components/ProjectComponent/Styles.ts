@@ -1,111 +1,67 @@
+import { PLAYER_MODE } from '@constants/app.constant';
+
 export const projectComponentStyles = {
   container: {
     flex: 1,
+    bg: 'transparent',
   },
   scrollView: {
-    showsVerticalScrollIndicator: true,
-    // paddingTop: '$7',
+    paddingBottom: '$10',
   },
   card: {
     size: 'lg' as const,
     variant: 'elevated' as const,
     bg: '$white',
     borderRadius: '$3xl',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '$borderColor',
     maxWidth: 1200,
     width: '$full',
     alignSelf: 'center' as const,
     overflow: 'hidden' as const,
-    shadowColor: '$gray600',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    marginVertical: '$4',
   },
-  // Main container stays white; padding for Onboarding Participants
   onboardingCard: {
-    padding: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
-  addTaskButtonContainer: {
-    padding: '$3',
-    paddingTop: '$3',
+  title: {
+    color: '$textPrimary',
+    fontWeight: '$semibold',
   },
-  // Progress card section
-  progressCardContainer: {
-    paddingHorizontal: '$5',
-    paddingVertical: '$4',
+  divider: {
+    height: 1,
+    bg: '$inputBorder',
+    marginVertical: '$4',
   },
-  progressCard: {
-    borderWidth: 1,
-    borderColor: '$borderLight200',
-    borderRadius: '$lg',
+  pillarContainer: {
+    space: 'xs' as const, // Reduced spacing between accordions
+  },
+  taskContainer: {
     padding: '$4',
+  },
+  footer: {
+    padding: '$4',
+    borderTopWidth: 1,
+    borderTopColor: '$borderColor',
     bg: '$white',
   },
-  progressHeader: {
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginBottom: '$2',
-  },
-  progressBarBackground: {
-    height: '$1.5',
-    bg: '$progressBarBackground',
-    borderRadius: '$full',
-    overflow: 'hidden' as const,
-  },
-  progressBarFill: {
-    height: '$full',
-    bg: '$progressBarFillColor',
-    borderRadius: '$full',
-  },
-  previousProgressText: {
-    marginTop: '$1',
-  },
-  // Save Progress button
-  saveProgressButton: {
-    marginTop: '$4',
-  },
-  saveProgressButtonInner: {
-    bg: '$primary500',
-    paddingHorizontal: '$4',
-    paddingVertical: '$3',
-    borderRadius: '$lg',
-    alignItems: 'center' as const,
-    space: 'sm' as const,
-    alignSelf: 'flex-start' as const,
-  },
-  // Add Custom Task button
-  addCustomTaskContainer: {
-    paddingHorizontal: '$5',
-    paddingVertical: '$1',
-  },
-  addCustomTaskButton: {
+  footerWarning: {
+    bg: '$warning50',
+    borderColor: '$warning200',
     borderWidth: 1,
-    borderStyle: 'dashed' as const,
-    borderColor: '$mutedBorder',
-    borderRadius: '$md',
-    padding: '$3',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    bg: '$accent100',
-  },
-  addCustomTaskButtonHovered: {
-    borderColor: '$primary500',
-    bg: '$primary100',
-  },
-  toast: {
-    bg: '$backgroundLight100',
     borderRadius: '$lg',
+    padding: '$3',
     marginBottom: '$4',
-    marginRight: '$4',
-  },
-  toastContent: {
-    space: 'sm' as const,
+    flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    padding: '$2',
+    gap: '$2',
   },
-  // Footer button container - responsive layout
+  footerWarningText: {
+    color: '$warning700',
+    fontSize: '$sm',
+    flex: 1,
+  },
   footerButtonContainer: {
     flexDirection: 'column-reverse' as const,
     gap: '$3',
@@ -117,8 +73,9 @@ export const projectComponentStyles = {
       },
     },
   },
-  // Change Pathway button - responsive
   changePathwayButton: {
+    variant: 'outline' as const,
+    borderColor: '$borderColor',
     width: '$full',
     sx: {
       '@md': {
@@ -126,7 +83,21 @@ export const projectComponentStyles = {
       },
     },
   },
-  // Submit button - responsive
+  submitButtonBox: {
+    flex: 1,
+    justifyContent: 'flex-end' as const,
+    flexDirection: 'row' as const,
+    width: '$full',
+    sx: {
+      '@md': {
+        width: 'auto',
+      },
+    },
+  },
+  addCustomTaskContainer: {
+    paddingHorizontal: '$5',
+    paddingVertical: '$4',
+  },
   submitButton: {
     width: '$full',
     sx: {
@@ -139,13 +110,48 @@ export const projectComponentStyles = {
 
 export const projectInfoCardStyles = {
   container: {
-    bg: '$backgroundPrimary.light',
+    bg: '$white',
     paddingTop: '$6',
     paddingLeft: '$6',
     paddingRight: '$6',
-    paddingBottom: 0,
-    borderTopLeftRadius: '$3xl',
-    borderTopRightRadius: '$3xl',
+    paddingBottom: '$6',
+    borderWidth: 1,
+    borderColor: '$borderColor',
+    borderRadius: '$2xl',
+  },
+  previewContainer: {
+    bg: '$white',
+    paddingTop: '$4',
+    paddingLeft: '$6',
+    paddingRight: '$6',
+    paddingBottom: '$4',
+    marginBottom: '$6',
+    borderWidth: 2,
+    borderColor: '$error200',
+    borderRadius: '$2xl',
+  },
+  onboardingContainer: {
+    bg: 'transparent',
+    paddingTop: '$5',
+    paddingLeft: '$5',
+    paddingRight: '$5',
+    paddingBottom: '$0',
+    borderWidth: 0,
+  },
+  pathwayTag: {
+    paddingHorizontal: '$3',
+    paddingVertical: '$0.5',
+    borderRadius: '$full',
+    borderWidth: 1,
+  },
+  pathwayTagText: {
+    fontSize: '$xs',
+    fontWeight: '$medium',
+  },
+  versionText: {
+    fontSize: '$xs',
+    color: '$textMuted',
+    marginLeft: '$2',
   },
   header: {
     justifyContent: 'space-between' as const,
@@ -182,9 +188,8 @@ export const projectInfoCardStyles = {
     // Simple text container
   },
   progressContainer: {
-    space: 'lg' as const,
-    marginLeft: '$4',
-    width: 120,
+    width: '100%',
+    marginTop: '$2',
   },
   progressPercentage: {
     textAlign: 'right' as const,
@@ -200,5 +205,28 @@ export const projectInfoCardStyles = {
     space: 'xs' as const,
     marginLeft: '$4',
     alignItems: 'flex-end' as const,
+  },
+  pillarCountText: {
+    color: '$primary500',
+    fontSize: '$sm',
+    fontWeight: '$medium',
+  },
+  taskCountText: {
+    color: '$primary500',
+    fontSize: '$sm',
+    fontWeight: '$medium',
+  },
+  // Blue variant for pathway tags (Employment)
+  pathwayTagBlue: {
+    bg: '$blue50',
+    borderColor: '$blue200',
+  },
+  pathwayTagBlueText: {
+    color: '$blue600',
+  },
+  // Red/Gold variant for Action Required
+  actionRequiredPillar: {
+    bg: '$error50',
+    borderColor: '$error200',
   },
 } as const;

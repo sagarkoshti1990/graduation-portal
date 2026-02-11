@@ -103,16 +103,16 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     else if(status === STATUS.IN_PROGRESS){
        const baseConfig =  MODE.editMode;
       const showAddCustomTaskButton = status === STATUS.IN_PROGRESS;
-      
-        return {
-          ...baseConfig,
-          profileInfo: participantProfile,
-          showSubmitButton: true,
-          onSubmitInterventionPlan: handleIdpCreationSuccess,
-          isSubmitDisabled: !areAllOptionalTasksAdded,
-          showAddCustomTaskButton
-        };
-    
+
+      return {
+        ...baseConfig,
+        profileInfo: participantProfile,
+        showSubmitButton: true,
+        onSubmitInterventionPlan: handleIdpCreationSuccess,
+        isSubmitDisabled: !areAllOptionalTasksAdded,
+        showAddCustomTaskButton
+      };
+
     }
 
     // Map other statuses to their respective configs
@@ -136,7 +136,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   // Show empty state for ENROLLED status when player is not shown yet
   if (currentStatus === STATUS.ENROLLED) {
     return (
-      <Box {...interventionPlanStyles.container} mt="$6">
+      <Box {...interventionPlanStyles.container} mt="$7">
         <VStack {...interventionPlanStyles.content}>
           <Box {...interventionPlanStyles.iconContainer}>
             <LucideIcon

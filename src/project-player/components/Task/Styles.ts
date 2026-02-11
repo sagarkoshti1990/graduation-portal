@@ -342,7 +342,8 @@ export const taskAccordionStyles = {
     paddingHorizontal: '$3',
     paddingVertical: '$1',
     borderRadius: '$full',
-    borderColor: '$primary500',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   accordion: {
     type: 'single' as const,
@@ -354,7 +355,7 @@ export const taskAccordionStyles = {
     elevation: 2,
   },
   accordionItem: {
-    bg: '$backgroundPrimary.light',
+    bg: '$white',
     borderRadius: '$lg',
     borderWidth: 1,
     borderColor: '$mutedBorder',
