@@ -15,10 +15,12 @@ import { useAuth } from '@contexts/AuthContext';
 import { Spinner } from '@ui';
 import logger from '@utils/logger';
 import { isWeb, usePlatform } from '@utils/platform';
+import { navigationRef, resetToScreen } from '@utils/navigationRef';
 import AccessBaseNavigator from './navigators/AccessBaseNavigator';
 import HomeScreen from '../screens/Home';
 import UserManagementScreen from '../screens/UserManagement';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import LogoutScreen from '../screens/Auth/LogoutScreen';
 import SelectLanguageScreen from '../screens/Language/Index';
 import WelcomePage from '../screens/Welcome/index';
 import ParticipantDetail from '../screens/ParticipantDetail';
@@ -230,6 +232,7 @@ const AppNavigator: React.FC = () => {
         config: {
           screens: {
             login: 'login',
+            logout: 'logout',
           },
         },
       };
@@ -256,6 +259,27 @@ const AppNavigator: React.FC = () => {
     }
   }, [isWeb]);
 
+  // Navigate to main screen when user logs in successfully
+  useEffect(() => {
+    if (isLoggedIn && accessPages.length > 0 && navigationRef.isReady()) {
+      // Check current route to avoid unnecessary navigation
+      const currentRoute = navigationRef.getCurrentRoute();
+      if (currentRoute?.name !== 'main') {
+        // Small delay to ensure navigation stack is updated after navigationKey change
+        const timer = setTimeout(() => {
+          try {
+            resetToScreen('main');
+            logger.info('Navigated to main screen after successful login');
+          } catch (error) {
+            logger.warn('Error navigating to main after login:', error);
+          }
+        }, 200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isLoggedIn, accessPages.length]);
+
+
   // Create a stable key for NavigationContainer to prevent state issues
   // MUST be called before any conditional returns (Rules of Hooks)
   const navigationKey = useMemo(() => {
@@ -271,6 +295,7 @@ const AppNavigator: React.FC = () => {
   return (
     <NavigationErrorBoundary>
       <NavigationContainer
+        ref={navigationRef}
         key={navigationKey}
         linking={linking}
         fallback={<Spinner height={isWeb ? '$100vh' : '$full'} size="large" color="$primary500" />}
@@ -316,6 +341,14 @@ const AppNavigator: React.FC = () => {
               }}
             />
           )}
+          {/* Logout screen - always available for navigation from API interceptor */}
+          <Stack.Screen
+            name="logout"
+            component={LogoutScreen}
+            options={{
+              title: t('logout.sessionExpired') || 'Session Expired',
+            }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </NavigationErrorBoundary>

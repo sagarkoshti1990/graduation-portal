@@ -266,6 +266,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       setLoading(true);
       setDefaultValuesLocal(null);
       setSubmission(null);
+      setToken(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [solutionId, id, submissionNumber]);
@@ -322,6 +323,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       mockData: mockData,
       defaultValues: defaultValuesLocal,
       usePageQuestionsGrid: true,
+      showPrivacyPopup: false,
     }),
     [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
   );
