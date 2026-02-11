@@ -36,7 +36,6 @@ export const csvImportStyles = {
         flexWrap: 'wrap' as const,
         gap: '$4' as const,
         justifyContent: 'center' as const,
-        '$md-justifyContent': 'flex-start' as const,
     },
     guidelinesContainer: {
         bg: '$gray50' as const,
