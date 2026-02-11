@@ -310,11 +310,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const taskBadge = shouldShowBadge ? (
       <Box
         bg={
-          task?.isDeletable === false
-            ? '$warning100'
-            : task?.isDeletable === true || (isPreview && task?.isDeletable)
+            task?.isDeletable === true || (isPreview && task?.isDeletable)
             ? '$optionalBadgeBg'
-            : '$backgroundLight100'
+            : ''
         }
         paddingHorizontal="$3"
         paddingVertical="$1"

@@ -199,7 +199,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
   // For Preview mode: Show as Accordion
   return (
     <Box {...taskAccordionStyles.container}>
-      <Accordion {...taskAccordionStyles.accordion}>
+      <Accordion
+        {...taskAccordionStyles.accordion}
+        defaultValue={isSocialProtection ? task._id : undefined}
+        value={isSocialProtection ? task._id : undefined}
+      >
         <AccordionItem
           value={task._id}
           {...taskAccordionStyles.accordionItem}
@@ -219,6 +223,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
             <AccordionTrigger
               {...taskAccordionStyles.accordionTrigger}
               padding={isWeb ? '$5' : '$1'}
+              isDisabled={isSocialProtection}
             >
               {({ isExpanded }: { isExpanded: boolean }) => (
                 <>
@@ -266,7 +271,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
                     {/* Custom Lucide Icon */}
                     <Box {...taskAccordionStyles.accordionIconContainer}>
                       <LucideIcon
-                        name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
+                        name={
+                          isSocialProtection || isExpanded
+                            ? 'ChevronUp'
+                            : 'ChevronDown'
+                        }
                         size={20}
                         color={theme.tokens.colors.textSecondary}
                       />
