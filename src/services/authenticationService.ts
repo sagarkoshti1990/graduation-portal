@@ -54,13 +54,19 @@ export const refreshToken = async (
     const { access_token, refresh_token: newRefreshToken } =
       responseData.result || {};
 
+    // Get rememberMe preference to determine storage type
+    const rememberMe = await offlineStorage.read<boolean>(
+      STORAGE_KEYS.AUTH_REMEMBER_ME
+    );
+
     // Validate and save access token (must be non-empty string)
+    // Pass rememberMe to saveToken so it uses the correct storage (localStorage vs sessionStorage)
     if (
       access_token &&
       typeof access_token === 'string' &&
       access_token.trim().length > 0
     ) {
-      await saveToken(access_token);
+      await saveToken(access_token, rememberMe === true);
       logger.info('Access token refreshed and saved successfully');
     } else {
       logger.warn('Access token is missing or empty in refresh response', {
@@ -126,13 +132,21 @@ export const login = async (
     // Extract tokens and user from result
     const { access_token, refresh_token, user } = responseData.result || {};
 
+    // Save rememberMe preference to storage first (config-driven)
+    await offlineStorage.create(
+      STORAGE_KEYS.AUTH_REMEMBER_ME,
+      rememberMe
+    );
+    logger.info(`Remember Me preference saved: ${rememberMe}`);
+
     // Validate and save access token (must be non-empty string)
+    // Pass rememberMe to saveToken so it uses the correct storage (localStorage vs sessionStorage)
     if (
       access_token &&
       typeof access_token === 'string' &&
       access_token.trim().length > 0
     ) {
-      await saveToken(access_token);
+      await saveToken(access_token, rememberMe);
       logger.info('Access token saved successfully');
     } else {
       logger.warn(
@@ -140,13 +154,6 @@ export const login = async (
       );
       throw new Error('Access token is required but was not provided');
     }
-
-    // Save rememberMe preference to storage (config-driven)
-    await offlineStorage.create(
-      STORAGE_KEYS.AUTH_REMEMBER_ME,
-      rememberMe
-    );
-    logger.info(`Remember Me preference saved: ${rememberMe}`);
 
     // Save refresh token only if rememberMe is true
     if (rememberMe) {

@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     // Setup tab close handler for web platform (config-driven)
-    const cleanupTabCloseHandler = setupTabCloseHandler();
+    // const cleanupTabCloseHandler = setupTabCloseHandler();
 
     const loadUser = async () => {
       try {
@@ -162,7 +162,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     // Cleanup on unmount
     return () => {
-      cleanupTabCloseHandler();
+      // cleanupTabCloseHandler();
     };
   }, []);
 
