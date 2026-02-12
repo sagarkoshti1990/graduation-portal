@@ -328,13 +328,21 @@ const ProjectComponent: React.FC = () => {
 
               return (
                 <>
-            {/* Warning Banner - Show when message exists */}
-            {config.submitWarningMessage && (
-              <Box {...projectComponentStyles.footerWarning}>
-                <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
-                <Text {...projectComponentStyles.footerWarningText}>
-                  {config.submitWarningMessage}
-                </Text>
+            {/* Warning Banner - Show when Submit is disabled */}
+            {isSubmitDisabled && config.submitWarningMessage && (
+              <Box
+                bg="$warning50"
+                borderWidth={1}
+                borderColor="$warning300"
+                borderRadius="$md"
+                padding="$3"
+              >
+                <HStack space="sm" alignItems="center">
+                  <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
+                  <Text fontSize="$sm" color="$warning700">
+                    {config.submitWarningMessage}
+                  </Text>
+                </HStack>
               </Box>
             )}
 
