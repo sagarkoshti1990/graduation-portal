@@ -18,10 +18,11 @@ import { projectComponentStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Container from '@ui/Container';
-import { LucideIcon, useAlert } from '@ui';
+import { LucideIcon, Modal, useAlert } from '@ui';
 import { theme } from '@config/theme';
 import { submitInterventionPlan } from '../../services/projectPlayerService';
 import { addCustomTaskStyles } from '../Task/Styles';
+import { PILLAR_NAMES } from '@constants/app.constant';
 
 const ProjectComponent: React.FC = () => {
   const {
@@ -34,6 +35,7 @@ const ProjectComponent: React.FC = () => {
     useProjectContext();
   const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChangePathwayOpen, setIsChangePathwayOpen] = useState(false);
   const { showAlert } = useAlert();
 
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
@@ -45,6 +47,18 @@ const ProjectComponent: React.FC = () => {
   const showPillarFeatures = isEditMode && hasChildren;
 
   const shouldShowSubmitButton = config.showSubmitButton && mode === 'preview';
+
+  const getPillarOrderIndex = (name = ''): number => {
+    const normalized = name.toLowerCase();
+    const order = [
+      PILLAR_NAMES.SOCIAL_EMPOWERMENT,
+      PILLAR_NAMES.LIVELIHOOD,
+      PILLAR_NAMES.FINANCIAL_INCLUSION,
+      PILLAR_NAMES.SOCIAL_PROTECTION,
+    ];
+    const index = order.findIndex(pillar => normalized.includes(pillar));
+    return index === -1 ? order.length : index;
+  };
 
   const getExcludedTaskIds = (
     tasks: any[] = [],
@@ -152,7 +166,7 @@ const ProjectComponent: React.FC = () => {
       };
 
       // Call API to submit intervention plan
-      const response = await submitInterventionPlan(reqBody);
+      const response  = await submitInterventionPlan(reqBody);
       const newProjectId = response?.data?.projectId
       if (!response.error) {
         showAlert('success', t('template.IdpCreationSuccess'), {
@@ -197,7 +211,13 @@ const ProjectComponent: React.FC = () => {
               // Render pillars
               <>
                 {projectData?.children?.length
-                  ? projectData?.children.map(task => (
+                  ? [...projectData.children]
+                      .sort(
+                        (a, b) =>
+                          getPillarOrderIndex(a?.name) -
+                          getPillarOrderIndex(b?.name),
+                      )
+                      .map(task => (
                     <TaskComponent
                       key={task?._id}
                       task={task}
@@ -206,6 +226,11 @@ const ProjectComponent: React.FC = () => {
                   ))
                   : projectData?.tasks
                     ?.filter(task => task.children?.length)
+                    ?.sort(
+                      (a, b) =>
+                        getPillarOrderIndex(a?.name) -
+                        getPillarOrderIndex(b?.name),
+                    )
                     ?.map(task => (
                       <TaskComponent
                         key={task._id}
@@ -322,76 +347,94 @@ const ProjectComponent: React.FC = () => {
 
               return (
                 <>
-            {/* Warning Banner - Show when Submit is disabled */}
-            {isSubmitDisabled && config.submitWarningMessage && (
-              <Box
-                bg="$warning50"
-                borderWidth={1}
-                borderColor="$warning300"
-                borderRadius="$md"
-                padding="$3"
-              >
-                <HStack space="sm" alignItems="center">
-                  <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
-                  <Text fontSize="$sm" color="$warning700">
-                    {config.submitWarningMessage}
-                  </Text>
-                </HStack>
-              </Box>
-            )}
+                  {/* Warning Banner - Show when Submit is disabled */}
+                  <Box
+                    bg="$warning50"
+                    borderWidth={1}
+                    borderColor="$warning300"
+                    borderRadius="$md"
+                    padding="$3"
+                  >
+                    <HStack space="sm" alignItems="center">
+                      <LucideIcon
+                        name="AlertCircle"
+                        size={18}
+                        color="#ca8a04"
+                      />
+                      <Text fontSize="$sm" color="$warning700">
+                        {t('participantDetail.interventionPlan.warningMsg')}
+                      </Text>
+                    </HStack>
+                  </Box>
 
-            {/* Responsive Button Container - stacks on mobile, row on web */}
-            <Box {...projectComponentStyles.footerButtonContainer}>
-              {/* Change Pathway Button */}
-              <Button
-                variant="outline"
-                borderColor="$borderLight300"
-                borderRadius="$md"
-                paddingHorizontal="$4"
-                paddingVertical="$2"
-                onPress={() => {
-                  if (config.onChangePathway) {
-                    config.onChangePathway();
-                    return;
-                  }
-                }}
-                $hover-borderColor="$primary500"
-                $hover-bg="$error50"
-                {...projectComponentStyles.changePathwayButton}
-              >
-                <ButtonText
-                  color="$textPrimary"
-                  {...TYPOGRAPHY.button}
-                  fontWeight="$medium"
-                >
-                  {t('participantDetail.interventionPlan.changePathway')}
-                </ButtonText>
-              </Button>
+                  {/* Responsive Button Container - stacks on mobile, row on web */}
+                  <Box {...projectComponentStyles.footerButtonContainer}>
+                    {/* Change Pathway Button */}
+                    <Button
+                      variant="outline"
+                      borderColor="$borderLight300"
+                      borderRadius="$md"
+                      paddingHorizontal="$4"
+                      paddingVertical="$2"
+                      onPress={() => {
+                        setIsChangePathwayOpen(true);
+                      }}
+                      $hover-borderColor="$primary500"
+                      $hover-bg="$error50"
+                      {...projectComponentStyles.changePathwayButton}
+                    >
+                      <ButtonText
+                        color="$textPrimary"
+                        {...TYPOGRAPHY.button}
+                        fontWeight="$medium"
+                      >
+                        {t('participantDetail.interventionPlan.changePathway')}
+                      </ButtonText>
+                    </Button>
 
-              {/* Submit Intervention Plan Button */}
-              <Button
-                bg="$primary500"
-                borderRadius="$md"
-                paddingHorizontal="$6"
-                paddingVertical="$2"
-                onPress={onSubmitInterventionPlan}
-                isDisabled={isSubmitDisabled}
-                opacity={isSubmitDisabled ? 0.5 : 1}
-                $hover-bg="$primary600"
-                $web-cursor="pointer"
-                {...projectComponentStyles.submitButton}
-              >
-                <ButtonText
-                  color="$backgroundPrimary.light"
-                  {...TYPOGRAPHY.button}
-                  fontWeight="$semibold"
-                >
-                  {t(
-                    'participantDetail.interventionPlan.submitInterventionPlan',
-                  )}
-                </ButtonText>
-              </Button>
-            </Box>
+                    {/* Submit Intervention Plan Button */}
+                    <Button
+                      bg="$primary500"
+                      borderRadius="$md"
+                      paddingHorizontal="$6"
+                      paddingVertical="$2"
+                      onPress={onSubmitInterventionPlan}
+                      isDisabled={isSubmitDisabled}
+                      opacity={isSubmitDisabled ? 0.5 : 1}
+                      $hover-bg="$primary600"
+                      $web-cursor="pointer"
+                      {...projectComponentStyles.submitButton}
+                    >
+                      <ButtonText
+                        color="$backgroundPrimary.light"
+                        {...TYPOGRAPHY.button}
+                        fontWeight="$semibold"
+                      >
+                        {t(
+                          'participantDetail.interventionPlan.submitInterventionPlan',
+                        )}
+                      </ButtonText>
+                    </Button>
+                  </Box>
+                  <Modal
+                    isOpen={isChangePathwayOpen}
+                    onClose={() => setIsChangePathwayOpen(false)}
+                    headerTitle="Are you sure?"
+                    confirmButtonText="common.confirm"
+                    cancelButtonText="common.cancel"
+                    onConfirm={() => {
+                      setIsChangePathwayOpen(false);
+                      if (config.onChangePathway) {
+                        config.onChangePathway();
+                      }
+                    }}
+                  >
+                    <Text {...TYPOGRAPHY.paragraph} color="$textSecondary">
+                      {t(
+                        'participantDetail.interventionPlan.changePathwayCofirmationMsg',
+                      )}
+                    </Text>
+                  </Modal>
                 </>
               );
             })()}

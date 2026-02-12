@@ -864,8 +864,10 @@
       "developPlan": "Develop Intervention Plan",
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",
+      "changePathwayCofirmationMsg":"Are you sure you want to change pathway? Your current changes will be vanished.",
       "socialProtectionWarning": "Please review and address all Social Protection tasks before assigning the intervention plan.",
-      "actionRequired": "Action Required"
+      "actionRequired": "Action Required",
+      "warningMsg":"Please review and address all Social Protection tasks before assigning the intervention plan."
     },
     "assessmentSurveys": {
       "title": "Assessment Surveys",
@@ -1009,15 +1011,15 @@
     "pageTitle": "Develop Intervention Plan",
     "pageSubtitle": "Select a development plan template for {{name}}",
     "backButton": "Back",
-    "IdpCreationSuccess": "IDP Created Successfully!",
+    "IdpCreationSuccess": "Customized development plan assigned successfully!",
     "categoryModal": {
       "title": "Select Livelihood Category",
       "forParticipant": "For participant: {{name}}",
       "description": "Please select the livelihood category and subcategory for this pathway. This helps track and support the specific business type.",
       "categoryLabel": "Category of Livelihoods *",
-      "categoryPlaceholder": "Select a category...",
+      "categoryPlaceholder": "Select a category",
       "subCategoryLabel": "Sub-Category of Livelihoods *",
-      "subCategoryPlaceholder": "Select a sub-category...",
+      "subCategoryPlaceholder": "Select a sub-category",
       "subCategoryPlaceholderDisabled": "First select a category",
       "selectedLabel": "Selected: {{category}} - {{subcategory}}",
       "selectedDescription": "This information will be used to tailor support and track progress for this specific business type.",
