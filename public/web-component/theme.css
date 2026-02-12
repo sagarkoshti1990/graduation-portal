@@ -475,3 +475,13 @@ mat-select {
   background-color: var(--colors-backgroundLightError) !important;
 }
 /* end toast styles */
+
+/* start calender */
+.mat-calendar-previous-button::after, .mat-calendar-next-button::after{
+  margin: 10px !important;
+}
+
+/* end calender */
+
+
+
