@@ -539,5 +539,46 @@ mat-select {
 
 /* end calender */
 
+/* entity-modal-content styles */
+.entity-modal-content {
+  padding: 1.5rem !important;
+  gap: 1rem !important;
+  background-color: var(--colors-backgroundColor) !important;
+}
+.entity-modal-content .mat-divider.mat-divider-horizontal {
+  display: none !important;
+}
+.entity-modal-content .modal-header,
+.entity-modal-content .modal-search-container,
+.entity-modal-content .modal-actions,
+.entity-modal-content .options-container,
+.entity-modal-content .load-more-container,
+.entity-modal-content .modal-options-list,
+.entity-modal-content .mat-mdc-dialog-content.mdc-dialog__content.ng-star-inserted {
+  border: none !important;
+  padding: 0 !important;
+}
 
-
+.entity-modal-content .mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field .mdc-notched-outline__notch {
+  border-bottom-right-radius: 0px !important;
+  border-top-right-radius: 0px !important;
+}
+.entity-modal-content .options-container {
+  gap: 0.75rem !important;
+  padding-right: 1rem !important;
+}
+.entity-modal-content .mat-mdc-checkbox.option-checkbox.mat-accent {
+  padding: 0 !important;
+  border: 1px solid var(--colors-borderColor) !important;
+  border-radius: 0.75rem !important;
+  display: flex !important;
+}
+.entity-modal-content .mdc-form-field{
+  padding: .75rem !important;
+  width: 100% !important;
+  flex: auto !important;
+}
+.entity-modal-content .mdc-form-field .mdc-label {
+  font-size: 1rem !important;
+}
+/* end entity-modal-content styles */

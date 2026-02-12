@@ -16,6 +16,7 @@ import offlineStorage from '../../services/offlineStorage';
 import { observationStyles } from './Styles';
 import { CARD_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
+import { STATUS } from '@constants/PARTICIPANTS_LIST';
 
 interface ObservationData {
   entityId: string;
@@ -324,6 +325,11 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       defaultValues: defaultValuesLocal,
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
+       dynamicEntityTyperequireDynamicAnswers:{
+        lableMapping:{
+          status:STATUS
+        }
+      }
     }),
     [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
   );

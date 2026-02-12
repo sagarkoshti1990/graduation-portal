@@ -42,6 +42,7 @@ export const STATUS = {
   IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   DROPOUT: 'Dropped out',
+  DROPPED_OUT: 'Dropped out',
   GRADUATED: 'Graduated',
 };
 

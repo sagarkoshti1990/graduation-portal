@@ -136,7 +136,7 @@ export default function Select({
           editable={!disabled}
           // @ts-ignore - writingDirection is a valid style prop but may not be in types
           style={{ writingDirection, backgroundColor: bg }}
-          fontFamily='Poppins'
+          fontFamily='Inter'
         />
         <SelectIcon mr="$3">
           <ChevronDownIcon />
