@@ -314,9 +314,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
           fontSize="$xs"
           fontWeight="$medium"
           color={
-            task?.isDeletable === false
+             task?.isDeletable === false
               ? '$warning900'
-              : task?.isDeletable === true || (isPreview && task?.isDeletable)
+              :  task?.isDeletable === true || (isPreview && task?.isDeletable)
               ? '$optionalBadgeText'
               : '$textMuted'
           }
