@@ -71,21 +71,21 @@ const DevelopInterventionPlan: React.FC = () => {
   /* -------------------- DERIVED -------------------- */
   const participantName = participant?.name || '-';
 
-  useEffect(() => {
-    const fetchEntityDetails = async () => {
-      if (participantId && user?.id) {
-        try {
-          const response = await getParticipantsList({entityId:participantId,userId:user?.id})
-          const {userDetails,...rest} = response?.result?.data?.[0]
-          const participantData = {...(userDetails || {}),...rest}
-          setParticipant(participantData);
-        } catch (error) {
-          console.log(error);
+    useEffect(() => {
+      const fetchEntityDetails = async () => {
+        if (participantId && user?.id) {
+          try {
+            const response = await getParticipantsList({entityId:participantId,userId:user?.id})
+            const {userDetails,...rest} = response?.result?.data?.[0]
+            const participantData = {...(userDetails || {}),...rest}
+            setParticipant(participantData);
+          } catch (error) {
+            console.log(error);
+          }
         }
-      }
-    };
-    fetchEntityDetails();
-  }, [participantId,user?.id, idpCreated]);
+      };
+      fetchEntityDetails();
+    }, [participantId,user?.id, idpCreated]);
 
   const getCategoriesForPillar = (pillarId: string) =>
     pillarCategoryMap.find(p => p.pillarId === pillarId)?.categories || [];
@@ -120,7 +120,7 @@ const DevelopInterventionPlan: React.FC = () => {
         },
       });
 
-      // create user program Mapping for the participant
+     // create user program Mapping for the participant
       const userProgramMapping = await createOrUpdateProgramUserMapping({
         userId: participantId,
         programId: project.programId,
@@ -185,7 +185,7 @@ const DevelopInterventionPlan: React.FC = () => {
           const selectedCategory = categories.find(
             c => c.id === selection.categoryId,
           );
-
+          
           if (selectedCategory && !selectedCategory.hasChildren) {
             return {
               pillarId: pillarId,
@@ -206,7 +206,7 @@ const DevelopInterventionPlan: React.FC = () => {
   const config = PROJECT_PLAYER_CONFIGS;
   const selectedMode = participant?.status === STATUS.IN_PROGRESS ? MODE.editMode : MODE.previewMode;
 
-
+    
   const configData = {
     ...config,
     ...selectedMode,
@@ -233,7 +233,7 @@ const DevelopInterventionPlan: React.FC = () => {
   const ProjectPlayerConfigData: ProjectPlayerData = useMemo(
     () => ({
       projectId: projectId || participant?.idpProjectId,
-      categoryIds: categoryIdsArray,
+      categoryIds: categoryIdsArray, 
       selectedPathway: selectedPathway,
       pillarCategoryRelation: getPillarCategoryRelationships,
     }),
@@ -691,7 +691,7 @@ const DevelopInterventionPlan: React.FC = () => {
                     <Select
                       key={`subcategory-${pillar._id}-${
                         selectionByPillar[pillar._id]?.categoryId || 'none'
-                        }`}
+                      }`}
                       options={getSubCategoriesForPillar(pillar._id).map(
                         sc => ({
                           label: sc.label,
@@ -730,42 +730,42 @@ const DevelopInterventionPlan: React.FC = () => {
                 selectionByPillar[pillar._id]?.categoryId &&
                 selectionByPillar[pillar._id]?.subCategoryId,
             ) && (
-              <Box {...(templateStyles.summaryBox as any)}>
-                {pillarData
-                  .filter((pillar: any) => pillar?.hasChildCategories)
-                  .map((pillar: any) => {
-                    const selection = selectionByPillar[pillar._id];
+            <Box {...(templateStyles.summaryBox as any)}>
+              {pillarData
+                .filter((pillar: any) => pillar?.hasChildCategories)
+                .map((pillar: any) => {
+                  const selection = selectionByPillar[pillar._id];
 
-                    if (!selection?.categoryId || !selection?.subCategoryId) {
-                      return null;
-                    }
+                  if (!selection?.categoryId || !selection?.subCategoryId) {
+                    return null;
+                  }
 
-                    return (
-                      <>
-                        <Text
-                          key={pillar._id}
-                          {...TYPOGRAPHY.bodySmall}
-                          color="$progressBarFillColor"
-                          fontWeight="$semibold"
-                          mb="$2"
-                        >
-                          {t('template.categoryModal.selectedLabel', {
-                            category: selection.categoryName,
-                            subcategory: selection.subCategoryName,
-                          })}
-                        </Text>
-                        <Text
-                          {...TYPOGRAPHY.caption}
-                          color="$progressBarFillColor"
-                          mt="$1"
-                        >
-                          {t('template.categoryModal.selectedDescription')}
-                        </Text>
-                      </>
-                    );
-                  })}
-              </Box>
-            )}
+                  return (
+                    <>
+                      <Text
+                        key={pillar._id}
+                        {...TYPOGRAPHY.bodySmall}
+                        color="$progressBarFillColor"
+                        fontWeight="$semibold"
+                        mb="$2"
+                      >
+                        {t('template.categoryModal.selectedLabel', {
+                          category: selection.categoryName,
+                          subcategory: selection.subCategoryName,
+                        })}
+                      </Text>
+                      <Text
+                        {...TYPOGRAPHY.caption}
+                        color="$progressBarFillColor"
+                        mt="$1"
+                      >
+                        {t('template.categoryModal.selectedDescription')}
+                      </Text>
+                    </>
+                  );
+                })}
+            </Box>
+          )}
         </VStack>
       </Modal>
     </ScrollView>

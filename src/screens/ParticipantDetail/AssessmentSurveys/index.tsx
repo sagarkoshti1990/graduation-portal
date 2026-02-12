@@ -93,7 +93,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
       {...assessmentSurveysStyles.scrollView}
       showsVerticalScrollIndicator={false}
     >
-      <VStack {...assessmentSurveysStyles.cardsContainer} gap="$5" mt="$7">
+      <VStack {...assessmentSurveysStyles.cardsContainer} gap="$5" mt="$2">
         {solutions.length > 0 ? (
           solutions.map(card => (
             <AssessmentCard
