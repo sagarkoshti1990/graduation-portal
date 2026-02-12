@@ -152,9 +152,7 @@ const ProjectComponent: React.FC = () => {
       // Format the payload
       const userId = config.profileInfo?.id?.toString();
       if (!userId) {
-        showAlert('error', t('projectPlayer.error.participantIdMissing'), {
-          placement: 'top',
-        });
+        showAlert('error', t('projectPlayer.error.participantIdMissing'));
         return;
       }
 
@@ -169,9 +167,7 @@ const ProjectComponent: React.FC = () => {
       const response  = await submitInterventionPlan(reqBody);
       const newProjectId = response?.data?.projectId
       if (!response.error) {
-        showAlert('success', t('template.IdpCreationSuccess'), {
-          placement: 'top',
-        });
+        showAlert('success', t('template.IdpCreationSuccess'));
 
         // Call the config callback if provided (this will update status to IN_PROGRESS)
         if (config.onSubmitInterventionPlan) {
@@ -180,17 +176,11 @@ const ProjectComponent: React.FC = () => {
       } else {
         showAlert(
           'error',
-          response.error || t('projectPlayer.error.submitFailed'),
-          {
-            placement: 'top',
-          },
-        );
+          response.error || t('projectPlayer.error.submitFailed'));
       }
     } catch (error) {
       console.error('Error submitting intervention plan:', error);
-      showAlert('error', t('projectPlayer.error.submitFailed'), {
-        placement: 'top',
-      });
+      showAlert('error', t('projectPlayer.error.submitFailed'));
     }
   };
 

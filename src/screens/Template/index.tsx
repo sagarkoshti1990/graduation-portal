@@ -137,6 +137,7 @@ const DevelopInterventionPlan: React.FC = () => {
       //     status: STATUS.IN_PROGRESS,
       //   },
       // });
+    navigation.navigate('participant-detail', { id: route.params?.id });
     }
   }, []);
 
