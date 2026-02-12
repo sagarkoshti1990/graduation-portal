@@ -30,7 +30,7 @@ import logger from '@utils/logger';
 import { PageHeader } from '@components/PageHeader';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Status key type (keys of STATUS object)
 type StatusKey = keyof typeof STATUS;
@@ -333,14 +333,16 @@ const GroupCheckInsButton: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const [isLoading, setIsLoading] = useState(false);
   const handleGroupCheckIns = async () => {
     try {
+      setIsLoading(true);
       // Call the API with keyword filter (e.g. "checkin") and send userId for auth context
       const response = await getTargetedSolutions({
         type: 'observation',
         // @ts-ignore - filter[keywords] is a valid parameter
         "filter[keywords]": FILTER_KEYWORDS.GROUP_CHECK_IN.join(',')
-      });;
+      });
       // Assume the API returns an array of solutions, pick the first one
       const solution = response?.[0];
       if (solution?.solutionId) {
@@ -360,12 +362,14 @@ const GroupCheckInsButton: React.FC = () => {
       logger.error('Error fetching targeted solutions:', errorMessage, err);
       // Handle error (log or UI feedback)
       showAlert('error', 'Failed to fetch targeted solutions: '+errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Button variant="solid" size="sm" onPress={handleGroupCheckIns}>
-      <ButtonIcon as={LucideIcon} name="Users" />
+    <Button variant="solid" size="sm" onPress={handleGroupCheckIns} isDisabled={isLoading}>
+      <ButtonIcon as={LucideIcon} name={isLoading?"LoaderCircle":"Users"} mr="$2" />
       <ButtonText>{t('participants.groupCheckIns')}</ButtonText>
     </Button>
   );
