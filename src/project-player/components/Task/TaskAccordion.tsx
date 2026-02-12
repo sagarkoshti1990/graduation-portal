@@ -97,79 +97,79 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
 
     return (
       <Box {...taskAccordionStyles.container} marginBottom="$6">
-        <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
-          {/* Card Header with Progress on right */}
-          <Box {...taskAccordionStyles.cardHeader}>
-            <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$5">
-              {isMobile ? (
-                <VStack space="sm">
-                  <HStack {...taskAccordionStyles.pillarHeaderRow}>
-                    <LucideIcon
-                      name={pillarIconData.icon}
-                      size={15}
-                      color={pillarIconData.color}
-                    />
-                    <Text {...TYPOGRAPHY.h4} color="$textPrimary">
-                      {task.name}
-                    </Text>
-                  </HStack>
-                  <HStack space="md" alignItems="center" maxWidth={150}>
-                    <Text {...taskAccordionStyles.progressText} minWidth={40}>
-                      {progressPercent}%
-                    </Text>
-                    <Box
-                      height={8}
-                      width={100}
-                      bg="$backgroundLight200"
-                      borderRadius="$full"
-                      overflow="hidden"
-                    >
-                      <Box
-                        height="$full"
-                        width={`${progressPercent}%`}
-                        bg="$progressBarFillColor"
-                        borderRadius="$full"
-                      />
-                    </Box>
-                  </HStack>
-                </VStack>
-              ) : (
-                <HStack
-                  {...taskAccordionStyles.cardHeaderContent}
-                  justifyContent="space-between"
-                >
-                  <HStack {...taskAccordionStyles.pillarHeaderRow}>
-                    <LucideIcon
-                      name={pillarIconData.icon}
-                      size={20}
-                      color={pillarIconData.color}
-                    />
-                    <Text {...TYPOGRAPHY.h4} color="$textPrimary">
-                      {task.name}
-                    </Text>
-                  </HStack>
-                  {/* Pillar progress percentage and bar on right */}
-                  <HStack space="md" alignItems="center" minWidth={150}>
-                    <Text {...taskAccordionStyles.progressText} minWidth={40}>
-                      {progressPercent}%
-                    </Text>
-                    <Box
-                      height={8}
-                      flex={1}
-                      bg="$backgroundLight200"
-                      borderRadius="$full"
-                      overflow="hidden"
-                    >
-                      <Box
-                        height="$full"
-                        width={`${progressPercent}%`}
-                        bg="$progressBarFillColor"
-                        borderRadius="$full"
-                      />
-                    </Box>
-                  </HStack>
+       <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
+         {/* Card Header with Progress on right */}
+         <Box {...taskAccordionStyles.cardHeader}>
+           <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$5">
+            {isMobile ? (
+              <VStack space="sm">
+                <HStack {...taskAccordionStyles.pillarHeaderRow}>
+                  <LucideIcon
+                    name={pillarIconData.icon}
+                    size={15}
+                    color={pillarIconData.color}
+                  />
+                  <Text {...TYPOGRAPHY.h4} color="$textPrimary">
+                    {task.name}
+                  </Text>
                 </HStack>
-              )}
+                <HStack space="md" alignItems="center" maxWidth={150}>
+                  <Text {...taskAccordionStyles.progressText} minWidth={40}>
+                    {progressPercent}%
+                  </Text>
+                  <Box
+                    height={8}
+                    width={100}
+                    bg="$backgroundLight200"
+                    borderRadius="$full"
+                    overflow="hidden"
+                  >
+                    <Box
+                      height="$full"
+                      width={`${progressPercent}%`}
+                      bg="$progressBarFillColor"
+                      borderRadius="$full"
+                    />
+                  </Box>
+                </HStack>
+              </VStack>
+            ) : (
+              <HStack
+                {...taskAccordionStyles.cardHeaderContent}
+                justifyContent="space-between"
+              >
+                <HStack {...taskAccordionStyles.pillarHeaderRow}>
+                  <LucideIcon
+                    name={pillarIconData.icon}
+                    size={20}
+                    color={pillarIconData.color}
+                  />
+                  <Text {...TYPOGRAPHY.h4} color="$textPrimary">
+                    {task.name}
+                  </Text>
+                </HStack>
+                {/* Pillar progress percentage and bar on right */}
+                <HStack space="md" alignItems="center" minWidth={150}>
+                  <Text {...taskAccordionStyles.progressText} minWidth={40}>
+                    {progressPercent}%
+                  </Text>
+                  <Box
+                    height={8}
+                    flex={1}
+                    bg="$backgroundLight200"
+                    borderRadius="$full"
+                    overflow="hidden"
+                  >
+                    <Box
+                      height="$full"
+                      width={`${progressPercent}%`}
+                      bg="$progressBarFillColor"
+                      borderRadius="$full"
+                    />
+                  </Box>
+                </HStack>
+              </HStack>
+            )}
             </Box>
           </Box>
 
