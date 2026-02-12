@@ -97,79 +97,79 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
 
     return (
       <Box {...taskAccordionStyles.container} marginBottom="$6">
-       <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
-         {/* Card Header with Progress on right */}
-         <Box {...taskAccordionStyles.cardHeader}>
-           <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$5">
-            {isMobile ? (
-              <VStack space="sm">
-                <HStack {...taskAccordionStyles.pillarHeaderRow}>
-                  <LucideIcon
-                    name={pillarIconData.icon}
-                    size={15}
-                    color={pillarIconData.color}
-                  />
-                  <Text {...TYPOGRAPHY.h4} color="$textPrimary">
-                    {task.name}
-                  </Text>
-                </HStack>
-                <HStack space="md" alignItems="center" maxWidth={150}>
-                  <Text {...taskAccordionStyles.progressText} minWidth={40}>
-                    {progressPercent}%
-                  </Text>
-                  <Box
-                    height={8}
-                    width={100}
-                    bg="$backgroundLight200"
-                    borderRadius="$full"
-                    overflow="hidden"
-                  >
-                    <Box
-                      height="$full"
-                      width={`${progressPercent}%`}
-                      bg="$progressBarFillColor"
-                      borderRadius="$full"
+        <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
+          {/* Card Header with Progress on right */}
+          <Box {...taskAccordionStyles.cardHeader}>
+            <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$5">
+              {isMobile ? (
+                <VStack space="sm">
+                  <HStack {...taskAccordionStyles.pillarHeaderRow}>
+                    <LucideIcon
+                      name={pillarIconData.icon}
+                      size={15}
+                      color={pillarIconData.color}
                     />
-                  </Box>
-                </HStack>
-              </VStack>
-            ) : (
-              <HStack
-                {...taskAccordionStyles.cardHeaderContent}
-                justifyContent="space-between"
-              >
-                <HStack {...taskAccordionStyles.pillarHeaderRow}>
-                  <LucideIcon
-                    name={pillarIconData.icon}
-                    size={20}
-                    color={pillarIconData.color}
-                  />
-                  <Text {...TYPOGRAPHY.h4} color="$textPrimary">
-                    {task.name}
-                  </Text>
-                </HStack>
-                {/* Pillar progress percentage and bar on right */}
-                <HStack space="md" alignItems="center" minWidth={150}>
-                  <Text {...taskAccordionStyles.progressText} minWidth={40}>
-                    {progressPercent}%
-                  </Text>
-                  <Box
-                    height={8}
-                    flex={1}
-                    bg="$backgroundLight200"
-                    borderRadius="$full"
-                    overflow="hidden"
-                  >
+                    <Text {...TYPOGRAPHY.h4} color="$textPrimary">
+                      {task.name}
+                    </Text>
+                  </HStack>
+                  <HStack space="md" alignItems="center" maxWidth={150}>
+                    <Text {...taskAccordionStyles.progressText} minWidth={40}>
+                      {progressPercent}%
+                    </Text>
                     <Box
-                      height="$full"
-                      width={`${progressPercent}%`}
-                      bg="$progressBarFillColor"
+                      height={8}
+                      width={100}
+                      bg="$backgroundLight200"
                       borderRadius="$full"
+                      overflow="hidden"
+                    >
+                      <Box
+                        height="$full"
+                        width={`${progressPercent}%`}
+                        bg="$progressBarFillColor"
+                        borderRadius="$full"
+                      />
+                    </Box>
+                  </HStack>
+                </VStack>
+              ) : (
+                <HStack
+                  {...taskAccordionStyles.cardHeaderContent}
+                  justifyContent="space-between"
+                >
+                  <HStack {...taskAccordionStyles.pillarHeaderRow}>
+                    <LucideIcon
+                      name={pillarIconData.icon}
+                      size={20}
+                      color={pillarIconData.color}
                     />
-                  </Box>
+                    <Text {...TYPOGRAPHY.h4} color="$textPrimary">
+                      {task.name}
+                    </Text>
+                  </HStack>
+                  {/* Pillar progress percentage and bar on right */}
+                  <HStack space="md" alignItems="center" minWidth={150}>
+                    <Text {...taskAccordionStyles.progressText} minWidth={40}>
+                      {progressPercent}%
+                    </Text>
+                    <Box
+                      height={8}
+                      flex={1}
+                      bg="$backgroundLight200"
+                      borderRadius="$full"
+                      overflow="hidden"
+                    >
+                      <Box
+                        height="$full"
+                        width={`${progressPercent}%`}
+                        bg="$progressBarFillColor"
+                        borderRadius="$full"
+                      />
+                    </Box>
+                  </HStack>
                 </HStack>
-              </HStack>
-            )}
+              )}
             </Box>
           </Box>
 
@@ -198,8 +198,12 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
 
   // For Preview mode: Show as Accordion
   return (
-    <Box {...taskAccordionStyles.container} marginBottom="$2">
-      <Accordion {...taskAccordionStyles.accordion}>
+    <Box {...taskAccordionStyles.container}>
+      <Accordion
+        {...taskAccordionStyles.accordion}
+        defaultValue={isSocialProtection ? task._id : undefined}
+        value={isSocialProtection ? task._id : undefined}
+      >
         <AccordionItem
           value={task._id}
           {...taskAccordionStyles.accordionItem}
@@ -224,6 +228,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
             <AccordionTrigger
               {...taskAccordionStyles.accordionTrigger}
               padding={isWeb ? '$5' : '$1'}
+              isDisabled={isSocialProtection}
             >
               {({ isExpanded }: { isExpanded: boolean }) => (
                 <>
@@ -237,11 +242,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
                           sx={
                             isWeb
                               ? {
-                                  ':hover': {
-                                    textDecorationLine: 'underline',
-                                    cursor: 'pointer',
-                                  },
-                                }
+                                ':hover': {
+                                  textDecorationLine: 'underline',
+                                  cursor: 'pointer',
+                                },
+                              }
                               : undefined
                           }
                         >
@@ -272,7 +277,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
                     {/* Custom Lucide Icon */}
                     <Box {...taskAccordionStyles.accordionIconContainer}>
                       <LucideIcon
-                        name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
+                        name={
+                          isSocialProtection || isExpanded
+                            ? 'ChevronUp'
+                            : 'ChevronDown'
+                        }
                         size={20}
                         color={theme.tokens.colors.textSecondary}
                       />
