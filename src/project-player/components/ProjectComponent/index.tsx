@@ -328,66 +328,66 @@ const ProjectComponent: React.FC = () => {
 
               return (
                 <>
-              {/* Warning Banner - Show when message exists */}
-              {config.submitWarningMessage && (
-                <Box {...projectComponentStyles.footerWarning}>
-                  <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
-                  <Text {...projectComponentStyles.footerWarningText}>
-                    {config.submitWarningMessage}
-                  </Text>
-                </Box>
-              )}
-
-              {/* Responsive Button Container - stacks on mobile, row on web */}
-              <Box {...projectComponentStyles.footerButtonContainer}>
-                {/* Change Pathway Button */}
-                <Button
-                  borderRadius="$md"
-                  paddingHorizontal="$4"
-                  paddingVertical="$2"
-                  onPress={() => {
-                    if (config.onChangePathway) {
-                      config.onChangePathway();
-                      return;
-                    }
-                  }}
-                  $hover-borderColor="$primary500"
-                  $hover-bg="$error50"
-                  {...projectComponentStyles.changePathwayButton}
-                >
-                  <ButtonText
-                    color="$textPrimary"
-                    {...TYPOGRAPHY.button}
-                    fontWeight="$medium"
-                  >
-                    {t('participantDetail.interventionPlan.changePathway')}
-                  </ButtonText>
-                </Button>
-
-                {/* Submit Intervention Plan Button */}
-                <Button
-                  bg="$primary500"
-                  borderRadius="$md"
-                  paddingHorizontal="$6"
-                  paddingVertical="$2"
-                  onPress={onSubmitInterventionPlan}
-                  isDisabled={isSubmitDisabled}
-                  opacity={isSubmitDisabled ? 0.5 : 1}
-                  $hover-bg="$primary600"
-                  $web-cursor="pointer"
-                  {...projectComponentStyles.submitButton}
-                >
-                  <ButtonText
-                    color="$backgroundPrimary.light"
-                    {...TYPOGRAPHY.button}
-                    fontWeight="$semibold"
-                  >
-                    {t(
-                      'participantDetail.interventionPlan.submitInterventionPlan',
-                    )}
-                  </ButtonText>
-                </Button>
+            {/* Warning Banner - Show when message exists */}
+            {config.submitWarningMessage && (
+              <Box {...projectComponentStyles.footerWarning}>
+                <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
+                <Text {...projectComponentStyles.footerWarningText}>
+                  {config.submitWarningMessage}
+                </Text>
               </Box>
+            )}
+
+            {/* Responsive Button Container - stacks on mobile, row on web */}
+            <Box {...projectComponentStyles.footerButtonContainer}>
+              {/* Change Pathway Button */}
+              <Button
+                borderRadius="$md"
+                paddingHorizontal="$4"
+                paddingVertical="$2"
+                onPress={() => {
+                  if (config.onChangePathway) {
+                    config.onChangePathway();
+                    return;
+                  }
+                }}
+                $hover-borderColor="$primary500"
+                $hover-bg="$error50"
+                {...projectComponentStyles.changePathwayButton}
+              >
+                <ButtonText
+                  color="$textPrimary"
+                  {...TYPOGRAPHY.button}
+                  fontWeight="$medium"
+                >
+                  {t('participantDetail.interventionPlan.changePathway')}
+                </ButtonText>
+              </Button>
+
+              {/* Submit Intervention Plan Button */}
+              <Button
+                bg="$primary500"
+                borderRadius="$md"
+                paddingHorizontal="$6"
+                paddingVertical="$2"
+                onPress={onSubmitInterventionPlan}
+                isDisabled={isSubmitDisabled}
+                opacity={isSubmitDisabled ? 0.5 : 1}
+                $hover-bg="$primary600"
+                $web-cursor="pointer"
+                {...projectComponentStyles.submitButton}
+              >
+                <ButtonText
+                  color="$backgroundPrimary.light"
+                  {...TYPOGRAPHY.button}
+                  fontWeight="$semibold"
+                >
+                  {t(
+                    'participantDetail.interventionPlan.submitInterventionPlan',
+                  )}
+                </ButtonText>
+              </Button>
+            </Box>
                 </>
               );
             })()}
