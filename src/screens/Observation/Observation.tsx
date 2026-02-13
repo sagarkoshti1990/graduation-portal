@@ -37,7 +37,7 @@ const Observation: React.FC = () => {
   const submissionNumber = routeParams?.submissionNumber;
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const {user} = useAuth();
+  const {user, setNavbarData} = useAuth();
   const { showAlert } = useAlert();
   const handleBackPress = () => {
       // @ts-ignore
@@ -59,17 +59,20 @@ const Observation: React.FC = () => {
     const fetchUserData = async () => {
       const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
       const newData = userDataResponse?.result?.data?.[0];
+      setNavbarData({
+        subtitle: newData?.name,
+      });
       const preFillData = {
         "Facilitator Name":user?.name,
-        "Province":{value:user?.province?.value, readonly: user?.province?.value ? true : false},
-        "Pilot Site":{value:user?.site?.value, readonly: user?.site?.value ? true : false},
+        "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
+        "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
         "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
         "What is your name?":{value:newData?.name, readonly: false},
         "What is your ID number?":newData?.userId,
         // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
-        "What is your cell phone number?":{value:newData?.phone, readonly: false},
-        "And what is your email address?":{value:newData?.email, readonly: true},
-      };
+        "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
+        "And what is your email address?":{value:newData?.userDetails?.email, readonly: true},
+      };  
       setUserData(preFillData);
       setIsLoading(false);
     };
@@ -78,8 +81,9 @@ const Observation: React.FC = () => {
     return () => {
       setUserData(null);
       setIsLoading(true);
+      setNavbarData(null);
     };
-  }, [id,user]);
+  }, [id,user, setNavbarData]);
   
   if (isLoading) {
     return <Loader fullScreen message="Loading observation..." />;

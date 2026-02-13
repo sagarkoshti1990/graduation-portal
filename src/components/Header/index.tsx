@@ -176,11 +176,11 @@ const Header: React.FC<{
               <Text {...stylesHeader.userNameText}>
                 {user?.name || ''}
               </Text>
-              {/* <HStack {...stylesHeader.userRoleContainer}>
-                <Text {...stylesHeader.userRoleText}>
-                  {user?.role || ''}
-                </Text>
-              </HStack> */}
+              {subTitle && (
+                <HStack {...stylesHeader.userRoleContainer}>
+                  <Text {...stylesHeader.userRoleText}>{subTitle}</Text>
+                </HStack>
+              )}
             </VStack>
           </HStack>
         )}
@@ -192,14 +192,6 @@ const Header: React.FC<{
             color={isDark ? '$textLight100' : '$textDark900'}
           >
             {title}
-          </Text>
-        )}
-        {subTitle && (
-          <Text
-            {...TYPOGRAPHY.bodySmall}
-            color={isDark ? '$textLight100' : '$textDark900'}
-          >
-            {subTitle}
           </Text>
         )}
         {/* Center: Search Bar */}
