@@ -71,13 +71,18 @@ const readFromIndexedDB = async <T>(
 /**
  * Create/Update - Save data to storage
  * @param key - Storage key
- * @param data - Data to save (will be JSON stringified)
+ * @param data - Data to save (objects/arrays will be JSON stringified, strings saved raw)
  * @returns Promise<void>
  */
 export const create = async <T>(key: string, data: T): Promise<void> => {
   try {
-    const jsonData = JSON.stringify(data);
-    await AsyncStorage.setItem(key, jsonData);
+    // Save strings as raw values to avoid extra quotes (for tokens)
+    // Save other types (objects, arrays, etc.) as JSON
+    const valueToStore = typeof data === 'string' 
+      ? data 
+      : JSON.stringify(data);
+    
+    await AsyncStorage.setItem(key, valueToStore);
     logger.info(`OfflineStorage: Created/Updated key "${key}"`);
   } catch (error) {
     logger.error(`OfflineStorage: Error creating/updating key "${key}"`, error);
@@ -113,14 +118,22 @@ export const read = async <T>(
     }
 
     // Default to AsyncStorage
-    const jsonData = await AsyncStorage.getItem(key);
-    if (!jsonData) {
+    const value = await AsyncStorage.getItem(key);
+    if (!value) {
       logger.info(`OfflineStorage: Key "${key}" not found`);
       return null;
     }
-    const data = JSON.parse(jsonData) as T;
-    logger.info(`OfflineStorage: Read key "${key}"`);
-    return data;
+    
+    // Try to parse as JSON, if it fails, return as raw string
+    try {
+      const data = JSON.parse(value) as T;
+      logger.info(`OfflineStorage: Read key "${key}"`);
+      return data;
+    } catch {
+      // If JSON.parse fails, it's a raw string (like a token)
+      logger.info(`OfflineStorage: Read raw key "${key}"`);
+      return value as T;
+    }
   } catch (error) {
     logger.error(`OfflineStorage: Error reading key "${key}"`, error);
     throw error;

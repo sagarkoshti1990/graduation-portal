@@ -33,6 +33,12 @@ form.main {
 }
 .sticky-footer {
   position: relative !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.footer-buttons.top-primary-border > div {
+  margin: 0 !important;
+  gap: 1rem !important;
 }
 /* lib-page-questions-grid .custom-font {
   max-height: calc(100vh - 357px) !important;
@@ -398,14 +404,6 @@ lib-checkbox-input .mat-mdc-checkbox-checked .mdc-checkbox__background {
   color: var(--text-color) !important;
 }
 
-/* Mobile: add spacing between stacked footer buttons (Save Progress / Submit) */
-@media (max-width: 768px) {
-  .sticky-footer .btn-draft + .btn-primary,
-  .btn-draft + .btn-primary {
-    margin-top: 12px !important;
-  }
-}
-
 .btn-draft:hover, .btn-outline-primary:hover {
   background-color: var(--colors-primary100) !important;
   color: var(--primary-color) !important;
@@ -502,6 +500,9 @@ mat-select {
   background-color: transparent !important;
   width: 22px !important;
   height: 22px !important;
+}
+lib-entity-dropdown-input mat-chip {
+  padding: 2px !important;
 }
 .tags-wrapper {
   padding: 1rem !important;

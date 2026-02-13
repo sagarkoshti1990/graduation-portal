@@ -35,6 +35,8 @@ interface ObservationContentProps {
   showAlert: (type: string, message: string, options?: any) => void;
   defaultValues?: any;
   userData?: any;
+  hideElements?: any;
+  _css?: any;
 }
 
 /**
@@ -48,6 +50,8 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   onClose,
   showAlert,
   userData,
+  hideElements,
+  _css,
 }) => {
   const { t } = useLanguage();
   const [observation, setObservation] = useState<ObservationData | null>(null);
@@ -354,6 +358,8 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       >
         {/* Header Section */}
         <Header
+          hideElements={hideElements?.header}
+          _css={_css?._header}
           title={mockData?.solution?.name || ''}
           progress={progress}
           participantInfo={participantInfo}

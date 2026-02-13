@@ -54,13 +54,13 @@ export const refreshToken = async (
     const { access_token, refresh_token: newRefreshToken } =
       responseData.result || {};
 
-    // Get rememberMe preference to determine storage type
+    // Get rememberMe preference to determine storage behavior
     const rememberMe = await offlineStorage.read<boolean>(
       STORAGE_KEYS.AUTH_REMEMBER_ME
     );
 
     // Validate and save access token (must be non-empty string)
-    // Pass rememberMe to saveToken so it uses the correct storage (localStorage vs sessionStorage)
+    // Pass rememberMe to saveToken for consistency
     if (
       access_token &&
       typeof access_token === 'string' &&
@@ -140,7 +140,7 @@ export const login = async (
     logger.info(`Remember Me preference saved: ${rememberMe}`);
 
     // Validate and save access token (must be non-empty string)
-    // Pass rememberMe to saveToken so it uses the correct storage (localStorage vs sessionStorage)
+    // Always save access token using offlineStorage
     if (
       access_token &&
       typeof access_token === 'string' &&

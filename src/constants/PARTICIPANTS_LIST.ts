@@ -528,3 +528,16 @@ export const getParticipantsMenuItems: MenuItemData[] = [
     color: theme.tokens.colors.error.light,
   },
 ];
+
+/**
+ * Dropout reason options for participant dropout
+ */
+export const DROPOUT_REASON_OPTIONS = [
+  { label: 'Relocation', value: 'relocation' },
+  { label: 'Loss of Interest', value: 'loss_of_interest' },
+  { label: 'Did Not Meet Expectations', value: 'did_not_meet_expectations' },
+  { label: 'Education', value: 'education' },
+  { label: 'Employment', value: 'employment' },
+  { label: 'Pregnancy', value: 'pregnancy' },
+  { label: 'Other', value: 'other' },
+];

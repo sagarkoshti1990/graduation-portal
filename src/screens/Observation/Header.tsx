@@ -21,25 +21,29 @@ interface HeaderProps {
   } | null;
   onBackPress: () => void;
   status: string;
+  hideElements?: any;
+  _css?: any;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, progress, participantInfo, onBackPress, status }) => {
+const Header: React.FC<HeaderProps> = ({ title, progress, participantInfo, onBackPress, status, hideElements, _css }) => {
   const { t } = useLanguage();
 
   return (
     <PageHeader
-      onBackPress={onBackPress}
-      backButtonText={t('common.back')}
-      _content={{ "$md-px": '$0', px: '$0', py: '$0' }}
-      _container={{ "$md-px": '$6', px: '$4', py: '$4' }}
+    _content={{ "$md-px": '$0', px: '$0', py: '$0' }}
+    _container={{ "$md-px": '$6', px: '$4', py: '$4' }}
+    {..._css?.pageHeader}
+    {...(!hideElements?.includes('backButton') ? { onBackPress, backButtonText: t('common.back') } : {})}
     >
       {/* Title and Progress Badge Row */}
       <HStack
         {...observationStyles.titleAndProgressContainer}
       >
-        <Text {...TYPOGRAPHY.h4}>
-          {title}
-        </Text>
+        {!hideElements?.includes('title') ? (
+          <Text {...TYPOGRAPHY.h4}>
+            {title}
+          </Text>
+        ) : null}
         <StatusBadge status={status} preFix={<Text {...TYPOGRAPHY.caption}> {progress}% </Text>} />
       </HStack>
 

@@ -8,7 +8,7 @@ import { useAuth } from '@contexts/AuthContext';
 import { LucideIcon, Menu } from '@ui';
 import { Participant } from '@app-types/screens';
 import { styles as dataTableStyles } from '@components/DataTable/Styles';
-import { getParticipantsMenuItems } from '@constants/PARTICIPANTS_LIST';
+import { getParticipantsMenuItems, DROPOUT_REASON_OPTIONS } from '@constants/PARTICIPANTS_LIST';
 import logger from '@utils/logger';
 import { usePlatform } from '@utils/platform';
 import ObservationContent from '../Observation/ObservationContent';
@@ -17,6 +17,7 @@ import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
 import { STATUS } from '@constants/app.constant';
+import Select from '@components/ui/Inputs/Select';
 
 interface ActionColumnProps {
   participant: Participant;
@@ -46,7 +47,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
   const [modalType, setModalType] = useState<'dropout' | 'log-visit' | 'view-log' | null>(null);
   
   // Dropout modal specific state
-  const [dropoutReason, setDropoutReason] = useState('');
+  const [selectedDropoutReason, setSelectedDropoutReason] = useState('');
+  const [customDropoutReason, setCustomDropoutReason] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
   
   // Log visit modal specific states
@@ -112,13 +114,26 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
 
   const handleCloseModal = useCallback(() => {
     setModalType(null);
-    setDropoutReason('');
+    setSelectedDropoutReason('');
+    setCustomDropoutReason('');
     setSelectedSolutionId('');
   }, []);
 
-  const handleDropoutConfirm = useCallback(async (reason?: string) => {
+  const handleDropoutConfirm = useCallback(async () => {
     if (!user?.id) {
       showAlert('error', t('common.error') || 'User not authenticated');
+      return;
+    }
+
+    // Validate that a reason is selected
+    if (!selectedDropoutReason) {
+      showAlert('error', t('actions.selectDropoutReason') || 'Please select a reason for dropout');
+      return;
+    }
+
+    // If "other" is selected, validate that custom reason is provided
+    if (selectedDropoutReason === 'other' && !customDropoutReason.trim()) {
+      showAlert('error', t('actions.enterCustomReason') || 'Please enter a custom reason');
       return;
     }
 
@@ -130,6 +145,11 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
       return;
     }
 
+    // Determine the final reason to save
+    const finalReason = selectedDropoutReason === 'other' 
+      ? customDropoutReason 
+      : DROPOUT_REASON_OPTIONS.find(option => option.value === selectedDropoutReason)?.label || selectedDropoutReason;
+
     setDropoutLoading(true);
     try {
       await updateEntityDetails({
@@ -137,14 +157,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
         entityId: userEntityId,
         entityUpdates: {
           status: STATUS.DROPOUT,
-          dropoutReason: reason || '',
+          dropoutReason: finalReason,
         },
       });
 
       showAlert('success', t('actions.dropoutSuccess'));
       
       // Close modal and reset state
-      setDropoutReason('');
+      setSelectedDropoutReason('');
+      setCustomDropoutReason('');
       setModalType(null);
       
       // Optionally refresh the page or trigger a callback to refresh participants list
@@ -156,7 +177,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
     } finally {
       setDropoutLoading(false);
     }
-  }, [participant, user?.id, showAlert, t]);
+  }, [participant, user?.id, showAlert, t, selectedDropoutReason, customDropoutReason]);
 
   const handleFormSelect = (submission: any) => {
     setModalType('log-visit');
@@ -212,7 +233,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
         cancelButtonText={modalType === 'dropout' ? t('common.cancel') || 'Cancel' : undefined}
         confirmButtonText={modalType === 'dropout' ? (dropoutLoading ? (t('common.loading') || 'Loading...') : (t('actions.confirmDropout') || 'Confirm Dropout')) : undefined}
         onCancel={modalType === 'dropout' ? (dropoutLoading ? undefined : handleCloseModal) : undefined}
-        onConfirm={modalType === 'dropout' ? (dropoutLoading ? undefined : () => handleDropoutConfirm(dropoutReason)) : undefined}
+        onConfirm={modalType === 'dropout' ? (dropoutLoading ? undefined : handleDropoutConfirm) : undefined}
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
         bodyProps={modalType !== 'dropout' ? {padding: 0,paddingTop: 0,paddingBottom: 0} : {}}
         headerProps={modalType !== 'dropout' ? {paddingBottom: 0,paddingTop: "$2"} : {}}
@@ -236,23 +257,48 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
               >
                 {t('actions.dropoutReasonLabel') || 'Reason for Dropout'}
               </Text>
-              <Input
-                {...dataTableStyles.modalInput}
-                borderColor="$inputBorder"
+              
+              <Select
+                options={DROPOUT_REASON_OPTIONS}
+                value={selectedDropoutReason}
+                onChange={(value) => setSelectedDropoutReason(value)}
+                placeholder={t('actions.selectDropoutReason') || 'Select a reason'}
                 bg="$modalBackground"
-                $focus-borderColor="$inputFocusBorder"
-                $focus-borderWidth={2}
-              >
-                <InputField
-                  placeholder={
-                    t('actions.dropoutReasonPlaceholder') || 'Enter reason for dropout...'
-                  }
-                  value={dropoutReason}
-                  onChangeText={setDropoutReason}
-                  {...dataTableStyles.modalInputField}
-                  placeholderTextColor="$textMutedForeground"
-                />
-              </Input>
+                borderColor="$inputBorder"
+                size="md"
+                borderRadius="$md"
+              />
+
+              {selectedDropoutReason === 'other' && (
+                <Box mt="$3">
+                  <Text
+                    {...TYPOGRAPHY.label}
+                    color="$textPrimary"
+                    fontWeight="$medium"
+                    mb="$2"
+                  >
+                    {t('actions.customReasonLabel') || 'Please specify'}
+                  </Text>
+                  <Input
+                    {...dataTableStyles.modalInput}
+                    borderColor="$inputBorder"
+                    bg="$modalBackground"
+                    $focus-borderColor="$inputFocusBorder"
+                    $focus-borderWidth={2}
+                  >
+                    <InputField
+                      placeholder={
+                        t('actions.customReasonPlaceholder') || 'Enter custom reason...'
+                      }
+                      value={customDropoutReason}
+                      onChangeText={setCustomDropoutReason}
+                      {...dataTableStyles.modalInputField}
+                      placeholderTextColor="$textMutedForeground"
+                    />
+                  </Input>
+                </Box>
+              )}
+
               <Text
                 {...TYPOGRAPHY.bodySmall}
                 color="$textSecondary"
@@ -273,6 +319,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
               </Box>
             ) : selectedSolutionId && modalType === 'log-visit' ? (
               <ObservationContent
+                hideElements={{ header: ['title', 'backButton'] }}
+                _css={{_header:{pageHeader:{_container:{ "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" }}}}}
                 id={participant.userId}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
