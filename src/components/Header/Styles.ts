@@ -103,7 +103,7 @@ export const stylesHeader = {
     space: 'xs' as const,
   },
   userRoleText: {
-    fontSize: '$xs' as const,
+    fontSize: '$sm' as const,
     color: '$textLight500' as const,
   },
   chevronIcon: {
