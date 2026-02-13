@@ -8,7 +8,7 @@ import { useAuth } from '@contexts/AuthContext';
 import { LucideIcon, Menu } from '@ui';
 import { Participant } from '@app-types/screens';
 import { styles as dataTableStyles } from '@components/DataTable/Styles';
-import { getParticipantsMenuItems } from '@constants/PARTICIPANTS_LIST';
+import { getParticipantsMenuItems, DROPOUT_REASON_OPTIONS } from '@constants/PARTICIPANTS_LIST';
 import logger from '@utils/logger';
 import { usePlatform } from '@utils/platform';
 import ObservationContent from '../Observation/ObservationContent';
@@ -22,17 +22,6 @@ import Select from '@components/ui/Inputs/Select';
 interface ActionColumnProps {
   participant: Participant;
 }
-
-// Predefined dropout reasons
-const DROPOUT_REASON_OPTIONS = [
-  { label: 'Personal reasons', value: 'personal' },
-  { label: 'Health issues', value: 'health' },
-  { label: 'Work commitments', value: 'work' },
-  { label: 'Financial constraints', value: 'financial' },
-  { label: 'Relocated', value: 'relocated' },
-  { label: 'Not interested anymore', value: 'not_interested' },
-  { label: 'Other', value: 'other' },
-];
 
 /**
  * Custom trigger for actions menu
@@ -330,6 +319,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
               </Box>
             ) : selectedSolutionId && modalType === 'log-visit' ? (
               <ObservationContent
+                hideElements={{ header: ['title', 'backButton'] }}
+                _css={{_header:{pageHeader:{_container:{ "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" }}}}}
                 id={participant.userId}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
