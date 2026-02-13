@@ -192,7 +192,7 @@ const ProjectComponent: React.FC = () => {
   return (
     <Container {...projectComponentStyles.container}>
       <VStack flex={1}>
-        <ScrollView
+        <ScrollView flex={1}
           {...projectComponentStyles.scrollView}
           contentContainerStyle={{ paddingBottom: 40 }}
         >
@@ -307,7 +307,7 @@ const ProjectComponent: React.FC = () => {
                   isSingleContainer ? 0 : { base: '$1', md: '$3' }
                 }
                 paddingTop={isSingleContainer ? 0 : '$4'}
-                space="xs"
+                space="md"
               >
                 {header}
                 {pillarContent}
@@ -367,8 +367,6 @@ const ProjectComponent: React.FC = () => {
                   <Box {...projectComponentStyles.footerButtonContainer}>
                     {/* Change Pathway Button */}
                     <Button
-                      variant="outline"
-                      borderColor="$borderLight300"
                       borderRadius="$md"
                       paddingHorizontal="$4"
                       paddingVertical="$2"

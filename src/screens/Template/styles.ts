@@ -56,7 +56,10 @@ export const templateStyles = {
     justifyContent: 'center',
   },
   container: {
-    flexGrow: 1,
+    flex: 1,
+    height: '100vh',
+    maxHeight: '100vh',
+    overflow: 'hidden',
     bg: '$bgSecondary',
   },
   mainContent: {
@@ -91,6 +94,7 @@ export const templateStyles = {
     borderBottomWidth: 1,
     borderBottomColor: '$borderLight200',
     mb: '$2',
+    flexShrink: 0,
   },
   contentContainer: {
     width: '100%',

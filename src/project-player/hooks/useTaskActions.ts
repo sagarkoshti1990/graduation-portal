@@ -19,15 +19,14 @@ export const useTaskActions = () => {
           attachments = data.data;
         }
       }
-      if(attachments.length > 0) {
-        const response = await updateTask(taskId, { status, attachments });
-        return {success: true, data: response};
-      } else {
-        return {
-          success: false,
-          data: null,
-        };
+      // Always update if we have a status change, regardless of files
+      const updateData: any = { status };
+      if (attachments.length > 0) {
+        updateData.attachments = attachments;
       }
+
+      const response = await updateTask(taskId, updateData);
+      return {success: true, data: response};
     },
     [canEdit, updateTask],
   );

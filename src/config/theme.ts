@@ -126,6 +126,7 @@ export const theme = {
       optionalTaskRedBg: '#fee2e2',
       // Preview mode - tick button active state
       tickButtonActiveBg: '#16a34a',
+      tableHeaderBg: '#f7f9fc',
     },
     fonts: {
       ...((gluestackConfig.tokens as any).fonts || {}),

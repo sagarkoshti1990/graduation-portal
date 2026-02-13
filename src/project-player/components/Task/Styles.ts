@@ -304,7 +304,7 @@ export const taskCardStyles = {
 
 export const taskAccordionStyles = {
   container: {
-    marginBottom: '$6',
+    marginBottom: '$0',
   },
   card: {
     size: 'md' as const,
@@ -353,6 +353,7 @@ export const taskAccordionStyles = {
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    paddingHorizontal: '$1',
   },
   accordionItem: {
     bg: '$white',
@@ -378,6 +379,7 @@ export const taskAccordionStyles = {
   accordionContentStack: {
     space: 'md' as const,
     paddingTop: '$3',
+    paddingHorizontal: '$1',
   },
   // Progress percentage text
   progressText: {

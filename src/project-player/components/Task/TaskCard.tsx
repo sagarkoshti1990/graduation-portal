@@ -329,7 +329,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isEditModeOnly = isInterventionPlanEditMode;
     const statusBadge =
       isEditModeOnly && uiConfig.showAsCard ? (
-        <Pressable>
+        <Pressable onPress={() => handleCheckboxChange(!isCompleted)}>
           {(state: any) => {
             const isHovered = state?.hovered || state?.pressed || false;
             const isDone = isCompleted;
@@ -540,6 +540,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         isDisabled={isReadOnly}
         size={isWeb ? (uiConfig.showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
         borderRadius="$lg"
+        py="$1"
         opacity={isReadOnly ? 0.5 : 1}
         $web-cursor={isEdit ? 'pointer' : undefined}
       >

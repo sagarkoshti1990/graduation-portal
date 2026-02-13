@@ -401,12 +401,9 @@ const DevelopInterventionPlan: React.FC = () => {
   /* -------------------- UI -------------------- */
 
   return (
-    <ScrollView
-      {...(templateStyles.container as any)}
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
+    <VStack flex={1} h="100vh" maxHeight="100vh" overflow="hidden" {...(templateStyles.container as any)}>
       {/* Header */}
-      <Box {...(templateStyles.headerContainer as any)}>
+      <Box flexShrink={0} {...(templateStyles.headerContainer as any)}>
         <Box {...(templateStyles.contentContainer as any)}>
           <HStack {...(templateStyles.navigationRow as any)}>
             <Pressable onPress={handleBackPress}>
@@ -443,7 +440,7 @@ const DevelopInterventionPlan: React.FC = () => {
         </Box>
       </Box>
 
-      <Container {...(templateStyles.mainContent as any)}>
+      <Container flex={1} {...(templateStyles.mainContent as any)}>
         {/* Loading */}
         {isLoading && (
           <Box py="$10" alignItems="center">
@@ -461,8 +458,9 @@ const DevelopInterventionPlan: React.FC = () => {
         {/* Templates */}
         {!isLoading &&
           !error &&
-          !showProjectPlayerPreview &&
-          templates?.map(pathway => (
+          !showProjectPlayerPreview && (
+        <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+          {templates?.map(pathway => (
             <Pressable
               key={pathway?._id}
               {...(templateStyles.pressableCard as any)}
@@ -561,9 +559,13 @@ const DevelopInterventionPlan: React.FC = () => {
               </HStack>
             </Pressable>
           ))}
+        </ScrollView>
+      )}
 
         {!isLoading && !error && showProjectPlayerPreview && (
+        <Box flex={1} h="100%" overflow="hidden">
           <ProjectPlayer config={configData} data={ProjectPlayerConfigData} />
+          </Box>
         )}
       </Container>
 
@@ -740,7 +742,7 @@ const DevelopInterventionPlan: React.FC = () => {
                   if (!selection?.categoryId || !selection?.subCategoryId) {
                     return null;
                   }
-
+                                     
                   return (
                     <>
                       <Text
@@ -769,7 +771,7 @@ const DevelopInterventionPlan: React.FC = () => {
           )}
         </VStack>
       </Modal>
-    </ScrollView>
+    </VStack>
   );
 };
 

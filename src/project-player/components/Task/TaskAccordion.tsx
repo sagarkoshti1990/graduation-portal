@@ -96,11 +96,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return (
-      <Box {...taskAccordionStyles.container} marginBottom="$6">
+      <Box {...taskAccordionStyles.container} marginBottom="$4">
        <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
          {/* Card Header with Progress on right */}
          <Box {...taskAccordionStyles.cardHeader}>
-           <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$5">
+           <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$3">
             {isMobile ? (
               <VStack space="sm">
                 <HStack {...taskAccordionStyles.pillarHeaderRow}>

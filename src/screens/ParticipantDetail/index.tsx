@@ -275,7 +275,7 @@ export default function ParticipantDetail() {
             </Box>
 
             {/* Tab Content */}
-            <Box flex={1} mt="$0" mb="$4" bg="transparent">
+            <Box flex={1} mt="$2" mb="$4" bg="transparent">
               <Box width="$full">
                 <Box width="$full">
                   {activeTab ===
