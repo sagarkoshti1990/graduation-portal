@@ -31,7 +31,7 @@ export const styles = {
 
   // Table Header
   tableHeader: {
-    bg: '$backgroundLight50' as const,
+    bg: '$tableHeaderBg' as const,
     padding: '$4' as const,
     borderBottomColor: '$borderLight300' as const,
     space: 'md' as const,

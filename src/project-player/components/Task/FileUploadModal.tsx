@@ -290,7 +290,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         >
             <VStack space="md">
                 {/* Take a Photo */}
-                { !isWeb && (
+                {isMobile && (
                     <UploadMethodOption
                     method="camera"
                     selectedMethod={selectedMethod}
