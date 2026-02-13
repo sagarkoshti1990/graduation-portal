@@ -5,8 +5,10 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { projectInfoCardStyles } from './Styles';
-import { PLAYER_MODE, TASK_STATUS, ONBOARDING_PROJECT_TITLES } from '@constants/app.constant';
+import { PLAYER_MODE, TASK_STATUS, ONBOARDING_PROJECT_TITLES, PATHWAY_TAGS } from '@constants/app.constant';
 import { usePlatform } from '@utils/platform';
+import { LucideIcon } from '@ui';
+import { theme } from '@config/theme';
 
 const ProjectInfoCard: React.FC<ProjectInfoCardProps> = ({ project }) => {
   const { mode } = useProjectContext();
@@ -35,21 +37,23 @@ const hasChildren =
     }, 0) || 0;
 
   const isPreview = mode === PLAYER_MODE.PREVIEW;
+  const isNaked = !hasChildren && !isPreview;
 
   return (
     <Box
-      {...projectInfoCardStyles.container}
+      {...(isPreview
+        ? projectInfoCardStyles.previewContainer
+        : isNaked
+          ? projectInfoCardStyles.onboardingContainer
+          : projectInfoCardStyles.container)}
       paddingTop={
         !hasChildren &&
           (ONBOARDING_PROJECT_TITLES.includes(project?.title || '') ||
             ONBOARDING_PROJECT_TITLES.includes(project?.name || ''))
           ? '$6'
-          : '$2'
+          : '$5'
       }
-      borderWidth={hasChildren && isPreview ? 1 : 0}
-      borderColor={hasChildren && isPreview ? '$primary500' : 'transparent'}
-      borderRadius={hasChildren && isPreview ? '$2xl' : undefined}
-      marginBottom={hasChildren && isPreview ? '$4' : 0}
+      marginBottom={0}
     >
       <HStack {...projectInfoCardStyles.header}
         alignItems="flex-start"
@@ -139,23 +143,55 @@ const hasChildren =
           ) : (
             // Only show title in preview mode when there are children/pillars
             isPreview && (
-              <Text {...TYPOGRAPHY.h3} color="$textPrimary">
-                {project?.title || project?.name}
-              </Text>
+              <VStack space="xs">
+                <HStack space="sm" alignItems="center">
+                  <LucideIcon
+                    name="ClipboardList"
+                    size={24}
+                    color={theme.tokens.colors.error600}
+                  />
+                  <Text {...TYPOGRAPHY.h4} color="$textPrimary" fontWeight="$medium">
+                    {project?.title || project?.name}
+                  </Text>
+                </HStack>
+              </VStack>
             )
           )}
 
           {!hasChildren ? null : (
             // Only show description in preview mode when there are children/pillars
             isPreview && project?.description && (
-              <Text
-                {...TYPOGRAPHY.paragraph}
-                color="$textSecondary"
-                lineHeight="$lg"
-                mt="$1"
-              >
-                {project?.description}
-              </Text>
+              <VStack space="sm" mt="$2">
+                <Text
+                  {...TYPOGRAPHY.paragraph}
+                  color="$textSecondary"
+                  lineHeight="$lg"
+                >
+                  {project?.description}
+                </Text>
+                {/* Pathway Tag + Version below description */}
+                <HStack space="sm" alignItems="center" mt="$1">
+                  {(() => {
+                    const title = (project?.title || project?.name || '').toLowerCase();
+                    const isEntrepreneurship = title.includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase());
+                    return (
+                      <Box
+                        {...projectInfoCardStyles.pathwayTag}
+                        bg={isEntrepreneurship ? '$badgeSuccessBg' : '$blue50'}
+                        borderColor={isEntrepreneurship ? '$badgeSuccessText' : '$blue200'}
+                      >
+                        <Text
+                          {...projectInfoCardStyles.pathwayTagText}
+                          color={isEntrepreneurship ? '$badgeSuccessText' : '$blue600'}
+                        >
+                          {isEntrepreneurship ? PATHWAY_TAGS.ENTREPRENEURSHIP : PATHWAY_TAGS.EMPLOYMENT}
+                        </Text>
+                      </Box>
+                    );
+                  })()}
+                  <Text {...projectInfoCardStyles.versionText}>v2.1</Text>
+                </HStack>
+              </VStack>
             )
           )}
         </VStack>
@@ -188,10 +224,10 @@ const hasChildren =
 
         {hasChildren && isPreview && (
           <VStack {...projectInfoCardStyles.pillarsCountContainer}>
-            <Text {...TYPOGRAPHY.caption} color="$primary500">
+            <Text {...projectInfoCardStyles.pillarCountText}>
               {totalPillars} {t('projectPlayer.pillars')}
             </Text>
-            <Text {...TYPOGRAPHY.caption} color="$primary500">
+            <Text {...projectInfoCardStyles.taskCountText}>
               {totalChildTasks} {t('projectPlayer.tasks')}
             </Text>
           </VStack>

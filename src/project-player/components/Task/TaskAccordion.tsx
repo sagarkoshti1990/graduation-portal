@@ -96,11 +96,11 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return (
-      <Box {...taskAccordionStyles.container}>
+      <Box {...taskAccordionStyles.container} marginBottom="$4">
        <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
          {/* Card Header with Progress on right */}
          <Box {...taskAccordionStyles.cardHeader}>
-           <Box {...taskAccordionStyles.cardHeaderInner}>
+           <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$3">
             {isMobile ? (
               <VStack space="sm">
                 <HStack {...taskAccordionStyles.pillarHeaderRow}>
@@ -209,14 +209,19 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
           {...taskAccordionStyles.accordionItem}
           bg={
             isSocialProtection
-              ? '$socialProtectionBg'
-              : taskAccordionStyles.accordionItem.bg
+              ? '$socialProtectionAccordionBg'
+              : '$white'
           }
           borderColor={
             isSocialProtection
-              ? '$primary500'
+              ? '$error200'
               : taskAccordionStyles.accordionItem.borderColor
           }
+          borderLeftWidth={isSocialProtection ? 2 : 1}
+          borderRightWidth={isSocialProtection ? 2 : 1}
+          borderTopWidth={isSocialProtection ? 2 : 1}
+          borderBottomWidth={isSocialProtection ? 0 : 1}
+          borderRadius="$2xl"
         >
           {/* Accordion Header */}
           <AccordionHeader>
@@ -231,8 +236,9 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
                     <VStack flex={1} space="xs">
                       <HStack alignItems="center" space="sm" flexWrap="wrap">
                         <Text
-                          {...TYPOGRAPHY.paragraph}
+                          {...TYPOGRAPHY.h4}
                           color="$textPrimary"
+                          fontWeight="$medium"
                           sx={
                             isWeb
                               ? {

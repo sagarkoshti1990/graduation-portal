@@ -115,3 +115,8 @@ export const ONBOARDING_PROJECT_TITLES = [
   'Onboarding Participants',
   'Onboarding the Participant',
 ];
+
+export const PATHWAY_TAGS = {
+  ENTREPRENEURSHIP: 'Entrepreneurship',
+  EMPLOYMENT: 'Employment',
+} as const;

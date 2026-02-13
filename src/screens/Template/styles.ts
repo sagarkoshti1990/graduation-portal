@@ -8,12 +8,12 @@ export const templateStyles = {
   },
   pressableCard: {
     mb: '$4',
-    mt: '$2',
-    p: '$3',
+    mt: '$1',
+    p: '$2',
     bg: '$white',
     borderWidth: 1,
-    borderColor: 'transparent',
-    borderRadius: '$2xl',
+    borderColor: '$borderLight300',
+    borderRadius: '$xl',
     _pressed: { opacity: 0.8 },
     $web: {
       boxShadow: '$primary500',
@@ -30,13 +30,13 @@ export const templateStyles = {
     width: '$10',
     height: '$10',
     borderRadius: '$md',
-    bg: '$iconBgCyan',
+    bg: '$gray100',
     justifyContent: 'center',
     alignItems: 'center',
     mr: '$3',
   },
   badge: {
-    borderRadius: '$sm',
+    borderRadius: '$full',
     px: '$2',
     py: '$1',
     mr: '$2',
@@ -56,7 +56,10 @@ export const templateStyles = {
     justifyContent: 'center',
   },
   container: {
-    flexGrow: 1,
+    flex: 1,
+    height: '100vh',
+    maxHeight: '100vh',
+    overflow: 'hidden',
     bg: '$bgSecondary',
   },
   mainContent: {
@@ -90,7 +93,8 @@ export const templateStyles = {
     py: '$5',
     borderBottomWidth: 1,
     borderBottomColor: '$borderLight200',
-    mb: '$4',
+    mb: '$2',
+    flexShrink: 0,
   },
   contentContainer: {
     width: '100%',
@@ -119,8 +123,9 @@ export const templateStyles = {
   },
   pageTitle: {
     fontSize: '$2xl',
-    fontWeight: '$bold',
-    color: '$textPrimary',
+    fontWeight: '$medium',
+    lineHeight: 36,
+    color: '$textForeground',
     mb: '$1',
   },
   pageSubtitle: {

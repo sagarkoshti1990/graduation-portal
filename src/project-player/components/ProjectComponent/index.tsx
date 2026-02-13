@@ -22,6 +22,7 @@ import { LucideIcon, Modal, useAlert } from '@ui';
 import { theme } from '@config/theme';
 import { submitInterventionPlan } from '../../services/projectPlayerService';
 import { addCustomTaskStyles } from '../Task/Styles';
+import { PLAYER_MODE } from '@constants/app.constant';
 import { PILLAR_NAMES } from '@constants/app.constant';
 
 const ProjectComponent: React.FC = () => {
@@ -191,8 +192,9 @@ const ProjectComponent: React.FC = () => {
   return (
     <Container {...projectComponentStyles.container}>
       <VStack flex={1}>
-        <ScrollView
+        <ScrollView flex={1}
           {...projectComponentStyles.scrollView}
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
 
           {/* Shared content logic - pillars or onboarding tasks */}
@@ -291,28 +293,32 @@ const ProjectComponent: React.FC = () => {
               </Box>
             );
 
-            // Wrap in Card for preview mode or onboarding tasks (no children)
-            if (mode !== 'edit' || !hasChildren) {
-              return (
-                <Card
-                  {...projectComponentStyles.card}
-                  {...(hasChildren ? {} : projectComponentStyles.onboardingCard)}
-                >
-                  <VStack>
-                   {/* Render ProjectInfoCard inside the card for onboarding */}
-                   {!hasChildren && <ProjectInfoCard project={projectData} />}
-                   {pillarContent}
-                 </VStack>
-                </Card>
-              );
-            }
+            // Render ProjectInfoCard (only for onboarding or preview top-level)
+            // Remove from edit mode as per user request (Image 2 feedback)
+            const header = !hasChildren || mode === PLAYER_MODE.PREVIEW ? (
+              <ProjectInfoCard project={projectData} />
+            ) : null;
 
-            return (
-             <>
-               <ProjectInfoCard project={projectData} />
-               {pillarContent}
-             </>
-           );
+            const isSingleContainer = !hasChildren;
+
+            const content = (
+              <VStack
+                paddingHorizontal={
+                  isSingleContainer ? 0 : { base: '$1', md: '$3' }
+                }
+                paddingTop={isSingleContainer ? 0 : '$4'}
+                space="md"
+              >
+                {header}
+                {pillarContent}
+              </VStack>
+            );
+
+            return isSingleContainer ? (
+              <Card {...projectComponentStyles.card} {...projectComponentStyles.onboardingCard}>
+                {content}
+              </Card>
+            ) : content;
           })()}
         </ScrollView>
 
@@ -321,9 +327,9 @@ const ProjectComponent: React.FC = () => {
           <VStack
             space="md"
             padding="$4"
+            bg={mode === PLAYER_MODE.PREVIEW ? 'transparent' : '$white'}
             borderTopWidth={1}
             borderTopColor="$borderLight300"
-            bg="$backgroundPrimary.light"
           >
             {(() => {
               const deletableTaskIds = getDeletableTaskIds(
@@ -361,8 +367,6 @@ const ProjectComponent: React.FC = () => {
                   <Box {...projectComponentStyles.footerButtonContainer}>
                     {/* Change Pathway Button */}
                     <Button
-                      variant="outline"
-                      borderColor="$borderLight300"
                       borderRadius="$md"
                       paddingHorizontal="$4"
                       paddingVertical="$2"

@@ -19,7 +19,7 @@ export interface ProjectData {
   metaInformation?: any;
   createdAt: string;
   updatedAt: string;
-  children?: [];
+  children?: Task[];
 }
 
 export interface Task {
@@ -144,4 +144,4 @@ export interface createProjectPlanPayload{
       description: string;
     };
     isATargetedSolution: boolean;
-  },
+  }

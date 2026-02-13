@@ -294,9 +294,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isEditModeForBadge = isEdit && !isPreview;
     // In preview mode, show badge for deletable tasks even if metaInformation is not set
     const shouldShowBadge =
-      (!task?.isDeletable &&
-        (!isEditModeForBadge ||
-          !task.isDeletable)) ||
       (isPreview && task?.isDeletable);
 
     const taskBadge = shouldShowBadge ? (
@@ -332,7 +329,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isEditModeOnly = isInterventionPlanEditMode;
     const statusBadge =
       isEditModeOnly && uiConfig.showAsCard ? (
-        <Pressable>
+        <Pressable onPress={() => handleCheckboxChange(!isCompleted)}>
           {(state: any) => {
             const isHovered = state?.hovered || state?.pressed || false;
             const isDone = isCompleted;
@@ -476,17 +473,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
               const isHovered = state?.hovered || state?.pressed || false;
               return (
                 <Box
-                  bg={isHovered ? '$success100' : 'transparent'}
+                  bg={isAddedToPlan ? '$tickButtonActiveBg' : isHovered ? '$success100' : 'transparent'}
                   padding="$1.5"
                   borderRadius="$md"
                   borderWidth={1}
-                  borderColor="$success500"
+                  borderColor={isAddedToPlan ? '$tickButtonActiveBg' : '$success500'}
                   $web-cursor="pointer"
                 >
                   <LucideIcon
                     name="Check"
                     size={22}
-                    color={theme.tokens.colors.success500}
+                    color={isAddedToPlan ? theme.tokens.colors.white : theme.tokens.colors.success500}
                     strokeWidth={3}
                   />
                 </Box>
@@ -543,6 +540,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         isDisabled={isReadOnly}
         size={isWeb ? (uiConfig.showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
         borderRadius="$lg"
+        py="$1"
         opacity={isReadOnly ? 0.5 : 1}
         $web-cursor={isEdit ? 'pointer' : undefined}
       >
@@ -727,12 +725,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
             ? '$observationTaskBg'
             : isPreview && task?.isDeletable
               ? isAddedToPlan
-                ? '$addedToPlanBg'
+                ? '$optionalTaskGreenBg'
                 : isRejected
-                  ? '$error50'
-                  : '$warning50'
+                  ? '$optionalTaskRedBg'
+                  : '$optionalTaskYellowBg'
               : isInterventionPlanEditMode
-                ? '#F9FAFD'
+                ? '$stylesCardBg'
                 : taskCardStyles.childCard?.bg
         }
         borderRadius={taskCardStyles.childCard?.borderRadius as any}
@@ -741,10 +739,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
             ? '$observationTaskBorder'
             : isPreview && task?.isDeletable
               ? isAddedToPlan
-                ? '$addedToPlanBorder'
+                ? '$optionalTaskGreenBorder'
                 : isRejected
                   ? '$error200'
-                  : '$warning200'
+                  : '$optionalTaskYellowBorder'
               : taskCardStyles.childCard?.borderColor
         }
       >

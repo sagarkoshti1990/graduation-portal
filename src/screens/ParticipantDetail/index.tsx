@@ -251,7 +251,7 @@ export default function ParticipantDetail() {
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
           <Box>
             {/* Tabs */}
-            <Box width="$full" mt="$4" mb="$0">
+            <Box width="$full" mt="$2" mb="$0">
               <Box width="$full">
                 <HStack
                   width="$full"
@@ -275,7 +275,7 @@ export default function ParticipantDetail() {
             </Box>
 
             {/* Tab Content */}
-            <Box flex={1} mt="$0" mb="$4" bg="transparent">
+            <Box flex={1} mt="$2" mb="$4" bg="transparent">
               <Box width="$full">
                 <Box width="$full">
                   {activeTab ===

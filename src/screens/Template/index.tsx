@@ -32,7 +32,7 @@ import {
 import { ProjectPlayerData } from 'src/project-player/types/components.types';
 import { getCategoryList, getProjectDetails} from '../../project-player/services/projectPlayerService';
 import { useAuth } from '@contexts/AuthContext';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, PATHWAY_TAGS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
 
 
@@ -106,10 +106,10 @@ const DevelopInterventionPlan: React.FC = () => {
     if (newProjectId) {
       // Extract project ID from the response
       setProjectId(projectId);
-    
 
-     const response = await getProjectDetails(newProjectId);
-     const project = response?.data;
+
+      const response = await getProjectDetails(newProjectId);
+      const project = response?.data;
       // update entity to IN_PROGRESS
       const res = await updateEntityDetails({
         userId: user?.userId,
@@ -207,7 +207,7 @@ const DevelopInterventionPlan: React.FC = () => {
   const config = PROJECT_PLAYER_CONFIGS;
   const selectedMode = participant?.status === STATUS.IN_PROGRESS ? MODE.editMode : MODE.previewMode;
 
-  
+    
   const configData = {
     ...config,
     ...selectedMode,
@@ -220,7 +220,7 @@ const DevelopInterventionPlan: React.FC = () => {
 
 
 
-  
+
   // Combine pillarIdsToGetIdp with selected subcategory IDs
   const categoryIdsArray = useMemo(() => {
     const selectedSubCategoryIds = Object.values(selectionByPillar)
@@ -401,12 +401,9 @@ const DevelopInterventionPlan: React.FC = () => {
   /* -------------------- UI -------------------- */
 
   return (
-    <ScrollView
-      {...(templateStyles.container as any)}
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
+    <VStack flex={1} h="100vh" maxHeight="100vh" overflow="hidden" {...(templateStyles.container as any)}>
       {/* Header */}
-      <Box {...(templateStyles.headerContainer as any)}>
+      <Box flexShrink={0} {...(templateStyles.headerContainer as any)}>
         <Box {...(templateStyles.contentContainer as any)}>
           <HStack {...(templateStyles.navigationRow as any)}>
             <Pressable onPress={handleBackPress}>
@@ -443,7 +440,7 @@ const DevelopInterventionPlan: React.FC = () => {
         </Box>
       </Box>
 
-      <Container {...(templateStyles.mainContent as any)}>
+      <Container flex={1} {...(templateStyles.mainContent as any)}>
         {/* Loading */}
         {isLoading && (
           <Box py="$10" alignItems="center">
@@ -461,8 +458,9 @@ const DevelopInterventionPlan: React.FC = () => {
         {/* Templates */}
         {!isLoading &&
           !error &&
-          !showProjectPlayerPreview &&
-          templates?.map(pathway => (
+          !showProjectPlayerPreview && (
+        <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+          {templates?.map(pathway => (
             <Pressable
               key={pathway?._id}
               {...(templateStyles.pressableCard as any)}
@@ -476,12 +474,12 @@ const DevelopInterventionPlan: React.FC = () => {
                 >
                   <LucideIcon
                     name="FileText"
-                    size={20}
-                    color={theme.tokens.colors.iconCyan}
+                    size={25}
+                    color={theme.tokens.colors.gray600}
                   />
                 </Box>
                 <VStack flex={1} space="xs">
-                  <Text {...TYPOGRAPHY.h3} color="$textLight900">
+                  <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
                     {pathway.name}
                   </Text>
                   <Text
@@ -499,14 +497,26 @@ const DevelopInterventionPlan: React.FC = () => {
                   >
                     <Box
                       {...(templateStyles.badge as any)}
-                      bg={pathway.badgeBg || '$badgeSuccessBg'}
+                      bg={
+                        String(pathway.metaInformation?.tags || '')
+                          .toLowerCase()
+                          .includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase())
+                          ? '$badgeSuccessBg'
+                          : '$badgeInfoBg'
+                      }
                     >
                       <Text
                         {...TYPOGRAPHY.caption}
                         fontWeight="$medium"
-                        color={pathway.badgeTextColor || '$badgeSuccessText'}
+                        color={
+                          String(pathway.metaInformation?.tags || '')
+                            .toLowerCase()
+                            .includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase())
+                            ? '$badgeSuccessText'
+                            : '$badgeInfoText'
+                        }
                       >
-                        {pathway.metaInformation.tags}
+                        {pathway.metaInformation?.tags || ''}
                       </Text>
                     </Box>
                     <Text
@@ -549,9 +559,13 @@ const DevelopInterventionPlan: React.FC = () => {
               </HStack>
             </Pressable>
           ))}
+        </ScrollView>
+      )}
 
         {!isLoading && !error && showProjectPlayerPreview && (
+        <Box flex={1} h="100%" overflow="hidden">
           <ProjectPlayer config={configData} data={ProjectPlayerConfigData} />
+          </Box>
         )}
       </Container>
 
@@ -728,7 +742,7 @@ const DevelopInterventionPlan: React.FC = () => {
                   if (!selection?.categoryId || !selection?.subCategoryId) {
                     return null;
                   }
-
+                                     
                   return (
                     <>
                       <Text
@@ -757,7 +771,7 @@ const DevelopInterventionPlan: React.FC = () => {
           )}
         </VStack>
       </Modal>
-    </ScrollView>
+    </VStack>
   );
 };
 

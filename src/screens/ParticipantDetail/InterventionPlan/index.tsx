@@ -136,7 +136,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   // Show empty state for ENROLLED status when player is not shown yet
   if (currentStatus === STATUS.ENROLLED) {
     return (
-      <Box {...interventionPlanStyles.container} mt="$6">
+      <Box {...interventionPlanStyles.container} mt="$7">
         <VStack {...interventionPlanStyles.content}>
           <Box {...interventionPlanStyles.iconContainer}>
             <LucideIcon
