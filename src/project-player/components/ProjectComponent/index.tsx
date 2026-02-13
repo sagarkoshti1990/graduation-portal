@@ -413,7 +413,7 @@ const ProjectComponent: React.FC = () => {
                   <Modal
                     isOpen={isChangePathwayOpen}
                     onClose={() => setIsChangePathwayOpen(false)}
-                    headerTitle="Are you sure?"
+                    headerTitle={t('participantDetail.interventionPlan.changePathway')}
                     confirmButtonText="common.confirm"
                     cancelButtonText="common.cancel"
                     onConfirm={() => {

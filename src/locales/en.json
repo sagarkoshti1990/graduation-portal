@@ -864,7 +864,7 @@
       "developPlan": "Develop Intervention Plan",
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",
-      "changePathwayCofirmationMsg":"Are you sure you want to change pathway? Your current changes will be vanished.",
+      "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
       "socialProtectionWarning": "Please review and address all Social Protection tasks before assigning the intervention plan.",
       "actionRequired": "Action Required",
       "warningMsg":"Please review and address all Social Protection tasks before assigning the intervention plan."
