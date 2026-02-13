@@ -12,7 +12,7 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
 import { ADMIN_ROLES, LC_ROLES } from '@constants/ROLES';
 import { useLanguage } from './LanguageContext';
-import { setupTabCloseHandler } from '@utils/tabCloseHandler';
+// import { setupTabCloseHandler } from '@utils/tabCloseHandler';
 
 export type UserRole = 'Admin' | 'Supervisor' | 'LC';
 
@@ -37,6 +37,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   setIsLoggedIn: (value: boolean) => void;
   loading: boolean;
+  navbarData: any;
+  setNavbarData: (data: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,6 +92,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [navbarData, setNavbarData] = useState<any>(null);
 
   useEffect(() => {
     // Setup tab close handler for web platform (config-driven)
@@ -257,7 +260,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ isLoggedIn, user, login, logout, setIsLoggedIn, loading }}
+      value={{ isLoggedIn, user, login, logout, setIsLoggedIn, loading,navbarData, setNavbarData }}
     >
       {children}
     </AuthContext.Provider>

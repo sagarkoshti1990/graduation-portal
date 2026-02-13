@@ -42,7 +42,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
   const route = useRoute<LogVisitRouteProp>();
   const navigation = useNavigation();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, setNavbarData } = useAuth();
   
   // Use prop if provided, otherwise fall back to route params
   const id = propId || route.params?.id;
@@ -60,6 +60,9 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         ]);
         if (participantData) {
           setParticipant(participantData);
+          setNavbarData({
+            subtitle: participantData?.name,
+          });
         }
         setSolutions(solutionsData);
       } catch (error) {
@@ -70,7 +73,10 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     if (id) {
       fetchData();
     }
-  }, [id]);
+    return () => {
+      setNavbarData(null);
+    };
+  }, [id, setNavbarData]);
 
   /**
    * Handle Back Navigation

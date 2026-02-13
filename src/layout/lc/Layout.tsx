@@ -24,7 +24,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ title, children }) => {
   const mode = useColorMode();
   const isDark = mode === 'dark';
-  const { logout } = useAuth();
+  const { logout,navbarData } = useAuth();
   const navigation = useNavigation();
 
   // Handle menu item selection - uses route from menu config for navigation
@@ -69,6 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children }) => {
       */}
       <Header 
         title={title} 
+        subTitle={navbarData?.subtitle}
         showLanguage={false} 
         showTheme={false} 
         userMenuPosition="left"

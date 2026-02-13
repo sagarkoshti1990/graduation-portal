@@ -826,7 +826,7 @@
       "backToCaseload": "Back to Caseload",
       "viewProfile": "View Profile",
       "enrollParticipant": "Enroll Participant",
-      "logVisit": "Check-ins",
+      "logVisit": "Individual Check-Ins",
       "checkInsHistory": "Check-ins History",
       "checkInsHistoryDescription": "Past forms and surveys for {{name}}",
       "droppedOut": "Dropped Out",

@@ -13,7 +13,7 @@ import { ParticipantData } from '@app-types/participant';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
-import { User } from '@contexts/AuthContext';
+import { useAuth, User } from '@contexts/AuthContext';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 
 /**
@@ -41,7 +41,7 @@ const LogVisit: React.FC = () => {
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
   const navigation = useNavigation();
   const { t } = useLanguage();
-
+  const { setNavbarData } = useAuth();
   /**
    * Fetch targeted solutions from API
    */
@@ -57,6 +57,9 @@ const LogVisit: React.FC = () => {
         if (route.params?.id) {
           const participantData = await getParticipantProfile(route.params?.id);
           setParticipant(participantData);
+          setNavbarData({
+            subtitle: participantData?.name,
+          });
         }
       } catch (error) {
         logger.error('Error fetching solutions:', error);
@@ -67,7 +70,11 @@ const LogVisit: React.FC = () => {
     };
 
     fetchSolutions();
-  }, [route.params?.id]);
+
+    return () => {
+      setNavbarData(null);
+    };
+  }, [route.params?.id, setNavbarData]);
 
   /**
    * Handle Back Navigation

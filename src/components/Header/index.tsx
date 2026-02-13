@@ -48,6 +48,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
  */
 const Header: React.FC<{
   title?: string;
+  subTitle?: string;
   rightSideContent?: React.ReactNode;
   leftSideContent?: React.ReactNode;
   search?: string;
@@ -65,6 +66,7 @@ const Header: React.FC<{
   onToggleSidebar?: () => void;
 }> = ({
   title,
+  subTitle,
   rightSideContent,
   leftSideContent,
   search,
@@ -190,6 +192,14 @@ const Header: React.FC<{
             color={isDark ? '$textLight100' : '$textDark900'}
           >
             {title}
+          </Text>
+        )}
+        {subTitle && (
+          <Text
+            {...TYPOGRAPHY.bodySmall}
+            color={isDark ? '$textLight100' : '$textDark900'}
+          >
+            {subTitle}
           </Text>
         )}
         {/* Center: Search Bar */}

@@ -58,7 +58,7 @@ type ParticipantDetailRouteProp = RouteProp<{
 
 export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
-  const { user } = useAuth()
+  const { user, setNavbarData } = useAuth()
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const { isWeb } = usePlatform();
@@ -98,6 +98,9 @@ export default function ParticipantDetail() {
         const { userDetails, ...rest } = response?.result?.data?.[0]
         const participantData = { ...(userDetails || {}), ...rest }
         setParticipant(participantData);
+        setNavbarData({
+          subtitle: participantData?.name,
+        });
         setStatus(participantData?.status);
       } catch (error) {
         console.log(error);
@@ -106,7 +109,8 @@ export default function ParticipantDetail() {
         isFetchingRef.current = false;
       }
     }
-  }, [participantId, user?.id]);
+    // @ts-ignore
+  }, [participantId, user?.id, setNavbarData]);
 
   // Re-fetch data when screen comes into focus (e.g., navigating back)
   useFocusEffect(
@@ -115,6 +119,13 @@ export default function ParticipantDetail() {
     }, [fetchEntityDetails])
   );
 
+  // Cleanup navbar data on component unmount
+  useEffect(() => {
+    return () => {
+      setNavbarData(null);
+    };
+  }, [setNavbarData]);
+  
   // Re-fetch when idpCreated changes
   useEffect(() => {
     if (idpCreated) {
