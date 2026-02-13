@@ -4,12 +4,11 @@ import axios, {
   AxiosResponse,
   AxiosError,
 } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '@utils/logger';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 // import { API_BASE_URL, ORIGIN } from '@config/env';
 import offlineStorage from './offlineStorage';
-import { isAndroid, isWeb } from '@utils/platform';
+import { isAndroid } from '@utils/platform'; // isWeb removed as window.localStorage/sessionStorage are no longer used
 import { refreshToken } from './authenticationService';
 import { resetToScreen } from '@utils/navigationRef';
 
@@ -65,7 +64,7 @@ api.interceptors.request.use(
       }
 
       // Add internal-access-token header if available - Required for entity-management API endpoints
-      const internalAccessToken = await AsyncStorage.getItem(INTERNAL_ACCESS_TOKEN_KEY);
+      const internalAccessToken = await offlineStorage.read<string>(INTERNAL_ACCESS_TOKEN_KEY);
       if (internalAccessToken && config.headers) {
         config.headers['internal-access-token'] = internalAccessToken;
       }
@@ -144,7 +143,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Check if refresh token exists (Remember Me was checked)
+        // Check if refresh token exists (always saved now)
         const storedRefreshToken = await offlineStorage.read<string>(
           STORAGE_KEYS.AUTH_REFRESH_TOKEN
         );
@@ -158,8 +157,8 @@ api.interceptors.response.use(
             const refreshResponse = await refreshToken(storedRefreshToken);
             logger.info('Refresh token call completed successfully');
 
-            // Get the new token
-            const newToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+            // Get the new token from offlineStorage
+            const newToken = await offlineStorage.read<string>(TOKEN_STORAGE_KEY);
             logger.info('New token retrieved:', newToken ? 'Token exists' : 'Token missing');
 
             if (newToken && originalRequest.headers) {
@@ -204,7 +203,7 @@ api.interceptors.response.use(
             return Promise.reject(error);
           }
         } else {
-          // No refresh token found (Remember Me was not checked)
+          // No refresh token found
           // Redirect to logout page
           logger.warn(
             'Session expired. No refresh token available. Redirecting to logout page.'
@@ -258,47 +257,16 @@ api.interceptors.response.use(
 
 /**
  * Helper function to save token
- * Uses localStorage if rememberMe is true, sessionStorage if false (web only)
- * On native platforms, always uses AsyncStorage
+ * Always uses offlineStorage service (both web and native platforms)
+ * window.localStorage and window.sessionStorage are no longer used
+ * @param token - The token to save
+ * @param _rememberMe - Deprecated parameter, kept for backward compatibility but not used
  */
-export const saveToken = async (token: string, rememberMe?: boolean): Promise<void> => {
+export const saveToken = async (token: string, _rememberMe?: boolean): Promise<void> => {
   try {
-    // On web platform, use localStorage or sessionStorage based on rememberMe
-    if (isWeb) {
-      // Get rememberMe preference if not provided
-      if (rememberMe === undefined) {
-        const storedRememberMe = await offlineStorage.read<boolean>(
-          STORAGE_KEYS.AUTH_REMEMBER_ME
-        );
-        rememberMe = storedRememberMe === true;
-      }
-
-      if (rememberMe) {
-        // Save to localStorage (persistent)
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-          logger.info('Token saved to localStorage (Remember Me enabled)');
-        }
-        // Also remove from sessionStorage if it exists
-        if (typeof window !== 'undefined' && window.sessionStorage) {
-          window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-        }
-      } else {
-        // Save to sessionStorage (temporary, cleared when tab closes)
-        if (typeof window !== 'undefined' && window.sessionStorage) {
-          window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
-          logger.info('Token saved to sessionStorage (Remember Me disabled)');
-        }
-        // Also remove from localStorage if it exists
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-        }
-      }
-    } else {
-      // On native platforms, use AsyncStorage (always persistent)
-      await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-      logger.info('Token saved to AsyncStorage');
-    }
+    // Always use offlineStorage for all platforms (web and native)
+    await offlineStorage.create(TOKEN_STORAGE_KEY, token);
+    logger.info('Token saved to storage');
   } catch (error) {
     logger.error('Error saving token:', error);
     throw error;
@@ -307,30 +275,13 @@ export const saveToken = async (token: string, rememberMe?: boolean): Promise<vo
 
 /**
  * Helper function to get token
- * Checks both localStorage and sessionStorage on web
- * On native platforms, uses AsyncStorage
+ * Uses offlineStorage service for all platforms (web and native)
+ * window.localStorage and window.sessionStorage are no longer used
  */
 export const getToken = async (): Promise<string | null> => {
   try {
-    if (isWeb) {
-      // On web, check both localStorage and sessionStorage
-      if (typeof window !== 'undefined') {
-        // First check localStorage (persistent)
-        const localStorageToken = window.localStorage?.getItem(TOKEN_STORAGE_KEY);
-        if (localStorageToken) {
-          return localStorageToken;
-        }
-        // Then check sessionStorage (temporary)
-        const sessionStorageToken = window.sessionStorage?.getItem(TOKEN_STORAGE_KEY);
-        if (sessionStorageToken) {
-          return sessionStorageToken;
-        }
-      }
-      return null;
-    } else {
-      // On native platforms, use AsyncStorage
-      return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-    }
+    // Always use offlineStorage for all platforms (web and native)
+    return await offlineStorage.read<string>(TOKEN_STORAGE_KEY);
   } catch (error) {
     logger.error('Error getting token:', error);
     return null;
@@ -339,27 +290,14 @@ export const getToken = async (): Promise<string | null> => {
 
 /**
  * Helper function to remove token
- * Removes from both localStorage and sessionStorage on web
- * On native platforms, removes from AsyncStorage
+ * Uses offlineStorage service for all platforms (web and native)
+ * window.localStorage and window.sessionStorage are no longer used
  */
 export const removeToken = async (): Promise<void> => {
   try {
-    if (isWeb) {
-      // On web, remove from both localStorage and sessionStorage
-      if (typeof window !== 'undefined') {
-        if (window.localStorage) {
-          window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-        }
-        if (window.sessionStorage) {
-          window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-        }
-        logger.info('Token removed from localStorage and sessionStorage');
-      }
-    } else {
-      // On native platforms, remove from AsyncStorage
-      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-      logger.info('Token removed from AsyncStorage');
-    }
+    // Always use offlineStorage for all platforms (web and native)
+    await offlineStorage.remove(TOKEN_STORAGE_KEY);
+    logger.info('Token removed from storage');
   } catch (error) {
     logger.error('Error removing token:', error);
     throw error;

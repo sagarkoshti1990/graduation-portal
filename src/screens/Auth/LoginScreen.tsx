@@ -3,7 +3,7 @@ import { ScrollView, Animated, Pressable } from 'react-native';
 import {
   Box,
   VStack,
-  HStack,
+  // HStack, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   Text,
   Input,
   InputField,
@@ -11,11 +11,11 @@ import {
   ButtonText,
   Heading,
   Spinner,
-  Checkbox,
-  CheckboxIndicator,
-  CheckboxIcon,
-  CheckboxLabel,
-  CheckIcon,
+  // Checkbox, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  // CheckboxIndicator, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  // CheckboxIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  // CheckboxLabel, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  // CheckIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   Image,
   LucideIcon,
 } from '@ui';
@@ -55,8 +55,8 @@ const LoginScreen: React.FC = () => {
             `Loaded Remember Me preference from storage: ${savedRememberMe}`
           );
         }
-      } catch (error) {
-        logger.error('Error loading Remember Me preference:', error);
+      } catch (err) {
+        logger.error('Error loading Remember Me preference:', err);
       }
     };
     loadRememberMePreference();
@@ -91,7 +91,7 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      // Use the login function from AuthContext with isAdmin flag and rememberMe based on current mode
+      // Use the login function from AuthContext with isAdmin flag and rememberMe state
       const result = await login(email, password, isAdminMode, rememberMe);
       if (!result.success) {
         // Use the message from the login function, or fallback to default messages
@@ -239,8 +239,8 @@ const LoginScreen: React.FC = () => {
                 </Box>
               </VStack>
 
-              {/* Remember Me Checkbox */}
-              <HStack {...loginStyles.hstack}>
+              {/* Remember Me Checkbox - UI hidden but functionality preserved */}
+              {/* <HStack {...loginStyles.hstack}>
                 <Checkbox
                   value="remember"
                   isChecked={rememberMe}
@@ -252,7 +252,7 @@ const LoginScreen: React.FC = () => {
                   </CheckboxIndicator>
                   <CheckboxLabel>{t('login.rememberMe')}</CheckboxLabel>
                 </Checkbox>
-              </HStack>
+              </HStack> */}
 
               {/* Error Message */}
               {error ? (

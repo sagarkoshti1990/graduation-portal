@@ -13,7 +13,16 @@ import { User } from '@contexts/AuthContext';
  * @returns A promise resolving to the search response from the API
  */
 export const getParticipantsList = async (params: ParticipantSearchParams): Promise<ParticipantSearchResponse> => {
-  try {
+  return (new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        result: {
+          data: PARTICIPANTS_DATA,
+        },
+      });
+    }, 1000);
+  }));
+  /*try {
     const {
       userId,
       type = ROLE_NAMES.USER,
@@ -58,7 +67,7 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
   } catch (error: any) {
     // Error is already handled by axios interceptor
     throw error;
-  }
+  }*/
 };
 
 export const getParticipantById = (id: string): any => {
