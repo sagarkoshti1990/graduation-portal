@@ -83,6 +83,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const hasUploadedFiles = !!(task.attachments && task.attachments.length > 0);
   const isOnboardingCompletedUI = isOnboardingTask && (task.isDeletable ? hasUploadedFiles : isCompleted);
 
+  const onboardingTextStyle = {
+    textDecorationLine: (isOnboardingCompletedUI ? 'line-through' : 'none') as
+      | 'line-through'
+      | 'none',
+    opacity: isOnboardingCompletedUI ? 0.6 : 1,
+  };
+
+  const onboardingDescStyle = {
+    opacity: isOnboardingCompletedUI ? 0.6 : 1,
+  };
+
   const uiConfig = useMemo(
     () => ({
       showAsCard: isChildOfProject,
@@ -656,7 +667,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <Text
                   {...TYPOGRAPHY.h4}
                   {...taskCardStyles.onboardingTitleText}
-                  style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+                  {...onboardingTextStyle}
+                  style={isWeb ? ([taskCardStyles.webTextWrap, onboardingTextStyle] as any) : onboardingTextStyle}
                 >
                   {task?.name}
                 </Text>
@@ -664,7 +676,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   <Text
                     {...TYPOGRAPHY.bodySmall}
                     {...taskCardStyles.onboardingDescriptionText}
-                    style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+                    {...onboardingDescStyle}
+                    style={isWeb ? ([taskCardStyles.webTextWrap, onboardingDescStyle] as any) : onboardingDescStyle}
                   >
                     {task?.description}
                   </Text>
@@ -690,7 +703,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <Text
                 {...TYPOGRAPHY.h4}
                 {...taskCardStyles.onboardingTitleText}
-                style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+                {...onboardingTextStyle}
+                style={isWeb ? ([taskCardStyles.webTextWrap, onboardingTextStyle] as any) : onboardingTextStyle}
               >
                 {task?.name}
               </Text>
@@ -698,7 +712,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <Text
                   {...TYPOGRAPHY.bodySmall}
                   {...taskCardStyles.onboardingDescriptionText}
-                  style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+                  {...onboardingDescStyle}
+                  style={isWeb ? ([taskCardStyles.webTextWrap, onboardingDescStyle] as any) : onboardingDescStyle}
                 >
                   {task?.description}
                 </Text>
