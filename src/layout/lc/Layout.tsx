@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'react-native';
-import { SafeAreaView, ScrollView, useColorMode, Pressable, Icon, MenuIcon } from '@gluestack-ui/themed';
+import { SafeAreaView, ScrollView, useColorMode, Pressable, Icon, MenuIcon, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import Header from '@components/Header';
 import { stylesLayout } from './Styles';
@@ -19,9 +19,10 @@ interface LayoutProps {
   children: React.ReactNode;
   navigation?: any;
   pendingSyncCount?: number;
+  disableScroll?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ title, children }) => {
+const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll }) => {
   const mode = useColorMode();
   const isDark = mode === 'dark';
   const { logout,navbarData } = useAuth();
@@ -79,12 +80,24 @@ const Layout: React.FC<LayoutProps> = ({ title, children }) => {
       />
 
       {/* Main Content */}
-        <ScrollView
-          {...stylesLayout.mainContent}
-          bg={isDark ? '$backgroundDark950' : '$accent100'}
-        >
-          {children}
-        </ScrollView>
+      {(() => {
+        const content = <>{children}</>;
+        if (disableScroll) {
+          return (
+            <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$accent100'}>
+              {content}
+            </VStack>
+          );
+        }
+        return (
+          <ScrollView
+            {...stylesLayout.mainContent}
+            bg={isDark ? '$backgroundDark950' : '$accent100'}
+          >
+            {content}
+          </ScrollView>
+        );
+      })()}
     </SafeAreaView>
   );
 };
