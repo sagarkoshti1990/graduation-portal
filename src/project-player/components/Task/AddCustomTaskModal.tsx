@@ -199,6 +199,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
       }
       headerAlignment="baseline"
       maxWidth={480}
+      size="lg"
       footerContent={
         <HStack
           {...addCustomTaskModalStyles.footerButtons}
