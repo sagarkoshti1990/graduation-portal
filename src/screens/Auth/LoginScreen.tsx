@@ -294,7 +294,7 @@ const LoginScreen: React.FC = () => {
                   isDisabled={loading}
                 >
                   <ButtonText {...loginStyles.adminLinkText}>
-                    {t('login.backToLogin') || 'Back to Login'}
+                    {t('login.backToLogin') || 'Back to LC / LF Login'}
                   </ButtonText>
                 </Button>
               )}
