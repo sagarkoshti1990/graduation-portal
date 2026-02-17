@@ -228,38 +228,26 @@ const ProjectComponent: React.FC = () => {
                     pillar =>
                       pillar.name.toLowerCase() === PILLAR_NAMES.SOCIAL_PROTECTION,
                   );
-                  const otherPillars = sortedPillars.filter(
-                    pillar =>
-                      pillar.name.toLowerCase() !== PILLAR_NAMES.SOCIAL_PROTECTION,
-                  );
 
                   return (
                     <VStack {...projectComponentStyles.pillarContainer}>
-                      {otherPillars.length > 0 && (
-                        <Accordion
-                          {...taskAccordionStyles.accordion}
-                          type="single"
-                          isCollapsible={true}
-                        >
-                          <VStack {...projectComponentStyles.pillarContainer}>
-                            {otherPillars.map(task => (
-                              <TaskComponent
-                                key={task._id}
-                                task={task}
-                                isChildOfProject={true}
-                                showAccordionWrapper={false}
-                              />
-                            ))}
-                          </VStack>
-                        </Accordion>
-                      )}
-                      {socialProtectionPillar && (
-                        <TaskComponent
-                          key={socialProtectionPillar._id}
-                          task={socialProtectionPillar}
-                          isChildOfProject={true}
-                        />
-                      )}
+                      <Accordion
+                        {...taskAccordionStyles.accordion}
+                        type="single"
+                        isCollapsible={true}
+                        defaultValue={socialProtectionPillar ? [socialProtectionPillar._id] : undefined}
+                      >
+                        <VStack {...projectComponentStyles.pillarContainer}>
+                          {sortedPillars.map(task => (
+                            <TaskComponent
+                              key={task?._id}
+                              task={task}
+                              isChildOfProject={true}
+                              showAccordionWrapper={false}
+                            />
+                          ))}
+                        </VStack>
+                      </Accordion>
                     </VStack>
                   );
                 })()}
@@ -337,7 +325,7 @@ const ProjectComponent: React.FC = () => {
             const content = (
               <VStack
                 paddingHorizontal={
-                  isSingleContainer ? 0 : { base: '$1', md: '$3' }
+                  isSingleContainer ? 0 : '$1'
                 }
                 paddingTop={isSingleContainer ? 0 : '$4'}
                 space="md"
