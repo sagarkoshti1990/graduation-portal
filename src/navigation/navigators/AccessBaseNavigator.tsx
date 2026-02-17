@@ -24,6 +24,10 @@ const createScreenWithLayout = (
       layoutProps.title = t('settings.selectLanguage');
     }
 
+    if (pageName === 'template') {
+      layoutProps.disableScroll = true;
+    }
+
     return (
       <LayoutWrapper layoutProps={layoutProps}>
         <ScreenComponent {...props} />
