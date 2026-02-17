@@ -21,6 +21,7 @@ export interface TaskStatusProps {
 export interface TaskAccordionProps {
   task: Task;
   level?: number;
+  showAccordionWrapper?: boolean;
 }
 
 export interface TaskComponentProps {
@@ -29,6 +30,7 @@ export interface TaskComponentProps {
   isLastTask?: boolean;
   isChildOfProject?: boolean;
   isOnboardingTask?: boolean;
+  showAccordionWrapper?: boolean;
 }
 
 export interface UploadComponentProps {
@@ -54,6 +56,7 @@ export interface ProjectInfoCardProps {
 export interface ProjectAsTaskComponentProps {
   task: Task;
   level?: number;
+  showAccordionWrapper?: boolean;
 }
 
 export interface ProjectContextValue {

@@ -304,7 +304,7 @@ export const taskCardStyles = {
 
 export const taskAccordionStyles = {
   container: {
-    marginBottom: '$0',
+    marginBottom: '$2',
   },
   card: {
     size: 'md' as const,
