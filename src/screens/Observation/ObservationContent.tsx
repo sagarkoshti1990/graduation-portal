@@ -308,6 +308,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [],
   );
 
+  const handleToast = useCallback(
+    (toastValue: { message: string; toastType: string }) => {
+      showAlert(toastValue.toastType, toastValue.message);
+    },
+    [showAlert],
+  );
+
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
     () => ({
@@ -329,6 +336,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       defaultValues: defaultValuesLocal,
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
+      showToast: false,
        dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
           status:STATUS
@@ -373,6 +381,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
             {mockData &&
               <WebComponentPlayer
                 getProgress={handleProgressUpdate}
+                getToast={handleToast}
                 // @ts-ignore - afterSubmitCallback exists in web version
                 afterSubmitCallback={handleAfterSubmit}
                 playerConfig={playerConfigMemoized}
@@ -412,7 +421,12 @@ const buildDefaultValuesFromObservation = (
         // Handle questions with pageQuestions separately
         if (question.responseType === 'pageQuestions' && Array.isArray(question.pageQuestions)) {
           for (const pageQuestion of question.pageQuestions) {
-            const keyFound = userDataKeys.find(key => pageQuestion.question.includes(key));
+            // pageQuestion.question is an array of strings, key is a string. Compare lowercase.
+            const keyFound = userDataKeys.find(key => 
+              pageQuestion.question
+                .map((q: string) => q.toLowerCase())
+                .some((qString: string) => key.toLowerCase() === qString.toLowerCase())
+            );
             if (keyFound !== undefined) {
               defaultValues[pageQuestion._id] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
             }

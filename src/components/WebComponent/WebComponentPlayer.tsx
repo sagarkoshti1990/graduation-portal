@@ -17,9 +17,10 @@ interface PlayerConfigProps {
    */
   playerConfig: any;
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
+  getToast: (toast: { message: string; toastType: string }) => void;
 }
 
-const WebComponentPlayer = React.memo(({ playerConfig, getProgress }: PlayerConfigProps) => {
+const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: PlayerConfigProps) => {
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef<any>(null);
 
@@ -139,6 +140,8 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress }: PlayerConf
 
       if (message.type === 'progress') {
         getProgress(message.data);
+      } else if (message.type === 'TOAST') {
+        getToast(message.data);
       } else if (message.type === 'domReady') {
         logger.info('DOM is ready:', message.data);
       } else if (message.type === 'success') {

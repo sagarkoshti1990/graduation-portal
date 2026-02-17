@@ -969,6 +969,7 @@
     "viewForm": "View Form",
     "selectSolution": "Select Solution",
     "selectSolutionPlaceholder": "Select a solution...",
+    "selectFormTypeMessage": "Please select form type from top right selection using select dropdown",
     "selectVisitType": "Select visit type for {{name}}",
     "viewCheckIns": "View Check-Ins",
     "by": "By",

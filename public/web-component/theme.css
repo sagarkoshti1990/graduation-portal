@@ -14,6 +14,10 @@
   --mdc-outlined-text-field-outline-color: #e2e8f0;
   --text-color: #1e293b;
   --mat-select-trigger-text-size: 14px;
+  --mdc-checkbox-size: 16px !important;
+  --mdc-checkbox-state-layer-size: 16px !important;
+  --mdc-radio-state-layer-size: 16px !important;
+  --mdc-radio-size: 16px !important;
 }
 
 .page-header {
@@ -581,5 +585,15 @@ lib-entity-dropdown-input mat-chip {
 }
 .entity-modal-content .mdc-form-field .mdc-label {
   font-size: 1rem !important;
+}
+.mdc-form-field {
+  gap: 0.75rem !important;
+}
+.mdc-checkbox .mdc-checkbox__native-control:enabled:not(:checked):not(:indeterminate):not([data-indeterminate=true])~.mdc-checkbox__background
+{border-color: var(--colors-borderColor) !important;}
+
+.mdc-checkbox .mdc-checkbox__native-control:enabled:not(:checked):not(:indeterminate):not([data-indeterminate=true])~.mdc-checkbox__background,
+.mdc-checkbox .mdc-checkbox__native-control:enabled:checked~.mdc-checkbox__background {
+  border-radius: 50% !important;
 }
 /* end entity-modal-content styles */
