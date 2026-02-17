@@ -862,7 +862,7 @@
       "noPlanAssigned": "No intervention plan has been assigned yet.",
       "noPlanDescription": "Develop a personalized intervention plan to support this participant's goals.",
       "developPlan": "Develop Intervention Plan",
-      "submitInterventionPlan": "Submit Intervention Plan",
+      "createInterventionPlan": "Create Intervention Plan",
       "changePathway": "Change Pathway",
       "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
       "socialProtectionWarning": "Please review and address all Social Protection tasks before assigning the intervention plan.",
