@@ -308,6 +308,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [],
   );
 
+  const handleToast = useCallback(
+    (toastValue: { message: string; toastType: string }) => {
+      showAlert(toastValue.toastType, toastValue.message);
+    },
+    [showAlert],
+  );
+
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
     () => ({
@@ -329,6 +336,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       defaultValues: defaultValuesLocal,
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
+      showToast: false,
        dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
           status:STATUS
@@ -373,6 +381,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
             {mockData &&
               <WebComponentPlayer
                 getProgress={handleProgressUpdate}
+                getToast={handleToast}
                 // @ts-ignore - afterSubmitCallback exists in web version
                 afterSubmitCallback={handleAfterSubmit}
                 playerConfig={playerConfigMemoized}

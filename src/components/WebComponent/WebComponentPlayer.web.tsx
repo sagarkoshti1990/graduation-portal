@@ -17,10 +17,11 @@ interface PlayerConfigProps {
    */
   playerConfig: any;
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
+  getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback: (event?: any) => void | undefined;
 }
 
-const WebComponentPlayer: React.FC<PlayerConfigProps> = ({ playerConfig, getProgress: _getProgress, afterSubmitCallback }) => {
+const WebComponentPlayer: React.FC<PlayerConfigProps> = ({ playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }) => {
   const playerRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -250,6 +251,8 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({ playerConfig, getProg
             }
           }
         }
+      } else if (event.detail.type === 'TOAST') {
+        _getToast(event.detail.data);
       }
     };
 
@@ -262,7 +265,7 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({ playerConfig, getProg
         playerElement.removeEventListener('postMessage', handleCustomEvent as EventListener);
       }
     };
-  }, [loading, _getProgress, afterSubmitCallback]);
+  }, [loading, _getProgress, afterSubmitCallback, _getToast]);
 
   if(loading) {
     return <ActivityIndicator size="large" color="#007AFF" />;
