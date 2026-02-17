@@ -59,6 +59,8 @@ export const logVisitStyles = {
     px: 40 as const,
     py: 40 as const,
     alignSelf: 'center' as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   selectSolutionText: {
     color: '$textMutedForeground' as const,

@@ -375,17 +375,10 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
               {...logVisitStyles.selectSolutionCard}
               $web-boxShadow="none"
             >
-              <Text {...logVisitStyles.selectSolutionText}>
-                {t('logVisit.selectSolution')}
+              <LucideIcon name={'Info'} size={48} color="$textMutedForeground" />
+              <Text {...assessmentSurveyCardStyles.emptyCardTitale}>
+                {t('logVisit.selectFormTypeMessage')}
               </Text>
-              <Select
-                options={solutions.map(solution => ({
-                  label: solution.name || solution.id,
-                  value: solution.solutionId || solution.id,
-                }))}
-                value={selectedSolution}
-                onChange={setSelectedSolution}
-              />
             </Card>
           </Box>
         )}
