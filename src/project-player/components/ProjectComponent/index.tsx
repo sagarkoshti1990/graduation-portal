@@ -426,7 +426,7 @@ const ProjectComponent: React.FC = () => {
                         fontWeight="$semibold"
                       >
                         {t(
-                          'participantDetail.interventionPlan.submitInterventionPlan',
+                          'participantDetail.interventionPlan.createInterventionPlan',
                         )}
                       </ButtonText>
                     </Button>
