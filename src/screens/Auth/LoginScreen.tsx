@@ -271,7 +271,7 @@ const LoginScreen: React.FC = () => {
                   <Spinner color="$white" />
                 ) : (
                   <ButtonText {...loginStyles.buttonText}>
-                    {isAdminMode ? t('login.adminLogin') : t('login.logIn')}
+                    {isAdminMode ? t('login.adminLogin') : t('login.lcLogin')}
                   </ButtonText>
                 )}
               </Button>
@@ -294,7 +294,7 @@ const LoginScreen: React.FC = () => {
                   isDisabled={loading}
                 >
                   <ButtonText {...loginStyles.adminLinkText}>
-                    {t('login.backToLogin') || 'Back to Login'}
+                    {t('login.backToLogin') || 'Back to LC / LF Login'}
                   </ButtonText>
                 </Button>
               )}
