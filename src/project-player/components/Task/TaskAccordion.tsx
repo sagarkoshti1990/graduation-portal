@@ -217,7 +217,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
           borderLeftWidth={isSocialProtection ? 2 : 1}
           borderRightWidth={isSocialProtection ? 2 : 1}
           borderTopWidth={isSocialProtection ? 2 : 1}
-          borderBottomWidth={isSocialProtection ? 0 : 1}
+          borderBottomWidth={isSocialProtection ? 2 : 1}
           borderRadius="$2xl"
         >
           {/* Accordion Header */}

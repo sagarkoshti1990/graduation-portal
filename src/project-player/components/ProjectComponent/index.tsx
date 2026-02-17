@@ -232,7 +232,9 @@ const ProjectComponent: React.FC = () => {
                   return (
                     <VStack {...projectComponentStyles.pillarContainer}>
                       <Accordion
-                        {...taskAccordionStyles.accordion}
+                        {...(mode === PLAYER_MODE.PREVIEW
+                          ? taskAccordionStyles.accordionPreview
+                          : taskAccordionStyles.accordion)}
                         type="single"
                         isCollapsible={true}
                         defaultValue={socialProtectionPillar ? [socialProtectionPillar._id] : undefined}
