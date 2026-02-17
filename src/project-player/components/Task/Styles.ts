@@ -304,7 +304,7 @@ export const taskCardStyles = {
 
 export const taskAccordionStyles = {
   container: {
-    marginBottom: '$0',
+    marginBottom: '$2',
   },
   card: {
     size: 'md' as const,
@@ -353,6 +353,15 @@ export const taskAccordionStyles = {
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    paddingHorizontal: '$1',
+  },
+  accordionPreview: {
+    type: 'single' as const,
+    variant: 'unfilled' as const,
+    shadowColor: 'transparent',
+    elevation: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     paddingHorizontal: '$1',
   },
   accordionItem: {

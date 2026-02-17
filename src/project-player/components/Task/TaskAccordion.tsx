@@ -27,7 +27,10 @@ import { theme } from '../../../config/theme';
 import { taskAccordionStyles } from './Styles';
 import { usePlatform } from '@utils/platform';
 
-const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
+const TaskAccordion: React.FC<TaskAccordionProps> = ({
+  task,
+  showAccordionWrapper = true,
+}) => {
   const { t } = useLanguage();
   const { mode } = useProjectContext();
   const { isWeb, isMobile } = usePlatform();
@@ -197,12 +200,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
   }
 
   // For Preview mode: Show as Accordion
-  return (
-    <Box {...taskAccordionStyles.container}>
-      <Accordion
-        {...taskAccordionStyles.accordion}
-        defaultValue={isSocialProtection ? task._id : undefined}
-      >
+  const accordionItem = (
         <AccordionItem
           value={task._id}
           {...taskAccordionStyles.accordionItem}
@@ -219,7 +217,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
           borderLeftWidth={isSocialProtection ? 2 : 1}
           borderRightWidth={isSocialProtection ? 2 : 1}
           borderTopWidth={isSocialProtection ? 2 : 1}
-          borderBottomWidth={isSocialProtection ? 0 : 1}
+          borderBottomWidth={isSocialProtection ? 2 : 1}
           borderRadius="$2xl"
         >
           {/* Accordion Header */}
@@ -340,7 +338,20 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({ task }) => {
             </VStack>
           </AccordionContent>
         </AccordionItem>
-      </Accordion>
+  );
+
+  return (
+    <Box {...taskAccordionStyles.container}>
+      {showAccordionWrapper ? (
+        <Accordion
+          {...taskAccordionStyles.accordion}
+          defaultValue={isSocialProtection ? [task._id] : undefined}
+        >
+          {accordionItem}
+        </Accordion>
+      ) : (
+        accordionItem
+      )}
     </Box>
   );
 };

@@ -9,12 +9,14 @@ import {
   HStack,
   Text,
   Pressable,
+  Accordion,
 } from '@gluestack-ui/themed';
 import { useProjectContext } from '../../context/ProjectContext';
 import ProjectInfoCard from './ProjectInfoCard';
 import TaskComponent from './TaskComponent';
 import AddCustomTaskModal from '../Task/AddCustomTaskModal';
 import { projectComponentStyles } from './Styles';
+import { taskAccordionStyles } from '../Task/Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Container from '@ui/Container';
@@ -202,34 +204,55 @@ const ProjectComponent: React.FC = () => {
             const pillarContent = hasChildren ? (
               // Render pillars
               <>
-                {projectData?.children?.length
+                {(() => {
+                  const sortedPillars = (projectData?.children?.length
                   ? [...projectData.children]
-                      .sort(
+                  : projectData?.tasks?.filter(task => task.children?.length) || []
+                  ).sort(
                         (a, b) =>
                           getPillarOrderIndex(a?.name) -
                           getPillarOrderIndex(b?.name),
-                      )
-                      .map(task => (
-                    <TaskComponent
-                      key={task?._id}
-                      task={task}
-                      isChildOfProject={true}
-                    />
-                  ))
-                  : projectData?.tasks
-                    ?.filter(task => task.children?.length)
-                    ?.sort(
-                      (a, b) =>
-                        getPillarOrderIndex(a?.name) -
-                        getPillarOrderIndex(b?.name),
-                    )
-                    ?.map(task => (
+                      );
+
+                  if (mode !== PLAYER_MODE.PREVIEW) {
+                    return sortedPillars.map(task => (
                       <TaskComponent
-                        key={task._id}
+                        key={task?._id}
                         task={task}
                         isChildOfProject={true}
                       />
-                    ))}
+                    ));
+                  }
+
+                  const socialProtectionPillar = sortedPillars.find(
+                    pillar =>
+                      pillar.name.toLowerCase() === PILLAR_NAMES.SOCIAL_PROTECTION,
+                  );
+
+                  return (
+                    <VStack {...projectComponentStyles.pillarContainer}>
+                      <Accordion
+                        {...(mode === PLAYER_MODE.PREVIEW
+                          ? taskAccordionStyles.accordionPreview
+                          : taskAccordionStyles.accordion)}
+                        type="single"
+                        isCollapsible={true}
+                        defaultValue={socialProtectionPillar ? [socialProtectionPillar._id] : undefined}
+                      >
+                        <VStack {...projectComponentStyles.pillarContainer}>
+                          {sortedPillars.map(task => (
+                            <TaskComponent
+                              key={task?._id}
+                              task={task}
+                              isChildOfProject={true}
+                              showAccordionWrapper={false}
+                            />
+                          ))}
+                        </VStack>
+                      </Accordion>
+                    </VStack>
+                  );
+                })()}
 
                 {/* Pillar features only: +Add Custom Task button */}
                 {showPillarFeatures && (
@@ -304,7 +327,7 @@ const ProjectComponent: React.FC = () => {
             const content = (
               <VStack
                 paddingHorizontal={
-                  isSingleContainer ? 0 : { base: '$1', md: '$3' }
+                  isSingleContainer ? 0 : '$1'
                 }
                 paddingTop={isSingleContainer ? 0 : '$4'}
                 space="md"
