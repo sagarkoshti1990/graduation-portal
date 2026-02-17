@@ -271,7 +271,7 @@ const LoginScreen: React.FC = () => {
                   <Spinner color="$white" />
                 ) : (
                   <ButtonText {...loginStyles.buttonText}>
-                    {isAdminMode ? t('login.adminLogin') : t('login.logIn')}
+                    {isAdminMode ? t('login.adminLogin') : t('login.Login as LC / LF')}
                   </ButtonText>
                 )}
               </Button>
