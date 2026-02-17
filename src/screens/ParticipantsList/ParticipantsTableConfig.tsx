@@ -67,11 +67,22 @@ export const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => {
  * Ready to Graduate Component
  * Shows "Ready to Graduate" text with warning icon
  */
-const ReadyToGraduate: React.FC = () => {
+interface ReadyToGraduateProps {
+  certificateId?: string;
+}
+
+const ReadyToGraduate: React.FC<ReadyToGraduateProps> = ({ certificateId }) => {
   const { t } = useLanguage();
-  
+  const { isMobile } = usePlatform();
   return (
-    <HStack space="sm" alignItems="center" justifyContent="space-between" marginTop="$3" $md-marginTop="$0">
+    <HStack
+      space="sm"
+      alignItems="center"
+      justifyContent={isMobile ? "space-between" : 'center'}
+      marginTop="$3"
+      $md-marginTop="$0"
+      {...(!isMobile && { width: 100 })}
+    >
       <Text
         {...TYPOGRAPHY.bodySmall}
         color="$textMutedForeground"
@@ -79,14 +90,20 @@ const ReadyToGraduate: React.FC = () => {
       >
         {t('participants.graduated')}
       </Text>
+
       <LucideIcon
-        name="AlertCircle"
+        name={certificateId ? "AlertCircle" : "CheckCircle"}
         size={20}
-        color={theme.tokens.colors.warning500}
+        color={
+          certificateId
+            ? theme.tokens.colors.warning500
+            : theme.tokens.colors.success500
+        }
       />
     </HStack>
   );
 };
+
 
 
 /**
@@ -154,12 +171,9 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
     key: 'graduated',
     label: 'participants.graduated',
     flex: 2,
-    render: participant =>
-      participant.progress === 100 ? (
-        <ReadyToGraduate />
-      ) : (
-        '-'
-      ),
+    render: participant => (
+        <ReadyToGraduate certificateId={participant.certificateId} />
+    ),
     mobileConfig: {
       fullWidthRank: 2, // Full width, appears after progress
       showLabel: false, // Text is rendered inside the component

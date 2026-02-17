@@ -9,6 +9,7 @@ export interface Participant {
   status?: StatusType;
   userDetails?: User;
   idpProjectId?:string;
+  certificateId?:string;
 }
 
 export type StatusCount = {
