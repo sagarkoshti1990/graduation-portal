@@ -69,7 +69,7 @@ export interface ColumnDef<T> {
 
 export interface PaginationConfig {
   enabled?: boolean;           // Enable/disable pagination (default: false)
-  pageSize?: number;           // Items per page (default: 10)
+  pageSize?: number | null;           // Items per page (default: 10)
   showPageSizeSelector?: boolean; // Show page size dropdown (default: false)
   pageSizeOptions?: number[];  // Available page sizes [10, 25, 50, 100]
   showPageNumbers?: boolean;   // Show page number buttons (default: true)
@@ -103,7 +103,7 @@ export interface DataTableProps<T> {
 export interface PaginationControlsProps {
   currentPage: number;
   totalPages: number;
-  pageSize: number;
+  pageSize?: number;
   totalItems: number;
   startIndex: number;
   endIndex: number;

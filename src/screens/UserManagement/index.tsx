@@ -132,7 +132,7 @@ const UserManagementScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState<number | null>(null);
 
   // File upload state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -284,7 +284,9 @@ const UserManagementScreen = () => {
       }
     };
 
-    fetchUsers();
+    if (pageSize) {
+      fetchUsers();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, roles.length, currentPage, pageSize]); // Depend on filters, roles, currentPage, and pageSize
 

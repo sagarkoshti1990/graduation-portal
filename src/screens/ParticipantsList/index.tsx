@@ -162,7 +162,7 @@ const ParticipantsList: React.FC = () => {
           search: searchKey,
           status: activeStatus,
           page: currentPage,
-          limit: pageSize ?? undefined,
+          limit: pageSize,
         });
         setParticipants(response.result.data || []);
         // Set overview from API response
@@ -189,7 +189,9 @@ const ParticipantsList: React.FC = () => {
         setIsLoading(false);
       }
     };
-    fetchParticipants();
+    if (pageSize) {
+      fetchParticipants();
+    }
   }, [searchKey, user, activeStatus, currentPage, pageSize]);
   
   // When Active/Inactive filter changes, set default status
@@ -200,24 +202,7 @@ const ParticipantsList: React.FC = () => {
       // Set default to NOT_ONBOARDED when Active is selected
       setActiveStatus('NOT_ONBOARDED');
     }
-
-    // Load pageSize from storage if not already set
-    const loadPageSize = async () => {
-      if (pageSize === null) {
-        try {
-          const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE);
-          if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
-            setPageSize(storedPageSize);
-          } else {
-            setPageSize(PAGE_SIZE_OPTIONS[0]);
-          }
-        } catch (error) {
-          setPageSize(PAGE_SIZE_OPTIONS[0]);
-        }
-      }
-    };
-    loadPageSize();
-  }, [activeFilter, pageSize]);
+  }, [activeFilter]);
 
   // Handlers
   const handleSearch = useCallback((text: string) => {
