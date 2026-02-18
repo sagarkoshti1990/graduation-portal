@@ -196,7 +196,7 @@ const ProjectComponent: React.FC = () => {
           {...projectComponentStyles.scrollView}
           contentContainerStyle={{ paddingBottom: 40 }}
         >
-{/* Pillar features only: +Add Custom Task button */}
+              {/* Pillar features only: +Add Custom Task button */}
                 {showPillarFeatures && (
                   <Box {...projectComponentStyles.addCustomTaskContainer}>
                     <Pressable onPress={() => setIsModalOpen(true)}>
@@ -234,11 +234,6 @@ const ProjectComponent: React.FC = () => {
                         );
                       }}
                     </Pressable>
-                    <AddCustomTaskModal
-                      isOpen={isModalOpen}
-                      onClose={() => setIsModalOpen(false)}
-                      mode="add"
-                    />
                   </Box>
                 )}
           {/* Shared content logic - pillars or onboarding tasks */}
