@@ -121,17 +121,21 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         });
       }
 
+      setSubmission(observationSubmissionsLast);
+      let numsub;
+      if(submissionNumberInput) {
+        numsub = submissionNumberInput;
+      } else if(observationSubmissionsLast?.status === CARD_STATUS.COMPLETED){
+        numsub = observationSubmissionsLast?.submissionNumber + 1;
+        setSubmission({status:CARD_STATUS.IN_PROGRESS});
+      } else if(observationSubmissionsLast?.submissionNumber){
+        numsub = observationSubmissionsLast?.submissionNumber;
+      } else {
+        numsub = 1;
+      }
+
       if (!observationSolution) {
-        let numsub;
-        if(submissionNumberInput) {
-          numsub = submissionNumberInput;
-        } else if(observationSubmissionsLast?.status === CARD_STATUS.COMPLETED){
-          numsub = observationSubmissionsLast?.submissionNumber + 1;
-        } else if(observationSubmissionsLast?.submissionNumber){
-          numsub = observationSubmissionsLast?.submissionNumber;
-        } else {
-          numsub = 1;
-        }
+        
         const response = await getObservationSolution({
           observationId,
           entityId,
@@ -139,12 +143,6 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           evidenceCode:observationSubmissionsLast?.evidencesStatus?.[0]?.code,
         });
         observationSolution = response.result;
-      }
-
-      if(!observationSubmissionsLast?.status) {
-        setSubmission({status:CARD_STATUS.IN_PROGRESS});
-      } else {
-        setSubmission(observationSubmissionsLast);
       }
 
       if(userData) {
@@ -275,6 +273,8 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [solutionId, id, submissionNumber]);
+
+  console.log('defaultValuesLocal', submission,submission?.status);
 
   const handleBackPress = useCallback(() => {
     if (onClose) {

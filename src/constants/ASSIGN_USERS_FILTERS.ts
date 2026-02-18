@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getProvincesList, getSitesByProvince } from '../services/usersService';
 import { getSupervisorsByProvince } from '../services/assignUsersService';
-import type { FilterConfig } from './USER_MANAGEMENT_FILTERS';
+import type { FilterConfig } from './USER_MANAGEMENT';
 import type { ProvinceEntity, AdminUserManagementData, SiteEntity } from '@app-types/Users';
 
 // Search filter for LC assignment

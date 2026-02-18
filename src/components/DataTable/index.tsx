@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, ReactNode } from 'react';
-import { Box, HStack, Text, Pressable, VStack, Card } from '@ui';
+import { Box, HStack, Text, Pressable, VStack, Card, Loader } from '@ui';
 import { ScrollView } from 'react-native';
 import { theme } from '@config/theme';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -394,14 +394,7 @@ const EmptyState = ({ message }: EmptyStateProps) => {
  */
 const LoadingState = ({ message }: LoadingStateProps) => {
   return (
-    <Box {...styles.loadingState}>
-      <Text
-        {...TYPOGRAPHY.paragraph}
-        color="$textMutedForeground"
-      >
-        {message}
-      </Text>
-    </Box>
+    <Loader size="small" color="$primary500" message={message} />
   );
 };
 
@@ -641,7 +634,7 @@ const DataTable = <T,>({
           </ScrollView>
         )}
       </Box>
-      {paginationConfig.isEnabled && paginationConfig.totalPages > 1 && pagination && (
+      {paginationConfig.isEnabled && pagination && (
         <PaginationControls
           currentPage={paginationConfig.currentPage}
           totalPages={paginationConfig.totalPages}

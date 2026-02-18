@@ -19,5 +19,9 @@ export const STORAGE_KEYS = {
   INTERNAL_ACCESS_TOKEN: '@internal_access_token',
   /** Entity types storage key (for caching province, district, site entity types) */
   ENTITY_TYPES: '@entity_types',
+  /** User Management screen page size preference */
+  USER_MANAGEMENT_PAGE_SIZE: 'user_management_page_size',
+  /** Participants List screen page size preference */
+  PARTICIPANTS_PAGE_SIZE: 'participants_page_size',
 } as const;
 
