@@ -41,6 +41,7 @@ const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const flashAnim = useRef(new Animated.Value(1)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
+  const hoverLoginTriggered = useRef(false);
 
   // Load saved rememberMe preference on mount
   useEffect(() => {
@@ -112,6 +113,12 @@ const LoginScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoginOnEnter = () => {
+    if (loading) return;
+    if (!email || !password) return;
+    handleLogin();
   };
 
   const handleAdminLoginClick = () => {
@@ -208,6 +215,8 @@ const LoginScreen: React.FC = () => {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    returnKeyType="next"
+                    onSubmitEditing={handleLoginOnEnter}
                   />
                 </Input>
               </VStack>
@@ -223,6 +232,8 @@ const LoginScreen: React.FC = () => {
                       onChangeText={setPassword}
                       secureTextEntry={!showPassword}
                       pr="$12"
+                      returnKeyType="done"
+                      onSubmitEditing={handleLoginOnEnter}
                     />
                   </Input>
                   <Pressable
@@ -266,6 +277,10 @@ const LoginScreen: React.FC = () => {
                 {...loginStyles.button}
                 onPress={handleLogin}
                 isDisabled={loading}
+                // @ts-ignore - Web-specific event handlers
+                onMouseLeave={() => {
+                  hoverLoginTriggered.current = false;
+                }}
               >
                 {loading ? (
                   <Spinner color="$white" />
