@@ -60,6 +60,12 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
     navigation.navigate('participant-detail', { id: participant.userId });
   };
 
+  const handleLogVisit = () => {
+    setModalType('log-visit');
+    setSelectedSolutionId('');
+    setSelectedSubmissionNumber(null);
+  };
+
   const handleMenuSelect = (key: string) => {
     // const participantId = participant.userId;
     
@@ -187,13 +193,32 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
 
   // Check if participant is Graduated or Dropout - hide menu for these statuses
   const isReadOnlyStatus = participant.status === STATUS.GRADUATED || participant.status === STATUS.DROPOUT;
+  const isNotOnboarded = participant?.status === STATUS.NOT_ONBOARDED;
 
   return (
     <Box>
       <HStack {...dataTableStyles.cardActionsSection}>
-      {/* @ts-ignore: Back Button */}
-        <Button variant={isMobile ? "outlineghost" : "ghost"} flex="1" onPress={handleViewDetails}>
-          <ButtonText {...TYPOGRAPHY.bodySmall} color="$primary500" fontWeight="$medium">{t('actions.viewDetails')}</ButtonText>
+        {/* @ts-ignore: Back Button */}
+        <Button
+          variant={isMobile ? 'outlineghost' : 'ghost'}
+          flex="1"
+          onPress={isNotOnboarded ? handleLogVisit : handleViewDetails}
+        >
+          {isNotOnboarded && (
+            <LucideIcon
+              name="ClipboardCheck"
+              size={20}
+              color={theme.tokens.colors.primary500}
+            />
+          )}
+
+          <ButtonText
+            {...TYPOGRAPHY.bodySmall}
+            color="$primary500"
+            fontWeight="$medium"
+          >
+            {t(isNotOnboarded ? 'actions.logVisit' : 'actions.viewDetails')}
+          </ButtonText>
         </Button>
         {!isReadOnlyStatus && (
           <Menu
@@ -312,7 +337,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
         )}
 
         {(modalType === 'log-visit' || modalType === 'view-log') && (
-          <Box flex={1}>
+          <Box flex={1} minHeight={400}>
             {logVisitLoading ? (
               <Box flex={1} justifyContent="center" alignItems="center">
                 <Spinner size="large" color="$primary500" />
