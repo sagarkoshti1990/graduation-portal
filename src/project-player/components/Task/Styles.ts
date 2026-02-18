@@ -57,6 +57,30 @@ export const taskCardStyles = {
     elevation: 1,
   },
 
+  // Tooltip styles
+  tooltipContent: {
+    bg: '$textSecondary',
+    px: '$3',
+    py: '$2',
+    borderRadius: '$md',
+  },
+  tooltipText: {
+    color: '$white',
+    fontSize: '$xs',
+  },
+
+  // Primary filled circle (reusable for completed/mandatory tasks)
+  primaryFilledCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: '$full',
+    borderWidth: 2,
+    borderColor: '$primary500',
+    bg: '$primary500',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+
   // Divider
   divider: {
     height: 1,
@@ -190,7 +214,7 @@ export const taskCardStyles = {
   // Status Badge (Done/To Do)
   statusBadge: {
     paddingHorizontal: '$2',
-    paddingVertical: '$0.3',
+    paddingVertical: '$0.5',
     borderRadius: '$full',
     alignSelf: 'flex-start' as const,
     borderWidth: 1,
@@ -227,7 +251,7 @@ export const taskCardStyles = {
   // File Count Tag
   fileCountTag: {
     paddingHorizontal: '$2',
-    paddingVertical: '$0.3',
+    paddingVertical: '$0.5',
     borderRadius: '$full',
     borderWidth: 1,
     borderColor: '$borderColor',
@@ -269,7 +293,7 @@ export const taskCardStyles = {
   onboardingMobileTextContainer: {
     flex: 1,
     minWidth: '$0',
-    space: '2xs' as const,
+    space: 'xs' as const,
   },
   // Onboarding desktop layout
   onboardingDesktopContainer: {

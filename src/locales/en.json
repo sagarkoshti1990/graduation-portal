@@ -55,6 +55,7 @@
     "pillars": "pillars",
     "complete": "complete",
     "stepsComplete": "Steps Complete",
+    "completeFormToMarkDone": "Complete the form first to mark this task as done",
     "onboardingDescription": "Complete all required steps before enrolling the participant",
     "statusTypes": {
       "to-do": "To Do",
