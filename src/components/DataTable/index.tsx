@@ -641,7 +641,7 @@ const DataTable = <T,>({
           </ScrollView>
         )}
       </Box>
-      {paginationConfig.isEnabled && paginationConfig.totalPages > 1 && pagination && (
+      {paginationConfig.isEnabled && pagination && (
         <PaginationControls
           currentPage={paginationConfig.currentPage}
           totalPages={paginationConfig.totalPages}

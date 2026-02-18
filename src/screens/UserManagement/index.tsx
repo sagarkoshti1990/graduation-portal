@@ -3,10 +3,10 @@ import { VStack, HStack, Button, Text, Box, Pressable, Card, Modal, useAlert, Bu
 import { Platform } from 'react-native';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useUserManagementFilters, mapStatusLabelToAPI } from '@constants/USER_MANAGEMENT_FILTERS';
+import { useUserManagementFilters, mapStatusLabelToAPI, PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import FilterButton from '@components/Filter';
 import TitleHeader from '@components/TitleHeader';
-import { titleHeaderStyles } from '@components/TitleHeader/Styles';
+// import { titleHeaderStyles } from '@components/TitleHeader/Styles';
 import DataTable from '@components/DataTable';
 import { getUsersColumns, RoleBadge } from './UsersTableConfig';
 import { AdminUserManagementData } from '@app-types/Users';
@@ -14,11 +14,109 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { getUsersList } from '../../services/usersService';
-import type { UserSearchParams, Role } from '@app-types/Users';
+import type { 
+  // UserSearchParams,
+   Role
+} from '@app-types/Users';
 import { getSignedUrl, uploadFileToSignedUrl, bulkUserCreate } from '../../services/bulkUploadService';
 import { theme } from '@config/theme';
 import { getUserProfile } from '../../services/authenticationService';
 import { TabButton } from '@components/Tabs';
+import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import offlineStorage from '../../services/offlineStorage';
+import logger from '@utils/logger';
+
+/**
+ * ProfileModalHeader - Header component for the profile modal
+ */
+interface ProfileModalHeaderProps {
+  selectedUserBase: AdminUserManagementData | null;
+  selectedUserProfile: any | null;
+  isMobile: boolean;
+  t: (key: string) => string;
+}
+
+const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
+  selectedUserBase,
+  selectedUserProfile,
+  isMobile,
+  t,
+}) => {
+  const roles =
+    (selectedUserBase as any)?.user_organizations?.[0]?.roles
+      ?.map((r: any) => r?.role?.label)
+      .filter(Boolean) || [];
+
+  // Ensure we never render an object as text (prevents React error #31)
+  const profileRole =
+    typeof (selectedUserProfile as any)?.role === 'string'
+      ? (selectedUserProfile as any)?.role
+      : (selectedUserProfile as any)?.role?.label;
+
+  const roleLabel =
+    roles[0] ||
+    profileRole ||
+    selectedUserBase?.role ||
+    t('admin.users.profileModal.defaultRole');
+
+  const badges = (
+    <HStack space="sm" alignItems="center">
+      <RoleBadge role={roleLabel} />
+      <Badge
+        bg={(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
+          ? '$success600'
+          : '$textMutedForeground'}
+        borderRadius="$md"
+        px="$2"
+        py="$0.5"
+      >
+        <BadgeText color="$white" fontSize="$xs" textTransform="none">
+          {(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
+            ? t('admin.filters.active')
+            : t('admin.filters.deactivated')}
+        </BadgeText>
+      </Badge>
+    </HStack>
+  );
+
+  // Mobile: stack name/email above badges
+  if (isMobile) {
+    return (
+      <VStack space="sm" flex={1} flexShrink={1}>
+        <VStack space="xs">
+          <Text {...TYPOGRAPHY.h1} color="$textForeground">
+            {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+          </Text>
+          <HStack space="xs" alignItems="center">
+            <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
+            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+              {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+            </Text>
+          </HStack>
+        </VStack>
+        {badges}
+      </VStack>
+    );
+  }
+
+  // Desktop: left/right layout
+  return (
+    <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1}>
+      <VStack space="xs" flex={1}>
+        <Text {...TYPOGRAPHY.h1} color="$textForeground">
+          {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+        </Text>
+        <HStack space="xs" alignItems="center">
+          <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
+          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+            {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+          </Text>
+        </HStack>
+      </VStack>
+      {badges}
+    </HStack>
+  );
+};
 
 /**
  * UserManagementScreen - Layout is automatically applied by navigation based on user role
@@ -80,6 +178,24 @@ const UserManagementScreen = () => {
 
   // Ref to track previous roles length to detect when roles are first loaded
   const prevRolesLengthRef = useRef(0);
+
+  // Load pageSize from offline storage on mount
+  useEffect(() => {
+    const loadPageSize = async () => {
+      try {
+        const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.USER_MANAGEMENT_PAGE_SIZE);
+        if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
+          setPageSize(storedPageSize);
+        } else {
+          setPageSize(PAGE_SIZE_OPTIONS[1]);
+        }
+      } catch (error) {
+        logger.error('Error loading page size from storage:', error);
+        setPageSize(PAGE_SIZE_OPTIONS[1]);
+      }
+    };
+    loadPageSize();
+  }, []);
 
   // Use custom hook for filter management - handles all API calls for roles, provinces
   const { filters: filterOptions, roles, provinces } = useUserManagementFilters(filters);
@@ -184,9 +300,15 @@ const UserManagementScreen = () => {
   }, []);
 
   // Handle page size change
-  const handlePageSizeChange = useCallback((size: number) => {
+  const handlePageSizeChange = useCallback(async (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when page size changes
+    // Save to offline storage
+    try {
+      await offlineStorage.create(STORAGE_KEYS.USER_MANAGEMENT_PAGE_SIZE, size);
+    } catch (error) {
+      logger.error('Error saving page size to storage:', error);
+    }
   }, []);
 
   // Handle CSV upload: closes options modal and triggers native file picker
@@ -336,7 +458,7 @@ const UserManagementScreen = () => {
             enabled: true,
             pageSize: pageSize,
             showPageSizeSelector: true,
-            pageSizeOptions: [5, 10, 25, 50],
+            pageSizeOptions: PAGE_SIZE_OPTIONS,
             serverSide: {
               count: currentPage,
               total: totalCount,
@@ -466,84 +588,14 @@ const UserManagementScreen = () => {
         size="lg"
         showCloseButton={true}
         contentProps={{ bg: '$white' }}
-        headerContent={(
-          (() => {
-            const roles =
-              (selectedUserBase as any)?.user_organizations?.[0]?.roles
-                ?.map((r: any) => r?.role?.label)
-                .filter(Boolean) || [];
-
-            // Ensure we never render an object as text (prevents React error #31)
-            const profileRole =
-              typeof (selectedUserProfile as any)?.role === 'string'
-                ? (selectedUserProfile as any)?.role
-                : (selectedUserProfile as any)?.role?.label;
-
-            const roleLabel =
-              roles[0] ||
-              profileRole ||
-              selectedUserBase?.role ||
-              t('admin.users.profileModal.defaultRole');
-
-            const badges = (
-              <HStack space="sm" alignItems="center">
-                <RoleBadge role={roleLabel} />
-                <Badge
-                  bg={(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
-                    ? '$success600'
-                    : '$textMutedForeground'}
-                  borderRadius="$md"
-                  px="$2"
-                  py="$0.5"
-                >
-                  <BadgeText color="$white" fontSize="$xs" textTransform="none">
-                    {(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
-                      ? t('admin.filters.active')
-                      : t('admin.filters.deactivated')}
-                  </BadgeText>
-                </Badge>
-              </HStack>
-            );
-
-            // Mobile: stack name/email above badges
-            if (isMobile) {
-              return (
-                <VStack space="sm" flex={1} flexShrink={1}>
-                  <VStack space="xs">
-                    <Text {...TYPOGRAPHY.h1} color="$textForeground">
-                      {selectedUserProfile?.name || selectedUserBase?.name || '-'}
-                    </Text>
-                    <HStack space="xs" alignItems="center">
-                      <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
-                      <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-                        {selectedUserProfile?.email || selectedUserBase?.email || '-'}
-                      </Text>
-                    </HStack>
-                  </VStack>
-                  {badges}
-                </VStack>
-              );
-            }
-
-            // Desktop: left/right layout
-            return (
-              <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1}>
-                <VStack space="xs" flex={1}>
-                  <Text {...TYPOGRAPHY.h1} color="$textForeground">
-                    {selectedUserProfile?.name || selectedUserBase?.name || '-'}
-                  </Text>
-                  <HStack space="xs" alignItems="center">
-                    <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
-                    <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-                      {selectedUserProfile?.email || selectedUserBase?.email || '-'}
-                    </Text>
-                  </HStack>
-                </VStack>
-                {badges}
-              </HStack>
-            );
-          })()
-        )}
+        headerContent={
+          <ProfileModalHeader
+            selectedUserBase={selectedUserBase}
+            selectedUserProfile={selectedUserProfile}
+            isMobile={isMobile}
+            t={t}
+          />
+        }
       >
         <VStack space="md" width="100%">
           {/* Tabs */}

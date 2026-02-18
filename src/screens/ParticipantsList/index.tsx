@@ -30,7 +30,9 @@ import logger from '@utils/logger';
 import { PageHeader } from '@components/PageHeader';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
+import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import offlineStorage from '../../services/offlineStorage';
 
 // Status key type (keys of STATUS object)
 type StatusKey = keyof typeof STATUS;
@@ -72,8 +74,27 @@ const ParticipantsList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [overview, setOverview] = useState<ParticipantOverview | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
+
+  // Load pageSize from offline storage on mount
+  useEffect(() => {
+    const loadPageSize = async () => {
+      try {
+        const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE);
+        if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
+          setPageSize(storedPageSize);
+        } else {
+          setPageSize(PAGE_SIZE_OPTIONS[0]);
+        }
+      } catch (error) {
+        logger.error('Error loading page size from storage:', error);
+        setPageSize(PAGE_SIZE_OPTIONS[0]);
+      }
+    };
+    loadPageSize();
+  }, []);
+
   // Get status items directly from overview using STATUS constants
   const allStatusItems = useMemo<StatusFilterItem[]>(() => {
     if (!overview) {
@@ -141,7 +162,7 @@ const ParticipantsList: React.FC = () => {
           search: searchKey,
           status: activeStatus,
           page: currentPage,
-          limit: pageSize,
+          limit: pageSize ?? undefined,
         });
         setParticipants(response.result.data || []);
         // Set overview from API response
@@ -179,7 +200,24 @@ const ParticipantsList: React.FC = () => {
       // Set default to NOT_ONBOARDED when Active is selected
       setActiveStatus('NOT_ONBOARDED');
     }
-  }, [activeFilter]);
+
+    // Load pageSize from storage if not already set
+    const loadPageSize = async () => {
+      if (pageSize === null) {
+        try {
+          const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE);
+          if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
+            setPageSize(storedPageSize);
+          } else {
+            setPageSize(PAGE_SIZE_OPTIONS[0]);
+          }
+        } catch (error) {
+          setPageSize(PAGE_SIZE_OPTIONS[0]);
+        }
+      }
+    };
+    loadPageSize();
+  }, [activeFilter, pageSize]);
 
   // Handlers
   const handleSearch = useCallback((text: string) => {
@@ -197,9 +235,15 @@ const ParticipantsList: React.FC = () => {
     setCurrentPage(page);
   }, []);
 
-  const handlePageSizeChange = useCallback((size: number) => {
+  const handlePageSizeChange = useCallback(async (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when page size changes
+    // Save to offline storage
+    try {
+      await offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE, size);
+    } catch (error) {
+      logger.error('Error saving page size to storage:', error);
+    }
   }, []);
 
   const handleRowClick = useCallback(
@@ -306,10 +350,10 @@ const ParticipantsList: React.FC = () => {
               loadingMessage={t('participants.loadingParticipants')}
               pagination={{
                 enabled: true,
-                pageSize: pageSize,
+                pageSize: pageSize ?? undefined,
                 maxPageNumbers: 5,
                 showPageSizeSelector: true,
-                pageSizeOptions: [5, 10],
+                pageSizeOptions: PAGE_SIZE_OPTIONS,
                 serverSide: {
                   count: currentPage,
                   total: totalItems,
@@ -334,6 +378,7 @@ const GroupCheckInsButton: React.FC = () => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const [isLoading, setIsLoading] = useState(false);
+
   const handleGroupCheckIns = async () => {
     try {
       setIsLoading(true);
@@ -345,8 +390,8 @@ const GroupCheckInsButton: React.FC = () => {
       });
       // Assume the API returns an array of solutions, pick the first one
       const solution = response?.[0];
-      if (solution?.solutionId) {
-        // Navigate to the group check-in details page or solution details
+      if (solution && solution?.solutionId) {
+      // Navigate to the group check-in details page or solution details
         // @ts-ignore
         navigation.navigate('observation', {
           id: user?.id as string,
@@ -355,7 +400,7 @@ const GroupCheckInsButton: React.FC = () => {
         });
       } else {
         // Optionally show error (toast/snackbar)
-        showAlert('error', 'No group check-in solutions found: '+solution.solutionId);
+        showAlert('error', 'No group check-in solutions found for keyword: '+FILTER_KEYWORDS.GROUP_CHECK_IN.join(','));
       }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch targeted solutions';

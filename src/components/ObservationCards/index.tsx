@@ -181,7 +181,18 @@ export const StatusBadge: React.FC<{ status: string,preFix?: any }> = ({ status,
               color={status === CARD_STATUS.GRADUATED ? '$white' : '$success600'}
             />
           )}
-        {preFix && preFix}
+        {React.isValidElement(preFix)
+          ? React.cloneElement(preFix, {
+              color:
+                status === CARD_STATUS.GRADUATED
+                  ? '$white'
+                  : status === CARD_STATUS.COMPLETED
+                  ? '$success600'
+                  : status === CARD_STATUS.IN_PROGRESS
+                  ? '$warning600'
+                  : '$textMuted',
+            })
+          : preFix}
         <Text
           {...(status === CARD_STATUS.GRADUATED
             ? assessmentSurveyCardStyles.statusBadgeTextGraduated

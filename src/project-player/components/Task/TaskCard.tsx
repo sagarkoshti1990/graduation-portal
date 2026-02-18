@@ -157,7 +157,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
         // @ts-ignore Navigate to observation screen - task will be marked as completed on return
         navigation.navigate('observation', {
           id: participantId,
-          solutionId: solutionDetails.data._id
+          solutionId: solutionDetails.data._id,
+          submissionNumber: 1, // First submission number for the task
         });
       }
     } else {
