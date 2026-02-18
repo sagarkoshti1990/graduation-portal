@@ -40,7 +40,7 @@ const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useLanguage();
-  const { isWeb } = usePlatform();
+  const { isWeb , isMobile} = usePlatform();
   const { user } = useAuth();
 
   const participantId = (route.params as { id?: string })?.id || '';
@@ -573,6 +573,7 @@ const DevelopInterventionPlan: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        size={isMobile ? "lg" : "md"}
         headerTitle={t('template.categoryModal.title')}
         headerDescription={t('template.categoryModal.forParticipant', {
           name: participantName,
@@ -634,7 +635,7 @@ const DevelopInterventionPlan: React.FC = () => {
             </Button>
           </Box>
         }
-        size={isWeb ? 'md' : 'lg'}
+        //size={isWeb ? 'md' : 'lg'}
       >
         <VStack gap="$1">
           <Text {...TYPOGRAPHY.bodySmall} color="$textSecondary" mb="$2">
@@ -648,6 +649,7 @@ const DevelopInterventionPlan: React.FC = () => {
                     {/* {t('template.categoryModal.categoryLabel')} */}
                     Category of {pillar?.name}
                   </Text>
+                 <Box {...(templateStyles.selectWrapper as any)}>
                   <Select
                     options={getCategoriesForPillar(pillar._id).map(c => ({
                       label: c.label,
@@ -671,8 +673,9 @@ const DevelopInterventionPlan: React.FC = () => {
                     placeholder={t(
                       'template.categoryModal.categoryPlaceholder',
                     )}
-                    borderColor="$inputBorder"
+                    borderColor="$transparent"
                   />
+                  </Box>
                 </VStack>
 
                 <VStack gap="$1" mb="$1">
@@ -691,6 +694,7 @@ const DevelopInterventionPlan: React.FC = () => {
                         : 'auto'
                     }
                   >
+                    <Box {...(templateStyles.selectWrapper as any)}>
                     <Select
                       key={`subcategory-${pillar._id}-${
                         selectionByPillar[pillar._id]?.categoryId || 'none'
@@ -718,8 +722,9 @@ const DevelopInterventionPlan: React.FC = () => {
                       placeholder={t(
                         'template.categoryModal.subCategoryPlaceholder',
                       )}
-                      borderColor="$inputBorder"
+                      borderColor="$transparent"
                     />
+                    </Box>
                   </Box>
                 </VStack>
               </React.Fragment>
@@ -744,13 +749,13 @@ const DevelopInterventionPlan: React.FC = () => {
                   }
                                      
                   return (
-                    <>
+                    <React.Fragment key={pillar._id}>
                       <Text
                         key={pillar._id}
                         {...TYPOGRAPHY.bodySmall}
-                        color="$progressBarFillColor"
+                        color="$blue800"
                         fontWeight="$semibold"
-                        mb="$2"
+                        mb="$1"
                       >
                         {t('template.categoryModal.selectedLabel', {
                           category: selection.categoryName,
@@ -759,12 +764,11 @@ const DevelopInterventionPlan: React.FC = () => {
                       </Text>
                       <Text
                         {...TYPOGRAPHY.caption}
-                        color="$progressBarFillColor"
-                        mt="$1"
+                        color="$blue700"
                       >
                         {t('template.categoryModal.selectedDescription')}
                       </Text>
-                    </>
+                    </React.Fragment>
                   );
                 })}
             </Box>
