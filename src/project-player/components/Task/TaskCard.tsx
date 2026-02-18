@@ -188,10 +188,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
         // Render a simple green checkmark (non-interactive)
         return (
           <Box
-            {...taskCardStyles.observationStatusCircle}
-            {...taskCardStyles.observationStatusCircleCompleted}
+            {...taskCardStyles.primaryFilledCircle}
           >
-            <LucideIcon name="Check" size={14} color={theme.tokens.colors.success500} strokeWidth={3} />
+            <LucideIcon name="Check" size={14} color={theme.tokens.colors.white} strokeWidth={3} />
           </Box>
         );
       } else {
@@ -203,7 +202,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
               return (
                 <Pressable {...triggerProps} cursor="default">
                   <Box
-                    {...taskCardStyles.observationStatusCircle}
+                    {...taskCardStyles.primaryFilledCircle}
+                    borderColor="$textMuted"
+                    bg="$backgroundPrimary.light"
                   />
                 </Pressable>
               );

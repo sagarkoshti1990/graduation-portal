@@ -69,19 +69,16 @@ export const taskCardStyles = {
     fontSize: '$xs',
   },
 
-  // Observation Task specific status circle (non-interactive, larger border)
-  observationStatusCircle: {
+  // Primary filled circle (reusable for completed/mandatory tasks)
+  primaryFilledCircle: {
     width: 20,
     height: 20,
     borderRadius: '$full',
     borderWidth: 2,
-    borderColor: '$textMuted',
-    bg: 'transparent',
+    borderColor: '$primary500',
+    bg: '$primary500',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-  },
-  observationStatusCircleCompleted: {
-    borderColor: '$success500',
   },
 
   // Divider
