@@ -196,7 +196,51 @@ const ProjectComponent: React.FC = () => {
           {...projectComponentStyles.scrollView}
           contentContainerStyle={{ paddingBottom: 40 }}
         >
-
+{/* Pillar features only: +Add Custom Task button */}
+                {showPillarFeatures && (
+                  <Box {...projectComponentStyles.addCustomTaskContainer}>
+                    <Pressable onPress={() => setIsModalOpen(true)}>
+                      {(state: any) => {
+                        const isHovered =
+                          state?.hovered || state?.pressed || false;
+                        return (
+                          <Box
+                            {...addCustomTaskStyles.buttonBox}
+                            bg={isHovered ? '$primary100' : '$accent100'}
+                            borderColor={
+                              isHovered ? '$primary500' : '$mutedBorder'
+                            }
+                          >
+                            <HStack {...addCustomTaskStyles.buttonContent}>
+                              <LucideIcon
+                                name="Plus"
+                                size={18}
+                                color={
+                                  isHovered
+                                    ? theme.tokens.colors.primary700
+                                    : theme.tokens.colors.primary500
+                                }
+                                strokeWidth={2.5}
+                              />
+                              <Text
+                                {...TYPOGRAPHY.button}
+                                color={isHovered ? '$primary700' : '$primary500'}
+                                fontWeight="$semibold"
+                              >
+                                {t('projectPlayer.addCustomTask')}
+                              </Text>
+                            </HStack>
+                          </Box>
+                        );
+                      }}
+                    </Pressable>
+                    <AddCustomTaskModal
+                      isOpen={isModalOpen}
+                      onClose={() => setIsModalOpen(false)}
+                      mode="add"
+                    />
+                  </Box>
+                )}
           {/* Shared content logic - pillars or onboarding tasks */}
           {(() => {
             const pillarContent = hasChildren ? (
@@ -262,7 +306,7 @@ const ProjectComponent: React.FC = () => {
                                 color={isHovered ? '$primary700' : '$primary500'}
                                 fontWeight="$semibold"
                               >
-                                {t('projectPlayer.addTaskToPillar')}
+                                {t('projectPlayer.addCustomTask')}
                               </Text>
                             </HStack>
                           </Box>

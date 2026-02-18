@@ -57,7 +57,7 @@ const AddCustomTask: React.FC<AddCustomTaskProps> = ({
                   color={isHovered ? "$primary700" : "$primary500"}
                   fontWeight="$semibold"
                 >
-                  {t('projectPlayer.addTaskToPillar')}
+                  {t('projectPlayer.addCustomTask')}
                 </Text>
               </HStack>
             </Box>
