@@ -13,6 +13,9 @@ import {
   Pressable,
   CheckIcon,
   useAlert,
+  Tooltip,
+  TooltipContent,
+  TooltipText,
 } from '@ui';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useTaskActions } from '../../hooks/useTaskActions';
@@ -176,6 +179,48 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   // Render task status indicator (circle or checkbox)
   const renderStatusIndicator = () => {
+    // Special handling for Observation/Form tasks in Edit Mode
+    const isInterventionPlanEditMode = isEdit && !isPreview && isChildOfProject;
+    const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
+
+    if (isInterventionPlanEditMode && isObservationTask) {
+      if (isCompleted) {
+        // Render a simple green checkmark (non-interactive)
+        return (
+          <Box
+            {...taskCardStyles.observationStatusCircle}
+            {...taskCardStyles.observationStatusCircleCompleted}
+          >
+            <LucideIcon name="Check" size={14} color={theme.tokens.colors.success500} strokeWidth={3} />
+          </Box>
+        );
+      } else {
+        // Show empty circle for consistency (non-interactive) with Tooltip on hover
+        return (
+          <Tooltip
+            placement="top"
+            trigger={(triggerProps: any) => {
+              return (
+                <Pressable {...triggerProps} cursor="default">
+                  <Box
+                    {...taskCardStyles.observationStatusCircle}
+                  />
+                </Pressable>
+              );
+            }}
+          >
+            <TooltipContent
+              {...taskCardStyles.tooltipContent}
+            >
+              <TooltipText {...taskCardStyles.tooltipText}>
+                {t('projectPlayer.completeFormToMarkDone') || 'Complete the form first to mark this task as done'}
+              </TooltipText>
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+    }
+
     if (uiConfig.showCheckbox) {
       return (
         <Checkbox
@@ -338,16 +383,26 @@ const TaskCard: React.FC<TaskCardProps> = ({
     // Status badge for Intervention Plan Edit mode only (not Onboarding)
     // isInterventionPlanEditMode is true ONLY for Intervention Plan tasks that are children of pillars
     const isEditModeOnly = isInterventionPlanEditMode;
+    const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
     const statusBadge =
       isEditModeOnly && uiConfig.showAsCard ? (
-        <Pressable onPress={() => handleCheckboxChange(!isCompleted)}>
+        <Pressable
+          onPress={() => {
+            if (!isObservationTask) {
+              handleCheckboxChange(!isCompleted);
+            }
+          }}
+          disabled={isObservationTask} // Disable interaction for observation tasks (no toggle)
+        >
           {(state: any) => {
-            const isHovered = state?.hovered || state?.pressed || false;
+            // For disabled state (Observation tasks), force isHovered to false
+            const isHovered = !isObservationTask && (state?.hovered || state?.pressed || false);
             const isDone = isCompleted;
             return (
               <Box
                 {...taskCardStyles.statusBadge}
                 {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
+                opacity={isObservationTask ? 1 : undefined} // Keep full opacity for visibility
               >
                 <Text
                   {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
@@ -362,6 +417,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     // In Edit mode only (non-preview), hide description
     const showDescription = !isEditModeOnly || !uiConfig.showAsCard;
+
+    // Wrap content in Pressable for Observation tasks in Edit mode to allow opening the form by clicking the text
+    const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
+      const isInterventionPlanEditMode = isEdit && !isPreview && isChildOfProject;
+      const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
+
+      if (isInterventionPlanEditMode && isObservationTask) {
+        return (
+          <Pressable onPress={handleTaskClick}>
+            {children}
+          </Pressable>
+        );
+      }
+      return <>{children}</>;
+    };
 
     return (
       <VStack space="xs" flex={1}>
@@ -386,6 +456,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         ) : (
           /* Edit mode: title on first line, badges on second line */
           <>
+          <ContentWrapper>
             <Text
               {...titleTypography}
               color="$textPrimary"
@@ -402,6 +473,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             >
               {task.name}
             </Text>
+          </ContentWrapper>
             <HStack space="sm" alignItems="center" flexWrap="wrap">
               {statusBadge}
               {taskBadge}
@@ -653,7 +725,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     mainContent = (
       <Box
         {...taskCardStyles.onboardingStepCard}
-        padding={isMobile ? taskCardStyles.onboardingCardPaddingMobile : taskCardStyles.onboardingCardPaddingDesktop}
+        paddingVertical={isMobile ? '$4' : '$4'}
         marginBottom={isLastTask ? 0 : (isMobile ? taskCardStyles.onboardingCardMarginBottomMobile : taskCardStyles.onboardingCardMarginBottomDesktop)}
       >
         {isMobile ? (
@@ -881,7 +953,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     mainContent = (
       <Box
         {...taskCardStyles.regularTaskContainer}
-        padding={isMobile ? '20px 0' : '$2 0'}
+        paddingVertical={isMobile ? '$5' : '$2'}
       >
         <HStack
           alignItems="flex-start"
@@ -894,7 +966,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <Box flexShrink={0} mt="$1">
                 {renderStatusIndicator()}
               </Box>
-              <Box flex={1} marginLeft="5px">
+              <Box flex={1} marginLeft="$1">
                 {renderTaskInfo()}
               </Box>
             </Box>
