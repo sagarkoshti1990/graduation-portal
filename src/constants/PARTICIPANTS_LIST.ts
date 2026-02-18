@@ -511,14 +511,6 @@ export const getParticipantsMenuItems: MenuItemData[] = [
     iconSizeValue: 20,
   },
   {
-    key: 'log-visit',
-    label: 'actions.logVisit',
-    textValue: 'Log Visit',
-    iconName: 'ClipboardCheck',
-    iconColor: theme.tokens.colors.textForegroundColor,
-    iconSizeValue: 20,
-  },
-  {
     key: 'dropout',
     label: 'actions.dropout',
     textValue: 'Dropout',
