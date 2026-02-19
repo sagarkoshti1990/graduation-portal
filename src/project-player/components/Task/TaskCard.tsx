@@ -523,7 +523,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </HStack>
           </>
         )}
-        {showDescription && task?.description && (
+        {/* {showDescription && task?.description && (
           <Text
             {...(uiConfig.showAsCard
               ? TYPOGRAPHY.bodySmall
@@ -535,7 +535,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           >
             {task.description}
           </Text>
-        )}
+        )} */}
       </VStack>
     );
   };
