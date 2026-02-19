@@ -7,12 +7,12 @@ interface SidebarItem {
 }
 
 export const MAIN_MENU_ITEMS: SidebarItem[] = [
-  // {
-  //   key: 'dashboard',
-  //   label: 'admin.dashboard',
-  //   icon: 'LayoutDashboard', // Lucide icon name
-  //   route: 'admin-dashboard',
-  // },
+  {
+    key: 'dashboard',
+    label: 'admin.dashboard',
+    icon: 'LayoutDashboard', // Lucide icon name
+    route: 'admin-dashboard',
+  },
   {
     key: 'user-management',
     label: 'admin.menu.userManagement',

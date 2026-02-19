@@ -80,8 +80,8 @@ const getAccessPages = (
   switch (role) {
     case 'admin':
       return [
-        { name: 'home', path: '/', component: HomeScreen },
-        { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        // { name: 'home', path: '/', component: HomeScreen },
+        { name: 'admin-dashboard', path: '/', component: AdminDashboard },
         {
           name: 'user-management',
           path: '/user-management',

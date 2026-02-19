@@ -29,10 +29,18 @@ const StatCard: React.FC<StatCardProps> = ({
   const finalColor = color || (isPercentage ? theme.tokens.colors.success600 : theme.tokens.colors.textForeground);
   
   // Determine what to show in subtitle
-  // If showCountBeforeSubLabel is true and countValue is provided, show count before subtitle
-  const subtitleText = showCountBeforeSubLabel && countValue
-    ? `${countValue} ${t(subLabel)}`
-    : t(subLabel);
+  // If showCountBeforeSubLabel is true and countValue is provided:
+  // - If countValue looks like a full phrase (contains letters), show it directly
+  // - Otherwise, prefix countValue before the translated subLabel (e.g. "2,456 contacted")
+  const translatedSubLabel = t(subLabel);
+  const subtitleText =
+    showCountBeforeSubLabel && countValue
+      ? /[A-Za-z]/.test(countValue)
+        ? countValue
+        : translatedSubLabel && translatedSubLabel !== countValue
+          ? `${countValue} ${translatedSubLabel}`
+          : countValue
+      : translatedSubLabel;
 
   return (
     <StatCardContainer>

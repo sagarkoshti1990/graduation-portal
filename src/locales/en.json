@@ -269,6 +269,423 @@
         "sla": "100% SLA completion - All profiled participants have signed SLAs with intervention plans."
       },
       "graphs": {
+        "sections": {
+          "assigned": {
+            "header": "1.1 Prospective Participants Assigned by Supervisors to LC/LF (CSG Lists)",
+            "meta": "Target: Participant | Time: Monthly / Per graduation cycle | Data: Assigned Participants by Supervisor"
+          },
+          "contacted": {
+            "header": "1.2 Prospective Participants Contacted by LC/LF",
+            "meta": "Target: Participant | Time: Monthly | Data: Door-to-door outreach logs | Logic: Count contacted / total assigned → %"
+          },
+          "consent": {
+            "header": "1.3 Participants Who Signed Consent Forms & Completed Profiling",
+            "meta": "Target: Participant | Time: Monthly | Data: Signed Consent Form Logs | Logic: Count signed / total assigned → %"
+          },
+          "sla": {
+            "header": "1.4 Participants Who Signed SLAs with Intervention Plans",
+            "meta": "Target: Participant | Time: Monthly | Data: Signed SLA Logs | Logic: Count signed / total assigned → %"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "socialProtectionReferrals": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "specialAttention": {
+          "title": "Special Attention Referrals",
+          "subtitle": "19% of participants | 100% referred"
+        },
+        "immediateAttention": {
+          "title": "Immediate Attention Referrals",
+          "subtitle": "46% of participants | 100% referred"
+        },
+        "supportCompletion": {
+          "title": "Support Completion Rate",
+          "subtitle": "1323 receiving out of 1438 referred"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Social Protection Referrals",
+        "specialAttention": "526 participants (19%) requiring special attention - Substance Abuse, Mental Health, GBV",
+        "immediateAttention": "1,248 participants (46%) requiring immediate attention - Food Security, Health, Municipal Indigent Programs",
+        "referralRate": "100% referral rate achieved - All identified participants referred to appropriate support services",
+        "supportCompletion": "92% support completion rate - 1,323 participants successfully receiving or received support from referral services"
+      },
+      "graphs": {
+        "sections": {
+          "specialAttention": {
+            "header": "2.1 Special Attention Referrals",
+            "meta": "Target: Participant | Time: Monthly | Data: Special Attention Referral Logs | Logic: Count referred / total needing support → %"
+          },
+          "immediateAttention": {
+            "header": "2.2 Immediate Attention Referrals",
+            "meta": "Target: Participant | Time: Monthly | Data: Immediate Attention Referral Logs | Logic: Count referred / total needing support → %"
+          },
+          "receivedSupport": {
+            "header": "2.3 Participants Who Received Support",
+            "meta": "Target: Participant | Time: Monthly | Data: Support Completion Logs | Logic: Count received / total referred → %"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "socialEmpowerment": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "emotionalSelfAwareness": {
+          "title": "Emotional Self-Awareness",
+          "subtitle": "sessions completed"
+        },
+        "relationships": {
+          "title": "Relationships",
+          "subtitle": "sessions completed"
+        },
+        "communicationSkills": {
+          "title": "Communication Skills",
+          "subtitle": "sessions completed"
+        },
+        "familySupport": {
+          "title": "Family Support",
+          "subtitle": "engagement recorded"
+        },
+        "parentsInvolvement": {
+          "title": "Parents' Involvement",
+          "subtitle": "involvement recorded"
+        }
+      },
+      "insights": {
+        "title": "Social Empowerment - Task Completion Summary",
+        "emotionalSelfAwareness": "2,596 participants (95%) completed emotional self-awareness sessions",
+        "relationships": "2,623 participants (96%) completed relationship-focused sessions",
+        "communicationSkills": "2,650 participants (98%) completed communication skills sessions",
+        "familySupport": "2,569 participants (95%) have family support engagement recorded",
+        "parentsInvolvement": "2,528 participants (93%) have parental involvement in schooling recorded"
+      },
+      "graphs": {
+        "sections": {
+          "emotionalSelfAwareness": {
+            "header": "3.2.1 Emotional Self-Awareness Sessions Over Time",
+            "meta": "Data Source: Task completed - Emotional Self-Awareness session completed | One task = one count"
+          },
+          "communicationSkills": {
+            "header": "3.2.2 Communication Skills Sessions Over Time",
+            "meta": "Data Source: Task completed - Communication Skills session completed | One task = one count"
+          },
+          "familySupport": {
+            "header": "3.2.3 Family Support Engagement Over Time",
+            "meta": "Data Source: Task completed - Family Support session/visit logged | One task = one count"
+          },
+          "parentsInvolvement": {
+            "header": "3.2.4 Parents' Involvement in Schooling Over Time",
+            "meta": "Data Source: Task completed - Parents' involvement in schooling logged | One task = one count"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "bigPush": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "fundingSubmitted": {
+          "title": "Funding Applications Submitted",
+          "subtitle": "90% of 1,466 eligible"
+        },
+        "fundingApproved": {
+          "title": "Funding Applications Approved",
+          "subtitle": "85% of 1,320 submitted"
+        },
+        "assetTransfers45Days": {
+          "title": "Asset Transfers Within 45 Days",
+          "subtitle": "92% of 1,122 approved"
+        },
+        "avgAssetValue": {
+          "title": "Average Value of Asset Per Participant",
+          "subtitle": "ZAR 20,566.087 per participant"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Big Push",
+        "fundingSubmitted": "90% application submission rate - 1,320 of 1,466 eligible participants submitted funding applications",
+        "fundingApproved": "85% approval rate - 1,122 applications approved for funding",
+        "assetTransfers45Days": "92% timely transfer rate - 950 assets transferred within 45 days post-approval",
+        "totalAssetValue": "R23.1M total asset value transferred to 1,122 participants across all sites"
+      },
+      "graphs": {
+        "sections": {
+          "submittedFunding": {
+            "header": "3.1.1 Submitted Funding Applications",
+            "meta": "Target: Participant | Time: Per graduation cycle | Data: Funding Application Logs | Logic: Count submitted / eligible participants → %"
+          },
+          "approvedFunding": {
+            "header": "3.1.2 Approved Funding Applications",
+            "meta": "Target: Participant | Time: Per graduation cycle | Data: Approval Decision Logs | Logic: Count approved / submitted → %"
+          },
+          "assetTransfer45": {
+            "header": "3.1.3 Asset Transfers ≤ 45 Days Post Approval",
+            "meta": "Target: Participant | Time: Per graduation cycle | Data: Asset Transfer Logs | Logic: Count transferred ≤45 days / approved → %"
+          },
+          "assetValuePerSite": {
+            "header": "3.1.4 Cumulative Asset Value per Site (ZAR)",
+            "meta": "Target: Site | Time: Per graduation cycle | Data: Asset Transfer Logs | Logic: Sum asset values per site"
+          },
+          "assetValueByProvider": {
+            "header": "3.1.5 Cumulative Asset Value by Opportunity Provider (ZAR)",
+            "meta": "Target: Opportunity Provider | Time: Per graduation cycle | Data: Asset Transfer Logs | Logic: Sum asset values per provider"
+          },
+          "approvalWithin45": {
+            "header": "3.1.6 Funding Approval ≤ 45 Days Post Application",
+            "meta": "Target: Participant | Time: Per graduation cycle | Data: Application & Approval Logs | Logic: Days between application & approval ≤45 → %"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "livelihoodPromotion": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "sections": {
+        "pathwaySelection": "Livelihood Pathway Selection",
+        "entrepreneurshipKeyMetrics": "Entrepreneurship Pathway - Key Metrics",
+        "employmentKeyMetrics": "Employment Pathway - Key Metrics"
+      },
+      "common": {
+        "ofParticipants": "of participants",
+        "trained": "trained",
+        "supported": "supported",
+        "businesses": "businesses",
+        "linked": "linked",
+        "attended": "attended",
+        "employed": "employed"
+      },
+      "metrics": {
+        "entrepreneurshipPathway": {
+          "title": "Entrepreneurship Pathway",
+          "subtitle": "of participants"
+        },
+        "employmentPathway": {
+          "title": "Employment Pathway",
+          "subtitle": "of participants"
+        },
+        "livelihoodSpecificTraining": {
+          "title": "Livelihood Specific Training",
+          "subtitle": "trained"
+        },
+        "businessTraining": {
+          "title": "Business Training",
+          "subtitle": "trained"
+        },
+        "registrationSupport": {
+          "title": "Registration Support",
+          "subtitle": "supported"
+        },
+        "registrationRate": {
+          "title": "Registration Rate",
+          "subtitle": "businesses"
+        },
+        "linkageToMarket": {
+          "title": "Linkage to Market",
+          "subtitle": "linked"
+        },
+        "vocationalTraining": {
+          "title": "Vocational Training",
+          "subtitle": "trained"
+        },
+        "workReadiness": {
+          "title": "Work Readiness",
+          "subtitle": "attended"
+        },
+        "learnershipPublicEmployment": {
+          "title": "Learnerships/Public Employment",
+          "subtitle": "linked"
+        },
+        "permanentEmploymentRate": {
+          "title": "Permanent Employment Rate",
+          "subtitle": "employed"
+        },
+        "linkedToMentorship": {
+          "title": "Linked to Mentorship",
+          "subtitle": "linked"
+        }
+      },
+      "graphs": {
+        "groupHeaders": {
+          "entrepreneurship": "ENTREPRENEURSHIP PATHWAY",
+          "employment": "EMPLOYMENT PATHWAY"
+        },
+        "sections": {
+          "vocationalSkills": {
+            "header": "6.1.1 Trained in Vocational/Livelihood Specific Skills",
+            "meta": "Target: Participant | Time: Monthly | Data: Training attendance logs | Logic: Count completed / eligible participants → %"
+          },
+          "businessTraining": {
+            "header": "6.1.2 Trained in Business Management & Entrepreneurship",
+            "meta": "Target: Participant | Time: Monthly | Data: Training attendance logs | Logic: Count completed / eligible participants → %"
+          },
+          "registrationSupport": {
+            "header": "6.1.3 Supported to Register New Businesses",
+            "meta": "Target: Participant | Time: Monthly | Data: Business registration support logs | Logic: Count supported / eligible participants → %"
+          },
+          "registeredBusinesses": {
+            "header": "6.1.4 Youth Registered Businesses (Added / Linked to Training)",
+            "meta": "Target: Participant | Time: Monthly | Data: Business registration logs | Logic: Cumulative count of registered businesses"
+          },
+          "linkedToMarket": {
+            "header": "6.1.5 Linked to Market Opportunities",
+            "meta": "Target: Participant | Time: Monthly | Data: Market linkage logs | Logic: Count linked / eligible participants → %"
+          },
+          "workReadiness": {
+            "header": "6.2.1 Attended Work Readiness Training",
+            "meta": "Target: Participant | Time: Monthly | Data: Work readiness attendance logs | Logic: Count attended / eligible participants → %"
+          },
+          "linkedToEmployment": {
+            "header": "6.2.2 Linked to Opportunities of Market Employment",
+            "meta": "Target: Participant | Time: Monthly | Data: Employment linkage logs | Logic: Count linked / eligible participants → %"
+          },
+          "permanentEmployment": {
+            "header": "6.2.3 Linked to Permanent Employment (> 2 years)",
+            "meta": "Target: Participant | Time: Monthly | Data: Employment outcomes logs | Logic: Count permanently employed / eligible participants → %"
+          },
+          "mentorship": {
+            "header": "6.2.4 Linked to Mentorship Programme in Sector Specific Jobs",
+            "meta": "Target: Participant | Time: Monthly | Data: Mentorship programme logs | Logic: Count linked / eligible participants → %"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "financialInclusion": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "financialLiteracyAttendance": {
+          "title": "Financial Literacy Attendance",
+          "subtitle": "2650 of 2718 participants"
+        },
+        "formalSavingsProductUsage": {
+          "title": "Formal Savings Product Usage",
+          "subtitle": "2557 using formal savings"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Financial Inclusion",
+        "financialLiteracyAttendance": "97% attendance at financial literacy training - 2,650 participants completed the program",
+        "formalSavingsUsage": "94% usage of formal savings products - majority using bank accounts and stokvels",
+        "strongOutcomes": "Strong financial inclusion outcomes across both literacy and savings adoption"
+      },
+      "graphs": {
+        "sections": {
+          "financialLiteracy": {
+            "header": "6.1 % Attended Financial Literacy Program",
+            "meta": "Target: Participant | Data: Financial Literacy Attendance Logs | Chart: Number card + trend"
+          },
+          "formalSavings": {
+            "header": "6.2 Usage of Formal Savings Products/Services",
+            "meta": "Target: Participant | Data: Q37 / Home Visit Form Q8 | Chart: Multi-line or Pie chart + trend"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "coaching": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "participantsReceivingCoaching": {
+          "title": "Participants Receiving Coaching",
+          "subtitle": "100% coverage"
+        },
+        "totalSessionsDelivered": {
+          "title": "Total Sessions Delivered",
+          "subtitle": "Across all participants"
+        },
+        "avgSessionsPerParticipant": {
+          "title": "Average Sessions per Participant",
+          "subtitle": "Per graduation cycle"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Coaching",
+        "coverage": "100% of participants (2,718) received regular coaching support throughout the program",
+        "totalSessions": "21,744 total coaching sessions delivered - average of 8 sessions per participant",
+        "weeklySessions": "50% of participants received weekly coaching sessions (4+ per month)"
+      },
+      "graphs": {
+        "sections": {
+          "sessionsFrequency": {
+            "header": "7.1 # and Average Frequency of Sessions",
+            "meta": "Target: Participant | Data: Coaching Session Logs | Chart: Number card + line trend"
+          },
+          "challengingCases": {
+            "header": "7.2 Number and (%) with Challenging Cases Flagged",
+            "meta": "Target: Participant | Data: Home Visit Form - Check-in | Logic: Count flagged as challenging case / total → %"
+          },
+          "refresherTrainings": {
+            "header": "7.3 Number and (%) Attended Refresher Trainings",
+            "meta": "Target: Participant | Data: Employment & Entrepreneurship IDPs | Logic: Count with refresher training ticked / total → %"
+          }
+        },
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "dropOuts": {
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "totalDroppedOff": {
+          "title": "Total Participants Dropped Off",
+          "subtitle": "Participants who left the program"
+        }
+      },
+      "breakdown": {
+        "title": "Detailed Reasons Breakdown",
+        "reasons": {
+          "personalFamily": "Personal/Family Reasons",
+          "relocationMigration": "Relocation/Migration",
+          "healthIssues": "Health Issues",
+          "foundOtherEmployment": "Found Other Employment",
+          "financialConstraints": "Financial Constraints",
+          "lostInterestMotivation": "Lost Interest/Motivation",
+          "unknownNoContact": "Unknown/No Contact"
+        }
+      },
+      "graphs": {
+        "sections": {
+          "dropoutOverTime": {
+            "header": "Dropout Rates - Number & Percentage Dropping Out",
+            "meta": "Comprehensive dropout analysis including aggregate totals, trends over time by reason, reasons breakdown, and provincial heatmap"
+          },
+          "reasonsDistribution": {
+            "header": "Dropout Reasons Distribution",
+            "meta": "Breakdown of why participants dropped out of the program"
+          },
+          "provinceHeatmap": {
+            "header": "Dropout Heatmap by Province (Supervisor View)",
+            "meta": "Provincial dropout rates showing intensity across all 9 provinces"
+          },
+          "cumulativeTimeline": {
+            "header": "Cumulative Dropout Timeline",
+            "meta": "Total cumulative dropouts building up over the year"
+          }
+        },
         "placeholder": "Graphs view will be displayed here"
       }
     },
