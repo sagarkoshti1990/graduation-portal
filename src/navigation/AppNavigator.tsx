@@ -81,12 +81,12 @@ const getAccessPages = (
     case 'admin':
       return [
         // { name: 'home', path: '/', component: HomeScreen },
-        { name: 'admin-dashboard', path: '/', component: AdminDashboard },
         {
           name: 'user-management',
-          path: '/user-management',
+          path: '/',
           component: UserManagementScreen,
         },
+        { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
         {
           name: 'template-management',
           path: '/template-managemnt',
@@ -120,12 +120,12 @@ const getAccessPages = (
       ];
     case 'supervisor':
       return [
-        { name: 'admin-dashboard', path: '/', component: AdminDashboard },
         {
           name: 'user-management',
-          path: '/user-management',
+          path: '/',
           component: UserManagementScreen,
         },
+        { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
         {
           name: 'assign-users',
           path: '/assign-users',

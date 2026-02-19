@@ -434,12 +434,22 @@ const getAvailableParticipants = () => {
    fetchLinkageChampions();
  }, [supervisorFilterValues.filterByProvince, lcFilterValues.site]);
 
- // Fetch mapped LCs when supervisor is selected
+ // Fetch mapped LCs when supervisor is selected (or when logged-in user is supervisor)
  useEffect(() => {
    const fetchMappedLCs = async () => {
-     if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
-       setMappedLCs([]);
-       return;
+     // For supervisors, use logged-in user ID; for admins, require supervisor selection
+     if (isSupervisor) {
+       // Supervisor is logged in - fetch their LCs automatically
+       if (!user?.id && !user?._id) {
+         setMappedLCs([]);
+         return;
+       }
+     } else {
+       // Admin - require supervisor selection
+       if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
+         setMappedLCs([]);
+         return;
+       }
      }
 
      try {
@@ -454,7 +464,10 @@ const getAvailableParticipants = () => {
          return;
        }
 
-       const supervisorId = String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
+       // Use logged-in user ID for supervisors, selected supervisor ID for admins
+       const supervisorId = isSupervisor
+         ? String(user?.id || user?._id || '')
+         : String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
        if (!supervisorId) {
          console.error('Supervisor ID not found');
          setMappedLCs([]);
@@ -510,7 +523,7 @@ const getAvailableParticipants = () => {
    };
 
   fetchMappedLCs();
-}, [selectedSupervisor, supervisorFilterValues.selectSupervisor]);
+}, [selectedSupervisor, supervisorFilterValues.selectSupervisor, isSupervisor, user?.id, user?._id]);
 
 // Fetch participants when participant filters change (do NOT refetch on Supervisor/LC dropdown changes)
 useEffect(() => {
@@ -919,10 +932,10 @@ return (
        <>
          <UserAvatarCard
            title="admin.assignUsers.step1SelectSupervisorAndLC"
-           description="admin.assignUsers.chooseSupervisor"
+           description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
            filterOptions={[
-             // Supervisor filter - use dynamic data from API
-             {
+             // Supervisor filter - only show for non-supervisors (admins)
+             ...(isSupervisor ? [] : [{
                nameKey: 'admin.filters.selectSupervisor',
                attr: 'selectSupervisor',
                type: 'select',
@@ -935,14 +948,14 @@ return (
                    value: value,
                  };
                }),
-             },
-             // LC filter - populated dynamically based on selected supervisor (use mapped LCs)
+             }]),
+             // LC filter - populated dynamically based on selected supervisor (admins) or logged-in supervisor
              {
                nameKey: 'admin.filters.selectLC',
                attr: 'selectLC',
                type: 'select',
                placeholderKey: 'admin.filters.chooseLC',
-               data: supervisorFilterValues.selectSupervisor && mappedLCs.length > 0
+               data: (isSupervisor || supervisorFilterValues.selectSupervisor) && mappedLCs.length > 0
                  ? mappedLCs.map((lc: any) => ({
                      labelKey: lc.labelKey,
                      value: lc.value,
