@@ -119,7 +119,34 @@ const getAccessPages = (
         },
       ];
     case 'supervisor':
-      return [{ name: 'home', path: '/home', component: HomeScreen }];
+      return [
+        { name: 'admin-dashboard', path: '/', component: AdminDashboard },
+        {
+          name: 'user-management',
+          path: '/user-management',
+          component: UserManagementScreen,
+        },
+        {
+          name: 'assign-users',
+          path: '/assign-users',
+          component: AssignUsersScreen,
+        },
+        {
+          name: 'csv-templates',
+          path: '/csv-templates',
+          component: CsvImportTemplates,
+        },
+        {
+          name: 'PasswordPolicy',
+          path: '/password-policy',
+          component: PasswordPolicy,
+        },
+        {
+          name: 'ProfilePermissions',
+          path: '/profile-permissions',
+          component: ProfilePermissions,
+        },
+      ];
     case 'lc':
       return [
         { name: 'welcome', component: WelcomePage },

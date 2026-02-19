@@ -18,6 +18,7 @@ import { AssignUsersStyles } from './Styles';
 import { theme } from '@config/theme';
 import { getLinkageChampions, assignLCsToSupervisor, getMappedLCsForSupervisor, getParticipants, assignParticipantsToLC, getMappedParticipantsForLC } from '../../services/assignUsersService';
 import { getInitials } from '@utils/helper';
+import { useIsSupervisor, useAuth } from '../../contexts/AuthContext';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -30,10 +31,21 @@ declare const process:
 
 const AssignUsersScreen = () => {
  const { t } = useLanguage();
+ const { user } = useAuth();
+ const isSupervisor = useIsSupervisor();
  type AssignTab = 'LC_TO_SUPERVISOR' | 'PARTICIPANT_TO_LC';
 
+ // Log logged-in user role
+ useEffect(() => {
+   console.log('Logged in user role:', user?.role);
+   console.log('Is Supervisor:', isSupervisor);
+   console.log('Full user object:', user);
+ }, [user, isSupervisor]);
 
- const [activeTab, setActiveTab] = useState<AssignTab>('LC_TO_SUPERVISOR');
+ // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR
+ const [activeTab, setActiveTab] = useState<AssignTab>(
+   isSupervisor ? 'PARTICIPANT_TO_LC' : 'LC_TO_SUPERVISOR'
+ );
  const [selectedLc, setSelectedLc] = useState<any>(null);
  // State to store filter values for each UserAvatarCard
  const [supervisorFilterValues, setSupervisorFilterValues] = useState<
@@ -792,8 +804,8 @@ return (
    <VStack space="md" width="100%">
      <TitleHeader
        title="admin.menu.assignUsers"
-       description="admin.assignUsersDescription"
-       bottom={
+       description={isSupervisor ? "admin.assignUsers.assignParticipantsToLCsDescription" : "admin.assignUsersDescription"}
+       bottom={!isSupervisor && (
          <HStack space="md" alignItems="center">
            <Button
              {...(activeTab === 'LC_TO_SUPERVISOR'
@@ -826,7 +838,7 @@ return (
              </Text>
            </Button>
          </HStack>
-       }
+       )}
      />
 
 

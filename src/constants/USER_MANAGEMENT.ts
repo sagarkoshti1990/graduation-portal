@@ -11,7 +11,7 @@ import {
   getSitesByProvince,
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
-import { useAuth } from '../contexts/AuthContext';
+import { useIsSupervisor } from '../contexts/AuthContext';
 
 // Type definition for filter configuration
 export type FilterConfig = {
@@ -56,35 +56,8 @@ export const mapStatusLabelToAPI = (statusLabel: string): string => {
  * Fetches roles and provinces from API and builds filter options dynamically
  */
 export const useUserManagementFilters = (filters: Record<string, any>) => {
-  // Get current logged-in user's role and organizations
-  const { user } = useAuth();
-  const currentUserRole = user?.role;
-
-  // Check if user is a supervisor by checking their actual role titles from organizations
-  // Supervisors typically have 'tenant_admin' or 'supervisor' role title
-  const isSupervisor = useMemo(() => {
-    // Check mapped role first
-    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
-      return true;
-    }
-    
-    // Also check user's actual organizations for supervisor role titles
-    if (user && (user as any).organizations) {
-      const organizations = (user as any).organizations;
-      const hasSupervisorRole = organizations.some((org: any) => {
-        if (!org?.roles || !Array.isArray(org.roles)) {
-          return false;
-        }
-        return org.roles.some((role: any) => {
-          const roleTitle = role?.title?.toLowerCase() || '';
-          return roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
-        });
-      });
-      return hasSupervisorRole;
-    }
-    
-    return false;
-  }, [user, currentUserRole]);
+  // Check if user is a supervisor using the reusable hook
+  const isSupervisor = useIsSupervisor();
 
   // State for API data
   const [roles, setRoles] = useState<Role[]>([]);
