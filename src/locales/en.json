@@ -867,6 +867,7 @@
       "activeSupervisors": "Active supervisors"
     },
     "assignUsers": {
+      "assignParticipantsToLCsDescription": "Assign Participants to LCs",
       "step1SelectSupervisor": "Step 1: Select Supervisor",
       "step1SelectSupervisorAndLC": "Step 1: Select Supervisor and Linkage Champion",
       "filterByProvince": "Filter by province and choose a supervisor",
