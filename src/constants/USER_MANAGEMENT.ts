@@ -11,6 +11,7 @@ import {
   getSitesByProvince,
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
+import { useAuth } from '../contexts/AuthContext';
 
 // Type definition for filter configuration
 export type FilterConfig = {
@@ -55,6 +56,36 @@ export const mapStatusLabelToAPI = (statusLabel: string): string => {
  * Fetches roles and provinces from API and builds filter options dynamically
  */
 export const useUserManagementFilters = (filters: Record<string, any>) => {
+  // Get current logged-in user's role and organizations
+  const { user } = useAuth();
+  const currentUserRole = user?.role;
+
+  // Check if user is a supervisor by checking their actual role titles from organizations
+  // Supervisors typically have 'tenant_admin' or 'supervisor' role title
+  const isSupervisor = useMemo(() => {
+    // Check mapped role first
+    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
+      return true;
+    }
+    
+    // Also check user's actual organizations for supervisor role titles
+    if (user && (user as any).organizations) {
+      const organizations = (user as any).organizations;
+      const hasSupervisorRole = organizations.some((org: any) => {
+        if (!org?.roles || !Array.isArray(org.roles)) {
+          return false;
+        }
+        return org.roles.some((role: any) => {
+          const roleTitle = role?.title?.toLowerCase() || '';
+          return roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
+        });
+      });
+      return hasSupervisorRole;
+    }
+    
+    return false;
+  }, [user, currentUserRole]);
+
   // State for API data
   const [roles, setRoles] = useState<Role[]>([]);
   const [provinces, setProvinces] = useState<ProvinceEntity[]>([]);
@@ -68,7 +99,23 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
         const rolesResponse = await getRolesList({ page: 1, limit: 100 });
         const allRoles = rolesResponse.result?.data || [];
         // Filter only ACTIVE roles for the dropdown
-        const activeRoles = allRoles.filter((role: Role) => role.status === 'ACTIVE');
+        let activeRoles = allRoles.filter((role: Role) => role.status === 'ACTIVE');
+        
+        // If logged-in user is Supervisor, exclude "BRAC admin" and "Supervisor" roles
+        // Check role label (what's displayed in dropdown) to filter out these roles
+        if (isSupervisor) {
+          activeRoles = activeRoles.filter((role: Role) => {
+            const roleLabel = role.label?.toLowerCase() || '';
+            
+            // Exclude "BRAC admin" and "Supervisor" roles based on label
+            // These are the display labels shown in the dropdown
+            const isBRACAdmin = roleLabel === 'brac admin' || roleLabel.includes('brac admin');
+            const isSupervisorRole = roleLabel === 'supervisor';
+            
+            return !isBRACAdmin && !isSupervisorRole;
+          });
+        }
+        
         setRoles(activeRoles);
       } catch (error) {
         setRoles([]);
@@ -80,7 +127,7 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
     };
 
     fetchInitialData();
-  }, []);
+  }, [isSupervisor]);
 
   // Fetch sites when province filter changes
   useEffect(() => {
