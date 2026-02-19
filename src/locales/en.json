@@ -1481,5 +1481,10 @@
       "buttonNegative": "Cancel",
       "buttonPositive": "OK"
     }
+  },
+  "downloadForms":{
+    "downloadForms":"Download Forms",
+    "downloadNecessaryForms":"Download the necessary forms for the participant",
+    "Download":"Download"
   }
 }

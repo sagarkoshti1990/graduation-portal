@@ -39,6 +39,7 @@ import {
 } from '@constants/PROJECTDATA';
 import { PARTICIPANT_DETAILS_TABS, STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
+import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -248,8 +249,9 @@ export default function ParticipantDetail() {
       
       <Container px="$4" py="$6" $md-px="$6">
         {status === STATUS.NOT_ENROLLED ? (
-          // NOT_ENROLLED: Show ProjectPlayer directly with editMode
-          configData && projectPlayerConfigData && (
+          <>
+          <DownloadFormsCard />
+          {configData && projectPlayerConfigData && (
             <ProjectPlayer
               key={`project-player-${participantId}`}
               config={configData}
@@ -257,7 +259,8 @@ export default function ParticipantDetail() {
               onTaskCompletionChange={setAreAllTasksCompleted}
               onProgressChange={handleProgressChange}
             />
-          )
+          )}
+            </>
         ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
           <Box>
