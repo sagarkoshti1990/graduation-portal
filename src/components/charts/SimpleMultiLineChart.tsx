@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, useWindowDimensions } from 'react-native';
 import Svg, { Line, Circle, Text as SvgText, G, Path } from 'react-native-svg';
-import { Box, VStack, HStack, Text, Heading } from '@ui';
+import { Box, VStack, HStack, Text } from '@ui';
 import { usePlatform } from '@utils/platform';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 export interface MultiLineChartPoint {
   x: string; // month label
@@ -33,9 +35,11 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
   const { isWeb } = usePlatform();
   const windowDimensions = useWindowDimensions();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
 
-  const width = Math.min(containerWidth, 1200);
+  // Use full available container width (end-to-end charts on wide screens)
+  const width = containerWidth;
   const padding = { top: 20, right: 20, bottom: 50, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
@@ -68,14 +72,67 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
     return { x, y: yy };
   };
 
-  const handleLeave = () => setHoveredIndex(null);
+  // Smooth curve path (Catmull-Rom spline -> Bezier), same as SimpleLineChart
+  const createSmoothPath = (pts: { x: number; y: number }[]) => {
+    if (pts.length === 0) return '';
+    if (pts.length === 1) return `M ${pts[0].x},${pts[0].y}`;
+    const d: string[] = [`M ${pts[0].x},${pts[0].y}`];
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d.push(`C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`);
+    }
+
+    return d.join(' ');
+  };
+
+  const handleLeave = () => {
+    setHoveredIndex(null);
+    setHoverPos(null);
+  };
+
+  const seriesLengths = useMemo(() => {
+    return series.map(s => {
+      const pts = s.data.map((p, idx) => getPointXY(idx, p.y));
+      let len = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const dx = pts[i].x - pts[i - 1].x;
+        const dy = pts[i].y - pts[i - 1].y;
+        len += Math.sqrt(dx * dx + dy * dy);
+      }
+      return Math.max(len, 1);
+    });
+  }, [series, xStep, chartHeight, chartWidth, minValue, valueRange]);
+
+  const dashOffsetsRef = useRef<Animated.Value[]>([]);
+  if (dashOffsetsRef.current.length !== series.length) {
+    dashOffsetsRef.current = series.map((_, idx) => new Animated.Value(seriesLengths[idx] || 1));
+  }
+
+  useEffect(() => {
+    const animations = dashOffsetsRef.current.map((v, idx) => {
+      v.setValue(seriesLengths[idx] || 1);
+      return Animated.timing(v, {
+        toValue: 0,
+        duration: 900,
+        delay: idx * 120,
+        useNativeDriver: false,
+      });
+    });
+    Animated.stagger(120, animations).start();
+  }, [seriesLengths, series.length]);
 
   return (
     <VStack space="sm" width="100%" alignItems="center" mb="$6">
-      <Heading size="md" mb="$2">
-        {title}
-      </Heading>
-
       <Box
         width="100%"
         alignItems="center"
@@ -94,37 +151,59 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
               const rect = e.currentTarget?.getBoundingClientRect?.();
               if (!rect) return;
               const mouseX = e.clientX - rect.left;
+              const mouseY = e.clientY - rect.top;
 
-              let closestIndex = -1;
-              let minDist = 28;
-              xLabels.forEach((_, idx) => {
-                const px = padding.left + idx * xStep;
-                const dist = Math.abs(mouseX - px);
-                if (dist < minDist) {
-                  minDist = dist;
-                  closestIndex = idx;
-                }
-              });
+              const withinX =
+                mouseX >= padding.left && mouseX <= padding.left + chartWidth;
+              const withinY =
+                mouseY >= padding.top && mouseY <= padding.top + chartHeight;
 
-              setHoveredIndex(closestIndex >= 0 ? closestIndex : null);
+              if (!withinX || !withinY) {
+                setHoveredIndex(null);
+                setHoverPos(null);
+                return;
+              }
+
+              const rawIdx = Math.round((mouseX - padding.left) / xStep);
+              const idx = Math.max(0, Math.min(xLabels.length - 1, rawIdx));
+              setHoveredIndex(idx);
+              setHoverPos({ x: mouseX, y: mouseY });
             },
             onMouseLeave: handleLeave,
             style: { cursor: 'pointer' },
           })}
         >
           <Svg width={width} height={height}>
-            {/* Grid */}
+            {/* Grid (faint dotted like reference) */}
             {yTickValues.map((val, i) => {
               const y = padding.top + chartHeight - ((val - minValue) / valueRange) * chartHeight;
               return (
                 <Line
-                  key={`grid-${i}`}
+                  key={`grid-h-${i}`}
                   x1={padding.left}
                   y1={y}
                   x2={padding.left + chartWidth}
                   y2={y}
-                  stroke="#E5E7EB"
+                  stroke="#D1D5DB"
                   strokeWidth="1"
+                  strokeDasharray="3 3"
+                />
+              );
+            })}
+
+            {xLabels.map((_, i) => {
+              const x = padding.left + i * xStep;
+              return (
+                <Line
+                  key={`grid-v-${i}`}
+                  x1={x}
+                  y1={padding.top}
+                  x2={x}
+                  y2={padding.top + chartHeight}
+                  stroke={hoveredIndex === i ? '#9CA3AF' : '#D1D5DB'}
+                  strokeWidth={hoveredIndex === i ? 1.5 : 1}
+                  strokeDasharray={hoveredIndex === i ? '0' : '3 3'}
+                  opacity={hoveredIndex === i ? 0.9 : 0.7}
                 />
               );
             })}
@@ -164,6 +243,33 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
               );
             })}
 
+            {/* Y-axis title (vertical) */}
+            {yAxisLabel ? (
+              <SvgText
+                x={18}
+                y={padding.top + chartHeight / 2}
+                fontSize="12"
+                fill="#6B7280"
+                textAnchor="middle"
+                transform={`rotate(-90 18 ${padding.top + chartHeight / 2})`}
+              >
+                {yAxisLabel}
+              </SvgText>
+            ) : null}
+
+            {/* Hover crosshair (vertical) */}
+            {hoveredIndex !== null ? (
+              <Line
+                x1={padding.left + hoveredIndex * xStep}
+                y1={padding.top}
+                x2={padding.left + hoveredIndex * xStep}
+                y2={padding.top + chartHeight}
+                stroke="#9CA3AF"
+                strokeWidth="1"
+                opacity={0.6}
+              />
+            ) : null}
+
             {/* X labels */}
             {xLabels.map((lab, i) => {
               const x = padding.left + i * xStep;
@@ -185,20 +291,25 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
 
             {/* Series paths */}
             {series.map(s => {
-              const path = s.data
-                .map((p, idx) => {
-                  const xy = getPointXY(idx, p.y);
-                  return `${idx === 0 ? 'M' : 'L'} ${xy.x},${xy.y}`;
-                })
-                .join(' ');
+              const pts = s.data.map((p, idx) => getPointXY(idx, p.y));
+              const path = createSmoothPath(pts);
+              const idx = series.findIndex(ss => ss.id === s.id);
+              const length = seriesLengths[idx] || 1;
+              const dashOffset = dashOffsetsRef.current[idx];
               return (
-                <Path
+                <AnimatedPath
                   key={`path-${s.id}`}
                   d={path}
                   stroke={s.color}
                   strokeWidth="2.5"
                   fill="none"
                   strokeDasharray={s.dashArray as any}
+                  {...(!s.dashArray
+                    ? {
+                        strokeDasharray: `${length} ${length}`,
+                        strokeDashoffset: dashOffset as any,
+                      }
+                    : {})}
                 />
               );
             })}
@@ -218,15 +329,34 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
                         cy={xy.y}
                         r="12"
                         fill="transparent"
-                        onPress={() => setHoveredIndex(idx)}
+                        onPress={(e: any) => {
+                          setHoveredIndex(idx);
+                          return e;
+                        }}
                       />
-                      <Circle
-                        cx={xy.x}
-                        cy={xy.y}
-                        r={isActive ? '4.5' : '3'}
-                        fill={s.color}
-                        opacity={isActive ? 1 : 0.85}
-                      />
+                      {isActive ? (
+                        <>
+                          {/* Outer ring */}
+                          <Circle
+                            cx={xy.x}
+                            cy={xy.y}
+                            r="5.5"
+                            fill="#FFFFFF"
+                            stroke={s.color}
+                            strokeWidth="2.5"
+                          />
+                          {/* Inner dot */}
+                          <Circle cx={xy.x} cy={xy.y} r="3" fill={s.color} />
+                        </>
+                      ) : (
+                        <Circle
+                          cx={xy.x}
+                          cy={xy.y}
+                          r="3"
+                          fill={s.color}
+                          opacity={0.85}
+                        />
+                      )}
                     </G>
                   );
                 })}
@@ -236,11 +366,11 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
         </Box>
 
         {/* Tooltip */}
-        {hoveredIndex !== null && xLabels[hoveredIndex] ? (
+        {hoveredIndex !== null && xLabels[hoveredIndex] && hoverPos ? (
           <Box
             position="absolute"
-            left={padding.left + hoveredIndex * xStep - 60}
-            top={padding.top + 10}
+            left={Math.min(Math.max(hoverPos.x + 12, 8), width - 220)}
+            top={Math.min(Math.max(hoverPos.y - 60, 8), height - 140)}
             bg="$white"
             borderWidth={1}
             borderColor="$borderLight300"
@@ -288,11 +418,7 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
         ))}
       </HStack>
 
-      {yAxisLabel ? (
-        <Text fontSize="$sm" color="$textLight600" mt="$2">
-          {yAxisLabel}
-        </Text>
-      ) : null}
+      {/* Y-axis label is rendered vertically inside SVG (like reference) */}
     </VStack>
   );
 };

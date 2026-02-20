@@ -59,8 +59,9 @@ export interface DashboardGraphStatCard {
 }
 
 export interface DashboardGraphSectionChart {
-  kind: 'line' | 'bar' | 'pie' | 'placeholder' | 'multiLine';
+  kind: 'line' | 'bar' | 'pie' | 'placeholder' | 'multiLine' | 'groupedBar';
   title: string; // plain text
+  subtitle?: string; // plain text
   line?: {
     data: LineChartDataPoint[];
     color?: string;
@@ -81,6 +82,22 @@ export interface DashboardGraphSectionChart {
     data: BarChartDataPoint[];
     orientation?: 'vertical' | 'horizontal';
     height?: number;
+    variant?: 'standard' | 'progress';
+    showAxes?: boolean;
+    showGrid?: boolean;
+    showLegend?: boolean;
+    valueFormat?: 'number' | 'currencyM' | 'countPercent';
+  };
+  groupedBar?: {
+    categories: string[];
+    height?: number;
+    series: Array<{
+      id: string;
+      label: string;
+      color: string;
+      axis?: 'left' | 'right';
+      data: number[];
+    }>;
   };
   pie?: {
     data: PieChartDataPoint[];
