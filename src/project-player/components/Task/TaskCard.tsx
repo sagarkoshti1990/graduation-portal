@@ -29,7 +29,7 @@ import {
 } from '../../../constants/app.constant';
 import { TaskCardProps } from '../../types/components.types';
 import { Task } from '../../types/project.types';
-import { taskCardStyles } from './Styles';
+import { taskCardStyles, taskAccordionStyles } from './Styles';
 import { LucideIcon } from '@ui/index';
 import { theme } from '@config/theme';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -67,7 +67,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   );
   const [isRejected, setIsRejected] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
-  const participantId = route.params?.id;
+  const participantId = (route.params as any)?.id;
   // Modal state management (from Incoming)
   type ModalType = 'edit' | 'delete' | null;
   const [modalState, setModalState] = useState<{
@@ -83,10 +83,17 @@ const TaskCard: React.FC<TaskCardProps> = ({
   // Use mixed logic for completion: check status or use helper
   const isCompleted = isTaskCompleted(task?.status);
 
-  // Common Logic Variables
   const isInterventionPlanEditMode = isEdit && !isPreview && isChildOfProject;
   const hasUploadedFiles = !!(task.attachments && task.attachments.length > 0);
+  const isEvidenceRequired = !!(
+    (task.noOfEvidenceRequired && task.noOfEvidenceRequired > 0) ||
+    (task.metaInformation?.noOfEvidencesRequired && task.metaInformation.noOfEvidencesRequired > 0)
+  );
+  const isEvidenceUploaded = hasUploadedFiles;
+  const isTaskDone = isCompleted || (isEvidenceRequired && isEvidenceUploaded);
   const isOnboardingCompletedUI = isOnboardingTask && (task.isDeletable ? hasUploadedFiles : isCompleted);
+  const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
+  const isManualToggleDisabled = isObservationTask || isEvidenceRequired;
 
   const onboardingTextStyle = {
     textDecorationLine: (isOnboardingCompletedUI ? 'line-through' : 'none') as
@@ -187,11 +194,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   // Render task status indicator (circle or checkbox)
   const renderStatusIndicator = () => {
-    // Special handling for Observation/Form tasks in Edit Mode
-    const isInterventionPlanEditMode = isEdit && !isPreview && isChildOfProject;
-    const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
-
-    if (isInterventionPlanEditMode && isObservationTask) {
+    // Special handling for Observation/Form tasks and Evidence Required tasks in Edit Mode
+    if (isInterventionPlanEditMode && (isObservationTask || isEvidenceRequired)) {
       if (isStatusUpdating) {
         return (
           <Box {...taskCardStyles.primaryFilledCircle} borderColor="transparent" bg="transparent">
@@ -199,17 +203,23 @@ const TaskCard: React.FC<TaskCardProps> = ({
           </Box>
         );
       }
-      if (isCompleted) {
+      if (isTaskDone) {
         // Render a simple green checkmark (non-interactive)
         return (
           <Box
             {...taskCardStyles.primaryFilledCircle}
+            bg="$primary500"
+            borderColor="$primary500"
           >
-            <LucideIcon name="Check" size={14} color={theme.tokens.colors.white} strokeWidth={3} />
+            <LucideIcon name="Check" size={14} color="white" strokeWidth={3} />
           </Box>
         );
       } else {
         // Show empty circle for consistency (non-interactive) with Tooltip on hover
+        const tooltipText = isObservationTask
+          ? (t('projectPlayer.completeFormToMarkDone') || 'Complete the form first to mark this task as done')
+          : (t('projectPlayer.uploadEvidenceToMarkDone') || 'Upload evidence first to mark this task as done');
+
         return (
           <Tooltip
             placement="top"
@@ -229,7 +239,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               {...taskCardStyles.tooltipContent}
             >
               <TooltipText {...taskCardStyles.tooltipText}>
-                {t('projectPlayer.completeFormToMarkDone') || 'Complete the form first to mark this task as done'}
+                {tooltipText}
               </TooltipText>
             </TooltipContent>
           </Tooltip>
@@ -408,40 +418,62 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
     const statusBadge =
       isEditModeOnly && uiConfig.showAsCard ? (
-        <Pressable
-          onPress={() => {
-            if (!isObservationTask) {
-              handleCheckboxChange(!isCompleted);
-            }
-          }}
-          disabled={isObservationTask} // Disable interaction for observation tasks (no toggle)
-        >
-          {(state: any) => {
-            // For disabled state (Observation tasks), force isHovered to false
-            const isHovered = !isObservationTask && (state?.hovered || state?.pressed || false);
-            const isDone = isCompleted;
-            return (
-              <Box
-                {...taskCardStyles.statusBadge}
-                {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
-                opacity={isObservationTask ? 1 : undefined} // Keep full opacity for visibility
-                minWidth={50}
-                justifyContent="center"
-              >
-                {isStatusUpdating ? (
-                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
-                ) : (
-                  <Text
-                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
+        <Tooltip
+          isDisabled={!isManualToggleDisabled || isStatusUpdating}
+          placement="top"
+          trigger={(triggerProps: any) => (
+            <Pressable
+              {...triggerProps}
+              onPress={() => {
+                if (!isManualToggleDisabled) {
+                  handleCheckboxChange(!isCompleted);
+                }
+              }}
+              disabled={isManualToggleDisabled}
+            >
+              {(state: any) => {
+                const isHovered = !isManualToggleDisabled && (state?.hovered || state?.pressed || false);
+                const isDone = isTaskDone;
+                return (
+                  <Box
+                    {...taskCardStyles.statusBadge}
+                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
+                    opacity={isManualToggleDisabled ? 1 : undefined}
+                    minWidth={50}
+                    justifyContent="center"
                   >
-                    {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
-                  </Text>
-                )}
-              </Box>
-            );
-          }}
-        </Pressable>
+                    {isStatusUpdating ? (
+                      <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                    ) : (
+                      <Text
+                        {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
+                      >
+                        {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
+                      </Text>
+                    )}
+                  </Box>
+                );
+              }}
+            </Pressable>
+          )}
+        >
+          <TooltipContent {...taskCardStyles.tooltipContent}>
+            <TooltipText {...taskCardStyles.tooltipText}>
+              {isObservationTask
+                ? (t('projectPlayer.completeFormToMarkDone') || 'Complete the form first to mark this task as done')
+                : (t('projectPlayer.uploadEvidenceToMarkDone') || 'Upload evidence first to mark this task as done')}
+            </TooltipText>
+          </TooltipContent>
+        </Tooltip>
       ) : null;
+
+    const evidenceRequiredBadge = isEvidenceRequired && !isTaskDone && uiConfig.showAsCard && isInterventionPlanEditMode ? (
+      <Box {...taskAccordionStyles.actionRequiredBadge}>
+        <Text {...taskAccordionStyles.actionRequiredText}>
+          {t('projectPlayer.evidenceRequired') || 'Evidence Required'}
+        </Text>
+      </Box>
+    ) : null;
 
     // In Edit mode only (non-preview), hide description
     const showDescription = !isEditModeOnly || !uiConfig.showAsCard;
@@ -480,6 +512,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               {task?.name}
             </Text>
             {taskBadge}
+            {evidenceRequiredBadge}
           </HStack>
         ) : (
           /* Edit mode: title on first line, badges on second line */
@@ -505,6 +538,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <HStack space="sm" alignItems="center" flexWrap="wrap">
               {statusBadge}
               {taskBadge}
+              {evidenceRequiredBadge}
               {/* File count tag for Edit mode when files exist */}
               {isEditModeOnly &&
                 task.attachments &&
