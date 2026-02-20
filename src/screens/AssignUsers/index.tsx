@@ -58,11 +58,8 @@ const AssignUsersScreen = () => {
  // Get dynamic supervisor filter options (supervisor disabled until province is selected)
  const { filters: supervisorFilterOptions, supervisors: supervisorsData } = useSupervisorFilterOptions(supervisorFilterValues);
  
- // Get dynamic site filter options based on province selected in Step 1
- const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
-
- // Combine search filter with dynamic site filter for Step 2
- const AssignLCFilterOptions = [SearchFilter, ...siteFilterOptions];
+// Get dynamic site filter options based on province selected in Step 1
+const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
  
  // Find the selected supervisor object from supervisorsData
  // Match by id (number) or _id (string) or email, converting to string for comparison
@@ -75,6 +72,12 @@ const AssignUsersScreen = () => {
  );
  
  const [lcFilterValues, setLcFilterValues] = useState<Record<string, any>>({});
+
+// Get dynamic site filter options for Step 2 based on province selected in Step 1
+const { filters: lcSiteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
+
+// Combine search filter with dynamic site filter for Step 2 (no province dropdown)
+const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
  // State for mapped LCs from API
  const [mappedLCs, setMappedLCs] = useState<any[]>([]);
  const [isLoadingMappedLCs, setIsLoadingMappedLCs] = useState(false);
@@ -378,7 +381,7 @@ const getAvailableParticipants = () => {
 };
 
 
- // Fetch linkage champions when province or site filters change
+ // Fetch linkage champions when province, site, or search filters change
  useEffect(() => {
    const fetchLinkageChampions = async () => {
      try {
@@ -393,16 +396,15 @@ const getAvailableParticipants = () => {
          return;
        }
        
-       // Get province from supervisor filter values (Step 1)
-       const province = supervisorFilterValues.filterByProvince;
-       // Get site from LC filter values (Step 2)
+       // Get site and search from LC filter values (Step 2) - no province filter
        const site = lcFilterValues.site;
+       const search = lcFilterValues.search;
        
        const response = await getLinkageChampions(programId, {
          excludeMapped: true,
          limit: 100,
-         province: province,
-         site: site,
+         site: site && site !== 'all-sites' ? site : undefined,
+         search: search && String(search).trim() ? String(search).trim() : undefined,
        });
        
        // Transform API response to match expected format
@@ -431,8 +433,8 @@ const getAvailableParticipants = () => {
      }
    };
 
-   fetchLinkageChampions();
- }, [supervisorFilterValues.filterByProvince, lcFilterValues.site]);
+  fetchLinkageChampions();
+}, [supervisorFilterValues.filterByProvince, lcFilterValues.site, lcFilterValues.search]);
 
  // Fetch mapped LCs when supervisor is selected (or when logged-in user is supervisor)
  useEffect(() => {
@@ -931,8 +933,8 @@ return (
      {activeTab === 'PARTICIPANT_TO_LC' && (
        <>
          <UserAvatarCard
-           title="admin.assignUsers.step1SelectSupervisorAndLC"
-           description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
+          title={isSupervisor ? "admin.assignUsers.step1SelectLC" : "admin.assignUsers.step1SelectSupervisorAndLC"}
+          description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
            filterOptions={[
              // Supervisor filter - only show for non-supervisors (admins)
              ...(isSupervisor ? [] : [{
