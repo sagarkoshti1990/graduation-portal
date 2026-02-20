@@ -58,9 +58,9 @@ const AssignUsersScreen = () => {
  // Get dynamic supervisor filter options (supervisor disabled until province is selected)
  const { filters: supervisorFilterOptions, supervisors: supervisorsData } = useSupervisorFilterOptions(supervisorFilterValues);
  
-// Get dynamic site filter options based on province selected in Step 1
-const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
- 
+ // Get dynamic site filter options based on province selected in Step 1
+ const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
+
  // Find the selected supervisor object from supervisorsData
  // Match by id (number) or _id (string) or email, converting to string for comparison
  const selectedSupervisor = supervisorsData.find(
@@ -433,7 +433,7 @@ const getAvailableParticipants = () => {
      }
    };
 
-  fetchLinkageChampions();
+   fetchLinkageChampions();
 }, [supervisorFilterValues.filterByProvince, lcFilterValues.site, lcFilterValues.search]);
 
  // Fetch mapped LCs when supervisor is selected (or when logged-in user is supervisor)
@@ -448,9 +448,9 @@ const getAvailableParticipants = () => {
        }
      } else {
        // Admin - require supervisor selection
-       if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
-         setMappedLCs([]);
-         return;
+     if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
+       setMappedLCs([]);
+       return;
        }
      }
 

@@ -527,40 +527,40 @@
         },
         "sections": {
           "vocationalSkills": {
-            "header": "6.1.1 Trained in Vocational/Livelihood Specific Skills",
-            "meta": "Target: Participant | Time: Monthly | Data: Training attendance logs | Logic: Count completed / eligible participants → %"
+            "header": "4.1 % Trained on Vocational/Livelihood Specific Skills",
+            "meta": "Target: Participant (Both Pathways) | Data: Training Logs | Chart: Number card + trend"
           },
           "businessTraining": {
-            "header": "6.1.2 Trained in Business Management & Entrepreneurship",
-            "meta": "Target: Participant | Time: Monthly | Data: Training attendance logs | Logic: Count completed / eligible participants → %"
+            "header": "4.2 % Trained in Business Management & Entrepreneurship",
+            "meta": "Target: Participant | Data: Training Logs | Chart: Number card + trend"
           },
           "registrationSupport": {
-            "header": "6.1.3 Supported to Register New Businesses",
-            "meta": "Target: Participant | Time: Monthly | Data: Business registration support logs | Logic: Count supported / eligible participants → %"
+            "header": "4.3 % Supported to Register New Businesses",
+            "meta": "Target: Participant | Data: Business Registration Support Logs | Chart: Number card + trend"
           },
           "registeredBusinesses": {
-            "header": "6.1.4 Youth Registered Businesses (Added / Linked to Training)",
-            "meta": "Target: Participant | Time: Monthly | Data: Business registration logs | Logic: Cumulative count of registered businesses"
+            "header": "4.4 % Youth Registered Businesses (Added / Linked to Training)",
+            "meta": "Target: Participant | Data: Business Registration Logs | Chart: Number card + trend"
           },
           "linkedToMarket": {
-            "header": "6.1.5 Linked to Market Opportunities",
-            "meta": "Target: Participant | Time: Monthly | Data: Market linkage logs | Logic: Count linked / eligible participants → %"
+            "header": "4.5 % Linked to Market Opportunities",
+            "meta": "Target: Participant | Data: Market Linkage Logs | Chart: Number card + trend"
           },
           "workReadiness": {
-            "header": "6.2.1 Attended Work Readiness Training",
-            "meta": "Target: Participant | Time: Monthly | Data: Work readiness attendance logs | Logic: Count attended / eligible participants → %"
+            "header": "5.1 % Attended Work Readiness Training",
+            "meta": "Target: Participant | Data: Work Readiness Attendance Logs | Chart: Number card + trend"
           },
           "linkedToEmployment": {
-            "header": "6.2.2 Linked to Opportunities of Market Employment",
-            "meta": "Target: Participant | Time: Monthly | Data: Employment linkage logs | Logic: Count linked / eligible participants → %"
+            "header": "5.2 % Linked to Learnerships / Public Employment",
+            "meta": "Target: Participant | Data: Employment Linkage Logs | Chart: Number card + trend"
           },
           "permanentEmployment": {
-            "header": "6.2.3 Linked to Permanent Employment (> 2 years)",
-            "meta": "Target: Participant | Time: Monthly | Data: Employment outcomes logs | Logic: Count permanently employed / eligible participants → %"
+            "header": "5.3 % Linked to Permanent Employment (> 2 years)",
+            "meta": "Target: Participant | Data: Employment Outcomes Logs | Chart: Number card + trend"
           },
           "mentorship": {
-            "header": "6.2.4 Linked to Mentorship Programme in Sector Specific Jobs",
-            "meta": "Target: Participant | Time: Monthly | Data: Mentorship programme logs | Logic: Count linked / eligible participants → %"
+            "header": "5.4 % Linked to Mentorship Programme by Sector Specific Events",
+            "meta": "Target: Participant | Data: Mentorship Programme Logs | Chart: Number card + trend"
           }
         },
         "placeholder": "Graphs view will be displayed here"

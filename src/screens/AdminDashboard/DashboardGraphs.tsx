@@ -6,6 +6,7 @@ import SimpleLineChart from '@components/charts/SimpleLineChart';
 import SimpleBarChart from '@components/charts/SimpleBarChart';
 import SimplePieChart from '@components/charts/SimplePieChart';
 import SimpleMultiLineChart from '@components/charts/SimpleMultiLineChart';
+import SimpleGroupedBarChart from '@components/charts/SimpleGroupedBarChart';
 import type {
   DashboardGraphBlock,
   DashboardGraphReportSectionBlock,
@@ -19,23 +20,29 @@ interface DashboardGraphsProps {
 }
 
 const GraphStatCard: React.FC<{ card: DashboardGraphStatCard }> = ({ card }) => {
+  const valueStr = String(card.value ?? '');
+  // Keep large font for numeric KPIs (e.g., "2,718") but use 18px for text values (e.g., "Monthly tracking")
+  const isNumericLike = /^[\d,.\s%]+$/.test(valueStr.trim());
   return (
     <Box
       flex={1}
       minWidth={180}
-      bg="$backgroundLight50"
+      bg="$bgSidebar"
       borderRadius="$lg"
       px="$4"
       py="$4"
-      borderWidth={1}
-      borderColor="$borderLight200"
+    
     >
-      <Text fontSize="$sm" color="$textLight600">
+      <Text fontSize="$sm" color="$textMutedForeground">
         {card.title}
       </Text>
       <HStack alignItems="flex-end" justifyContent="space-between" mt="$2">
-        <Text fontSize="$2xl" fontWeight="$semibold" color={card.valueColor as any}>
-          {card.value}
+        <Text
+          fontSize={isNumericLike ? '$4xl' : '$lg'}
+          fontWeight={isNumericLike ? '$semibold' : '$normal'}
+          color={card.valueColor as any}
+        >
+          {valueStr}
         </Text>
         {card.badgeText ? (
           <Box
@@ -90,7 +97,7 @@ const ReportSection: React.FC<{
           <HStack space="lg" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap">
             {extra.items.map(it => (
               <VStack key={it.id} space="xs" flex={1} minWidth={160}>
-                <Text fontSize="$xs" color="$textLight600">
+                <Text fontSize="$xs" color="$textMutedForeground">
                   {it.label}
                 </Text>
                 <Text
@@ -101,7 +108,7 @@ const ReportSection: React.FC<{
                   {it.value}
                 </Text>
                 {it.subValue ? (
-                  <Text fontSize="$xs" color="$textLight600">
+                  <Text fontSize="$xs" color="$textMutedForeground">
                     {it.subValue}
                   </Text>
                 ) : null}
@@ -133,7 +140,7 @@ const ReportSection: React.FC<{
               <VStack space="xs">
                 {col.items.map(item => (
                   <HStack key={item.id} justifyContent="space-between" alignItems="center">
-                    <Text fontSize="$xs" color="$textLight600">
+                    <Text fontSize="$xs" color="$textMutedForeground">
                       {item.label}
                     </Text>
                     <Text
@@ -170,7 +177,7 @@ const ReportSection: React.FC<{
           <HStack space="lg" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap">
             {extra.items.map(it => (
               <VStack key={it.id} space="xs" flex={1} minWidth={180} alignItems="center">
-                <Text fontSize="$xs" color="$textLight600">
+                <Text fontSize="$xs" color="$textMutedForeground">
                   {it.label}
                 </Text>
                 <Text
@@ -181,7 +188,7 @@ const ReportSection: React.FC<{
                   {it.value}
                 </Text>
                 {it.subtitle ? (
-                  <Text fontSize="$xs" color={it.subtitleColor ? (it.subtitleColor as any) : '$textLight600'}>
+                  <Text fontSize="$xs" color={it.subtitleColor ? (it.subtitleColor as any) : '$textMutedForeground'}>
                     {it.subtitle}
                   </Text>
                 ) : null}
@@ -219,7 +226,7 @@ const ReportSection: React.FC<{
                   bg={it.dotColor ? (it.dotColor as any) : '$primary600'}
                   mt="$1.5"
                 />
-                <Text fontSize="$xs" color="$textLight600" flex={1}>
+                <Text fontSize="$xs" color="$textMutedForeground" flex={1}>
                   {it.text}
                 </Text>
               </HStack>
@@ -234,12 +241,12 @@ const ReportSection: React.FC<{
         <Box
           key={extra.id}
           mt="$3"
-          bg="$backgroundLight50"
-          borderRadius="$lg"
-          px="$4"
-          py="$4"
-          borderWidth={1}
-          borderColor="$borderLight200"
+          bg="transparent"
+          borderRadius="$0"
+          px="$0"
+          py="$0"
+          borderWidth={0}
+          borderColor="transparent"
         >
           {extra.title ? (
             <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$3">
@@ -259,7 +266,7 @@ const ReportSection: React.FC<{
                 borderWidth={1}
                 borderColor={it.borderColor ? (it.borderColor as any) : '$borderLight200'}
               >
-                <Text fontSize="$xs" color="$textLight600">
+                <Text fontSize="$xs" color="$textMutedForeground">
                   {it.title}
                 </Text>
                 <Text
@@ -271,7 +278,7 @@ const ReportSection: React.FC<{
                   {it.value}
                 </Text>
                 {it.subtitle ? (
-                  <Text fontSize="$xs" color="$textLight600" mt="$1">
+                  <Text fontSize="$xs" color="$textMutedForeground" mt="$1">
                     {it.subtitle}
                   </Text>
                 ) : null}
@@ -287,47 +294,53 @@ const ReportSection: React.FC<{
 
   const StatContent = block.statCards && block.statCards.length > 0 ? (
     block.statLayout === 'bar' ? (
-      <Box
-        mt="$3"
-        bg={block.statBarBg ? (block.statBarBg as any) : '$backgroundLight50'}
-        borderRadius="$lg"
-        px="$4"
-        py="$4"
-        borderWidth={1}
-        borderColor="$borderLight200"
-      >
-        <HStack space="lg" alignItems="center" justifyContent="space-between" flexWrap="wrap">
-          {block.statCards.map(sc => (
-            <VStack key={sc.id} space="xs" flex={1} minWidth={180}>
-              <Text fontSize="$xs" color="$textLight600">
-                {sc.title}
-              </Text>
-              <Text
-                fontSize="$lg"
-                fontWeight="$semibold"
-                color={sc.valueColor ? (sc.valueColor as any) : '$textForeground'}
+      <Box mt="$3" width="100%">
+        <HStack space="md" alignItems="stretch" justifyContent="space-between" flexWrap="wrap">
+          {block.statCards.map(sc => {
+            const valueStr = String(sc.value ?? '');
+            const isNumericLike = /^[\d,.\s%]+$/.test(valueStr.trim());
+            return (
+              <Box
+                key={sc.id}
+                flex={1}
+                minWidth={220}
+                bg="$bgSidebar"
+                borderRadius="$lg"
+                px="$6"
+                py="$5"
               >
-                {sc.value}
-              </Text>
-              {sc.badgeText ? (
-                <Box
-                  alignSelf="flex-start"
-                  bg={sc.badgeBg ? (sc.badgeBg as any) : '#16A34A'}
-                  px="$2"
-                  py="$1"
-                  borderRadius="$sm"
+                <Text fontSize="$sm" color="$textMutedForeground">
+                  {sc.title}
+                </Text>
+                <Text
+                  fontSize={isNumericLike ? '$4xl' : '$lg'}
+                  fontWeight={isNumericLike ? '$semibold' : '$normal'}
+                  color={sc.valueColor ? (sc.valueColor as any) : '$textForeground'}
+                  mt="$2"
                 >
-                  <Text
-                    fontSize="$xs"
-                    fontWeight="$semibold"
-                    color={sc.badgeTextColor ? (sc.badgeTextColor as any) : '$white'}
+                  {valueStr}
+                </Text>
+                {sc.badgeText ? (
+                  <Box
+                    alignSelf="flex-start"
+                    bg={sc.badgeBg ? (sc.badgeBg as any) : '#16A34A'}
+                    px="$3"
+                    py="$1.5"
+                    borderRadius="$sm"
+                    mt="$2"
                   >
-                    {sc.badgeText}
-                  </Text>
-                </Box>
-              ) : null}
-            </VStack>
-          ))}
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color={sc.badgeTextColor ? (sc.badgeTextColor as any) : '$white'}
+                    >
+                      {sc.badgeText}
+                    </Text>
+                  </Box>
+                ) : null}
+              </Box>
+            );
+          })}
         </HStack>
       </Box>
     ) : (
@@ -342,9 +355,18 @@ const ReportSection: React.FC<{
   const renderChart = (chart: any, idx: number) => {
     return (
       <Box key={`${block.id}-chart-${idx}`} mt="$3" width="100%">
-        <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
-          {chart.title}
-        </Text>
+        {/* Keep chart title label (do not render title inside chart components to avoid duplicates) */}
+        {chart?.title ? (
+          <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
+            {chart.title}
+          </Text>
+        ) : null}
+
+        {chart?.subtitle ? (
+          <Text fontSize="$xs" color="$textMutedForeground" mb="$2">
+            {chart.subtitle}
+          </Text>
+        ) : null}
 
         {chart.kind === 'line' && chart.line ? (
           <SimpleLineChart
@@ -370,6 +392,11 @@ const ReportSection: React.FC<{
             title={chart.title}
             orientation={chart.bar.orientation}
             height={chart.bar.height}
+            variant={chart.bar.variant}
+            showAxes={chart.bar.showAxes}
+            showGrid={chart.bar.showGrid}
+            showLegend={chart.bar.showLegend}
+            valueFormat={chart.bar.valueFormat}
           />
         ) : null}
 
@@ -377,8 +404,17 @@ const ReportSection: React.FC<{
           <SimplePieChart data={chart.pie.data} title={chart.title} />
         ) : null}
 
+        {chart.kind === 'groupedBar' && chart.groupedBar ? (
+          <SimpleGroupedBarChart
+            title={chart.title}
+            categories={chart.groupedBar.categories}
+            series={chart.groupedBar.series}
+            height={chart.groupedBar.height}
+          />
+        ) : null}
+
         {chart.kind === 'placeholder' ? (
-          <Text fontSize="$sm" color="$textLight600">
+          <Text fontSize="$sm" color="$textMutedForeground">
             {chart.placeholderText || t(fallbackPlaceholderKey)}
           </Text>
         ) : null}
@@ -387,11 +423,11 @@ const ReportSection: React.FC<{
   };
 
   return (
-    <Card p="$4" borderRadius="$lg" borderWidth={1} borderColor="$borderLight200">
-      <VStack space="sm" width="100%">
-        <Heading size="sm">{t(block.sectionTitle)}</Heading>
+    <Card p="$6" borderRadius="$xl" borderWidth={1} borderColor="$borderColor" variant="ghost" bg="$white">
+      <VStack space="xs" width="100%">
+        <Heading size="sm" fontWeight="$normal">{t(block.sectionTitle)}</Heading>
         {block.sectionMeta ? (
-          <Text fontSize="$xs" color="$textLight600">
+          <Text fontSize="$sm" color="$textMutedForeground" fontWeight="$medium">
             {t(block.sectionMeta)}
           </Text>
         ) : null}
@@ -416,6 +452,16 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
 }) => {
   const { t } = useLanguage();
 
+  const getGroupHeaderAccent = (block: any) => {
+    // Prefer explicit textColor if provided.
+    if (block?.textColor) return block.textColor;
+    // Infer from known tinted backgrounds used in Livelihood Promotion.
+    const bg = String(block?.bg || '').toLowerCase();
+    if (bg === '#f5f3ff') return '#7C3AED'; // purple (entrepreneurship)
+    if (bg === '#eff6ff') return '#2563EB'; // blue (employment)
+    return '#111827';
+  };
+
   if (!blocks || blocks.length === 0) {
     return (
       <VStack space="md" width="100%" alignItems="center" py="$4" px="$2">
@@ -435,25 +481,50 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
               fallbackPlaceholderKey={fallbackPlaceholderKey}
             />
           ) : block.kind === 'groupHeader' ? (
-            <Box
-              key={block.id}
-              bg={(block as any).bg ? ((block as any).bg as any) : '$backgroundLight50'}
-              borderRadius="$lg"
-              px="$4"
-              py="$3"
-              borderWidth={1}
-              borderColor="$borderLight200"
-            >
-              <Heading size="xs" color={(block as any).textColor ? ((block as any).textColor as any) : '$textForeground'}>
-                {t((block as any).title)}
-              </Heading>
-            </Box>
+            (() => {
+              const accent = getGroupHeaderAccent(block as any);
+              const titleStr = t((block as any).title);
+              return (
+                <Box
+                  key={block.id}
+                  width="100%"
+                  bg={(block as any).bg ? ((block as any).bg as any) : '$backgroundLight50'}
+                  borderRadius="$lg"
+                  px="$6"
+                  py="$5"
+                  borderWidth={1}
+                  borderColor="$borderLight200"
+                  position="relative"
+                  overflow="hidden"
+                  minHeight={64}
+                  justifyContent="center"
+                >
+                  {/* Left accent bar (like reference) */}
+                  <Box
+                    position="absolute"
+                    left={0}
+                    top={0}
+                    bottom={0}
+                    width={4}
+                    bg={accent as any}
+                  />
+                  <Text
+                    fontSize="$sm"
+                    fontWeight="$semibold"
+                    color={accent as any}
+                    letterSpacing={0.5 as any}
+                  >
+                    {String(titleStr || '').toUpperCase()}
+                  </Text>
+                </Box>
+              );
+            })()
           ) : (
             <Card key={block.id} p="$4" borderRadius="$lg" borderWidth={1} borderColor="$borderLight200">
               <VStack space="sm" width="100%">
                 {'title' in block && block.title ? <Heading size="md">{t(block.title as any)}</Heading> : null}
                 {'description' in block && block.description ? (
-                  <Text fontSize="$sm" color="$textLight600">
+                  <Text fontSize="$sm" color="$textMutedForeground">
                     {t(block.description as any)}
                   </Text>
                 ) : null}

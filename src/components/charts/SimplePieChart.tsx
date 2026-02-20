@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import Svg, { Path, Circle, Text as SvgText } from 'react-native-svg';
-import { Box, VStack, HStack, Text, Heading } from '@ui';
+import Svg, { Path, Polyline, Text as SvgText } from 'react-native-svg';
+import { Box, VStack, Text } from '@ui';
+import { usePlatform } from '@utils/platform';
 
 export interface PieChartDataPoint {
   label: string;
@@ -21,54 +22,196 @@ export interface SimplePieChartProps {
  */
 const SimplePieChart: React.FC<SimplePieChartProps> = ({
   data,
-  title = 'Pie Chart',
+  title: _title = 'Pie Chart',
 }) => {
+  const { isWeb } = usePlatform();
   const windowDimensions = useWindowDimensions();
   const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   
+  const useOutsideLabels = data.length <= 2;
+  const useCalloutLabels = data.length > 2;
+
   // Responsive size calculation
   const size = Math.min(containerWidth * 0.6, 280);
+  // Extra room for outside labels (match reference for 2-slice pies)
+  const sidePadding = useOutsideLabels
+    ? Math.min(360, Math.max(240, containerWidth * 0.32))
+    : useCalloutLabels
+      ? Math.min(320, Math.max(220, containerWidth * 0.28))
+      : 0;
+  const verticalPadding = useCalloutLabels ? 70 : 0;
+  const svgWidth = size + sidePadding * 2;
+  const svgHeight = size + verticalPadding * 2;
   const radius = size / 2 - 10;
-  const centerX = size / 2;
-  const centerY = size / 2;
+  const centerX = svgWidth / 2;
+  const centerY = svgHeight / 2;
 
-  const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
-  let currentAngle = -90; // Start from top
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0) || 1, [data]);
 
-  const slices = data.map(d => {
-    const percentage = (d.value / total) * 100;
-    const angle = (d.value / total) * 360;
-    const startAngle = currentAngle;
-    currentAngle += angle;
-    const endAngle = currentAngle;
+  // Match reference for 2-slice pies: keep the smaller slice (often "Delayed") on the right side.
+  const chartData = useMemo(() => {
+    if (useOutsideLabels && data.length === 2) {
+      return [...data].sort((a, b) => a.value - b.value); // smaller first
+    }
+    return data;
+  }, [data, useOutsideLabels]);
 
-    // Calculate arc path
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = (endAngle * Math.PI) / 180;
+  const slices = useMemo(() => {
+    const firstAngle = chartData.length ? (chartData[0].value / total) * 360 : 0;
+    // For 2-slice: center the first (smaller) slice at 0deg (pointing right).
+    let currentAngle = useOutsideLabels && chartData.length === 2 ? -firstAngle / 2 : -90; // default: start from top
+    return chartData.map(d => {
+      const percentage = (d.value / total) * 100;
+      const angle = (d.value / total) * 360;
+      const startAngle = currentAngle;
+      currentAngle += angle;
+      const endAngle = currentAngle;
 
-    const x1 = centerX + radius * Math.cos(startRad);
-    const y1 = centerY + radius * Math.sin(startRad);
-    const x2 = centerX + radius * Math.cos(endRad);
-    const y2 = centerY + radius * Math.sin(endRad);
+      // Calculate arc path
+      const startRad = (startAngle * Math.PI) / 180;
+      const endRad = (endAngle * Math.PI) / 180;
 
-    const largeArc = angle > 180 ? 1 : 0;
+      const x1 = centerX + radius * Math.cos(startRad);
+      const y1 = centerY + radius * Math.sin(startRad);
+      const x2 = centerX + radius * Math.cos(endRad);
+      const y2 = centerY + radius * Math.sin(endRad);
 
-    const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
+      const largeArc = angle > 180 ? 1 : 0;
 
-    return {
-      ...d,
-      path,
-      percentage: percentage.toFixed(1),
+      const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
+      const midAngle = (startAngle + endAngle) / 2;
+
+      return {
+        ...d,
+        path,
+        percentage: percentage.toFixed(0),
+        startAngle,
+        endAngle,
+        midAngle,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartData, total, centerX, centerY, radius, svgWidth, svgHeight, useOutsideLabels]);
+
+  const callouts = useMemo(() => {
+    if (!useCalloutLabels) return [];
+
+    type Item = {
+      i: number;
+      side: 'left' | 'right';
+      color: string;
+      label: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      xElbow: number;
+      xLineEnd: number;
+      y3: number;
+      textX: number;
+      textY: number;
+      textAnchor: 'start' | 'end';
     };
-  });
+
+    const minY = 14;
+    const maxY = svgHeight - 14;
+    const gap = 20;
+    const lineOffsetY = 10; // draw the final horizontal segment below the text baseline
+
+    const raw: Item[] = slices.map((s: any, i: number) => {
+      const rad = (s.midAngle * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const side: 'left' | 'right' = cos >= 0 ? 'right' : 'left';
+
+      const x1 = centerX + radius * cos;
+      const y1 = centerY + radius * sin;
+      const x2 = centerX + (radius + 14) * cos;
+      const y2 = centerY + (radius + 14) * sin;
+      // Elbow is kept close to the pie edge; the final segment runs horizontally near the side.
+      const xElbow = side === 'right'
+        ? centerX + radius + 18
+        : centerX - radius - 18;
+
+      // Text sits near the edges, inside bounds.
+      const textX = side === 'right' ? svgWidth - 12 : 12;
+      const textAnchor: 'start' | 'end' = side === 'right' ? 'end' : 'start';
+
+      // Stop the line a bit before the text to avoid striking through glyphs.
+      const xLineEnd = side === 'right' ? textX - 14 : textX + 14;
+      const y3 = y2;
+
+      const label = `${s.label}: ${s.percentage}% (${s.value})`;
+
+      return {
+        i,
+        side,
+        color: s.color,
+        label,
+        x1,
+        y1,
+        x2,
+        y2,
+        xElbow,
+        xLineEnd,
+        y3,
+        textX,
+        textY: y3,
+        textAnchor,
+      };
+    });
+
+    const adjustSide = (items: Item[]) => {
+      const sorted = [...items].sort((a, b) => a.textY - b.textY);
+      let y = minY;
+      for (const it of sorted) {
+        it.textY = Math.max(it.textY, y);
+        it.textY = Math.min(Math.max(it.textY, minY), maxY);
+        y = it.textY + gap;
+      }
+
+      // If overflow at bottom, shift everything up.
+      const overflow = (sorted.length ? sorted[sorted.length - 1].textY : 0) - (maxY - 2);
+      if (overflow > 0) {
+        for (const it of sorted) {
+          it.textY = Math.max(minY, it.textY - overflow);
+        }
+      }
+
+      // Keep the elbow aligned to adjusted textY
+      for (const it of sorted) {
+        it.y3 = Math.min(maxY, it.textY + lineOffsetY);
+      }
+      return sorted;
+    };
+
+    const left = adjustSide(raw.filter(r => r.side === 'left'));
+    const right = adjustSide(raw.filter(r => r.side === 'right'));
+    return [...left, ...right].sort((a, b) => a.i - b.i);
+  }, [useCalloutLabels, slices, svgHeight, svgWidth, centerX, centerY, radius]);
+
+  const normalizeAngle = (deg: number) => ((deg % 360) + 360) % 360;
+
+  const pickSliceIndexByAngle = (deg: number) => {
+    const a = normalizeAngle(deg);
+    for (let i = 0; i < slices.length; i++) {
+      const s = slices[i] as any;
+      const start = normalizeAngle(s.startAngle);
+      const end = normalizeAngle(s.endAngle);
+      if (start <= end) {
+        if (a >= start && a <= end) return i;
+      } else {
+        // wrap-around (e.g., start=300 end=20)
+        if (a >= start || a <= end) return i;
+      }
+    }
+    return null;
+  };
 
   return (
     <VStack space="sm" width="100%" alignItems="center" mb="$6">
-      {/* Title */}
-      <Heading size="md" mb="$2">
-        {title}
-      </Heading>
-
       {/* Chart */}
       <Box 
         width="100%" 
@@ -80,27 +223,157 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
           }
         }}
       >
-        <Svg width={size} height={size}>
-          {slices.map((slice, i) => (
-            <Path key={`slice-${i}`} d={slice.path} fill={slice.color} />
-          ))}
-        </Svg>
-      </Box>
+        <Box
+          width={svgWidth}
+          height={svgHeight}
+          position="relative"
+          {...(isWeb && {
+            // @ts-ignore - web-only mouse events
+            onMouseMove: (e: any) => {
+              const rect = e.currentTarget?.getBoundingClientRect?.();
+              if (!rect) return;
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
 
-      {/* Legend */}
-      <VStack space="xs" width="100%" mt="$2" px="$4">
-        {slices.map((slice, i) => (
-          <HStack key={`legend-${i}`} space="sm" alignItems="center">
-            <Box width={16} height={16} borderRadius={4} bg={slice.color} />
-            <Text fontSize="$sm" color="$textLight600" flex={1}>
-              {slice.label}
-            </Text>
+              const dx = x - centerX;
+              const dy = y - centerY;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist > radius) {
+                setHoveredIndex(null);
+                setHoverPos(null);
+                return;
+              }
+
+              const deg = (Math.atan2(dy, dx) * 180) / Math.PI;
+              const idx = pickSliceIndexByAngle(deg);
+              setHoveredIndex(idx);
+              setHoverPos(idx !== null ? { x, y } : null);
+            },
+            onMouseLeave: () => {
+              setHoveredIndex(null);
+              setHoverPos(null);
+            },
+            style: { cursor: 'pointer' },
+          })}
+        >
+          <Svg width={svgWidth} height={svgHeight}>
+            {slices.map((slice: any, i) => {
+              const midRad = (slice.midAngle * Math.PI) / 180;
+              // Keep the pie visually stable on hover (no explode / no dimming).
+              return (
+                <Path
+                  key={`slice-${i}`}
+                  d={slice.path}
+                  fill={slice.color}
+                  stroke="#FFFFFF"
+                  strokeWidth={1}
+                  // @ts-ignore - press works on native svg
+                  onPress={(ev: any) => {
+                    setHoveredIndex(i);
+                    setHoverPos({ x: centerX, y: centerY });
+                    return ev;
+                  }}
+                />
+              );
+            })}
+
+            {/* Multi-slice callout labels + leader lines (Dropouts-style) */}
+            {useCalloutLabels
+              ? callouts.map(c => (
+                  <React.Fragment key={`callout-${c.i}`}>
+                    <Polyline
+                      points={`${c.x1},${c.y1} ${c.x2},${c.y2} ${c.xElbow},${c.y2} ${c.xElbow},${c.y3} ${c.xLineEnd},${c.y3}`}
+                      fill="none"
+                      stroke={c.color}
+                      strokeWidth={1}
+                    />
+                    <SvgText
+                      x={c.textX}
+                      y={c.textY + 4}
+                      fontSize="13"
+                      fill={c.color}
+                      textAnchor={c.textAnchor}
+                      fontWeight="500"
+                    >
+                      {c.label}
+                    </SvgText>
+                  </React.Fragment>
+                ))
+              : null}
+          </Svg>
+
+          {/* Outside labels (2-slice pies) */}
+          {useOutsideLabels ? slices.map((slice: any, i) => {
+            const midRad = (slice.midAngle * Math.PI) / 180;
+            // Position labels like reference: keep them close to the center line.
+            // For 2-slice pies (common in this dashboard), lock Y to center for a clean left/right layout.
+            const damp = 0.35;
+            const ly =
+              slices.length <= 2
+                ? centerY
+                : centerY + Math.sin(midRad) * radius * damp;
+            // Determine which side the label should sit on (left/right)
+            const lx = centerX + Math.cos(midRad) * (radius + 10);
+            const isRightByAngle = lx >= centerX;
+            const isTwoSlices = slices.length === 2;
+            const maxValue = isTwoSlices ? Math.max(slices[0].value, slices[1].value) : null;
+            // Match reference for 2-slice pies: larger slice label on LEFT, smaller on RIGHT
+            const isRight = isTwoSlices
+              ? slice.value !== maxValue
+              : isRightByAngle;
+            const label = `${slice.label}: ${slice.percentage}% (${slice.value})`;
+
+            // Position relative to the side paddings; clamp within container height
+            const top = Math.min(Math.max(ly - 10, 6), svgHeight - 26);
+
+            return (
+              <Box
+                key={`label-ui-${i}`}
+                position="absolute"
+                top={top}
+                left={isRight ? undefined : 0}
+                right={isRight ? 0 : undefined}
+                width={sidePadding - 24}
+                px="$2"
+                pointerEvents="none"
+              >
+                <Text
+                  fontSize="$md"
+                  color={slice.color}
+                  textAlign={isRight ? 'left' : 'right'}
+                  numberOfLines={1}
+                >
+                  {label}
+                </Text>
+              </Box>
+            );
+          }) : null}
+        </Box>
+
+        {/* Hover tooltip (like reference) */}
+        {hoveredIndex !== null && hoverPos ? (
+          <Box
+            position="absolute"
+            left={Math.min(Math.max(hoverPos.x + 12, 8), svgWidth - 260)}
+            top={Math.min(Math.max(hoverPos.y - 30, 8), svgHeight - 80)}
+            bg="$white"
+            borderWidth={1}
+            borderColor="$borderLight300"
+            borderRadius="$md"
+            p="$3"
+            shadowColor="$black"
+            shadowOffset={{ width: 0, height: 2 } as any}
+            shadowOpacity={0.08}
+            shadowRadius={6}
+            elevation={3}
+            pointerEvents="none"
+          >
             <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
-              {slice.percentage}%
+              {`${(slices[hoveredIndex] as any).label}: ${(slices[hoveredIndex] as any).percentage}% (${(slices[hoveredIndex] as any).value})`}
             </Text>
-          </HStack>
-        ))}
-      </VStack>
+          </Box>
+        ) : null}
+      </Box>
     </VStack>
   );
 };

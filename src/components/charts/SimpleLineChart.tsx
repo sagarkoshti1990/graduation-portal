@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Pressable, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, View, Pressable, useWindowDimensions } from 'react-native';
 import Svg, { Line, Circle, Text as SvgText, G, Rect, Path } from 'react-native-svg';
-import { Box, VStack, HStack, Text, Heading } from '@ui';
+import { Box, VStack, HStack, Text } from '@ui';
 import { usePlatform } from '@utils/platform';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 export interface LineChartDataPoint {
   month: string;
@@ -36,10 +38,11 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   const { isWeb } = usePlatform();
   const windowDimensions = useWindowDimensions();
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
   
-  // Responsive width calculation
-  const width = Math.min(containerWidth, 1200);
+  // Use full available container width (end-to-end charts on wide screens)
+  const width = containerWidth;
   const padding = { top: 40, right: 20, bottom: 50, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
@@ -60,9 +63,53 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   }));
 
   // Create line path
-  const linePath = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`)
-    .join(' ');
+  // Smooth curve path (Catmull-Rom spline -> Bezier)
+  const createSmoothPath = (pts: { x: number; y: number }[]) => {
+    if (pts.length === 0) return '';
+    if (pts.length === 1) return `M ${pts[0].x},${pts[0].y}`;
+    const d: string[] = [`M ${pts[0].x},${pts[0].y}`];
+
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d.push(`C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`);
+    }
+
+    return d.join(' ');
+  };
+
+  const linePath = createSmoothPath(points);
+
+  // Approximate path length for animation (good enough for dash animation)
+  const approxPathLength = useMemo(() => {
+    if (points.length < 2) return 0;
+    let len = 0;
+    for (let i = 1; i < points.length; i++) {
+      const dx = points[i].x - points[i - 1].x;
+      const dy = points[i].y - points[i - 1].y;
+      len += Math.sqrt(dx * dx + dy * dy);
+    }
+    return Math.max(len, 1);
+  }, [points]);
+
+  const dashOffset = useRef(new Animated.Value(approxPathLength)).current;
+
+  useEffect(() => {
+    dashOffset.setValue(approxPathLength);
+    Animated.timing(dashOffset, {
+      toValue: 0,
+      duration: 900,
+      useNativeDriver: false,
+    }).start();
+  }, [approxPathLength, dashOffset, linePath]);
 
   // Handle point hover/press
   const handlePointInteraction = (index: number) => {
@@ -71,6 +118,7 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
 
   const handlePointLeave = () => {
     setHoveredPoint(null);
+    setHoverPos(null);
   };
 
   // Y-axis labels (5 ticks)
@@ -81,11 +129,6 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
 
   return (
     <VStack space="sm" width="100%" alignItems="center" mb="$6">
-      {/* Title */}
-      <Heading size="md" mb="$2">
-        {title}
-      </Heading>
-
       {/* Chart Container */}
       <Box 
         width="100%" 
@@ -107,48 +150,62 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
               
               const mouseX = e.clientX - svgRect.left;
               const mouseY = e.clientY - svgRect.top;
-              
-              // Find closest point
-              let closestIndex = -1;
-              let minDistance = 30; // Max distance threshold
-              
-              points.forEach((point, index) => {
-                const distance = Math.sqrt(
-                  Math.pow(mouseX - point.x, 2) + Math.pow(mouseY - point.y, 2)
-                );
-                if (distance < minDistance) {
-                  minDistance = distance;
-                  closestIndex = index;
-                }
-              });
-              
-              if (closestIndex >= 0) {
-                setHoveredPoint(closestIndex);
-              } else {
+
+              // Only hover when mouse is within plot area
+              const withinX =
+                mouseX >= padding.left && mouseX <= padding.left + chartWidth;
+              const withinY =
+                mouseY >= padding.top && mouseY <= padding.top + chartHeight;
+
+              if (!withinX || !withinY) {
                 setHoveredPoint(null);
+                setHoverPos(null);
+                return;
               }
+
+              // Hover should follow mouse movement: pick nearest x-index (no distance threshold)
+              const rawIdx = Math.round((mouseX - padding.left) / xStep);
+              const idx = Math.max(0, Math.min(data.length - 1, rawIdx));
+              setHoveredPoint(idx);
+              setHoverPos({ x: mouseX, y: mouseY });
             },
             onMouseLeave: handlePointLeave,
             style: { cursor: 'pointer' },
           })}
         >
           <Svg width={width} height={height}>
-          {/* Grid lines */}
+          {/* Grid lines (faint dotted like reference) */}
           {showGrid &&
             yTickValues.map((val, i) => {
               const y = padding.top + chartHeight - ((val - minValue) / valueRange) * chartHeight;
               return (
                 <Line
-                  key={`grid-${i}`}
+                  key={`grid-h-${i}`}
                   x1={padding.left}
                   y1={y}
                   x2={padding.left + chartWidth}
                   y2={y}
-                  stroke="#E5E7EB"
+                  stroke="#D1D5DB"
                   strokeWidth="1"
+                  strokeDasharray="3 3"
                 />
               );
             })}
+
+          {showGrid &&
+            points.map((p, i) => (
+              <Line
+                key={`grid-v-${i}`}
+                x1={p.x}
+                y1={padding.top}
+                x2={p.x}
+                y2={padding.top + chartHeight}
+                stroke={hoveredPoint === i ? '#9CA3AF' : '#D1D5DB'}
+                strokeWidth={hoveredPoint === i ? 1.5 : 1}
+                strokeDasharray={hoveredPoint === i ? '0' : '3 3'}
+                opacity={hoveredPoint === i ? 0.9 : 0.7}
+              />
+            ))}
 
           {/* Y-axis */}
           <Line
@@ -187,8 +244,42 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
             );
           })}
 
-          {/* Line */}
-          <Path d={linePath} stroke={color} strokeWidth="3" fill="none" />
+          {/* Y-axis title (vertical) */}
+          {yAxisLabel ? (
+            <SvgText
+              x={18}
+              y={padding.top + chartHeight / 2}
+              fontSize="12"
+              fill="#6B7280"
+              textAnchor="middle"
+              transform={`rotate(-90 18 ${padding.top + chartHeight / 2})`}
+            >
+              {yAxisLabel}
+            </SvgText>
+          ) : null}
+
+          {/* Hover crosshair (vertical) */}
+          {hoveredPoint !== null ? (
+            <Line
+              x1={points[hoveredPoint].x}
+              y1={padding.top}
+              x2={points[hoveredPoint].x}
+              y2={padding.top + chartHeight}
+              stroke="#9CA3AF"
+              strokeWidth="1"
+              opacity={0.6}
+            />
+          ) : null}
+
+          {/* Line (smooth curve) with draw animation */}
+          <AnimatedPath
+            d={linePath}
+            stroke={color}
+            strokeWidth="3"
+            fill="none"
+            strokeDasharray={`${approxPathLength} ${approxPathLength}`}
+            strokeDashoffset={dashOffset as any}
+          />
 
           {/* Data points with hover/press support */}
           {points.map((p, i) => (
@@ -199,16 +290,42 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
                 cy={p.y}
                 r="15"
                 fill="transparent"
-                onPress={() => handlePointInteraction(i)}
+                onPress={(e: any) => {
+                  handlePointInteraction(i);
+                  return e;
+                }}
               />
               {/* Visible point */}
-              <Circle
-                cx={p.x}
-                cy={p.y}
-                r={hoveredPoint === i ? "7" : "5"}
-                fill={hoveredPoint === i ? "#1E40AF" : color}
-                onPress={() => handlePointInteraction(i)}
-              />
+              {hoveredPoint === i ? (
+                <>
+                  {/* Outer ring */}
+                  <Circle
+                    cx={p.x}
+                    cy={p.y}
+                    r="6.5"
+                    fill="#FFFFFF"
+                    stroke={color}
+                    strokeWidth="2.5"
+                    onPress={(e: any) => {
+                      handlePointInteraction(i);
+                      return e;
+                    }}
+                  />
+                  {/* Inner dot */}
+                  <Circle cx={p.x} cy={p.y} r="3.5" fill={color} />
+                </>
+              ) : (
+                <Circle
+                  cx={p.x}
+                  cy={p.y}
+                  r="5"
+                  fill={color}
+                  onPress={(e: any) => {
+                    handlePointInteraction(i);
+                    return e;
+                  }}
+                />
+              )}
             </G>
           ))}
 
@@ -235,11 +352,18 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
         </Box>
 
         {/* Tooltip Popover */}
-        {hoveredPoint !== null && (
+        {hoveredPoint !== null && hoverPos && (
           <Box
             position="absolute"
-            left={points[hoveredPoint].x - 40}
-            top={points[hoveredPoint].y - 80}
+            // Follow mouse, clamped within container
+            left={Math.min(
+              Math.max(hoverPos.x + 12, 8),
+              width - 180
+            )}
+            top={Math.min(
+              Math.max(hoverPos.y - 60, 8),
+              height - 90
+            )}
             bg="$white"
             borderWidth={1}
             borderColor="$borderLight300"
@@ -265,11 +389,6 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
           </Box>
         )}
       </Box>
-
-      {/* Y-axis label */}
-      <Text fontSize="$sm" color="$textLight600" mt="$2">
-        {yAxisLabel}
-      </Text>
     </VStack>
   );
 };
