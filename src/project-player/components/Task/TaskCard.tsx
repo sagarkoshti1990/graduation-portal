@@ -16,6 +16,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipText,
+  Spinner,
 } from '@ui';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useTaskActions } from '../../hooks/useTaskActions';
@@ -65,6 +66,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     Boolean(!task?.isDeletable),
   );
   const [isRejected, setIsRejected] = useState(false);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const participantId = route.params?.id;
   // Modal state management (from Incoming)
   type ModalType = 'edit' | 'delete' | null;
@@ -172,8 +174,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
   // Checkbox change handler
   const handleCheckboxChange = async (checked: boolean) => {
     if (!isEdit) return;
-    const newStatus = checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO;
-    await handleStatusChange(task._id, newStatus);
+    setIsStatusUpdating(true);
+    try {
+      const newStatus = checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO;
+      await handleStatusChange(task._id, newStatus);
+    } finally {
+      setIsStatusUpdating(false);
+    }
   };
 
   // Custom Renderers (From HEAD to preserve styling)
@@ -185,6 +192,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
 
     if (isInterventionPlanEditMode && isObservationTask) {
+      if (isStatusUpdating) {
+        return (
+          <Box {...taskCardStyles.primaryFilledCircle} borderColor="transparent" bg="transparent">
+            <Spinner size="small" color={theme.tokens.colors.primary500} />
+          </Box>
+        );
+      }
       if (isCompleted) {
         // Render a simple green checkmark (non-interactive)
         return (
@@ -225,6 +239,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     if (uiConfig.showCheckbox) {
       return (
+        <Box width={32} height={32} alignItems="center" justifyContent="center">
+          {isStatusUpdating ? (
+            <Spinner size="small" color={theme.tokens.colors.primary500} />
+          ) : (
         <Checkbox
           value={task?._id}
           isChecked={isCompleted}
@@ -245,6 +263,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <CheckboxIcon as={CheckIcon} color="$accent100" />
           </CheckboxIndicator>
         </Checkbox>
+          )}
+        </Box>
       );
     }
 
@@ -405,12 +425,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 {...taskCardStyles.statusBadge}
                 {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
                 opacity={isObservationTask ? 1 : undefined} // Keep full opacity for visibility
+                minWidth={50}
+                justifyContent="center"
               >
-                <Text
-                  {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
-                >
-                  {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
-                </Text>
+                {isStatusUpdating ? (
+                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                ) : (
+                  <Text
+                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
+                  >
+                    {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
+                  </Text>
+                )}
               </Box>
             );
           }}
@@ -697,13 +723,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
         console.log('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
-        const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
-        if(data?.success) {
-          // Show success toast with task-specific message
-          showSuccess(t('projectPlayer.evidenceUploaded'));
-          setShowUploadModal(false);
-        } else {
-          showError(t('projectPlayer.evidenceUploadFailed'));
+        setIsStatusUpdating(true);
+        try {
+          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
+          if (data?.success) {
+            // Show success toast with task-specific message
+            showSuccess(t('projectPlayer.evidenceUploaded'));
+            setShowUploadModal(false);
+          } else {
+            showError(t('projectPlayer.evidenceUploadFailed'));
+          }
+        } finally {
+          setIsStatusUpdating(false);
         }
       }}
     />
