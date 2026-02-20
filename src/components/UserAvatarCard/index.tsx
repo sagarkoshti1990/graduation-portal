@@ -99,22 +99,41 @@ const UserAvatarCard = ({
           space="sm"
         >
           {/* Checkbox + Avatar managed inside name (no separate columns) */}
-          <Checkbox
-            value={item.value}
-            isChecked={selectedLCs.has(item.value)}
-            onChange={(checked: boolean) => {
-              setSelectedLCs((prev) => {
-                const newSet = new Set(prev);
-                if (checked) newSet.add(item.value);
-                else newSet.delete(item.value);
-                return newSet;
-              });
+          <Pressable
+            onPress={(e: any) => {
+              // Stop event propagation to prevent row click from firing
+              // This prevents the checkbox click from triggering the row's onRowClick
+            }}
+            $web-onClick={(e: any) => {
+              // For web, stop click event propagation
+              if (e?.stopPropagation) {
+                e.stopPropagation();
+              }
+            }}
+            $web-onMouseDown={(e: any) => {
+              // Also stop mousedown propagation for web
+              if (e?.stopPropagation) {
+                e.stopPropagation();
+              }
             }}
           >
-            <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-              <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-            </CheckboxIndicator>
-          </Checkbox>
+            <Checkbox
+              value={item.value}
+              isChecked={selectedLCs.has(item.value)}
+              onChange={(checked: boolean) => {
+                setSelectedLCs((prev) => {
+                  const newSet = new Set(prev);
+                  if (checked) newSet.add(item.value);
+                  else newSet.delete(item.value);
+                  return newSet;
+                });
+              }}
+            >
+              <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+              </CheckboxIndicator>
+            </Checkbox>
+          </Pressable>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
             <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
@@ -125,6 +144,9 @@ const UserAvatarCard = ({
           <VStack space="xs" flexShrink={1}>
             <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
               {item.labelKey}
+            </Text>
+            <Text {...(AssignUsersStyles.provinceName as TextProps)} fontSize="$xs">
+              PAR-{String(item.id || item.value || '').padStart(3, '0')}
             </Text>
             {item.location && (
               <HStack gap="$1" alignItems="center">
@@ -178,22 +200,41 @@ const UserAvatarCard = ({
           space="sm"
         >
           {/* Checkbox managed inside lcInfo (no separate checkbox column) */}
-          <Checkbox
-            value={lc.value}
-            isChecked={selectedLCs.has(lc.value)}
-            onChange={(checked: boolean) => {
-              setSelectedLCs((prev) => {
-                const newSet = new Set(prev);
-                if (checked) newSet.add(lc.value);
-                else newSet.delete(lc.value);
-                return newSet;
-              });
+          <Pressable
+            onPress={(e: any) => {
+              // Stop event propagation to prevent row click from firing
+              // This prevents the checkbox click from triggering the row's onRowClick
+            }}
+            $web-onClick={(e: any) => {
+              // For web, stop click event propagation
+              if (e?.stopPropagation) {
+                e.stopPropagation();
+              }
+            }}
+            $web-onMouseDown={(e: any) => {
+              // Also stop mousedown propagation for web
+              if (e?.stopPropagation) {
+                e.stopPropagation();
+              }
             }}
           >
-            <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-              <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-            </CheckboxIndicator>
-          </Checkbox>
+            <Checkbox
+              value={lc.value}
+              isChecked={selectedLCs.has(lc.value)}
+              onChange={(checked: boolean) => {
+                setSelectedLCs((prev) => {
+                  const newSet = new Set(prev);
+                  if (checked) newSet.add(lc.value);
+                  else newSet.delete(lc.value);
+                  return newSet;
+                });
+              }}
+            >
+              <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+              </CheckboxIndicator>
+            </Checkbox>
+          </Pressable>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
             <Text {...(AssignUsersStyles.avatarFallbackTextStyles as TextProps)} fontSize="$sm">
@@ -204,6 +245,9 @@ const UserAvatarCard = ({
           <VStack space="xs" flexShrink={1}>
             <Text {...(AssignUsersStyles.supervisorName as TextProps)} fontSize="$sm">
               {lc.labelKey}
+            </Text>
+            <Text {...(AssignUsersStyles.provinceName as TextProps)} fontSize="$xs">
+              LC-{String(lc.id || lc.value || '').padStart(3, '0')}
             </Text>
             {lc.location && (
               <HStack gap="$1" alignItems="center">

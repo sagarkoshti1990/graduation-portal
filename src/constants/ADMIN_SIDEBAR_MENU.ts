@@ -7,6 +7,7 @@ interface SidebarItem {
 }
 
 export const MAIN_MENU_ITEMS: SidebarItem[] = [
+  // Dashboard is hidden from menu but still accessible via /admin-dashboard URL
   // {
   //   key: 'dashboard',
   //   label: 'admin.dashboard',

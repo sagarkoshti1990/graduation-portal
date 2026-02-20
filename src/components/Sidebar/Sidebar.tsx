@@ -53,7 +53,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   );
   const [expandedQuickActions, setExpandedQuickActions] = useState(true);
   const [expandedMoreInfo, setExpandedMoreInfo] = useState(true);
-  const [activeRoute, setActiveRoute] = useState('dashboard');
+  const [activeRoute, setActiveRoute] = useState('user-management');
   const { isWeb } = usePlatform();
   const { t } = useLanguage();
   const handleClose = () => {

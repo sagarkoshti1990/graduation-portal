@@ -60,15 +60,15 @@ export const getSupervisorsByProvince = async (
  * Fetches linkage champions that can be assigned to supervisors
  * 
  * @param programId - Program ID (e.g., "6952469bd9f179bdf8abe717")
- * @param params - Optional parameters (excludeMapped, limit, province, site)
+ * @param params - Optional parameters (excludeMapped, limit, province, site, search)
  * @returns A promise resolving to the linkage champions response from the API
  */
 export const getLinkageChampions = async (
   programId: string,
-  params?: { excludeMapped?: boolean; limit?: number; province?: string; site?: string }
+  params?: { excludeMapped?: boolean; limit?: number; province?: string; site?: string; search?: string }
 ): Promise<UserSearchResponse> => {
   try {
-    const { excludeMapped = true, limit = 100, province, site } = params || {};
+    const { excludeMapped = true, limit = 100, province, site, search } = params || {};
     
     // Build query string
     const queryParams = new URLSearchParams({
@@ -78,19 +78,24 @@ export const getLinkageChampions = async (
       type: 'org_admin',
     });
 
-    // Add site as query parameter if provided
-    if (site && site !== 'all-sites') {
-      queryParams.append('site', site);
+    // Add optional search parameter (name/email)
+    if (search && search.trim()) {
+      queryParams.append('search', search.trim());
     }
 
     const endpoint = `${API_ENDPOINTS.PROGRAM_USERS_SEARCH}?${queryParams.toString()}`;
     
-    // Build request body - province goes in meta.province (similar to usersService)
+    // Build request body - site goes in meta.site (province removed from Step 2)
     const requestBody: any = {};
-    if (province && province !== 'all-provinces' && province !== 'all-Provinces') {
-      requestBody.meta = {
-        province: province, // Province ID (e.g., "6952163ae83c1c00147132a8")
-      };
+    const meta: any = {};
+    
+    if (site && site !== 'all-sites') {
+      meta.site = site; // Site ID
+    }
+    
+    // Add meta to requestBody if it has at least one property
+    if (Object.keys(meta).length > 0) {
+      requestBody.meta = meta;
     }
     
     // POST request to fetch linkage champions

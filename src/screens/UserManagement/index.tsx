@@ -634,7 +634,7 @@ const UserManagementScreen = () => {
               </Text>
             </VStack>
           ) : (
-            <VStack space="lg">
+            <VStack space="lg"  alignItems="stretch">
               {/* Personal Information */}
               <VStack space="sm">
                 <HStack space="xs" alignItems="center">

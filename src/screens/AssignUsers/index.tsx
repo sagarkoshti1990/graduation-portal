@@ -18,6 +18,7 @@ import { AssignUsersStyles } from './Styles';
 import { theme } from '@config/theme';
 import { getLinkageChampions, assignLCsToSupervisor, getMappedLCsForSupervisor, getParticipants, assignParticipantsToLC, getMappedParticipantsForLC } from '../../services/assignUsersService';
 import { getInitials } from '@utils/helper';
+import { useIsSupervisor, useAuth } from '../../contexts/AuthContext';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -30,10 +31,21 @@ declare const process:
 
 const AssignUsersScreen = () => {
  const { t } = useLanguage();
+ const { user } = useAuth();
+ const isSupervisor = useIsSupervisor();
  type AssignTab = 'LC_TO_SUPERVISOR' | 'PARTICIPANT_TO_LC';
 
+ // Log logged-in user role
+ useEffect(() => {
+   console.log('Logged in user role:', user?.role);
+   console.log('Is Supervisor:', isSupervisor);
+   console.log('Full user object:', user);
+ }, [user, isSupervisor]);
 
- const [activeTab, setActiveTab] = useState<AssignTab>('LC_TO_SUPERVISOR');
+ // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR
+ const [activeTab, setActiveTab] = useState<AssignTab>(
+   isSupervisor ? 'PARTICIPANT_TO_LC' : 'LC_TO_SUPERVISOR'
+ );
  const [selectedLc, setSelectedLc] = useState<any>(null);
  // State to store filter values for each UserAvatarCard
  const [supervisorFilterValues, setSupervisorFilterValues] = useState<
@@ -46,11 +58,8 @@ const AssignUsersScreen = () => {
  // Get dynamic supervisor filter options (supervisor disabled until province is selected)
  const { filters: supervisorFilterOptions, supervisors: supervisorsData } = useSupervisorFilterOptions(supervisorFilterValues);
  
- // Get dynamic site filter options based on province selected in Step 1
- const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
-
- // Combine search filter with dynamic site filter for Step 2
- const AssignLCFilterOptions = [SearchFilter, ...siteFilterOptions];
+// Get dynamic site filter options based on province selected in Step 1
+const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
  
  // Find the selected supervisor object from supervisorsData
  // Match by id (number) or _id (string) or email, converting to string for comparison
@@ -63,6 +72,12 @@ const AssignUsersScreen = () => {
  );
  
  const [lcFilterValues, setLcFilterValues] = useState<Record<string, any>>({});
+
+// Get dynamic site filter options for Step 2 based on province selected in Step 1
+const { filters: lcSiteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
+
+// Combine search filter with dynamic site filter for Step 2 (no province dropdown)
+const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
  // State for mapped LCs from API
  const [mappedLCs, setMappedLCs] = useState<any[]>([]);
  const [isLoadingMappedLCs, setIsLoadingMappedLCs] = useState(false);
@@ -366,7 +381,7 @@ const getAvailableParticipants = () => {
 };
 
 
- // Fetch linkage champions when province or site filters change
+ // Fetch linkage champions when province, site, or search filters change
  useEffect(() => {
    const fetchLinkageChampions = async () => {
      try {
@@ -381,16 +396,15 @@ const getAvailableParticipants = () => {
          return;
        }
        
-       // Get province from supervisor filter values (Step 1)
-       const province = supervisorFilterValues.filterByProvince;
-       // Get site from LC filter values (Step 2)
+       // Get site and search from LC filter values (Step 2) - no province filter
        const site = lcFilterValues.site;
+       const search = lcFilterValues.search;
        
        const response = await getLinkageChampions(programId, {
          excludeMapped: true,
          limit: 100,
-         province: province,
-         site: site,
+         site: site && site !== 'all-sites' ? site : undefined,
+         search: search && String(search).trim() ? String(search).trim() : undefined,
        });
        
        // Transform API response to match expected format
@@ -419,15 +433,25 @@ const getAvailableParticipants = () => {
      }
    };
 
-   fetchLinkageChampions();
- }, [supervisorFilterValues.filterByProvince, lcFilterValues.site]);
+  fetchLinkageChampions();
+}, [supervisorFilterValues.filterByProvince, lcFilterValues.site, lcFilterValues.search]);
 
- // Fetch mapped LCs when supervisor is selected
+ // Fetch mapped LCs when supervisor is selected (or when logged-in user is supervisor)
  useEffect(() => {
    const fetchMappedLCs = async () => {
-     if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
-       setMappedLCs([]);
-       return;
+     // For supervisors, use logged-in user ID; for admins, require supervisor selection
+     if (isSupervisor) {
+       // Supervisor is logged in - fetch their LCs automatically
+       if (!user?.id && !user?._id) {
+         setMappedLCs([]);
+         return;
+       }
+     } else {
+       // Admin - require supervisor selection
+       if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
+         setMappedLCs([]);
+         return;
+       }
      }
 
      try {
@@ -442,7 +466,10 @@ const getAvailableParticipants = () => {
          return;
        }
 
-       const supervisorId = String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
+       // Use logged-in user ID for supervisors, selected supervisor ID for admins
+       const supervisorId = isSupervisor
+         ? String(user?.id || user?._id || '')
+         : String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
        if (!supervisorId) {
          console.error('Supervisor ID not found');
          setMappedLCs([]);
@@ -498,7 +525,7 @@ const getAvailableParticipants = () => {
    };
 
   fetchMappedLCs();
-}, [selectedSupervisor, supervisorFilterValues.selectSupervisor]);
+}, [selectedSupervisor, supervisorFilterValues.selectSupervisor, isSupervisor, user?.id, user?._id]);
 
 // Fetch participants when participant filters change (do NOT refetch on Supervisor/LC dropdown changes)
 useEffect(() => {
@@ -792,8 +819,8 @@ return (
    <VStack space="md" width="100%">
      <TitleHeader
        title="admin.menu.assignUsers"
-       description="admin.assignUsersDescription"
-       bottom={
+       description={isSupervisor ? "admin.assignUsers.assignParticipantsToLCsDescription" : "admin.assignUsersDescription"}
+       bottom={!isSupervisor && (
          <HStack space="md" alignItems="center">
            <Button
              {...(activeTab === 'LC_TO_SUPERVISOR'
@@ -826,7 +853,7 @@ return (
              </Text>
            </Button>
          </HStack>
-       }
+       )}
      />
 
 
@@ -906,11 +933,11 @@ return (
      {activeTab === 'PARTICIPANT_TO_LC' && (
        <>
          <UserAvatarCard
-           title="admin.assignUsers.step1SelectSupervisorAndLC"
-           description="admin.assignUsers.chooseSupervisor"
+          title={isSupervisor ? "admin.assignUsers.step1SelectLC" : "admin.assignUsers.step1SelectSupervisorAndLC"}
+          description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
            filterOptions={[
-             // Supervisor filter - use dynamic data from API
-             {
+             // Supervisor filter - only show for non-supervisors (admins)
+             ...(isSupervisor ? [] : [{
                nameKey: 'admin.filters.selectSupervisor',
                attr: 'selectSupervisor',
                type: 'select',
@@ -923,14 +950,14 @@ return (
                    value: value,
                  };
                }),
-             },
-             // LC filter - populated dynamically based on selected supervisor (use mapped LCs)
+             }]),
+             // LC filter - populated dynamically based on selected supervisor (admins) or logged-in supervisor
              {
                nameKey: 'admin.filters.selectLC',
                attr: 'selectLC',
                type: 'select',
                placeholderKey: 'admin.filters.chooseLC',
-               data: supervisorFilterValues.selectSupervisor && mappedLCs.length > 0
+               data: (isSupervisor || supervisorFilterValues.selectSupervisor) && mappedLCs.length > 0
                  ? mappedLCs.map((lc: any) => ({
                      labelKey: lc.labelKey,
                      value: lc.value,

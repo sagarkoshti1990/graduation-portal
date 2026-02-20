@@ -4,13 +4,14 @@ import React, {
   useState,
   ReactNode,
   useEffect,
+  useMemo,
 } from 'react';
 import logger from '@utils/logger';
 import { login as loginService } from '../services/authenticationService';
 import offlineStorage from '../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
-import { ADMIN_ROLES, LC_ROLES } from '@constants/ROLES';
+import { ADMIN_ROLES, SUPERVISOR_ROLES, LC_ROLES } from '@constants/ROLES';
 import { useLanguage } from './LanguageContext';
 // import { setupTabCloseHandler } from '@utils/tabCloseHandler';
 
@@ -45,14 +46,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * Determines user role based on organizations and roles.
- * Checks admin roles first (priority), then LC roles.
+ * Checks admin roles first (priority), then supervisor roles, then LC roles.
  * Throws error if user doesn't have any authorized role.
  * @param userData - User data from API response
- * @returns UserRole based on role priority (Admin > LC)
+ * @returns UserRole based on role priority (Admin > Supervisor > LC)
  * @throws Error if user doesn't have any authorized role
  */
 const determineUserRole = (userData: any): UserRole => {
-  // Check for admin roles first (priority)
+  // Check for admin roles first (priority) - only 'admin', not 'tenant_admin'
   const adminOrganizations = userData.organizations.filter((org: any) => {
     if (!org?.roles || !Array.isArray(org.roles)) {
       return false;
@@ -63,6 +64,19 @@ const determineUserRole = (userData: any): UserRole => {
   if (adminOrganizations.length > 0) {
     logger.info('User has admin role based on organizations');
     return 'Admin';
+  }
+
+  // Check for supervisor roles (tenant_admin, supervisor)
+  const supervisorOrganizations = userData.organizations.filter((org: any) => {
+    if (!org?.roles || !Array.isArray(org.roles)) {
+      return false;
+    }
+    return org.roles.some((role: any) => SUPERVISOR_ROLES.includes(role?.title));
+  });
+
+  if (supervisorOrganizations.length > 0) {
+    logger.info('User has supervisor role based on organizations');
+    return 'Supervisor';
   }
 
   // Check for LC roles
@@ -273,4 +287,55 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+/**
+ * Custom hook to check if the current logged-in user is a Supervisor
+ * 
+ * This hook checks both:
+ * 1. The mapped role from AuthContext ('Supervisor')
+ * 2. The user's actual role titles from organizations ('tenant_admin' or 'supervisor')
+ * 
+ * @returns {boolean} - true if the user is a supervisor, false otherwise
+ * 
+ * @example
+ * ```tsx
+ * const MyComponent = () => {
+ *   const isSupervisor = useIsSupervisor();
+ *   
+ *   if (isSupervisor) {
+ *     return <SupervisorOnlyContent />;
+ *   }
+ *   
+ *   return <RegularContent />;
+ * };
+ * ```
+ */
+export const useIsSupervisor = (): boolean => {
+  const { user } = useAuth();
+  const currentUserRole = user?.role;
+
+  return useMemo(() => {
+    // Check mapped role first
+    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
+      return true;
+    }
+    
+    // Also check user's actual organizations for supervisor role titles
+    if (user && (user as any).organizations) {
+      const organizations = (user as any).organizations;
+      const hasSupervisorRole = organizations.some((org: any) => {
+        if (!org?.roles || !Array.isArray(org.roles)) {
+          return false;
+        }
+        return org.roles.some((role: any) => {
+          const roleTitle = role?.title?.toLowerCase() || '';
+          return roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
+        });
+      });
+      return hasSupervisorRole;
+    }
+    
+    return false;
+  }, [user, currentUserRole]);
 };

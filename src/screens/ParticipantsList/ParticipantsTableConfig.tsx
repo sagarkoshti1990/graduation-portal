@@ -161,7 +161,7 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
     key: 'progress',
     label: 'participants.overallProgress',
     flex: 2,
-    render: participant => <ProgressBar progress={participant.progress || 0} />,
+    render: participant => <ProgressBar progress={Math.round(participant?.idpProgress?.completionPercentage || 0)} />,
     mobileConfig: {
       fullWidthRank: 1, // Full width progress bar
       showLabel: false, // Label is rendered inside ProgressBar component

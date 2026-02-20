@@ -5,7 +5,7 @@ export type StatusType = (typeof STATUS)[keyof typeof STATUS];
 export interface Participant {
   userId: string;
   name: string;
-  progress?: number;
+  idpProgress?: any;
   status?: StatusType;
   userDetails?: User;
   idpProjectId?:string;

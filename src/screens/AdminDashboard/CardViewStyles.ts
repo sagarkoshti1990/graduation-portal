@@ -33,7 +33,7 @@ export const cardViewStyles = {
     borderColor: '$borderLight200' as const,
     bg: '$white' as const,
     minHeight: 400,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: 'stretch' as const,
+    justifyContent: 'flex-start' as const,
   },
 };

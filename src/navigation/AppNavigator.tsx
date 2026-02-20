@@ -80,13 +80,13 @@ const getAccessPages = (
   switch (role) {
     case 'admin':
       return [
-        { name: 'home', path: '/', component: HomeScreen },
-        { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        // { name: 'home', path: '/', component: HomeScreen },
         {
           name: 'user-management',
-          path: '/user-management',
+          path: '/',
           component: UserManagementScreen,
         },
+        { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
         {
           name: 'template-management',
           path: '/template-managemnt',
@@ -119,7 +119,34 @@ const getAccessPages = (
         },
       ];
     case 'supervisor':
-      return [{ name: 'home', path: '/home', component: HomeScreen }];
+      return [
+        {
+          name: 'user-management',
+          path: '/',
+          component: UserManagementScreen,
+        },
+        { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        {
+          name: 'assign-users',
+          path: '/assign-users',
+          component: AssignUsersScreen,
+        },
+        {
+          name: 'csv-templates',
+          path: '/csv-templates',
+          component: CsvImportTemplates,
+        },
+        {
+          name: 'PasswordPolicy',
+          path: '/password-policy',
+          component: PasswordPolicy,
+        },
+        {
+          name: 'ProfilePermissions',
+          path: '/profile-permissions',
+          component: ProfilePermissions,
+        },
+      ];
     case 'lc':
       return [
         { name: 'welcome', component: WelcomePage },

@@ -66,9 +66,9 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
       // Navigate to URL if no sub-cards
       // @ts-ignore - Navigation type inference
       navigation.navigate(card.navigationUrl as never);
-    } else if (card.id === 'participant-enrollment') {
-      // Show CardView for Participant Enrollment on same screen
-      setSelectedCardView('participant-enrollment');
+    } else if (cardViewDataMap[card.id]) {
+      // Show CardView for any card that has data in cardViewDataMap
+      setSelectedCardView(card.id);
       // Update breadcrumb to show current path
       setBreadcrumbItems([
         {
@@ -84,9 +84,9 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           data: null,
         },
         {
-          id: 'participant-enrollment',
-          label: 'Participant Enrollment & Targeting',
-          labelKey: 'admin.outputIndicators.topics.participantEnrollment.title',
+          id: card.id,
+          label: card.title,
+          labelKey: card.title,
           data: card,
         },
       ]);
@@ -136,8 +136,8 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
     if (cardData && cardData.subCards) {
       setCurrentCards(cardData.subCards);
       setSelectedCardView(null);
-    } else if (cardData && cardData.id === 'participant-enrollment') {
-      setSelectedCardView('participant-enrollment');
+    } else if (cardData && cardViewDataMap[cardData.id]) {
+      setSelectedCardView(cardData.id);
     }
   };
 
@@ -166,8 +166,8 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
         if (previousCard && previousCard.subCards) {
           setCurrentCards(previousCard.subCards);
           setSelectedCardView(null);
-        } else if (previousCard && previousCard.id === 'participant-enrollment') {
-          setSelectedCardView('participant-enrollment');
+        } else if (previousCard && cardViewDataMap[previousCard.id]) {
+          setSelectedCardView(previousCard.id);
         }
       }
     }
@@ -206,8 +206,13 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
 
         {/* CardView */}
         <CardView
+          cardViewId={selectedCardView}
           tabs={cardViewData.tabs}
           metricCards={cardViewData.metricCards}
+          sections={cardViewData.sections}
+          breakdownSections={cardViewData.breakdownSections}
+          graphsBlocks={cardViewData.graphsBlocks}
+          graphsPlaceholderKey={cardViewData.graphsPlaceholderKey}
           insightsTitle={cardViewData.insightsTitle}
           insightsItems={cardViewData.insightsItems}
         />
