@@ -931,8 +931,8 @@ return (
      {activeTab === 'PARTICIPANT_TO_LC' && (
        <>
          <UserAvatarCard
-           title="admin.assignUsers.step1SelectSupervisorAndLC"
-           description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
+          title={isSupervisor ? "admin.assignUsers.step1SelectLC" : "admin.assignUsers.step1SelectSupervisorAndLC"}
+          description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
            filterOptions={[
              // Supervisor filter - only show for non-supervisors (admins)
              ...(isSupervisor ? [] : [{
