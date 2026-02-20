@@ -392,7 +392,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           color={
              task?.isDeletable === false
               ? '$warning900'
-              : task?.isDeletable === true || (isPreview && task?.isDeletable)
+              :  task?.isDeletable === true || (isPreview && task?.isDeletable)
               ? '$optionalBadgeText'
               : '$textMuted'
           }
@@ -469,7 +469,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Text
               {...titleTypography}
               color="$textPrimary"
-              {...textStyle}
+                {...textStyle}
               fontSize={
                 (!isWeb && !uiConfig.showAsCard
                   ? '$sm'
