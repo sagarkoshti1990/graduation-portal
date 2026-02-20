@@ -16,6 +16,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipText,
+  Spinner,
 } from '@ui';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useTaskActions } from '../../hooks/useTaskActions';
@@ -65,6 +66,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     Boolean(!task?.isDeletable),
   );
   const [isRejected, setIsRejected] = useState(false);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const participantId = route.params?.id;
   // Modal state management (from Incoming)
   type ModalType = 'edit' | 'delete' | null;
@@ -156,7 +158,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       }
       const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
 
-      if(solutionDetails.data._id) {
+      if (solutionDetails.data._id) {
         // @ts-ignore Navigate to observation screen - task will be marked as completed on return
         navigation.navigate('observation', {
           id: participantId,
@@ -172,8 +174,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
   // Checkbox change handler
   const handleCheckboxChange = async (checked: boolean) => {
     if (!isEdit) return;
-    const newStatus = checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO;
-    await handleStatusChange(task._id, newStatus);
+    setIsStatusUpdating(true);
+    try {
+      const newStatus = checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO;
+      await handleStatusChange(task._id, newStatus);
+    } finally {
+      setIsStatusUpdating(false);
+    }
   };
 
   // Custom Renderers (From HEAD to preserve styling)
@@ -185,6 +192,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const isObservationTask = task.type === TASK_TYPE.OBSERVATION;
 
     if (isInterventionPlanEditMode && isObservationTask) {
+      if (isStatusUpdating) {
+        return (
+          <Box {...taskCardStyles.primaryFilledCircle} borderColor="transparent" bg="transparent">
+            <Spinner size="small" color={theme.tokens.colors.primary500} />
+          </Box>
+        );
+      }
       if (isCompleted) {
         // Render a simple green checkmark (non-interactive)
         return (
@@ -225,26 +239,32 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     if (uiConfig.showCheckbox) {
       return (
-        <Checkbox
-          value={task?._id}
-          isChecked={isCompleted}
-          onChange={handleCheckboxChange}
-          isDisabled={isReadOnly}
-          size="md"
-          aria-label={`Mark ${task?.name} as ${isCompleted ? 'incomplete' : 'complete'
-            }`}
-          opacity={isReadOnly ? 0.6 : 1}
-        >
-          <CheckboxIndicator
-            borderColor={isCompleted ? '$primary500' : '$textMuted'}
-            bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
-            alignItems="center"
-            justifyContent="center"
-            borderRadius="$full"
-          >
-            <CheckboxIcon as={CheckIcon} color="$accent100" />
-          </CheckboxIndicator>
-        </Checkbox>
+        <Box width={32} height={32} alignItems="center" justifyContent="center">
+          {isStatusUpdating ? (
+            <Spinner size="small" color={theme.tokens.colors.primary500} />
+          ) : (
+            <Checkbox
+              value={task?._id}
+              isChecked={isCompleted}
+              onChange={handleCheckboxChange}
+              isDisabled={isReadOnly}
+              size="md"
+              aria-label={`Mark ${task?.name} as ${isCompleted ? 'incomplete' : 'complete'
+                }`}
+              opacity={isReadOnly ? 0.6 : 1}
+            >
+              <CheckboxIndicator
+                borderColor={isCompleted ? '$primary500' : '$textMuted'}
+                bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="$full"
+              >
+                <CheckboxIcon as={CheckIcon} color="$accent100" />
+              </CheckboxIndicator>
+            </Checkbox>
+          )}
+        </Box>
       );
     }
 
@@ -338,11 +358,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const renderTaskInfo = () => {
     const textStyle = uiConfig.showCheckbox
       ? {
-          textDecorationLine: (isCompleted ? 'line-through' : 'none') as
-            | 'line-through'
-            | 'none',
-          opacity: isCompleted ? 0.6 : 1,
-        }
+        textDecorationLine: (isCompleted ? 'line-through' : 'none') as
+          | 'line-through'
+          | 'none',
+        opacity: isCompleted ? 0.6 : 1,
+      }
       : {};
 
     const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.bodySmall : TYPOGRAPHY.h3;
@@ -357,7 +377,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const taskBadge = shouldShowBadge ? (
       <Box
         bg={
-            task?.isDeletable === true || (isPreview && task?.isDeletable)
+          task?.isDeletable === true || (isPreview && task?.isDeletable)
             ? '$optionalBadgeBg'
             : ''
         }
@@ -370,11 +390,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
           fontSize="$xs"
           fontWeight="$medium"
           color={
-             task?.isDeletable === false
+            task?.isDeletable === false
               ? '$warning900'
-              :  task?.isDeletable === true || (isPreview && task?.isDeletable)
-              ? '$optionalBadgeText'
-              : '$textMuted'
+              : task?.isDeletable === true || (isPreview && task?.isDeletable)
+                ? '$optionalBadgeText'
+                : '$textMuted'
           }
         >
           {!task?.isDeletable || (isPreview && task?.isDeletable ? 'Optional' : '')}
@@ -405,12 +425,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 {...taskCardStyles.statusBadge}
                 {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
                 opacity={isObservationTask ? 1 : undefined} // Keep full opacity for visibility
+                minWidth={50}
+                justifyContent="center"
               >
-                <Text
-                  {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
-                >
-                  {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
-                </Text>
+                {isStatusUpdating ? (
+                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                ) : (
+                  <Text
+                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
+                  >
+                    {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
+                  </Text>
+                )}
               </Box>
             );
           }}
@@ -443,7 +469,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Text
               {...titleTypography}
               color="$textPrimary"
-                {...textStyle}
+              {...textStyle}
               fontSize={
                 (!isWeb && !uiConfig.showAsCard
                   ? '$sm'
@@ -458,24 +484,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
         ) : (
           /* Edit mode: title on first line, badges on second line */
           <>
-          <ContentWrapper>
-            <Text
-              {...titleTypography}
-              color="$textPrimary"
-              {...textStyle}
-              fontSize={
-                (!isWeb && !uiConfig.showAsCard
-                  ? '$sm'
-                  : (titleTypography as any).fontSize) as any
-              }
-              fontWeight={
-                (titleTypography as any).fontWeight
-              }
-              style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
-            >
-              {task.name}
-            </Text>
-          </ContentWrapper>
+            <ContentWrapper>
+              <Text
+                {...titleTypography}
+                color="$textPrimary"
+                {...textStyle}
+                fontSize={
+                  (!isWeb && !uiConfig.showAsCard
+                    ? '$sm'
+                    : (titleTypography as any).fontSize) as any
+                }
+                fontWeight={
+                  (titleTypography as any).fontWeight
+                }
+                style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+              >
+                {task.name}
+              </Text>
+            </ContentWrapper>
             <HStack space="sm" alignItems="center" flexWrap="wrap">
               {statusBadge}
               {taskBadge}
@@ -697,13 +723,18 @@ const TaskCard: React.FC<TaskCardProps> = ({
         console.log('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
-        const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
-        if(data?.success) {
-          // Show success toast with task-specific message
-          showSuccess(t('projectPlayer.evidenceUploaded'));
-          setShowUploadModal(false);
-        } else {
-          showError(t('projectPlayer.evidenceUploadFailed'));
+        setIsStatusUpdating(true);
+        try {
+          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
+          if (data?.success) {
+            // Show success toast with task-specific message
+            showSuccess(t('projectPlayer.evidenceUploaded'));
+            setShowUploadModal(false);
+          } else {
+            showError(t('projectPlayer.evidenceUploadFailed'));
+          }
+        } finally {
+          setIsStatusUpdating(false);
         }
       }}
     />
