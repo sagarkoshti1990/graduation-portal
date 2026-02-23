@@ -250,15 +250,15 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
                     strokeWidth="2"
                   />
 
-                {/* X-axis */}
-                <Line
-                  x1={padding.left}
-                  y1={padding.top + chartHeight}
-                  x2={padding.left + chartWidth}
-                  y2={padding.top + chartHeight}
-                  stroke="#9CA3AF"
-                  strokeWidth="2"
-                />
+                  {/* X-axis */}
+                  <Line
+                    x1={padding.left}
+                    y1={padding.top + chartHeight}
+                    x2={padding.left + chartWidth}
+                    y2={padding.top + chartHeight}
+                    stroke="#9CA3AF"
+                    strokeWidth="2"
+                  />
                 </>
               ) : null}
 
