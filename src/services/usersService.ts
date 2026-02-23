@@ -1,7 +1,6 @@
 import type {
   UserSearchParams,
   UserSearchResponse,
-  Role,
   RolesListParams,
   RolesListResponse,
   ProvinceEntity,
@@ -77,13 +76,10 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
     }
     
     // Log the complete API URL with query parameters (for debugging)
-    console.log('API URL:', endpoint);
     const paramsObj: Record<string, string> = {};
     queryParams.forEach((value, key) => {
       paramsObj[key] = value;
     });
-    console.log('Query Parameters:', paramsObj);
-    console.log('Request Body:', requestBody);
     
     // POST request to fetch users
     const response = await api.post<UserSearchResponse>(endpoint, requestBody);
@@ -360,6 +356,76 @@ export const getSitesByProvince = async (
     return response.data;
   } catch (error: any) {
     // Error is already handled by axios interceptor
+    throw error;
+  }
+};
+
+
+/**
+ * Reset Password Response Interface
+ */
+export interface ResetPasswordResponse {
+  responseCode: string;
+  message: string;
+  result?: any;
+}
+
+/**
+ * Reset Password Request Interface
+ */
+export interface ResetPasswordRequest {
+  username: string;
+  email: string;
+  password: string;
+  userId: string;
+}
+
+/**
+ * Resets the password for a user.
+ * 
+ * @param params - Object containing username, email, and new password
+ * @returns A promise resolving to the reset password response from the API
+ * 
+ * Note: Currently returns a static response for testing purposes.
+ * TODO: Replace with actual API endpoint when backend is ready.
+ */
+export const resetPassword = async (
+  params: ResetPasswordRequest
+): Promise<ResetPasswordResponse> => {
+  try {
+    console.log('Reset password called for user:', params.username);
+    
+    // TODO: Replace this with actual API call when endpoint is available
+    // Example:
+    // const response = await api.post<ResetPasswordResponse>(
+    //   API_ENDPOINTS.RESET_PASSWORD,
+    //   params
+    // );
+    // return response.data;
+    
+    // Static response for now
+    const staticResponse: ResetPasswordResponse = {
+      responseCode: '200',
+      message: 'Password reset successfully',
+      result: {
+        username: params.username,
+        email: params.email,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    
+    console.log('Password reset successful (static response)');
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return staticResponse;
+  } catch (error: any) {
+    console.error('Reset password error:', {
+      message: error?.message,
+      response: error?.response?.data,
+      status: error?.response?.status,
+    });
     throw error;
   }
 };

@@ -170,4 +170,14 @@ export const styles = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
+
+  // Reset Password Modal Styles
+  resetPasswordEyeIconButton: {
+    position: 'absolute' as const,
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    padding: 4,
+    zIndex: 1,
+  },
 } as const;

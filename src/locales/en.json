@@ -838,6 +838,18 @@
         "confirmDeactivate": "Confirm Deactivation",
         "deactivateMessage": "Are you sure you want to deactivate {{name}}? This will prevent them from accessing the system."
       },
+      "resetPassword": {
+        "title": "Reset Password",
+        "description": "Enter a new password for the user",
+        "email": "Email",
+        "username": "Username",
+        "newPassword": "New Password",
+        "passwordPlaceholder": "Enter new password",
+        "passwordRequired": "Password is required",
+        "submit": "Reset Password",
+        "success": "Password reset successfully",
+        "error": "Failed to reset password"
+      },
       "allProvinces": "All Provinces",
       "selectSupervisor": "Select Supervisor",
       "chooseSupervisor": "Choose Supervisor",
