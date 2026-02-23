@@ -62,7 +62,7 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
         marginTop="$1"
         marginBottom="$3"
       >
-        {t('downloadForms.downloadNecessaryForms')}{' '}
+        {t('downloadForms.downloadNecessaryForms')}
       </Text>
 
       {/* Responsive Row */}
