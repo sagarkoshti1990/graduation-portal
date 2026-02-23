@@ -231,175 +231,7 @@
         "cumulative": {
           "title": "Cumulative Indicators",
           "description": "Household and participant-level outcome measurements",
-          "topics": "6 Topics",
-          "topicsList": {
-            "income": {
-              "title": "Income by Household and Participant",
-              "description": "Income tracking for both households and individual participants",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "activeIncomeActivity": {
-                  "title": "IGA Status",
-                  "subtitle": "Current Status"
-                },
-                "profitability": {
-                  "title": "Profitability",
-                  "subtitle": "Entrepreneurship"
-                },
-                "perPersonIncome": {
-                  "title": "Per Person Income",
-                  "subtitle": "Household Average"
-                },
-                "participantIncomeBusiness": {
-                  "title": "Participant Income",
-                  "subtitle": "Current Monthly"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "assetAccumulation": {
-              "title": "Asset Accumulation by Household and Participant",
-              "description": "Asset accumulation metrics for households and participants",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "assetAccumulationHousehold": {
-                  "title": "Asset Accumulation - Household",
-                  "subtitle": "from baseline"
-                },
-                "assetAccumulationParticipant": {
-                  "title": "Asset Accumulation - Participant",
-                  "subtitle": "from baseline"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "savings": {
-              "title": "Savings",
-              "description": "Savings behavior and accumulation tracking",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "savingsAmountHousehold": {
-                  "title": "Savings Amount - Household",
-                  "subtitle": "from baseline"
-                },
-                "savingsAmountParticipant": {
-                  "title": "Savings Amount - Participant",
-                  "subtitle": "from baseline"
-                },
-                "savingsFrequency": {
-                  "title": "Savings Frequency - Adoption of Savings Culture",
-                  "subtitle": "of participants"
-                },
-                "formalSavingsUsage": {
-                  "title": "Usage of Formal Savings Products/Services",
-                  "subtitle": "participants using formal products"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "recordKeeping": {
-              "title": "Record Keeping",
-              "description": "Financial and business record keeping practices",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "personal": {
-                  "title": "Personal Record Keeping Practices",
-                  "subtitle": "of participants"
-                },
-                "business": {
-                  "title": "Business Record Keeping Practices",
-                  "subtitle": "of businesses"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "debtCredit": {
-              "title": "Debt/Credit",
-              "description": "Debt levels, credit management, and borrowing patterns",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "reducedDebtParticipant": {
-                  "title": "Reduced Level of Debt - Participant",
-                  "subtitle": "of participants"
-                },
-                "creditUsageParticipant": {
-                  "title": "Usage of Formal/Informal Credit - Participant",
-                  "subtitle": "using formal credit"
-                },
-                "reducedDebtHousehold": {
-                  "title": "Reduced Level of Debt - Household",
-                  "subtitle": "of households"
-                },
-                "creditUsageHousehold": {
-                  "title": "Usage of Formal/Informal Credit - Household",
-                  "subtitle": "using formal credit"
-                },
-                "riskOverIndebtedness": {
-                  "title": "Risk of Over-Indebtedness",
-                  "subtitle": "participants at risk"
-                },
-                "riskOverIndebtednessResponses": {
-                  "title": "Risk of Over-Indebtedness - Participant Responses",
-                  "subtitle": "responded Yes"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "socialEmpowerment": {
-              "title": "Social Empowerment & Dignity",
-              "description": "Self-esteem, confidence, and personal empowerment",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "selfEsteemConfidence": {
-                  "title": "Self-Esteem and Confidence",
-                  "subtitle": "from baseline"
-                },
-                "agencyControl": {
-                  "title": "Agency and Control",
-                  "subtitle": "from baseline"
-                },
-                "attitudesDomesticViolence": {
-                  "title": "Attitudes Towards Domestic Violence",
-                  "subtitle": "from baseline"
-                },
-                "decisionMakingGenderEquality": {
-                  "title": "Decision-Making & Gender Equality",
-                  "subtitle": "from baseline"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            }
-          }
+          "topics": "6 Topics"
         },
         "individual": {
           "title": "Individual Indicators",
@@ -414,201 +246,365 @@
           "participantPlaceholder": "Select a participant",
           "participantPlaceholderDisabled": "Select pathway first",
           "emptyStateTitle": "Please select both Pathway and Participant to continue",
-          "emptyStateSubtitle": "Start by selecting a pathway",
-          "topicsList": {
-            "income": {
-              "title": "Income",
-              "description": "Individual participant income tracking",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "activeIncomeActivity": {
-                  "title": "Presence of Active Income-Generating Activity",
-                  "subtitle": "of participants"
-                },
-                "profitability": {
-                  "title": "Profitability of Income-Generating Activity",
-                  "subtitle": "of businesses profitable"
-                },
-                "perPersonIncome": {
-                  "title": "Per Person Income in the Household",
-                  "subtitle": "from baseline"
-                },
-                "participantIncomeBusiness": {
-                  "title": "Participant Income from Business",
-                  "subtitle": "participants with business income"
-                },
-                "participantIncomeSource": {
-                  "title": "Participant Income By Source",
-                  "subtitle": "source"
-                }
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "assetAccumulation": {
-              "title": "Asset Accumulation",
-              "description": "Individual asset accumulation and wealth building",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "householdAssets": {
-                  "title": "Household Assets",
-                  "subtitle": "Avg assets per household"
-                },
-                "householdValue": {
-                  "title": "Household Value",
-                  "subtitle": "Total asset value"
-                },
-                "participantAssets": {
-                  "title": "Participant Assets",
-                  "subtitle": "Avg assets per participant"
-                },
-                "participantValue": {
-                  "title": "Participant Value",
-                  "subtitle": "Total asset value"
-                }
-              },
-              "insights": {
-                "title": "Key Insights - Asset Accumulation (Individual Indicators)",
-                "item1": "Household average assets grew 152% from 2.1 to 5.3 assets per household, with total value of R 45,680",
-                "item2": "Participant personal assets increased 250% from 1.2 to 4.2 assets, demonstrating strong wealth accumulation",
-                "item3": "Top household asset growth: Agricultural Equipment (+29%), Dwelling/Housing (+26%), Livestock (+23%)",
-                "item4": "Top participant asset growth: Savings/Investments (+46%), Business Equipment (+39%), Technology (+39%)"
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "recordKeeping": {
-              "title": "Record Keeping",
-              "description": "Individual record keeping practices and behaviors",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "personalRecords": {
-                  "title": "Personal Records",
-                  "subtitle": "Avg score"
-                },
-                "businessRecords": {
-                  "title": "Business Records",
-                  "subtitle": "Avg score"
-                },
-                "overallAdoption": {
-                  "title": "Overall Adoption",
-                  "subtitle": "Keep records"
-                },
-                "topPractice": {
-                  "title": "Top Practice",
-                  "subtitle": "82% adoption"
-                }
-              },
-              "insights": {
-                "title": "Key Insights - Record-Keeping (Individual Indicators)",
-                "item1": "Personal record-keeping score increased 375% from 0.8 to 3.8 out of 4.0, showing strong adoption of financial discipline",
-                "item2": "Business record-keeping score increased 567% from 0.6 to 4.0 out of 4.0, reaching maximum score",
-                "item3": "92% of participants now maintain regular records, up from 28% at baseline",
-                "item4": "Top adopted practices: Sales/Income Records (82%), Expense Tracking (78%), Customer Records (72%)"
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "savings": {
-              "title": "Savings",
-              "description": "Individual savings patterns and accumulation",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "householdSavings": {
-                  "title": "Household Savings",
-                  "subtitle": "Total savings amount"
-                },
-                "participantSavings": {
-                  "title": "Participant Savings",
-                  "subtitle": "Total savings amount"
-                },
-                "savingsCulture": {
-                  "title": "Savings Culture",
-                  "subtitle": "Save regularly"
-                },
-                "formalProducts": {
-                  "title": "Formal Products",
-                  "subtitle": "Use Stokvel/Bank"
-                }
-              },
-              "insights": {
-                "title": "Key Insights - Savings (Individual Indicators)",
-                "item1": "Household savings grew 655% from R 850 (baseline) to R 6,420 (12-month), demonstrating strong savings discipline.",
-                "item2": "Participant savings increased 1,198% from R 420 to R 5,450, showing remarkable wealth accumulation.",
-                "item3": "94% of participants now save regularly (monthly or more frequently), up from 32% at baseline.",
-                "item4": "64% use Stokvels, 58% use bank accounts, and 38% use mobile money - strong adoption of formal savings products."
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "debt": {
-              "title": "Debt",
-              "description": "Individual debt levels and management",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "snapshot": {
-                "placeholder": "Snapshot view is under development"
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            },
-            "agencyDignity": {
-              "title": "Agency and Dignity",
-              "description": "Personal agency, dignity, and self-determination",
-              "tabs": {
-                "snapshot": "Snapshot",
-                "graphs": "Graphs"
-              },
-              "metrics": {
-                "selfEsteem": {
-                  "title": "Self-Esteem",
-                  "subtitle": "Score"
-                },
-                "agencyControl": {
-                  "title": "Agency & Control",
-                  "subtitle": "Score"
-                },
-                "dvAttitudes": {
-                  "title": "DV Attitudes",
-                  "subtitle": "Score"
-                },
-                "decisionMaking": {
-                  "title": "Decision-Making",
-                  "subtitle": "Score"
-                }
-              },
-              "insights": {
-                "title": "Key Insights - Agency & Dignity (Individual Indicators)",
-                "item1": "Self-esteem score increased 123% from 35% to 78%, reaching GREEN threshold (≥70%)",
-                "item2": "Agency & Control score grew 134% from 32% to 75%, achieving GREEN status with strong participant empowerment",
-                "item3": "Attitudes towards domestic violence improved 164% to 74%, demonstrating major shift in gender norms",
-                "item4": "Decision-making equality score reached 82% (GREEN ≥75%), up 116% from baseline showing enhanced household equality"
-              },
-              "graphs": {
-                "placeholder": "Graphs view will be displayed here"
-              }
-            }
-          }
+          "emptyStateSubtitle": "Start by selecting a pathway"
         }
+      }
+    },
+    "cumulativeIncome": {
+      "title": "Income by Household and Participant",
+      "description": "Income tracking for both households and individual participants",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "activeIncomeActivity": {
+          "title": "IGA Status",
+          "subtitle": "Current Status"
+        },
+        "profitability": {
+          "title": "Profitability",
+          "subtitle": "Entrepreneurship"
+        },
+        "perPersonIncome": {
+          "title": "Per Person Income",
+          "subtitle": "Household Average"
+        },
+        "participantIncomeBusiness": {
+          "title": "Participant Income",
+          "subtitle": "Current Monthly"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "cumulativeAssetAccumulation": {
+      "title": "Asset Accumulation by Household and Participant",
+      "description": "Asset accumulation metrics for households and participants",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "assetAccumulationHousehold": {
+          "title": "Asset Accumulation - Household",
+          "subtitle": "from baseline"
+        },
+        "assetAccumulationParticipant": {
+          "title": "Asset Accumulation - Participant",
+          "subtitle": "from baseline"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "cumulativeSavings": {
+      "title": "Savings",
+      "description": "Savings behavior and accumulation tracking",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "savingsAmountHousehold": {
+          "title": "Savings Amount - Household",
+          "subtitle": "from baseline"
+        },
+        "savingsAmountParticipant": {
+          "title": "Savings Amount - Participant",
+          "subtitle": "from baseline"
+        },
+        "savingsFrequency": {
+          "title": "Savings Frequency - Adoption of Savings Culture",
+          "subtitle": "of participants"
+        },
+        "formalSavingsUsage": {
+          "title": "Usage of Formal Savings Products/Services",
+          "subtitle": "participants using formal products"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "cumulativeRecordKeeping": {
+      "title": "Record Keeping",
+      "description": "Financial and business record keeping practices",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "personal": {
+          "title": "Personal Record Keeping Practices",
+          "subtitle": "of participants"
+        },
+        "business": {
+          "title": "Business Record Keeping Practices",
+          "subtitle": "of businesses"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "cumulativeDebtCredit": {
+      "title": "Debt/Credit",
+      "description": "Debt levels, credit management, and borrowing patterns",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "reducedDebtParticipant": {
+          "title": "Reduced Level of Debt - Participant",
+          "subtitle": "of participants"
+        },
+        "creditUsageParticipant": {
+          "title": "Usage of Formal/Informal Credit - Participant",
+          "subtitle": "using formal credit"
+        },
+        "reducedDebtHousehold": {
+          "title": "Reduced Level of Debt - Household",
+          "subtitle": "of households"
+        },
+        "creditUsageHousehold": {
+          "title": "Usage of Formal/Informal Credit - Household",
+          "subtitle": "using formal credit"
+        },
+        "riskOverIndebtedness": {
+          "title": "Risk of Over-Indebtedness",
+          "subtitle": "participants at risk"
+        },
+        "riskOverIndebtednessResponses": {
+          "title": "Risk of Over-Indebtedness - Participant Responses",
+          "subtitle": "responded Yes"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "cumulativeSocialEmpowerment": {
+      "title": "Social Empowerment & Dignity",
+      "description": "Self-esteem, confidence, and personal empowerment",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "selfEsteemConfidence": {
+          "title": "Self-Esteem and Confidence",
+          "subtitle": "from baseline"
+        },
+        "agencyControl": {
+          "title": "Agency and Control",
+          "subtitle": "from baseline"
+        },
+        "attitudesDomesticViolence": {
+          "title": "Attitudes Towards Domestic Violence",
+          "subtitle": "from baseline"
+        },
+        "decisionMakingGenderEquality": {
+          "title": "Decision-Making & Gender Equality",
+          "subtitle": "from baseline"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "individualIncome": {
+      "title": "Income",
+      "description": "Individual participant income tracking",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "activeIncomeActivity": {
+          "title": "Presence of Active Income-Generating Activity",
+          "subtitle": "of participants"
+        },
+        "profitability": {
+          "title": "Profitability of Income-Generating Activity",
+          "subtitle": "of businesses profitable"
+        },
+        "perPersonIncome": {
+          "title": "Per Person Income in the Household",
+          "subtitle": "from baseline"
+        },
+        "participantIncomeBusiness": {
+          "title": "Participant Income from Business",
+          "subtitle": "participants with business income"
+        },
+        "participantIncomeSource": {
+          "title": "Participant Income By Source",
+          "subtitle": "source"
+        }
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "individualAssetAccumulation": {
+      "title": "Asset Accumulation",
+      "description": "Individual asset accumulation and wealth building",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "householdAssets": {
+          "title": "Household Assets",
+          "subtitle": "Avg assets per household"
+        },
+        "householdValue": {
+          "title": "Household Value",
+          "subtitle": "Total asset value"
+        },
+        "participantAssets": {
+          "title": "Participant Assets",
+          "subtitle": "Avg assets per participant"
+        },
+        "participantValue": {
+          "title": "Participant Value",
+          "subtitle": "Total asset value"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Asset Accumulation (Individual Indicators)",
+        "item1": "Household average assets grew 152% from 2.1 to 5.3 assets per household, with total value of R 45,680",
+        "item2": "Participant personal assets increased 250% from 1.2 to 4.2 assets, demonstrating strong wealth accumulation",
+        "item3": "Top household asset growth: Agricultural Equipment (+29%), Dwelling/Housing (+26%), Livestock (+23%)",
+        "item4": "Top participant asset growth: Savings/Investments (+46%), Business Equipment (+39%), Technology (+39%)"
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "individualRecordKeeping": {
+      "title": "Record Keeping",
+      "description": "Individual record keeping practices and behaviors",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "personalRecords": {
+          "title": "Personal Records",
+          "subtitle": "Avg score"
+        },
+        "businessRecords": {
+          "title": "Business Records",
+          "subtitle": "Avg score"
+        },
+        "overallAdoption": {
+          "title": "Overall Adoption",
+          "subtitle": "Keep records"
+        },
+        "topPractice": {
+          "title": "Top Practice",
+          "subtitle": "82% adoption"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Record-Keeping (Individual Indicators)",
+        "item1": "Personal record-keeping score increased 375% from 0.8 to 3.8 out of 4.0, showing strong adoption of financial discipline",
+        "item2": "Business record-keeping score increased 567% from 0.6 to 4.0 out of 4.0, reaching maximum score",
+        "item3": "92% of participants now maintain regular records, up from 28% at baseline",
+        "item4": "Top adopted practices: Sales/Income Records (82%), Expense Tracking (78%), Customer Records (72%)"
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "individualSavings": {
+      "title": "Savings",
+      "description": "Individual savings patterns and accumulation",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "householdSavings": {
+          "title": "Household Savings",
+          "subtitle": "Total savings amount"
+        },
+        "participantSavings": {
+          "title": "Participant Savings",
+          "subtitle": "Total savings amount"
+        },
+        "savingsCulture": {
+          "title": "Savings Culture",
+          "subtitle": "Save regularly"
+        },
+        "formalProducts": {
+          "title": "Formal Products",
+          "subtitle": "Use Stokvel/Bank"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Savings (Individual Indicators)",
+        "item1": "Household savings grew 655% from R 850 (baseline) to R 6,420 (12-month), demonstrating strong savings discipline.",
+        "item2": "Participant savings increased 1,198% from R 420 to R 5,450, showing remarkable wealth accumulation.",
+        "item3": "94% of participants now save regularly (monthly or more frequently), up from 32% at baseline.",
+        "item4": "64% use Stokvels, 58% use bank accounts, and 38% use mobile money - strong adoption of formal savings products."
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "individualDebt": {
+      "title": "Debt",
+      "description": "Individual debt levels and management",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "snapshot": {
+        "placeholder": "Snapshot view is under development"
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
+      }
+    },
+    "individualAgencyDignity": {
+      "title": "Agency and Dignity",
+      "description": "Personal agency, dignity, and self-determination",
+      "tabs": {
+        "snapshot": "Snapshot",
+        "graphs": "Graphs"
+      },
+      "metrics": {
+        "selfEsteem": {
+          "title": "Self-Esteem",
+          "subtitle": "Score"
+        },
+        "agencyControl": {
+          "title": "Agency & Control",
+          "subtitle": "Score"
+        },
+        "dvAttitudes": {
+          "title": "DV Attitudes",
+          "subtitle": "Score"
+        },
+        "decisionMaking": {
+          "title": "Decision-Making",
+          "subtitle": "Score"
+        }
+      },
+      "insights": {
+        "title": "Key Insights - Agency & Dignity (Individual Indicators)",
+        "item1": "Self-esteem score increased 123% from 35% to 78%, reaching GREEN threshold (≥70%)",
+        "item2": "Agency & Control score grew 134% from 32% to 75%, achieving GREEN status with strong participant empowerment",
+        "item3": "Attitudes towards domestic violence improved 164% to 74%, demonstrating major shift in gender norms",
+        "item4": "Decision-making equality score reached 82% (GREEN ≥75%), up 116% from baseline showing enhanced household equality"
+      },
+      "graphs": {
+        "placeholder": "Graphs view will be displayed here"
       }
     },
     "participantEnrollment": {
