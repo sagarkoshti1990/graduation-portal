@@ -183,8 +183,8 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
               setHoverPos(null);
             },
           })}
-      >
-        <Svg width={width} height={height}>
+        >
+          <Svg width={width} height={height}>
           {orientation === 'horizontal' ? (
             <>
               {resolvedShowGrid ? (
@@ -250,15 +250,15 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
                     strokeWidth="2"
                   />
 
-              {/* X-axis */}
-              <Line
-                x1={padding.left}
-                y1={padding.top + chartHeight}
-                x2={padding.left + chartWidth}
-                y2={padding.top + chartHeight}
-                stroke="#9CA3AF"
-                strokeWidth="2"
-              />
+                {/* X-axis */}
+                <Line
+                  x1={padding.left}
+                  y1={padding.top + chartHeight}
+                  x2={padding.left + chartWidth}
+                  y2={padding.top + chartHeight}
+                  stroke="#9CA3AF"
+                  strokeWidth="2"
+                />
                 </>
               ) : null}
 
@@ -329,15 +329,15 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
                         />
                       </>
                     ) : (
-                    <Rect
-                      x={x}
-                      y={y}
-                      width={barW}
-                      height={horizontalBarHeight}
-                      fill={d.color || defaultColor}
+                      <Rect
+                        x={x}
+                        y={y}
+                        width={barW}
+                        height={horizontalBarHeight}
+                        fill={d.color || defaultColor}
                         rx={0}
                         ry={0}
-                    />
+                      />
                     )}
 
                     {/* Value label */}
@@ -489,7 +489,7 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
               })}
             </>
           )}
-        </Svg>
+          </Svg>
 
           {/* Hover tooltip */}
           {isWeb && hoveredDatum && hoverPos ? (
