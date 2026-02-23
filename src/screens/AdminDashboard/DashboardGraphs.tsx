@@ -305,39 +305,39 @@ const ReportSection: React.FC<{
                 flex={1}
                 minWidth={220}
                 bg="$bgSidebar"
-        borderRadius="$lg"
+                borderRadius="$lg"
                 px="$6"
                 py="$5"
-      >
+              >
                 <Text fontSize="$sm" color="$textMutedForeground">
-                {sc.title}
-              </Text>
-              <Text
+                  {sc.title}
+                </Text>
+                <Text
                   fontSize={isNumericLike ? '$4xl' : '$lg'}
                   fontWeight={isNumericLike ? '$semibold' : '$normal'}
                 color={sc.valueColor ? (sc.valueColor as any) : '$textForeground'}
                   mt="$2"
-              >
-                  {valueStr}
-              </Text>
-              {sc.badgeText ? (
-                <Box
-                  alignSelf="flex-start"
-                  bg={sc.badgeBg ? (sc.badgeBg as any) : '#16A34A'}
-                    px="$3"
-                    py="$1.5"
-                  borderRadius="$sm"
-                    mt="$2"
                 >
-                  <Text
-                    fontSize="$xs"
-                    fontWeight="$semibold"
-                    color={sc.badgeTextColor ? (sc.badgeTextColor as any) : '$white'}
+                  {valueStr}
+                </Text>
+                {sc.badgeText ? (
+                  <Box
+                    alignSelf="flex-start"
+                    bg={sc.badgeBg ? (sc.badgeBg as any) : '#16A34A'}
+                      px="$3"
+                      py="$1.5"
+                    borderRadius="$sm"
+                      mt="$2"
                   >
-                    {sc.badgeText}
-                  </Text>
-                </Box>
-              ) : null}
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color={sc.badgeTextColor ? (sc.badgeTextColor as any) : '$white'}
+                    >
+                      {sc.badgeText}
+                    </Text>
+                  </Box>
+               ) : null}
               </Box>
             );
           })}
@@ -357,10 +357,10 @@ const ReportSection: React.FC<{
       <Box key={`${block.id}-chart-${idx}`} mt="$3" width="100%">
         {/* Keep chart title label (do not render title inside chart components to avoid duplicates) */}
         {chart?.title ? (
-        <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
-          {chart.title}
-        </Text>
-        ) : null}
+          <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
+            {chart.title}
+          </Text>
+          ) : null}
 
         {chart?.subtitle ? (
           <Text fontSize="$xs" color="$textMutedForeground" mb="$2">
@@ -485,38 +485,38 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
               const accent = getGroupHeaderAccent(block as any);
               const titleStr = t((block as any).title);
               return (
-            <Box
-              key={block.id}
-                  width="100%"
-              bg={(block as any).bg ? ((block as any).bg as any) : '$backgroundLight50'}
-              borderRadius="$lg"
-                  px="$6"
-                  py="$5"
-              borderWidth={1}
-              borderColor="$borderLight200"
-                  position="relative"
-                  overflow="hidden"
-                  minHeight={64}
-                  justifyContent="center"
-                >
-                  {/* Left accent bar (like reference) */}
-                  <Box
-                    position="absolute"
-                    left={0}
-                    top={0}
-                    bottom={0}
-                    width={4}
-                    bg={accent as any}
-                  />
-                  <Text
-                    fontSize="$sm"
-                    fontWeight="$semibold"
-                    color={accent as any}
-                    letterSpacing={0.5 as any}
+              <Box
+                key={block.id}
+                    width="100%"
+                bg={(block as any).bg ? ((block as any).bg as any) : '$backgroundLight50'}
+                borderRadius="$lg"
+                    px="$6"
+                    py="$5"
+                borderWidth={1}
+                borderColor="$borderLight200"
+                    position="relative"
+                    overflow="hidden"
+                    minHeight={64}
+                    justifyContent="center"
                   >
-                    {String(titleStr || '').toUpperCase()}
-                  </Text>
-            </Box>
+                    {/* Left accent bar (like reference) */}
+                    <Box
+                      position="absolute"
+                      left={0}
+                      top={0}
+                      bottom={0}
+                      width={4}
+                      bg={accent as any}
+                    />
+                    <Text
+                      fontSize="$sm"
+                      fontWeight="$semibold"
+                      color={accent as any}
+                      letterSpacing={0.5 as any}
+                    >
+                      {String(titleStr || '').toUpperCase()}
+                    </Text>
+              </Box>
               );
             })()
           ) : (
