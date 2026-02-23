@@ -130,6 +130,8 @@ export const theme = {
       tickButtonActiveBg: '#16a34a',
       tableHeaderBg: '#f7f9fc',
       tooltipBg: '#45556c',
+      evidenceRequiredBg: '#fff9db',
+      evidenceRequiredBorder: '#ffd230',
     },
     fonts: {
       ...((gluestackConfig.tokens as any).fonts || {}),
