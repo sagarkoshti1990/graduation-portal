@@ -150,13 +150,11 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
               
               const mouseX = e.clientX - svgRect.left;
               const mouseY = e.clientY - svgRect.top;
-              
               // Only hover when mouse is within plot area
               const withinX =
                 mouseX >= padding.left && mouseX <= padding.left + chartWidth;
               const withinY =
                 mouseY >= padding.top && mouseY <= padding.top + chartHeight;
-              
               if (!withinX || !withinY) {
                 setHoveredPoint(null);
                 setHoverPos(null);
