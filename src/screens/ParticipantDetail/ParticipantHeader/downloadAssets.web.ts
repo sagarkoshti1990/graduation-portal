@@ -1,3 +1,3 @@
-export const CONSENT_FORM_ASSET = '/Consent Form.docx.pdf';
-export const SLA_FORM_ASSET = '/SLA form.docx';
+export const CONSENT_FORM_ASSET = '/web-component/Consent Form.docx.pdf';
+export const SLA_FORM_ASSET = '/web-component/SLA form.docx';
 
