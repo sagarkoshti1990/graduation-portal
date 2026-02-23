@@ -20,14 +20,14 @@ export const StatCardContainer = styled(View, {
   minWidth: 150,
   marginHorizontal: '$2',
   marginBottom: '$4',
-  gap:'$6',
+  gap:'$2',
 });
 
 export const StatTitle = styled(Text, {
   fontSize: '$sm',
-  color: '$textForeground',
+  color: '$textMutedForeground',
   fontWeight: '$medium',
-  marginBottom: '$2',
+  lineHeight: '$sm',
 });
 
 export const StatCount = styled(Text, {

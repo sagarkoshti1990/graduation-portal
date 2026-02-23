@@ -229,7 +229,179 @@
         "cumulative": {
           "title": "Cumulative Indicators",
           "description": "Household and participant-level outcome measurements",
-          "topics": "6 Topics"
+          "topics": "6 Topics",
+          "topicsList": {
+            "income": {
+              "title": "Income by Household and Participant",
+              "description": "Income tracking for both households and individual participants",
+              "tabs": {
+                "snapshot": "Snapshot",
+                "graphs": "Graphs"
+              },
+              "metrics": {
+                "activeIncomeActivity": {
+                  "title": "Presence of Active Income-Generating Activity",
+                  "subtitle": "of participants"
+                },
+                "profitability": {
+                  "title": "Profitability of Income-Generating Activity",
+                  "subtitle": "of businesses profitable"
+                },
+                "perPersonIncome": {
+                  "title": "Per Person Income in the Household",
+                  "subtitle": "from baseline"
+                },
+                "participantIncomeBusiness": {
+                  "title": "Participant Income from Business",
+                  "subtitle": "participants with business income"
+                },
+                "participantIncomeSource": {
+                  "title": "Participant Income By Source",
+                  "subtitle": "source"
+                }
+              },
+              "graphs": {
+                "placeholder": "Graphs view will be displayed here"
+              }
+            },
+            "assetAccumulation": {
+              "title": "Asset Accumulation by Household and Participant",
+              "description": "Asset accumulation metrics for households and participants",
+              "tabs": {
+                "snapshot": "Snapshot",
+                "graphs": "Graphs"
+              },
+              "metrics": {
+                "assetAccumulationHousehold": {
+                  "title": "Asset Accumulation - Household",
+                  "subtitle": "from baseline"
+                },
+                "assetAccumulationParticipant": {
+                  "title": "Asset Accumulation - Participant",
+                  "subtitle": "from baseline"
+                }
+              },
+              "graphs": {
+                "placeholder": "Graphs view will be displayed here"
+              }
+            },
+            "savings": {
+              "title": "Savings",
+              "description": "Savings behavior and accumulation tracking",
+              "tabs": {
+                "snapshot": "Snapshot",
+                "graphs": "Graphs"
+              },
+              "metrics": {
+                "savingsAmountHousehold": {
+                  "title": "Savings Amount - Household",
+                  "subtitle": "from baseline"
+                },
+                "savingsAmountParticipant": {
+                  "title": "Savings Amount - Participant",
+                  "subtitle": "from baseline"
+                },
+                "savingsFrequency": {
+                  "title": "Savings Frequency - Adoption of Savings Culture",
+                  "subtitle": "of participants"
+                },
+                "formalSavingsUsage": {
+                  "title": "Usage of Formal Savings Products/Services",
+                  "subtitle": "participants using formal products"
+                }
+              },
+              "graphs": {
+                "placeholder": "Graphs view will be displayed here"
+              }
+            },
+            "recordKeeping": {
+              "title": "Record Keeping",
+              "description": "Financial and business record keeping practices",
+              "tabs": {
+                "snapshot": "Snapshot",
+                "graphs": "Graphs"
+              },
+              "metrics": {
+                "personal": {
+                  "title": "Personal Record Keeping Practices",
+                  "subtitle": "of participants"
+                },
+                "business": {
+                  "title": "Business Record Keeping Practices",
+                  "subtitle": "of businesses"
+                }
+              },
+              "graphs": {
+                "placeholder": "Graphs view will be displayed here"
+              }
+            },
+            "debtCredit": {
+              "title": "Debt/Credit",
+              "description": "Debt levels, credit management, and borrowing patterns",
+              "tabs": {
+                "snapshot": "Snapshot",
+                "graphs": "Graphs"
+              },
+              "metrics": {
+                "reducedDebtParticipant": {
+                  "title": "Reduced Level of Debt - Participant",
+                  "subtitle": "of participants"
+                },
+                "creditUsageParticipant": {
+                  "title": "Usage of Formal/Informal Credit - Participant",
+                  "subtitle": "using formal credit"
+                },
+                "reducedDebtHousehold": {
+                  "title": "Reduced Level of Debt - Household",
+                  "subtitle": "of households"
+                },
+                "creditUsageHousehold": {
+                  "title": "Usage of Formal/Informal Credit - Household",
+                  "subtitle": "using formal credit"
+                },
+                "riskOverIndebtedness": {
+                  "title": "Risk of Over-Indebtedness",
+                  "subtitle": "participants at risk"
+                },
+                "riskOverIndebtednessResponses": {
+                  "title": "Risk of Over-Indebtedness - Participant Responses",
+                  "subtitle": "responded Yes"
+                }
+              },
+              "graphs": {
+                "placeholder": "Graphs view will be displayed here"
+              }
+            },
+            "socialEmpowerment": {
+              "title": "Social Empowerment & Dignity",
+              "description": "Self-esteem, confidence, and personal empowerment",
+              "tabs": {
+                "snapshot": "Snapshot",
+                "graphs": "Graphs"
+              },
+              "metrics": {
+                "selfEsteemConfidence": {
+                  "title": "Self-Esteem and Confidence",
+                  "subtitle": "from baseline"
+                },
+                "agencyControl": {
+                  "title": "Agency and Control",
+                  "subtitle": "from baseline"
+                },
+                "attitudesDomesticViolence": {
+                  "title": "Attitudes Towards Domestic Violence",
+                  "subtitle": "from baseline"
+                },
+                "decisionMakingGenderEquality": {
+                  "title": "Decision-Making & Gender Equality",
+                  "subtitle": "from baseline"
+                }
+              },
+              "graphs": {
+                "placeholder": "Graphs view will be displayed here"
+              }
+            }
+          }
         },
         "individual": {
           "title": "Individual Indicators",

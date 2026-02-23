@@ -349,13 +349,13 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
                           <Circle cx={xy.x} cy={xy.y} r="3" fill={s.color} />
                         </>
                       ) : (
-                        <Circle
-                          cx={xy.x}
-                          cy={xy.y}
+                      <Circle
+                        cx={xy.x}
+                        cy={xy.y}
                           r="3"
-                          fill={s.color}
+                        fill={s.color}
                           opacity={0.85}
-                        />
+                      />
                       )}
                     </G>
                   );

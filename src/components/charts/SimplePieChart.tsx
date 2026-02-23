@@ -32,7 +32,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
   
   const useOutsideLabels = data.length <= 2;
   const useCalloutLabels = data.length > 2;
-
+  
   // Responsive size calculation
   const size = Math.min(containerWidth * 0.6, 280);
   // Extra room for outside labels (match reference for 2-slice pies)
@@ -63,29 +63,29 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
     // For 2-slice: center the first (smaller) slice at 0deg (pointing right).
     let currentAngle = useOutsideLabels && chartData.length === 2 ? -firstAngle / 2 : -90; // default: start from top
     return chartData.map(d => {
-      const percentage = (d.value / total) * 100;
-      const angle = (d.value / total) * 360;
-      const startAngle = currentAngle;
-      currentAngle += angle;
-      const endAngle = currentAngle;
+    const percentage = (d.value / total) * 100;
+    const angle = (d.value / total) * 360;
+    const startAngle = currentAngle;
+    currentAngle += angle;
+    const endAngle = currentAngle;
 
-      // Calculate arc path
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
+    // Calculate arc path
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
 
-      const x1 = centerX + radius * Math.cos(startRad);
-      const y1 = centerY + radius * Math.sin(startRad);
-      const x2 = centerX + radius * Math.cos(endRad);
-      const y2 = centerY + radius * Math.sin(endRad);
+    const x1 = centerX + radius * Math.cos(startRad);
+    const y1 = centerY + radius * Math.sin(startRad);
+    const x2 = centerX + radius * Math.cos(endRad);
+    const y2 = centerY + radius * Math.sin(endRad);
 
-      const largeArc = angle > 180 ? 1 : 0;
+    const largeArc = angle > 180 ? 1 : 0;
 
-      const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
+    const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
       const midAngle = (startAngle + endAngle) / 2;
 
-      return {
-        ...d,
-        path,
+    return {
+      ...d,
+      path,
         percentage: percentage.toFixed(0),
         startAngle,
         endAngle,
@@ -160,8 +160,8 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
         textX,
         textY: y3,
         textAnchor,
-      };
-    });
+    };
+  });
 
     const adjustSide = (items: Item[]) => {
       const sorted = [...items].sort((a, b) => a.textY - b.textY);
@@ -300,7 +300,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
                   </React.Fragment>
                 ))
               : null}
-          </Svg>
+        </Svg>
 
           {/* Outside labels (2-slice pies) */}
           {useOutsideLabels ? slices.map((slice: any, i) => {
@@ -348,7 +348,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
               </Box>
             );
           }) : null}
-        </Box>
+      </Box>
 
         {/* Hover tooltip (like reference) */}
         {hoveredIndex !== null && hoverPos ? (

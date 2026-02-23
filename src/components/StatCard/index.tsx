@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { StatCardContainer, StatTitle, StatCount, StatSubLabel, StatsRowContainer } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { theme } from '@config/theme';
@@ -11,6 +11,7 @@ interface StatCardProps {
   color?: string;
   showCountBeforeSubLabel?: boolean; // If true, shows count before subLabel (e.g., "2,456 contacted")
   countValue?: string; // The actual count value to display in subtitle (e.g., "2,456")
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 const StatCard: React.FC<StatCardProps> = ({ 
@@ -20,13 +21,28 @@ const StatCard: React.FC<StatCardProps> = ({
   color,
   showCountBeforeSubLabel = false,
   countValue,
+  containerStyle,
 }) => {
   const { t } = useLanguage();
+
+  const resolveThemeColorToken = (value?: string) => {
+    if (!value) return undefined;
+    if (value.startsWith('$')) {
+      const tokenKey = value.slice(1);
+      return (theme.tokens.colors as any)?.[tokenKey] as string | undefined;
+    }
+    return value;
+  };
   
   // Auto-detect if count is a percentage and apply green color
   const countStr = String(count);
   const isPercentage = countStr.includes('%');
-  const finalColor = color || (isPercentage ? theme.tokens.colors.success600 : theme.tokens.colors.textForeground);
+  // If color is explicitly provided, use it; otherwise auto-detect percentage for green
+  const explicitColor = resolveThemeColorToken(color);
+  const finalColor =
+    explicitColor !== undefined
+      ? explicitColor
+      : (isPercentage ? theme.tokens.colors.success600 : theme.tokens.colors.textForeground);
   
   // Determine what to show in subtitle
   // If showCountBeforeSubLabel is true and countValue is provided:
@@ -43,7 +59,7 @@ const StatCard: React.FC<StatCardProps> = ({
       : translatedSubLabel;
 
   return (
-    <StatCardContainer>
+    <StatCardContainer style={containerStyle}>
       <StatTitle>{t(title)}</StatTitle>
       <View>
          <StatCount style={{ color: finalColor }}>{count}</StatCount>

@@ -47,21 +47,54 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
     if (card.subCards && card.subCards.length > 0) {
       setCurrentCards(card.subCards);
       setSelectedCardView(null); // Clear card view when showing sub-cards
-      // Add to breadcrumb with "Back to Indicator Types" as first item
-      setBreadcrumbItems([
-        {
-          id: 'back-to-indicators',
-          label: 'Back to Indicator Types',
-          labelKey: 'admin.backToIndicatorTypes',
-          data: null,
-        },
-        {
-          id: card.id,
-          label: card.title,
-          labelKey: card.title,
-          data: card,
-        },
-      ]);
+      // Build breadcrumb - preserve existing breadcrumb if we're navigating deeper
+      const newBreadcrumbItems: BreadcrumbItem[] = [];
+      
+      // If we're clicking cumulative-indicators, we need to include outcome-indicators in breadcrumb
+      if (card.id === 'cumulative-indicators' || card.id === 'individual-indicators') {
+        // Check if outcome-indicators is already in breadcrumb
+        const outcomeIndicatorsIndex = breadcrumbItems.findIndex(item => item.id === 'outcome-indicators');
+        if (outcomeIndicatorsIndex >= 0) {
+          // Preserve breadcrumb up to outcome-indicators
+          newBreadcrumbItems.push(...breadcrumbItems.slice(0, outcomeIndicatorsIndex + 1));
+        } else {
+          // Add back-to-indicators and outcome-indicators
+          newBreadcrumbItems.push({
+            id: 'back-to-indicators',
+            label: 'Back to Indicator Types',
+            labelKey: 'admin.backToIndicatorTypes',
+            data: null,
+          });
+          newBreadcrumbItems.push({
+            id: 'outcome-indicators',
+            label: 'Outcome Indicators',
+            labelKey: 'admin.outcomeIndicators.title',
+            data: null,
+          });
+        }
+      } else {
+        // For other cards, start fresh or preserve existing
+        if (breadcrumbItems.length > 0) {
+          newBreadcrumbItems.push(...breadcrumbItems);
+        } else {
+          newBreadcrumbItems.push({
+            id: 'back-to-indicators',
+            label: 'Back to Indicator Types',
+            labelKey: 'admin.backToIndicatorTypes',
+            data: null,
+          });
+        }
+      }
+      
+      // Add the current card to breadcrumb
+      newBreadcrumbItems.push({
+        id: card.id,
+        label: card.title,
+        labelKey: card.title,
+        data: card,
+      });
+      
+      setBreadcrumbItems(newBreadcrumbItems);
     } else if (card.navigationUrl) {
       // Navigate to URL if no sub-cards
       // @ts-ignore - Navigation type inference
@@ -69,27 +102,55 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
     } else if (cardViewDataMap[card.id]) {
       // Show CardView for any card that has data in cardViewDataMap
       setSelectedCardView(card.id);
-      // Update breadcrumb to show current path
-      setBreadcrumbItems([
+      // Build breadcrumb based on card context
+      const newBreadcrumbItems: BreadcrumbItem[] = [
         {
           id: 'back-to-indicators',
           label: 'Back to Indicator Types',
           labelKey: 'admin.backToIndicatorTypes',
           data: null,
         },
-        {
+      ];
+      
+      // Check if this is an outcome indicator topic card
+      if (card.id === 'income-household-participant' || 
+          card.id === 'asset-accumulation-household-participant' ||
+          card.id === 'savings' ||
+          card.id === 'record-keeping' ||
+          card.id === 'debt-credit' ||
+          card.id === 'social-empowerment-dignity') {
+        // Outcome indicator topic cards
+        newBreadcrumbItems.push({
+          id: 'outcome-indicators',
+          label: 'Outcome Indicators',
+          labelKey: 'admin.outcomeIndicators.title',
+          data: null,
+        });
+        newBreadcrumbItems.push({
+          id: 'cumulative-indicators',
+          label: 'Cumulative',
+          labelKey: 'admin.outcomeIndicators.types.cumulative.title',
+          data: null,
+        });
+      } else {
+        // Output indicator topic cards
+        newBreadcrumbItems.push({
           id: 'output-indicators',
           label: 'Output Indicators',
           labelKey: 'admin.outputIndicators.title',
           data: null,
-        },
-        {
-          id: card.id,
-          label: card.title,
-          labelKey: card.title,
-          data: card,
-        },
-      ]);
+        });
+      }
+      
+      // Add the current card
+      newBreadcrumbItems.push({
+        id: card.id,
+        label: card.title,
+        labelKey: card.title,
+        data: card,
+      });
+      
+      setBreadcrumbItems(newBreadcrumbItems);
     }
   };
 
@@ -123,6 +184,64 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
             data: outputIndicatorsCard,
           },
         ]);
+      }
+      return;
+    }
+
+    // If clicked on outcome-indicators, show outcome indicator type cards
+    if (item.id === 'outcome-indicators') {
+      const outcomeIndicatorsCard = cards.find(c => c.id === 'outcome-indicators');
+      if (outcomeIndicatorsCard && outcomeIndicatorsCard.subCards) {
+        setCurrentCards(outcomeIndicatorsCard.subCards);
+        setSelectedCardView(null);
+        setBreadcrumbItems([
+          {
+            id: 'back-to-indicators',
+            label: 'Back to Indicator Types',
+            labelKey: 'admin.backToIndicatorTypes',
+            data: null,
+          },
+          {
+            id: 'outcome-indicators',
+            label: 'Outcome Indicators',
+            labelKey: 'admin.outcomeIndicators.title',
+            data: outcomeIndicatorsCard,
+          },
+        ]);
+      }
+      return;
+    }
+
+    // If clicked on cumulative-indicators or individual-indicators, show their topic cards
+    if (item.id === 'cumulative-indicators' || item.id === 'individual-indicators') {
+      // Find the card from the outcome indicator type cards
+      const outcomeIndicatorsCard = cards.find(c => c.id === 'outcome-indicators');
+      if (outcomeIndicatorsCard && outcomeIndicatorsCard.subCards) {
+        const typeCard = outcomeIndicatorsCard.subCards.find(c => c.id === item.id);
+        if (typeCard && typeCard.subCards) {
+          setCurrentCards(typeCard.subCards);
+          setSelectedCardView(null);
+          setBreadcrumbItems([
+            {
+              id: 'back-to-indicators',
+              label: 'Back to Indicator Types',
+              labelKey: 'admin.backToIndicatorTypes',
+              data: null,
+            },
+            {
+              id: 'outcome-indicators',
+              label: 'Outcome Indicators',
+              labelKey: 'admin.outcomeIndicators.title',
+              data: outcomeIndicatorsCard,
+            },
+            {
+              id: item.id,
+              label: item.label,
+              labelKey: item.labelKey,
+              data: typeCard,
+            },
+          ]);
+        }
       }
       return;
     }
@@ -242,6 +361,9 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
               if (lastBreadcrumb?.id === 'outcome-indicators') {
                 return t('admin.outcomeIndicators.selectOutcomeType');
               }
+              if (lastBreadcrumb?.id === 'cumulative-indicators' || lastBreadcrumb?.id === 'individual-indicators') {
+                return t('admin.outputIndicators.selectTopic');
+              }
               return t('admin.outputIndicators.selectTopic');
             })()}
           </Heading>
@@ -250,6 +372,9 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
               const lastBreadcrumb = breadcrumbItems[breadcrumbItems.length - 1];
               if (lastBreadcrumb?.id === 'outcome-indicators') {
                 return t('admin.outcomeIndicators.selectOutcomeTypeDescription');
+              }
+              if (lastBreadcrumb?.id === 'cumulative-indicators' || lastBreadcrumb?.id === 'individual-indicators') {
+                return t('admin.outputIndicators.selectTopicDescription');
               }
               return t('admin.outputIndicators.selectTopicDescription');
             })()}
@@ -309,7 +434,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
                     <LucideIcon 
                       name={card.icon || 'Circle'} 
                       size={dashboardCardsStyles.iconSize} 
-                      color={dashboardCardsStyles.iconColor} 
+                      color={card.iconFillColor || dashboardCardsStyles.iconColor} 
                     />
                   </Box>
 

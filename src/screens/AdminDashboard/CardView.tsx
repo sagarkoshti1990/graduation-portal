@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { ScrollView, useWindowDimensions } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { VStack, Heading, Box, Card, Text, HStack } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TabButton } from '@components/Tabs';
 import StatCard, { StatsRow } from '@components/StatCard';
 import { TabData } from '@app-types/components';
+import type { DashboardGraphBlock } from '@app-types/dashboardGraphs';
 import { cardViewStyles } from './CardViewStyles';
-import DashboardGraphs, { DashboardGraphBlock } from './DashboardGraphs';
+import DashboardGraphs from './DashboardGraphs';
 
 interface MetricCardData {
   id: string;
@@ -67,6 +68,92 @@ const CardView: React.FC<CardViewProps> = ({
   const [activeTab, setActiveTab] = useState<string>(tabs[0]?.key || '');
   const { width: windowWidth } = useWindowDimensions();
 
+  const metricColumns = useMemo(() => {
+    // Max 5 cards per row (web). On smaller widths, reduce columns.
+    if (windowWidth < 640) return 1;
+    if (windowWidth < 1024) return 2;
+    if (windowWidth < 1280) return 4;
+    return 5;
+  }, [windowWidth]);
+
+  const renderMetricGrid = (metrics: MetricCardData[]) => {
+    if (Platform.OS !== 'web') {
+      return (
+        <StatsRow>
+          {metrics.map(metric => (
+            <StatCard
+              key={metric.id}
+              title={metric.title}
+              count={metric.value}
+              subLabel={metric.subtitle}
+              showCountBeforeSubLabel={!!metric.count}
+              countValue={metric.count}
+              color={metric.color}
+            />
+          ))}
+        </StatsRow>
+      );
+    }
+
+    const maxCols = metricColumns;
+    const gutter = 8; // left/right padding per item (8 + 8 = 16px gap)
+    const rowGap = 16;
+
+    const rows: MetricCardData[][] = [];
+    for (let i = 0; i < metrics.length; i += maxCols) {
+      rows.push(metrics.slice(i, i + maxCols));
+    }
+
+    // If we have multiple rows, keep a consistent column width (100/maxCols) across all rows.
+    // If we only have one row, expand to 100/rowLength to avoid empty space.
+    const colsForWidth = rows.length > 1 ? maxCols : Math.max(1, rows[0]?.length ?? 1);
+
+    return (
+      <Box>
+        {rows.map((row, rowIdx) => {
+          const itemWidth = `${100 / colsForWidth}%`;
+          return (
+            <Box
+              key={`metric-row-${rowIdx}`}
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'nowrap',
+                marginLeft: -gutter,
+                marginRight: -gutter,
+                marginBottom: rowIdx === rows.length - 1 ? 0 : rowGap,
+              } as any}
+            >
+              {row.map(metric => (
+                <Box
+                  key={metric.id}
+                  style={{
+                    width: itemWidth,
+                    paddingLeft: gutter,
+                    paddingRight: gutter,
+                  } as any}
+                >
+                  <StatCard
+                    title={metric.title}
+                    count={metric.value}
+                    subLabel={metric.subtitle}
+                    showCountBeforeSubLabel={!!metric.count}
+                    countValue={metric.count}
+                    color={metric.color}
+                    containerStyle={{
+                      marginHorizontal: 0,
+                      marginBottom: 0,
+                      width: '100%',
+                    } as any}
+                  />
+                </Box>
+              ))}
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  };
+
   return (
     <VStack {...cardViewStyles.container}>
       {/* Tabs */}
@@ -110,37 +197,13 @@ const CardView: React.FC<CardViewProps> = ({
                 <Card key={section.title} {...cardViewStyles.insightsCard} mt="$0">
                   <Heading {...cardViewStyles.insightsTitle}>{t(section.title)}</Heading>
                   <Box mt="$4">
-                    <StatsRow>
-                      {section.metricCards.map(metric => (
-                        <StatCard
-                          key={metric.id}
-                          title={metric.title}
-                          count={metric.value}
-                          subLabel={metric.subtitle}
-                          showCountBeforeSubLabel={!!metric.count}
-                          countValue={metric.count}
-                          color={metric.color}
-                        />
-                      ))}
-                    </StatsRow>
+                    {renderMetricGrid(section.metricCards)}
                   </Box>
                 </Card>
               ))}
             </VStack>
           ) : (
-          <StatsRow>
-              {metricCards.map(metric => (
-                <StatCard
-                  key={metric.id}
-                  title={metric.title}
-                  count={metric.value}
-                  subLabel={metric.subtitle}
-                  showCountBeforeSubLabel={!!metric.count}
-                  countValue={metric.count}
-                  color={metric.color}
-                />
-              ))}
-            </StatsRow>
+            renderMetricGrid(metricCards)
           )}
 
           {/* Breakdown Sections (e.g. Drop Outs reasons) */}

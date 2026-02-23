@@ -9,7 +9,8 @@ import type { DashboardGraphBlock } from '@app-types/dashboardGraphs';
 export interface DashboardCard {
   id: string;
   icon?: string;
-  iconColor?: string;
+  iconColor?: string; // Background color for icon box
+  iconFillColor?: string; // Fill color for the icon itself
   title: string; // Translation key
   description: string; // Translation key
   navigationUrl?: string;
@@ -118,6 +119,52 @@ export const outputIndicatorTopicCards: DashboardCard[] = [
   },
 ];
 
+// Cumulative Indicator Topic Cards
+export const cumulativeIndicatorTopicCards: DashboardCard[] = [
+  {
+    id: 'income-household-participant',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.cumulative.topicsList.income.title',
+    description: 'admin.outcomeIndicators.types.cumulative.topicsList.income.description',
+  },
+  {
+    id: 'asset-accumulation-household-participant',
+    icon: 'TrendingUp',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.title',
+    description: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.description',
+  },
+  {
+    id: 'savings',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.title',
+    description: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.description',
+  },
+  {
+    id: 'record-keeping',
+    icon: 'Briefcase',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.title',
+    description: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.description',
+  },
+  {
+    id: 'debt-credit',
+    icon: 'CreditCard',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.title',
+    description: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.description',
+  },
+  {
+    id: 'social-empowerment-dignity',
+    icon: 'Target',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.title',
+    description: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.description',
+  },
+];
+
 // Outcome Indicator Type Cards
 export const outcomeIndicatorTypeCards: DashboardCard[] = [
   {
@@ -126,6 +173,7 @@ export const outcomeIndicatorTypeCards: DashboardCard[] = [
     iconColor: '$bgPrimary/10',
     title: 'admin.outcomeIndicators.types.cumulative.title',
     description: 'admin.outcomeIndicators.types.cumulative.description',
+    subCards: cumulativeIndicatorTopicCards, // Add sub-cards
     status: {
       type: 'not-started',
       label: 'admin.outcomeIndicators.types.cumulative.topics',
@@ -3089,5 +3137,280 @@ export const cardViewDataMap: Record<string, CardViewData> = {
         chart: { kind: 'placeholder', title: 'Dropouts', placeholderText: '' },
       },
     ],
+  },
+  'income-household-participant': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.income.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.income.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'active-income-activity',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.activeIncomeActivity.title',
+        value: '68%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.activeIncomeActivity.subtitle',
+        count: '1,847 of 2,718 participants',
+        color: '#00a63e', // Green color for percentage
+      },
+      {
+        id: 'profitability',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.profitability.title',
+        value: '75%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.profitability.subtitle',
+        count: '935 of 1,247 businesses profitable',
+        color: '#00a63e', // Green color for percentage
+      },
+      {
+        id: 'per-person-income',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.perPersonIncome.title',
+        value: 'R 2,340',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.perPersonIncome.subtitle',
+        count: '+39% from baseline',
+      },
+      {
+        id: 'participant-income-business',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.participantIncomeBusiness.title',
+        value: 'R 3,680',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.participantIncomeBusiness.subtitle',
+        count: '1,247 participants with business income',
+      },
+      {
+        id: 'participant-income-source',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.participantIncomeSource.title',
+        value: 'R 3,680',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.income.metrics.participantIncomeSource.subtitle',
+        count: 'Top source: Own Business',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.outcomeIndicators.types.cumulative.topicsList.income.graphs.placeholder',
+  },
+  'asset-accumulation-household-participant': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'asset-accumulation-household',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.metrics.assetAccumulationHousehold.title',
+        value: 'R 48.25M',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.metrics.assetAccumulationHousehold.subtitle',
+        count: '+45% from baseline',
+      },
+      {
+        id: 'asset-accumulation-participant',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.metrics.assetAccumulationParticipant.title',
+        value: 'R 17,755',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.metrics.assetAccumulationParticipant.subtitle',
+        count: '+38% from baseline',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.outcomeIndicators.types.cumulative.topicsList.assetAccumulation.graphs.placeholder',
+  },
+  'savings': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'savings-amount-household',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.savingsAmountHousehold.title',
+        value: 'R 12.48M',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.savingsAmountHousehold.subtitle',
+        count: '+52% from baseline',
+      },
+      {
+        id: 'savings-amount-participant',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.savingsAmountParticipant.title',
+        value: 'R 4,590',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.savingsAmountParticipant.subtitle',
+        count: '+48% from baseline',
+      },
+      {
+        id: 'savings-frequency',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.savingsFrequency.title',
+        value: '58%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.savingsFrequency.subtitle',
+        count: '1,576 of 2,718 participants',
+        color: '$textForeground',
+      },
+      {
+        id: 'formal-savings-usage',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.formalSavingsUsage.title',
+        value: '42%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.metrics.formalSavingsUsage.subtitle',
+        count: '1,142 participants using formal products',
+        color: '$textForeground',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.outcomeIndicators.types.cumulative.topicsList.savings.graphs.placeholder',
+  },
+  'record-keeping': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'personal-record-keeping',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.metrics.personal.title',
+        value: '72%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.metrics.personal.subtitle',
+        count: '1,957 of 2,718 participants',
+        color: '$textForeground',
+      },
+      {
+        id: 'business-record-keeping',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.metrics.business.title',
+        value: '84%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.metrics.business.subtitle',
+        count: '1,047 of 1,247 businesses',
+        color: '$textForeground',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.outcomeIndicators.types.cumulative.topicsList.recordKeeping.graphs.placeholder',
+  },
+  'debt-credit': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'reduced-debt-participant',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.reducedDebtParticipant.title',
+        value: '72%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.reducedDebtParticipant.subtitle',
+        count: '1,958 of 2,718 participants',
+        color: '$textForeground',
+      },
+      {
+        id: 'formal-informal-credit-participant',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.creditUsageParticipant.title',
+        value: '78%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.creditUsageParticipant.subtitle',
+        count: '891 of 1,142 using formal credit',
+        color: '$textForeground',
+      },
+      {
+        id: 'reduced-debt-household',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.reducedDebtHousehold.title',
+        value: '68%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.reducedDebtHousehold.subtitle',
+        count: '1,848 of 2,718 households',
+        color: '$textForeground',
+      },
+      {
+        id: 'formal-informal-credit-household',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.creditUsageHousehold.title',
+        value: '75%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.creditUsageHousehold.subtitle',
+        count: '856 of 1,142 using formal credit',
+        color: '$textForeground',
+      },
+      {
+        id: 'risk-over-indebtedness',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.riskOverIndebtedness.title',
+        value: '18%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.riskOverIndebtedness.subtitle',
+        count: '489 of 2,718 participants at risk',
+        color: '$textForeground',
+      },
+      {
+        id: 'risk-over-indebtedness-responses',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.riskOverIndebtednessResponses.title',
+        value: '22%',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.metrics.riskOverIndebtednessResponses.subtitle',
+        count: '598 of 2,718 responded Yes',
+        color: '$textForeground',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.outcomeIndicators.types.cumulative.topicsList.debtCredit.graphs.placeholder',
+  },
+  'social-empowerment-dignity': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'self-esteem-confidence',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.selfEsteemConfidence.title',
+        value: '0.72',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.selfEsteemConfidence.subtitle',
+        count: '+12% from baseline',
+      },
+      {
+        id: 'agency-control',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.agencyControl.title',
+        value: '0.68',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.agencyControl.subtitle',
+        count: '+9% from baseline',
+      },
+      {
+        id: 'attitudes-domestic-violence',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.attitudesDomesticViolence.title',
+        value: '0.81',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.attitudesDomesticViolence.subtitle',
+        count: '+15% from baseline',
+      },
+      {
+        id: 'decision-making-gender-equality',
+        title: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.decisionMakingGenderEquality.title',
+        value: '0.75',
+        subtitle: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.metrics.decisionMakingGenderEquality.subtitle',
+        count: '+11% from baseline',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.outcomeIndicators.types.cumulative.topicsList.socialEmpowerment.graphs.placeholder',
   },
 };
