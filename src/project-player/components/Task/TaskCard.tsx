@@ -419,7 +419,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const statusBadge =
       isEditModeOnly && uiConfig.showAsCard ? (
         <Tooltip
-          isDisabled={!isManualToggleDisabled || isStatusUpdating}
+          isDisabled={!isManualToggleDisabled || isStatusUpdating || isTaskDone}
           placement="top"
           trigger={(triggerProps: any) => (
             <Pressable
@@ -467,7 +467,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </Tooltip>
       ) : null;
 
-    const evidenceRequiredBadge = isEvidenceRequired && uiConfig.showAsCard && isInterventionPlanEditMode ? (
+    const evidenceRequiredBadge = (isEvidenceRequired || isObservationTask) && uiConfig.showAsCard && isInterventionPlanEditMode ? (
       <Box {...taskAccordionStyles.actionRequiredBadge}>
         <Text {...taskAccordionStyles.actionRequiredText}>
           {t('projectPlayer.evidenceRequired') || 'Evidence Required'}

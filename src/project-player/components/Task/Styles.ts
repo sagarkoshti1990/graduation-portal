@@ -59,7 +59,7 @@ export const taskCardStyles = {
 
   // Tooltip styles
   tooltipContent: {
-    bg: '$textSecondary',
+    bg: '$tooltipBg',
     px: '$3',
     py: '$2',
     borderRadius: '$md',
