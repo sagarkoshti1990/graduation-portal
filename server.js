@@ -21,14 +21,17 @@ const mimeTypes = {
   '.eot': 'application/vnd.ms-fontobject',
   '.otf': 'application/font-otf',
   '.wasm': 'application/wasm',
+  '.pdf': 'application/pdf',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.doc': 'application/msword',
 };
 
 const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
 
   // Parse URL - remove query string and hash for file path resolution
-  // Extract just the pathname (before ? or #)
-  const urlPath = req.url.split('?')[0].split('#')[0];
+  // Extract just the pathname (before ? or #) and decode it to handle special characters
+  const urlPath = decodeURIComponent(req.url.split('?')[0].split('#')[0]);
   
   // Determine file path
   let filePath;
@@ -52,12 +55,12 @@ const server = http.createServer((req, res) => {
   const contentType = mimeTypes[extname] || 'application/octet-stream';
 
   // Check if file exists
-  fs.stat(filePath, (err, stats) => {
-    if (err || !stats.isFile()) {
+  fs.stat(filePath, (statErr, stats) => {
+    if (statErr || !stats.isFile()) {
       // File doesn't exist - serve index.html for SPA routing
       const indexPath = path.join(DIST_DIR, 'index.html');
-      fs.readFile(indexPath, (err, data) => {
-        if (err) {
+      fs.readFile(indexPath, (readErr, data) => {
+        if (readErr) {
           res.writeHead(404);
           res.end('File not found');
         } else {
@@ -69,12 +72,20 @@ const server = http.createServer((req, res) => {
     }
 
     // File exists - serve it
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
+    fs.readFile(filePath, (readErr, data) => {
+      if (readErr) {
         res.writeHead(500);
         res.end('Server Error');
       } else {
-        res.writeHead(200, { 'Content-Type': contentType });
+        const headers = { 'Content-Type': contentType };
+        
+        // For PDF and DOCX files, add Content-Disposition header to force download
+        if (extname === '.pdf' || extname === '.docx' || extname === '.doc') {
+          const filename = path.basename(filePath);
+          headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+        }
+        
+        res.writeHead(200, headers);
         res.end(data);
       }
     });

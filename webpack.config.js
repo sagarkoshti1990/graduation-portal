@@ -154,6 +154,36 @@ module.exports = (env = {}, argv = {}) => {
           warnings: false,
         },
       },
+      // Add custom headers for downloadable files
+      setupMiddlewares: (middlewares, devServer) => {
+        if (!devServer) {
+          throw new Error('webpack-dev-server is not defined');
+        }
+        
+        devServer.app.use((req, res, next) => {
+          // Check if the request is for a PDF or DOCX file
+          if (req.url.match(/\.(pdf|docx|doc)$/i)) {
+            // Extract filename from URL
+            const urlParts = req.url.split('/');
+            const filename = decodeURIComponent(urlParts[urlParts.length - 1]);
+            
+            // Set Content-Disposition header to force download
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            
+            // Set proper Content-Type
+            if (req.url.endsWith('.pdf')) {
+              res.setHeader('Content-Type', 'application/pdf');
+            } else if (req.url.endsWith('.docx')) {
+              res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            } else if (req.url.endsWith('.doc')) {
+              res.setHeader('Content-Type', 'application/msword');
+            }
+          }
+          next();
+        });
+        
+        return middlewares;
+      },
     },
     cache: {
       type: 'filesystem',
