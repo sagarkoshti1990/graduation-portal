@@ -14,6 +14,7 @@ import { styles } from './Styles';
  * Helper function to extract role label from user object
  * Extracts role label from nested user_organizations structure
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const useRole = (user: any): string => {
   return user?.user_organizations?.[0]?.organization?.roles?.[0]?.role?.label ||
     user?.role ||
@@ -24,6 +25,7 @@ const useRole = (user: any): string => {
  * Helper function to extract province from user object
  * Extracts province from API response, returns "-" if not found
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getProvince = (user: any): string => {
   return user?.province || user?.province_name || user?.location?.province || '-';
 };
@@ -32,6 +34,7 @@ const getProvince = (user: any): string => {
  * Helper function to extract site from user object
  * Extracts site from API response, returns "-" if not found
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getSite = (user: any): string => {
   return user?.site || user?.site_name || user?.location?.site || '-';
 };
@@ -83,6 +86,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
  * Details Component
  * Shows either assigned count or progress bar
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DetailsCell: React.FC<{ details: AdminUserManagementData['details'] }> = ({ details }) => {
   if (!details) {
     return null;
@@ -131,7 +135,7 @@ const getCustomTrigger = (triggerProps: any) => (
 /**
  * Get User Menu Items
  */
-const getUserMenuItems = (t: (key: string) => string): MenuItemData[] => [
+const getUserMenuItems = (_t: (key: string) => string): MenuItemData[] => [
   {
     key: 'view-profile',
     label: 'admin.users.actionMenu.viewProfile',
@@ -148,14 +152,14 @@ const getUserMenuItems = (t: (key: string) => string): MenuItemData[] => [
   //   iconColor: theme.tokens.colors.textForeground,
   //   iconSizeValue: 20,
   // },
-  // {
-  //   key: 'reset-password',
-  //   label: 'admin.users.actionMenu.resetPassword',
-  //   textValue: 'Reset Password',
-  //   iconName: 'RotateCcw',
-  //   iconColor: theme.tokens.colors.textForeground,
-  //   iconSizeValue: 20,
-  // },
+  {
+    key: 'reset-password',
+    label: 'admin.users.actionMenu.resetPassword',
+    textValue: 'Reset Password',
+    iconName: 'RotateCcw',
+    iconColor: theme.tokens.colors.textForeground,
+    iconSizeValue: 20,
+  },
   {
     key: 'deactivate',
     label: 'admin.users.actionMenu.deactivate',
@@ -173,7 +177,8 @@ const getUserMenuItems = (t: (key: string) => string): MenuItemData[] => [
 const ActionsColumn: React.FC<{
   user: AdminUserManagementData;
   onViewProfile?: (user: AdminUserManagementData) => void;
-}> = ({ user, onViewProfile }) => {
+  onResetPassword?: (user: AdminUserManagementData) => void;
+}> = ({ user, onViewProfile, onResetPassword }) => {
   const { t } = useLanguage();
 
   const handleMenuSelect = (key: string) => {
@@ -186,8 +191,8 @@ const ActionsColumn: React.FC<{
         // TODO: Open edit modal or navigate to edit page
         break;
       case 'reset-password':
-        console.log('Reset password for user:', user.id);
-        // TODO: Open reset password modal
+        // Prevent event propagation to avoid triggering other elements
+        onResetPassword?.(user);
         break;
       case 'deactivate':
         console.log('Deactivate user:', user.id);
@@ -216,6 +221,7 @@ const ActionsColumn: React.FC<{
  */
 export const getUsersColumns = (handlers?: {
   onViewProfile?: (user: AdminUserManagementData) => void;
+  onResetPassword?: (user: AdminUserManagementData) => void;
 }): ColumnDef<AdminUserManagementData>[] => [
   {
     key: 'id',
@@ -346,7 +352,7 @@ export const getUsersColumns = (handlers?: {
     key: 'details',
     label: 'admin.users.details',
     flex: 1.5,
-    render: (user) => (
+    render: () => (
       <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>
         -
       </Text>
@@ -361,7 +367,11 @@ export const getUsersColumns = (handlers?: {
     label: 'admin.users.actions',
     flex: 0.8,
     render: (user) => (
-      <ActionsColumn user={user} onViewProfile={handlers?.onViewProfile} />
+      <ActionsColumn 
+        user={user} 
+        onViewProfile={handlers?.onViewProfile}
+        onResetPassword={handlers?.onResetPassword}
+      />
     ),
     mobileConfig: {
       fullWidthRank: 2,

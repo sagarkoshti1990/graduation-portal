@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { VStack, HStack, Button, Text, Box, Pressable, Card, Modal, useAlert, ButtonIcon, ButtonText, Badge, BadgeText, Divider } from '@ui';
+import { VStack, HStack, Button, Text, Box, Pressable, Card, Modal, useAlert, ButtonIcon, ButtonText, Badge, BadgeText, Divider, Input, InputField } from '@ui';
 import { Platform } from 'react-native';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -13,7 +13,7 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { getUsersList } from '../../services/usersService';
+import { getUsersList, resetPassword } from '../../services/usersService';
 import type { 
   // UserSearchParams,
    Role
@@ -146,6 +146,15 @@ const UserManagementScreen = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserBase, setSelectedUserBase] = useState<AdminUserManagementData | null>(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
+  const [editable, setEditable] = useState(false);
+  // Reset Password modal state
+  const [resetPasswordState, setResetPasswordState] = useState({
+    user: null as AdminUserManagementData | null,
+    password: '',
+    showPassword: false,
+    isSubmitting: false,
+    error: '',
+  });
 
   const closeProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
@@ -171,9 +180,73 @@ const UserManagementScreen = () => {
     }
   }, [showAlert, t]);
 
+  const openResetPasswordModal = useCallback((user: AdminUserManagementData) => {
+    setResetPasswordState({
+      user,
+      password: '',
+      showPassword: false,
+      isSubmitting: false,
+      error: '',
+    });
+    setEditable(false);
+  }, []);
+
+  const closeResetPasswordModal = useCallback(() => {
+    setResetPasswordState({
+      user: null,
+      password: '',
+      showPassword: false,
+      isSubmitting: false,
+      error: '',
+    });
+    setEditable(false);
+  }, []);
+
+  const handleResetPasswordSubmit = useCallback(async () => {
+    // Validate password
+    if (!resetPasswordState.password?.trim()) {
+      setResetPasswordState(prev => ({
+        ...prev,
+        error: t('admin.users.resetPassword.passwordRequired') || 'Password is required',
+      }));
+      return;
+    }
+
+    if (!resetPasswordState.user) return;
+
+    setResetPasswordState(prev => ({ ...prev, isSubmitting: true }));
+
+    try {
+      await resetPassword({
+        username: resetPasswordState.user.name,
+        email: resetPasswordState.user.email,
+        password: resetPasswordState.password,
+        userId: resetPasswordState.user?.id,
+      });
+
+      showAlert(
+        'success',
+        t('admin.users.resetPassword.success') || 'Password reset successfully',
+        { placement: 'bottom' }
+      );
+
+      closeResetPasswordModal();
+    } catch (error: any) {
+      showAlert(
+        'error',
+        error?.message || t('admin.users.resetPassword.error') || 'Failed to reset password',
+        { placement: 'bottom' }
+      );
+      setResetPasswordState(prev => ({ ...prev, isSubmitting: false }));
+    }
+  }, [resetPasswordState.password, resetPasswordState.user, t, showAlert, closeResetPasswordModal]);
+
   const columns = useMemo(
-    () => getUsersColumns({ onViewProfile: openProfileModal }),
-    [openProfileModal]
+    () => getUsersColumns({ 
+      onViewProfile: openProfileModal,
+      onResetPassword: openResetPasswordModal,
+    }),
+    [openProfileModal, openResetPasswordModal]
   );
 
   // Ref to track previous roles length to detect when roles are first loaded
@@ -450,47 +523,49 @@ const UserManagementScreen = () => {
         </HStack>
 
         {/* DataTable with server-side pagination */}
-        <DataTable
-          minWidth={1000}
-          data={users}
-          columns={columns}
-          getRowKey={(user) => user.id}
-          isLoading={isLoading}
-          pagination={{
-            enabled: true,
-            pageSize: pageSize,
-            showPageSizeSelector: true,
-            pageSizeOptions: PAGE_SIZE_OPTIONS,
-            serverSide: {
-              count: currentPage,
-              total: totalCount,
-            },
-          }}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
-          emptyMessage="admin.users.noUsersFound"
-          loadingMessage="admin.users.loadingUsers"
-          _css={{
-            _table:{
-              borderRadius: '$md',
-              borderWidth: 0,
-            },
-            _header:{
-              _tableHeader:{
-              borderBottomWidth: 1,
-                borderBottomColor: '$borderLight300' as const,
-                bg: '#fff' as const,
-                borderTopLeftRadius: '$md' as const,
-                borderTopRightRadius: '$md' as const,
+        {pageSize !== null && (
+          <DataTable
+            minWidth={1000}
+            data={users}
+            columns={columns}
+            getRowKey={(user) => user.id}
+            isLoading={isLoading}
+            pagination={{
+              enabled: true,
+              pageSize: pageSize,
+              showPageSizeSelector: true,
+              pageSizeOptions: PAGE_SIZE_OPTIONS,
+              serverSide: {
+                count: currentPage,
+                total: totalCount,
               },
-              _thText:{
-                fontWeight: '$medium',
+            }}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            emptyMessage="admin.users.noUsersFound"
+            loadingMessage="admin.users.loadingUsers"
+            _css={{
+              _table:{
+                borderRadius: '$md',
+                borderWidth: 0,
+              },
+              _header:{
+                _tableHeader:{
+                borderBottomWidth: 1,
+                  borderBottomColor: '$borderLight300' as const,
+                  bg: '#fff' as const,
+                  borderTopLeftRadius: '$md' as const,
+                  borderTopRightRadius: '$md' as const,
+                },
+                _thText:{
+                  fontWeight: '$medium',
+                
+                },
               
-              },
-            
-            }
-          }}
-        />
+              }
+            }}
+          />
+        )}
       </Box>
 
       {/* Upload Users Modal */}
@@ -781,6 +856,101 @@ const UserManagementScreen = () => {
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.editUser')}</ButtonText>
             </Button>
           </HStack>
+        </VStack>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={!!resetPasswordState.user?.id}
+        onClose={closeResetPasswordModal}
+        headerTitle={t('admin.users.resetPassword.title') || 'Reset Password'}
+        headerDescription={t('admin.users.resetPassword.description') || 'Enter a new password for the user'}
+        headerAlignment="baseline"
+        maxWidth={480}
+        size="md"
+        closeOnOverlayClick={!resetPasswordState.isSubmitting}
+        footerContent={
+          <HStack space="md" width="100%" justifyContent="flex-end">
+            <Button variant="outline" onPress={closeResetPasswordModal} isDisabled={resetPasswordState.isSubmitting}>
+              <ButtonText color="$textPrimary" {...TYPOGRAPHY.button}>
+                {t('common.cancel') || 'Cancel'}
+              </ButtonText>
+            </Button>
+
+            <Button variant="solid" action="primary" onPress={handleResetPasswordSubmit} isDisabled={resetPasswordState.isSubmitting}>
+              <ButtonText color="$white" {...TYPOGRAPHY.button}>
+                {resetPasswordState.isSubmitting
+                  ? (t('common.submitting') || 'Submitting...')
+                  : (t('admin.users.resetPassword.submit') || 'Reset Password')}
+              </ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <VStack space="lg" width="100%">
+          {/* Username Field - Read Only */}
+          <VStack space="xs" width="100%">
+            <Text {...TYPOGRAPHY.bodySmall} fontWeight="$medium" color="$textForeground">
+              {t('admin.users.resetPassword.username') || 'Username'}
+            </Text>
+            <Input isReadOnly>
+              <InputField value={resetPasswordState.user?.name || ''} />
+            </Input>
+          </VStack>
+
+          <VStack space="xs" width="100%">
+            <Text {...TYPOGRAPHY.bodySmall} fontWeight="$medium" color="$textForeground">
+              {t('admin.users.resetPassword.email') || 'Email'}
+            </Text>
+            <Input isReadOnly>
+              <InputField value={resetPasswordState.user?.email || ''} />
+            </Input>
+          </VStack>
+
+          {/* Password Field - With Show/Hide Toggle */}
+          <VStack space="xs" width="100%">
+            <Text {...TYPOGRAPHY.bodySmall} fontWeight="$medium" color="$textForeground">
+              {t('admin.users.resetPassword.newPassword') || 'New Password'}
+              <Text color="$error600"> *</Text>
+            </Text>
+            <Box position="relative">
+              <Input isDisabled={resetPasswordState.isSubmitting} isInvalid={!!resetPasswordState.error}>
+                <InputField
+                  placeholder={t('admin.users.resetPassword.passwordPlaceholder') || 'Enter new password'}
+                  value={resetPasswordState.password}
+                  onChangeText={(text) => {
+                    setResetPasswordState(prev => ({
+                      ...prev,
+                      password: text,
+                      error: prev.error ? '' : prev.error,
+                    }));
+                  }}
+                  secureTextEntry={!resetPasswordState.showPassword}
+                  editable={editable}
+                  onFocus={() => setEditable(true)}
+                  pr="$12"
+                  returnKeyType="done"
+                  onSubmitEditing={handleResetPasswordSubmit}
+                />
+              </Input>
+              <Pressable
+                onPress={() => setResetPasswordState(prev => ({ ...prev, showPassword: !prev.showPassword }))}
+                disabled={resetPasswordState.isSubmitting}
+                style={styles.resetPasswordEyeIconButton}
+              >
+                <LucideIcon
+                  name={resetPasswordState.showPassword ? 'EyeOff' : 'Eye'}
+                  size={20}
+                  color="#6B7280"
+                />
+              </Pressable>
+            </Box>
+            {resetPasswordState.error ? (
+              <Text {...TYPOGRAPHY.bodySmall} color="$error600">
+                {resetPasswordState.error}
+              </Text>
+            ) : null}
+          </VStack>
         </VStack>
       </Modal>
 
