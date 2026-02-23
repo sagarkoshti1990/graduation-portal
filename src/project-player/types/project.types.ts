@@ -48,6 +48,7 @@ export interface Task {
   isDeleted?:boolean;
   isDeletable?:boolean;
   excludedTaskIds?:string[];
+  noOfEvidenceRequired?: number;
 }
 
 export interface Attachment {

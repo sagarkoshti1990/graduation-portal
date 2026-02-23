@@ -143,6 +143,8 @@
     "remove": "Remove",
     "evidenceUploaded": "Evidence uploaded successfully",
     "evidenceUploadFailed": "Evidence upload failed. Please try again.",
+    "evidenceRequired": "Evidence Required",
+    "uploadEvidenceToMarkDone": "Upload evidence first to mark this task as done",
     "consentUploaded": "Consent uploaded successfully",
     "slaUploaded": "SLA uploaded successfully",
     "selectedFiles": "Selected Files",
