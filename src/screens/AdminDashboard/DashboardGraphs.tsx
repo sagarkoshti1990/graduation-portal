@@ -485,38 +485,38 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
               const accent = getGroupHeaderAccent(block as any);
               const titleStr = t((block as any).title);
               return (
-                <Box
-                  key={block.id}
-                  width="100%"
-                  bg={(block as any).bg ? ((block as any).bg as any) : '$backgroundLight50'}
-                  borderRadius="$lg"
-                  px="$6"
-                  py="$5"
-                  borderWidth={1}
-                  borderColor="$borderLight200"
-                  position="relative"
-                  overflow="hidden"
-                  minHeight={64}
-                  justifyContent="center"
-                >
-                  {/* Left accent bar (like reference) */}
-                  <Box
-                    position="absolute"
-                    left={0}
-                    top={0}
-                    bottom={0}
-                    width={4}
-                    bg={accent as any}
-                  />
-                  <Text
-                    fontSize="$sm"
-                    fontWeight="$semibold"
-                    color={accent as any}
-                    letterSpacing={0.5 as any}
+              <Box
+                key={block.id}
+                    width="100%"
+                bg={(block as any).bg ? ((block as any).bg as any) : '$backgroundLight50'}
+                borderRadius="$lg"
+                    px="$6"
+                    py="$5"
+                borderWidth={1}
+                borderColor="$borderLight200"
+                    position="relative"
+                    overflow="hidden"
+                    minHeight={64}
+                    justifyContent="center"
                   >
-                    {String(titleStr || '').toUpperCase()}
-                  </Text>
-                </Box>
+                    {/* Left accent bar (like reference) */}
+                    <Box
+                      position="absolute"
+                      left={0}
+                      top={0}
+                      bottom={0}
+                      width={4}
+                      bg={accent as any}
+                    />
+                    <Text
+                      fontSize="$sm"
+                      fontWeight="$semibold"
+                      color={accent as any}
+                      letterSpacing={0.5 as any}
+                    >
+                      {String(titleStr || '').toUpperCase()}
+                    </Text>
+              </Box>
               );
             })()
           ) : (

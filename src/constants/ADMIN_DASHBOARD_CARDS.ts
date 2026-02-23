@@ -9,7 +9,8 @@ import type { DashboardGraphBlock } from '@app-types/dashboardGraphs';
 export interface DashboardCard {
   id: string;
   icon?: string;
-  iconColor?: string;
+  iconColor?: string; // Background color for icon box
+  iconFillColor?: string; // Fill color for the icon itself
   title: string; // Translation key
   description: string; // Translation key
   navigationUrl?: string;
@@ -27,6 +28,9 @@ export interface MetricCardData {
   subtitle: string; // Translation key
   count?: string; // Optional count to show before subtitle
   color?: string; // Optional color for the main value
+  badgeText?: string;
+  badgeBg?: string;
+  badgeTextColor?: string;
 }
 
 export interface CardViewSection {
@@ -56,6 +60,8 @@ export interface CardViewData {
   graphsPlaceholderKey?: string;
   insightsTitle?: string; // Translation key
   insightsItems?: string[]; // Translation keys
+  insightsDotColor?: string; // Optional override for insights bullet color
+  snapshotPlaceholderKey?: string; // Translation key for placeholder when snapshot is empty
 }
 
 // Output Indicator Topic Cards
@@ -118,6 +124,98 @@ export const outputIndicatorTopicCards: DashboardCard[] = [
   },
 ];
 
+// Cumulative Indicator Topic Cards
+export const cumulativeIndicatorTopicCards: DashboardCard[] = [
+  {
+    id: 'income-household-participant',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.cumulativeIncome.title',
+    description: 'admin.cumulativeIncome.description',
+  },
+  {
+    id: 'asset-accumulation-household-participant',
+    icon: 'TrendingUp',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.cumulativeAssetAccumulation.title',
+    description: 'admin.cumulativeAssetAccumulation.description',
+  },
+  {
+    id: 'savings',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.cumulativeSavings.title',
+    description: 'admin.cumulativeSavings.description',
+  },
+  {
+    id: 'record-keeping',
+    icon: 'Briefcase',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.cumulativeRecordKeeping.title',
+    description: 'admin.cumulativeRecordKeeping.description',
+  },
+  {
+    id: 'debt-credit',
+    icon: 'CreditCard',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.cumulativeDebtCredit.title',
+    description: 'admin.cumulativeDebtCredit.description',
+  },
+  {
+    id: 'social-empowerment-dignity',
+    icon: 'Target',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.cumulativeSocialEmpowerment.title',
+    description: 'admin.cumulativeSocialEmpowerment.description',
+  },
+];
+
+// Individual Indicator Topic Cards (shown after selecting Pathway + Participant)
+export const individualIndicatorTopicCards: DashboardCard[] = [
+  {
+    id: 'individual-income',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.individualIncome.title',
+    description: 'admin.individualIncome.description',
+  },
+  {
+    id: 'individual-asset-accumulation',
+    icon: 'TrendingUp',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.individualAssetAccumulation.title',
+    description: 'admin.individualAssetAccumulation.description',
+  },
+  {
+    id: 'individual-record-keeping',
+    icon: 'Briefcase',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.individualRecordKeeping.title',
+    description: 'admin.individualRecordKeeping.description',
+  },
+  {
+    id: 'individual-savings',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.individualSavings.title',
+    description: 'admin.individualSavings.description',
+  },
+  {
+    id: 'individual-debt',
+    icon: 'CreditCard',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.individualDebt.title',
+    description: 'admin.individualDebt.description',
+  },
+  {
+    id: 'individual-agency-dignity',
+    icon: 'Target',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.individualAgencyDignity.title',
+    description: 'admin.individualAgencyDignity.description',
+  },
+];
+
 // Outcome Indicator Type Cards
 export const outcomeIndicatorTypeCards: DashboardCard[] = [
   {
@@ -126,6 +224,7 @@ export const outcomeIndicatorTypeCards: DashboardCard[] = [
     iconColor: '$bgPrimary/10',
     title: 'admin.outcomeIndicators.types.cumulative.title',
     description: 'admin.outcomeIndicators.types.cumulative.description',
+    subCards: cumulativeIndicatorTopicCards, // Add sub-cards
     status: {
       type: 'not-started',
       label: 'admin.outcomeIndicators.types.cumulative.topics',
@@ -3089,5 +3188,574 @@ export const cardViewDataMap: Record<string, CardViewData> = {
         chart: { kind: 'placeholder', title: 'Dropouts', placeholderText: '' },
       },
     ],
+  },
+  'income-household-participant': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.cumulativeIncome.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.cumulativeIncome.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'active-income-activity',
+        title: 'admin.cumulativeIncome.metrics.activeIncomeActivity.title',
+        value: '68%',
+        subtitle: 'admin.cumulativeIncome.metrics.activeIncomeActivity.subtitle',
+        count: '1,847 of 2,718 participants',
+        color: '#00a63e', // Green color for percentage
+      },
+      {
+        id: 'profitability',
+        title: 'admin.cumulativeIncome.metrics.profitability.title',
+        value: '75%',
+        subtitle: 'admin.cumulativeIncome.metrics.profitability.subtitle',
+        count: '935 of 1,247 businesses profitable',
+        color: '#00a63e', // Green color for percentage
+      },
+      {
+        id: 'per-person-income',
+        title: 'admin.cumulativeIncome.metrics.perPersonIncome.title',
+        value: 'R 2,340',
+        subtitle: 'admin.cumulativeIncome.metrics.perPersonIncome.subtitle',
+        count: '+39% from baseline',
+      },
+      {
+        id: 'participant-income-business',
+        title: 'admin.cumulativeIncome.metrics.participantIncomeBusiness.title',
+        value: 'R 3,680',
+        subtitle: 'admin.cumulativeIncome.metrics.participantIncomeBusiness.subtitle',
+        count: '1,247 participants with business income',
+      },
+      {
+        id: 'participant-income-source',
+        title: 'admin.cumulativeIncome.metrics.participantIncomeSource.title',
+        value: 'R 3,680',
+        subtitle: 'admin.cumulativeIncome.metrics.participantIncomeSource.subtitle',
+        count: 'Top source: Own Business',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.cumulativeIncome.graphs.placeholder',
+  },
+  'asset-accumulation-household-participant': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.cumulativeAssetAccumulation.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.cumulativeAssetAccumulation.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'asset-accumulation-household',
+        title: 'admin.cumulativeAssetAccumulation.metrics.assetAccumulationHousehold.title',
+        value: 'R 48.25M',
+        subtitle: 'admin.cumulativeAssetAccumulation.metrics.assetAccumulationHousehold.subtitle',
+        count: '+45% from baseline',
+      },
+      {
+        id: 'asset-accumulation-participant',
+        title: 'admin.cumulativeAssetAccumulation.metrics.assetAccumulationParticipant.title',
+        value: 'R 17,755',
+        subtitle: 'admin.cumulativeAssetAccumulation.metrics.assetAccumulationParticipant.subtitle',
+        count: '+38% from baseline',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.cumulativeAssetAccumulation.graphs.placeholder',
+  },
+  'savings': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.cumulativeSavings.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.cumulativeSavings.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'savings-amount-household',
+        title: 'admin.cumulativeSavings.metrics.savingsAmountHousehold.title',
+        value: 'R 12.48M',
+        subtitle: 'admin.cumulativeSavings.metrics.savingsAmountHousehold.subtitle',
+        count: '+52% from baseline',
+      },
+      {
+        id: 'savings-amount-participant',
+        title: 'admin.cumulativeSavings.metrics.savingsAmountParticipant.title',
+        value: 'R 4,590',
+        subtitle: 'admin.cumulativeSavings.metrics.savingsAmountParticipant.subtitle',
+        count: '+48% from baseline',
+      },
+      {
+        id: 'savings-frequency',
+        title: 'admin.cumulativeSavings.metrics.savingsFrequency.title',
+        value: '58%',
+        subtitle: 'admin.cumulativeSavings.metrics.savingsFrequency.subtitle',
+        count: '1,576 of 2,718 participants',
+        color: '$textForeground',
+      },
+      {
+        id: 'formal-savings-usage',
+        title: 'admin.cumulativeSavings.metrics.formalSavingsUsage.title',
+        value: '42%',
+        subtitle: 'admin.cumulativeSavings.metrics.formalSavingsUsage.subtitle',
+        count: '1,142 participants using formal products',
+        color: '$textForeground',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.cumulativeSavings.graphs.placeholder',
+  },
+  'record-keeping': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.cumulativeRecordKeeping.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.cumulativeRecordKeeping.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'personal-record-keeping',
+        title: 'admin.cumulativeRecordKeeping.metrics.personal.title',
+        value: '72%',
+        subtitle: 'admin.cumulativeRecordKeeping.metrics.personal.subtitle',
+        count: '1,957 of 2,718 participants',
+        color: '$textForeground',
+      },
+      {
+        id: 'business-record-keeping',
+        title: 'admin.cumulativeRecordKeeping.metrics.business.title',
+        value: '84%',
+        subtitle: 'admin.cumulativeRecordKeeping.metrics.business.subtitle',
+        count: '1,047 of 1,247 businesses',
+        color: '$textForeground',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.cumulativeRecordKeeping.graphs.placeholder',
+  },
+  'debt-credit': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.cumulativeDebtCredit.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.cumulativeDebtCredit.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'reduced-debt-participant',
+        title: 'admin.cumulativeDebtCredit.metrics.reducedDebtParticipant.title',
+        value: '72%',
+        subtitle: 'admin.cumulativeDebtCredit.metrics.reducedDebtParticipant.subtitle',
+        count: '1,958 of 2,718 participants',
+        color: '$textForeground',
+      },
+      {
+        id: 'formal-informal-credit-participant',
+        title: 'admin.cumulativeDebtCredit.metrics.creditUsageParticipant.title',
+        value: '78%',
+        subtitle: 'admin.cumulativeDebtCredit.metrics.creditUsageParticipant.subtitle',
+        count: '891 of 1,142 using formal credit',
+        color: '$textForeground',
+      },
+      {
+        id: 'reduced-debt-household',
+        title: 'admin.cumulativeDebtCredit.metrics.reducedDebtHousehold.title',
+        value: '68%',
+        subtitle: 'admin.cumulativeDebtCredit.metrics.reducedDebtHousehold.subtitle',
+        count: '1,848 of 2,718 households',
+        color: '$textForeground',
+      },
+      {
+        id: 'formal-informal-credit-household',
+        title: 'admin.cumulativeDebtCredit.metrics.creditUsageHousehold.title',
+        value: '75%',
+        subtitle: 'admin.cumulativeDebtCredit.metrics.creditUsageHousehold.subtitle',
+        count: '856 of 1,142 using formal credit',
+        color: '$textForeground',
+      },
+      {
+        id: 'risk-over-indebtedness',
+        title: 'admin.cumulativeDebtCredit.metrics.riskOverIndebtedness.title',
+        value: '18%',
+        subtitle: 'admin.cumulativeDebtCredit.metrics.riskOverIndebtedness.subtitle',
+        count: '489 of 2,718 participants at risk',
+        color: '$textForeground',
+      },
+      {
+        id: 'risk-over-indebtedness-responses',
+        title: 'admin.cumulativeDebtCredit.metrics.riskOverIndebtednessResponses.title',
+        value: '22%',
+        subtitle: 'admin.cumulativeDebtCredit.metrics.riskOverIndebtednessResponses.subtitle',
+        count: '598 of 2,718 responded Yes',
+        color: '$textForeground',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.cumulativeDebtCredit.graphs.placeholder',
+  },
+  'social-empowerment-dignity': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.cumulativeSocialEmpowerment.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.cumulativeSocialEmpowerment.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'self-esteem-confidence',
+        title: 'admin.cumulativeSocialEmpowerment.metrics.selfEsteemConfidence.title',
+        value: '0.72',
+        subtitle: 'admin.cumulativeSocialEmpowerment.metrics.selfEsteemConfidence.subtitle',
+        count: '+12% from baseline',
+      },
+      {
+        id: 'agency-control',
+        title: 'admin.cumulativeSocialEmpowerment.metrics.agencyControl.title',
+        value: '0.68',
+        subtitle: 'admin.cumulativeSocialEmpowerment.metrics.agencyControl.subtitle',
+        count: '+9% from baseline',
+      },
+      {
+        id: 'attitudes-domestic-violence',
+        title: 'admin.cumulativeSocialEmpowerment.metrics.attitudesDomesticViolence.title',
+        value: '0.81',
+        subtitle: 'admin.cumulativeSocialEmpowerment.metrics.attitudesDomesticViolence.subtitle',
+        count: '+15% from baseline',
+      },
+      {
+        id: 'decision-making-gender-equality',
+        title: 'admin.cumulativeSocialEmpowerment.metrics.decisionMakingGenderEquality.title',
+        value: '0.75',
+        subtitle: 'admin.cumulativeSocialEmpowerment.metrics.decisionMakingGenderEquality.subtitle',
+        count: '+11% from baseline',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.cumulativeSocialEmpowerment.graphs.placeholder',
+  },
+  'individual-income': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.individualIncome.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.individualIncome.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'iga-status',
+        title: 'admin.individualIncome.metrics.activeIncomeActivity.title',
+        value: 'Active',
+        subtitle: 'admin.individualIncome.metrics.activeIncomeActivity.subtitle',
+      },
+      {
+        id: 'profitability',
+        title: 'admin.individualIncome.metrics.profitability.title',
+        value: 'Profitable',
+        subtitle: 'admin.individualIncome.metrics.profitability.subtitle',
+        color: '$success600',
+      },
+      {
+        id: 'per-person-income',
+        title: 'admin.individualIncome.metrics.perPersonIncome.title',
+        value: 'R 2,850',
+        subtitle: 'admin.individualIncome.metrics.perPersonIncome.subtitle',
+      },
+      {
+        id: 'participant-income',
+        title: 'admin.individualIncome.metrics.participantIncomeBusiness.title',
+        value: 'R 4,200',
+        subtitle: 'admin.individualIncome.metrics.participantIncomeBusiness.subtitle',
+      },
+    ],
+    graphsPlaceholderKey: 'admin.individualIncome.graphs.placeholder',
+  },
+  'individual-asset-accumulation': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.individualAssetAccumulation.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.individualAssetAccumulation.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'household-assets',
+        title: 'admin.individualAssetAccumulation.metrics.householdAssets.title',
+        value: '5.3',
+        subtitle: 'admin.individualAssetAccumulation.metrics.householdAssets.subtitle',
+        badgeText: '+152% growth',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'household-value',
+        title: 'admin.individualAssetAccumulation.metrics.householdValue.title',
+        value: 'R 45,680',
+        subtitle: 'admin.individualAssetAccumulation.metrics.householdValue.subtitle',
+      },
+      {
+        id: 'participant-assets',
+        title: 'admin.individualAssetAccumulation.metrics.participantAssets.title',
+        value: '4.2',
+        subtitle: 'admin.individualAssetAccumulation.metrics.participantAssets.subtitle',
+        badgeText: '+250% growth',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'participant-value',
+        title: 'admin.individualAssetAccumulation.metrics.participantValue.title',
+        value: 'R 28,400',
+        subtitle: 'admin.individualAssetAccumulation.metrics.participantValue.subtitle',
+      },
+    ],
+    insightsDotColor: '#16A34A',
+    insightsTitle: 'admin.individualAssetAccumulation.insights.title',
+    insightsItems: [
+      'admin.individualAssetAccumulation.insights.item1',
+      'admin.individualAssetAccumulation.insights.item2',
+      'admin.individualAssetAccumulation.insights.item3',
+      'admin.individualAssetAccumulation.insights.item4',
+    ],
+    graphsPlaceholderKey: 'admin.individualAssetAccumulation.graphs.placeholder',
+  },
+  'individual-record-keeping': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.individualRecordKeeping.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.individualRecordKeeping.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'personal-records',
+        title: 'admin.individualRecordKeeping.metrics.personalRecords.title',
+        value: '3.8/4.0',
+        subtitle: 'admin.individualRecordKeeping.metrics.personalRecords.subtitle',
+        badgeText: '+375% growth',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+        color: '$success600',
+      },
+      {
+        id: 'business-records',
+        title: 'admin.individualRecordKeeping.metrics.businessRecords.title',
+        value: '4.0/4.0',
+        subtitle: 'admin.individualRecordKeeping.metrics.businessRecords.subtitle',
+        badgeText: '+567% growth',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+        color: '$success600',
+      },
+      {
+        id: 'overall-adoption',
+        title: 'admin.individualRecordKeeping.metrics.overallAdoption.title',
+        value: '92%',
+        subtitle: 'admin.individualRecordKeeping.metrics.overallAdoption.subtitle',
+        color: '$success600',
+      },
+      {
+        id: 'top-practice',
+        title: 'admin.individualRecordKeeping.metrics.topPractice.title',
+        value: 'Sales/Income',
+        subtitle: 'admin.individualRecordKeeping.metrics.topPractice.subtitle',
+      },
+    ],
+    insightsDotColor: '#16A34A',
+    insightsTitle: 'admin.individualRecordKeeping.insights.title',
+    insightsItems: [
+      'admin.individualRecordKeeping.insights.item1',
+      'admin.individualRecordKeeping.insights.item2',
+      'admin.individualRecordKeeping.insights.item3',
+      'admin.individualRecordKeeping.insights.item4',
+    ],
+    graphsPlaceholderKey: 'admin.individualRecordKeeping.graphs.placeholder',
+  },
+  'individual-savings': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.individualSavings.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.individualSavings.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'household-savings',
+        title: 'admin.individualSavings.metrics.householdSavings.title',
+        value: 'R 6,420',
+        subtitle: 'admin.individualSavings.metrics.householdSavings.subtitle',
+        badgeText: '+655% growth',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'participant-savings',
+        title: 'admin.individualSavings.metrics.participantSavings.title',
+        value: 'R 5,450',
+        subtitle: 'admin.individualSavings.metrics.participantSavings.subtitle',
+        badgeText: '+1,198% growth',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'savings-culture',
+        title: 'admin.individualSavings.metrics.savingsCulture.title',
+        value: '94%',
+        subtitle: 'admin.individualSavings.metrics.savingsCulture.subtitle',
+        color: '$success600',
+      },
+      {
+        id: 'formal-products',
+        title: 'admin.individualSavings.metrics.formalProducts.title',
+        value: '64%',
+        subtitle: 'admin.individualSavings.metrics.formalProducts.subtitle',
+        color: '$success600',
+      },
+    ],
+    insightsDotColor: '#16A34A',
+    insightsTitle: 'admin.individualSavings.insights.title',
+    insightsItems: [
+      'admin.individualSavings.insights.item1',
+      'admin.individualSavings.insights.item2',
+      'admin.individualSavings.insights.item3',
+      'admin.individualSavings.insights.item4',
+    ],
+    graphsPlaceholderKey: 'admin.individualSavings.graphs.placeholder',
+  },
+  'individual-debt': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.individualDebt.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.individualDebt.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [], // Empty - shows placeholder
+    snapshotPlaceholderKey: 'admin.individualDebt.snapshot.placeholder',
+    graphsPlaceholderKey: 'admin.individualDebt.graphs.placeholder',
+  },
+  'individual-agency-dignity': {
+    tabs: [
+      {
+        key: 'snapshot',
+        label: 'admin.individualAgencyDignity.tabs.snapshot',
+        icon: 'BarChart',
+      },
+      {
+        key: 'graphs',
+        label: 'admin.individualAgencyDignity.tabs.graphs',
+        icon: 'TrendingUp',
+      },
+    ],
+    metricCards: [
+      {
+        id: 'self-esteem',
+        title: 'admin.individualAgencyDignity.metrics.selfEsteem.title',
+        value: '78%',
+        subtitle: 'admin.individualAgencyDignity.metrics.selfEsteem.subtitle',
+        color: '$success600',
+        badgeText: '+123%',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'agency-control',
+        title: 'admin.individualAgencyDignity.metrics.agencyControl.title',
+        value: '75%',
+        subtitle: 'admin.individualAgencyDignity.metrics.agencyControl.subtitle',
+        color: '$success600',
+        badgeText: '+134%',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'dv-attitudes',
+        title: 'admin.individualAgencyDignity.metrics.dvAttitudes.title',
+        value: '74%',
+        subtitle: 'admin.individualAgencyDignity.metrics.dvAttitudes.subtitle',
+        color: '$success600',
+        badgeText: '+164%',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+      {
+        id: 'decision-making',
+        title: 'admin.individualAgencyDignity.metrics.decisionMaking.title',
+        value: '82%',
+        subtitle: 'admin.individualAgencyDignity.metrics.decisionMaking.subtitle',
+        color: '$success600',
+        badgeText: '+116%',
+        badgeBg: '$primary500',
+        badgeTextColor: '$white',
+      },
+    ],
+    insightsDotColor: '#16A34A',
+    insightsTitle: 'admin.individualAgencyDignity.insights.title',
+    insightsItems: [
+      'admin.individualAgencyDignity.insights.item1',
+      'admin.individualAgencyDignity.insights.item2',
+      'admin.individualAgencyDignity.insights.item3',
+      'admin.individualAgencyDignity.insights.item4',
+    ],
+    graphsPlaceholderKey: 'admin.individualAgencyDignity.graphs.placeholder',
   },
 };
