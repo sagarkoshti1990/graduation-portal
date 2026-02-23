@@ -117,22 +117,22 @@ const UserAvatarCard = ({
               }
             }}
           >
-          <Checkbox
-            value={item.value}
-            isChecked={selectedLCs.has(item.value)}
-            onChange={(checked: boolean) => {
-              setSelectedLCs((prev) => {
-                const newSet = new Set(prev);
-                if (checked) newSet.add(item.value);
-                else newSet.delete(item.value);
-                return newSet;
-              });
-            }}
-          >
-            <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-              <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-            </CheckboxIndicator>
-          </Checkbox>
+            <Checkbox
+              value={item.value}
+              isChecked={selectedLCs.has(item.value)}
+              onChange={(checked: boolean) => {
+                setSelectedLCs((prev) => {
+                  const newSet = new Set(prev);
+                  if (checked) newSet.add(item.value);
+                  else newSet.delete(item.value);
+                  return newSet;
+                });
+              }}
+            >
+              <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+              </CheckboxIndicator>
+            </Checkbox>
           </Pressable>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
@@ -218,22 +218,22 @@ const UserAvatarCard = ({
               }
             }}
           >
-          <Checkbox
-            value={lc.value}
-            isChecked={selectedLCs.has(lc.value)}
-            onChange={(checked: boolean) => {
-              setSelectedLCs((prev) => {
-                const newSet = new Set(prev);
-                if (checked) newSet.add(lc.value);
-                else newSet.delete(lc.value);
-                return newSet;
-              });
-            }}
-          >
-            <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-              <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-            </CheckboxIndicator>
-          </Checkbox>
+            <Checkbox
+              value={lc.value}
+              isChecked={selectedLCs.has(lc.value)}
+              onChange={(checked: boolean) => {
+                setSelectedLCs((prev) => {
+                  const newSet = new Set(prev);
+                  if (checked) newSet.add(lc.value);
+                  else newSet.delete(lc.value);
+                  return newSet;
+                });
+              }}
+            >
+              <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+              </CheckboxIndicator>
+            </Checkbox>
           </Pressable>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>

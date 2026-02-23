@@ -32,7 +32,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
   
   const useOutsideLabels = data.length <= 2;
   const useCalloutLabels = data.length > 2;
-  
+
   // Responsive size calculation
   const size = Math.min(containerWidth * 0.6, 280);
   // Extra room for outside labels (match reference for 2-slice pies)
@@ -81,7 +81,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
       const largeArc = angle > 180 ? 1 : 0;
 
       const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
-        const midAngle = (startAngle + endAngle) / 2;
+      const midAngle = (startAngle + endAngle) / 2;
 
       return {
         ...d,
@@ -348,7 +348,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
               </Box>
             );
           }) : null}
-      </Box>
+        </Box>
 
         {/* Hover tooltip (like reference) */}
         {hoveredIndex !== null && hoverPos ? (

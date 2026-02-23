@@ -315,7 +315,7 @@ const ReportSection: React.FC<{
                 <Text
                   fontSize={isNumericLike ? '$4xl' : '$lg'}
                   fontWeight={isNumericLike ? '$semibold' : '$normal'}
-                color={sc.valueColor ? (sc.valueColor as any) : '$textForeground'}
+                  color={sc.valueColor ? (sc.valueColor as any) : '$textForeground'}
                   mt="$2"
                 >
                   {valueStr}
@@ -324,10 +324,10 @@ const ReportSection: React.FC<{
                   <Box
                     alignSelf="flex-start"
                     bg={sc.badgeBg ? (sc.badgeBg as any) : '#16A34A'}
-                      px="$3"
-                      py="$1.5"
+                    px="$3"
+                    py="$1.5"
                     borderRadius="$sm"
-                      mt="$2"
+                    mt="$2"
                   >
                     <Text
                       fontSize="$xs"
@@ -337,7 +337,7 @@ const ReportSection: React.FC<{
                       {sc.badgeText}
                     </Text>
                   </Box>
-               ) : null}
+                ) : null}
               </Box>
             );
           })}
@@ -360,7 +360,7 @@ const ReportSection: React.FC<{
           <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
             {chart.title}
           </Text>
-          ) : null}
+        ) : null}
 
         {chart?.subtitle ? (
           <Text fontSize="$xs" color="$textMutedForeground" mb="$2">
