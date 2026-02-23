@@ -408,7 +408,43 @@
         "individual": {
           "title": "Individual Indicators",
           "description": "Individual participant outcome measurements",
-          "topics": "6 Topics"
+          "topics": "6 Topics",
+          "selectParticipantFilters": "Select Participant Filters",
+          "selectParticipantFiltersDescription": "Select both Pathway and Participant to view individual outcome indicators",
+          "requiredFilters": "Required Filters",
+          "pathwayLabel": "Pathway",
+          "participantLabel": "Select Participant",
+          "pathwayPlaceholder": "Select a pathway",
+          "participantPlaceholder": "Select a participant",
+          "participantPlaceholderDisabled": "Select pathway first",
+          "emptyStateTitle": "Please select both Pathway and Participant to continue",
+          "emptyStateSubtitle": "Start by selecting a pathway",
+          "topicsList": {
+            "income": {
+              "title": "Income",
+              "description": "Individual participant income tracking"
+            },
+            "assetAccumulation": {
+              "title": "Asset Accumulation",
+              "description": "Individual asset accumulation and wealth building"
+            },
+            "recordKeeping": {
+              "title": "Record Keeping",
+              "description": "Individual record keeping practices and behaviors"
+            },
+            "savings": {
+              "title": "Savings",
+              "description": "Individual savings patterns and accumulation"
+            },
+            "debt": {
+              "title": "Debt",
+              "description": "Individual debt levels and management"
+            },
+            "agencyDignity": {
+              "title": "Agency and Dignity",
+              "description": "Personal agency, dignity, and self-determination"
+            }
+          }
         }
       }
     },

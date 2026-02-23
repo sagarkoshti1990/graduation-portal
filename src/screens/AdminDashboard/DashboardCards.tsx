@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { HStack, Box, Card, VStack, Text, Pressable, Badge, BadgeText, Heading } from '@ui';
+import React, { useMemo, useState } from 'react';
+import { HStack, Box, Card, VStack, Text, Pressable, Badge, BadgeText, Heading, Select } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import { dashboardCardsStyles } from './DashboardStyle';
-import { DashboardCard, cardViewDataMap } from '@constants/ADMIN_DASHBOARD_CARDS';
+import { DashboardCard, cardViewDataMap, individualIndicatorTopicCards } from '@constants/ADMIN_DASHBOARD_CARDS';
 import Breadcrumb, { BreadcrumbItem } from '@components/Breadcrumb';
 import CardView from './CardView';
 
@@ -32,6 +32,8 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
   const [currentCards, setCurrentCards] = useState<DashboardCard[]>(cards);
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
   const [selectedCardView, setSelectedCardView] = useState<string | null>(null);
+  const [individualPathway, setIndividualPathway] = useState<string>('');
+  const [individualParticipant, setIndividualParticipant] = useState<string>('');
 
   // Get card view data from constants
   const cardViewData = useMemo(() => {
@@ -41,8 +43,65 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
     return null;
   }, [selectedCardView]);
 
+  const isIndividualIndicatorsScreen = useMemo(() => {
+    const last = breadcrumbItems[breadcrumbItems.length - 1];
+    return last?.id === 'individual-indicators' && !selectedCardView;
+  }, [breadcrumbItems, selectedCardView]);
+
+  const pathwayOptions = useMemo(
+    () => [
+      { value: 'employment', name: 'Employment' },
+      { value: 'entrepreneurship', name: 'Entrepreneurship' },
+    ],
+    [],
+  );
+
+  const participantOptions = useMemo(() => {
+    if (!individualPathway) return [];
+    // Static sample data (matches screenshot style)
+    return [
+      { value: 'P001', name: 'Thabo Mokoena (P001)' },
+      { value: 'P002', name: 'Nomvula Dlamini (P002)' },
+      { value: 'P003', name: 'Sipho Ndlovu (P003)' },
+    ];
+  }, [individualPathway]);
+
+  const enterIndividualIndicators = (outcomeIndicatorsCard?: DashboardCard | null, individualCard?: DashboardCard | null) => {
+    setSelectedCardView(null);
+    setCurrentCards([]);
+    setIndividualPathway('');
+    setIndividualParticipant('');
+    setBreadcrumbItems([
+      {
+        id: 'back-to-indicators',
+        label: 'Back to Indicator Types',
+        labelKey: 'admin.backToIndicatorTypes',
+        data: null,
+      },
+      {
+        id: 'outcome-indicators',
+        label: 'Outcome Indicators',
+        labelKey: 'admin.outcomeIndicators.title',
+        data: outcomeIndicatorsCard || null,
+      },
+      {
+        id: 'individual-indicators',
+        label: individualCard?.title || 'Individual Indicators',
+        labelKey: individualCard?.title || 'admin.outcomeIndicators.types.individual.title',
+        data: individualCard || null,
+      },
+    ]);
+  };
+
   // Handle card press - check for sub-cards first
   const handleCardPress = (card: DashboardCard) => {
+    // Special flow: Individual Indicators uses a filter screen before showing topic cards
+    if (card.id === 'individual-indicators') {
+      const outcomeIndicatorsCard = cards.find(c => c.id === 'outcome-indicators') || null;
+      enterIndividualIndicators(outcomeIndicatorsCard, card);
+      return;
+    }
+
     // If card has sub-cards, show them and update breadcrumb
     if (card.subCards && card.subCards.length > 0) {
       setCurrentCards(card.subCards);
@@ -218,6 +277,10 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
       const outcomeIndicatorsCard = cards.find(c => c.id === 'outcome-indicators');
       if (outcomeIndicatorsCard && outcomeIndicatorsCard.subCards) {
         const typeCard = outcomeIndicatorsCard.subCards.find(c => c.id === item.id);
+        if (item.id === 'individual-indicators' && typeCard) {
+          enterIndividualIndicators(outcomeIndicatorsCard, typeCard);
+          return;
+        }
         if (typeCard && typeCard.subCards) {
           setCurrentCards(typeCard.subCards);
           setSelectedCardView(null);
@@ -272,15 +335,30 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
         setCurrentCards(cards);
         setSelectedCardView(null);
       } else if (newBreadcrumbItems.length === 1) {
-        // Back to output indicators - show topic cards
-        const outputIndicatorsCard = cards.find(c => c.id === 'output-indicators');
-        if (outputIndicatorsCard && outputIndicatorsCard.subCards) {
-          setCurrentCards(outputIndicatorsCard.subCards);
-          setSelectedCardView(null);
-        }
+        // Back to root (indicator types)
+        setCurrentCards(cards);
+        setSelectedCardView(null);
+        setBreadcrumbItems([]);
       } else {
         // Show sub-cards of previous level
         const previousItem = newBreadcrumbItems[newBreadcrumbItems.length - 1];
+        if (previousItem.id === 'outcome-indicators') {
+          const outcomeIndicatorsCard = cards.find(c => c.id === 'outcome-indicators');
+          if (outcomeIndicatorsCard?.subCards) {
+            setCurrentCards(outcomeIndicatorsCard.subCards);
+            setSelectedCardView(null);
+          }
+          return;
+        }
+        if (previousItem.id === 'output-indicators') {
+          const outputIndicatorsCard = cards.find(c => c.id === 'output-indicators');
+          if (outputIndicatorsCard?.subCards) {
+            setCurrentCards(outputIndicatorsCard.subCards);
+            setSelectedCardView(null);
+          }
+          return;
+        }
+
         const previousCard = previousItem.data as DashboardCard;
         if (previousCard && previousCard.subCards) {
           setCurrentCards(previousCard.subCards);
@@ -358,6 +436,12 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           <Heading {...dashboardCardsStyles.infoHeading}>
             {(() => {
               const lastBreadcrumb = breadcrumbItems[breadcrumbItems.length - 1];
+              if (lastBreadcrumb?.id === 'individual-indicators') {
+                const ready = !!individualPathway && !!individualParticipant;
+                return ready
+                  ? t('admin.outputIndicators.selectTopic')
+                  : t('admin.outcomeIndicators.types.individual.selectParticipantFilters');
+              }
               if (lastBreadcrumb?.id === 'outcome-indicators') {
                 return t('admin.outcomeIndicators.selectOutcomeType');
               }
@@ -370,6 +454,12 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           <Text {...dashboardCardsStyles.infoText}>
             {(() => {
               const lastBreadcrumb = breadcrumbItems[breadcrumbItems.length - 1];
+              if (lastBreadcrumb?.id === 'individual-indicators') {
+                const ready = !!individualPathway && !!individualParticipant;
+                return ready
+                  ? t('admin.outputIndicators.selectTopicDescription')
+                  : t('admin.outcomeIndicators.types.individual.selectParticipantFiltersDescription');
+              }
               if (lastBreadcrumb?.id === 'outcome-indicators') {
                 return t('admin.outcomeIndicators.selectOutcomeTypeDescription');
               }
@@ -393,8 +483,158 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
         )
       )}
 
+      {/* Individual Indicators: filter screen + conditional topic cards */}
+      {isIndividualIndicatorsScreen ? (
+        <VStack space="lg">
+          <Card
+            size="md"
+            variant="outline"
+            borderColor="$borderColor"
+            borderRadius="$xl"
+            p="$6"
+          >
+            <VStack space="md">
+              <Heading size="sm" fontWeight="$medium" color="$textForeground">
+                {t('admin.outcomeIndicators.types.individual.requiredFilters')}
+              </Heading>
+              <HStack space="lg" alignItems="flex-start" flexWrap="wrap">
+                <VStack space="sm" flex={1} minWidth={320}>
+                  <HStack space="xs" alignItems="center">
+                    <Text color="$textForeground">
+                      {`1. ${t('admin.outcomeIndicators.types.individual.pathwayLabel')}`}
+                    </Text>
+                    <Text color="$error600">*</Text>
+                  </HStack>
+                  <Select
+                    options={pathwayOptions}
+                    value={individualPathway}
+                    onChange={(val: string) => {
+                      setIndividualPathway(val);
+                      setIndividualParticipant('');
+                    }}
+                    placeholder={t('admin.outcomeIndicators.types.individual.pathwayPlaceholder')}
+                  />
+                  {individualPathway ? (
+                    <HStack mt="$2">
+                      <Badge bg="$textSecondary" borderRadius="$md" px="$2" py="$0.5">
+                        <BadgeText color="$white" fontSize="$xs">
+                          {`Pathway: ${pathwayOptions.find(o => o.value === individualPathway)?.name ?? individualPathway}`}
+                        </BadgeText>
+                      </Badge>
+                    </HStack>
+                  ) : null}
+                </VStack>
+
+                <VStack space="sm" flex={1} minWidth={320}>
+                  <HStack space="xs" alignItems="center">
+                    <Text color="$textForeground">
+                      {`2. ${t('admin.outcomeIndicators.types.individual.participantLabel')}`}
+                    </Text>
+                    <Text color="$error600">*</Text>
+                  </HStack>
+                  <Select
+                    options={participantOptions}
+                    value={individualParticipant}
+                    onChange={(val: string) => setIndividualParticipant(val)}
+                    placeholder={
+                      individualPathway
+                        ? t('admin.outcomeIndicators.types.individual.participantPlaceholder')
+                        : t('admin.outcomeIndicators.types.individual.participantPlaceholderDisabled')
+                    }
+                    disabled={!individualPathway}
+                  />
+                </VStack>
+              </HStack>
+            </VStack>
+          </Card>
+
+          {individualPathway && individualParticipant ? (
+            <HStack {...dashboardCardsStyles.cardsContainer}>
+              {individualIndicatorTopicCards.map(card => (
+                <Pressable
+                  key={card.id}
+                  {...dashboardCardsStyles.pressable}
+                  style={{
+                    flexBasis: 'calc(25% - 12px)',
+                    width: 'calc(25% - 12px)',
+                    maxWidth: 'calc(25% - 12px)',
+                    flexShrink: 0,
+                    flexGrow: 0,
+                  } as any}
+                  onPress={() => handleCardPress(card)}
+                >
+                  <Card
+                    {...dashboardCardsStyles.card}
+                    borderColor={hoveredCardId === card.id ? '$primary500' : '$borderColor'}
+                    // @ts-ignore
+                    onMouseEnter={() => setHoveredCardId(card.id)}
+                    onMouseLeave={() => setHoveredCardId(null)}
+                  >
+                    <VStack {...dashboardCardsStyles.cardContent}>
+                      <HStack {...dashboardCardsStyles.iconTitleRow}>
+                        <HStack {...dashboardCardsStyles.iconTitleContainer}>
+                          <Box
+                            {...dashboardCardsStyles.iconBox}
+                            bg={card.iconColor || dashboardCardsStyles.iconBoxDefaultBg}
+                          >
+                            <LucideIcon
+                              name={card.icon || 'Circle'}
+                              size={dashboardCardsStyles.iconSize}
+                              color={dashboardCardsStyles.iconColor}
+                            />
+                          </Box>
+                          <VStack {...dashboardCardsStyles.titleContainer}>
+                            <Text {...dashboardCardsStyles.titleText}>{t(card.title)}</Text>
+                          </VStack>
+                        </HStack>
+                        <Box {...dashboardCardsStyles.chevronIconContainer}>
+                          <LucideIcon name="ChevronRight" {...dashboardCardsStyles.chevronIcon} />
+                        </Box>
+                      </HStack>
+                      <Text {...dashboardCardsStyles.descriptionText}>{t(card.description)}</Text>
+                    </VStack>
+                  </Card>
+                </Pressable>
+              ))}
+            </HStack>
+          ) : (
+            <Card
+              size="md"
+              variant="outline"
+              borderColor="$borderColor"
+              borderRadius="$xl"
+              p="$10"
+              alignItems="center"
+              justifyContent="center"
+              minHeight={260}
+            >
+              <VStack space="md" alignItems="center">
+                <Box
+                  borderWidth={2}
+                  borderColor="$textMutedForeground"
+                  borderRadius="$full"
+                  width={48}
+                  height={48}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <LucideIcon name="AlertCircle" size={22} color="$textMutedForeground" />
+                </Box>
+                <Text fontSize="$md" color="$textMutedForeground">
+                  {t('admin.outcomeIndicators.types.individual.emptyStateTitle')}
+                </Text>
+                <Text fontSize="$sm" color="$textMutedForeground">
+                  {t('admin.outcomeIndicators.types.individual.emptyStateSubtitle')}
+                </Text>
+              </VStack>
+            </Card>
+          )}
+        </VStack>
+      ) : null}
+
       {/* Indicator Cards */}
-      <HStack {...dashboardCardsStyles.cardsContainer}>
+      {!isIndividualIndicatorsScreen ? (
+        <HStack {...dashboardCardsStyles.cardsContainer}>
       {currentCards.map(card => (
         <Pressable
           key={card.id}
@@ -474,7 +714,8 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           </Card>
         </Pressable>
       ))}
-      </HStack>
+        </HStack>
+      ) : null}
     </VStack>
   );
 };

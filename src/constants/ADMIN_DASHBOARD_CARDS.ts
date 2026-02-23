@@ -165,6 +165,52 @@ export const cumulativeIndicatorTopicCards: DashboardCard[] = [
   },
 ];
 
+// Individual Indicator Topic Cards (shown after selecting Pathway + Participant)
+export const individualIndicatorTopicCards: DashboardCard[] = [
+  {
+    id: 'individual-income',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.individual.topicsList.income.title',
+    description: 'admin.outcomeIndicators.types.individual.topicsList.income.description',
+  },
+  {
+    id: 'individual-asset-accumulation',
+    icon: 'TrendingUp',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.individual.topicsList.assetAccumulation.title',
+    description: 'admin.outcomeIndicators.types.individual.topicsList.assetAccumulation.description',
+  },
+  {
+    id: 'individual-record-keeping',
+    icon: 'Briefcase',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.individual.topicsList.recordKeeping.title',
+    description: 'admin.outcomeIndicators.types.individual.topicsList.recordKeeping.description',
+  },
+  {
+    id: 'individual-savings',
+    icon: 'Link2',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.individual.topicsList.savings.title',
+    description: 'admin.outcomeIndicators.types.individual.topicsList.savings.description',
+  },
+  {
+    id: 'individual-debt',
+    icon: 'CreditCard',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.individual.topicsList.debt.title',
+    description: 'admin.outcomeIndicators.types.individual.topicsList.debt.description',
+  },
+  {
+    id: 'individual-agency-dignity',
+    icon: 'Target',
+    iconColor: '$bgPrimary/10',
+    title: 'admin.outcomeIndicators.types.individual.topicsList.agencyDignity.title',
+    description: 'admin.outcomeIndicators.types.individual.topicsList.agencyDignity.description',
+  },
+];
+
 // Outcome Indicator Type Cards
 export const outcomeIndicatorTypeCards: DashboardCard[] = [
   {
