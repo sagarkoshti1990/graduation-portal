@@ -129,10 +129,10 @@ const UserAvatarCard = ({
                 });
               }}
             >
-            <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-              <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-            </CheckboxIndicator>
-          </Checkbox>
+              <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+              </CheckboxIndicator>
+            </Checkbox>
           </Pressable>
 
           <Box {...(AssignUsersStyles.initialsBoxSmStyles as ViewProps)}>
