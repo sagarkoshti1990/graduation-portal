@@ -172,12 +172,16 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
       ];
       
       // Check if this is an outcome indicator topic card
-      if (card.id === 'income-household-participant' || 
+      const isCumulativeOutcomeTopic =
+        card.id === 'income-household-participant' || 
           card.id === 'asset-accumulation-household-participant' ||
           card.id === 'savings' ||
           card.id === 'record-keeping' ||
           card.id === 'debt-credit' ||
-          card.id === 'social-empowerment-dignity') {
+          card.id === 'social-empowerment-dignity';
+      const isIndividualOutcomeTopic = card.id.startsWith('individual-');
+
+      if (isCumulativeOutcomeTopic || isIndividualOutcomeTopic) {
         // Outcome indicator topic cards
         newBreadcrumbItems.push({
           id: 'outcome-indicators',
@@ -185,12 +189,21 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           labelKey: 'admin.outcomeIndicators.title',
           data: null,
         });
-        newBreadcrumbItems.push({
-          id: 'cumulative-indicators',
-          label: 'Cumulative',
-          labelKey: 'admin.outcomeIndicators.types.cumulative.title',
-          data: null,
-        });
+        newBreadcrumbItems.push(
+          isIndividualOutcomeTopic
+            ? {
+                id: 'individual-indicators',
+                label: 'Individual',
+                labelKey: 'admin.outcomeIndicators.types.individual.title',
+                data: null,
+              }
+            : {
+                id: 'cumulative-indicators',
+                label: 'Cumulative',
+                labelKey: 'admin.outcomeIndicators.types.cumulative.title',
+                data: null,
+              },
+        );
       } else {
         // Output indicator topic cards
         newBreadcrumbItems.push({
@@ -388,6 +401,15 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
 
   // Show CardView if a card view is selected
   if (selectedCardView && cardViewData) {
+    const isIndividualCardView = selectedCardView.startsWith('individual-');
+    const selectedPathwayName =
+      pathwayOptions.find(o => o.value === individualPathway)?.name ?? individualPathway;
+    const selectedParticipantName =
+      participantOptions.find(o => o.value === individualParticipant)?.name ?? individualParticipant;
+    const selectedParticipantShort = selectedParticipantName
+      ? String(selectedParticipantName).split(' (')[0]
+      : '';
+
     return (
       <VStack space="md">
         {/* Breadcrumb */}
@@ -412,6 +434,54 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           graphsPlaceholderKey={cardViewData.graphsPlaceholderKey}
           insightsTitle={cardViewData.insightsTitle}
           insightsItems={cardViewData.insightsItems}
+          insightsDotColor={cardViewData.insightsDotColor}
+          snapshotPlaceholderKey={cardViewData.snapshotPlaceholderKey}
+          topContent={
+            isIndividualCardView ? (
+              <Card
+                size="md"
+                variant="outline"
+                borderColor="$borderColor"
+                borderRadius="$xl"
+                p="$6"
+              >
+                <HStack
+                  alignItems="center"
+                  justifyContent="space-between"
+                  flexWrap="wrap"
+                  space="md"
+                >
+                  <HStack alignItems="center" space="md" flex={1} minWidth={360}>
+                    <Text color="$textForeground">Selected Participant:</Text>
+                    <Box flex={1} minWidth={260}>
+                      <Select
+                        options={participantOptions}
+                        value={individualParticipant}
+                        onChange={(val: string) => setIndividualParticipant(val)}
+                        placeholder="Select a participant"
+                        disabled={!individualPathway}
+                      />
+                    </Box>
+                  </HStack>
+
+                  {individualPathway ? (
+                    <Badge bg="$textSecondary" borderRadius="$md" px="$3" py="$1">
+                      <BadgeText color="$white" fontSize="$xs">
+                        {`Pathway: ${selectedPathwayName}`}
+                      </BadgeText>
+                    </Badge>
+                  ) : null}
+                </HStack>
+              </Card>
+            ) : null
+          }
+          snapshotHeader={
+            isIndividualCardView && selectedParticipantShort ? (
+              <Text fontSize="$md" color="$textForeground">
+                {selectedParticipantShort}
+              </Text>
+            ) : null
+          }
         />
       </VStack>
     );
@@ -486,67 +556,70 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
       {/* Individual Indicators: filter screen + conditional topic cards */}
       {isIndividualIndicatorsScreen ? (
         <VStack space="lg">
-          <Card
-            size="md"
-            variant="outline"
-            borderColor="$borderColor"
-            borderRadius="$xl"
-            p="$6"
-          >
-            <VStack space="md">
-              <Heading size="sm" fontWeight="$medium" color="$textForeground">
-                {t('admin.outcomeIndicators.types.individual.requiredFilters')}
-              </Heading>
-              <HStack space="lg" alignItems="flex-start" flexWrap="wrap">
-                <VStack space="sm" flex={1} minWidth={320}>
-                  <HStack space="xs" alignItems="center">
-                    <Text color="$textForeground">
-                      {`1. ${t('admin.outcomeIndicators.types.individual.pathwayLabel')}`}
-                    </Text>
-                    <Text color="$error600">*</Text>
-                  </HStack>
-                  <Select
-                    options={pathwayOptions}
-                    value={individualPathway}
-                    onChange={(val: string) => {
-                      setIndividualPathway(val);
-                      setIndividualParticipant('');
-                    }}
-                    placeholder={t('admin.outcomeIndicators.types.individual.pathwayPlaceholder')}
-                  />
-                  {individualPathway ? (
-                    <HStack mt="$2">
-                      <Badge bg="$textSecondary" borderRadius="$md" px="$2" py="$0.5">
-                        <BadgeText color="$white" fontSize="$xs">
-                          {`Pathway: ${pathwayOptions.find(o => o.value === individualPathway)?.name ?? individualPathway}`}
-                        </BadgeText>
-                      </Badge>
+          {/* Hide filter panel after participant is selected (per UI reference) */}
+          {!individualParticipant ? (
+            <Card
+              size="md"
+              variant="outline"
+              borderColor="$borderColor"
+              borderRadius="$xl"
+              p="$6"
+            >
+              <VStack space="md">
+                <Heading size="sm" fontWeight="$medium" color="$textForeground">
+                  {t('admin.outcomeIndicators.types.individual.requiredFilters')}
+                </Heading>
+                <HStack space="lg" alignItems="flex-start" flexWrap="wrap">
+                  <VStack space="sm" flex={1} minWidth={320}>
+                    <HStack space="xs" alignItems="center">
+                      <Text color="$textForeground">
+                        {`1. ${t('admin.outcomeIndicators.types.individual.pathwayLabel')}`}
+                      </Text>
+                      <Text color="$error600">*</Text>
                     </HStack>
-                  ) : null}
-                </VStack>
+                    <Select
+                      options={pathwayOptions}
+                      value={individualPathway}
+                      onChange={(val: string) => {
+                        setIndividualPathway(val);
+                        setIndividualParticipant('');
+                      }}
+                      placeholder={t('admin.outcomeIndicators.types.individual.pathwayPlaceholder')}
+                    />
+                    {individualPathway ? (
+                      <HStack mt="$2">
+                        <Badge bg="$textSecondary" borderRadius="$md" px="$2" py="$0.5">
+                          <BadgeText color="$white" fontSize="$xs">
+                            {`Pathway: ${pathwayOptions.find(o => o.value === individualPathway)?.name ?? individualPathway}`}
+                          </BadgeText>
+                        </Badge>
+                      </HStack>
+                    ) : null}
+                  </VStack>
 
-                <VStack space="sm" flex={1} minWidth={320}>
-                  <HStack space="xs" alignItems="center">
-                    <Text color="$textForeground">
-                      {`2. ${t('admin.outcomeIndicators.types.individual.participantLabel')}`}
-                    </Text>
-                    <Text color="$error600">*</Text>
-                  </HStack>
-                  <Select
-                    options={participantOptions}
-                    value={individualParticipant}
-                    onChange={(val: string) => setIndividualParticipant(val)}
-                    placeholder={
-                      individualPathway
-                        ? t('admin.outcomeIndicators.types.individual.participantPlaceholder')
-                        : t('admin.outcomeIndicators.types.individual.participantPlaceholderDisabled')
-                    }
-                    disabled={!individualPathway}
-                  />
-                </VStack>
-              </HStack>
-            </VStack>
-          </Card>
+                  <VStack space="sm" flex={1} minWidth={320}>
+                    <HStack space="xs" alignItems="center">
+                      <Text color="$textForeground">
+                        {`2. ${t('admin.outcomeIndicators.types.individual.participantLabel')}`}
+                      </Text>
+                      <Text color="$error600">*</Text>
+                    </HStack>
+                    <Select
+                      options={participantOptions}
+                      value={individualParticipant}
+                      onChange={(val: string) => setIndividualParticipant(val)}
+                      placeholder={
+                        individualPathway
+                          ? t('admin.outcomeIndicators.types.individual.participantPlaceholder')
+                          : t('admin.outcomeIndicators.types.individual.participantPlaceholderDisabled')
+                      }
+                      disabled={!individualPathway}
+                    />
+                  </VStack>
+                </HStack>
+              </VStack>
+            </Card>
+          ) : null}
 
           {individualPathway && individualParticipant ? (
             <HStack {...dashboardCardsStyles.cardsContainer}>

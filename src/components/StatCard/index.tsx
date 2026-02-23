@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { Box, Text as UIText } from '@ui';
 import { StatCardContainer, StatTitle, StatCount, StatSubLabel, StatsRowContainer } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { theme } from '@config/theme';
@@ -12,6 +13,9 @@ interface StatCardProps {
   showCountBeforeSubLabel?: boolean; // If true, shows count before subLabel (e.g., "2,456 contacted")
   countValue?: string; // The actual count value to display in subtitle (e.g., "2,456")
   containerStyle?: StyleProp<ViewStyle>;
+  badgeText?: string;
+  badgeBg?: string;
+  badgeTextColor?: string;
 }
 
 const StatCard: React.FC<StatCardProps> = ({ 
@@ -22,6 +26,9 @@ const StatCard: React.FC<StatCardProps> = ({
   showCountBeforeSubLabel = false,
   countValue,
   containerStyle,
+  badgeText,
+  badgeBg,
+  badgeTextColor,
 }) => {
   const { t } = useLanguage();
 
@@ -58,6 +65,9 @@ const StatCard: React.FC<StatCardProps> = ({
           : countValue
       : translatedSubLabel;
 
+  const resolvedBadgeBg = resolveThemeColorToken(badgeBg);
+  const resolvedBadgeTextColor = resolveThemeColorToken(badgeTextColor);
+
   return (
     <StatCardContainer style={containerStyle}>
       <StatTitle>{t(title)}</StatTitle>
@@ -65,6 +75,23 @@ const StatCard: React.FC<StatCardProps> = ({
          <StatCount style={{ color: finalColor }}>{count}</StatCount>
          <StatSubLabel>{subtitleText}</StatSubLabel>
       </View>
+      {badgeText ? (
+        <Box
+          alignSelf="flex-start"
+          bg={(resolvedBadgeBg ?? '#7C2D12') as any}
+          px="$3"
+          py="$1"
+          borderRadius="$sm"
+        >
+          <UIText
+            fontSize="$xs"
+            fontWeight="$medium"
+            color={(resolvedBadgeTextColor ?? '$white') as any}
+          >
+            {badgeText}
+          </UIText>
+        </Box>
+      ) : null}
      
     </StatCardContainer>
   );
