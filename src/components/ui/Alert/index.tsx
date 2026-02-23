@@ -142,7 +142,7 @@ export const useAlert = () => {
     const {
       variant = 'solid',
       placement = 'bottom',
-      duration = 20000,
+      duration = 5000,
     } = options;
 
     const icon = getAlertIcon(action);
