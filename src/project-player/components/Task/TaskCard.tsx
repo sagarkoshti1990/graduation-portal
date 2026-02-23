@@ -430,29 +430,29 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 }
               }}
               disabled={isManualToggleDisabled}
-            >
-              {(state: any) => {
-                const isHovered = !isManualToggleDisabled && (state?.hovered || state?.pressed || false);
-                const isDone = isTaskDone;
-                return (
-                  <Box
-                    {...taskCardStyles.statusBadge}
-                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
-                    opacity={isManualToggleDisabled ? 1 : undefined}
-                    minWidth={50}
-                    justifyContent="center"
+        >
+          {(state: any) => {        
+            const isHovered = !isManualToggleDisabled && (state?.hovered || state?.pressed || false);
+            const isDone = isTaskDone;
+            return (
+              <Box
+                {...taskCardStyles.statusBadge}
+                {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
+                opacity={isManualToggleDisabled ? 1 : undefined} 
+                minWidth={50}
+                justifyContent="center"
+              >
+                {isStatusUpdating ? (
+                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                ) : (
+                  <Text
+                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
                   >
-                    {isStatusUpdating ? (
-                      <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
-                    ) : (
-                      <Text
-                        {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
-                      >
-                        {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
-                      </Text>
-                    )}
-                  </Box>
-                );
+                    {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
+                  </Text>
+                )}
+              </Box>
+            );
               }}
             </Pressable>
           )}
@@ -467,7 +467,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </Tooltip>
       ) : null;
 
-    const evidenceRequiredBadge = isEvidenceRequired && !isTaskDone && uiConfig.showAsCard && isInterventionPlanEditMode ? (
+    const evidenceRequiredBadge = isEvidenceRequired && uiConfig.showAsCard && isInterventionPlanEditMode ? (
       <Box {...taskAccordionStyles.actionRequiredBadge}>
         <Text {...taskAccordionStyles.actionRequiredText}>
           {t('projectPlayer.evidenceRequired') || 'Evidence Required'}
