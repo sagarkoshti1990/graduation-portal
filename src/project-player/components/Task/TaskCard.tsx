@@ -165,7 +165,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       }
       const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
 
-      if (solutionDetails.data._id) {
+      if(solutionDetails.data._id) {
         // @ts-ignore Navigate to observation screen - task will be marked as completed on return
         navigation.navigate('observation', {
           id: participantId,
@@ -253,26 +253,26 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {isStatusUpdating ? (
             <Spinner size="small" color={theme.tokens.colors.primary500} />
           ) : (
-            <Checkbox
-              value={task?._id}
-              isChecked={isCompleted}
-              onChange={handleCheckboxChange}
-              isDisabled={isReadOnly}
-              size="md"
-              aria-label={`Mark ${task?.name} as ${isCompleted ? 'incomplete' : 'complete'
-                }`}
-              opacity={isReadOnly ? 0.6 : 1}
-            >
-              <CheckboxIndicator
-                borderColor={isCompleted ? '$primary500' : '$textMuted'}
-                bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
-                alignItems="center"
-                justifyContent="center"
-                borderRadius="$full"
-              >
-                <CheckboxIcon as={CheckIcon} color="$accent100" />
-              </CheckboxIndicator>
-            </Checkbox>
+        <Checkbox
+          value={task?._id}
+          isChecked={isCompleted}
+          onChange={handleCheckboxChange}
+          isDisabled={isReadOnly}
+          size="md"
+          aria-label={`Mark ${task?.name} as ${isCompleted ? 'incomplete' : 'complete'
+            }`}
+          opacity={isReadOnly ? 0.6 : 1}
+        >
+          <CheckboxIndicator
+            borderColor={isCompleted ? '$primary500' : '$textMuted'}
+            bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="$full"
+          >
+            <CheckboxIcon as={CheckIcon} color="$accent100" />
+          </CheckboxIndicator>
+        </Checkbox>
           )}
         </Box>
       );
@@ -368,11 +368,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const renderTaskInfo = () => {
     const textStyle = uiConfig.showCheckbox
       ? {
-        textDecorationLine: (isCompleted ? 'line-through' : 'none') as
-          | 'line-through'
-          | 'none',
-        opacity: isCompleted ? 0.6 : 1,
-      }
+          textDecorationLine: (isCompleted ? 'line-through' : 'none') as
+            | 'line-through'
+            | 'none',
+          opacity: isCompleted ? 0.6 : 1,
+        }
       : {};
 
     const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.bodySmall : TYPOGRAPHY.h3;
@@ -387,7 +387,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const taskBadge = shouldShowBadge ? (
       <Box
         bg={
-          task?.isDeletable === true || (isPreview && task?.isDeletable)
+            task?.isDeletable === true || (isPreview && task?.isDeletable)
             ? '$optionalBadgeBg'
             : ''
         }
@@ -400,11 +400,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
           fontSize="$xs"
           fontWeight="$medium"
           color={
-            task?.isDeletable === false
+             task?.isDeletable === false
               ? '$warning900'
               : task?.isDeletable === true || (isPreview && task?.isDeletable)
-                ? '$optionalBadgeText'
-                : '$textMuted'
+              ? '$optionalBadgeText'
+              : '$textMuted'
           }
         >
           {!task?.isDeletable || (isPreview && task?.isDeletable ? 'Optional' : '')}
@@ -429,29 +429,29 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   handleCheckboxChange(!isCompleted);
                 }
               }}
-            >
-              {(state: any) => {
-                const isHovered = state?.hovered || state?.pressed || false;
-                const isDone = isTaskDone;
-                return (
-                  <Box
-                    {...taskCardStyles.statusBadge}
-                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
-                    opacity={isManualToggleDisabled ? 1 : undefined}
-                    minWidth={50}
-                    justifyContent="center"
+        >
+          {(state: any) => {        
+            const isHovered = state?.hovered || state?.pressed || false;
+            const isDone = isTaskDone;
+            return (
+              <Box
+                {...taskCardStyles.statusBadge}
+                {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
+                opacity={isManualToggleDisabled ? 1 : undefined} 
+                minWidth={50}
+                justifyContent="center"
+              >
+                {isStatusUpdating ? (
+                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                ) : (
+                  <Text
+                    {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
                   >
-                    {isStatusUpdating ? (
-                      <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
-                    ) : (
-                      <Text
-                        {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
-                      >
-                        {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
-                      </Text>
-                    )}
-                  </Box>
-                );
+                    {isDone ? t('projectPlayer.done') : t('projectPlayer.toDo')}
+                  </Text>
+                )}
+              </Box>
+            );
               }}
             </Pressable>
           )}
@@ -500,7 +500,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Text
               {...titleTypography}
               color="$textPrimary"
-              {...textStyle}
+                {...textStyle}
               fontSize={
                 (!isWeb && !uiConfig.showAsCard
                   ? '$sm'
@@ -516,24 +516,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
         ) : (
           /* Edit mode: title on first line, badges on second line */
           <>
-            <ContentWrapper>
-              <Text
-                {...titleTypography}
-                color="$textPrimary"
-                {...textStyle}
-                fontSize={
-                  (!isWeb && !uiConfig.showAsCard
-                    ? '$sm'
-                    : (titleTypography as any).fontSize) as any
-                }
-                fontWeight={
-                  (titleTypography as any).fontWeight
-                }
-                style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
-              >
-                {task.name}
-              </Text>
-            </ContentWrapper>
+          <ContentWrapper>
+            <Text
+              {...titleTypography}
+              color="$textPrimary"
+              {...textStyle}
+              fontSize={
+                (!isWeb && !uiConfig.showAsCard
+                  ? '$sm'
+                  : (titleTypography as any).fontSize) as any
+              }
+              fontWeight={
+                (titleTypography as any).fontWeight
+              }
+              style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+            >
+              {task.name}
+            </Text>
+          </ContentWrapper>
             <HStack space="sm" alignItems="center" flexWrap="wrap">
               {statusBadge}
               {taskBadge}
