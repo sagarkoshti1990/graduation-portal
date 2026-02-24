@@ -24,12 +24,15 @@
   margin: 0;
   color: var(--text-color) !important;
   font-weight: 400 !important;
+  font-family: 'Inter' !important;
 }
 .wc-primary-color {
   color: var(--text-color) !important;
   font-weight: 500 !important;
   font-size: 0.875rem !important;
   padding: 0 !important;
+  font-family: 'Inter' !important;
+  line-height: 1.5 !important;
 }
 
 form.main {
