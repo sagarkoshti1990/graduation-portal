@@ -16,6 +16,8 @@ export interface MultiLineChartSeries {
   label: string;
   color: string;
   dashArray?: string; // e.g. "4 4"
+  axis?: 'left' | 'right';
+  hidden?: boolean;
   data: MultiLineChartPoint[];
 }
 
@@ -23,6 +25,9 @@ export interface SimpleMultiLineChartProps {
   title?: string;
   height?: number;
   yAxisLabel?: string;
+  yMin?: number;
+  yMax?: number;
+  rightYAxisLabel?: string;
   series: MultiLineChartSeries[];
 }
 
@@ -30,6 +35,9 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
   title = 'Trend',
   height = 300,
   yAxisLabel,
+  yMin,
+  yMax,
+  rightYAxisLabel,
   series,
 }) => {
   const { isWeb } = usePlatform();
@@ -40,7 +48,8 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
 
   // Use full available container width (end-to-end charts on wide screens)
   const width = containerWidth;
-  const padding = { top: 20, right: 20, bottom: 50, left: 60 };
+  const hasRightAxis = useMemo(() => series.some(s => s.axis === 'right' && !s.hidden), [series]);
+  const padding = { top: 20, right: hasRightAxis ? 60 : 20, bottom: 50, left: 60 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
@@ -49,26 +58,60 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
     return first.map(p => p.x);
   }, [series]);
 
-  const allValues = useMemo(() => {
+  const leftValues = useMemo(() => {
     const vals: number[] = [];
-    series.forEach(s => s.data.forEach(p => vals.push(p.y)));
+    const visible = series.filter(s => !s.hidden);
+    const leftSeries = visible.filter(s => s.axis !== 'right');
+    const input = leftSeries.length > 0 ? leftSeries : visible;
+    input.forEach(s => s.data.forEach(p => vals.push(p.y)));
     return vals;
   }, [series]);
 
-  const maxValue = Math.max(...allValues, 0);
-  const minValue = Math.min(...allValues, 0);
-  const valueRange = maxValue - minValue || 1;
+  const rightValues = useMemo(() => {
+    const vals: number[] = [];
+    series
+      .filter(s => s.axis === 'right' && !s.hidden)
+      .forEach(s => s.data.forEach(p => vals.push(p.y)));
+    return vals;
+  }, [series]);
+
+  const computedLeftMax = Math.max(...leftValues, 0);
+  const computedLeftMin = Math.min(...leftValues, 0);
+  const leftMaxValue = yMax !== undefined ? yMax : computedLeftMax;
+  const leftMinValue = yMin !== undefined ? yMin : computedLeftMin;
+  const leftRange = leftMaxValue - leftMinValue || 1;
+
+  const rightMaxValue = Math.max(...rightValues, 0);
+  const rightMinValue = Math.min(...rightValues, 0);
+  const rightRange = rightMaxValue - rightMinValue || 1;
 
   const xStep = chartWidth / (xLabels.length - 1 || 1);
 
   const yTicks = 5;
+  const leftHasFractional = useMemo(
+    () => leftValues.some(v => Math.abs(v - Math.round(v)) > 0.0001),
+    [leftValues]
+  );
+  const formatLeftTick = (v: number) => {
+    const smallScale = Math.max(Math.abs(leftMaxValue), Math.abs(leftMinValue)) <= 1.5;
+    if (smallScale || leftHasFractional) return String(parseFloat(v.toFixed(2)));
+    return String(Math.round(v));
+  };
   const yTickValues = Array.from({ length: yTicks }, (_, i) => {
-    return minValue + (valueRange * i) / (yTicks - 1);
+    return leftMinValue + (leftRange * i) / (yTicks - 1);
   });
+  const rightTickValues = useMemo(() => {
+    if (!hasRightAxis) return [];
+    return Array.from({ length: yTicks }, (_, i) => {
+      return rightMinValue + (rightRange * i) / (yTicks - 1);
+    });
+  }, [hasRightAxis, rightMinValue, rightRange]);
 
-  const getPointXY = (idx: number, y: number) => {
+  const getPointXY = (idx: number, y: number, axis: 'left' | 'right' = 'left') => {
     const x = padding.left + idx * xStep;
-    const yy = padding.top + chartHeight - ((y - minValue) / valueRange) * chartHeight;
+    const minV = axis === 'right' ? rightMinValue : leftMinValue;
+    const rangeV = axis === 'right' ? rightRange : leftRange;
+    const yy = padding.top + chartHeight - ((y - minV) / rangeV) * chartHeight;
     return { x, y: yy };
   };
 
@@ -102,7 +145,8 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
 
   const seriesLengths = useMemo(() => {
     return series.map(s => {
-      const pts = s.data.map((p, idx) => getPointXY(idx, p.y));
+      if (s.hidden) return 1;
+      const pts = s.data.map((p, idx) => getPointXY(idx, p.y, s.axis === 'right' ? 'right' : 'left'));
       let len = 0;
       for (let i = 1; i < pts.length; i++) {
         const dx = pts[i].x - pts[i - 1].x;
@@ -111,7 +155,7 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
       }
       return Math.max(len, 1);
     });
-  }, [series, xStep, chartHeight, chartWidth, minValue, valueRange]);
+  }, [series, xStep, chartHeight, chartWidth, leftMinValue, leftRange, rightMinValue, rightRange]);
 
   const dashOffsetsRef = useRef<Animated.Value[]>([]);
   if (dashOffsetsRef.current.length !== series.length) {
@@ -176,7 +220,7 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
           <Svg width={width} height={height}>
             {/* Grid (faint dotted like reference) */}
             {yTickValues.map((val, i) => {
-              const y = padding.top + chartHeight - ((val - minValue) / valueRange) * chartHeight;
+              const y = padding.top + chartHeight - ((val - leftMinValue) / leftRange) * chartHeight;
               return (
                 <Line
                   key={`grid-h-${i}`}
@@ -217,6 +261,16 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
               stroke="#9CA3AF"
               strokeWidth="2"
             />
+            {hasRightAxis ? (
+              <Line
+                x1={padding.left + chartWidth}
+                y1={padding.top}
+                x2={padding.left + chartWidth}
+                y2={padding.top + chartHeight}
+                stroke="#9CA3AF"
+                strokeWidth="2"
+              />
+            ) : null}
             <Line
               x1={padding.left}
               y1={padding.top + chartHeight}
@@ -228,7 +282,7 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
 
             {/* Y labels */}
             {yTickValues.map((val, i) => {
-              const y = padding.top + chartHeight - ((val - minValue) / valueRange) * chartHeight;
+              const y = padding.top + chartHeight - ((val - leftMinValue) / leftRange) * chartHeight;
               return (
                 <SvgText
                   key={`y-${i}`}
@@ -238,10 +292,29 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
                   fill="#6B7280"
                   textAnchor="end"
                 >
-                  {Math.round(val)}
+                  {formatLeftTick(val)}
                 </SvgText>
               );
             })}
+
+            {/* Right Y labels */}
+            {hasRightAxis
+              ? rightTickValues.map((val, i) => {
+                  const y = padding.top + chartHeight - (chartHeight * i) / (yTicks - 1);
+                  return (
+                    <SvgText
+                      key={`y-right-${i}`}
+                      x={padding.left + chartWidth + 10}
+                      y={y + 5}
+                      fontSize="12"
+                      fill="#6B7280"
+                      textAnchor="start"
+                    >
+                      {Math.round(val)}
+                    </SvgText>
+                  );
+                })
+              : null}
 
             {/* Y-axis title (vertical) */}
             {yAxisLabel ? (
@@ -254,6 +327,18 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
                 transform={`rotate(-90 18 ${padding.top + chartHeight / 2})`}
               >
                 {yAxisLabel}
+              </SvgText>
+            ) : null}
+            {hasRightAxis && rightYAxisLabel ? (
+              <SvgText
+                x={width - 18}
+                y={padding.top + chartHeight / 2}
+                fontSize="12"
+                fill="#6B7280"
+                textAnchor="middle"
+                transform={`rotate(-90 ${width - 18} ${padding.top + chartHeight / 2})`}
+              >
+                {rightYAxisLabel}
               </SvgText>
             ) : null}
 
@@ -291,7 +376,9 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
 
             {/* Series paths */}
             {series.map(s => {
-              const pts = s.data.map((p, idx) => getPointXY(idx, p.y));
+              if (s.hidden) return null;
+              const axis: 'left' | 'right' = s.axis === 'right' ? 'right' : 'left';
+              const pts = s.data.map((p, idx) => getPointXY(idx, p.y, axis));
               const path = createSmoothPath(pts);
               const idx = series.findIndex(ss => ss.id === s.id);
               const length = seriesLengths[idx] || 1;
@@ -318,9 +405,10 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
             {xLabels.map((_, idx) => (
               <G key={`hover-${idx}`}>
                 {series.map(s => {
+                  if (s.hidden) return null;
                   const p = s.data[idx];
                   if (!p) return null;
-                  const xy = getPointXY(idx, p.y);
+                  const xy = getPointXY(idx, p.y, s.axis === 'right' ? 'right' : 'left');
                   const isActive = hoveredIndex === idx;
                   return (
                     <G key={`${s.id}-${idx}`}>
@@ -349,13 +437,13 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
                           <Circle cx={xy.x} cy={xy.y} r="3" fill={s.color} />
                         </>
                       ) : (
-                        <Circle
-                          cx={xy.x}
-                          cy={xy.y}
+                      <Circle
+                        cx={xy.x}
+                        cy={xy.y}
                           r="3"
-                          fill={s.color}
+                        fill={s.color}
                           opacity={0.85}
-                        />
+                      />
                       )}
                     </G>
                   );
@@ -390,7 +478,7 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
               <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
                 {xLabels[hoveredIndex]}
               </Text>
-              {series.map(s => (
+              {series.filter(s => !s.hidden).map(s => (
                 <HStack key={`tt-${s.id}`} space="sm" alignItems="center">
                   <Box width={8} height={8} borderRadius={999} bg={s.color as any} />
                   <Text fontSize="$xs" color="$textLight600" flex={1}>

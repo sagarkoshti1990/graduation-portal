@@ -1,7 +1,8 @@
-import React from 'react';
-import { ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, Switch } from 'react-native';
 import { VStack, HStack, Box, Card, Heading, Text } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import DataTable from '@components/DataTable';
 import SimpleLineChart from '@components/charts/SimpleLineChart';
 import SimpleBarChart from '@components/charts/SimpleBarChart';
 import SimplePieChart from '@components/charts/SimplePieChart';
@@ -71,10 +72,30 @@ const ReportSection: React.FC<{
   fallbackPlaceholderKey: string;
 }> = ({ block, fallbackPlaceholderKey }) => {
   const { t } = useLanguage();
-  const chartsToRender = block.charts && block.charts.length > 0 ? block.charts : [block.chart];
+  const [trendEnabled, setTrendEnabled] = useState<boolean>(
+    block.headerToggle?.defaultValue ?? true
+  );
+  const variant = block.headerToggle ? (trendEnabled ? block.trend : block.summary) : undefined;
 
-  const extrasTop = (block.extras || []).filter(e => (e as any).placement !== 'bottom');
-  const extrasBottom = (block.extras || []).filter(e => (e as any).placement === 'bottom');
+  const resolvedStatLayout = variant?.statLayout ?? block.statLayout;
+  const resolvedStatBarBg = variant?.statBarBg ?? block.statBarBg;
+  const resolvedStatPosition = variant?.statPosition ?? block.statPosition;
+  const resolvedStatCards = variant?.statCards ?? block.statCards;
+  const resolvedExtras = variant?.extras ?? block.extras;
+  const resolvedChartLayout = variant?.chartLayout ?? block.chartLayout ?? 'single';
+
+  const resolvedCharts = (() => {
+    if (variant && 'chart' in variant && variant.chart === null) return [] as any[];
+    const vCharts = variant?.charts && variant.charts.length > 0 ? variant.charts : undefined;
+    const vChart = variant?.chart ?? undefined;
+    if (vCharts) return vCharts;
+    if (vChart) return [vChart];
+    if (block.charts && block.charts.length > 0) return block.charts;
+    return [block.chart];
+  })();
+
+  const extrasTop = (resolvedExtras || []).filter(e => (e as any).placement !== 'bottom');
+  const extrasBottom = (resolvedExtras || []).filter(e => (e as any).placement === 'bottom');
 
   const renderExtra = (extra: DashboardGraphExtraBlock) => {
     if (extra.kind === 'kpiRow') {
@@ -266,7 +287,11 @@ const ReportSection: React.FC<{
                 borderWidth={1}
                 borderColor={it.borderColor ? (it.borderColor as any) : '$borderLight200'}
               >
-                <Text fontSize="$xs" color="$textMutedForeground">
+                <Text
+                  fontSize="$xs"
+                  color="$textMutedForeground"
+                  textAlign={it.align === 'center' ? 'center' : 'left'}
+                >
                   {it.title}
                 </Text>
                 <Text
@@ -274,11 +299,35 @@ const ReportSection: React.FC<{
                   fontWeight="$semibold"
                   color={it.valueColor ? (it.valueColor as any) : '$textForeground'}
                   mt="$2"
+                  textAlign={it.align === 'center' ? 'center' : 'left'}
                 >
                   {it.value}
                 </Text>
+                {it.badgeText ? (
+                  <Box
+                    alignSelf={it.align === 'center' ? 'center' : 'flex-start'}
+                    bg={it.badgeBg ? (it.badgeBg as any) : '#6B7280'}
+                    px="$3"
+                    py="$1"
+                    borderRadius="$sm"
+                    mt="$2"
+                  >
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color={it.badgeTextColor ? (it.badgeTextColor as any) : '$white'}
+                    >
+                      {it.badgeText}
+                    </Text>
+                  </Box>
+                ) : null}
                 {it.subtitle ? (
-                  <Text fontSize="$xs" color="$textMutedForeground" mt="$1">
+                  <Text
+                    fontSize="$xs"
+                    color="$textMutedForeground"
+                    mt="$1"
+                    textAlign={it.align === 'center' ? 'center' : 'left'}
+                  >
                     {it.subtitle}
                   </Text>
                 ) : null}
@@ -289,14 +338,90 @@ const ReportSection: React.FC<{
       );
     }
 
+    if (extra.kind === 'dataTable') {
+      const columns = (extra.columns || []).map(col => ({
+        key: col.key,
+        label: col.label,
+        flex: col.flex,
+        width: col.width,
+        align: col.align,
+        render:
+          col.key === 'change'
+            ? (item: any) => (
+                <Text
+                  fontSize="$xs"
+                  fontWeight="$semibold"
+                  color={String(item?.[col.key] || '').trim().startsWith('+') ? '#16A34A' : '$textMutedForeground'}
+                >
+                  {String(item?.[col.key] ?? '-')}
+                </Text>
+              )
+            : undefined,
+      }));
+
+      const rows = (extra.rows || []).map((r, idx) => ({ __rowKey: (r as any).__rowKey ?? idx, ...r }));
+
+      return (
+        <Box
+          key={extra.id}
+          mt="$3"
+          bg="$backgroundLight50"
+          borderRadius="$lg"
+          px="$4"
+          py="$4"
+          borderWidth={1}
+          borderColor="$borderLight200"
+        >
+          {extra.title ? (
+            <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$3">
+              {extra.title}
+            </Text>
+          ) : null}
+          <DataTable
+            data={rows as any}
+            columns={columns as any}
+            getRowKey={(item: any) => String(item.__rowKey)}
+            responsive={false}
+            showHeader={extra.showHeader ?? true}
+            minWidth={extra.minWidth ?? 900}
+            emptyMessage=""
+          />
+        </Box>
+      );
+    }
+
+    if (extra.kind === 'note') {
+      return (
+        <Box
+          key={extra.id}
+          mt="$3"
+          bg="$backgroundLight50"
+          borderRadius="$lg"
+          px="$4"
+          py="$4"
+          borderWidth={1}
+          borderColor="$borderLight200"
+        >
+          {extra.title ? (
+            <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
+              {extra.title}
+            </Text>
+          ) : null}
+          <Text fontSize="$xs" color="$textMutedForeground">
+            {extra.text}
+          </Text>
+        </Box>
+      );
+    }
+
     return null;
   };
 
-  const StatContent = block.statCards && block.statCards.length > 0 ? (
-    block.statLayout === 'bar' ? (
+  const StatContent = resolvedStatCards && resolvedStatCards.length > 0 ? (
+    resolvedStatLayout === 'bar' ? (
       <Box mt="$3" width="100%">
         <HStack space="md" alignItems="stretch" justifyContent="space-between" flexWrap="wrap">
-          {block.statCards.map(sc => {
+          {resolvedStatCards.map(sc => {
             const valueStr = String(sc.value ?? '');
             const isNumericLike = /^[\d,.\s%]+$/.test(valueStr.trim());
             return (
@@ -345,7 +470,7 @@ const ReportSection: React.FC<{
       </Box>
     ) : (
       <HStack space="md" flexWrap="wrap" mt="$3">
-        {block.statCards.map(sc => (
+        {resolvedStatCards.map(sc => (
           <GraphStatCard key={sc.id} card={sc} />
         ))}
       </HStack>
@@ -375,6 +500,13 @@ const ReportSection: React.FC<{
             color={chart.line.color}
             yAxisLabel={chart.line.yAxisLabel}
             valueLabel={chart.line.valueLabel}
+            showLegend={chart.line.showLegend}
+            hideLine={chart.line.hideLine}
+            yMin={chart.line.yMin}
+            yMax={chart.line.yMax}
+            referenceLines={chart.line.referenceLines as any}
+            threshold={chart.line.threshold}
+            thresholdPointColor={chart.line.thresholdPointColor}
           />
         ) : null}
 
@@ -382,6 +514,9 @@ const ReportSection: React.FC<{
           <SimpleMultiLineChart
             title={chart.title}
             yAxisLabel={chart.multiLine.yAxisLabel}
+            yMin={chart.multiLine.yMin}
+            yMax={chart.multiLine.yMax}
+            rightYAxisLabel={chart.multiLine.rightYAxisLabel}
             series={chart.multiLine.series as any}
           />
         ) : null}
@@ -401,7 +536,13 @@ const ReportSection: React.FC<{
         ) : null}
 
         {chart.kind === 'pie' && chart.pie ? (
-          <SimplePieChart data={chart.pie.data} title={chart.title} />
+          <SimplePieChart
+            data={chart.pie.data}
+            title={chart.title}
+            variant={chart.pie.variant}
+            showLabels={chart.pie.showLabels}
+            showLegend={chart.pie.showLegend}
+          />
         ) : null}
 
         {chart.kind === 'groupedBar' && chart.groupedBar ? (
@@ -425,22 +566,48 @@ const ReportSection: React.FC<{
   return (
     <Card p="$6" borderRadius="$xl" borderWidth={1} borderColor="$borderColor" variant="ghost" bg="$white">
       <VStack space="xs" width="100%">
-        <Heading size="sm" fontWeight="$normal">{t(block.sectionTitle)}</Heading>
-        {block.sectionMeta ? (
-          <Text fontSize="$sm" color="$textMutedForeground" fontWeight="$medium">
-            {t(block.sectionMeta)}
-          </Text>
-        ) : null}
+        <HStack alignItems="flex-start" justifyContent="space-between" flexWrap="wrap">
+          <VStack space="xs" flex={1} minWidth={240}>
+            <Heading size="sm" fontWeight="$normal">
+              {t(block.sectionTitle)}
+            </Heading>
+            {block.sectionMeta ? (
+              <Text fontSize="$sm" color="$textMutedForeground" fontWeight="$medium">
+                {t(block.sectionMeta)}
+              </Text>
+            ) : null}
+          </VStack>
 
-        {block.statPosition === 'bottom' ? null : StatContent}
+          {block.headerToggle ? (
+            <HStack alignItems="center" space="sm" mt="$1">
+              <Text fontSize="$sm" color="$textMutedForeground" fontWeight="$medium">
+                {t(block.headerToggle.labelKey)}
+              </Text>
+              <Switch value={trendEnabled} onValueChange={setTrendEnabled} />
+            </HStack>
+          ) : null}
+        </HStack>
+
+        {resolvedStatPosition === 'bottom' ? null : StatContent}
 
         {extrasTop.map(renderExtra)}
 
-        {chartsToRender.map((c, idx) => renderChart(c, idx))}
+        {resolvedChartLayout === 'twoColumn' && resolvedCharts.length === 2 ? (
+          <HStack space="lg" alignItems="flex-start" flexWrap="wrap">
+            <Box flex={1} minWidth={320}>
+              {renderChart(resolvedCharts[0], 0)}
+            </Box>
+            <Box flex={1} minWidth={320}>
+              {renderChart(resolvedCharts[1], 1)}
+            </Box>
+          </HStack>
+        ) : (
+          resolvedCharts.map((c, idx) => renderChart(c, idx))
+        )}
 
         {extrasBottom.map(renderExtra)}
 
-        {block.statPosition === 'bottom' ? StatContent : null}
+        {resolvedStatPosition === 'bottom' ? StatContent : null}
       </VStack>
     </Card>
   );

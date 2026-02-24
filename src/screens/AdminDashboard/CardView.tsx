@@ -221,128 +221,128 @@ const CardView: React.FC<CardViewProps> = ({
             </Box>
           ) : (
             <>
-              {/* Metric Cards (supports simple list or sectioned layout) */}
-              {sections && sections.length > 0 ? (
-                <VStack space="lg">
-                  {sections.map(section => (
-                    <Card key={section.title} {...cardViewStyles.insightsCard} mt="$0">
-                      <Heading {...cardViewStyles.insightsTitle}>{t(section.title)}</Heading>
-                      <Box mt="$4">
+          {/* Metric Cards (supports simple list or sectioned layout) */}
+          {sections && sections.length > 0 ? (
+            <VStack space="lg">
+              {sections.map(section => (
+                <Card key={section.title} {...cardViewStyles.insightsCard} mt="$0">
+                  <Heading {...cardViewStyles.insightsTitle}>{t(section.title)}</Heading>
+                  <Box mt="$4">
                         {renderMetricGrid(section.metricCards)}
-                      </Box>
-                    </Card>
-                  ))}
-                </VStack>
-              ) : (
+                  </Box>
+                </Card>
+              ))}
+            </VStack>
+          ) : (
                 renderMetricGrid(metricCards)
-              )}
+          )}
 
-              {/* Breakdown Sections (e.g. Drop Outs reasons) */}
-              {breakdownSections && breakdownSections.length > 0 && (
-                <VStack space="md">
-                  {breakdownSections.map(section => (
-                    <Card key={section.title} {...cardViewStyles.insightsCard} mt="$0">
-                      <Heading {...cardViewStyles.insightsTitle}>{t(section.title)}</Heading>
-                      <Box mt="$4">
-                        {(() => {
-                          const isNarrow = windowWidth < 768;
-                          const leftItems = section.items.filter((_, idx) => idx % 2 === 0);
-                          const rightItems = section.items.filter((_, idx) => idx % 2 === 1);
+          {/* Breakdown Sections (e.g. Drop Outs reasons) */}
+          {breakdownSections && breakdownSections.length > 0 && (
+            <VStack space="md">
+              {breakdownSections.map(section => (
+                <Card key={section.title} {...cardViewStyles.insightsCard} mt="$0">
+                  <Heading {...cardViewStyles.insightsTitle}>{t(section.title)}</Heading>
+                  <Box mt="$4">
+                    {(() => {
+                      const isNarrow = windowWidth < 768;
+                      const leftItems = section.items.filter((_, idx) => idx % 2 === 0);
+                      const rightItems = section.items.filter((_, idx) => idx % 2 === 1);
 
-                          const renderRow = (item: CardViewBreakdownItem) => (
-                            <Box
-                              key={item.id}
-                              width="100%"
-                              px="$4"
-                              py="$4"
-                              bg="$backgroundLight50"
-                              borderRadius="$lg"
-                            >
-                              <HStack alignItems="center" justifyContent="space-between">
-                                <HStack space="sm" alignItems="center" flex={1}>
-                                  <Box
-                                    width={10}
-                                    height={10}
-                                    borderRadius={999}
-                                    bg={item.color as any}
-                                    flexShrink={0}
-                                  />
-                                  <Text fontSize="$sm" color="$textForeground" flex={1}>
-                                    {t(item.label)}
-                                  </Text>
-                                </HStack>
-
-                                <VStack space="xs" alignItems="flex-end">
-                                  <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
-                                    {item.count}
-                                  </Text>
-                                  <Box
-                                    bg="#6B7280"
-                                    px="$2"
-                                    py="$1"
-                                    borderRadius="$sm"
-                                  >
-                                    <Text fontSize="$xs" color="$white" fontWeight="$semibold">
-                                      {item.percentage}
-                                    </Text>
-                                  </Box>
-                                </VStack>
-                              </HStack>
-                            </Box>
-                          );
-
-                          if (isNarrow) {
-                            return (
-                              <VStack space="md">
-                                {section.items.map(renderRow)}
-                              </VStack>
-                            );
-                          }
-
-                          return (
-                            <HStack space="lg" alignItems="flex-start">
-                              <VStack flex={1} space="md">
-                                {leftItems.map(renderRow)}
-                              </VStack>
-                              <VStack flex={1} space="md">
-                                {rightItems.map(renderRow)}
-                              </VStack>
+                      const renderRow = (item: CardViewBreakdownItem) => (
+                        <Box
+                          key={item.id}
+                          width="100%"
+                          px="$4"
+                          py="$4"
+                          bg="$backgroundLight50"
+                          borderRadius="$lg"
+                        >
+                          <HStack alignItems="center" justifyContent="space-between">
+                            <HStack space="sm" alignItems="center" flex={1}>
+                              <Box
+                                width={10}
+                                height={10}
+                                borderRadius={999}
+                                bg={item.color as any}
+                                flexShrink={0}
+                              />
+                              <Text fontSize="$sm" color="$textForeground" flex={1}>
+                                {t(item.label)}
+                              </Text>
                             </HStack>
-                          );
-                        })()}
-                      </Box>
-                    </Card>
-                  ))}
-                </VStack>
-              )}
 
-              {/* Key Insights */}
-              {insightsTitle && insightsItems && (
-                <Card {...cardViewStyles.insightsCard}>
-                  <Heading {...cardViewStyles.insightsTitle}>
-                    {t(insightsTitle)}
-                  </Heading>
-                  <VStack space="sm" mt="$4">
-                    {insightsItems.map((item, index) => {
-                      const dotColor = insightsDotColor ?? metricCards?.[index]?.color ?? '#2563EB';
+                            <VStack space="xs" alignItems="flex-end">
+                              <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
+                                {item.count}
+                              </Text>
+                              <Box
+                                bg="#6B7280"
+                                px="$2"
+                                py="$1"
+                                borderRadius="$sm"
+                              >
+                                <Text fontSize="$xs" color="$white" fontWeight="$semibold">
+                                  {item.percentage}
+                                </Text>
+                              </Box>
+                            </VStack>
+                          </HStack>
+                        </Box>
+                      );
+
+                      if (isNarrow) {
+                        return (
+                          <VStack space="md">
+                            {section.items.map(renderRow)}
+                          </VStack>
+                        );
+                      }
+
                       return (
-                        <HStack key={index} space="sm" alignItems="flex-start">
-                          <Box
-                            width={8}
-                            height={8}
-                            borderRadius={999}
-                            mt={6}
-                            bg={dotColor as any}
-                            flexShrink={0}
-                          />
-                          <Text {...cardViewStyles.insightItem} flex={1}>
-                            {t(item)}
-                          </Text>
+                        <HStack space="lg" alignItems="flex-start">
+                          <VStack flex={1} space="md">
+                            {leftItems.map(renderRow)}
+                          </VStack>
+                          <VStack flex={1} space="md">
+                            {rightItems.map(renderRow)}
+                          </VStack>
                         </HStack>
                       );
-                    })}
-                  </VStack>
+                    })()}
+                  </Box>
                 </Card>
+              ))}
+            </VStack>
+          )}
+
+          {/* Key Insights */}
+          {insightsTitle && insightsItems && (
+            <Card {...cardViewStyles.insightsCard}>
+              <Heading {...cardViewStyles.insightsTitle}>
+                {t(insightsTitle)}
+              </Heading>
+              <VStack space="sm" mt="$4">
+                {insightsItems.map((item, index) => {
+                      const dotColor = insightsDotColor ?? metricCards?.[index]?.color ?? '#2563EB';
+                  return (
+                    <HStack key={index} space="sm" alignItems="flex-start">
+                      <Box
+                        width={8}
+                        height={8}
+                        borderRadius={999}
+                        mt={6}
+                        bg={dotColor as any}
+                        flexShrink={0}
+                      />
+                      <Text {...cardViewStyles.insightItem} flex={1}>
+                        {t(item)}
+                  </Text>
+                    </HStack>
+                  );
+                })}
+              </VStack>
+            </Card>
               )}
             </>
           )}
