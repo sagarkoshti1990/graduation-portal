@@ -424,8 +424,13 @@ const buildDefaultValuesFromObservation = (
             // pageQuestion.question is an array of strings, key is a string. Compare lowercase.
             const keyFound = userDataKeys.find(key => 
               pageQuestion.question
-                .map((q: string) => q.toLowerCase())
-                .some((qString: string) => key.toLowerCase() === qString.toLowerCase())
+                .map((q: string) => (typeof q === 'string' ? q.toLowerCase() : ''))
+                .some(
+                  (qString: string) =>
+                    (typeof key === 'string' && typeof qString === 'string'
+                      ? key.toLowerCase() === qString.toLowerCase()
+                      : false)
+                )
             );
             if (keyFound !== undefined) {
               defaultValues[pageQuestion._id] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
