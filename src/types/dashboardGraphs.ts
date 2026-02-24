@@ -67,14 +67,31 @@ export interface DashboardGraphSectionChart {
     color?: string;
     yAxisLabel?: string;
     valueLabel?: string;
+    showLegend?: boolean;
+    hideLine?: boolean;
+    yMin?: number;
+    yMax?: number;
+    threshold?: number;
+    thresholdPointColor?: string;
+    referenceLines?: Array<{
+      value: number;
+      color: string;
+      label?: string;
+      dashArray?: string;
+    }>;
   };
   multiLine?: {
     yAxisLabel?: string;
+    yMin?: number;
+    yMax?: number;
+    rightYAxisLabel?: string;
     series: {
       id: string;
       label: string;
       color: string;
       dashArray?: string; // e.g. "4 4" (for cumulative dotted)
+      axis?: 'left' | 'right';
+      hidden?: boolean;
       data: { x: string; y: number }[];
     }[];
   };
@@ -101,18 +118,39 @@ export interface DashboardGraphSectionChart {
   };
   pie?: {
     data: PieChartDataPoint[];
+    variant?: 'pie' | 'donut';
+    showLabels?: boolean;
+    showLegend?: boolean;
   };
   placeholderText?: string;
+}
+
+export interface DashboardGraphReportSectionVariant {
+  statLayout?: 'cards' | 'bar';
+  statBarBg?: string;
+  statPosition?: 'top' | 'bottom';
+  statCards?: DashboardGraphStatCard[];
+  chartLayout?: 'single' | 'twoColumn';
+  chart?: DashboardGraphSectionChart | null;
+  charts?: DashboardGraphSectionChart[];
+  extras?: DashboardGraphExtraBlock[];
 }
 
 export interface DashboardGraphReportSectionBlock extends DashboardGraphBlockBase {
   kind: 'reportSection';
   sectionTitle: string; // translation key
   sectionMeta?: string; // translation key
+  headerToggle?: {
+    labelKey: string; // translation key
+    defaultValue?: boolean;
+  };
+  trend?: DashboardGraphReportSectionVariant;
+  summary?: DashboardGraphReportSectionVariant;
   statLayout?: 'cards' | 'bar';
   statBarBg?: string;
   statPosition?: 'top' | 'bottom';
   statCards?: DashboardGraphStatCard[];
+  chartLayout?: 'single' | 'twoColumn';
   chart: DashboardGraphSectionChart; // backward compat (single chart)
   charts?: DashboardGraphSectionChart[]; // optional (multiple charts)
   extras?: DashboardGraphExtraBlock[]; // optional (tables/highlights/bullets)
@@ -132,7 +170,9 @@ export type DashboardGraphExtraKind =
   | 'kvColumns'
   | 'calloutRow'
   | 'bullets'
-  | 'tiles';
+  | 'tiles'
+  | 'dataTable'
+  | 'note';
 
 export interface DashboardGraphExtraBase {
   id: string;
@@ -199,10 +239,35 @@ export interface DashboardGraphExtraTiles extends DashboardGraphExtraBase {
     title: string; // plain text
     value: string; // plain text
     subtitle?: string; // plain text
+    badgeText?: string; // plain text
+    badgeBg?: string;
+    badgeTextColor?: string;
+    align?: 'left' | 'center';
     valueColor?: string;
     bg?: string;
     borderColor?: string;
   }>;
+}
+
+export interface DashboardGraphExtraDataTable extends DashboardGraphExtraBase {
+  kind: 'dataTable';
+  title?: string; // plain text
+  minWidth?: number;
+  showHeader?: boolean;
+  columns: Array<{
+    key: string;
+    label: string; // plain text (or translation key; if missing, shows as-is)
+    flex?: number;
+    width?: number;
+    align?: 'left' | 'center' | 'right';
+  }>;
+  rows: Array<Record<string, string | number>>;
+}
+
+export interface DashboardGraphExtraNote extends DashboardGraphExtraBase {
+  kind: 'note';
+  title?: string; // plain text
+  text: string; // plain text
 }
 
 export type DashboardGraphExtraBlock =
@@ -210,7 +275,9 @@ export type DashboardGraphExtraBlock =
   | DashboardGraphExtraKvColumns
   | DashboardGraphExtraCalloutRow
   | DashboardGraphExtraBullets
-  | DashboardGraphExtraTiles;
+  | DashboardGraphExtraTiles
+  | DashboardGraphExtraDataTable
+  | DashboardGraphExtraNote;
 
 export type DashboardGraphBlock =
   | DashboardGraphLineBlock

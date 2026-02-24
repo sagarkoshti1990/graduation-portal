@@ -137,20 +137,20 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           newBreadcrumbItems.push(...breadcrumbItems);
         } else {
           newBreadcrumbItems.push({
-            id: 'back-to-indicators',
-            label: 'Back to Indicator Types',
-            labelKey: 'admin.backToIndicatorTypes',
-            data: null,
+          id: 'back-to-indicators',
+          label: 'Back to Indicator Types',
+          labelKey: 'admin.backToIndicatorTypes',
+          data: null,
           });
         }
       }
       
       // Add the current card to breadcrumb
       newBreadcrumbItems.push({
-        id: card.id,
-        label: card.title,
-        labelKey: card.title,
-        data: card,
+          id: card.id,
+          label: card.title,
+          labelKey: card.title,
+          data: card,
       });
       
       setBreadcrumbItems(newBreadcrumbItems);
@@ -216,10 +216,10 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
       
       // Add the current card
       newBreadcrumbItems.push({
-        id: card.id,
-        label: card.title,
-        labelKey: card.title,
-        data: card,
+          id: card.id,
+          label: card.title,
+          labelKey: card.title,
+          data: card,
       });
       
       setBreadcrumbItems(newBreadcrumbItems);
@@ -350,7 +350,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
       } else if (newBreadcrumbItems.length === 1) {
         // Back to root (indicator types)
         setCurrentCards(cards);
-        setSelectedCardView(null);
+          setSelectedCardView(null);
         setBreadcrumbItems([]);
       } else {
         // Show sub-cards of previous level
@@ -707,7 +707,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
 
       {/* Indicator Cards */}
       {!isIndividualIndicatorsScreen ? (
-        <HStack {...dashboardCardsStyles.cardsContainer}>
+      <HStack {...dashboardCardsStyles.cardsContainer}>
       {currentCards.map(card => (
         <Pressable
           key={card.id}
@@ -787,7 +787,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
           </Card>
         </Pressable>
       ))}
-        </HStack>
+      </HStack>
       ) : null}
     </VStack>
   );

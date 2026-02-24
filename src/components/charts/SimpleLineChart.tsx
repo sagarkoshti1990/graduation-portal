@@ -19,6 +19,18 @@ export interface SimpleLineChartProps {
   showGrid?: boolean;
   yAxisLabel?: string;
   valueLabel?: string;
+  showLegend?: boolean;
+  hideLine?: boolean;
+  yMin?: number;
+  yMax?: number;
+  threshold?: number;
+  thresholdPointColor?: string;
+  referenceLines?: Array<{
+    value: number;
+    color: string;
+    label?: string;
+    dashArray?: string;
+  }>;
 }
 
 /**
@@ -34,6 +46,13 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   showGrid = true,
   yAxisLabel = 'Participants Assigned',
   valueLabel = 'Assigned Participants',
+  showLegend = false,
+  hideLine = false,
+  yMin,
+  yMax,
+  threshold,
+  thresholdPointColor = '#16A34A',
+  referenceLines,
 }) => {
   const { isWeb } = usePlatform();
   const windowDimensions = useWindowDimensions();
@@ -49,8 +68,10 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
 
   // Find min/max values
   const values = data.map(d => d.value);
-  const maxValue = Math.max(...values);
-  const minValue = Math.min(...values, 0);
+  const computedMax = Math.max(...values, 0);
+  const computedMin = Math.min(...values, 0);
+  const minValue = yMin !== undefined ? yMin : computedMin;
+  const maxValue = yMax !== undefined ? yMax : computedMax;
   const valueRange = maxValue - minValue || 1;
 
   // Calculate points
@@ -61,6 +82,11 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
     month: d.month,
     value: d.value,
   }));
+
+  const getPointFill = (v: number) => {
+    if (threshold !== undefined && v >= threshold) return thresholdPointColor;
+    return color;
+  };
 
   // Create line path
   // Smooth curve path (Catmull-Rom spline -> Bezier)
@@ -150,13 +176,13 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
               
               const mouseX = e.clientX - svgRect.left;
               const mouseY = e.clientY - svgRect.top;
-
+              
               // Only hover when mouse is within plot area
               const withinX =
                 mouseX >= padding.left && mouseX <= padding.left + chartWidth;
               const withinY =
                 mouseY >= padding.top && mouseY <= padding.top + chartHeight;
-
+              
               if (!withinX || !withinY) {
                 setHoveredPoint(null);
                 setHoverPos(null);
@@ -206,6 +232,37 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
                 opacity={hoveredPoint === i ? 0.9 : 0.7}
               />
             ))}
+
+          {/* Reference lines (threshold guides) */}
+          {(referenceLines || []).map((rl, i) => {
+            const y = padding.top + chartHeight - ((rl.value - minValue) / valueRange) * chartHeight;
+            if (Number.isNaN(y) || !Number.isFinite(y)) return null;
+            return (
+              <G key={`ref-${i}`}>
+                <Line
+                  x1={padding.left}
+                  y1={y}
+                  x2={padding.left + chartWidth}
+                  y2={y}
+                  stroke={rl.color}
+                  strokeWidth="1"
+                  strokeDasharray={rl.dashArray ?? '3 3'}
+                  opacity={0.9}
+                />
+                {rl.label ? (
+                  <SvgText
+                    x={padding.left + chartWidth - 6}
+                    y={Math.max(padding.top + 10, y - 6)}
+                    fontSize="10"
+                    fill={rl.color}
+                    textAnchor="end"
+                  >
+                    {rl.label}
+                  </SvgText>
+                ) : null}
+              </G>
+            );
+          })}
 
           {/* Y-axis */}
           <Line
@@ -272,17 +329,19 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
           ) : null}
 
           {/* Line (smooth curve) with draw animation */}
-          <AnimatedPath
-            d={linePath}
-            stroke={color}
-            strokeWidth="3"
-            fill="none"
-            strokeDasharray={`${approxPathLength} ${approxPathLength}`}
-            strokeDashoffset={dashOffset as any}
-          />
+          {!hideLine ? (
+            <AnimatedPath
+              d={linePath}
+              stroke={color}
+              strokeWidth="3"
+              fill="none"
+              strokeDasharray={`${approxPathLength} ${approxPathLength}`}
+              strokeDashoffset={dashOffset as any}
+            />
+          ) : null}
 
           {/* Data points with hover/press support */}
-          {points.map((p, i) => (
+          {!hideLine ? points.map((p, i) => (
             <G key={`point-group-${i}`}>
               {/* Invisible larger circle for easier interaction */}
               <Circle
@@ -312,22 +371,22 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
                     }}
                   />
                   {/* Inner dot */}
-                  <Circle cx={p.x} cy={p.y} r="3.5" fill={color} />
+                  <Circle cx={p.x} cy={p.y} r="3.5" fill={getPointFill(p.value)} />
                 </>
               ) : (
-                <Circle
-                  cx={p.x}
-                  cy={p.y}
+              <Circle
+                cx={p.x}
+                cy={p.y}
                   r="5"
-                  fill={color}
+                  fill={getPointFill(p.value)}
                   onPress={(e: any) => {
                     handlePointInteraction(i);
                     return e;
                   }}
-                />
+              />
               )}
             </G>
-          ))}
+          )) : null}
 
           {/* X-axis labels */}
           {data.map((d, i) => {
@@ -389,6 +448,16 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
           </Box>
         )}
       </Box>
+
+      {/* Bottom legend (optional) */}
+      {showLegend ? (
+        <HStack space="xs" alignItems="center" justifyContent="center" mt="$2" flexWrap="wrap">
+          <Box width={10} height={10} borderRadius={999} bg={color as any} />
+          <Text fontSize="$xs" color="$textLight600">
+            {valueLabel}
+          </Text>
+        </HStack>
+      ) : null}
     </VStack>
   );
 };

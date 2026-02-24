@@ -44,6 +44,9 @@
     "optional": "(Optional)",
     "participant": "Participant",
     "complete": "Complete",
+    "trendOverTime": "Trend Over Time",
+    "show6MonthlyTrend": "Show 6-Monthly Trend",
+    "showMonthlyTrend": "Show Monthly Trend",
     "serverError500": "A server error occurred (500). Please try again later."
   },
   "projectPlayer": {
@@ -276,7 +279,17 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "activeIncomeTitle": "Presence of Active Income-Generating Activity",
+        "activeIncomeMeta": "Percentage of participants with active employment or business",
+        "profitabilityTitle": "Profitability of Income-Generating Activity",
+        "profitabilityMeta": "Entrepreneurship pathway only - Percentage of businesses profitable",
+        "perPersonTitle": "Per Person Income in the Household",
+        "perPersonMeta": "Household total income divided by number of household members (6-monthly)",
+        "fromBusinessTitle": "Participant Income from Business",
+        "fromBusinessMeta": "Monthly income generated from business activities only",
+        "bySourceTitle": "Participant Income By Source",
+        "bySourceMeta": "Monthly income generated from various sources"
       }
     },
     "cumulativeAssetAccumulation": {
@@ -297,7 +310,15 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "s61Title": "6.1 Self-Esteem and Confidence",
+        "s61Meta": "Target: Participant | Time: 6-monthly | Logic: Sum(Q1-Q6)/30 | GREEN ≥0.7, YELLOW 0.4-0.69, RED <0.4",
+        "s62Title": "6.2 Agency and Control",
+        "s62Meta": "Target: Participant | Time: 6-monthly | Logic: Max=12, divide by 12 | GREEN ≥0.7, YELLOW 0.4-0.69, RED <0.4",
+        "s63Title": "6.3 Attitudes towards Domestic Violence",
+        "s63Meta": "Target: Participant | Time: 6-monthly | Logic: Max=1, divide by 5 | GREEN ≥0.6, YELLOW 0.4-0.6, RED <0.4",
+        "s64Title": "6.4 Decision-making & Gender Equality",
+        "s64Meta": "Target: Participant | Time: 6-monthly | Logic: Max=12, divide by 12 | GREEN ≥0.75, YELLOW 0.5-0.74, RED <0.5"
       }
     },
     "cumulativeSavings": {
@@ -326,7 +347,15 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "savingsAmountHouseholdTitle": "Savings Amount - Household",
+        "savingsAmountHouseholdMeta": "Total household savings (6-monthly tracking)",
+        "savingsAmountParticipantTitle": "Savings Amount - Participant",
+        "savingsAmountParticipantMeta": "Individual participant savings over time (monthly tracking)",
+        "savingsFrequencyTitle": "Savings Frequency - Adoption of Savings Culture",
+        "savingsFrequencyMeta": "How often participants save (monthly tracking)",
+        "formalSavingsTitle": "Usage of Formal Savings Products/Services",
+        "formalSavingsMeta": "Type of savings account used by participants (monthly tracking)"
       }
     },
     "cumulativeRecordKeeping": {
@@ -347,7 +376,13 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "personalTitle": "Personal Record Keeping Practices",
+        "personalMeta": "Personal financial record-keeping score (0-4 scale, monthly tracking)",
+        "businessTitle": "Business Record Keeping Practices",
+        "businessMeta": "Business financial record-keeping score (0-4 scale, monthly tracking)",
+        "combinedTitle": "Combined Record Keeping Trends",
+        "combinedMeta": "Personal vs Business record-keeping practices over time"
       }
     },
     "cumulativeDebtCredit": {
@@ -384,7 +419,21 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "reducedDebtParticipantTitle": "Reduced Level of Debt - Participant",
+        "reducedDebtParticipantMeta": "Participant debt trend: Decreasing (Green), Same (Yellow), Increasing (Red) - Monthly tracking",
+        "creditUsageParticipantTitle": "Usage of Formal/Informal Credit - Participant",
+        "creditUsageParticipantMeta": "Source of loans by participant (monthly tracking)",
+        "reducedDebtHouseholdTitle": "Reduced Level of Debt - Household",
+        "reducedDebtHouseholdMeta": "Household debt trend: Decreasing (Green), Same (Yellow), Increasing (Red) - 6-monthly tracking",
+        "creditUsageHouseholdTitle": "Usage of Formal/Informal Credit - Household",
+        "creditUsageHouseholdMeta": "Source of loans by household (6-monthly tracking)",
+        "riskOverIndebtednessTitle": "Risk of Over-Indebtedness",
+        "riskOverIndebtednessMeta": "Loan > 1/3 income = High Risk (Red), otherwise Low Risk (Green) - Monthly tracking",
+        "riskResponsesTitle": "Risk of Over-Indebtedness - Participant Responses",
+        "riskResponsesMeta": "Participants reporting whether they are at risk of over-indebtedness",
+        "remainingBalanceTitle": "Remaining Balance by Loan Source",
+        "remainingBalanceMeta": "Remaining loan balance by source (for participants with active loans)"
       }
     },
     "cumulativeSocialEmpowerment": {
@@ -413,7 +462,15 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "selfEsteemTitle": "Self-Esteem and Confidence",
+        "selfEsteemMeta": "Score = sum(Q1-Q6) / 30 (6-monthly tracking) | Green ≥0.7, Yellow 0.4-0.69, Red <0.4",
+        "agencyTitle": "Agency and Control",
+        "agencyMeta": "Max score = 12, divided by 12 for 0-1 scale (6-monthly tracking) | Green ≥0.7, Yellow 0.4-0.69, Red <0.4",
+        "dvTitle": "Attitudes Towards Domestic Violence",
+        "dvMeta": "Max score = 1, divided by 5 (6-monthly tracking) | Green >0.6, Yellow 0.4-0.6, Red <0.4",
+        "decisionTitle": "Decision-Making & Gender Equality",
+        "decisionMeta": "Max score = 12, divided by 12 (6-monthly tracking) | Green ≥0.75, Yellow 0.5-0.74, Red <0.5"
       }
     },
     "individualIncome": {
@@ -446,7 +503,15 @@
         }
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "activeTitle": "1. Presence of Active Income Generating Activity Led by Program Participant",
+        "activeMeta": "Target: Participant | Time: Monthly | Employment vs Entrepreneurship status",
+        "profitabilityTitle": "2. Profitability of Income Generating Activity Led by Participant (Entrepreneurship Pathway Only)",
+        "profitabilityMeta": "Target: Participant | Time: Monthly | Profitable, Breaking Even, Operating at Loss",
+        "perPersonTitle": "3. Per Person Income in the Household",
+        "perPersonMeta": "Total income of the household divided by the number of people in the household | Time: 6-monthly",
+        "participantIncomeTitle": "4. Participant Income",
+        "participantIncomeMeta": "Target: Participant | Time: Monthly | Threshold: R 3,000"
       }
     },
     "individualAssetAccumulation": {
@@ -482,7 +547,11 @@
         "item4": "Top participant asset growth: Savings/Investments (+46%), Business Equipment (+39%), Technology (+39%)"
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "householdTitle": "2.1 Asset Accumulation - Household",
+        "householdMeta": "Target: Household | Time: 6-monthly | Track: quantity owned by participant, others, value/unit",
+        "participantTitle": "2.2 Asset Accumulation - Participant",
+        "participantMeta": "Target: Participant | Time: 6-monthly | Chart: Number + Line (% increase vs baseline)"
       }
     },
     "individualRecordKeeping": {
@@ -518,7 +587,9 @@
         "item4": "Top adopted practices: Sales/Income Records (82%), Expense Tracking (78%), Customer Records (72%)"
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "prevalenceTitle": "4.1 Prevalence of Record-Keeping Practices",
+        "prevalenceMeta": "Target: Participant | Time: Monthly | Logic: Personal vs Business (0-4 scale) | Keep separate trends"
       }
     },
     "individualSavings": {
@@ -554,7 +625,15 @@
         "item4": "64% use Stokvels, 58% use bank accounts, and 38% use mobile money - strong adoption of formal savings products."
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "householdTitle": "3.1 Savings Amount - Household",
+        "householdMeta": "Target: Household | Time: 6-monthly | Chart: Number card (optional linear trend)",
+        "participantTitle": "3.2 Savings Amount - Participant",
+        "participantMeta": "Target: Participant | Time: Monthly | Chart: Line chart (savings over time) + % by frequency",
+        "frequencyTitle": "3.3 Savings Frequency - Adoption of Savings Culture",
+        "frequencyMeta": "Target: Participant | Time: Monthly | Chart: Multi-line (Every day, Once a week, Once a month, Never)",
+        "formalTitle": "3.4 Usage of Formal Savings Products/Services",
+        "formalMeta": "Target: Participant | Time: Monthly | Focus: Bank, Mobile money, Stokvel (formal channels)"
       }
     },
     "individualDebt": {
@@ -568,7 +647,17 @@
         "placeholder": "Snapshot view is under development"
       },
       "graphs": {
-        "placeholder": "Graphs view will be displayed here"
+        "placeholder": "Graphs view will be displayed here",
+        "s1Title": "1. Reduced Level of Debt for Consumption Purposes - Participant",
+        "s1Meta": "Data from Indicator \"Do you have any active debt / loans?\" and \"What is the purpose of the loan(s)?\"",
+        "s2Title": "2. Usage of Formal and Informal Sources of Credit - Participant",
+        "s2Meta": "Only for participants with a current borrowing credit / loans | Data: What is the source of your loan(s)? and remaining balance",
+        "s3Title": "3. Reduced Level of Debt for Consumption Purposes - Household",
+        "s3Meta": "Data from household borrowing module | Active debt / loans and purpose categories",
+        "s4Title": "4. Usage of Formal and Informal Sources of Credit - Household",
+        "s4Meta": "Data for household borrowing by credit source (formal vs informal) + remaining balance and shift over time",
+        "s5Title": "5. Risk of Overindebtedness (Ability to Pay Back Loan)",
+        "s5Meta": "Data from Indicator \"Do you think you can pay back loan(s)?\" | Trend across 12 months"
       }
     },
     "individualAgencyDignity": {

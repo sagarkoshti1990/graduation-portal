@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
-import Svg, { Path, Polyline, Text as SvgText } from 'react-native-svg';
-import { Box, VStack, Text } from '@ui';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, useWindowDimensions } from 'react-native';
+import Svg, { Path, Polyline, Text as SvgText, Circle } from 'react-native-svg';
+import { Box, VStack, HStack, Text } from '@ui';
 import { usePlatform } from '@utils/platform';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 export interface PieChartDataPoint {
   label: string;
@@ -13,6 +15,9 @@ export interface PieChartDataPoint {
 export interface SimplePieChartProps {
   data: PieChartDataPoint[];
   title?: string;
+  variant?: 'pie' | 'donut';
+  showLabels?: boolean;
+  showLegend?: boolean;
 }
 
 /**
@@ -23,6 +28,9 @@ export interface SimplePieChartProps {
 const SimplePieChart: React.FC<SimplePieChartProps> = ({
   data,
   title: _title = 'Pie Chart',
+  variant = 'pie',
+  showLabels,
+  showLegend,
 }) => {
   const { isWeb } = usePlatform();
   const windowDimensions = useWindowDimensions();
@@ -30,9 +38,9 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   
-  const useOutsideLabels = data.length <= 2;
-  const useCalloutLabels = data.length > 2;
-
+  const useOutsideLabels = (showLabels ?? true) && data.length <= 2;
+  const useCalloutLabels = (showLabels ?? true) && data.length > 2;
+  
   // Responsive size calculation
   const size = Math.min(containerWidth * 0.6, 280);
   // Extra room for outside labels (match reference for 2-slice pies)
@@ -47,8 +55,33 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
   const radius = size / 2 - 10;
   const centerX = svgWidth / 2;
   const centerY = svgHeight / 2;
+  const isDonut = variant === 'donut';
+  const innerRadius = radius * 0.62;
+
+  const percentDigits = useMemo(() => {
+    // Use 1 decimal when input values are fractional (e.g., 42.9) to match reference labels.
+    const hasFractional = data.some(d => Math.abs(d.value - Math.round(d.value)) > 0.0001);
+    return hasFractional ? 1 : 0;
+  }, [data]);
+
+  const buildWedgePath = (startAngle: number, endAngle: number) => {
+    const angle = endAngle - startAngle;
+    const largeArc = Math.abs(angle) > 180 ? 1 : 0;
+
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+
+    const x1 = centerX + radius * Math.cos(startRad);
+    const y1 = centerY + radius * Math.sin(startRad);
+    const x2 = centerX + radius * Math.cos(endRad);
+    const y2 = centerY + radius * Math.sin(endRad);
+
+    // sweep-flag=1 to draw clockwise (matches previous filled pie rendering)
+    return `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
+  };
 
   const total = useMemo(() => data.reduce((sum, d) => sum + d.value, 0) || 1, [data]);
+  const isPercentBreakdown = useMemo(() => Math.abs(total - 100) < 0.001, [total]);
 
   // Match reference for 2-slice pies: keep the smaller slice (often "Delayed") on the right side.
   const chartData = useMemo(() => {
@@ -63,37 +96,91 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
     // For 2-slice: center the first (smaller) slice at 0deg (pointing right).
     let currentAngle = useOutsideLabels && chartData.length === 2 ? -firstAngle / 2 : -90; // default: start from top
     return chartData.map(d => {
-      const percentage = (d.value / total) * 100;
-      const angle = (d.value / total) * 360;
-      const startAngle = currentAngle;
-      currentAngle += angle;
-      const endAngle = currentAngle;
+    const percentage = (d.value / total) * 100;
+    const angle = (d.value / total) * 360;
+    const startAngle = currentAngle;
+    currentAngle += angle;
+    const endAngle = currentAngle;
 
-      // Calculate arc path
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
+    // Calculate arc path
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
 
-      const x1 = centerX + radius * Math.cos(startRad);
-      const y1 = centerY + radius * Math.sin(startRad);
-      const x2 = centerX + radius * Math.cos(endRad);
-      const y2 = centerY + radius * Math.sin(endRad);
+    const x1 = centerX + radius * Math.cos(startRad);
+    const y1 = centerY + radius * Math.sin(startRad);
+    const x2 = centerX + radius * Math.cos(endRad);
+    const y2 = centerY + radius * Math.sin(endRad);
 
-      const largeArc = angle > 180 ? 1 : 0;
+    const largeArc = angle > 180 ? 1 : 0;
 
-      const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
+    const path = `M ${centerX},${centerY} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`;
       const midAngle = (startAngle + endAngle) / 2;
 
-      return {
-        ...d,
-        path,
-        percentage: percentage.toFixed(0),
+    return {
+      ...d,
+      path,
+        percentage: percentage.toFixed(percentDigits),
         startAngle,
         endAngle,
         midAngle,
+        angle,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, total, centerX, centerY, radius, svgWidth, svgHeight, useOutsideLabels]);
+  }, [chartData, total, percentDigits, centerX, centerY, radius, svgWidth, svgHeight, useOutsideLabels]);
+
+  // Circular sweep animation: draw each slice stroke sequentially.
+  const sliceAnimsRef = useRef<Animated.Value[]>([]);
+  const sliceProgressRef = useRef<number[]>([]);
+  const rafRef = useRef<number | null>(null);
+  const [, forceRerender] = useState(0);
+
+  const scheduleRerender = () => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      forceRerender(v => (v + 1) % 1000000);
+    });
+  };
+
+  if (sliceAnimsRef.current.length !== slices.length) {
+    sliceAnimsRef.current = slices.map((_, idx) => sliceAnimsRef.current[idx] || new Animated.Value(0));
+  }
+
+  useEffect(() => {
+    // subscribe to value updates so the wedge paths re-render smoothly
+    const subs = sliceAnimsRef.current.map((v, idx) =>
+      v.addListener(({ value }) => {
+        sliceProgressRef.current[idx] = value;
+        scheduleRerender();
+      })
+    );
+
+    sliceAnimsRef.current.forEach(v => v.setValue(0));
+    const totalAngle = slices.reduce((s: number, it: any) => s + (it.angle || 0), 0) || 360;
+    const totalDuration = 900;
+    const animations = slices.map((it: any, idx: number) =>
+      Animated.timing(sliceAnimsRef.current[idx], {
+        toValue: 1,
+        duration: Math.max(140, Math.round((totalDuration * (it.angle || 0)) / totalAngle)),
+        useNativeDriver: false,
+      })
+    );
+    Animated.sequence(animations).start();
+    return () => {
+      subs.forEach((idObj, idx) => {
+        try {
+          sliceAnimsRef.current[idx]?.removeListener(idObj as any);
+        } catch {
+          // ignore
+        }
+      });
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [slices.length, variant]); // re-run when slice count/variant changes
 
   const callouts = useMemo(() => {
     if (!useCalloutLabels) return [];
@@ -143,7 +230,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
       const xLineEnd = side === 'right' ? textX - 14 : textX + 14;
       const y3 = y2;
 
-      const label = `${s.label}: ${s.percentage}% (${s.value})`;
+      const label = isPercentBreakdown ? `${s.label}: ${s.percentage}%` : `${s.label}: ${s.percentage}% (${s.value})`;
 
       return {
         i,
@@ -160,8 +247,8 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
         textX,
         textY: y3,
         textAnchor,
-      };
-    });
+    };
+  });
 
     const adjustSide = (items: Item[]) => {
       const sorted = [...items].sort((a, b) => a.textY - b.textY);
@@ -238,7 +325,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
               const dx = x - centerX;
               const dy = y - centerY;
               const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist > radius) {
+              if (dist > radius || (isDonut && dist < innerRadius)) {
                 setHoveredIndex(null);
                 setHoverPos(null);
                 return;
@@ -258,12 +345,14 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
         >
           <Svg width={svgWidth} height={svgHeight}>
             {slices.map((slice: any, i) => {
-              const midRad = (slice.midAngle * Math.PI) / 180;
-              // Keep the pie visually stable on hover (no explode / no dimming).
+              const p = sliceProgressRef.current[i] ?? 0;
+              const end = slice.startAngle + (slice.endAngle - slice.startAngle) * p;
+              const d = buildWedgePath(slice.startAngle, end);
+
               return (
-                <Path
-                  key={`slice-${i}`}
-                  d={slice.path}
+                <AnimatedPath
+                  key={`slice-wedge-${i}`}
+                  d={d}
                   fill={slice.color}
                   stroke="#FFFFFF"
                   strokeWidth={1}
@@ -276,6 +365,11 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
                 />
               );
             })}
+
+            {/* Donut hole */}
+            {isDonut ? (
+              <Circle cx={centerX} cy={centerY} r={innerRadius} fill="#FFFFFF" />
+            ) : null}
 
             {/* Multi-slice callout labels + leader lines (Dropouts-style) */}
             {useCalloutLabels
@@ -300,7 +394,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
                   </React.Fragment>
                 ))
               : null}
-          </Svg>
+        </Svg>
 
           {/* Outside labels (2-slice pies) */}
           {useOutsideLabels ? slices.map((slice: any, i) => {
@@ -321,7 +415,9 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
             const isRight = isTwoSlices
               ? slice.value !== maxValue
               : isRightByAngle;
-            const label = `${slice.label}: ${slice.percentage}% (${slice.value})`;
+            const label = isPercentBreakdown
+              ? `${slice.label}: ${slice.percentage}%`
+              : `${slice.label}: ${slice.percentage}% (${slice.value})`;
 
             // Position relative to the side paddings; clamp within container height
             const top = Math.min(Math.max(ly - 10, 6), svgHeight - 26);
@@ -348,7 +444,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
               </Box>
             );
           }) : null}
-        </Box>
+      </Box>
 
         {/* Hover tooltip (like reference) */}
         {hoveredIndex !== null && hoverPos ? (
@@ -369,11 +465,37 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
             pointerEvents="none"
           >
             <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
-              {`${(slices[hoveredIndex] as any).label}: ${(slices[hoveredIndex] as any).percentage}% (${(slices[hoveredIndex] as any).value})`}
+              {(() => {
+                const s = slices[hoveredIndex] as any;
+                return isPercentBreakdown
+                  ? `${s.label}: ${s.percentage}%`
+                  : `${s.label}: ${s.percentage}% (${s.value})`;
+              })()}
             </Text>
           </Box>
         ) : null}
       </Box>
+
+      {/* Bottom legend (like reference) */}
+      {(showLegend ?? (data.length > 2)) ? (
+        <HStack
+          mt="$3"
+          space="md"
+          flexWrap="wrap"
+          justifyContent="center"
+          alignItems="center"
+          px="$2"
+        >
+          {slices.map((s: any, idx: number) => (
+            <HStack key={`pie-lg-${idx}`} space="xs" alignItems="center">
+              <Box width={10} height={10} borderRadius={2} bg={s.color as any} />
+              <Text fontSize="$xs" color={s.color as any} numberOfLines={1}>
+                {s.label}
+              </Text>
+            </HStack>
+          ))}
+        </HStack>
+      ) : null}
     </VStack>
   );
 };
