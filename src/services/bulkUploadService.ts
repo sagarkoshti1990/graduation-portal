@@ -131,6 +131,7 @@ export const bulkUserCreate = async (
     
     headers['orgid'] = orgCode;
     headers['tenantid'] = tenantCode;
+    headers['x-tenent-code'] = tenantCode;
     
     console.log('Headers being sent:', headers);
     
