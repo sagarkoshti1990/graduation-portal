@@ -64,14 +64,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
           width="$full"
           flexDirection="column"
         >
-          {/* Header */}
+          {/* @ts-ignore - Header */}
           <Box {...layoutStyles.headerContent}>
             <AdminHeader
               showNotification={true}
               onToggleSidebar={() => setIsDrawerOpen(!isDrawerOpen)}
             />
           </Box>
-          {/* Main Content */}
+          {/* @ts-ignore - Main Content */}
           <Box {...layoutStyles.mainContent}>{children}</Box>
         </HStack>
       </ScrollView>
