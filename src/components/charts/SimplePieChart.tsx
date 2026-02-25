@@ -32,27 +32,40 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
   showLabels,
   showLegend,
 }) => {
-  const { isWeb } = usePlatform();
+  const { isWeb, isMobile } = usePlatform();
   const windowDimensions = useWindowDimensions();
-  const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
+  const [containerWidth, setContainerWidth] = useState(Math.max(windowDimensions.width, 0));
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   
-  const useOutsideLabels = (showLabels ?? true) && data.length <= 2;
-  const useCalloutLabels = (showLabels ?? true) && data.length > 2;
+  const resolvedShowLabels = showLabels ?? true;
+  // Outside/callout labels can easily overflow on narrow screens; fall back to legend on mobile.
+  const isNarrow = isMobile && containerWidth > 0 && containerWidth < 420;
+  const useOutsideLabels = resolvedShowLabels && !isNarrow && data.length <= 2;
+  const useCalloutLabels = resolvedShowLabels && !isNarrow && data.length > 2;
   
   // Responsive size calculation
-  const size = Math.min(containerWidth * 0.6, 280);
-  // Extra room for outside labels (match reference for 2-slice pies)
-  const sidePadding = useOutsideLabels
-    ? Math.min(360, Math.max(240, containerWidth * 0.32))
+  const maxW = Math.max(containerWidth, 0);
+  // On mobile, keep the chart within the container width (labels move to legend).
+  const size = isMobile ? Math.min(maxW, 280) : Math.min(maxW * 0.6, 280);
+  // Extra room for outside labels (desktop/tablet only)
+  let sidePadding = useOutsideLabels
+    ? Math.min(360, Math.max(240, maxW * 0.32))
     : useCalloutLabels
-      ? Math.min(320, Math.max(220, containerWidth * 0.28))
+      ? Math.min(320, Math.max(220, maxW * 0.28))
       : 0;
+  if (isMobile) {
+    sidePadding = 0;
+  }
   const verticalPadding = useCalloutLabels ? 70 : 0;
+  // Clamp computed SVG width so it never exceeds the measured container width
+  if (maxW > 0) {
+    const maxSide = Math.max((maxW - size) / 2, 0);
+    sidePadding = Math.min(sidePadding, maxSide);
+  }
   const svgWidth = size + sidePadding * 2;
   const svgHeight = size + verticalPadding * 2;
-  const radius = size / 2 - 10;
+  const radius = Math.max(size / 2 - 10, 40);
   const centerX = svgWidth / 2;
   const centerY = svgHeight / 2;
   const isDonut = variant === 'donut';
@@ -298,7 +311,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
   };
 
   return (
-    <VStack space="sm" width="100%" alignItems="center" mb="$6">
+    <VStack space="sm" width="100%" alignItems="center" mb={isMobile ? '$2' : '$6'}>
       {/* Chart */}
       <Box 
         width="100%" 
@@ -477,7 +490,7 @@ const SimplePieChart: React.FC<SimplePieChartProps> = ({
       </Box>
 
       {/* Bottom legend (like reference) */}
-      {(showLegend ?? (data.length > 2)) ? (
+      {(showLegend ?? (data.length > 2 || (isMobile && data.length <= 2))) ? (
         <HStack
           mt="$3"
           space="md"

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { ScrollView, useWindowDimensions } from 'react-native';
 import Svg, { Rect, Text as SvgText, Line } from 'react-native-svg';
 import { Box, VStack, Text } from '@ui';
 import { usePlatform } from '@utils/platform';
@@ -25,16 +25,21 @@ const SimpleGroupedBarChart: React.FC<SimpleGroupedBarChartProps> = ({
   series,
   height = 260,
 }) => {
-  const { isWeb } = usePlatform();
+  const { isWeb, isMobile } = usePlatform();
   const windowDimensions = useWindowDimensions();
-  const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
+  const [containerWidth, setContainerWidth] = useState(Math.max(windowDimensions.width, 0));
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
 
-  const width = containerWidth;
   const padding = { top: 20, right: 52, bottom: 58, left: 52 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+  const groupCount = Math.max(categories.length, 1);
+  // Mobile: allow horizontal scroll when category labels would collide.
+  const minGroupWidth = 90;
+  const desiredWidth = padding.left + padding.right + groupCount * minGroupWidth;
+  const width = isMobile ? Math.max(containerWidth, desiredWidth) : containerWidth;
+  const shouldScrollX = isMobile && width > containerWidth + 1;
+  const chartWidth = Math.max(width - padding.left - padding.right, 1);
+  const chartHeight = Math.max(height - padding.top - padding.bottom, 1);
 
   const leftSeries = useMemo(() => series.filter(s => (s.axis || 'left') === 'left'), [series]);
   const rightSeries = useMemo(() => series.filter(s => (s.axis || 'left') === 'right'), [series]);
@@ -57,7 +62,6 @@ const SimpleGroupedBarChart: React.FC<SimpleGroupedBarChartProps> = ({
   const formatLeft = (v: number) => `${Math.round(v)}`;
   const formatRight = (v: number) => `${v.toFixed(1)}%`;
 
-  const groupCount = Math.max(categories.length, 1);
   const groupWidth = chartWidth / groupCount;
   const barGap = 8;
   const barCount = Math.max(series.length, 1);
@@ -92,41 +96,30 @@ const SimpleGroupedBarChart: React.FC<SimpleGroupedBarChartProps> = ({
     return { cat, lines };
   }, [categories, hoveredIndex, series]);
 
-  return (
-    <VStack space="sm" width="100%" alignItems="center" mb="$6">
-      <Box
-        width="100%"
-        alignItems="center"
-        onLayout={(e: any) => {
-          const layoutWidth = e.nativeEvent.layout.width;
-          if (layoutWidth > 0 && layoutWidth !== containerWidth) {
-            setContainerWidth(layoutWidth);
-          }
-        }}
-      >
-        <Box
-          width={width}
-          height={height}
-          position="relative"
-          $web-cursor={isWeb ? 'auto' : undefined}
-          {...(isWeb && {
-            // @ts-ignore - web-only mouse events
-            onMouseMove: (e: any) => {
-              const rect = e.currentTarget?.getBoundingClientRect?.();
-              if (!rect) return;
-              const x = e.clientX - rect.left;
-              const y = e.clientY - rect.top;
-              const idx = pickGroupIndexByPoint(x, y);
-              setHoveredIndex(idx);
-              setHoverPos(idx !== null ? { x, y } : null);
-            },
-            onMouseLeave: () => {
-              setHoveredIndex(null);
-              setHoverPos(null);
-            },
-          })}
-        >
-          <Svg width={width} height={height}>
+  const ChartBody = (
+    <Box
+      width={width}
+      height={height}
+      position="relative"
+      $web-cursor={isWeb ? 'auto' : undefined}
+      {...(isWeb && {
+        // @ts-ignore - web-only mouse events
+        onMouseMove: (e: any) => {
+          const rect = e.currentTarget?.getBoundingClientRect?.();
+          if (!rect) return;
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const idx = pickGroupIndexByPoint(x, y);
+          setHoveredIndex(idx);
+          setHoverPos(idx !== null ? { x, y } : null);
+        },
+        onMouseLeave: () => {
+          setHoveredIndex(null);
+          setHoverPos(null);
+        },
+      })}
+    >
+      <Svg width={width} height={height}>
             {/* Grid (horizontal) */}
             {Array.from({ length: ticks + 1 }).map((_, i) => {
               const y = padding.top + (i * chartHeight) / ticks;
@@ -300,35 +293,61 @@ const SimpleGroupedBarChart: React.FC<SimpleGroupedBarChartProps> = ({
             ) : null}
           </Svg>
 
-          {/* Hover tooltip */}
-          {isWeb && hoveredIndex !== null && hoverPos && tooltipLines ? (
-            <Box
-              position="absolute"
-              left={Math.min(Math.max(hoverPos.x + 12, 8), width - 260)}
-              top={Math.min(Math.max(hoverPos.y - 30, 8), height - 110)}
-              bg="$white"
-              borderWidth={1}
-              borderColor="$borderLight300"
-              borderRadius="$md"
-              p="$3"
-              shadowColor="$black"
-              shadowOffset={{ width: 0, height: 2 } as any}
-              shadowOpacity={0.08}
-              shadowRadius={6}
-              elevation={3}
-              pointerEvents="none"
-            >
-              <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
-                {tooltipLines.cat}
-              </Text>
-              {tooltipLines.lines.map(l => (
-                <Text key={l.label} fontSize="$xs" color={l.color as any}>
-                  {`${l.label}: ${l.value}`}
-                </Text>
-              ))}
-            </Box>
-          ) : null}
+      {/* Hover tooltip */}
+      {isWeb && hoveredIndex !== null && hoverPos && tooltipLines ? (
+        <Box
+          position="absolute"
+          left={Math.min(Math.max(hoverPos.x + 12, 8), width - 260)}
+          top={Math.min(Math.max(hoverPos.y - 30, 8), height - 110)}
+          bg="$white"
+          borderWidth={1}
+          borderColor="$borderLight300"
+          borderRadius="$md"
+          p="$3"
+          shadowColor="$black"
+          shadowOffset={{ width: 0, height: 2 } as any}
+          shadowOpacity={0.08}
+          shadowRadius={6}
+          elevation={3}
+          pointerEvents="none"
+        >
+          <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$2">
+            {tooltipLines.cat}
+          </Text>
+          {tooltipLines.lines.map(l => (
+            <Text key={l.label} fontSize="$xs" color={l.color as any}>
+              {`${l.label}: ${l.value}`}
+            </Text>
+          ))}
         </Box>
+      ) : null}
+    </Box>
+  );
+
+  return (
+    <VStack space="sm" width="100%" alignItems="center" mb={isMobile ? '$2' : '$6'}>
+      <Box
+        width="100%"
+        alignItems="center"
+        onLayout={(e: any) => {
+          const layoutWidth = e.nativeEvent.layout.width;
+          if (layoutWidth > 0 && layoutWidth !== containerWidth) {
+            setContainerWidth(layoutWidth);
+          }
+        }}
+      >
+        {shouldScrollX ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            style={{ width: '100%' } as any}
+            contentContainerStyle={{ width } as any}
+          >
+            {ChartBody}
+          </ScrollView>
+        ) : (
+          ChartBody
+        )}
       </Box>
     </VStack>
   );

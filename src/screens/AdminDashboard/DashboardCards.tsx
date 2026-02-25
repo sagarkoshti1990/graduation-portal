@@ -7,6 +7,7 @@ import { dashboardCardsStyles } from './DashboardStyle';
 import { DashboardCard, cardViewDataMap, individualIndicatorTopicCards } from '@constants/ADMIN_DASHBOARD_CARDS';
 import Breadcrumb, { BreadcrumbItem } from '@components/Breadcrumb';
 import CardView from './CardView';
+import { usePlatform } from '@utils/platform';
 
 interface DashboardCardsProps {
   cards: DashboardCard[];
@@ -28,6 +29,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
+  const { isMobile } = usePlatform();
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [currentCards, setCurrentCards] = useState<DashboardCard[]>(cards);
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
@@ -385,6 +387,11 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
 
   // Calculate card width based on number of cards
   const getCardWidth = (totalCards: number) => {
+    // On mobile, always use 100% width
+    if (isMobile) {
+      return '100%';
+    }
+    
     if (totalCards === 1) {
       return '100%';
     } else if (totalCards === 2) {
@@ -628,9 +635,9 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
                   key={card.id}
                   {...dashboardCardsStyles.pressable}
                   style={{
-                    flexBasis: 'calc(25% - 12px)',
-                    width: 'calc(25% - 12px)',
-                    maxWidth: 'calc(25% - 12px)',
+                    flexBasis: isMobile ? '100%' : 'calc(25% - 12px)',
+                    width: isMobile ? '100%' : 'calc(25% - 12px)',
+                    maxWidth: isMobile ? '100%' : 'calc(25% - 12px)',
                     flexShrink: 0,
                     flexGrow: 0,
                   } as any}
