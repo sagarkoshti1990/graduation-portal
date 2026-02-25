@@ -23,7 +23,7 @@ import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { loginStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
-import logo500Image from '../../assets/images/logo500.png';
+import logo500Image from '../../assets/images/logo.svg';
 // import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import logger from '@utils/logger';
 import offlineStorage from '../../services/offlineStorage';
@@ -189,7 +189,7 @@ const LoginScreen: React.FC = () => {
           <Animated.View style={{ opacity: flashAnim }}>
             <VStack {...loginStyles.vstack}>
               {/* Logo/Brand */}
-              {/* Placeholder for logo - replace with actual logo */}
+              {/* @ts-ignore - Image props are valid */}
               <Image {...loginStyles.imageLogo} source={logoImage} />
 
               {/* Tagline */}

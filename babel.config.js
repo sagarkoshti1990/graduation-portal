@@ -15,6 +15,7 @@ module.exports = {
           '@app-types': './src/types',
           '@constants': './src/constants',
           '@layout': './src/layout',
+          '@hooks': './src/hooks',
         },
       },
     ],

@@ -20,6 +20,7 @@ import DataTable from '@components/DataTable';
 import { getParticipantsColumns } from './ParticipantsTableConfig';
 import { Participant } from '@app-types/screens';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useDocumentTitle } from '@hooks';
 import { getParticipantsList } from '../../services/participantService';
 import type { ParticipantOverview } from '@app-types/participant';
 import { STATUS } from '@constants/app.constant';
@@ -63,6 +64,9 @@ const ParticipantsList: React.FC = () => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user } = useAuth();
+
+  // Set document title
+  useDocumentTitle(t('admin.pageTitle.participants'));
 
   // State management
   const [participants, setParticipants] = useState<Participant[]>([]);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaView, ScrollView, useColorMode, Pressable, Icon, MenuIcon, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
@@ -6,6 +6,8 @@ import Header from '@components/Header';
 import { stylesLayout } from './Styles';
 import { LC_MENU_OPTIONS } from '@constants/PROFILE_MENU_OPTIONS';
 import { useAuth } from '@contexts/AuthContext';
+import { useLanguage } from '@contexts/LanguageContext';
+import { useDocumentTitle } from '@hooks';
 import logger from '@utils/logger';
 
 /**
@@ -20,13 +22,22 @@ interface LayoutProps {
   navigation?: any;
   pendingSyncCount?: number;
   disableScroll?: boolean;
+  pageName?: string; // Page name for title setting
 }
 
-const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll }) => {
+const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageName }) => {
   const mode = useColorMode();
   const isDark = mode === 'dark';
-  const { logout,navbarData } = useAuth();
+  const { logout, navbarData } = useAuth();
+  const { t } = useLanguage();
   const navigation = useNavigation();
+
+  // Set document title for web - memoize to avoid recalculation
+  const pageTitle = useMemo(() => 
+    pageName ? t(`admin.pageTitle.${pageName}`) : title,
+    [pageName, title, t]
+  );
+  useDocumentTitle(pageTitle);
 
   // Handle menu item selection - uses route from menu config for navigation
   const handleMenuSelect = (key: string | undefined) => {

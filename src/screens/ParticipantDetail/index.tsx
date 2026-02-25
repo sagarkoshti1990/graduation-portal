@@ -16,6 +16,7 @@ import {
   getSitesByProvince
 } from '../../services/participantService';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useDocumentTitle } from '@hooks';
 import NotFound from '@components/NotFound';
 import { TabButton } from '@components/Tabs';
 import { PARTICIPANT_DETAIL_TABS } from '@constants/TABS';
@@ -89,6 +90,12 @@ export default function ParticipantDetail() {
   const [configData, setConfigData] = useState<any>(null);
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
+
+  // Set document title with participant name
+  const pageTitle = participant?.name 
+    ? `${participant.name} - ${t('admin.pageTitle.participant-detail')}`
+    : t('admin.pageTitle.participant-detail');
+  useDocumentTitle(pageTitle);
 
   const fetchEntityDetails = useCallback(async () => {
     if (participantId && user?.id && !isFetchingRef.current) {

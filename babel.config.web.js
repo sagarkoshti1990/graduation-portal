@@ -20,6 +20,7 @@ module.exports = {
           '@types': './src/types',
           '@constants': './src/constants',
           '@layout': './src/layout',
+          '@hooks': './src/hooks',
         },
       },
     ],
