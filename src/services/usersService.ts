@@ -54,25 +54,26 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
       queryParams.append('search', search);
     }
 
-    // Add optional filter parameters (except province - it goes in body)
+    // Add optional filter parameters (except province/site - they go in body meta)
     if (role) {
       queryParams.append('role', role);
     }
     if (status) {
       queryParams.append('status', status);
     }
-    if (site) {
-      queryParams.append('site', site);
-    }
 
     const endpoint = `${API_ENDPOINTS.USERS_LIST}?${queryParams.toString()}`;
     
-    // Build request body - province goes in meta.province
+    // Build request body - province/site go in meta
     const requestBody: any = {};
-    if (province) {
-      requestBody.meta = {
-        province: province, // Province ID (e.g., "6952163ae83c1c00147132a8")
-      };
+    if (province || site) {
+      requestBody.meta = {};
+      if (province) {
+        requestBody.meta.province = province; // Province ID (e.g., "6952163ae83c1c00147132a8")
+      }
+      if (site) {
+        requestBody.meta.site = site; // Site ID
+      }
     }
     
     // Log the complete API URL with query parameters (for debugging)
@@ -430,3 +431,21 @@ export const resetPassword = async (
   }
 };
 
+/**
+ * Deactivate one or more users (Admin only)
+ *
+ * API: POST /user/v1/admin/deactivateUser
+ * Body: { "id": [3125] }
+ */
+export const deactivateUser = async (ids: Array<string | number>): Promise<any> => {
+  try {
+    const normalized = (ids || []).map((v) => {
+      const n = typeof v === 'number' ? v : Number(v);
+      return Number.isFinite(n) ? n : v;
+    });
+    const response = await api.post(API_ENDPOINTS.DEACTIVATE_USER, { id: normalized });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};

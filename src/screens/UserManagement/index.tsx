@@ -13,7 +13,7 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { getUsersList, resetPassword } from '../../services/usersService';
+import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
 import type { 
   // UserSearchParams,
    Role
@@ -133,6 +133,7 @@ const UserManagementScreen = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | null>(null);
+  const [refetchKey, setRefetchKey] = useState(0);
 
   // File upload state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -155,6 +156,36 @@ const UserManagementScreen = () => {
     isSubmitting: false,
     error: '',
   });
+
+  // Deactivate confirmation modal state
+  const [deactivateState, setDeactivateState] = useState({
+    user: null as AdminUserManagementData | null,
+    isSubmitting: false,
+  });
+
+  const closeDeactivateModal = useCallback(() => {
+    setDeactivateState({ user: null, isSubmitting: false });
+  }, []);
+
+  const openDeactivateModal = useCallback((user: AdminUserManagementData) => {
+    setDeactivateState({ user, isSubmitting: false });
+  }, []);
+
+  const handleConfirmDeactivate = useCallback(async () => {
+    if (!deactivateState.user) return;
+    setDeactivateState(prev => ({ ...prev, isSubmitting: true }));
+    try {
+      const n = Number(deactivateState.user.id);
+      const idVal = Number.isFinite(n) ? n : deactivateState.user.id;
+      await deactivateUser([idVal]);
+      showAlert('success', t('admin.users.deactivate.success') || 'User deactivated successfully');
+      closeDeactivateModal();
+      setRefetchKey(k => k + 1);
+    } catch (error: any) {
+      showAlert('error', error?.message || t('common.somethingWentWrong'));
+      setDeactivateState(prev => ({ ...prev, isSubmitting: false }));
+    }
+  }, [closeDeactivateModal, deactivateState.user, showAlert, t]);
 
   const closeProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
@@ -245,8 +276,9 @@ const UserManagementScreen = () => {
     () => getUsersColumns({ 
       onViewProfile: openProfileModal,
       onResetPassword: openResetPasswordModal,
+      onDeactivate: openDeactivateModal,
     }),
-    [openProfileModal, openResetPasswordModal]
+    [openProfileModal, openResetPasswordModal, openDeactivateModal]
   );
 
   // Ref to track previous roles length to detect when roles are first loaded
@@ -361,7 +393,7 @@ const UserManagementScreen = () => {
       fetchUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, roles.length, currentPage, pageSize]); // Depend on filters, roles, currentPage, and pageSize
+  }, [filters, roles.length, currentPage, pageSize, refetchKey]); // Depend on filters, roles, currentPage, and pageSize
 
   // Handle filter changes
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
@@ -952,6 +984,81 @@ const UserManagementScreen = () => {
             ) : null}
           </VStack>
         </VStack>
+      </Modal>
+
+      {/* Deactivate Confirmation Modal */}
+      <Modal
+        isOpen={!!deactivateState.user?.id}
+        onClose={closeDeactivateModal}
+        headerTitle={t('admin.users.actionMenu.confirmDeactivate') || 'Confirm Deactivation'}
+        headerDescription={(() => {
+          const name = deactivateState.user?.name || '';
+          const msg =
+            t('admin.users.actionMenu.deactivateMessage', { name }) ||
+            'Are you sure you want to deactivate this user?';
+
+          if (!name || typeof msg !== 'string') {
+            return (
+              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                {String(msg)}
+              </Text>
+            );
+          }
+
+          const idx = msg.indexOf(name);
+          if (idx < 0) {
+            return (
+              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                {msg}
+              </Text>
+            );
+          }
+
+          const before = msg.slice(0, idx);
+          const after = msg.slice(idx + name.length);
+          return (
+            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+              {before}
+              <Text color="$textForeground" fontWeight="$medium">
+                {name}
+              </Text>
+              {after}
+            </Text>
+          );
+        })()}
+        headerAlignment="baseline"
+        maxWidth={420}
+        size="sm"
+        closeOnOverlayClick={!deactivateState.isSubmitting}
+        headerProps={{ paddingTop: '$4', paddingBottom: '$2' }}
+        bodyProps={{ padding: '$4', paddingTop: '$0', paddingBottom: '$4' }}
+      >
+        <HStack space="md" width="100%" justifyContent="flex-end" flexWrap="wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            onPress={closeDeactivateModal}
+            isDisabled={deactivateState.isSubmitting}
+          >
+            <ButtonText color="$textPrimary" {...TYPOGRAPHY.bodySmall}>
+              {t('common.cancel') || 'Cancel'}
+            </ButtonText>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="solid"
+            action="primary"
+            onPress={handleConfirmDeactivate}
+            isDisabled={deactivateState.isSubmitting}
+          >
+            <ButtonText color="$white" {...TYPOGRAPHY.bodySmall}>
+              {deactivateState.isSubmitting
+                ? (t('common.submitting') || 'Submitting...')
+                : (t('admin.users.actionMenu.deactivate') || 'Deactivate')}
+            </ButtonText>
+          </Button>
+        </HStack>
       </Modal>
 
       {/* Hidden File Input for CSV Upload - triggers native file picker on "Upload CSV" click */}
