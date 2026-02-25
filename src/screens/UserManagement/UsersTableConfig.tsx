@@ -9,6 +9,7 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { styles as dataTableStyles } from '@components/DataTable/Styles';
 import { MenuItemData } from '@components/ui/Menu';
 import { styles } from './Styles';
+import { useAuth } from '@contexts/AuthContext';
 
 /**
  * Helper function to extract role label from user object
@@ -135,41 +136,51 @@ const getCustomTrigger = (triggerProps: any) => (
 /**
  * Get User Menu Items
  */
-const getUserMenuItems = (_t: (key: string) => string): MenuItemData[] => [
-  {
-    key: 'view-profile',
-    label: 'admin.users.actionMenu.viewProfile',
-    textValue: 'View Profile',
-    iconName: 'Eye',
-    iconColor: theme.tokens.colors.textForeground,
-    iconSizeValue: 20,
-  },
-  // {
-  //   key: 'edit',
-  //   label: 'admin.users.actionMenu.edit',
-  //   textValue: 'Edit',
-  //   iconName: 'Pencil',
-  //   iconColor: theme.tokens.colors.textForeground,
-  //   iconSizeValue: 20,
-  // },
-  {
-    key: 'reset-password',
-    label: 'admin.users.actionMenu.resetPassword',
-    textValue: 'Reset Password',
-    iconName: 'RotateCcw',
-    iconColor: theme.tokens.colors.textForeground,
-    iconSizeValue: 20,
-  },
-  {
-    key: 'deactivate',
-    label: 'admin.users.actionMenu.deactivate',
-    textValue: 'Deactivate',
-    iconName: 'UserX',
-    iconColor: theme.tokens.colors.error600,
-    iconSizeValue: 20,
-    color: theme.tokens.colors.error600,
-  },
-];
+const getUserMenuItems = (
+  _t: (key: string) => string,
+  isAdmin: boolean
+): MenuItemData[] => {
+  const items: MenuItemData[] = [
+    {
+      key: 'view-profile',
+      label: 'admin.users.actionMenu.viewProfile',
+      textValue: 'View Profile',
+      iconName: 'Eye',
+      iconColor: theme.tokens.colors.textForeground,
+      iconSizeValue: 20,
+    },
+    // {
+    //   key: 'edit',
+    //   label: 'admin.users.actionMenu.edit',
+    //   textValue: 'Edit',
+    //   iconName: 'Pencil',
+    //   iconColor: theme.tokens.colors.textForeground,
+    //   iconSizeValue: 20,
+    // },
+    {
+      key: 'reset-password',
+      label: 'admin.users.actionMenu.resetPassword',
+      textValue: 'Reset Password',
+      iconName: 'RotateCcw',
+      iconColor: theme.tokens.colors.textForeground,
+      iconSizeValue: 20,
+    },
+  ];
+
+  if (isAdmin) {
+    items.push({
+      key: 'deactivate',
+      label: 'admin.users.actionMenu.deactivate',
+      textValue: 'Deactivate',
+      iconName: 'UserX',
+      iconColor: theme.tokens.colors.error600,
+      iconSizeValue: 20,
+      color: theme.tokens.colors.error600,
+    });
+  }
+
+  return items;
+};
 
 /**
  * Actions Column Component
@@ -178,8 +189,11 @@ const ActionsColumn: React.FC<{
   user: AdminUserManagementData;
   onViewProfile?: (user: AdminUserManagementData) => void;
   onResetPassword?: (user: AdminUserManagementData) => void;
-}> = ({ user, onViewProfile, onResetPassword }) => {
+  onDeactivate?: (user: AdminUserManagementData) => void;
+}> = ({ user, onViewProfile, onResetPassword, onDeactivate }) => {
   const { t } = useLanguage();
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'Admin';
 
   const handleMenuSelect = (key: string) => {
     switch (key) {
@@ -195,15 +209,14 @@ const ActionsColumn: React.FC<{
         onResetPassword?.(user);
         break;
       case 'deactivate':
-        console.log('Deactivate user:', user.id);
-        // TODO: Implement deactivate logic - API call to deactivate user
+        onDeactivate?.(user);
         break;
       default:
         console.log('Action:', key, 'for user:', user.id);
     }
   };
 
-  const menuItems = getUserMenuItems(t);
+  const menuItems = getUserMenuItems(t, isAdmin);
 
   return (
     <Menu
@@ -222,6 +235,7 @@ const ActionsColumn: React.FC<{
 export const getUsersColumns = (handlers?: {
   onViewProfile?: (user: AdminUserManagementData) => void;
   onResetPassword?: (user: AdminUserManagementData) => void;
+  onDeactivate?: (user: AdminUserManagementData) => void;
 }): ColumnDef<AdminUserManagementData>[] => [
   {
     key: 'id',
@@ -371,6 +385,7 @@ export const getUsersColumns = (handlers?: {
         user={user} 
         onViewProfile={handlers?.onViewProfile}
         onResetPassword={handlers?.onResetPassword}
+        onDeactivate={handlers?.onDeactivate}
       />
     ),
     mobileConfig: {

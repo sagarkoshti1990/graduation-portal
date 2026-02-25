@@ -13,7 +13,7 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { getUsersList, resetPassword } from '../../services/usersService';
+import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
 import type { 
   // UserSearchParams,
    Role
@@ -133,6 +133,7 @@ const UserManagementScreen = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | null>(null);
+  const [refetchKey, setRefetchKey] = useState(0);
 
   // File upload state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -245,8 +246,20 @@ const UserManagementScreen = () => {
     () => getUsersColumns({ 
       onViewProfile: openProfileModal,
       onResetPassword: openResetPasswordModal,
+      onDeactivate: async (user: AdminUserManagementData) => {
+        try {
+          const n = Number(user.id);
+          const idVal = Number.isFinite(n) ? n : user.id;
+          await deactivateUser([idVal]);
+          showAlert('success', t('admin.users.deactivate.success') || 'User deactivated');
+          // Trigger a refetch without disturbing current filters/pagination
+          setRefetchKey(k => k + 1);
+        } catch (error: any) {
+          showAlert('error', error?.message || t('common.somethingWentWrong'));
+        }
+      },
     }),
-    [openProfileModal, openResetPasswordModal]
+    [openProfileModal, openResetPasswordModal, showAlert, t]
   );
 
   // Ref to track previous roles length to detect when roles are first loaded
@@ -361,7 +374,7 @@ const UserManagementScreen = () => {
       fetchUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, roles.length, currentPage, pageSize]); // Depend on filters, roles, currentPage, and pageSize
+  }, [filters, roles.length, currentPage, pageSize, refetchKey]); // Depend on filters, roles, currentPage, and pageSize
 
   // Handle filter changes
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
