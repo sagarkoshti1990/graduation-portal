@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { Box, Container, VStack, HStack, Text, Spinner, Button, ButtonText, ButtonIcon, LucideIcon } from '@ui';
 import { AssessmentCard } from '@components/ObservationCards';
-import { getParticipantProfile } from '../../../services/participantService';
+import { getParticipantsList } from '../../../services/participantService';
 import { getTargetedSolutions } from '../../../services/solutionService';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -41,7 +41,7 @@ const LogVisit: React.FC = () => {
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
   const navigation = useNavigation();
   const { t } = useLanguage();
-  const { setNavbarData } = useAuth();
+  const { setNavbarData, user } = useAuth();
   /**
    * Fetch targeted solutions from API
    */
@@ -55,8 +55,10 @@ const LogVisit: React.FC = () => {
         });
         setSolutions(data);
         if (route.params?.id) {
-          const participantData = await getParticipantProfile(route.params?.id);
-          setParticipant(participantData);
+          const response = await getParticipantsList({ entityId: route.params?.id, userId: user?.id as string });
+          const { userDetails, ...rest } = response?.result?.data?.[0]
+          const participantData = { ...(userDetails || {}), ...rest }
+          setParticipant(participantData as ParticipantData);
           setNavbarData({
             subtitle: participantData?.name,
           });

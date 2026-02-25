@@ -12,8 +12,8 @@ import {
   ButtonIcon,
   useAlert,
 } from '@ui';
-import { LucideIcon, Select } from '@ui';
-import { getParticipantProfile, getParticipantsList } from '../../../services/participantService';
+import { LucideIcon } from '@ui';
+import { getParticipantsList } from '../../../services/participantService';
 import {
   getTargetedSolutions,
   getObservationEntities,
@@ -27,9 +27,8 @@ import { ParticipantData } from '@app-types/participant';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
-import { ENTITY_TYPE } from '@constants/ROLES';
 import { StatusBadge } from '@components/ObservationCards';
-import { CARD_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_TYPE } from '@constants/app.constant';
 import { ICONS } from '@constants/LOG_VISIT_CARDS';
 import offlineStorage from '../../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
@@ -41,6 +40,7 @@ import type { User } from '@contexts/AuthContext';
  */
 interface CheckInsListContentProps {
   id: string;
+  solutions?: AssessmentSurveyCardData[];
   userName?: string;
   onClose?: () => void;
   onFormSelect?: (submission: any,solutionName: string) => void;
@@ -50,6 +50,7 @@ interface CheckInsListContentProps {
     submissionNumber: number;
   }) => void;
   preSelectedSolution?: string;
+  participant?: ParticipantData;
 }
 
 /**
@@ -58,10 +59,11 @@ interface CheckInsListContentProps {
  */
 const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   id,
-  userName,
   onNavigateToObservation,
   preSelectedSolution,
-  onFormSelect
+  onFormSelect,
+  solutions: propSolutions,
+  participant: propParticipant
 }) => {
   type IconMeta = {
     color?: string;
@@ -70,9 +72,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   } | null;
 
   const [loading, setLoading] = useState<boolean>(true);
-  const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
+  const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>(propSolutions || []);
   const [selectedSolution, setSelectedSolution] = useState<string>('');
-  const [solutionName, setSolutionName] = useState<string>('');
+  const [solutionItem, setSolutionItem] = useState<AssessmentSurveyCardData | null>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState<boolean>(false);
   const [iconMeta, setIconMeta] = useState<IconMeta>(null);
@@ -80,7 +82,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   const [isUserLoaded, setIsUserLoaded] = useState(false);
   const [participant, setParticipant] = useState<
     ParticipantData | undefined
-  >(undefined);
+  >(propParticipant);
   const { t } = useLanguage();
   const { showAlert } = useAlert();
 
@@ -118,26 +120,22 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   }, []);
   /**
    * Fetch targeted solutions from API
+   * Only fetch participant if not provided via props
    */
   useEffect(() => {
     if (!isUserLoaded) return;
 
     const fetchSolutions = async () => {
       try {
-        const data = await getTargetedSolutions({
-          type: 'observation',
-        });
-        setSolutions(data);
-        if (id && user?.id) {
-          const response = await getParticipantsList({
-            entityId: id,
-            userId: user.id,
+        if(propSolutions) {
+          setSolutions(propSolutions);
+        } else {
+          const data = await getTargetedSolutions({
+            type: 'observation',
           });
-          setParticipant(response?.result?.data?.[0] as ParticipantData);
+          setSolutions(data);
         }
-        if (preSelectedSolution) {
-          setSelectedSolution(preSelectedSolution);
-        }
+       
       } catch (error) {
         logger.error('Error fetching solutions:', error);
         setSolutions([]);
@@ -147,34 +145,61 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     };
 
     fetchSolutions();
-  }, [id, preSelectedSolution, user?.id, isUserLoaded]);
+  }, [isUserLoaded, propSolutions]);
+
+  useEffect(() => {
+    if (preSelectedSolution) {
+      setSelectedSolution(preSelectedSolution);
+    }
+  }, [preSelectedSolution]);
+
+  /**
+   * Update local participant state when prop changes
+   */
+  useEffect(() => {
+    const fetchParticipant = async () => {
+      if (propParticipant) {
+        setParticipant(propParticipant);
+      } else {
+        // Only fetch participant if not provided via props
+        if (id && user?.id) {
+          const response = await getParticipantsList({
+            entityId: id,
+            userId: user.id,
+          });
+          setParticipant(response?.result?.data?.[0] as ParticipantData);
+        }
+      }
+    }
+    fetchParticipant();
+  }, [propParticipant, id, user?.id]);
 
   /**
    * Fetch submissions when a solution is selected
    */
   useEffect(() => {
     const fetchSubmissions = async () => {
-      if (!selectedSolution || !participant?.userId) {
+      if (!selectedSolution || !participant?.userId || solutions.length <= 0 || !user?.id) {
         setSubmissions([]);
         return;
       }
-
+      
       setSubmissionsLoading(true);
       try {
-        const solution = solutions.find(
+        const selectedSolutionData = solutions.find(
           s => s.solutionId === selectedSolution || s.id === selectedSolution,
         );
-        if (!solution) {
+        if (!selectedSolutionData) {
           logger.error('Solution not found');
           setSubmissions([]);
           return;
         }
-        const iconMetanew = ICONS?.[solution?.name?.toLowerCase() as keyof typeof ICONS];
+        const iconMetanew = ICONS?.[selectedSolutionData?.name?.toLowerCase() as keyof typeof ICONS];
         setIconMeta(iconMetanew as any);
-        const solutionNameData = solutions.find((solution: any) => solution.solutionId === selectedSolution)?.name;
+        const solutionNameData = solutions.find((sol: any) => sol.solutionId === selectedSolution);
         let filterAnswerValue,userId, entityId: string | null = null;
-        setSolutionName(solutionNameData || '');
-        if(solutionNameData == "Group Check-Ins"){
+        setSolutionItem(solutionNameData || null);
+        if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
           userId = user?.id;
         } else {
@@ -183,12 +208,12 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
 
         // Get observation entities to find observationId and entityId
         const observationData = await getObservationEntities({
-          solutionId: solution.solutionId || solution.id,
+          solutionId: selectedSolutionData.solutionId || selectedSolutionData.id,
           profileData: {},
         });
         const observationId = observationData?.result?._id;
         if (!observationId) {
-          showAlert('error', 'Observation ID not found');
+          logger.error('Observation ID not found');
           setSubmissions([]);
           return;
         }
@@ -204,10 +229,11 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         }
 
         if (!entityId) {
-          showAlert('error','Entity ID not found for participant');
+          logger.log(t('logVisit.errors.entityIdNotFound'));
           setSubmissions([]);
           return;
         }
+
         // Fetch submissions
         const submissionsData = await getObservationSubmissions({
           observationId,
@@ -234,12 +260,12 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
 
   const handleViewForm = (submissionNumber: number) => {
     if (onNavigateToObservation && participant?.userId && selectedSolution) {
-      if (solutionName == "Group Check-Ins" && !user?.id) {
-        showAlert('error', 'User not found');
+      if (solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION && !user?.id) {
+        showAlert('error', t('logVisit.errors.userNotFound'));
         return;
       }
       onNavigateToObservation({
-        id: solutionName == "Group Check-Ins" ? user?.id : participant.userId,
+        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? user?.id : participant.userId,
         solutionId: selectedSolution,
         submissionNumber,
       });
@@ -341,7 +367,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
                             $md-width="fit-content"
                             // @ts-ignore
                             variant={"outlineghost"}
-                            onPress={() => onFormSelect ? onFormSelect(submission,solutionName) : handleViewForm(submission.submissionNumber)}
+                            onPress={() => onFormSelect ? onFormSelect(submission,solutionItem?.name || '') : handleViewForm(submission.submissionNumber)}
                           >
                             <ButtonIcon as={LucideIcon} name="Eye" size={16} />
                             <ButtonText {...assessmentSurveyCardStyles.buttonText}>

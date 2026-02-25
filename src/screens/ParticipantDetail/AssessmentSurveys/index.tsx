@@ -12,7 +12,7 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { ENTITY_TYPE } from '@constants/ROLES';
-import { STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_STATUS, STATUS } from '@constants/app.constant';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
@@ -43,7 +43,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 solutionId: item.solutionId,
                 id: participant?.id,
               });
-              return { ...item, entity };
+              
+              return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED } };
             } catch (error) {
               logger.error('Failed to fetch entity for solutionId:', item.solutionId, error);
               // Skip this item by returning null
@@ -87,7 +88,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   if (loading) {
     return <Spinner height={isWeb ? '$calc(100vh - 68px)' : '$full'} size="large" color="$primary500" />;
   }
-
+  
   return (
     <ScrollView
       {...assessmentSurveysStyles.scrollView}

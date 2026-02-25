@@ -1884,7 +1884,12 @@
       "description": "Conduct a midline assessment survey to track progress"
     },
     "noCheckInsYet": "No Check-Ins Yet",
-    "noCheckInsYetDescription": "Check-ins will appear here once forms and surveys are completed for this participant."
+    "noCheckInsYetDescription": "Check-ins will appear here once forms and surveys are completed for this participant.",
+    "errors": {
+      "observationIdNotFound": "Observation ID not found",
+      "entityIdNotFound": "Entity ID not found for participant",
+      "userNotFound": "User not found"
+    }
   },
   "lcProfile": {
     "myProfile": "My Profile",
@@ -1961,6 +1966,9 @@
   "downloadForms":{
     "downloadForms":"Download Forms",
     "downloadNecessaryForms":"Download the necessary forms for the participant",
-    "Download":"Download"
+    "Download":"Download",
+    "downloadSuccess":"Download started successfully",
+    "downloadError":"Failed to download file. Please try again.",
+    "downloadUriError":"File not found. Please contact support."
   }
 }

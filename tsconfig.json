@@ -23,7 +23,9 @@
       "@constants": ["./src/constants"],
       "@constants/*": ["./src/constants/*"],
       "@layout": ["./src/layout"],
-      "@layout/*": ["./src/layout/*"]
+      "@layout/*": ["./src/layout/*"],
+      "@hooks": ["./src/hooks"],
+      "@hooks/*": ["./src/hooks/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "src/components/ui/index.ts"],

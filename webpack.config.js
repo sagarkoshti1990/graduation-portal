@@ -258,6 +258,7 @@ module.exports = (env = {}, argv = {}) => {
         '@app-types': path.resolve(__dirname, 'src/types'),
         '@constants': path.resolve(__dirname, 'src/constants'),
         '@layout': path.resolve(__dirname, 'src/layout'),
+        '@hooks': path.resolve(__dirname, 'src/hooks'),
       },
       extensions: [
         '.web.tsx',

@@ -8,7 +8,7 @@ export const loginStyles = {
     position: 'absolute',
     left: 900,
     top: -130,
-    opacity: 0.1,
+    opacity: 0.2,
   },
   imageSpinLogoLeft: {
     marginBottom: 16,
@@ -17,7 +17,7 @@ export const loginStyles = {
     position: 'absolute',
     left: -126,
     bottom: 86,
-    opacity: 0.1,
+    opacity: 0.2,
   },
   imageLogo500: {
     width: 500,
@@ -59,9 +59,9 @@ export const loginStyles = {
     w: '$full',
     maxWidth: 448
   },
-  containerBoxShadow: SHADOW_STYLES.containerBoxShadow,
+  containerBoxShadow: SHADOW_STYLES.loginContainerBoxShadow,
   vstack: { space: 'lg', alignItems: 'center' },
-  imageLogo: { w: '$20', h: '$20', mb: '$4', resizeMode: 'contain' },
+  imageLogo: { w: '80px', h: '90px', mb: '$2', resizeMode: 'contain' },
   box2: {
     w: '$full',
     h: '$full',
@@ -71,9 +71,9 @@ export const loginStyles = {
     alignItems: 'center',
   },
   text: { fontSize: '$2xl', fontWeight: '$bold', color: '$white' },
-  heading: { size: 'sm', color: '$primary500', textAlign: 'center' },
+  heading: { size: 'md', color: '$primary500', textAlign: 'center', fontWeight: '$normal' },
   vstack2: { space: 'xs', alignItems: 'center', mb: '$4' },
-  text2: { fontSize: '$sm', fontWeight: '$semibold', color: '$textDark900' },
+  text2: { fontSize: '$sm', fontWeight: '$normal', color: '$primary500' },
   text3: { fontSize: '$sm', color: '$textDark400' },
   vstack3: { space: 'xs', w: '$full' },
   text4: { fontSize: '$sm', fontWeight: '$medium', color: '$textDark800' },

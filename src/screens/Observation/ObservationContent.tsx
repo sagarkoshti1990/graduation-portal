@@ -274,8 +274,6 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [solutionId, id, submissionNumber]);
 
-  console.log('defaultValuesLocal', submission,submission?.status);
-
   const handleBackPress = useCallback(() => {
     if (onClose) {
       onClose();
