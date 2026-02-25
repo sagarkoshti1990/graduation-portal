@@ -157,14 +157,14 @@ const getUserMenuItems = (
     //   iconColor: theme.tokens.colors.textForeground,
     //   iconSizeValue: 20,
     // },
-    {
-      key: 'reset-password',
-      label: 'admin.users.actionMenu.resetPassword',
-      textValue: 'Reset Password',
-      iconName: 'RotateCcw',
-      iconColor: theme.tokens.colors.textForeground,
-      iconSizeValue: 20,
-    },
+    // {
+    //   key: 'reset-password',
+    //   label: 'admin.users.actionMenu.resetPassword',
+    //   textValue: 'Reset Password',
+    //   iconName: 'RotateCcw',
+    //   iconColor: theme.tokens.colors.textForeground,
+    //   iconSizeValue: 20,
+    // },
   ];
 
   if (isAdmin) {
