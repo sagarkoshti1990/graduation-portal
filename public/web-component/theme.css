@@ -19,7 +19,9 @@
   --mdc-radio-state-layer-size: 16px !important;
   --mdc-radio-size: 16px !important;
 }
-
+.custom-font-grid {
+  gap:1rem !important;
+}
 .page-header {
   margin: 0;
   color: var(--text-color) !important;
@@ -602,3 +604,10 @@ lib-entity-dropdown-input mat-chip {
   border-radius: 50% !important;
 }
 /* end entity-modal-content styles */
+
+/* start mat-icon styles */
+.mat-icon {
+  height: 20px !important;
+  width: 20px !important;
+}
+/* end mat-icon styles */

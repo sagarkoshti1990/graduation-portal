@@ -6,7 +6,6 @@ import { theme } from '@config/theme';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import { LucideIcon, Menu } from '@ui';
-import { Participant } from '@app-types/screens';
 import { styles as dataTableStyles } from '@components/DataTable/Styles';
 import { getParticipantsMenuItems, DROPOUT_REASON_OPTIONS } from '@constants/PARTICIPANTS_LIST';
 import logger from '@utils/logger';
@@ -18,9 +17,10 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
 import { STATUS } from '@constants/app.constant';
 import Select from '@components/ui/Inputs/Select';
+import { AssessmentSurveyCardData, ParticipantData } from '@app-types/participant';
 
 interface ActionColumnProps {
-  participant: Participant;
+  participant: ParticipantData;
 }
 
 /**
@@ -53,6 +53,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
   
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
+  const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [logVisitLoading, setLogVisitLoading] = useState(false);
   const [selectedSubmissionNumber, setSelectedSubmissionNumber] = useState<number | null>(null);
   const handleViewDetails = () => {
@@ -100,6 +101,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
           // @ts-ignore - filter[keywords] is a valid parameter
           "filter[keywords]": FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')
         });
+        setSolutions(data);
         // Automatically select the first solution
         if (data && data.length > 0) {
           const firstSolution = data[0];
@@ -200,8 +202,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
       <HStack {...dataTableStyles.cardActionsSection}>
         {/* @ts-ignore: Back Button */}
         <Button
+          // @ts-ignore: variant outlineghost
           variant={isMobile ? 'outlineghost' : 'ghost'}
-          flex="1"
+          flex={1}
           onPress={isNotOnboarded ? handleLogVisit : handleViewDetails}
         >
           {isNotOnboarded && (
@@ -357,9 +360,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
               <Box flex={1}>
                 <CheckInsListContent
                   id={participant.userId}
-                  userName={user?.name}
+                  solutions={solutions}
                   preSelectedSolution={selectedSolutionId}
                   onFormSelect={handleFormSelect}
+                  participant={participant}
                 />
               </Box>
             ) : (

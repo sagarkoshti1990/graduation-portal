@@ -52,6 +52,7 @@ export const ICONS = {
   "midline survey": {icon: "BarChart", color: "$warning500",iconColor: "$primary500"},
   "group visit": {icon: "Users", color: "$blue500"},
   "group check-ins": {icon: "Users", color: "$blue500"},
+  "group check-in": {icon: "Users", color: "$blue500"},
   "log visit": {icon: "Users", color: "$blue500"},
   "intervention completion survey": {icon: "FileText", color: "$white", iconColor: "$primary500"},
   "big push / asset transfer observation framework-1769076753343": {icon: "FileText", color: "$primary500"},

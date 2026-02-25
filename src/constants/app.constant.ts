@@ -9,6 +9,18 @@ export const STATUS = {
   GRADUATED: 'GRADUATED',
 };
 
+export const ENTITY_STATUS = {
+  NOT_STARTED: 'notStarted',
+  STARTED: 'started',
+  COMPLETED: 'completed',
+} as const;
+
+export const ENTITY_TYPE = {
+  PARTICIPANT: 'participant',
+  LINKAGE_CHAMPION: 'linkageChampion',
+  SUPERVISOR: 'supervisor',
+} as const;
+
 // Task Status Constants
 export const TASK_STATUS = {
   TO_DO: 'notStarted',

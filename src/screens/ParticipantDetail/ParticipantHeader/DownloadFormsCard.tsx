@@ -4,6 +4,7 @@ import { Box, HStack, Text, Button, ButtonText, LucideIcon } from '@ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CONSENT_FORM_ASSET, SLA_FORM_ASSET } from './downloadAssets';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAlert } from '@components/ui/Alert';
 
 type FormItem = {
   label: string;
@@ -18,6 +19,7 @@ type Props = {
 const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
   const { width } = useWindowDimensions();
   const { t } = useLanguage();
+  const { showAlert } = useAlert();
   // breakpoint similar to design systems
   const isWeb = Platform.OS === 'web';
   const isDesktop = width >= 768;
@@ -32,6 +34,7 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
     
     if (!uri) {
       console.error('Download failed: URI is undefined');
+      showAlert('error', t('downloadForms.downloadUriError'));
       return;
     }
     
@@ -61,8 +64,10 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
         document.body.removeChild(link);
         
         console.log('Download initiated successfully for:', filename);
+        showAlert('success', t('downloadForms.downloadSuccess'));
       } catch (error) {
         console.error('Download error:', error);
+        showAlert('error', t('downloadForms.downloadError'));
         // Fallback: open in new tab
         window.open(uri, '_blank');
       }
@@ -70,9 +75,14 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
     }
     
     // Native platforms
-    Linking.openURL(uri).catch(err => {
-      console.error('Failed to open URL:', err);
-    });
+    Linking.openURL(uri)
+      .then(() => {
+        showAlert('success', t('downloadForms.downloadSuccess'));
+      })
+      .catch(err => {
+        console.error('Failed to open URL:', err);
+        showAlert('error', t('downloadForms.downloadError'));
+      });
   };
 
   return (
