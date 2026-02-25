@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, View, Pressable, useWindowDimensions } from 'react-native';
+import { Animated, View, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import Svg, { Line, Circle, Text as SvgText, G, Rect, Path } from 'react-native-svg';
 import { Box, VStack, HStack, Text } from '@ui';
 import { usePlatform } from '@utils/platform';
@@ -54,17 +54,23 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   thresholdPointColor = '#16A34A',
   referenceLines,
 }) => {
-  const { isWeb } = usePlatform();
+  const { isWeb, isMobile } = usePlatform();
   const windowDimensions = useWindowDimensions();
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
-  const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
+  const [containerWidth, setContainerWidth] = useState(Math.max(windowDimensions.width, 0));
   
-  // Use full available container width (end-to-end charts on wide screens)
-  const width = containerWidth;
   const padding = { top: 40, right: 20, bottom: 50, left: 60 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+  // Mobile: if x-axis spacing gets too tight, allow horizontal scroll by expanding the canvas width.
+  const minXStep = 44;
+  const desiredWidth =
+    padding.left + padding.right + Math.max(0, (data.length - 1) * minXStep);
+
+  // Use full available container width (end-to-end charts on wide screens)
+  const width = isMobile ? Math.max(containerWidth, desiredWidth) : containerWidth;
+  const shouldScrollX = isMobile && width > containerWidth + 1;
+  const chartWidth = Math.max(width - padding.left - padding.right, 1);
+  const chartHeight = Math.max(height - padding.top - padding.bottom, 1);
 
   // Find min/max values
   const values = data.map(d => d.value);
@@ -153,53 +159,39 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
     return minValue + (valueRange * i) / (yTicks - 1);
   });
 
-  return (
-    <VStack space="sm" width="100%" alignItems="center" mb="$6">
-      {/* Chart Container */}
-      <Box 
-        width="100%" 
-        alignItems="center" 
-        position="relative"
-        onLayout={(e: any) => {
-          const layoutWidth = e.nativeEvent.layout.width;
-          if (layoutWidth > 0 && layoutWidth !== containerWidth) {
-            setContainerWidth(layoutWidth);
-          }
-        }}
-      >
-        <Box
-          {...(isWeb && {
-            // @ts-ignore - web-only mouse events
-            onMouseMove: (e: any) => {
-              const svgRect = e.currentTarget?.getBoundingClientRect?.();
-              if (!svgRect) return;
-              
-              const mouseX = e.clientX - svgRect.left;
-              const mouseY = e.clientY - svgRect.top;
-              
-              // Only hover when mouse is within plot area
-              const withinX =
-                mouseX >= padding.left && mouseX <= padding.left + chartWidth;
-              const withinY =
-                mouseY >= padding.top && mouseY <= padding.top + chartHeight;
-              
-              if (!withinX || !withinY) {
-                setHoveredPoint(null);
-                setHoverPos(null);
-                return;
-              }
+  const ChartBody = (
+    <Box width={width} height={height} position="relative">
+      <Box
+        {...(isWeb && {
+          // @ts-ignore - web-only mouse events
+          onMouseMove: (e: any) => {
+            const svgRect = e.currentTarget?.getBoundingClientRect?.();
+            if (!svgRect) return;
 
-              // Hover should follow mouse movement: pick nearest x-index (no distance threshold)
-              const rawIdx = Math.round((mouseX - padding.left) / xStep);
-              const idx = Math.max(0, Math.min(data.length - 1, rawIdx));
-              setHoveredPoint(idx);
-              setHoverPos({ x: mouseX, y: mouseY });
-            },
-            onMouseLeave: handlePointLeave,
-            style: { cursor: 'pointer' },
-          })}
-        >
-          <Svg width={width} height={height}>
+            const mouseX = e.clientX - svgRect.left;
+            const mouseY = e.clientY - svgRect.top;
+
+            // Only hover when mouse is within plot area
+            const withinX = mouseX >= padding.left && mouseX <= padding.left + chartWidth;
+            const withinY = mouseY >= padding.top && mouseY <= padding.top + chartHeight;
+
+            if (!withinX || !withinY) {
+              setHoveredPoint(null);
+              setHoverPos(null);
+              return;
+            }
+
+            // Hover should follow mouse movement: pick nearest x-index (no distance threshold)
+            const rawIdx = Math.round((mouseX - padding.left) / xStep);
+            const idx = Math.max(0, Math.min(data.length - 1, rawIdx));
+            setHoveredPoint(idx);
+            setHoverPos({ x: mouseX, y: mouseY });
+          },
+          onMouseLeave: handlePointLeave,
+          style: { cursor: 'pointer' },
+        })}
+      >
+        <Svg width={width} height={height}>
           {/* Grid lines (faint dotted like reference) */}
           {showGrid &&
             yTickValues.map((val, i) => {
@@ -341,52 +333,54 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
           ) : null}
 
           {/* Data points with hover/press support */}
-          {!hideLine ? points.map((p, i) => (
-            <G key={`point-group-${i}`}>
-              {/* Invisible larger circle for easier interaction */}
-              <Circle
-                cx={p.x}
-                cy={p.y}
-                r="15"
-                fill="transparent"
-                onPress={(e: any) => {
-                  handlePointInteraction(i);
-                  return e;
-                }}
-              />
-              {/* Visible point */}
-              {hoveredPoint === i ? (
-                <>
-                  {/* Outer ring */}
+          {!hideLine
+            ? points.map((p, i) => (
+                <G key={`point-group-${i}`}>
+                  {/* Invisible larger circle for easier interaction */}
                   <Circle
                     cx={p.x}
                     cy={p.y}
-                    r="6.5"
-                    fill="#FFFFFF"
-                    stroke={color}
-                    strokeWidth="2.5"
+                    r="15"
+                    fill="transparent"
                     onPress={(e: any) => {
                       handlePointInteraction(i);
                       return e;
                     }}
                   />
-                  {/* Inner dot */}
-                  <Circle cx={p.x} cy={p.y} r="3.5" fill={getPointFill(p.value)} />
-                </>
-              ) : (
-              <Circle
-                cx={p.x}
-                cy={p.y}
-                  r="5"
-                  fill={getPointFill(p.value)}
-                  onPress={(e: any) => {
-                    handlePointInteraction(i);
-                    return e;
-                  }}
-              />
-              )}
-            </G>
-          )) : null}
+                  {/* Visible point */}
+                  {hoveredPoint === i ? (
+                    <>
+                      {/* Outer ring */}
+                      <Circle
+                        cx={p.x}
+                        cy={p.y}
+                        r="6.5"
+                        fill="#FFFFFF"
+                        stroke={color}
+                        strokeWidth="2.5"
+                        onPress={(e: any) => {
+                          handlePointInteraction(i);
+                          return e;
+                        }}
+                      />
+                      {/* Inner dot */}
+                      <Circle cx={p.x} cy={p.y} r="3.5" fill={getPointFill(p.value)} />
+                    </>
+                  ) : (
+                    <Circle
+                      cx={p.x}
+                      cy={p.y}
+                      r="5"
+                      fill={getPointFill(p.value)}
+                      onPress={(e: any) => {
+                        handlePointInteraction(i);
+                        return e;
+                      }}
+                    />
+                  )}
+                </G>
+              ))
+            : null}
 
           {/* X-axis labels */}
           {data.map((d, i) => {
@@ -408,44 +402,67 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
             ) : null;
           })}
         </Svg>
-        </Box>
+      </Box>
 
-        {/* Tooltip Popover */}
-        {hoveredPoint !== null && hoverPos && (
-          <Box
-            position="absolute"
-            // Follow mouse, clamped within container
-            left={Math.min(
-              Math.max(hoverPos.x + 12, 8),
-              width - 180
-            )}
-            top={Math.min(
-              Math.max(hoverPos.y - 60, 8),
-              height - 90
-            )}
-            bg="$white"
-            borderWidth={1}
-            borderColor="$borderLight300"
-            borderRadius="$md"
-            p="$2"
-            px="$3"
-            shadowColor="$black"
-            shadowOffset={{ width: 0, height: 2 } as any}
-            shadowOpacity={0.1}
-            shadowRadius={4}
-            elevation={3}
-            zIndex={1000}
-            pointerEvents="none"
+      {/* Tooltip Popover */}
+      {hoveredPoint !== null && hoverPos && (
+        <Box
+          position="absolute"
+          // Follow mouse, clamped within container
+          left={Math.min(Math.max(hoverPos.x + 12, 8), width - 180)}
+          top={Math.min(Math.max(hoverPos.y - 60, 8), height - 90)}
+          bg="$white"
+          borderWidth={1}
+          borderColor="$borderLight300"
+          borderRadius="$md"
+          p="$2"
+          px="$3"
+          shadowColor="$black"
+          shadowOffset={{ width: 0, height: 2 } as any}
+          shadowOpacity={0.1}
+          shadowRadius={4}
+          elevation={3}
+          zIndex={1000}
+          pointerEvents="none"
+        >
+          <VStack space="xs">
+            <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
+              {data[hoveredPoint].month}
+            </Text>
+            <Text fontSize="$xs" color="$primary600">
+              {valueLabel}: {data[hoveredPoint].value}
+            </Text>
+          </VStack>
+        </Box>
+      )}
+    </Box>
+  );
+
+  return (
+    <VStack space="sm" width="100%" alignItems="center" mb={isMobile ? '$2' : '$6'}>
+      {/* Chart Container */}
+      <Box 
+        width="100%" 
+        alignItems="center" 
+        position="relative"
+        onLayout={(e: any) => {
+          const layoutWidth = e.nativeEvent.layout.width;
+          if (layoutWidth > 0 && layoutWidth !== containerWidth) {
+            setContainerWidth(layoutWidth);
+          }
+        }}
+      >
+        {shouldScrollX ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            style={{ width: '100%' } as any}
+            contentContainerStyle={{ width } as any}
           >
-            <VStack space="xs">
-              <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
-                {data[hoveredPoint].month}
-              </Text>
-              <Text fontSize="$xs" color="$primary600">
-                {valueLabel}: {data[hoveredPoint].value}
-              </Text>
-            </VStack>
-          </Box>
+            {ChartBody}
+          </ScrollView>
+        ) : (
+          ChartBody
         )}
       </Box>
 

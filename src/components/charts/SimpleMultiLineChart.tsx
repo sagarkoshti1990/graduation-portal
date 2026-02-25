@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, useWindowDimensions } from 'react-native';
+import { Animated, ScrollView, useWindowDimensions } from 'react-native';
 import Svg, { Line, Circle, Text as SvgText, G, Path } from 'react-native-svg';
 import { Box, VStack, HStack, Text } from '@ui';
 import { usePlatform } from '@utils/platform';
@@ -40,18 +40,25 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
   rightYAxisLabel,
   series,
 }) => {
-  const { isWeb } = usePlatform();
+  const { isWeb, isMobile } = usePlatform();
   const windowDimensions = useWindowDimensions();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
-  const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
+  const [containerWidth, setContainerWidth] = useState(Math.max(windowDimensions.width, 0));
 
-  // Use full available container width (end-to-end charts on wide screens)
-  const width = containerWidth;
   const hasRightAxis = useMemo(() => series.some(s => s.axis === 'right' && !s.hidden), [series]);
   const padding = { top: 20, right: hasRightAxis ? 60 : 20, bottom: 50, left: 60 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+  // Mobile: allow horizontal scrolling when X labels would overlap.
+  const labelCount = Math.max(series?.[0]?.data?.length ?? 0, 0);
+  const minXStep = 44;
+  const desiredWidth =
+    padding.left + padding.right + Math.max(0, (labelCount - 1) * minXStep);
+
+  // Use full available container width (end-to-end charts on wide screens)
+  const width = isMobile ? Math.max(containerWidth, desiredWidth) : containerWidth;
+  const shouldScrollX = isMobile && width > containerWidth + 1;
+  const chartWidth = Math.max(width - padding.left - padding.right, 1);
+  const chartHeight = Math.max(height - padding.top - padding.bottom, 1);
 
   const xLabels = useMemo(() => {
     const first = series[0]?.data ?? [];
@@ -175,8 +182,316 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
     Animated.stagger(120, animations).start();
   }, [seriesLengths, series.length]);
 
+  const ChartBody = (
+    <Box width={width} height={height} position="relative">
+      <Box
+        {...(isWeb && {
+          // @ts-ignore web-only mouse events
+          onMouseMove: (e: any) => {
+            const rect = e.currentTarget?.getBoundingClientRect?.();
+            if (!rect) return;
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const withinX =
+              mouseX >= padding.left && mouseX <= padding.left + chartWidth;
+            const withinY =
+              mouseY >= padding.top && mouseY <= padding.top + chartHeight;
+
+            if (!withinX || !withinY) {
+              setHoveredIndex(null);
+              setHoverPos(null);
+              return;
+            }
+
+            const rawIdx = Math.round((mouseX - padding.left) / xStep);
+            const idx = Math.max(0, Math.min(xLabels.length - 1, rawIdx));
+            setHoveredIndex(idx);
+            setHoverPos({ x: mouseX, y: mouseY });
+          },
+          onMouseLeave: handleLeave,
+          style: { cursor: 'pointer' },
+        })}
+      >
+        <Svg width={width} height={height}>
+          {/* Grid (faint dotted like reference) */}
+          {yTickValues.map((val, i) => {
+            const y = padding.top + chartHeight - ((val - leftMinValue) / leftRange) * chartHeight;
+            return (
+              <Line
+                key={`grid-h-${i}`}
+                x1={padding.left}
+                y1={y}
+                x2={padding.left + chartWidth}
+                y2={y}
+                stroke="#D1D5DB"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+              />
+            );
+          })}
+
+          {xLabels.map((_, i) => {
+            const x = padding.left + i * xStep;
+            return (
+              <Line
+                key={`grid-v-${i}`}
+                x1={x}
+                y1={padding.top}
+                x2={x}
+                y2={padding.top + chartHeight}
+                stroke={hoveredIndex === i ? '#9CA3AF' : '#D1D5DB'}
+                strokeWidth={hoveredIndex === i ? 1.5 : 1}
+                strokeDasharray={hoveredIndex === i ? '0' : '3 3'}
+                opacity={hoveredIndex === i ? 0.9 : 0.7}
+              />
+            );
+          })}
+
+          {/* Axes */}
+          <Line
+            x1={padding.left}
+            y1={padding.top}
+            x2={padding.left}
+            y2={padding.top + chartHeight}
+            stroke="#9CA3AF"
+            strokeWidth="2"
+          />
+          {hasRightAxis ? (
+            <Line
+              x1={padding.left + chartWidth}
+              y1={padding.top}
+              x2={padding.left + chartWidth}
+              y2={padding.top + chartHeight}
+              stroke="#9CA3AF"
+              strokeWidth="2"
+            />
+          ) : null}
+          <Line
+            x1={padding.left}
+            y1={padding.top + chartHeight}
+            x2={padding.left + chartWidth}
+            y2={padding.top + chartHeight}
+            stroke="#9CA3AF"
+            strokeWidth="2"
+          />
+
+          {/* Y labels */}
+          {yTickValues.map((val, i) => {
+            const y = padding.top + chartHeight - ((val - leftMinValue) / leftRange) * chartHeight;
+            return (
+              <SvgText
+                key={`y-${i}`}
+                x={padding.left - 10}
+                y={y + 5}
+                fontSize="12"
+                fill="#6B7280"
+                textAnchor="end"
+              >
+                {formatLeftTick(val)}
+              </SvgText>
+            );
+          })}
+
+          {/* Right Y labels */}
+          {hasRightAxis
+            ? rightTickValues.map((val, i) => {
+                const y = padding.top + chartHeight - (chartHeight * i) / (yTicks - 1);
+                return (
+                  <SvgText
+                    key={`y-right-${i}`}
+                    x={padding.left + chartWidth + 10}
+                    y={y + 5}
+                    fontSize="12"
+                    fill="#6B7280"
+                    textAnchor="start"
+                  >
+                    {Math.round(val)}
+                  </SvgText>
+                );
+              })
+            : null}
+
+          {/* Y-axis title (vertical) */}
+          {yAxisLabel ? (
+            <SvgText
+              x={18}
+              y={padding.top + chartHeight / 2}
+              fontSize="12"
+              fill="#6B7280"
+              textAnchor="middle"
+              transform={`rotate(-90 18 ${padding.top + chartHeight / 2})`}
+            >
+              {yAxisLabel}
+            </SvgText>
+          ) : null}
+          {hasRightAxis && rightYAxisLabel ? (
+            <SvgText
+              x={width - 18}
+              y={padding.top + chartHeight / 2}
+              fontSize="12"
+              fill="#6B7280"
+              textAnchor="middle"
+              transform={`rotate(-90 ${width - 18} ${padding.top + chartHeight / 2})`}
+            >
+              {rightYAxisLabel}
+            </SvgText>
+          ) : null}
+
+          {/* Hover crosshair (vertical) */}
+          {hoveredIndex !== null ? (
+            <Line
+              x1={padding.left + hoveredIndex * xStep}
+              y1={padding.top}
+              x2={padding.left + hoveredIndex * xStep}
+              y2={padding.top + chartHeight}
+              stroke="#9CA3AF"
+              strokeWidth="1"
+              opacity={0.6}
+            />
+          ) : null}
+
+          {/* X labels */}
+          {xLabels.map((lab, i) => {
+            const x = padding.left + i * xStep;
+            const y = padding.top + chartHeight + 25;
+            const showLabel = xLabels.length <= 12 || i % 2 === 0;
+            return showLabel ? (
+              <SvgText
+                key={`x-${i}`}
+                x={x}
+                y={y}
+                fontSize="11"
+                fill="#6B7280"
+                textAnchor="middle"
+              >
+                {lab}
+              </SvgText>
+            ) : null;
+          })}
+
+          {/* Series paths */}
+          {series.map(s => {
+            if (s.hidden) return null;
+            const axis: 'left' | 'right' = s.axis === 'right' ? 'right' : 'left';
+            const pts = s.data.map((p, idx) => getPointXY(idx, p.y, axis));
+            const path = createSmoothPath(pts);
+            const idx = series.findIndex(ss => ss.id === s.id);
+            const length = seriesLengths[idx] || 1;
+            const dashOffset = dashOffsetsRef.current[idx];
+            return (
+              <AnimatedPath
+                key={`path-${s.id}`}
+                d={path}
+                stroke={s.color}
+                strokeWidth="2.5"
+                fill="none"
+                {...(s.dashArray
+                  ? { strokeDasharray: s.dashArray as any }
+                  : {
+                      strokeDasharray: `${length} ${length}`,
+                      strokeDashoffset: dashOffset as any,
+                    })}
+              />
+            );
+          })}
+
+          {/* Interaction points */}
+          {xLabels.map((_, idx) => (
+            <G key={`hover-${idx}`}>
+              {series.map(s => {
+                if (s.hidden) return null;
+                const p = s.data[idx];
+                if (!p) return null;
+                const xy = getPointXY(idx, p.y, s.axis === 'right' ? 'right' : 'left');
+                const isActive = hoveredIndex === idx;
+                return (
+                  <G key={`${s.id}-${idx}`}>
+                    <Circle
+                      cx={xy.x}
+                      cy={xy.y}
+                      r="12"
+                      fill="transparent"
+                      onPress={(e: any) => {
+                        setHoveredIndex(idx);
+                        return e;
+                      }}
+                    />
+                    {isActive ? (
+                      <>
+                        {/* Outer ring */}
+                        <Circle
+                          cx={xy.x}
+                          cy={xy.y}
+                          r="5.5"
+                          fill="#FFFFFF"
+                          stroke={s.color}
+                          strokeWidth="2.5"
+                        />
+                        {/* Inner dot */}
+                        <Circle cx={xy.x} cy={xy.y} r="3" fill={s.color} />
+                      </>
+                    ) : (
+                      <Circle
+                        cx={xy.x}
+                        cy={xy.y}
+                        r="3"
+                        fill={s.color}
+                        opacity={0.85}
+                      />
+                    )}
+                  </G>
+                );
+              })}
+            </G>
+          ))}
+        </Svg>
+      </Box>
+
+      {/* Tooltip */}
+      {hoveredIndex !== null && xLabels[hoveredIndex] && hoverPos ? (
+        <Box
+          position="absolute"
+          left={Math.min(Math.max(hoverPos.x + 12, 8), width - 220)}
+          top={Math.min(Math.max(hoverPos.y - 60, 8), height - 140)}
+          bg="$white"
+          borderWidth={1}
+          borderColor="$borderLight300"
+          borderRadius="$md"
+          p="$2"
+          px="$3"
+          shadowColor="$black"
+          shadowOffset={{ width: 0, height: 2 } as any}
+          shadowOpacity={0.1}
+          shadowRadius={4}
+          elevation={3}
+          zIndex={1000}
+          pointerEvents="none"
+          minWidth={140}
+        >
+          <VStack space="xs">
+            <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
+              {xLabels[hoveredIndex]}
+            </Text>
+            {series.filter(s => !s.hidden).map(s => (
+              <HStack key={`tt-${s.id}`} space="sm" alignItems="center">
+                <Box width={8} height={8} borderRadius={999} bg={s.color as any} />
+                <Text fontSize="$xs" color="$textLight600" flex={1}>
+                  {s.label}
+                </Text>
+                <Text fontSize="$xs" fontWeight="$semibold" color="$textForeground">
+                  {s.data[hoveredIndex]?.y ?? '-'}
+                </Text>
+              </HStack>
+            ))}
+          </VStack>
+        </Box>
+      ) : null}
+    </Box>
+  );
+
   return (
-    <VStack space="sm" width="100%" alignItems="center" mb="$6">
+    <VStack space="sm" width="100%" alignItems="center" mb={isMobile ? '$2' : '$6'}>
       <Box
         width="100%"
         alignItems="center"
@@ -188,310 +503,18 @@ const SimpleMultiLineChart: React.FC<SimpleMultiLineChartProps> = ({
           }
         }}
       >
-        <Box
-          {...(isWeb && {
-            // @ts-ignore web-only mouse events
-            onMouseMove: (e: any) => {
-              const rect = e.currentTarget?.getBoundingClientRect?.();
-              if (!rect) return;
-              const mouseX = e.clientX - rect.left;
-              const mouseY = e.clientY - rect.top;
-
-              const withinX =
-                mouseX >= padding.left && mouseX <= padding.left + chartWidth;
-              const withinY =
-                mouseY >= padding.top && mouseY <= padding.top + chartHeight;
-
-              if (!withinX || !withinY) {
-                setHoveredIndex(null);
-                setHoverPos(null);
-                return;
-              }
-
-              const rawIdx = Math.round((mouseX - padding.left) / xStep);
-              const idx = Math.max(0, Math.min(xLabels.length - 1, rawIdx));
-              setHoveredIndex(idx);
-              setHoverPos({ x: mouseX, y: mouseY });
-            },
-            onMouseLeave: handleLeave,
-            style: { cursor: 'pointer' },
-          })}
-        >
-          <Svg width={width} height={height}>
-            {/* Grid (faint dotted like reference) */}
-            {yTickValues.map((val, i) => {
-              const y = padding.top + chartHeight - ((val - leftMinValue) / leftRange) * chartHeight;
-              return (
-                <Line
-                  key={`grid-h-${i}`}
-                  x1={padding.left}
-                  y1={y}
-                  x2={padding.left + chartWidth}
-                  y2={y}
-                  stroke="#D1D5DB"
-                  strokeWidth="1"
-                  strokeDasharray="3 3"
-                />
-              );
-            })}
-
-            {xLabels.map((_, i) => {
-              const x = padding.left + i * xStep;
-              return (
-                <Line
-                  key={`grid-v-${i}`}
-                  x1={x}
-                  y1={padding.top}
-                  x2={x}
-                  y2={padding.top + chartHeight}
-                  stroke={hoveredIndex === i ? '#9CA3AF' : '#D1D5DB'}
-                  strokeWidth={hoveredIndex === i ? 1.5 : 1}
-                  strokeDasharray={hoveredIndex === i ? '0' : '3 3'}
-                  opacity={hoveredIndex === i ? 0.9 : 0.7}
-                />
-              );
-            })}
-
-            {/* Axes */}
-            <Line
-              x1={padding.left}
-              y1={padding.top}
-              x2={padding.left}
-              y2={padding.top + chartHeight}
-              stroke="#9CA3AF"
-              strokeWidth="2"
-            />
-            {hasRightAxis ? (
-              <Line
-                x1={padding.left + chartWidth}
-                y1={padding.top}
-                x2={padding.left + chartWidth}
-                y2={padding.top + chartHeight}
-                stroke="#9CA3AF"
-                strokeWidth="2"
-              />
-            ) : null}
-            <Line
-              x1={padding.left}
-              y1={padding.top + chartHeight}
-              x2={padding.left + chartWidth}
-              y2={padding.top + chartHeight}
-              stroke="#9CA3AF"
-              strokeWidth="2"
-            />
-
-            {/* Y labels */}
-            {yTickValues.map((val, i) => {
-              const y = padding.top + chartHeight - ((val - leftMinValue) / leftRange) * chartHeight;
-              return (
-                <SvgText
-                  key={`y-${i}`}
-                  x={padding.left - 10}
-                  y={y + 5}
-                  fontSize="12"
-                  fill="#6B7280"
-                  textAnchor="end"
-                >
-                  {formatLeftTick(val)}
-                </SvgText>
-              );
-            })}
-
-            {/* Right Y labels */}
-            {hasRightAxis
-              ? rightTickValues.map((val, i) => {
-                  const y = padding.top + chartHeight - (chartHeight * i) / (yTicks - 1);
-                  return (
-                    <SvgText
-                      key={`y-right-${i}`}
-                      x={padding.left + chartWidth + 10}
-                      y={y + 5}
-                      fontSize="12"
-                      fill="#6B7280"
-                      textAnchor="start"
-                    >
-                      {Math.round(val)}
-                    </SvgText>
-                  );
-                })
-              : null}
-
-            {/* Y-axis title (vertical) */}
-            {yAxisLabel ? (
-              <SvgText
-                x={18}
-                y={padding.top + chartHeight / 2}
-                fontSize="12"
-                fill="#6B7280"
-                textAnchor="middle"
-                transform={`rotate(-90 18 ${padding.top + chartHeight / 2})`}
-              >
-                {yAxisLabel}
-              </SvgText>
-            ) : null}
-            {hasRightAxis && rightYAxisLabel ? (
-              <SvgText
-                x={width - 18}
-                y={padding.top + chartHeight / 2}
-                fontSize="12"
-                fill="#6B7280"
-                textAnchor="middle"
-                transform={`rotate(-90 ${width - 18} ${padding.top + chartHeight / 2})`}
-              >
-                {rightYAxisLabel}
-              </SvgText>
-            ) : null}
-
-            {/* Hover crosshair (vertical) */}
-            {hoveredIndex !== null ? (
-              <Line
-                x1={padding.left + hoveredIndex * xStep}
-                y1={padding.top}
-                x2={padding.left + hoveredIndex * xStep}
-                y2={padding.top + chartHeight}
-                stroke="#9CA3AF"
-                strokeWidth="1"
-                opacity={0.6}
-              />
-            ) : null}
-
-            {/* X labels */}
-            {xLabels.map((lab, i) => {
-              const x = padding.left + i * xStep;
-              const y = padding.top + chartHeight + 25;
-              const showLabel = xLabels.length <= 12 || i % 2 === 0;
-              return showLabel ? (
-                <SvgText
-                  key={`x-${i}`}
-                  x={x}
-                  y={y}
-                  fontSize="11"
-                  fill="#6B7280"
-                  textAnchor="middle"
-                >
-                  {lab}
-                </SvgText>
-              ) : null;
-            })}
-
-            {/* Series paths */}
-            {series.map(s => {
-              if (s.hidden) return null;
-              const axis: 'left' | 'right' = s.axis === 'right' ? 'right' : 'left';
-              const pts = s.data.map((p, idx) => getPointXY(idx, p.y, axis));
-              const path = createSmoothPath(pts);
-              const idx = series.findIndex(ss => ss.id === s.id);
-              const length = seriesLengths[idx] || 1;
-              const dashOffset = dashOffsetsRef.current[idx];
-              return (
-                <AnimatedPath
-                  key={`path-${s.id}`}
-                  d={path}
-                  stroke={s.color}
-                  strokeWidth="2.5"
-                  fill="none"
-                  strokeDasharray={s.dashArray as any}
-                  {...(!s.dashArray
-                    ? {
-                        strokeDasharray: `${length} ${length}`,
-                        strokeDashoffset: dashOffset as any,
-                      }
-                    : {})}
-                />
-              );
-            })}
-
-            {/* Interaction points */}
-            {xLabels.map((_, idx) => (
-              <G key={`hover-${idx}`}>
-                {series.map(s => {
-                  if (s.hidden) return null;
-                  const p = s.data[idx];
-                  if (!p) return null;
-                  const xy = getPointXY(idx, p.y, s.axis === 'right' ? 'right' : 'left');
-                  const isActive = hoveredIndex === idx;
-                  return (
-                    <G key={`${s.id}-${idx}`}>
-                      <Circle
-                        cx={xy.x}
-                        cy={xy.y}
-                        r="12"
-                        fill="transparent"
-                        onPress={(e: any) => {
-                          setHoveredIndex(idx);
-                          return e;
-                        }}
-                      />
-                      {isActive ? (
-                        <>
-                          {/* Outer ring */}
-                          <Circle
-                            cx={xy.x}
-                            cy={xy.y}
-                            r="5.5"
-                            fill="#FFFFFF"
-                            stroke={s.color}
-                            strokeWidth="2.5"
-                          />
-                          {/* Inner dot */}
-                          <Circle cx={xy.x} cy={xy.y} r="3" fill={s.color} />
-                        </>
-                      ) : (
-                      <Circle
-                        cx={xy.x}
-                        cy={xy.y}
-                          r="3"
-                        fill={s.color}
-                          opacity={0.85}
-                      />
-                      )}
-                    </G>
-                  );
-                })}
-              </G>
-            ))}
-          </Svg>
-        </Box>
-
-        {/* Tooltip */}
-        {hoveredIndex !== null && xLabels[hoveredIndex] && hoverPos ? (
-          <Box
-            position="absolute"
-            left={Math.min(Math.max(hoverPos.x + 12, 8), width - 220)}
-            top={Math.min(Math.max(hoverPos.y - 60, 8), height - 140)}
-            bg="$white"
-            borderWidth={1}
-            borderColor="$borderLight300"
-            borderRadius="$md"
-            p="$2"
-            px="$3"
-            shadowColor="$black"
-            shadowOffset={{ width: 0, height: 2 } as any}
-            shadowOpacity={0.1}
-            shadowRadius={4}
-            elevation={3}
-            zIndex={1000}
-            pointerEvents="none"
-            minWidth={140}
+        {shouldScrollX ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            style={{ width: '100%' } as any}
+            contentContainerStyle={{ width } as any}
           >
-            <VStack space="xs">
-              <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground">
-                {xLabels[hoveredIndex]}
-              </Text>
-              {series.filter(s => !s.hidden).map(s => (
-                <HStack key={`tt-${s.id}`} space="sm" alignItems="center">
-                  <Box width={8} height={8} borderRadius={999} bg={s.color as any} />
-                  <Text fontSize="$xs" color="$textLight600" flex={1}>
-                    {s.label}
-                  </Text>
-                  <Text fontSize="$xs" fontWeight="$semibold" color="$textForeground">
-                    {s.data[hoveredIndex]?.y ?? '-'}
-                  </Text>
-                </HStack>
-              ))}
-            </VStack>
-          </Box>
-        ) : null}
+            {ChartBody}
+          </ScrollView>
+        ) : (
+          ChartBody
+        )}
       </Box>
 
       {/* Legend */}

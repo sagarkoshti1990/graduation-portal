@@ -40,14 +40,15 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
   showLegend,
   valueFormat,
 }) => {
-  const { isWeb } = usePlatform();
+  const { isWeb, isMobile } = usePlatform();
   const windowDimensions = useWindowDimensions();
-  const [containerWidth, setContainerWidth] = useState(windowDimensions.width - 100);
+  const [containerWidth, setContainerWidth] = useState(Math.max(windowDimensions.width, 0));
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   
   // Use full available container width (end-to-end charts on wide screens)
   const width = containerWidth;
+  const isNarrow = isMobile && containerWidth > 0 && containerWidth < 420;
   const resolvedShowAxes = showAxes ?? variant === 'standard';
   const resolvedShowGrid = showGrid ?? variant === 'standard';
   const resolvedShowLegend = showLegend ?? (variant === 'standard' && orientation === 'horizontal');
@@ -56,11 +57,26 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
     orientation === 'horizontal'
       ? variant === 'progress'
         // extra right space so value labels can align in a right-side column
-        ? { top: 18, right: 120, bottom: 18, left: 220 }
-        : { top: 30, right: 40, bottom: 56, left: 150 } // extra room for x-ticks + legend
-      : { top: 40, right: 20, bottom: 60, left: 60 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+        ? {
+            top: 18,
+            right: isNarrow ? 86 : 120,
+            bottom: 18,
+            left: isNarrow ? 140 : 220,
+          }
+        : {
+            top: 30,
+            right: isNarrow ? 20 : 40,
+            bottom: 56,
+            left: isNarrow ? 110 : 150,
+          } // extra room for x-ticks + legend
+      : {
+          top: isNarrow ? 30 : 40,
+          right: 20,
+          bottom: isNarrow ? 50 : 60,
+          left: isNarrow ? 48 : 60,
+        };
+  const chartWidth = Math.max(width - padding.left - padding.right, 1);
+  const chartHeight = Math.max(height - padding.top - padding.bottom, 1);
 
   const maxValue = Math.max(...data.map(d => d.value), 0);
   const isCurrencyLike = /zar|asset value/i.test(title || '');
@@ -150,7 +166,7 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
   };
 
   return (
-    <VStack space="sm" width="100%" alignItems="center" mb="$6">
+    <VStack space="sm" width="100%" alignItems="center" mb={isMobile ? '$2' : '$6'}>
       {/* Chart Container */}
       <Box 
         width="100%" 
@@ -290,7 +306,13 @@ const SimpleBarChart: React.FC<SimpleBarChartProps> = ({
                 const barW = (d.value / domainMax) * chartWidth || 0;
                 const y = padding.top + i * (horizontalBarHeight + horizontalBarSpacing);
                 const x = padding.left;
-                const maxLabel = variant === 'progress' ? 34 : 18;
+                const maxLabel = isNarrow
+                  ? variant === 'progress'
+                    ? 18
+                    : 12
+                  : variant === 'progress'
+                    ? 34
+                    : 18;
                 const label = d.label.length > maxLabel ? `${d.label.slice(0, maxLabel)}…` : d.label;
 
                 return (
