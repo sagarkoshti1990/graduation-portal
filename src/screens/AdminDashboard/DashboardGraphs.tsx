@@ -8,6 +8,7 @@ import SimpleBarChart from '@components/charts/SimpleBarChart';
 import SimplePieChart from '@components/charts/SimplePieChart';
 import SimpleMultiLineChart from '@components/charts/SimpleMultiLineChart';
 import SimpleGroupedBarChart from '@components/charts/SimpleGroupedBarChart';
+import { usePlatform } from '@utils/platform';
 import type {
   DashboardGraphBlock,
   DashboardGraphReportSectionBlock,
@@ -72,6 +73,7 @@ const ReportSection: React.FC<{
   fallbackPlaceholderKey: string;
 }> = ({ block, fallbackPlaceholderKey }) => {
   const { t } = useLanguage();
+  const { isMobile } = usePlatform();
   const [trendEnabled, setTrendEnabled] = useState<boolean>(
     block.headerToggle?.defaultValue ?? true
   );
@@ -345,18 +347,29 @@ const ReportSection: React.FC<{
         flex: col.flex,
         width: col.width,
         align: col.align,
+        // Force 14px table typography in graphs tab (match UI requirement)
         render:
           col.key === 'change'
             ? (item: any) => (
                 <Text
-                  fontSize="$xs"
+                  fontSize="$sm"
                   fontWeight="$semibold"
-                  color={String(item?.[col.key] || '').trim().startsWith('+') ? '#16A34A' : '$textMutedForeground'}
+                  color={
+                    String(item?.[col.key] || '')
+                      .trim()
+                      .startsWith('+')
+                      ? '#16A34A'
+                      : '$textForeground'
+                  }
                 >
                   {String(item?.[col.key] ?? '-')}
                 </Text>
               )
-            : undefined,
+            : (item: any) => (
+                <Text fontSize="$sm" color="$textForeground">
+                  {String(item?.[col.key] ?? '-')}
+                </Text>
+              ),
       }));
 
       const rows = (extra.rows || []).map((r, idx) => ({ __rowKey: (r as any).__rowKey ?? idx, ...r }));
@@ -365,12 +378,7 @@ const ReportSection: React.FC<{
         <Box
           key={extra.id}
           mt="$3"
-          bg="$backgroundLight50"
-          borderRadius="$lg"
-          px="$4"
-          py="$4"
-          borderWidth={1}
-          borderColor="$borderLight200"
+          width="100%"
         >
           {extra.title ? (
             <Text fontSize="$sm" fontWeight="$semibold" color="$textForeground" mb="$3">
@@ -384,7 +392,25 @@ const ReportSection: React.FC<{
             responsive={false}
             showHeader={extra.showHeader ?? true}
             minWidth={extra.minWidth ?? 900}
-            emptyMessage=""
+            _css={{
+              // Remove outer border + rounding (match "flat" table request)
+              _table: {
+                borderRadius: 0,
+                borderWidth: 0,
+              },
+              // Remove header background tint and header rounding
+              _header: {
+                _tableHeader: {
+                  bg: '$white' as const,
+                  borderTopLeftRadius: 0,
+                  borderTopRightRadius: 0,
+                },
+                _thText: {
+                  fontSize: '$sm',
+                  fontWeight: '$medium',
+                },
+              },
+            }}
           />
         </Box>
       );
@@ -564,7 +590,14 @@ const ReportSection: React.FC<{
   };
 
   return (
-    <Card p="$6" borderRadius="$xl" borderWidth={1} borderColor="$borderColor" variant="ghost" bg="$white">
+    <Card
+      p={isMobile ? '$5' : '$6'}
+      borderRadius="$xl"
+      borderWidth={1}
+      borderColor="$borderColor"
+      variant="ghost"
+      bg="$white"
+    >
       <VStack space="xs" width="100%">
         <HStack alignItems="flex-start" justifyContent="space-between" flexWrap="wrap">
           <VStack space="xs" flex={1} minWidth={240}>
@@ -579,7 +612,7 @@ const ReportSection: React.FC<{
           </VStack>
 
           {block.headerToggle ? (
-            <HStack alignItems="center" space="sm" mt="$1">
+            <HStack alignItems="center" space="sm" mt={isMobile ? '$3' : '$0'}>
               <Text fontSize="$sm" color="$textMutedForeground" fontWeight="$medium">
                 {t(block.headerToggle.labelKey)}
               </Text>
@@ -593,14 +626,21 @@ const ReportSection: React.FC<{
         {extrasTop.map(renderExtra)}
 
         {resolvedChartLayout === 'twoColumn' && resolvedCharts.length === 2 ? (
-          <HStack space="lg" alignItems="flex-start" flexWrap="wrap">
-            <Box flex={1} minWidth={320}>
+          isMobile ? (
+            <VStack space="lg" width="100%">
               {renderChart(resolvedCharts[0], 0)}
-            </Box>
-            <Box flex={1} minWidth={320}>
               {renderChart(resolvedCharts[1], 1)}
-            </Box>
-          </HStack>
+            </VStack>
+          ) : (
+            <HStack space="lg" alignItems="flex-start" flexWrap="wrap">
+              <Box flex={1} minWidth={320} width="100%">
+                {renderChart(resolvedCharts[0], 0)}
+              </Box>
+              <Box flex={1} minWidth={320} width="100%">
+                {renderChart(resolvedCharts[1], 1)}
+              </Box>
+            </HStack>
+          )
         ) : (
           resolvedCharts.map((c, idx) => renderChart(c, idx))
         )}
@@ -618,6 +658,7 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
   fallbackPlaceholderKey,
 }) => {
   const { t } = useLanguage();
+  const { isMobile } = usePlatform();
 
   const getGroupHeaderAccent = (block: any) => {
     // Prefer explicit textColor if provided.
@@ -631,7 +672,13 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
 
   if (!blocks || blocks.length === 0) {
     return (
-      <VStack space="md" width="100%" alignItems="center" py="$4" px="$2">
+      <VStack
+        space="md"
+        width="100%"
+        alignItems="center"
+        py="$4"
+        px={isMobile ? '$0' : '$2'}
+      >
         <Text>{t(fallbackPlaceholderKey)}</Text>
       </VStack>
     );
@@ -639,7 +686,13 @@ const DashboardGraphs: React.FC<DashboardGraphsProps> = ({
 
   return (
     <ScrollView showsVerticalScrollIndicator={true} style={{ width: '100%' }}>
-      <VStack space="lg" width="100%" alignItems="stretch" py="$2" px="$2">
+      <VStack
+        space="lg"
+        width="100%"
+        alignItems="stretch"
+        py={isMobile ? '$0' : '$2'}
+        px={isMobile ? '$0' : '$2'}
+      >
         {blocks.map(block => (
           block.kind === 'reportSection' ? (
             <ReportSection

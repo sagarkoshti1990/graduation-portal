@@ -1308,6 +1308,9 @@
         "success": "Password reset successfully",
         "error": "Failed to reset password"
       },
+      "deactivate": {
+        "success": "User deactivated successfully"
+      },
       "allProvinces": "All Provinces",
       "selectSupervisor": "Select Supervisor",
       "chooseSupervisor": "Choose Supervisor",
