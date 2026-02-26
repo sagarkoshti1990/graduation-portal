@@ -59,7 +59,7 @@ export const taskCardStyles = {
 
   // Tooltip styles
   tooltipContent: {
-    bg: '$textSecondary',
+    bg: '$tooltipBg',
     px: '$3',
     py: '$2',
     borderRadius: '$md',
@@ -437,9 +437,9 @@ export const taskAccordionStyles = {
   actionRequiredBadge: {
     space: 'xs' as const,
     alignItems: 'center' as const,
-    bg: '$warning100',
+    bg: '$evidenceRequiredBg',
     borderWidth: 1,
-    borderColor: '$warning300',
+    borderColor: '$evidenceRequiredBorder',
     borderRadius: '$full',
     paddingHorizontal: '$2',
     paddingVertical: '$0.5',
