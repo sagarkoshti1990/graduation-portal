@@ -17,7 +17,7 @@ interface HeaderProps {
   progress: number;
   participantInfo: {
     name: string;
-    date: string;
+    userId: string;
   } | null;
   onBackPress: () => void;
   status: string;
@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ title, progress, participantInfo, onBac
       {/* Participant Name and Date */}
       {participantInfo && (
         <Text {...observationStyles.participantInfoText}>
-          {participantInfo.name} • {participantInfo.date}
+          {participantInfo.name} • {participantInfo.userId}
         </Text>
       )}
     </PageHeader>

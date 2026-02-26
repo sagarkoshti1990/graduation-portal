@@ -347,9 +347,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
               </Box>
             ) : selectedSolutionId && modalType === 'log-visit' ? (
               <ObservationContent
+                participant={participant}
                 hideElements={{ header: ['title', 'backButton'] }}
                 _css={{_header:{pageHeader:{_container:{ "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" }}}}}
-                id={participant.userId}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
                 // @ts-ignore - showAlert is a valid prop
