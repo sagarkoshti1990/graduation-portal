@@ -4,6 +4,7 @@ import ObservationContent from './ObservationContent';
 import { Loader, useAlert } from '@ui';
 import { getParticipantsList } from '../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
+import { ParticipantData } from '@app-types/participant';
 
 /**
  * Route parameters type definition for Observation screen
@@ -36,6 +37,7 @@ const Observation: React.FC = () => {
   const solutionId = routeParams?.solutionId || '';
   const submissionNumber = routeParams?.submissionNumber;
   const [userData, setUserData] = useState<any>(null);
+  const [participant, setParticipant] = useState<ParticipantData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const {user, setNavbarData} = useAuth();
   const { showAlert } = useAlert();
@@ -57,23 +59,34 @@ const Observation: React.FC = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
-      const newData = userDataResponse?.result?.data?.[0];
-      setNavbarData({
-        subtitle: newData?.name,
-      });
-      const preFillData = {
-        "Facilitator Name":user?.name,
-        "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
-        "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
-        "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
-        "What is your name?":{value:newData?.name, readonly: false},
-        "What is your ID number?":newData?.userId,
-        // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
-        "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
-        "And what is your email address?":{value:newData?.userDetails?.email, readonly: true},
-      };  
-      setUserData(preFillData);
+      if(user?.id == id) {
+        setParticipant({...user, userId: user?.id, name: user?.name, contact: user?.phone, address: user?.address, status: user?.status} as ParticipantData);
+        setNavbarData({
+          subtitle: user?.name,
+        });
+        setUserData({});
+        setIsLoading(false);
+        return;
+      } else {
+        const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
+        const newData = userDataResponse?.result?.data?.[0];
+        setParticipant(newData as ParticipantData);
+        setNavbarData({
+          subtitle: newData?.name,
+        });
+        const preFillData = {
+          "Facilitator Name":user?.name,
+          "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
+          "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
+          "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
+          "What is your name?":{value:newData?.name, readonly: false},
+          "What is your ID number?":newData?.userId,
+          // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
+          "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
+          "And what is your email address?":{value:newData?.userDetails?.email, readonly: true},
+        };
+        setUserData(preFillData);
+      }
       setIsLoading(false);
     };
     fetchUserData();
@@ -92,10 +105,10 @@ const Observation: React.FC = () => {
   if (!id || !solutionId || !userData) {
     return null;
   }
-  
+  console.log('participant', participant);
   return (
     <ObservationContent
-      id={id}
+      participant={participant}
       solutionId={solutionId}
       submissionNumber={submissionNumber}
       onClose={handleBackPress}

@@ -17,6 +17,7 @@ import { observationStyles } from './Styles';
 import { CARD_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
+import { ParticipantData } from '@app-types/participant';
 
 interface ObservationData {
   entityId: string;
@@ -28,7 +29,7 @@ interface ObservationData {
  * Component without navigation dependencies - can be used in modals
  */
 interface ObservationContentProps {
-  id: string;
+  participant?: ParticipantData;
   solutionId: string;
   submissionNumber?: number;
   onClose?: () => void;
@@ -44,7 +45,7 @@ interface ObservationContentProps {
  * Component for viewing/editing observations without navigation dependencies
  */
 const ObservationContent: React.FC<ObservationContentProps> = ({
-  id,
+  participant,
   solutionId,
   submissionNumber,
   onClose,
@@ -58,10 +59,6 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   const [defaultValuesLocal, setDefaultValuesLocal] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [participantInfo, setParticipantInfo] = useState<{
-    name: string;
-    date: string;
-  } | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [mockData, setMockData] = useState<any>();
   const [submission, setSubmission] = useState<any>(null);
@@ -184,10 +181,11 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           showAlert('error', t('logVisit.multipleAssessemtsNotAllowed'));
           return;
         }
+        console.log('observationData', observationData);
         const observationId = observationData?.result?._id;
         if (observationId) {
           const newData = observationData?.result?.entities?.find(
-            (entity: any) => entity.externalId === id,
+            (entity: any) => entity.externalId == participant?.userId,
           );
           if (newData) {
             fetchObservationSolution({
@@ -195,24 +193,14 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
               observationId: observationId,
               submissionNumberInput: !observationData.result?.allowMultipleAssessemts ? 1 : submissionNumber,
             });
-            // Set participant info
-            setParticipantInfo({
-              name: newData.name || '',
-              date: (() => {
-                const now = new Date();
-                const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = now.getFullYear();
-                return `${day}/${month}/${year}`;
-              })(),
-            });
             setLoadingOff();
           } else {
             const entitiesData = await searchObservationEntities({
               observationId: observationId,
+              search: participant?.name,
             });
             const entityData = entitiesData.result?.[0]?.data.find(
-              (entity: any) => entity.externalId == id,
+              (entity: any) => entity.externalId == participant?.userId,
             );
             if (entityData) {
               try {
@@ -225,11 +213,6 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
                     entityId: entityData._id,
                     observationId: observationId,
                     submissionNumberInput: !observationData.result?.allowMultipleAssessemts ? 1 : submissionNumber,
-                  });
-                  // Set participant info
-                  setParticipantInfo({
-                    name: entityData.name || 'Participant',
-                    date: new Date().toISOString().split('T')[0],
                   });
                   setLoadingOff();
                 }
@@ -257,14 +240,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         setLoadingOff();
       }
     };
-    if (solutionId && id) {
+    if (solutionId && participant?.userId) {
       fetchObservation();
     }
 
     return () => {
       setMockData(null);
       setObservation(null);
-      setParticipantInfo(null);
       setProgress(0);
       setLoading(true);
       setDefaultValuesLocal(null);
@@ -272,7 +254,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       setToken(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solutionId, id, submissionNumber]);
+  }, [solutionId, participant?.userId, submissionNumber]);
 
   const handleBackPress = useCallback(() => {
     if (onClose) {
@@ -368,7 +350,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           _css={_css?._header}
           title={mockData?.solution?.name || ''}
           progress={progress}
-          participantInfo={participantInfo}
+          participantInfo={participant as any}
           onBackPress={handleBackPress}
           status={submission?.status || ''}
         />
