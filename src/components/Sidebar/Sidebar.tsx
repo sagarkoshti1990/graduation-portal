@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -16,13 +16,12 @@ import {
   Drawer,
 } from '@ui';
 import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { sidebarStyles, sidebarItemStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
 import { usePlatform } from '@utils/platform';
 import {
   MAIN_MENU_ITEMS,
-  QUICK_ACTION_MENU_ITEMS,
   MORE_INFORMATION_MENU_ITEMS,
 } from '@constants/ADMIN_SIDEBAR_MENU';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -43,19 +42,41 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
-  isOpen,
+  isOpen = false,
   onClose,
   isMobile,
 }) => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(
     new Set(['user-management']),
   );
-  const [expandedQuickActions, setExpandedQuickActions] = useState(true);
   const [expandedMoreInfo, setExpandedMoreInfo] = useState(true);
-  const [activeRoute, setActiveRoute] = useState('user-management');
+  const [activeRoute, setActiveRoute] = useState<string>('');
   const { isWeb } = usePlatform();
   const { t } = useLanguage();
+
+  // Sync activeRoute with the current route from navigation
+  useEffect(() => {
+    const currentRouteName = route.name;
+    setActiveRoute(currentRouteName);
+  }, [route.name]);
+
+  // Also listen to navigation state changes to catch programmatic navigation
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('state', () => {
+      // @ts-ignore - navigation state may not be fully typed
+      const state = navigation.getState();
+      if (state) {
+        const currentRoute = state.routes[state.index];
+        if (currentRoute?.name) {
+          setActiveRoute(currentRoute.name);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
   const handleClose = () => {
     if (onClose) {
       // Parent is controlling, notify parent to close
@@ -85,6 +106,47 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     setExpandedItems(newExpanded);
   };
 
+  const renderCollapsedItem = (item: SidebarItem) => {
+    const isActive = activeRoute === item.route;
+    const hasChildren = item.children && item.children.length > 0;
+
+    return (
+      <Pressable
+        key={item.key}
+        onPress={() => {
+          // In collapsed mode, we don't support expanding children; just navigate
+          if (!hasChildren) {
+            handleNavigation(item.route);
+          } else {
+            toggleExpand(item.key);
+          }
+        }}
+      >
+        {(state: any) => {
+          const isHovered = state?.hovered || state?.pressed || false;
+          const bg = isActive || isHovered ? '$accent200' : 'transparent';
+          const iconColor = isActive
+            ? theme.tokens.colors.primary600
+            : theme.tokens.colors.textLight600;
+
+          return (
+            <Box
+              width={40}
+              height={40}
+              borderRadius="$md"
+              alignItems="center"
+              justifyContent="center"
+              bg={bg as any}
+              $web-cursor="pointer"
+            >
+              <LucideIcon name={item.icon} size={20} color={iconColor} />
+            </Box>
+          );
+        }}
+      </Pressable>
+    );
+  };
+
   const renderSidebarItem = (item: SidebarItem, isChild = false) => {
     const isExpanded = expandedItems.has(item.key);
     const hasChildren = item.children && item.children.length > 0;
@@ -100,18 +162,17 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               handleNavigation(item.route);
             }
           }}
-          bg={isActive ? '$primary100' : 'transparent'}
-          {...sidebarItemStyles.container(isChild)}
+          {...sidebarItemStyles.container(isChild, isActive)}
           $hover={sidebarItemStyles.pressableHover}
         >
           <HStack {...sidebarItemStyles.itemContainer}>
             <HStack {...sidebarItemStyles.itemContent}>
               <LucideIcon
                 name={item.icon}
-                size={20}
+                size={16}
                 color={
                   isActive
-                    ? theme.tokens.colors.primary600
+                    ? theme.tokens.colors.textForeground
                     : theme.tokens.colors.textLight600
                 }
               />
@@ -135,6 +196,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </Box>
     );
   };
+
+  const isCollapsedDesktop = !isMobile && !isOpen;
 
   const sidebarContent = (
     <>
@@ -234,6 +297,35 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     </>
   );
 
+  const collapsedSidebarContent = (
+    <>
+      {/* Keep the same top "logo space" height as expanded sidebar */}
+      <HStack {...sidebarStyles.mobileMenuButton} justifyContent="center">
+        {/* Intentionally empty: keep spacing but hide logo in collapsed mode */}
+      </HStack>
+
+      <ScrollView
+        flex={1}
+        px="$2"
+        py="$3"
+        contentContainerStyle={{
+          alignItems: 'center',
+          paddingBottom: 16,
+        }}
+      >
+        <VStack space="md" alignItems="center">
+          {MAIN_MENU_ITEMS.map(item => renderCollapsedItem(item))}
+        </VStack>
+
+        <Divider my="$4" />
+
+        <VStack space="md" alignItems="center">
+          {MORE_INFORMATION_MENU_ITEMS.map(item => renderCollapsedItem(item))}
+        </VStack>
+      </ScrollView>
+    </>
+  );
+
   // Render as Drawer (using custom Drawer) for mobile, as fixed sidebar for desktop
   if (isMobile) {
     return (
@@ -258,8 +350,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   // Desktop: Render as fixed sidebar
   return (
-    <Box {...sidebarStyles.container} display={isOpen ? 'flex' : 'none'}>
-      {sidebarContent}
+    <Box
+      {...sidebarStyles.container}
+      width={isCollapsedDesktop ? (56 as any) : '$64'}
+    >
+      {isCollapsedDesktop ? collapsedSidebarContent : sidebarContent}
     </Box>
   );
 };

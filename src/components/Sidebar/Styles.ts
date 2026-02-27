@@ -4,8 +4,8 @@ export const sidebarStyles = {
     bg: '$bgSidebar' as const,
     borderRightWidth: 1,
     borderRightColor: '$borderLight300' as const,
-    width: '$64',
-    height: '$full',
+    width: '$64' as const,
+    height: '$full' as const,
   },
   scrollContent: {
     flex: 1,
@@ -21,9 +21,9 @@ export const sidebarStyles = {
     //px: '$4' as const,
     mb: '$2' as const,
     letterSpacing: 1,
-    height: "$8",
-    display: 'flex',
-    alignItems: 'center',
+    height: '$8' as const,
+    display: 'flex' as const,
+    alignItems: 'center' as const,
   },
   quickActionsHeader: {
     px: '$4' as const,
@@ -150,7 +150,7 @@ export const sidebarStyles = {
     fontSize: '$md' as const,
     fontWeight: '$bold' as const,
     color: '$textLight900' as const,
-    lineHeight: '$md',
+    lineHeight: '$md' as const,
   },
   versionText: {
     fontSize: '$xs' as const,
@@ -176,8 +176,17 @@ export const sidebarStyles = {
 
 // Sidebar Item Styles
 export const sidebarItemStyles = {
-  container: (isChild: boolean) => ({
-  
+  container: (isChild: boolean, isActive: boolean) => ({
+    px: '$3' as const,
+    py: '$2' as const,
+    borderRadius: '$md' as const,
+    bg: isActive ? '$accent200' : 'transparent',
+    ...(isChild
+      ? {
+          ml: '$6' as const,
+          px: '$3' as const,
+        }
+      : null),
   }),
   itemContainer: {
     alignItems: 'center' as const,
@@ -189,17 +198,16 @@ export const sidebarItemStyles = {
     alignItems: 'center' as const,
     space: 'sm' as const,
     flex: 1,
-    p: '$2' as const,
-    bg: '#f1f5f9'
+    // background/padding handled by the outer Pressable container
   },
   itemIcon: (isActive: boolean) => ({
-    color: (isActive ? '$primary600' : '$textLight600') as const,
+    color: isActive ? '$textForeground' : '$textLight600',
     size: 'md' as const,
   }),
   itemText: (isActive: boolean) => ({
     fontSize: '$sm' as const,
     fontWeight: isActive ? ('$medium' as const) : ('$normal' as const),
-    color: (isActive ? '$primary600' : '$textLight900') as const,
+    color: isActive ? '$textForeground' : '$textLight900',
   }),
   chevronIcon: {
     color: '$textLight500' as const,
@@ -210,9 +218,7 @@ export const sidebarItemStyles = {
     mt: '$1' as const,
   },
   pressableHover: {
-    bg: '$backgroundLight100' as const,
+    bg: '$accent200' as const,
   },
-  activeBackground: {
-    bg: '$primary100' as const,
-  },
+  // active background handled in container()
 };

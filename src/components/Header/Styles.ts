@@ -1,7 +1,7 @@
 export const stylesHeader = {
   container: {
     px: '$4' as const,
-    py: '$3' as const,
+    py: '$2' as const,
     justifyContent: 'center' as const,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
