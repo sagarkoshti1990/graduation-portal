@@ -105,7 +105,7 @@ const Observation: React.FC = () => {
   if (!id || !solutionId || !userData) {
     return null;
   }
-  console.log('participant', participant);
+
   return (
     <ObservationContent
       participant={participant}

@@ -16,6 +16,7 @@ export interface TargetedSolutionsParams {
   page?: number;
   limit?: number;
   search?: string;
+  showReferenceFrom?: boolean;
 }
 
 /**
