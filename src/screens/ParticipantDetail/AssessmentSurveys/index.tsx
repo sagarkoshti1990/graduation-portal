@@ -34,10 +34,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
       try {
         const data = await getTargetedSolutions({
           type: 'observation',
+          // @ts-ignore
           'filter[keywords]': participant?.status === STATUS.COMPLETED ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
+          showReferenceFrom:true
         });
         const dataNew = await Promise.all(
-          data.map(async (item) => {
+          data.filter(item => !item.project || item.project._id === participant?.onBoardedProjectId).map(async (item) => {
             try {
               const entity = await getdetails({
                 solutionId: item.solutionId,

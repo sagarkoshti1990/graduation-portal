@@ -67,6 +67,7 @@ export interface AssessmentSurveyCardData {
   };
   entity:any;
   entityType?: string;
+  project?: any;
 }
 
 /**
