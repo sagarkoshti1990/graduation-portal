@@ -241,21 +241,22 @@ export const uploadFiles = async (
       }
     });
     if (response?.data?.[id]) {
-      const responceData = await Promise.all(files.map(file => {
+      const responceData = await Promise.all(files.map(async (file) => {
         const presignedUrl = response.data[id].files.find(f => f.file === file.name);
-          fetch(presignedUrl?.url, {
+        if (presignedUrl?.url) {
+         await fetch(presignedUrl.url, { 
           method: 'PUT',
-          body: file
+          body: file,
         });
+      }
         return {
           name: file.name,
           sourcePath: presignedUrl?.payload?.sourcePath,
           type: file?.type,
           url: presignedUrl?.url ? presignedUrl.url.split('?')[0] : undefined,
-          size:file?.size
-        }
+          size:file?.size,
+        };
       }));
-      
       return { data: responceData };
     }
     return { data: [] };

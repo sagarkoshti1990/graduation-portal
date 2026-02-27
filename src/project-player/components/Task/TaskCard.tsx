@@ -163,15 +163,24 @@ const TaskCard: React.FC<TaskCardProps> = ({
         console.error('Missing userId or projectTemplateId');
         return;
       }
-      const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
+      try {
+        const solutionDetails = await getSolutionDetails(
+          projectTemplateId,
+          task._id,
+        );
 
-      if(solutionDetails.data._id) {
-        // @ts-ignore Navigate to observation screen - task will be marked as completed on return
-        navigation.navigate('observation', {
-          id: participantId,
-          solutionId: solutionDetails.data._id,
-          submissionNumber: 1, // First submission number for the task
-        });
+        if (solutionDetails?.data?._id) {
+          // @ts-ignore Navigate to observation screen - task will be marked as completed on return
+          navigation.navigate('observation', {
+            id: participantId,
+            solutionId: solutionDetails.data._id,
+            submissionNumber: 1,
+          });
+        } else {
+          showAlert('error', t('projectPlayer.unableToLoadObservation'));
+        }
+      } catch (error) {
+        console.error('getSolutionDetails API failed:', error);
       }
     } else {
       setShowUploadModal(true); // Open modal instead of file picker

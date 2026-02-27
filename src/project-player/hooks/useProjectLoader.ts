@@ -14,11 +14,13 @@ import { updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLanguage } from '@contexts/LanguageContext';
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
   data: ProjectPlayerData,
 ) => {
   const {user} = useAuth();
+  const { t } = useLanguage();
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -39,30 +41,28 @@ export const useProjectLoader = (
               projectData = res.data;
             } else {
               try {
-              projectData = await createProjectForEntity(entityId, province);
+                projectData = await createProjectForEntity(entityId, province);
 
-              if (projectData?._id) {
-                await updateEntityDetails({
-                  userId: `${user?.id}`,
-                  entityId:entityId,
-                 entityUpdates:{
-                   onBoardedProjectId: projectData._id,
-                 }
-                });
-                const ref = await AsyncStorage.getItem('my_program_user_ref');
-                if (ref) {
-                  await updateProjectInfo(projectData._id, ref);
+                if (projectData?._id) {
+                  await updateEntityDetails({
+                    userId: `${user?.id}`,
+                    entityId: entityId,
+                    entityUpdates: {
+                      onBoardedProjectId: projectData._id,
+                    },
+                  });
+                  const ref = await AsyncStorage.getItem('my_program_user_ref');
+                  if (ref) {
+                    await updateProjectInfo(projectData._id, ref);
+                  }
                 }
-              }
               } catch (error) {
                 console.log(error as Error)
-              }
-             
+              }             
             }
-            if (error) {
-              throw new Error(error);
+            if (!projectData) {
+              throw new Error(t('projectPlayer.failToLoad'));
             }
-
             setProjectData(projectData);
           } catch (err) {
             console.error('Failed to load project templates:', err);
