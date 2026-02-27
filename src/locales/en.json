@@ -1650,7 +1650,7 @@
     }
   },
   "observation": {
-    "noParticipantFound": "No entity found observation solution attached to this participant",
+    "noParticipantFound": "This form not assign to you, please contact administrator",
     "noParticipantFoundError": "Failed to update observation entities."
   },
   "brand": {

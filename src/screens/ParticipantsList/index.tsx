@@ -35,24 +35,24 @@ import { PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
 
-// Status key type (keys of STATUS object)
-type StatusKey = keyof typeof STATUS;
+// Status value type (values of STATUS object) - used for API filter + comparisons
+type StatusValue = (typeof STATUS)[keyof typeof STATUS];
 
 // Status items interface
 interface StatusFilterItem {
-  key: StatusKey;
+  key: StatusValue;
   label: string;
   count: number;
 }
 
 // Mapping between API overview keys and STATUS constants
 const overviewToStatusMap = {
-  notonboarded: { key: STATUS.NOT_ONBOARDED as StatusKey, label: 'participants.notEnrolled' },
-  onboarded: { key: STATUS.ONBOARDED as StatusKey, label: 'participants.enrolled' },
-  inprogress: { key: STATUS.IN_PROGRESS as StatusKey, label: 'participants.inProgress' },
-  completed: { key: STATUS.COMPLETED as StatusKey, label: 'participants.completed' },
-  droppedout: { key: STATUS.DROPOUT as StatusKey, label: 'participants.droppedOut' },
-  graduated: { key: STATUS.GRADUATED as StatusKey, label: 'participants.graduatedStatus' },
+  notonboarded: { key: STATUS.NOT_ONBOARDED, label: 'participants.notEnrolled' },
+  onboarded: { key: STATUS.ONBOARDED, label: 'participants.enrolled' },
+  inprogress: { key: STATUS.IN_PROGRESS, label: 'participants.inProgress' },
+  completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
+  droppedout: { key: STATUS.DROPOUT, label: 'participants.droppedOut' },
+  graduated: { key: STATUS.GRADUATED, label: 'participants.graduatedStatus' },
 } as const;
 
 /**
@@ -70,8 +70,8 @@ const ParticipantsList: React.FC = () => {
 
   // State management
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [activeStatus, setActiveStatus] = useState<StatusKey | ''>(
-    'NOT_ONBOARDED',
+  const [activeStatus, setActiveStatus] = useState<StatusValue | ''>(
+    STATUS.NOT_ONBOARDED,
   );
   const [searchKey, setSearchKey] = useState('');
   const [activeFilter, setActiveFilter] = useState<'active' | 'inactive'>('active');
@@ -80,6 +80,7 @@ const ParticipantsList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
+  const [refetchKey, setRefetchKey] = useState(0);
 
   // Load pageSize from offline storage on mount
   useEffect(() => {
@@ -196,15 +197,15 @@ const ParticipantsList: React.FC = () => {
     if (pageSize) {
       fetchParticipants();
     }
-  }, [searchKey, user, activeStatus, currentPage, pageSize]);
+  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey]);
   
   // When Active/Inactive filter changes, set default status
   useEffect(() => {
     if (activeFilter === 'inactive') {
-      setActiveStatus('GRADUATED');
+      setActiveStatus(STATUS.GRADUATED);
     } else if (activeFilter === 'active') {
       // Set default to NOT_ONBOARDED when Active is selected
-      setActiveStatus('NOT_ONBOARDED');
+      setActiveStatus(STATUS.NOT_ONBOARDED);
     }
   }, [activeFilter]);
 
@@ -215,7 +216,7 @@ const ParticipantsList: React.FC = () => {
     setCurrentPage(1); // Reset to first page when search changes
   }, []);
 
-  const handleStatusChange = useCallback((status: StatusKey | '') => {
+  const handleStatusChange = useCallback((status: StatusValue | '') => {
     setActiveStatus(status);
     setCurrentPage(1); // Reset to first page when status changes
   }, []);
@@ -244,6 +245,14 @@ const ParticipantsList: React.FC = () => {
     },
     [navigation],
   );
+
+  const handleDropoutSuccess = useCallback((participantId: string) => {
+    // Immediately remove from current list (avoids needing a full page refresh)
+    setParticipants((prev) => prev.filter((p) => p.userId !== participantId));
+    setTotalItems((prev) => (prev > 0 ? prev - 1 : 0));
+    // Refetch to sync overview counts + ensure inactive Dropped Out list includes participant
+    setRefetchKey((k) => k + 1);
+  }, []);
   
   return (
     <Box {...styles.mainContainer}>
@@ -285,7 +294,7 @@ const ParticipantsList: React.FC = () => {
                     value: item.key,
                   }))}
                   value={activeStatus}
-                  onChange={(value) => handleStatusChange(value as StatusKey | '')}
+                  onChange={(value) => handleStatusChange(value as StatusValue | '')}
                   placeholder={t('participants.selectStatus') || 'Select Status'}
                 />
               </Box>
@@ -331,7 +340,9 @@ const ParticipantsList: React.FC = () => {
             {/* Participants Table */}
             <DataTable
               data={participants}
-              columns={getParticipantsColumns(activeStatus ? STATUS[activeStatus] : undefined)}
+              columns={getParticipantsColumns(activeStatus || undefined, {
+                onDropoutSuccess: handleDropoutSuccess,
+              })}
               getRowKey={participant => participant.userId}
               onRowClick={handleRowClick}
               isLoading={isLoading}
