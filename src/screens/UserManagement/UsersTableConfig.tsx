@@ -138,7 +138,7 @@ const getCustomTrigger = (triggerProps: any) => (
  */
 const getUserMenuItems = (
   _t: (key: string) => string,
-  isAdmin: boolean
+  canDeactivate: boolean
 ): MenuItemData[] => {
   const items: MenuItemData[] = [
     {
@@ -167,7 +167,7 @@ const getUserMenuItems = (
     // },
   ];
 
-  if (isAdmin) {
+  if (canDeactivate) {
     items.push({
       key: 'deactivate',
       label: 'admin.users.actionMenu.deactivate',
@@ -195,6 +195,37 @@ const ActionsColumn: React.FC<{
   const { user: currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'Admin';
 
+  // Check if the target user has Admin role
+  const isTargetUserAdmin = (() => {
+    // Check role labels from user_organizations
+    const roleLabels = (user as any)?.user_organizations?.[0]?.roles?.map(
+      (role: any) => role?.role?.label?.toLowerCase()
+    ) || [];
+    
+    // Check if any role label is "admin" or "brac admin"
+    const hasAdminLabel = roleLabels.some(
+      (label: string) => 
+        label === 'admin' || 
+        label === 'brac admin' || 
+        label?.includes('admin')
+    );
+    
+    // Also check role.title for 'admin'
+    const roleTitles = (user as any)?.user_organizations?.[0]?.roles?.map(
+      (role: any) => role?.role?.title?.toLowerCase()
+    ) || [];
+    
+    const hasAdminTitle = roleTitles.some(
+      (title: string) => title === 'admin'
+    );
+    
+    // Check direct role property as fallback
+    const directRole = (user as any)?.role?.toLowerCase();
+    const hasDirectAdminRole = directRole === 'admin' || directRole === 'brac admin' || directRole?.includes('admin');
+    
+    return hasAdminLabel || hasAdminTitle || hasDirectAdminRole;
+  })();
+
   const handleMenuSelect = (key: string) => {
     switch (key) {
       case 'view-profile':
@@ -216,7 +247,9 @@ const ActionsColumn: React.FC<{
     }
   };
 
-  const menuItems = getUserMenuItems(t, isAdmin);
+  // Only show Deactivate if current user is Admin AND target user is NOT Admin
+  const canDeactivate = isAdmin && !isTargetUserAdmin;
+  const menuItems = getUserMenuItems(t, canDeactivate);
 
   return (
     <Menu
