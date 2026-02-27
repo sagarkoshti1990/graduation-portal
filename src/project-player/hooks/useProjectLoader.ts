@@ -56,8 +56,7 @@ export const useProjectLoader = (
               }
               } catch (error) {
                 console.log(error as Error)
-              }
-             
+              }             
             }
             if (error) {
               throw new Error(error);

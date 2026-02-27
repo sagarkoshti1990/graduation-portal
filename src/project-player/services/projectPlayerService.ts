@@ -255,7 +255,6 @@ export const uploadFiles = async (
           size:file?.size
         }
       }));
-      
       return { data: responceData };
     }
     return { data: [] };
