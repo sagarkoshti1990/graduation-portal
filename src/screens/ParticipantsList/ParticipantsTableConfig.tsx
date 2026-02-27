@@ -220,8 +220,27 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
 
 export const getParticipantsColumns = (
   status?: StatusType,
+  handlers?: {
+    onDropoutSuccess?: (participantId: string) => void;
+  },
 ): ColumnDef<Participant>[] => {
-  return allParticipantsColumns.filter(col => {
+  const columnsWithHandlers = allParticipantsColumns.map((col) => {
+    if (col.key !== 'actions') {
+      return col;
+    }
+
+    return {
+      ...col,
+      render: (participant: any) => (
+        <ActionColumn
+          participant={participant}
+          onDropoutSuccess={handlers?.onDropoutSuccess}
+        />
+      ),
+    } as ColumnDef<Participant>;
+  });
+
+  return columnsWithHandlers.filter(col => {
     if(([PARTICIPANT_COLUMN_KEYS.PROGRESS] as string[]).includes(col.key)) {
       if(status === STATUS.IN_PROGRESS) {return true} else {return false}
     }

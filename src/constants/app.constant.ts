@@ -5,7 +5,8 @@ export const STATUS = {
   ONBOARDED: 'ONBOARDED',
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
-  DROPOUT: ' DROPPED_OUT',
+  // IMPORTANT: Must match backend/API status value exactly (no leading/trailing whitespace)
+  DROPOUT: 'DROPPED_OUT',
   GRADUATED: 'GRADUATED',
 };
 

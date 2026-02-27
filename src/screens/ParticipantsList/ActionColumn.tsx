@@ -21,6 +21,7 @@ import { AssessmentSurveyCardData, ParticipantData } from '@app-types/participan
 
 interface ActionColumnProps {
   participant: ParticipantData;
+  onDropoutSuccess?: (participantId: string) => void;
 }
 
 /**
@@ -37,7 +38,7 @@ const getCustomTrigger = (triggerProps: any) => (
  * ActionColumn Component
  * Manages all action column functionality: View Details button, Actions menu, and Dropout modal
  */
-export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
+export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropoutSuccess }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
@@ -175,6 +176,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant }) => {
       setSelectedDropoutReason('');
       setCustomDropoutReason('');
       setModalType(null);
+
+      // Notify parent list so UI updates immediately (no full page refresh)
+      onDropoutSuccess?.(participant.userId);
       
       // Optionally refresh the page or trigger a callback to refresh participants list
       // You might want to add a callback prop or use navigation to refresh
