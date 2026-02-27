@@ -155,7 +155,9 @@
     "unknownSize": "Unknown size",
     "enrolledParticiapantSucess": "Participant Enrolled Successfully!",
     "socialProtectionPreviewInfo": "Please review all Social Protection tasks. Tasks requiring evidence are pre-selected. Optional tasks can be added or removed based on participant needs.",
-    "important": "Important"
+    "important": "Important",
+    "failToLoad":"Failed to load or create project",
+    "unableToLoadObservation":"Unable to load observation details"
   },
   "navigation": {
     "menu": "Menu",
@@ -1742,7 +1744,7 @@
       "selectProvince": "Select province",
       "selectSite": "Select site",
       "addressUpdated": "Profile updated successfully",
-      "fillAllFields": "Please fill in all required fields (Street, Province, and Site) before saving."
+      "fillAllFields": "Please fill in all required fields (Street) before saving."
     },
     "pathways": {
       "employment": "Employment Pathway",

@@ -14,11 +14,13 @@ import { updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLanguage } from '@contexts/LanguageContext';
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
   data: ProjectPlayerData,
 ) => {
   const {user} = useAuth();
+  const { t } = useLanguage();
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -58,8 +60,8 @@ export const useProjectLoader = (
                 console.log(error as Error)
               }             
             }
-            if (error) {
-              throw new Error(error);
+            if (!projectData) {
+              throw new Error(t('projectPlayer.failToLoad'));
             }
 
             setProjectData(projectData);

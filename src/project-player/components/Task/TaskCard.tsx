@@ -177,7 +177,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             submissionNumber: 1,
           });
         } else {
-          showAlert('error', 'Unable to load observation details');
+          showAlert('error', t('projectPlayer.unableToLoadObservation'));
         }
       } catch (error) {
         console.error('getSolutionDetails API failed:', error);
