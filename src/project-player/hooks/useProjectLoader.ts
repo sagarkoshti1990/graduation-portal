@@ -41,21 +41,21 @@ export const useProjectLoader = (
               projectData = res.data;
             } else {
               try {
-              projectData = await createProjectForEntity(entityId, province);
+                projectData = await createProjectForEntity(entityId, province);
 
-              if (projectData?._id) {
-                await updateEntityDetails({
-                  userId: `${user?.id}`,
-                  entityId:entityId,
-                 entityUpdates:{
-                   onBoardedProjectId: projectData._id,
-                 }
-                });
-                const ref = await AsyncStorage.getItem('my_program_user_ref');
-                if (ref) {
-                  await updateProjectInfo(projectData._id, ref);
+                if (projectData?._id) {
+                  await updateEntityDetails({
+                    userId: `${user?.id}`,
+                    entityId: entityId,
+                    entityUpdates: {
+                      onBoardedProjectId: projectData._id,
+                    },
+                  });
+                  const ref = await AsyncStorage.getItem('my_program_user_ref');
+                  if (ref) {
+                    await updateProjectInfo(projectData._id, ref);
+                  }
                 }
-              }
               } catch (error) {
                 console.log(error as Error)
               }             
@@ -63,7 +63,6 @@ export const useProjectLoader = (
             if (!projectData) {
               throw new Error(t('projectPlayer.failToLoad'));
             }
-
             setProjectData(projectData);
           } catch (err) {
             console.error('Failed to load project templates:', err);
