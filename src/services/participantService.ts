@@ -108,33 +108,30 @@ export const getParticipantProfile = async (id: string): Promise<User |undefined
  * @param address - New address object with street, province, and site
  * @returns Updated participant or undefined if not found
  */
-export const updateParticipantAddress = async (
-  id: string,
-  address: {
-    street: string;
-    province: string;
-    site: string;
-  }
-): Promise<ParticipantData | undefined> => {
-  // TODO: Replace with actual API call
-  // Example: return await api.put(`/participants/${id}/address`, address);
-  
-  // Mock implementation - simulate API delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const participant = PARTICIPANTS_DATA.find(p => p.id === id);
-      if (participant) {
-        // Format address as string for now (can be changed to object later)
-        const formattedAddress = `${address.street}, ${address.province}, ${address.site}`;
-        participant.address = formattedAddress;
-        resolve(participant);
-      } else {
-        resolve(undefined);
-      }
-    }, 500); // Simulate network delay
-  });
-};
 
+interface UpdateParticipantAddressPayload {
+  // userId: string;
+  entityId: string;
+  programId:string;
+  updateData: {
+    // province: string;
+    // site: string;
+    location: string;
+  };
+}
+
+export const updateParticipantAddress = async (
+  payload: UpdateParticipantAddressPayload
+): Promise<any> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.UPDATE_ENTITY, payload );
+    const data = response?.data
+     return data;
+  } catch (error) {
+    console.error('updateParticipantAddress error:', error);
+    return undefined;
+  }
+};
 /**
  * Get province label by value
  * @param value - Province value
