@@ -13,7 +13,7 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
+import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser } from '../../services/usersService';
 import type { 
   // UserSearchParams,
    Role
@@ -234,7 +234,7 @@ const UserManagementScreen = () => {
     });
   }, []);
 
-  const handleSaveEditUser = useCallback(() => {
+  const handleSaveEditUser = useCallback(async () => {
     if (!editUserState.user) return;
 
     // Validate required fields
@@ -243,9 +243,17 @@ const UserManagementScreen = () => {
       return;
     }
 
-    // UI-only for now (API integration later)
-    showAlert('info', t('common.comingSoon'));
-  }, [editUserState.user, editUserState.name, showAlert, t]);
+    setEditUserState(prev => ({ ...prev, isSubmitting: true }));
+    try {
+      await updateOrgAdminUser(editUserState.user.id, { name: editUserState.name.trim() });
+      showAlert('success', t('admin.users.edit.success') || 'User Updated Successfully.');
+      closeEditUserModal();
+      setRefetchKey(k => k + 1);
+    } catch (error: any) {
+      showAlert('error', error?.message || t('common.somethingWentWrong'));
+      setEditUserState(prev => ({ ...prev, isSubmitting: false }));
+    }
+  }, [closeEditUserModal, editUserState.user, editUserState.name, showAlert, t]);
 
   const closeProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
@@ -1203,15 +1211,9 @@ const UserManagementScreen = () => {
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
                         {t('admin.users.profileModal.phoneNumber')}
                       </Text>
-                      <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
-                        <InputField
-                          value={editUserState.phoneNumber}
-                          onChangeText={(text) => setEditUserState(prev => ({ ...prev, phoneNumber: text }))}
-                          placeholder={t('admin.users.profileModal.phoneNumber')}
-                          keyboardType="phone-pad"
-                          {...styles.editUserEditableInputField}
-                        />
-                      </Input>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.phoneNumber || '-'}
+                      </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">

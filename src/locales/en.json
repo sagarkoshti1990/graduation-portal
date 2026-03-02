@@ -1311,7 +1311,7 @@
       },
       "edit": {
         "nameRequired": "Name is required",
-        "success": "User updated successfully",
+        "success": "User Updated Successfully.",
         "error": "Failed to update user"
       },
       "deactivate": {
