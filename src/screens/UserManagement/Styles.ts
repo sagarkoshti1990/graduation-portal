@@ -10,6 +10,24 @@ const columnTextBase = {
 };
 
 export const styles = {
+  // Edit User Modal - Editable Input Styles
+  editUserEditableInput: {
+    variant: 'outline' as const,
+    size: 'md' as const,
+    bg: '$white' as const,
+    borderRadius: '$xl' as const,
+    borderWidth: 1,
+    borderColor: '$borderLight200' as const,
+    px: '$3' as const,
+    py: '$1' as const,
+  },
+  editUserEditableInputField: {
+    color: '$textForeground' as const,
+    placeholderTextColor: '$textMutedForeground' as const,
+    p: '$0' as const,
+    fontSize: '$sm' as const,
+  },
+
   // Role Badge Styles
   roleBadge: {
     paddingHorizontal: '$2' as const,

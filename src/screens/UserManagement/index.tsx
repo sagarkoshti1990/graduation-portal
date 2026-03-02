@@ -1179,11 +1179,12 @@ const UserManagementScreen = () => {
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
                         {t('admin.users.profileModal.fullName')}
                       </Text>
-                      <Input isDisabled={editUserState.isSubmitting}>
+                      <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
                         <InputField
                           value={editUserState.name}
                           onChangeText={(text) => setEditUserState(prev => ({ ...prev, name: text }))}
                           placeholder={t('admin.users.profileModal.fullName')}
+                          {...styles.editUserEditableInputField}
                         />
                       </Input>
                     </VStack>
@@ -1202,12 +1203,13 @@ const UserManagementScreen = () => {
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
                         {t('admin.users.profileModal.phoneNumber')}
                       </Text>
-                      <Input isDisabled={editUserState.isSubmitting}>
+                      <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
                         <InputField
                           value={editUserState.phoneNumber}
                           onChangeText={(text) => setEditUserState(prev => ({ ...prev, phoneNumber: text }))}
                           placeholder={t('admin.users.profileModal.phoneNumber')}
                           keyboardType="phone-pad"
+                          {...styles.editUserEditableInputField}
                         />
                       </Input>
                     </VStack>
