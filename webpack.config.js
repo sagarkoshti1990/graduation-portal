@@ -231,6 +231,13 @@ module.exports = (env = {}, argv = {}) => {
             filename: 'assets/fonts/[name].[contenthash:8][ext]',
           },
         },
+        {
+          test: /\.(pdf|docx|doc)$/i,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/files/[name].[contenthash:8][ext]',
+          },
+        },
       ],
     },
     resolve: {

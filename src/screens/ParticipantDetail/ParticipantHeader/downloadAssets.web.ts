@@ -1,4 +1,6 @@
 // URL-encode the paths to handle filenames with spaces
-export const CONSENT_FORM_ASSET = '/web-component/Consent%20Form.docx.pdf';
-export const SLA_FORM_ASSET = '/web-component/SLA%20form.docx';
+import SLA_FORM_ASSET from '../../../assets/files/SLA-form.docx';
+import CONSENT_FORM_ASSET from '../../../assets/files/Consent-Form.pdf';
+
+export { CONSENT_FORM_ASSET, SLA_FORM_ASSET };
 
