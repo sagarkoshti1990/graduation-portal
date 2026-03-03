@@ -137,12 +137,7 @@ export const theme = {
       ...((gluestackConfig.tokens as any).fonts || {}),
       body: 'Inter',
       heading: 'Inter',
-      input: 'Inter',
-      inputField: 'Inter',
-      inputSlot: 'Inter',
-      inputIcon: 'Inter',
-      inputPlaceholder: 'Inter',
-      inputPlaceholderTextColor: 'Inter',
+      mono: 'Inter',
     },
     sizes: {
       ...((gluestackConfig.tokens as any).sizes || {}),
