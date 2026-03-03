@@ -54,13 +54,12 @@ export const useProjectLoader = (
                   await updateProjectInfo(projectData._id, ref);
                 }
               }
-              } catch (error) {
-                console.log(error as Error)
+              } catch (err) {
+                console.error('Failed to create project for entity:', err);
+                // Re-throw the error to be handled by the outer catch block
+                throw err;
               }
              
-            }
-            if (error) {
-              throw new Error(error);
             }
 
             setProjectData(projectData);

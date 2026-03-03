@@ -241,12 +241,22 @@ export const uploadFiles = async (
       }
     });
     if (response?.data?.[id]) {
-      const responceData = await Promise.all(files.map(file => {
+      const responceData = await Promise.all(files.map(async file => {
         const presignedUrl = response.data[id].files.find(f => f.file === file.name);
-          fetch(presignedUrl?.url, {
+        
+        // Upload file to presigned URL
+        const res = await fetch(presignedUrl?.url, {
           method: 'PUT',
           body: file
         });
+        
+        // Check upload success
+        if (!res.ok) {
+          const errorMsg = `Failed to upload ${file.name}: ${res.status} ${res.statusText}`;
+          console.error(errorMsg);
+          throw new Error(errorMsg);
+        }
+        
         return {
           name: file.name,
           sourcePath: presignedUrl?.payload?.sourcePath,

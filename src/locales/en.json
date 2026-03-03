@@ -1168,6 +1168,26 @@
     "user-management": "User Management",
     "quickActions": "Quick Actions",
     "recentActivity": "Recent Activity",
+    "pageTitle": {
+      "user-management": "User Management",
+      "admin-dashboard": "Admin Dashboard",
+      "template-management": "Template Management",
+      "csv-templates": "CSV Import Templates",
+      "ProfilePermissions": "Profile Permissions",
+      "PasswordPolicy": "Password Policy",
+      "audit-log": "Audit Log",
+      "assign-users": "Assign Users",
+      "welcome": "Welcome",
+      "select-language": "Select Language",
+      "dashboard": "Dashboard",
+      "participants": "My Participants",
+      "participant-detail": "Participant Details",
+      "log-visit": "Log Visit",
+      "check-ins-list": "Check-Ins List",
+      "observation": "Observation",
+      "template": "Template",
+      "project": "Project Player"
+    },
     "menu": {
       "userManagement": "User Management",
       "assignUsers": "Assign Users",
@@ -1663,6 +1683,7 @@
     "offline": "System Inactive"
   },
   "login": {
+    "pageTitle": "Login",
     "pleaseEnterBothEmailAndPassword": "Please enter both email and password",
     "invalidEmailOrPassword": "Invalid email or password",
     "anErrorOccurredDuringLogin": "An error occurred during login",

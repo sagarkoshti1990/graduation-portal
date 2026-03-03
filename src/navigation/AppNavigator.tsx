@@ -355,7 +355,7 @@ const AppNavigator: React.FC = () => {
               name="login"
               component={LoginScreen}
               options={{
-                title: t('login.logIn'),
+                title: t('login.pageTitle'),
               }}
             />
           ) : (
