@@ -124,12 +124,11 @@ export const updateParticipantAddress = async (
   payload: UpdateParticipantAddressPayload
 ): Promise<any> => {
   try {
-    const response = await api.post(API_ENDPOINTS.UPDATE_ENTITY, payload );
-    const data = response?.data
-     return data;
+    const response = await api.post(API_ENDPOINTS.UPDATE_ENTITY, payload);
+    return response?.data;
   } catch (error) {
     console.error('updateParticipantAddress error:', error);
-    return undefined;
+    throw error;
   }
 };
 /**

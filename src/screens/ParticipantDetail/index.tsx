@@ -112,10 +112,10 @@ export default function ParticipantDetail() {
         });
         setStatus(participantData?.status);
         setEditedAddress({
-            street: participant?.location,
-            province: participant?.province?.label,
-            site: participant?.site,
-          });
+          street: participantData?.location || '',
+          province: participantData?.province?.label || '',
+          site: participantData?.site?.label || participantData?.site || '',
+        });
       } catch (error) {
         console.log(error);
       } finally {
