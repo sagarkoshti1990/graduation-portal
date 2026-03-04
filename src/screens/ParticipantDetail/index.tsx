@@ -233,15 +233,18 @@ export default function ParticipantDetail() {
         } as User),
       );
 
-        const reqBody = {
-          entityId: String(participant?.id),
-          programId:process.env.GLOBAL_LC_PROGRAM_ID,
-          updateData: {
-            // province: string,
-            // site: string,
-            location: editedAddress.street,
-            }
-          }
+      const programId = process.env.GLOBAL_LC_PROGRAM_ID;
+      if (!programId) {
+        showAlert('error', t('common.error'), { placement: 'bottom' });
+        return;
+      }
+      const reqBody = {
+        entityId: String(participant?.id),
+        programId,
+        updateData: {
+          location: editedAddress.street,
+        },
+      };
       const res = await updateParticipantAddress(reqBody);
       if(res){
         setIsEditingAddress(false);
@@ -367,9 +370,9 @@ export default function ParticipantDetail() {
         onCancel={() => {
           setIsEditingAddress(false);
           setEditedAddress({
-            street: '',
-            province: '',
-            site: '',
+            street: participant?.location,
+            province: participant?.province?.label,
+            site: participant?.site?.label,
           });
         }}
         onConfirm={handleSaveAddress}
@@ -417,7 +420,7 @@ export default function ParticipantDetail() {
                   setEditedAddress({
                     street: participant?.location || '',
                     province: participant?.province?.label || '',
-                    site: editedAddress?.site || '',
+                    site: participant?.site?.label || '',
                   });
                   setIsEditingAddress(true);
                 }}
