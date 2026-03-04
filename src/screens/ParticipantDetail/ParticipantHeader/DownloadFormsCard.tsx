@@ -88,7 +88,7 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
   return (
     <Box
       bg="$white"
-      borderRadius="$xl"
+      borderRadius="$3xl"
       padding="$4"
       borderWidth={1}
       borderColor="$borderColor"
