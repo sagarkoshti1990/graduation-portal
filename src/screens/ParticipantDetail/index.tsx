@@ -13,14 +13,15 @@ import {
 import ParticipantHeader from './ParticipantHeader';
 import {
   getParticipantsList,
-  getSitesByProvince
+  // getSitesByProvince,
+  updateParticipantAddress
 } from '../../services/participantService';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useDocumentTitle } from '@hooks';
+import { useDocumentTitle } from '../../hooks';
 import NotFound from '@components/NotFound';
 import { TabButton } from '@components/Tabs';
 import { PARTICIPANT_DETAIL_TABS } from '@constants/TABS';
-import { PROVINCES } from '@constants/PARTICIPANTS_LIST';
+// import { PROVINCES } from '@constants/PARTICIPANTS_LIST';
 import InterventionPlan from './InterventionPlan';
 import AssessmentSurveys from './AssessmentSurveys';
 import type {
@@ -28,7 +29,7 @@ import type {
   ParticipantStatus,
   // PathwayType,
 } from '@app-types/participant';
-import { Modal, useAlert, Select, LucideIcon, Loader } from '@ui';
+import { Modal, useAlert, LucideIcon, Loader } from '@ui';
 import { usePlatform } from '@utils/platform';
 import { profileStyles } from '@components/ui/Modal/Styles';
 import { theme } from '@config/theme';
@@ -110,6 +111,11 @@ export default function ParticipantDetail() {
           subtitle: participantData?.name,
         });
         setStatus(participantData?.status);
+        setEditedAddress({
+          street: participantData?.location || '',
+          province: participantData?.province?.label || '',
+          site: participantData?.site?.label || participantData?.site || '',
+        });
       } catch (error) {
         console.log(error);
       } finally {
@@ -210,10 +216,7 @@ export default function ParticipantDetail() {
 
   const handleSaveAddress = async () => {
     if (
-      !editedAddress.street ||
-      !editedAddress.province ||
-      !editedAddress.site
-    ) {
+      !editedAddress.street) {
       showAlert('warning', t('participantDetail.profileModal.fillAllFields'), {
         placement: 'bottom',
       });
@@ -225,13 +228,30 @@ export default function ParticipantDetail() {
         (prev: User | undefined) =>
         ({
           ...(prev as User),
-          location: `${editedAddress.street}, ${editedAddress.province}, ${editedAddress.site}`,
+          location: `${editedAddress.street}`,
+          // ${editedAddress.province}, ${editedAddress.site}
         } as User),
       );
-      setIsEditingAddress(false);
-      showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
-        placement: 'bottom',
-      });
+
+      const programId = process.env.GLOBAL_LC_PROGRAM_ID;
+      if (!programId) {
+        showAlert('error', t('common.error'), { placement: 'bottom' });
+        return;
+      }
+      const reqBody = {
+        entityId: String(participant?.id),
+        programId,
+        updateData: {
+          location: editedAddress.street,
+        },
+      };
+      const res = await updateParticipantAddress(reqBody);
+      if(res){
+        setIsEditingAddress(false);
+        showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
+          placement: 'bottom',
+        });
+      }
     } catch (error) {
       showAlert('error', t('common.error'), {
         placement: 'bottom',
@@ -331,8 +351,8 @@ export default function ParticipantDetail() {
           setIsProfileModalOpen(false);
           setIsEditingAddress(false);
           setEditedAddress({
-            street: '',
-            province: '',
+            street: participant?.location,
+            province: participant?.province?.label,
             site: '',
           });
         }}
@@ -350,9 +370,9 @@ export default function ParticipantDetail() {
         onCancel={() => {
           setIsEditingAddress(false);
           setEditedAddress({
-            street: '',
-            province: '',
-            site: '',
+            street: participant?.location,
+            province: participant?.province?.label,
+            site: participant?.site?.label,
           });
         }}
         onConfirm={handleSaveAddress}
@@ -389,114 +409,110 @@ export default function ParticipantDetail() {
           </VStack>
 
           {/* Address Section */}
-          {participant!.location && (
-            <VStack space="xs">
-              {!isEditingAddress ? (
-                <>
-                  <HStack alignItems="center" justifyContent="space-between">
-                    <Text {...profileStyles.fieldLabel}>
-                      {t('common.profileFields.address')}
-                    </Text>
-                    <Pressable
-                      onPress={() => {
-                        setEditedAddress({
-                          street: '',
-                          province: '',
-                          site: '',
-                        });
-                        setIsEditingAddress(true);
-                      }}
-                    >
-                      <LucideIcon
-                        name="Pencil"
-                        size={16}
-                        color={theme.tokens.colors.primary500}
-                      />
-                    </Pressable>
-                  </HStack>
-                  <Text {...profileStyles.fieldValue}>
-                    {participant!.location}
-                  </Text>
-                </>
-              ) : (
-                <VStack space="sm">
-                  {/* Street Address Input */}
-                  <VStack space="xs">
-                    <Text {...profileStyles.fieldLabel}>
-                      {t('common.profileFields.address')}
-                    </Text>
-                    <Input
-                      {...profileStyles.input}
-                      $focus-borderColor={theme.tokens.colors.inputFocusBorder}
-                    >
-                      <InputField
-                        placeholder={t(
-                          'common.profileFields.addressFields.street',
-                        )}
-                        value={editedAddress?.street || ''}
-                        onChangeText={value => {
-                          setEditedAddress(prev => ({
-                            ...prev,
-                            street: value,
-                          }));
-                        }}
-                      />
-                    </Input>
-                  </VStack>
+          {/* {participant!.location && ( */}
+          <VStack space="xs">
+            <HStack alignItems="center" justifyContent="space-between">
+              <Text {...profileStyles.fieldLabel}>
+                {t('common.profileFields.address')}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setEditedAddress({
+                    street: participant?.location || '',
+                    province: participant?.province?.label || '',
+                    site: participant?.site?.label || '',
+                  });
+                  setIsEditingAddress(true);
+                }}
+              >
+                <LucideIcon
+                  name="Pencil"
+                  size={16}
+                  color={theme.tokens.colors.primary500}
+                />
+              </Pressable>
+            </HStack>
 
-                  {/* Province Dropdown */}
-                  <VStack space="xs">
-                    <Select
-                      options={PROVINCES.map(p => ({
-                        label: p.label,
-                        value: p.value,
-                      }))}
-                      value={editedAddress?.province || ''}
-                      onChange={value => {
+            {isEditingAddress ? (
+              <VStack space="sm">
+                {/* Street Address Input */}
+                <VStack space="xs">
+                  <Input
+                    {...profileStyles.input}
+                    $focus-borderColor={theme.tokens.colors.inputFocusBorder}
+                  >
+                    <InputField
+                      placeholder={t(
+                        'common.profileFields.addressFields.street',
+                      )}
+                      value={editedAddress?.street || ''}
+                      onChangeText={value => {
                         setEditedAddress(prev => ({
                           ...prev,
-                          province: value,
-                          site: '', // Reset site when province changes
+                          street: value,
                         }));
                       }}
-                      placeholder={t(
-                        'participantDetail.profileModal.selectProvince',
-                      )}
-                      bg="$white"
-                      borderColor="transparent"
                     />
-                  </VStack>
-
-                  {/* Site Dropdown */}
-                  <VStack space="xs">
-                    <Select
-                      options={getSitesByProvince(
-                        editedAddress?.province || '',
-                      ).map(s => ({
-                        label: s.label,
-                        value: s.value,
-                      }))}
-                      value={editedAddress?.site || ''}
-                      onChange={value => {
-                        setEditedAddress(prev => ({
-                          ...prev,
-                          site: value,
-                        }));
-                      }}
-                      placeholder={t(
-                        'participantDetail.profileModal.selectSite',
-                      )}
-                      bg="$white"
-                      borderColor="transparent"
-                    />
-                  </VStack>
+                  </Input>
                 </VStack>
-              )}
+              </VStack>
+            ) : (
+              <Text {...profileStyles.fieldValue}>{participant?.location}</Text>
+            )}
+
+            {/* Province Dropdown (always disabled) */}
+            {/* {isEditingAddress ? (
+              <VStack space="xs">
+                <Select
+                  options={PROVINCES.map(p => ({
+                    label: p.label,
+                    value: p.value,
+                  }))}
+                  value={
+                    editedAddress?.province || participant?.province?.label
+                  }
+                  onChange={() => {}}
+                  placeholder={t(
+                    'participantDetail.profileModal.selectProvince',
+                  )}
+                  bg="$white"
+                  borderColor="transparent"
+                  disabled={true}
+                />
+              </VStack>
+            ) : ( */}
+              <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+               {t('common.profileFields.addressFields.province')}: {participant?.province?.label}
+              </Text>
+             {/* )} */}
+
+            {/* Site Dropdown (always disabled) */}
+             {/* {isEditingAddress ? (
+            <VStack space="xs">
+              <Select
+                options={getSitesByProvince(editedAddress?.province || '').map(
+                  s => ({
+                    label: s.label,
+                    value: s.value,
+                  }),
+                )}
+                value={editedAddress?.site?.label || ''}
+                onChange={() => {}}
+                placeholder={t('participantDetail.profileModal.selectSite')}
+                bg="$white"
+                borderColor="transparent"
+                disabled={true}
+              />
             </VStack>
-          )}
+             ) : ( */}
+              <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+               {t('common.profileFields.addressFields.site')}: {participant?.site?.label}
+              </Text>
+            {/* )}  */}
+          </VStack>
+           {/* )}  */}
         </VStack>
       </Modal>
     </Box>
-
   );
 }
