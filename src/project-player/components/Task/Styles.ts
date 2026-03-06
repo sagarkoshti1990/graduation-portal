@@ -671,6 +671,10 @@ export const evidencePreviewModalStyles = {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
+  imagePreviewStyle: {
+    width: '100%' as const,
+    height: 200,
+  },
   imagePreviewText: {
     fontSize: '$sm',
     color: '$textMuted',

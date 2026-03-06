@@ -12,6 +12,7 @@ import {
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
 import { useIsSupervisor } from '../contexts/AuthContext';
+import logger from '@utils/logger';
 
 // Type definition for filter configuration
 export type FilterConfig = {
@@ -123,7 +124,7 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
         const sitesData = sitesResponse.result?.data || [];
         setSites(sitesData);
       } catch (error) {
-        console.error('Error fetching sites:', error);
+        logger.error('Error fetching sites:', error);
         setSites([]);
       }
     };

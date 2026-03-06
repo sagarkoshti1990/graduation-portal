@@ -34,13 +34,13 @@ import { getCategoryList, getProjectDetails} from '../../project-player/services
 import { useAuth } from '@contexts/AuthContext';
 import { STATUS, PATHWAY_TAGS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
-
+import logger from '@utils/logger';
 
 const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useLanguage();
-  const { isWeb , isMobile} = usePlatform();
+  const { isMobile } = usePlatform();
   const { user } = useAuth();
 
   const participantId = (route.params as { id?: string })?.id || '';
@@ -79,8 +79,8 @@ const DevelopInterventionPlan: React.FC = () => {
             const {userDetails,...rest} = response?.result?.data?.[0]
             const participantData = {...(userDetails || {}),...rest}
             setParticipant(participantData);
-          } catch (error) {
-            console.log(error);
+          } catch (err) {
+            logger.log(err);
           }
         }
       };
@@ -101,7 +101,7 @@ const DevelopInterventionPlan: React.FC = () => {
   };
 
   const handleIdpCreation = useCallback(async (newProjectId: any) => {
-    console.log('handleIdpCreation -  Project ID:', newProjectId);
+    logger.log('handleIdpCreation -  Project ID:', newProjectId);
     setIdpCreated(true);
     if (newProjectId) {
       // Extract project ID from the response
@@ -111,7 +111,7 @@ const DevelopInterventionPlan: React.FC = () => {
       const response = await getProjectDetails(newProjectId);
       const project = response?.data;
       // update entity to IN_PROGRESS
-      const res = await updateEntityDetails({
+      await updateEntityDetails({
         userId: user?.userId,
         entityId: participantId,
         entityUpdates: {
@@ -121,7 +121,7 @@ const DevelopInterventionPlan: React.FC = () => {
       });
 
      // create user program Mapping for the participant
-      const userProgramMapping = await createOrUpdateProgramUserMapping({
+      await createOrUpdateProgramUserMapping({
         userId: participantId,
         programId: project.programId,
         metaInformation: {
@@ -137,9 +137,10 @@ const DevelopInterventionPlan: React.FC = () => {
       //     status: STATUS.IN_PROGRESS,
       //   },
       // });
+    // @ts-ignore - Navigation type issue
     navigation.navigate('participant-detail', { id: route.params?.id });
     }
-  }, []);
+  }, [navigation, participantId, projectId, route, user?.userId]);
 
   const handleChangePathway = useCallback(() => {
     setShowProjectPlayerPreview(false);
@@ -272,7 +273,7 @@ const DevelopInterventionPlan: React.FC = () => {
         if (!isMounted) return;
         setTemplates(templatesData || []);
       } catch (err) {
-        console.error('Failed to fetch project data', err);
+        logger.error('Failed to fetch project data', err);
         if (isMounted) {
           setError('Failed to load templates');
         }
@@ -304,7 +305,7 @@ const DevelopInterventionPlan: React.FC = () => {
 
     if (allPillarsHaveSelections) {
       // Log the pillar-category relationships
-      console.log(
+      logger.log(
         'Pillar-Category Relationships:',
         getPillarCategoryRelationships,
       );
@@ -381,21 +382,20 @@ const DevelopInterventionPlan: React.FC = () => {
 
       // setCategories(categoriesData || []);
     } catch (err) {
-      console.error('Failed to fetch project data', err);
+      logger.error('Failed to fetch project data', err);
       setError('Failed to load templates');
     }
   };
 
   const handleBackPress = () => {
-    navigation.navigate(
-      'participant-detail' as never,
-      { id: participantId } as never,
-    );
+    // @ts-ignore - Navigation type issue
+    navigation.navigate('participant-detail', { id: participantId });
     setShowProjectPlayerPreview(false);
   };
 
   const handleViewCheckIns = () => {
-    navigation.navigate('log-visit' as never, { id: participantId } as never);
+    // @ts-ignore - Navigation type issue
+    navigation.navigate('log-visit', { id: participantId });
   };
 
   /* -------------------- UI -------------------- */
@@ -459,7 +459,7 @@ const DevelopInterventionPlan: React.FC = () => {
         {!isLoading &&
           !error &&
           !showProjectPlayerPreview && (
-        <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+        <ScrollView flex={1} contentContainerStyle={templateStyles.scrollViewContent} showsVerticalScrollIndicator={false}>
           {templates?.map(pathway => (
             <Pressable
               key={pathway?._id}

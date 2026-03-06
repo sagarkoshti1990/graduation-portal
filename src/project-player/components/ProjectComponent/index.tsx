@@ -26,6 +26,7 @@ import { submitInterventionPlan } from '../../services/projectPlayerService';
 import { addCustomTaskStyles } from '../Task/Styles';
 import { PLAYER_MODE } from '@constants/app.constant';
 import { PILLAR_NAMES } from '@constants/app.constant';
+import logger from '@utils/logger';
 
 const ProjectComponent: React.FC = () => {
   const {
@@ -182,7 +183,7 @@ const ProjectComponent: React.FC = () => {
           response.error || t('projectPlayer.error.submitFailed'));
       }
     } catch (error) {
-      console.error('Error submitting intervention plan:', error);
+      logger.error('Error submitting intervention plan:', error);
       showAlert('error', t('projectPlayer.error.submitFailed'));
     }
   };
@@ -196,7 +197,7 @@ const ProjectComponent: React.FC = () => {
       <VStack flex={1}>
         <ScrollView flex={1}
           {...projectComponentStyles.scrollView}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={projectComponentStyles.scrollViewContent}
         >
               {/* Pillar features only: +Add Custom Task button */}
                 {showPillarFeatures && (

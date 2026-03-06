@@ -10,6 +10,7 @@ import { styles as dataTableStyles } from '@components/DataTable/Styles';
 import { MenuItemData } from '@components/ui/Menu';
 import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
+import logger from '@utils/logger';
 
 /**
  * Helper function to extract role label from user object
@@ -201,7 +202,7 @@ const ActionsColumn: React.FC<{
         onViewProfile?.(user);
         break;
       case 'edit':
-        console.log('Edit user:', user.id);
+        logger.log('Edit user:', user.id);
         // TODO: Open edit modal or navigate to edit page
         break;
       case 'reset-password':
@@ -212,7 +213,7 @@ const ActionsColumn: React.FC<{
         onDeactivate?.(user);
         break;
       default:
-        console.log('Action:', key, 'for user:', user.id);
+        logger.log('Action:', key, 'for user:', user.id);
     }
   };
 

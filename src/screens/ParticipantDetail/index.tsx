@@ -41,6 +41,7 @@ import {
 import { PARTICIPANT_DETAILS_TABS, STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
+import logger from '@utils/logger';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -111,7 +112,7 @@ export default function ParticipantDetail() {
         });
         setStatus(participantData?.status);
       } catch (error) {
-        console.log(error);
+        logger.error('Error fetching participant details:', error);
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;

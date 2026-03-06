@@ -12,6 +12,7 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import { ROLE_NAMES } from '@constants/ROLES';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import logger from '@utils/logger';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process: {
@@ -161,7 +162,7 @@ export const getEntityTypesFromStorage = async (): Promise<Record<string, string
     }
     return null;
   } catch (error) {
-    console.error('Error reading entity types from storage:', error);
+    logger.error('Error reading entity types from storage:', error);
     return null;
   }
 };
@@ -207,13 +208,13 @@ export const getProvincesList = async (): Promise<ProvinceEntity[]> => {
     let entityTypes = await getEntityTypesFromStorage();
     
     // If not in storage, fetch entity types from API
-    if (!entityTypes || !entityTypes['province']) {
+    if (!entityTypes || !entityTypes.province) {
       await getEntityTypesList();
       entityTypes = await getEntityTypesFromStorage();
     }
 
     // Get province entity type ID
-    const provinceEntityTypeId = entityTypes?.['province'];
+    const provinceEntityTypeId = entityTypes?.province;
     
     if (!provinceEntityTypeId) {
       return [];
@@ -223,7 +224,7 @@ export const getProvincesList = async (): Promise<ProvinceEntity[]> => {
     const provincesResponse = await getProvincesByEntityType(provinceEntityTypeId);
     return provincesResponse.result || [];
   } catch (error) {
-    console.error('Error fetching provinces:', error);
+    logger.error('Error fetching provinces:', error);
     return [];
   }
 };
@@ -276,13 +277,13 @@ export const getAllSites = async (): Promise<SiteEntity[]> => {
     let entityTypes = await getEntityTypesFromStorage();
     
     // If not in storage, fetch entity types from API
-    if (!entityTypes || !entityTypes['site']) {
+    if (!entityTypes || !entityTypes.site) {
       await getEntityTypesList();
       entityTypes = await getEntityTypesFromStorage();
     }
 
     // Get site entity type ID
-    const siteEntityTypeId = entityTypes?.['site'];
+    const siteEntityTypeId = entityTypes?.site;
     
     if (!siteEntityTypeId) {
       return [];
@@ -295,7 +296,7 @@ export const getAllSites = async (): Promise<SiteEntity[]> => {
     });
     return sitesResponse.result || [];
   } catch (error) {
-    console.error('Error fetching all sites:', error);
+    logger.error('Error fetching all sites:', error);
     return [];
   }
 };
@@ -394,7 +395,7 @@ export const resetPassword = async (
   params: ResetPasswordRequest
 ): Promise<ResetPasswordResponse> => {
   try {
-    console.log('Reset password called for user:', params.username);
+    logger.log('Reset password called for user:', params.username);
     
     // TODO: Replace this with actual API call when endpoint is available
     // Example:
@@ -415,14 +416,14 @@ export const resetPassword = async (
       },
     };
     
-    console.log('Password reset successful (static response)');
+    logger.log('Password reset successful (static response)');
     
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     return staticResponse;
   } catch (error: any) {
-    console.error('Reset password error:', {
+    logger.error('Reset password error:', {
       message: error?.message,
       response: error?.response?.data,
       status: error?.response?.status,

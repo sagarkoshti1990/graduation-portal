@@ -7,10 +7,11 @@ import FilterButton from '@components/Filter';
 import DashboardCards from './DashboardCards';
 import { AdminDashboardFilterOptions } from '@constants/ADMIN_DASHBOARD_FILTERS';
 import { indicatorCards } from '@constants/ADMIN_DASHBOARD_CARDS';
+import logger from '@utils/logger';
 
 const AdminDashboard = () => {
   const handleFilterChange = (filters: Record<string, any>) => {
-    console.log('Dashboard filters changed:', filters);
+    logger.log('Dashboard filters changed:', filters);
     // Add your filter logic here
   };
 

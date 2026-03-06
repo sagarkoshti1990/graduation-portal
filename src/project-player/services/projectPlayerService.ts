@@ -4,6 +4,7 @@ import { ApiResponse } from '../types/components.types';
 import { API_ENDPOINTS } from './apiEndpoints';
 import { isWeb } from '@utils/platform';
 import { createProjectPlanPayload } from '../types';
+import logger from '@utils/logger';
 
 export const apiClient = axios.create({
   // Use baseUrl from PROJECT_PLAYER_CONFIGS (which gets from env, with fallback)
@@ -21,10 +22,7 @@ apiClient.interceptors.request.use(async config => {
       config.headers['X-auth-token'] = token;
     }
   } catch (error) {
-    console.error(
-      'Error getting token from AsyncStorage in interceptor:',
-      error,
-    );
+    logger.error('Error getting token from AsyncStorage in interceptor:', error);
     // No token will be added if AsyncStorage fails
   }
 
@@ -253,7 +251,7 @@ export const uploadFiles = async (
         // Check upload success
         if (!res.ok) {
           const errorMsg = `Failed to upload ${file.name}: ${res.status} ${res.statusText}`;
-          console.error(errorMsg);
+          logger.error(errorMsg);
           throw new Error(errorMsg);
         }
         

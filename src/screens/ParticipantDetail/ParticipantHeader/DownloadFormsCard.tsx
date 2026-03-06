@@ -5,6 +5,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CONSENT_FORM_ASSET, SLA_FORM_ASSET } from './downloadAssets';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAlert } from '@components/ui/Alert';
+import logger from '@utils/logger';
 
 type FormItem = {
   label: string;
@@ -33,7 +34,7 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
         : Image.resolveAssetSource(assetSource)?.uri;
     
     if (!uri) {
-      console.error('Download failed: URI is undefined');
+      logger.error('Download failed: URI is undefined');
       showAlert('error', t('downloadForms.downloadUriError'));
       return;
     }
@@ -63,10 +64,10 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
         link.click();
         document.body.removeChild(link);
         
-        console.log('Download initiated successfully for:', filename);
+        logger.log('Download initiated successfully for:', filename);
         showAlert('success', t('downloadForms.downloadSuccess'));
       } catch (error) {
-        console.error('Download error:', error);
+        logger.error('Download error:', error);
         showAlert('error', t('downloadForms.downloadError'));
         // Fallback: open in new tab
         window.open(uri, '_blank');
@@ -80,7 +81,7 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
         showAlert('success', t('downloadForms.downloadSuccess'));
       })
       .catch(err => {
-        console.error('Failed to open URL:', err);
+        logger.error('Failed to open URL:', err);
         showAlert('error', t('downloadForms.downloadError'));
       });
   };

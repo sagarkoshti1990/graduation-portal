@@ -11,6 +11,7 @@ import { MODE } from '@constants/PROJECTDATA';
 import { STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
+import logger from '@utils/logger';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   participantStatus,
@@ -59,7 +60,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
   // Handle successful IDP creation
   const handleIdpCreationSuccess = useCallback((newProjectId: string) => {
-    console.log('newProject', newProjectId);
+    logger.log('IDP created with project ID:', newProjectId);
     if (newProjectId) {
       setProjectId(newProjectId);
     }

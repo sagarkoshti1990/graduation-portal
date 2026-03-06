@@ -42,7 +42,7 @@ const WebComponentPlayer = ({ playerConfig }: PlayerConfigProps) => {
     const previewMode = escapeForJS(
       JSON.stringify(playerConfig.previewmode || false),
     );
-    console.log('projectData', projectData);
+    logger.log('projectData', projectData);
 
     const injectPlayer = () => {
       if (!webViewRef.current) {

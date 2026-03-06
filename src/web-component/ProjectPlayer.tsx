@@ -14,6 +14,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import logger from '@utils/logger';
 // import { FileUploadService } from 'src/services/FileUploadService';
 
 // ---------- Types ----------
@@ -155,7 +156,7 @@ const ProjectPlayer: React.FC<Props> = props => {
             );
         }
       } catch (e) {
-        console.warn('Offline load failed', e);
+        logger.warn('Offline load failed', e);
       }
     })();
   }, [data]);
@@ -173,7 +174,7 @@ const ProjectPlayer: React.FC<Props> = props => {
           );
         }
       } catch (e) {
-        console.warn('Offline save failed', e);
+        logger.warn('Offline save failed', e);
       }
     })();
   }, [project]);
@@ -236,14 +237,14 @@ const ProjectPlayer: React.FC<Props> = props => {
                   resolveReader();
                 };
                 reader.onerror = () => {
-                  console.warn('File read failed for:', file.name);
+                  logger.warn('File read failed for:', file.name);
                   resolveReader();
                 };
                 reader.readAsDataURL(file);
               });
             }
           } catch (err) {
-            console.warn('file save failed for:', file.name, err);
+            logger.warn('file save failed for:', file.name, err);
           }
         }
 

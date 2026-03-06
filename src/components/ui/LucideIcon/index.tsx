@@ -1,6 +1,7 @@
 import React from 'react';
 import type { LucideProps } from 'lucide-react-native';
 import { theme } from '@config/theme';
+import logger from '@utils/logger';
 
 /**
  * Platform-agnostic Lucide Icon wrapper
@@ -55,7 +56,7 @@ const LucideIcon: React.FC<LucideIconProps> = ({
   }
 
   if (!IconComponent) {
-    console.warn(`Lucide icon "${name}" not found`);
+    logger.warn(`Lucide icon "${name}" not found`);
     return null;
   }
 

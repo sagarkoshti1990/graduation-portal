@@ -8,6 +8,9 @@ export const projectComponentStyles = {
   scrollView: {
     paddingBottom: '$10',
   },
+  scrollViewContent: {
+    paddingBottom: 40,
+  },
   card: {
     size: 'lg' as const,
     variant: 'elevated' as const,

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useProjectContext } from '../context/ProjectContext';
 import { Attachment, TaskStatus } from '../types/project.types';
 import { uploadFiles } from '../services/projectPlayerService';
+import logger from '@utils/logger';
 
 export const useTaskActions = () => {
   const { updateTask, mode, setTaskAddedToPlan, setTaskPlanActionPerformed } =
@@ -35,7 +36,7 @@ export const useTaskActions = () => {
     (taskId: string, files: File[]) => {
       if (!canEdit) return;
       // TODO: Implement file upload logic
-      console.log('Upload files:', taskId, files);
+      logger.log('Upload files:', taskId, files);
     },
     [canEdit],
   );
@@ -44,7 +45,7 @@ export const useTaskActions = () => {
     (taskId: string) => {
       if (!canEdit) return;
       // TODO: Implement form opening logic
-      console.log('Open form:', taskId);
+      logger.log('Open form:', taskId);
     },
     [canEdit],
   );

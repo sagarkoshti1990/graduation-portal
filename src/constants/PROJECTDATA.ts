@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './STORAGE_KEYS';
 import { isWeb } from '@utils/platform';
+import logger from '@utils/logger';
 
 declare const process:
   | {
@@ -10,7 +11,7 @@ declare const process:
     }
   | undefined;
 
-const baseUrl = process.env.API_BASE_URL;
+const baseUrl = typeof process !== 'undefined' ? process?.env.API_BASE_URL : undefined;
 
 // Helper function to get access token from AsyncStorage
 export const getAccessToken = async (): Promise<string | null> => {
@@ -36,7 +37,7 @@ export const getAccessToken = async (): Promise<string | null> => {
       return await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     }
   } catch (error) {
-    console.error('Error getting token:', error);
+    logger.error('Error getting token:', error);
     return null;
   }
 };

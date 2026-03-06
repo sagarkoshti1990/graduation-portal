@@ -21,8 +21,10 @@ import { requestCameraPermission, requestStoragePermission } from '@utils/permis
 import { usePlatform } from '@utils/platform';
 import Modal from '@components/ui/Modal';
 import { fileUploadModalStyles } from './Styles';
+import { taskCardStyles } from './Styles';
 import { UploadMethodOptionProps, FileUploadModalProps } from '../../types/components.types';
 import { formatFileSize } from '../../utils/taskUtils';
+import logger from '@utils/logger';
 
 // --- Helper Component for Selection Options ---
 const UploadMethodOption: React.FC<UploadMethodOptionProps> = ({
@@ -149,7 +151,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                     }
                 }
             } catch (error) {
-                console.error('Image picker error:', error);
+                logger.error('Image picker error:', error);
             }
         }
     };
@@ -339,7 +341,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                         type="file"
                         accept="image/*"
                         capture="environment"
-                        style={{ display: 'none' }}
+                        style={taskCardStyles.hiddenInput}
                         onChange={(e) => handleWebFileChange(e, 'camera')}
                     />
                     <input
@@ -347,7 +349,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                         type="file"
                         accept="image/*,application/pdf,.doc,.docx"
                         multiple
-                        style={{ display: 'none' }}
+                        style={taskCardStyles.hiddenInput}
                         onChange={(e) => handleWebFileChange(e, 'device')}
                     />
                 </>

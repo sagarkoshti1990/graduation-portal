@@ -25,6 +25,7 @@ import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
 import { usePlatform } from '@utils/platform';
 import { getProjectDetails } from '../../../project-player/services/projectPlayerService';
+import logger from '@utils/logger';
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   participant: participantProp,
@@ -89,7 +90,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
             setGraduationProgress(progress);
           }
         } catch (error) {
-          console.log(error);
+          logger.error('Error fetching project progress:', error);
         }
       }
     };

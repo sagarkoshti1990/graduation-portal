@@ -1,4 +1,7 @@
 export const templateStyles = {
+  scrollViewContent: {
+    flexGrow: 1,
+  },
   iconContainer: {
     $md: {
       width: '$12',

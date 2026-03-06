@@ -1,5 +1,5 @@
 // Storage abstraction for web (IndexedDB) and native (FileSystem)
-
+import logger from '@utils/logger';
 const DB_NAME = 'ProjectPlayerDB';
 const STORE_NAME = 'projects';
 
@@ -38,7 +38,7 @@ export const storage = {
         transaction.onerror = () => reject(transaction.error);
       });
     } catch (error) {
-      console.error('Error saving project:', error);
+      logger.error('Error saving project:', error);
       // Fallback to localStorage
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(
@@ -62,7 +62,7 @@ export const storage = {
         request.onerror = () => reject(request.error);
       });
     } catch (error) {
-      console.error('Error getting project:', error);
+      logger.error('Error getting project:', error);
       // Fallback to localStorage
       const data = localStorage.getItem(`project_${projectId}`);
       return data ? JSON.parse(data) : null;
@@ -82,7 +82,7 @@ export const storage = {
         transaction.onerror = () => reject(transaction.error);
       });
     } catch (error) {
-      console.error('Error deleting project:', error);
+      logger.error('Error deleting project:', error);
       // Fallback to localStorage
       localStorage.removeItem(`project_${projectId}`);
     }
@@ -101,7 +101,7 @@ export const storage = {
         request.onerror = () => reject(request.error);
       });
     } catch (error) {
-      console.error('Error getting all projects:', error);
+      logger.error('Error getting all projects:', error);
       return [];
     }
   },

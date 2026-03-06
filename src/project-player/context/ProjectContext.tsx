@@ -13,6 +13,7 @@ import {
 import { setApiConfig } from '../utils/api';
 import { updateTask as updateTaskAPI } from '../services/projectPlayerService';
 import { MODE } from '@constants/PROJECTDATA';
+import logger from '@utils/logger';
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(
   undefined,
@@ -133,7 +134,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       }
       
       // Call API to update task on server
-      if (currentProjectId) {
+      if (currentProjectId && updatedTaskObj) {
         try {
            if (updatedTaskObj?.isCustomTask && !isEditMode) {
               return;
@@ -143,7 +144,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
               tasks: [
                 {
                   _id: updatedTaskObj?.parentId,
-                  name: updates.pillarName,
+                  name: (updates as { pillarName?: string }).pillarName,
                   children: [
                     { _id: taskId, name: updatedTaskObj?.name, ...updates },
                   ],
@@ -161,12 +162,12 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
               ],
             });
           }
-        } catch (error) {
-          console.log(error);
+        } catch (err) {
+          logger.log(err);
         }
       }
     },
-    [onTaskUpdate],
+    [onTaskUpdate, isEditMode],
   );
 
   const updateProjectInfo = useCallback((updates: Partial<ProjectData>) => {
@@ -196,7 +197,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
                     ],
                   });
                 } catch (error) {
-                  console.log(error);
+                  logger.log(error);
                 }
               // })
               }
@@ -269,7 +270,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
             children: [{ _id: deletedTask._id, isDeleted: true }],
           },
         ],
-      }).catch(console.log);
+      }).catch(logger.log);
     }
 
     // 🧹 Step 3: Remove task from state
@@ -308,16 +309,16 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       tasks: deleteRecursive(prev.tasks || []),
     };
   });
-}, []);
+}, [isEditMode]);
 
   const saveLocal = useCallback(() => {
     // TODO: Implement local save logic
-    console.log('saveLocal');
+    logger.log('saveLocal');
   }, []);
 
   const syncToServer = useCallback(async () => {
     // TODO: Implement sync logic
-    console.log('syncToServer');
+    logger.log('syncToServer');
   }, []);
 
   const setTaskAddedToPlan = useCallback(

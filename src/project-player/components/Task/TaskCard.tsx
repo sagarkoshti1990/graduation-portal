@@ -25,7 +25,6 @@ import {
   TASK_STATUS,
   TASK_TYPE,
   PROJECT_MODES,
-  BADGE_TYPES,
 } from '../../../constants/app.constant';
 import { TaskCardProps } from '../../types/components.types';
 import { Task } from '../../types/project.types';
@@ -41,6 +40,7 @@ import { renderCustomTaskActions, renderModals } from './renderHelpers';
 import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { getSolutionDetails } from '../../services/projectPlayerService';
+import logger from '@utils/logger';
 
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
@@ -160,7 +160,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     if (task?.type === TASK_TYPE.OBSERVATION) {
       const projectTemplateId = projectData?._id;
       if (!participantId || !projectTemplateId) {
-        console.error('Missing userId or projectTemplateId');
+        logger.error('Missing userId or projectTemplateId');
         return;
       }
       const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
@@ -753,7 +753,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       participantName={!isChildOfProject ? config.profileInfo?.name : undefined}
       existingAttachments={task?.attachments}
       onUpload={method => {
-        console.log('Upload method selected:', method);
+        logger.log('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
         setIsStatusUpdating(true);

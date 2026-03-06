@@ -8,10 +8,8 @@ import {
  CheckboxIndicator,
  CheckboxIcon,
  CheckIcon,
- CheckboxLabel,
  VStack,
  HStack,
- Divider,
  Button,
  Pressable,
  Box,
@@ -31,7 +29,7 @@ import { getInitials } from '@utils/helper';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import DataTable from '@components/DataTable';
 import type { ColumnDef } from '@app-types/components';
-
+import logger from '@utils/logger';
 
 interface UserAvatarCardProps {
  title: string;
@@ -78,7 +76,7 @@ const UserAvatarCard = ({
     lcData?: any;
   } | null>(null);
   // Pagination state for participants table
-  const [currentPage, setCurrentPage] = useState(1);
+  const [_currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   
   // Use provided lcList or fall back to empty array
@@ -100,7 +98,7 @@ const UserAvatarCard = ({
         >
           {/* Checkbox + Avatar managed inside name (no separate columns) */}
           <Pressable
-            onPress={(e: any) => {
+            onPress={(_e: any) => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
@@ -201,7 +199,7 @@ const UserAvatarCard = ({
         >
           {/* Checkbox managed inside lcInfo (no separate checkbox column) */}
           <Pressable
-            onPress={(e: any) => {
+            onPress={(_e: any) => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
@@ -557,7 +555,7 @@ const UserAvatarCard = ({
                 setIsModalOpen(false);
                 setPendingAssignment(null);
               } catch (error) {
-                console.error('Error in onAssign callback:', error);
+                logger.error('Error in onAssign callback:', error);
                 // Show error alert
                 showAlert(
                   'error',
@@ -653,7 +651,7 @@ const UserAvatarCard = ({
                 setIsModalOpen(false);
                 setPendingAssignment(null);
               } catch (error) {
-                console.error('Error in onAssign callback:', error);
+                logger.error('Error in onAssign callback:', error);
                 // Show error alert
                 showAlert(
                   'error',

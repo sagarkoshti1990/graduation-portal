@@ -9,6 +9,7 @@ import { getProvincesList, getSitesByProvince } from '../services/usersService';
 import { getSupervisorsByProvince } from '../services/assignUsersService';
 import type { FilterConfig } from './USER_MANAGEMENT';
 import type { ProvinceEntity, AdminUserManagementData, SiteEntity } from '@app-types/Users';
+import logger from '@utils/logger';
 
 // Search filter for LC assignment
 export const SearchFilter: FilterConfig = {
@@ -70,7 +71,7 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
         const supervisorsData = supervisorsResponse.result?.data || [];
         setSupervisors(supervisorsData);
       } catch (error) {
-        console.error('Error fetching supervisors:', error);
+        logger.error('Error fetching supervisors:', error);
         setSupervisors([]);
       }
     };
@@ -117,7 +118,7 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
       ],
       supervisors, // Return supervisors data for accessing location and other details
     };
-  }, [provinces, supervisors, filters.filterByProvince]);
+  }, [provinces, supervisors]);
 };
 
 /**
@@ -149,7 +150,7 @@ export const useSiteFilterOptions = (selectedProvinceId?: string): {
         const sitesData = sitesResponse.result?.data || [];
         setSites(sitesData);
       } catch (error) {
-        console.error('Error fetching sites:', error);
+        logger.error('Error fetching sites:', error);
         setSites([]);
       }
     };
@@ -180,7 +181,7 @@ export const useSiteFilterOptions = (selectedProvinceId?: string): {
       ],
       sites, // Return sites data for accessing details
     };
-  }, [sites, selectedProvinceId]);
+  }, [sites]);
 };
 
 /**
@@ -222,7 +223,7 @@ export const useParticipantFilterOptions = (selectedProvinceId?: string): {
         const sitesData = sitesResponse.result?.data || [];
         setSites(sitesData);
       } catch (error) {
-        console.error('Error fetching sites:', error);
+        logger.error('Error fetching sites:', error);
         setSites([]);
       }
     };
@@ -268,7 +269,7 @@ export const useParticipantFilterOptions = (selectedProvinceId?: string): {
       ],
       sites,
     };
-  }, [provinces, sites, selectedProvinceId]);
+  }, [provinces, sites]);
 };
 
 // NOTE: Participant filters are now provided by `useParticipantFilterOptions`.

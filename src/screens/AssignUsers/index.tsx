@@ -19,6 +19,7 @@ import { theme } from '@config/theme';
 import { getLinkageChampions, assignLCsToSupervisor, getMappedLCsForSupervisor, getParticipants, assignParticipantsToLC, getMappedParticipantsForLC } from '../../services/assignUsersService';
 import { getInitials } from '@utils/helper';
 import { useIsSupervisor, useAuth } from '../../contexts/AuthContext';
+import logger from '@utils/logger';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -37,9 +38,9 @@ const AssignUsersScreen = () => {
 
  // Log logged-in user role
  useEffect(() => {
-   console.log('Logged in user role:', user?.role);
-   console.log('Is Supervisor:', isSupervisor);
-   console.log('Full user object:', user);
+   logger.log('Logged in user role:', user?.role);
+   logger.log('Is Supervisor:', isSupervisor);
+   logger.log('Full user object:', user);
  }, [user, isSupervisor]);
 
  // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR
@@ -155,13 +156,13 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
    try {
      // Get supervisor ID from selected supervisor
      if (!selectedSupervisor) {
-       console.error('No supervisor selected');
+       logger.error('No supervisor selected');
        return;
      }
 
      const supervisorId = String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
      if (!supervisorId) {
-       console.error('Supervisor ID not found');
+       logger.error('Supervisor ID not found');
        return;
      }
 
@@ -169,7 +170,7 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
      // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
      const programId = process.env.GLOBAL_LC_PROGRAM_ID;
      if (!programId) {
-       console.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
+       logger.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
        return;
      }
 
@@ -179,7 +180,7 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
        .filter((id) => id !== '');
 
      if (assignedUserIds.length === 0) {
-       console.error('No valid LC IDs found');
+       logger.error('No valid LC IDs found');
        return;
      }
 
@@ -236,7 +237,7 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
     // Return success indicator
     return { success: true };
   } catch (error) {
-    console.error('Error assigning LCs to supervisor:', error);
+    logger.error('Error assigning LCs to supervisor:', error);
     // Re-throw error so it can be caught by the modal handler
     throw error;
   }
@@ -364,13 +365,13 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
      setParticipants(refreshedParticipants);
      setAssignedParticipants([]); // reset local assigned tracker; API is source of truth now
      
-     // Return success indicator
-     return { success: true };
-   } catch (error) {
-     console.error('Error assigning participants to LC:', error);
-     // Re-throw error so it can be caught by the modal handler
-     throw error;
-   }
+    // Return success indicator
+    return { success: true };
+  } catch (error) {
+    logger.error('Error assigning participants to LC:', error);
+    // Re-throw error so it can be caught by the modal handler
+    throw error;
+  }
  };
 
 // Filter out assigned participants from the available list
@@ -391,7 +392,7 @@ const getAvailableParticipants = () => {
        const programId = process.env.GLOBAL_LC_PROGRAM_ID;
        
        if (!programId) {
-         console.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
+         logger.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
          setLinkageChampions([]);
          return;
        }
@@ -426,7 +427,7 @@ const getAvailableParticipants = () => {
        
        setLinkageChampions(lcs);
      } catch (error) {
-       console.error('Error fetching linkage champions:', error);
+       logger.error('Error fetching linkage champions:', error);
        setLinkageChampions([]);
      } finally {
        setIsLoadingLCs(false);
@@ -461,7 +462,7 @@ const getAvailableParticipants = () => {
        const programId = process.env.GLOBAL_LC_PROGRAM_ID;
        
        if (!programId) {
-         console.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
+         logger.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
          setMappedLCs([]);
          return;
        }
@@ -471,7 +472,7 @@ const getAvailableParticipants = () => {
          ? String(user?.id || user?._id || '')
          : String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
        if (!supervisorId) {
-         console.error('Supervisor ID not found');
+         logger.error('Supervisor ID not found');
          setMappedLCs([]);
          return;
        }
@@ -517,7 +518,7 @@ const getAvailableParticipants = () => {
        
        setMappedLCs(lcs);
      } catch (error) {
-       console.error('Error fetching mapped LCs:', error);
+       logger.error('Error fetching mapped LCs:', error);
        setMappedLCs([]);
      } finally {
        setIsLoadingMappedLCs(false);
@@ -540,7 +541,7 @@ useEffect(() => {
       const programId = process.env.GLOBAL_LC_PROGRAM_ID;
       
       if (!programId) {
-        console.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
+        logger.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
         setParticipants([]);
         return;
       }
@@ -588,7 +589,7 @@ useEffect(() => {
       
       setParticipants(participantsData);
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      logger.error('Error fetching participants:', error);
       setParticipants([]);
     } finally {
       setIsLoadingParticipants(false);
@@ -619,7 +620,7 @@ useEffect(() => {
       const programId = process.env.GLOBAL_LC_PROGRAM_ID;
       
       if (!programId) {
-        console.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
+        logger.error('GLOBAL_LC_PROGRAM_ID is not defined in environment variables');
         setMappedParticipants([]);
         return;
       }
@@ -663,7 +664,7 @@ useEffect(() => {
       
       setMappedParticipants(participantsData);
     } catch (error) {
-      console.error('Error fetching mapped participants:', error);
+      logger.error('Error fetching mapped participants:', error);
       setMappedParticipants([]);
     } finally {
       setIsLoadingMappedParticipants(false);

@@ -4,6 +4,16 @@ import { useTaskActions } from '../../hooks/useTaskActions';
 import { useProjectContext } from '../../context/ProjectContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { UploadComponentProps } from '../../types/components.types';
+import logger from '@utils/logger';
+
+const uploadComponentStyles = {
+  hiddenInput: {
+    display: 'none' as const,
+  },
+  cursorPointer: {
+    cursor: 'pointer' as const,
+  },
+};
 
 const UploadComponent: React.FC<UploadComponentProps> = ({
   taskId,
@@ -41,7 +51,7 @@ const UploadComponent: React.FC<UploadComponentProps> = ({
       const fileArray = Array.from(files);
       await handleFileUpload(taskId, fileArray);
     } catch (error) {
-      console.error('Upload failed:', error);
+      logger.error('Upload failed:', error);
       setError(t('projectPlayer.uploadFailed'));
     } finally {
       setUploading(false);
@@ -63,12 +73,12 @@ const UploadComponent: React.FC<UploadComponentProps> = ({
             type="file"
             multiple
             onChange={handleFileSelect}
-            style={{ display: 'none' }}
+            style={uploadComponentStyles.hiddenInput}
             id={`file-upload-${taskId}`}
           />
           <label
             htmlFor={`file-upload-${taskId}`}
-            style={{ cursor: 'pointer' }}
+            style={uploadComponentStyles.cursorPointer}
           >
             <VStack space="xs" alignItems="center">
               <Text fontSize="$sm" color="$primary500">

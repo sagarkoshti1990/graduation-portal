@@ -14,6 +14,8 @@ import { updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import logger from '@utils/logger';
+
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
   data: ProjectPlayerData,
@@ -39,23 +41,24 @@ export const useProjectLoader = (
               projectData = res.data;
             } else {
               try {
-              projectData = await createProjectForEntity(entityId, province);
+              const createdProject = await createProjectForEntity(entityId, province || '');
 
-              if (projectData?._id) {
+              if (createdProject && typeof createdProject === 'object' && '_id' in createdProject && createdProject._id) {
                 await updateEntityDetails({
                   userId: `${user?.id}`,
                   entityId:entityId,
                  entityUpdates:{
-                   onBoardedProjectId: projectData._id,
+                   onBoardedProjectId: createdProject._id,
                  }
                 });
                 const ref = await AsyncStorage.getItem('my_program_user_ref');
-                if (ref) {
-                  await updateProjectInfo(projectData._id, ref);
+                if (ref && createdProject._id) {
+                  await updateProjectInfo(createdProject._id, ref);
                 }
               }
+              projectData = createdProject;
               } catch (err) {
-                console.error('Failed to create project for entity:', err);
+                logger.error('Failed to create project for entity:', err);
                 // Re-throw the error to be handled by the outer catch block
                 throw err;
               }
@@ -64,7 +67,7 @@ export const useProjectLoader = (
 
             setProjectData(projectData);
           } catch (err) {
-            console.error('Failed to load project templates:', err);
+            logger.error('Failed to load project templates:', err);
             setProjectData(null);
             setError(err as Error);
           }
@@ -121,7 +124,7 @@ export const useProjectLoader = (
     };
 
     loadData();
-  }, [config.mode, data.projectId, data.solutionId, data.data, data,error, user?.id]);
+  }, [config.mode, data, error, user?.id]);
 
   return { projectData, isLoading, error };
 };

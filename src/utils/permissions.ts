@@ -1,4 +1,5 @@
 import { Platform, PermissionsAndroid } from 'react-native';
+import logger from '@utils/logger';
 
 export const requestCameraPermission = async (t: (key: string) => string) => {
     if (Platform.OS === 'android') {
@@ -15,7 +16,7 @@ export const requestCameraPermission = async (t: (key: string) => string) => {
             );
             return granted === PermissionsAndroid.RESULTS.GRANTED;
         } catch (err) {
-            console.warn(err);
+            logger.warn(err);
             return false;
         }
     }
@@ -52,7 +53,7 @@ export const requestStoragePermission = async (t: (key: string) => string) => {
                 return granted === PermissionsAndroid.RESULTS.GRANTED;
             }
         } catch (err) {
-            console.warn(err);
+            logger.warn(err);
             return false;
         }
     }
