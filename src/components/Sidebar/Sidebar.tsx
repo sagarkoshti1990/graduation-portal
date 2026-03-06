@@ -53,7 +53,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   );
   const [expandedMoreInfo, setExpandedMoreInfo] = useState(true);
   const [activeRoute, setActiveRoute] = useState<string>('');
-  const { isWeb } = usePlatform();
   const { t } = useLanguage();
 
   // Sync activeRoute with the current route from navigation
