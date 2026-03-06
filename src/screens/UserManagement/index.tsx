@@ -164,12 +164,11 @@ const UserManagementScreen = () => {
     isSubmitting: false,
   });
 
-  // Edit User modal state (UI only; API integration will be added later)
+  // Edit User modal state (only editable fields should live here)
   const [editUserState, setEditUserState] = useState({
     user: null as AdminUserManagementData | null,
     userProfile: null as any | null,
     name: '',
-    phoneNumber: '',
     isSubmitting: false,
     isLoading: false,
   });
@@ -204,7 +203,6 @@ const UserManagementScreen = () => {
       user,
       userProfile: null,
       name: user.name || '',
-      phoneNumber: '',
       isSubmitting: false,
       isLoading: true,
     });
@@ -213,7 +211,6 @@ const UserManagementScreen = () => {
       setEditUserState(prev => ({
         ...prev,
         userProfile: profile,
-        phoneNumber: profile?.phoneNumber || profile?.phone_number || profile?.phone || '',
         isLoading: false,
       }));
     } catch (error: any) {
@@ -228,7 +225,6 @@ const UserManagementScreen = () => {
       user: null,
       userProfile: null,
       name: '',
-      phoneNumber: '',
       isSubmitting: false,
       isLoading: false,
     });
@@ -951,7 +947,7 @@ const UserManagementScreen = () => {
             >
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close')}</ButtonText>
             </Button>
-            <Button variant={"solid" as any}
+            {/* <Button variant={"solid" as any}
               onPress={() => {
                 if (selectedUserBase) {
                   openEditUserModal(selectedUserBase);
@@ -961,8 +957,8 @@ const UserManagementScreen = () => {
                 }
               }}
             >
-              {/* <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.editUser')}</ButtonText> */}
-            </Button>
+              <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.editUser')}</ButtonText>
+            </Button> */}
           </HStack>
         </VStack>
       </Modal>
@@ -1212,7 +1208,13 @@ const UserManagementScreen = () => {
                         {t('admin.users.profileModal.phoneNumber')}
                       </Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {editUserState.phoneNumber || '-'}
+                        {editUserState.userProfile?.phoneNumber ||
+                          editUserState.userProfile?.phone_number ||
+                          editUserState.userProfile?.phone ||
+                          (editUserState.user as any)?.phoneNumber ||
+                          (editUserState.user as any)?.phone_number ||
+                          (editUserState.user as any)?.phone ||
+                          '-'}
                       </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
