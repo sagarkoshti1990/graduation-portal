@@ -76,7 +76,7 @@ export interface UserSearchResponse {
   responseCode: string;
   message: string;
   result: {
-    data: any[];
+    data: unknown[];
     count?: number;
     total?: number;
   };

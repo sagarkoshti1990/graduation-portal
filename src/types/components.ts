@@ -97,7 +97,7 @@ export interface DataTableProps<T> {
   // Responsive props
   responsive?: boolean;  // Enable responsive card view on mobile (default: true)
   minWidth?: number;  // Minimum width of the table
-  _css?: any; // Additional styling props
+  _css?: Record<string, unknown>;
 }
 
 export interface PaginationControlsProps {
@@ -141,11 +141,10 @@ export interface ModalProps extends Omit<ComponentProps<typeof GluestackModalTyp
   onConfirm?: () => void; // Confirm button handler
   confirmButtonColor?: string; // Confirm button color (defaults to primary500)
   confirmButtonVariant?: 'solid' | 'outline' | 'link'; // Confirm button variant
-  // Additional styling
   maxWidth?: number;
-  contentProps?: any; // Additional props for ModalContent
-  bodyProps?: any; // Additional props for ModalBody
-  headerProps?: any; // Additional props for ModalHeader
+  contentProps?: Record<string, unknown>;
+  bodyProps?: Record<string, unknown>;
+  headerProps?: Record<string, unknown>;
 }
 
 export type ToastPlacement =

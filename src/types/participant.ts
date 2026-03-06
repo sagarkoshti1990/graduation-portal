@@ -37,7 +37,7 @@ export interface ParticipantData extends User {
   progress?: number;
   graduationProgress?: number;
   graduationDate?: string | Date;
-  [key: string]: any; // Allow additional properties for flexibility
+  [key: string]: unknown;
 }
 
 /**
@@ -65,7 +65,7 @@ export interface AssessmentSurveyCardData {
     showForStatuses?: Array<ParticipantStatus>;
     hideForStatuses?: Array<ParticipantStatus>;
   };
-  entity:any;
+  entity: unknown;
   entityType?: string;
 }
 
@@ -127,9 +127,9 @@ export interface ParticipantSearchResponse {
   responseCode: string;
   message: string;
   result: {
-    data: any[];
+    data: unknown[];
     overview?: ParticipantOverview;
-    details:any;
+    details: unknown;
   };
   count?: number;
   total?: number;

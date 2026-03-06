@@ -7,7 +7,7 @@ export const navigationRef = createNavigationContainerRef();
  * @param name - Screen name to navigate to
  * @param params - Optional navigation parameters
  */
-export function navigate(name: string, params?: any) {
+export function navigate(name: string, params?: Record<string, unknown>) {
   if (navigationRef.isReady()) {
     try {
       // @ts-ignore - navigation type inference
@@ -27,7 +27,7 @@ export function navigate(name: string, params?: any) {
  * @param name - Screen name to reset to
  * @param params - Optional navigation parameters
  */
-export function resetToScreen(name: string, params?: any) {
+export function resetToScreen(name: string, params?: Record<string, unknown>) {
   if (navigationRef.isReady()) {
     try {
       navigationRef.dispatch(

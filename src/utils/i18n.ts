@@ -1,9 +1,9 @@
 import { I18nManager } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '@config/i18n';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
+import offlineStorage from '../services/offlineStorage';
 
 const LANGUAGE_STORAGE_KEY = STORAGE_KEYS.LANGUAGE;
 
@@ -31,7 +31,7 @@ export const saveLanguagePreference = async (
       logger.warn('Invalid language code provided:', languageCode);
       return;
     }
-    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, languageCode);
+    await offlineStorage.create(LANGUAGE_STORAGE_KEY, languageCode);
   } catch (error) {
     logger.error('Error saving language preference:', error);
   }
@@ -80,8 +80,7 @@ export const changeLanguage = async (
 // Load saved language preference
 export const loadSavedLanguage = async (): Promise<string | null> => {
   try {
-    const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return savedLanguage;
+    return await offlineStorage.read<string>(LANGUAGE_STORAGE_KEY);
   } catch (error) {
     logger.error('Error loading saved language:', error);
     return null;

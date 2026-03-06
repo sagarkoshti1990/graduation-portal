@@ -1,5 +1,8 @@
-export function applyFilters(data: any[], filters: Record<string, any>): any[] {
-  return data.filter(item => {
+export function applyFilters<T extends Record<string, unknown>>(
+  data: T[],
+  filters: Record<string, unknown>
+): T[] {
+  return data.filter((item: T) => {
     return Object.keys(filters).every(key => {
       const filterValue = filters[key];
       const itemValue = item[key];

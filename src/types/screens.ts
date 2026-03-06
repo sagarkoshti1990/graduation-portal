@@ -1,15 +1,15 @@
 import { User } from '@contexts/AuthContext';
-import { STATUS } from '../constants/app.constant';
+import { STATUS } from '@constants/app.constant';
 import { ParticipantStatus, PathwayType } from './participant';
 export type StatusType = (typeof STATUS)[keyof typeof STATUS];
 export interface Participant {
   userId: string;
   name: string;
-  idpProgress?: any;
+  idpProgress?: unknown;
   status?: StatusType;
   userDetails?: User;
-  idpProjectId?:string;
-  certificateId?:string;
+  idpProjectId?: string;
+  certificateId?: string;
 }
 
 export type StatusCount = {
@@ -48,12 +48,12 @@ export interface TemplateData {
 }
 
 export interface InterventionPlanProps {
-    participantStatus?: StatusType;
-    participantId?: string;
-    participantName?: string;
-    participantProfile?:any;
-    onIdpCreation?: (projectId?: string) => void;
-    onProgressChange?: (progress: number) => void;
+  participantStatus?: StatusType;
+  participantId?: string;
+  participantName?: string;
+  participantProfile?: unknown;
+  onIdpCreation?: (projectId?: string) => void;
+  onProgressChange?: (progress: number) => void;
 }
 
 export interface TemplateData {
