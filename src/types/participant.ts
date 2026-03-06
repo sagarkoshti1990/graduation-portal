@@ -65,9 +65,10 @@ export interface AssessmentSurveyCardData {
     showForStatuses?: Array<ParticipantStatus>;
     hideForStatuses?: Array<ParticipantStatus>;
   };
-  entity:any;
+  entity?: any;
   entityType?: string;
   project?: any;
+  keywords?: string[];
 }
 
 /**

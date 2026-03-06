@@ -120,6 +120,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       [STATUS.IN_PROGRESS]: MODE.editMode,
       [STATUS.COMPLETED]: MODE.editMode,
       [STATUS.DROPOUT]: MODE.readOnlyMode,
+      [STATUS.GRADUATED]: MODE.readOnlyMode,
     };
 
     return statusConfigMap[status];
@@ -132,7 +133,11 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     }),
     [projectId, participantProfile?.idpProjectId],
   );
-
+  
+  if(!config?.mode){
+    console.log('config is not defined',config);
+    return;
+  }
   // Show empty state for ENROLLED status when player is not shown yet
   if (currentStatus === STATUS.ENROLLED) {
     return (

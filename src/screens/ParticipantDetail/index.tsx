@@ -14,7 +14,8 @@ import ParticipantHeader from './ParticipantHeader';
 import {
   getParticipantsList,
   // getSitesByProvince,
-  updateParticipantAddress
+  updateParticipantAddress,
+  verifyParticipantCompletionActions
 } from '../../services/participantService';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '../../hooks';
@@ -67,7 +68,7 @@ export default function ParticipantDetail() {
   const { isWeb } = usePlatform();
   // Extract the id parameter from the route
   const participantId = route.params?.id;
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('intervention-plan');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -102,10 +103,19 @@ export default function ParticipantDetail() {
     if (participantId && user?.id && !isFetchingRef.current) {
       try {
         isFetchingRef.current = true;
-        setIsLoading(true);
         const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
         const { userDetails, ...rest } = response?.result?.data?.[0]
         const participantData = { ...(userDetails || {}), ...rest }
+
+
+        if(participantData?.status === STATUS.COMPLETED){
+         // Verify participant completion conditions and perform certificate/graduation actions
+          await verifyParticipantCompletionActions({
+            participantData,
+            userId: user?.id,
+          });
+        }
+        
         setParticipant(participantData);
         setNavbarData({
           subtitle: participantData?.name,

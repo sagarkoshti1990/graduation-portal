@@ -26,5 +26,6 @@ export const API_ENDPOINTS = {
   GET_SIGNED_URL: `${prefix}/user/v1/cloud-services/file/getSignedUrl`,
   BULK_USER_CREATE: `${prefix}/user/v1/tenant/bulkUserCreate`,
   PROGRAM_USERS_SEARCH: `${prefix}/project/v1/programUsers/search`, // Search program users (LCs, participants, etc.),
-  UPDATE_ENTITY:`${prefix}/project/v1/programUsers/updateEntityProfile`
+  UPDATE_ENTITY:`${prefix}/project/v1/programUsers/updateEntityProfile`,
+  GENERATE_CERTIFICATE: `${prefix}/certificates/v1/generate`, // Mock endpoint for certificate generation
 };

@@ -46,7 +46,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 id: participant?.id,
               });
               
-              return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED } };
+              return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED, submissionsCount: entity?.submissionsCount || 1 } };
             } catch (error) {
               logger.error('Failed to fetch entity for solutionId:', item.solutionId, error);
               // Skip this item by returning null

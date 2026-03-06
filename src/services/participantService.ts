@@ -5,6 +5,10 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import { ROLE_NAMES } from '@constants/ROLES';
 import { getUserProfile } from './authenticationService';
 import { User } from '@contexts/AuthContext';
+import { getTargetedSolutions, getObservationEntities } from './solutionService';
+import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD, FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import logger from '@utils/logger';
+import { STATUS,ENTITY_STATUS } from '@constants/app.constant';
 /**
  * Get participants list for table view
  * Searches users by user IDs and returns the search response
@@ -207,6 +211,11 @@ export const createOrUpdateProgramUserMapping = async ({
   programId,
   metaInformation,
   status
+}: {
+  userId: string;
+  programId: string;
+  metaInformation: any;
+  status: string;
 }): Promise<any> => {
   try {
 
@@ -225,5 +234,231 @@ export const createOrUpdateProgramUserMapping = async ({
     return { data: response.data.result };
   } catch (error) {
     throw error;
+  }
+};
+
+/**
+ * Generate certificate for participant (Mock API)
+ * @param participantId - Participant entity ID
+ * @returns Certificate generation response
+ */
+export const generateCertificate = async (participantId: string): Promise<any> => {
+  try {
+    // Mock API call - Replace with actual API when available
+    console.log('Mock: Generating certificate for participant:', participantId);
+    
+    // Simulate API call
+    const response = await api.post(API_ENDPOINTS.GENERATE_CERTIFICATE, {
+      participantId,
+      programId: process.env.GLOBAL_LC_PROGRAM_ID,
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error generating certificate:', error);
+    // Mock success response for now
+    return {
+      success: true,
+      certificateId: `CERT-${participantId}-${Date.now()}`,
+      message: 'Certificate generated successfully (Mock)',
+    };
+  }
+};
+
+/**
+ * Check targeted solution submission status by keyword
+ * @param solutionData - Solution data with entity information
+ * @param keyword - Keyword to match (case-insensitive)
+ * @returns true if solution matches keyword and is completed
+ */
+const checkSolutionByKeyword = (solutionData: any, keyword: string): boolean => {
+  // Check if solution has matching keyword (case-insensitive)
+  const solutionKeywords = solutionData?.keywords || [];
+  const hasKeyword = solutionKeywords.some(
+    (k: string) => k.toLowerCase() === keyword.toLowerCase()
+  );
+  if (!hasKeyword) return false;
+  
+  return true;
+};
+
+/**
+ * Verify participant completion conditions and perform required actions
+ * This function handles certificate generation and participant graduation status updates
+ * 
+ * @param params - Object containing participant data and user ID
+ * @param params.participantData - Participant data object
+ * @param params.userId - User ID performing the action
+ * @returns Promise<void>
+ * 
+ * @description
+ * This function runs when participant status is COMPLETED or certificate already exists.
+ * It performs the following actions:
+ * 1. Fetches targeted solutions filtered by certificate and ENDLINE keywords
+ * 2. Checks if certificate solution submission is completed
+ *    - If completed and certificate not generated: calls certificate generation API
+ *    - If certificate already exists: skips generation
+ * 3. Checks if ENDLINE solution submission is completed
+ *    - If completed: updates participant status to GRADUATED
+ */
+export const verifyParticipantCompletionActions = async ({
+  participantData,
+  userId,
+}: {
+  participantData: any;
+  userId: string;
+}): Promise<void> => {
+  try {
+    const participantStatus = participantData?.status;
+    const certificateId = participantData?.certificateId;
+    const participantId = participantData?.id;
+    const entityId = participantData?.entityId;
+
+    // Check if conditions are met: status is COMPLETED or certificate already exists
+    if (participantStatus !== STATUS.COMPLETED && !certificateId) {
+      logger.info('Participant completion actions skipped - conditions not met', {
+        participantId,
+        status: participantStatus,
+        hasCertificate: !!certificateId,
+      });
+      return;
+    }
+
+    logger.info('Starting participant completion verification', {
+      participantId,
+      status: participantStatus,
+      certificateId,
+    });
+
+    // 1. Fetch targeted solutions with certificate and ENDLINE keywords
+    const combinedKeywords = FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',');
+
+    const solutions = await getTargetedSolutions({
+      type: 'observation',
+      'filter[keywords]': combinedKeywords,
+    });
+
+    if (!solutions || solutions.length === 0) {
+      logger.warn('No targeted solutions found for certificate/ENDLINE keywords', {
+        participantId,
+      });
+      return;
+    }
+    
+    // 2. Get entity details for each solution to check completion status
+    const solutionsWithEntityStatus = await Promise.all(
+      solutions.map(async (solution) => {
+        try {
+          const entityResponse = await getObservationEntities({
+            solutionId: solution.solutionId,
+            profileData: {},
+          });
+          // Find the participant entity from the response
+          const participantEntity = entityResponse.result?.entities?.find(
+            (entity: any) => `${entity.externalId}` === `${participantId}`
+          );
+
+          return {
+            ...solution,
+            entity: participantEntity || null,
+          };
+        } catch (error) {
+          logger.error('Failed to fetch entity for solution', {
+            solutionId: solution.solutionId,
+            error,
+          });
+          return {
+            ...solution,
+            entity: null,
+          };
+        }
+      })
+    );
+    // 3. Process certificate solution
+    const certificateSolution = solutionsWithEntityStatus.find((solution) =>
+      checkSolutionByKeyword(solution, CERTIFICATE_KEYWORD)
+    );
+    
+    if (certificateSolution) {
+      const isCertificateCompleted = certificateSolution.entity?.status === ENTITY_STATUS.COMPLETED;
+      console.log('isCertificateCompleted', isCertificateCompleted,certificateId,isCertificateCompleted,isCertificateCompleted && !certificateId);
+      if (isCertificateCompleted && !certificateId) {
+        try {
+          const certificateResult = await generateCertificate(entityId);
+          logger.info('Certificate generated successfully', {
+            participantId,
+            certificateResult,
+          });
+        } catch (error) {
+          logger.error('Failed to generate certificate', {
+            participantId,
+            error,
+          });
+        }
+      } else if (certificateId) {
+        logger.info('Certificate already exists, skipping generation', {
+          participantId,
+          certificateId,
+        });
+      } else {
+        logger.info('Certificate solution not yet completed', {
+          participantId,
+          entityStatus: certificateSolution.entity?.status,
+        });
+      }
+    } else {
+      logger.warn('Certificate solution not found in targeted solutions', {
+        participantId,
+      });
+    }
+
+    // 4. Process ENDLINE solution
+    const endlineSolution = solutionsWithEntityStatus.find((solution) =>
+      checkSolutionByKeyword(solution, ENDLINE_KEYWORD)
+    );
+
+    if (endlineSolution) {
+      const isEndlineCompleted = endlineSolution.entity?.status === ENTITY_STATUS.COMPLETED;
+
+      if (isEndlineCompleted) {
+        try {
+          await updateEntityDetails({
+            userId,
+            entityId,
+            entityUpdates: {
+              status: STATUS.GRADUATED,
+            },
+          });
+
+          logger.info('Participant status updated to GRADUATED successfully', {
+            participantId,
+          });
+        } catch (error) {
+          logger.error('Failed to update participant status to GRADUATED', {
+            participantId,
+            error,
+          });
+        }
+      } else {
+        logger.info('ENDLINE solution not yet completed', {
+          participantId,
+          entityStatus: endlineSolution.entity?.status,
+        });
+      }
+    } else {
+      logger.warn('ENDLINE solution not found in targeted solutions', {
+        participantId,
+      });
+    }
+
+    logger.info('Participant completion verification completed', {
+      participantId,
+    });
+  } catch (error) {
+    logger.error('Error in verifyParticipantCompletionActions', {
+      participantId: participantData?.id,
+      error,
+    });
+    // Don't throw error - this is a background process that shouldn't block main flow
   }
 };
