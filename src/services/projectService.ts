@@ -3,7 +3,6 @@ import TEMPLATE_CATEGORIES from '@constants/TEMPLATE_CATEGORIES';
 import { TemplateData } from '@app-types/screens';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
-import { pathwaysData } from '@constants/PROJECTDATA';
 
 // TODO: Replace simulated API calls with real backend integration when API endpoints are available
 export const getProjectTemplates = async (): Promise<TemplateData[]> => {
@@ -35,10 +34,8 @@ export const getProjectCategories = async (): Promise<
 export const getProjectCategoryList = async (): Promise<any> => {
   try {
     const response = await api.get(API_ENDPOINTS.PROJECT_CATEGORIES_LIST);
-    // const res = pathwaysData;
     return response.data.result || [];
-    // return res?.result || [];
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Error is already handled by axios interceptor
     throw error;
   }
@@ -48,8 +45,7 @@ export const getChildCategories = async (): Promise<TemplateData[]> => {
   try {
     const response = await api.get(API_ENDPOINTS.PROJECT_CATEGORIES_LIST);
     return response.data.result || [];
-  } catch (error: any) {
-    // Error is already handled by axios interceptor
+  } catch (error: unknown) {
     throw error;
   }
 };

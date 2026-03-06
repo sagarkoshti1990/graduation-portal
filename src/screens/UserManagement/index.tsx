@@ -6,7 +6,6 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters, mapStatusLabelToAPI, PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import FilterButton from '@components/Filter';
 import TitleHeader from '@components/TitleHeader';
-// import { titleHeaderStyles } from '@components/TitleHeader/Styles';
 import DataTable from '@components/DataTable';
 import { getUsersColumns, RoleBadge } from './UsersTableConfig';
 import { AdminUserManagementData } from '@app-types/Users';
@@ -14,10 +13,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
-import type { 
-  // UserSearchParams,
-   Role
-} from '@app-types/Users';
+import type { UserSearchParams, Role } from '@app-types/Users';
 import { getSignedUrl, uploadFileToSignedUrl, bulkUserCreate } from '../../services/bulkUploadService';
 import { theme } from '@config/theme';
 import { getUserProfile } from '../../services/authenticationService';
@@ -167,6 +163,39 @@ const UserManagementScreen = () => {
     setDeactivateState({ user: null, isSubmitting: false });
   }, []);
 
+  const deactivateModalDescription = useMemo(() => {
+    const name = deactivateState.user?.name ?? '';
+    const msg =
+      t('admin.users.actionMenu.deactivateMessage', { name }) ||
+      'Are you sure you want to deactivate this user?';
+    if (!name || typeof msg !== 'string') {
+      return (
+        <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+          {String(msg)}
+        </Text>
+      );
+    }
+    const idx = msg.indexOf(name);
+    if (idx < 0) {
+      return (
+        <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+          {msg}
+        </Text>
+      );
+    }
+    const before = msg.slice(0, idx);
+    const after = msg.slice(idx + name.length);
+    return (
+      <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+        {before}
+        <Text color="$textForeground" fontWeight="$medium">
+          {name}
+        </Text>
+        {after}
+      </Text>
+    );
+  }, [deactivateState.user?.name, t]);
+
   const openDeactivateModal = useCallback((user: AdminUserManagementData) => {
     setDeactivateState({ user, isSubmitting: false });
   }, []);
@@ -303,7 +332,7 @@ const UserManagementScreen = () => {
   }, []);
 
   // Use custom hook for filter management - handles all API calls for roles, provinces
-  const { filters: filterOptions, roles, provinces } = useUserManagementFilters(filters);
+  const { filters: filterOptions, roles } = useUserManagementFilters(filters);
 
   // Fetch users from API when filters change or when roles are first loaded
   useEffect(() => {
@@ -338,11 +367,11 @@ const UserManagementScreen = () => {
           apiType = allRoleTitles.length > 0 ? allRoleTitles.join(',') : 'all';
         }
 
-        const apiParams: any = {
+        const apiParams: UserSearchParams = {
           tenant_code: 'brac',
           type: apiType,
           page: currentPage,
-          limit: pageSize,
+          limit: pageSize ?? undefined,
         };
 
         // Add search parameter if present
@@ -843,19 +872,19 @@ const UserManagementScreen = () => {
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.role')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
                         {(() => {
-                          const roles =
-                            (selectedUserBase as any)?.user_organizations?.[0]?.roles
-                              ?.map((r: any) => r?.role?.label)
-                              .filter(Boolean) || [];
-
-                          // Ensure we never render an object as text (prevents React error #31)
+                          const base = selectedUserBase as AdminUserManagementData & {
+                            user_organizations?: Array<{ roles?: Array<{ role?: { label?: string } }> }>;
+                          };
+                          const roleLabels =
+                            base?.user_organizations?.[0]?.roles
+                              ?.map((r: { role?: { label?: string } }) => r?.role?.label)
+                              .filter((x): x is string => Boolean(x)) ?? [];
                           const profileRole =
-                            typeof (selectedUserProfile as any)?.role === 'string'
-                              ? (selectedUserProfile as any)?.role
-                              : (selectedUserProfile as any)?.role?.label;
-
+                            typeof (selectedUserProfile as { role?: string | { label?: string } })?.role === 'string'
+                              ? (selectedUserProfile as { role: string }).role
+                              : (selectedUserProfile as { role?: { label?: string } })?.role?.label;
                           return (
-                            roles[0] ||
+                            roleLabels[0] ||
                             profileRole ||
                             selectedUserBase?.role ||
                             '-'
@@ -991,41 +1020,7 @@ const UserManagementScreen = () => {
         isOpen={!!deactivateState.user?.id}
         onClose={closeDeactivateModal}
         headerTitle={t('admin.users.actionMenu.confirmDeactivate') || 'Confirm Deactivation'}
-        headerDescription={(() => {
-          const name = deactivateState.user?.name || '';
-          const msg =
-            t('admin.users.actionMenu.deactivateMessage', { name }) ||
-            'Are you sure you want to deactivate this user?';
-
-          if (!name || typeof msg !== 'string') {
-            return (
-              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-                {String(msg)}
-              </Text>
-            );
-          }
-
-          const idx = msg.indexOf(name);
-          if (idx < 0) {
-            return (
-              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-                {msg}
-              </Text>
-            );
-          }
-
-          const before = msg.slice(0, idx);
-          const after = msg.slice(idx + name.length);
-          return (
-            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-              {before}
-              <Text color="$textForeground" fontWeight="$medium">
-                {name}
-              </Text>
-              {after}
-            </Text>
-          );
-        })()}
+        headerDescription={deactivateModalDescription}
         headerAlignment="baseline"
         maxWidth={420}
         size="sm"
@@ -1068,7 +1063,7 @@ const UserManagementScreen = () => {
           type="file"
           accept=".csv"
           onChange={handleFileSelect}
-          style={{ display: 'none' }}
+          style={styles.hiddenFileInput}
         />
       )}
     </VStack>

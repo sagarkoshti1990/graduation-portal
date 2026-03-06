@@ -1,13 +1,11 @@
 import React from 'react';
-import { Box, VStack, Text, Heading } from '@gluestack-ui/themed';
-import { Container } from '@ui';
+import { Box, VStack, Text, Heading, Container } from '@ui';
 import FeatureCard from '@components/FeatureCard';
 import { useAuth } from '@contexts/AuthContext';
 import { theme } from '@config/theme';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { useLanguage } from '@contexts/LanguageContext';
 import { WELCOME_CARDS } from '@constants/WELCOME_CARDS';
-import { usePlatform } from '@utils/platform';
 
 const WelcomePage: React.FC = () => {
   const { user } = useAuth();

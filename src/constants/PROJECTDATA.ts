@@ -10,9 +10,8 @@ declare const process:
       };
     }
   | undefined;
-
-const baseUrl = typeof process !== 'undefined' ? process?.env.API_BASE_URL : undefined;
-
+  // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
+  const baseUrl = process.env.API_BASE_URL || '';
 // Helper function to get access token from AsyncStorage
 export const getAccessToken = async (): Promise<string | null> => {
   try {

@@ -180,4 +180,7 @@ export const styles = {
     padding: 4,
     zIndex: 1,
   },
+  hiddenFileInput: {
+    display: 'none' as const,
+  },
 } as const;

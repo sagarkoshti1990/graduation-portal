@@ -210,8 +210,13 @@ export const createOrUpdateProgramUserMapping = async ({
   userId,
   programId,
   metaInformation,
-  status
-}): Promise<any> => {
+  status,
+}: {
+  userId: string;
+  programId: string;
+  metaInformation: Record<string, unknown>;
+  status?: string;
+}): Promise<unknown> => {
   try {
 
     const requestBody = {
