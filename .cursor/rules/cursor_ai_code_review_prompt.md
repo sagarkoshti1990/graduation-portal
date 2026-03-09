@@ -3,7 +3,7 @@
 ## 🎯 PRIMARY GOALS
 
 ### 1. 🚫 Zero CodeRabbit AI Comments on PR
-Cover **120+ checks** that CodeRabbit performs (static analysis, code quality, security, performance, best practices, accessibility).
+Cover **120+ checks** (87 checkbox items in the CodeRabbit sections below, plus 45 discrete steps in the Comprehensive Review Checklist) that CodeRabbit-style review implies—static analysis, code quality, security, performance, best practices, accessibility.
 
 ### 2. 📋 Six Custom Project Rules
 1. **i18next** - All UI text uses `t()` function
@@ -96,7 +96,7 @@ const handleData = (data: any) => { }
 
 **EXCEPTIONS:**
 - Keep existing `@ts-ignore` comments - do NOT remove them
-- don't add any new comments
+- Do not add any new comments.
 
 ### Rule 6: Custom API Service
 ```typescript
@@ -115,7 +115,7 @@ const fetchUser = async (id: string): Promise<User> => {
 
 ------------------------------------------------------------------------
 
-## CodeRabbit AI Coverage (120+ Checks)
+## CodeRabbit AI Coverage (87 checkbox checks; 120+ total with Comprehensive Review Checklist)
 
 ### Static Analysis (7) - MUST CHECK ALL
 - [ ] Linter errors, TypeScript errors (Run ReadLints tool)

@@ -14,6 +14,7 @@ export const LOG_VISIT_CARDS: AssessmentSurveyCardData[] = [
     icon: 'FileText',
     iconColor: "$primary500",
     navigationUrl: 'observation',
+    entity: undefined,
   },
   {
     id: 'group-visit-form',
@@ -23,6 +24,7 @@ export const LOG_VISIT_CARDS: AssessmentSurveyCardData[] = [
     icon: 'Users',
     iconColor: "$blue500",
     navigationUrl: 'observation',
+    entity: undefined,
   },
   {
     id: 'midline-survey-form',
@@ -32,6 +34,7 @@ export const LOG_VISIT_CARDS: AssessmentSurveyCardData[] = [
     icon: 'BarChart',
     iconColor: "$warning500",
     navigationUrl: 'observation',
+    entity: undefined,
   },
 ];
 

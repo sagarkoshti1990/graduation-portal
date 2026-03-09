@@ -15,14 +15,14 @@ import {
   LucideIcon,
   Drawer,
 } from '@ui';
-import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
+// import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import { useNavigation } from '@react-navigation/native';
 import { sidebarStyles, sidebarItemStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
 import { usePlatform } from '@utils/platform';
 import {
   MAIN_MENU_ITEMS,
-  QUICK_ACTION_MENU_ITEMS,
+  // QUICK_ACTION_MENU_ITEMS,
   MORE_INFORMATION_MENU_ITEMS,
 } from '@constants/ADMIN_SIDEBAR_MENU';
 import { useLanguage } from '@contexts/LanguageContext';

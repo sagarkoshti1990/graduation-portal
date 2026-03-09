@@ -42,8 +42,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
             }
           }
         } else {
-          // For React Native, use AsyncStorage
-          const savedMode = await AsyncStorage.getItem(STORAGE_KEYS.COLOR_MODE);
+          const savedMode = await offlineStorage.read<string>(STORAGE_KEYS.COLOR_MODE);
           if (savedMode === 'light' || savedMode === 'dark') {
             setColorMode(savedMode);
           }

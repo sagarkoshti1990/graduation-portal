@@ -421,7 +421,7 @@ const UserManagementScreen = () => {
         // Get total count from API response (if available), otherwise use data length
         const apiTotalCount = response.result?.count ?? response.result?.total ?? usersData.length;
 
-        setUsers(usersData);
+        setUsers((usersData ?? []) as AdminUserManagementData[]);
         // Use API total count
         setTotalCount(apiTotalCount);
       } catch (error) {

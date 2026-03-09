@@ -69,7 +69,7 @@ export const useSupervisorFilterOptions = (filters: Record<string, unknown> = {}
           limit: 100,
         });
         const supervisorsData = supervisorsResponse.result?.data || [];
-        setSupervisors(supervisorsData);
+        setSupervisors((supervisorsData ?? []) as AdminUserManagementData[]);
       } catch (error) {
         logger.error('Error fetching supervisors:', error);
         setSupervisors([]);

@@ -231,9 +231,8 @@ api.interceptors.response.use(
         },
       );
 
-      // Return a more user-friendly error message
       const errorMessage =
-        data?.message || `Request failed with status ${status}`;
+        (data?.message as string) ?? `Request failed with status ${status}`;
       return Promise.reject(new Error(errorMessage));
     }
 

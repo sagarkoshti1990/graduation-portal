@@ -32,7 +32,7 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
       page: page.toString(),
       limit: limit.toString(),
       search: search || '',
-      programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+      programId: process?.env?.GLOBAL_LC_PROGRAM_ID ?? '',
       ...(entityId ? {entityId}:{})
     });
 
@@ -89,8 +89,12 @@ export const getParticipantById = (id: string): ParticipantByIdResult | undefine
         ? participant.graduationProgress
         : undefined,
     graduationDate:
-      participant.graduationDate && participant.graduationDate !== ''
-        ? participant.graduationDate
+      participant.graduationDate != null && participant.graduationDate !== ''
+        ? typeof participant.graduationDate === 'string'
+          ? participant.graduationDate
+          : participant.graduationDate instanceof Date
+            ? participant.graduationDate.toISOString()
+            : undefined
         : undefined,
     email: participant.email,
     address: participant.address,
@@ -101,11 +105,10 @@ export const getParticipantById = (id: string): ParticipantByIdResult | undefine
  * Returns full participant data including contact info and address
  * Currently uses mock data, will be replaced with API call later
  */
-export const getParticipantProfile = async (id: string): Promise<User |undefined> => {
+export const getParticipantProfile = async (id: string): Promise<User | undefined> => {
   try {
     const userProfile = await getUserProfile(id);
-
-    return userProfile;
+    return userProfile as User;
   } catch (error: unknown) {
     throw error;
   }

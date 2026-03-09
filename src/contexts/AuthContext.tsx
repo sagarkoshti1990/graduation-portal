@@ -64,7 +64,7 @@ const determineUserRole = (userData: ApiUserData): UserRole => {
   const organizations = userData.organizations ?? [];
   const adminOrganizations = organizations.filter((org: ApiOrganization) => {
     if (!org?.roles || !Array.isArray(org.roles)) return false;
-    return org.roles.some((role) => ADMIN_ROLES.includes(role?.title));
+    return org.roles.some((role) => ADMIN_ROLES.includes(role?.title ?? ''));
   });
   if (adminOrganizations.length > 0) {
     logger.info('User has admin role based on organizations');
@@ -73,7 +73,7 @@ const determineUserRole = (userData: ApiUserData): UserRole => {
 
   const supervisorOrganizations = organizations.filter((org: ApiOrganization) => {
     if (!org?.roles || !Array.isArray(org.roles)) return false;
-    return org.roles.some((role) => SUPERVISOR_ROLES.includes(role?.title));
+    return org.roles.some((role) => SUPERVISOR_ROLES.includes(role?.title ?? ''));
   });
   if (supervisorOrganizations.length > 0) {
     logger.info('User has supervisor role based on organizations');
@@ -82,7 +82,7 @@ const determineUserRole = (userData: ApiUserData): UserRole => {
 
   const lcOrganizations = organizations.filter((org: ApiOrganization) => {
     if (!org?.roles || !Array.isArray(org.roles)) return false;
-    return org.roles.some((role) => LC_ROLES.includes(role?.title));
+    return org.roles.some((role) => LC_ROLES.includes(role?.title ?? ''));
   });
 
   if (lcOrganizations.length > 0) {
@@ -220,11 +220,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           return { success: false, message };
         }
 
-        // Map API user data to User interface
-        const mappedUser: User = {
-          role: determinedRole,
-          ...userData, // Include any additional properties from API
-        };
+        // Map API user data to User interface (API provides id, email, name or equivalent)
+        const mappedUser = { role: determinedRole, ...userData } as User;
 
         // Save the mapped user data to storage in one line
         await offlineStorage.create(STORAGE_KEYS.AUTH_USER, mappedUser);

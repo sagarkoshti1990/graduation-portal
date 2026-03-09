@@ -16,10 +16,8 @@ declare const __DEV__: boolean;
  */
 const isDev = (): boolean => {
   try {
-    // @ts-expect-error - __DEV__ is a compile-time constant replaced by bundlers
     return typeof __DEV__ !== 'undefined' ? __DEV__ : false;
   } catch {
-    // Fallback to NODE_ENV check if __DEV__ is not available
     return (
       typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'
     );

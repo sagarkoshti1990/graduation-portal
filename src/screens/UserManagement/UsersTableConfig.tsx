@@ -24,9 +24,9 @@ import logger from '@utils/logger';
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const useRole = (user: Record<string, unknown>): string => {
-  return user?.user_organizations?.[0]?.organization?.roles?.[0]?.role?.label ||
-    user?.role ||
-    '-';
+  const orgs = user?.user_organizations as Array<{ organization?: { roles?: Array<{ role?: { label?: string } }> }; role?: string }> | undefined;
+  const roleLabel = orgs?.[0]?.organization?.roles?.[0]?.role?.label ?? (user?.role as string | undefined);
+  return roleLabel ?? '-';
 };
 
 /**
@@ -35,7 +35,7 @@ const useRole = (user: Record<string, unknown>): string => {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getProvince = (user: Record<string, unknown>): string => {
-  return user?.province || user?.province_name || user?.location?.province || '-';
+  return (user?.province as string) || (user?.province_name as string) || (user?.location as { province?: string })?.province || '-';
 };
 
 /**
@@ -44,7 +44,7 @@ const getProvince = (user: Record<string, unknown>): string => {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getSite = (user: Record<string, unknown>): string => {
-  return user?.site || user?.site_name || user?.location?.site || '-';
+  return (user?.site as string) || (user?.site_name as string) || (user?.location as { site?: string })?.site || '-';
 };
 
 /**

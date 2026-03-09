@@ -88,7 +88,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               </Text>
               <Box {...styles.paginationPageSizeSelect}>
                 <Select
-                  value={pageSize.toString()}
+                  value={(pageSize ?? 10).toString()}
                   onChange={(value) => onPageSizeChange(Number(value))}
                   options={config.pageSizeOptions?.map(size => ({
                     label: size.toString(),
