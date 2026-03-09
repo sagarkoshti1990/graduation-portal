@@ -176,20 +176,17 @@ api.interceptors.response.use(
               });
               throw new Error('Failed to get new token after refresh');
             }
-          } catch (refreshError: any) {
-            // Log detailed error information
+          } catch (refreshError: unknown) {
+            const err = refreshError as { message?: string; response?: { data?: unknown; status?: number; statusText?: string }; config?: { url?: string } };
             logger.error('Refresh token error details:', {
-              message: refreshError?.message,
-              response: refreshError?.response?.data,
-              status: refreshError?.response?.status,
-              statusText: refreshError?.response?.statusText,
-              url: refreshError?.config?.url,
+              message: err?.message,
+              response: err?.response?.data,
+              status: err?.response?.status,
+              statusText: err?.response?.statusText,
+              url: err?.config?.url,
             });
-            
-            // Only redirect to logout if refresh token is actually invalid/expired
-            // Check if it's a 401 or 403 error (token invalid/expired)
-            const isTokenInvalid = refreshError?.response?.status === 401 || 
-                                   refreshError?.response?.status === 403;
+            const isTokenInvalid = err?.response?.status === 401 ||
+                                   err?.response?.status === 403;
             
             if (isTokenInvalid) {
               logger.warn(
@@ -197,7 +194,6 @@ api.interceptors.response.use(
               );
               resetToScreen('logout');
             } else {
-              // For other errors (network, server errors), don't logout - just reject
               logger.error('Refresh token failed with non-auth error:', refreshError);
             }
             return Promise.reject(error);
@@ -222,7 +218,7 @@ api.interceptors.response.use(
     // Handle other error status codes
     if (error.response) {
       const status = error.response.status;
-      const data = error.response.data as any;
+      const data = error.response.data as Record<string, unknown>;
 
       logger.error(
         `API Error: ${status} - ${error.config?.method?.toUpperCase()} ${

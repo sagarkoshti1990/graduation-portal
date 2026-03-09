@@ -15,7 +15,7 @@ export interface LoaderProps {
   /** Whether to show the loader in full screen mode */
   fullScreen?: boolean;
   /** Custom container styles */
-  containerProps?: any;
+  containerProps?: Record<string, unknown>;
 }
 
 /**

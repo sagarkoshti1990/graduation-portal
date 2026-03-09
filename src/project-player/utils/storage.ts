@@ -26,7 +26,7 @@ const initDB = (): Promise<IDBDatabase> => {
 // Storage API
 export const storage = {
   // Save project data
-  saveProject: async (projectData: any): Promise<void> => {
+  saveProject: async (projectData: { _id: string } & Record<string, unknown>): Promise<void> => {
     try {
       const db = await initDB();
       const transaction = db.transaction([STORE_NAME], 'readwrite');

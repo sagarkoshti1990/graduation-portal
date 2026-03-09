@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from './logger';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getAuthConfig } from '@config/auth';
+import offlineStorage from '../services/offlineStorage';
 
 /**
  * Clears authentication data when tab/window closes if rememberMe is false
@@ -58,16 +58,14 @@ export const setupTabCloseHandler = (): (() => void) => {
           localStorage.removeItem(STORAGE_KEYS.AUTH_REFRESH_TOKEN);
           localStorage.removeItem(STORAGE_KEYS.AUTH_REMEMBER_ME);
           
-          // Also clear from AsyncStorage (for React Native compatibility)
-          // This is async but we do our best effort
-          AsyncStorage.multiRemove([
+          // Also clear via offlineStorage (for React Native compatibility)
+          offlineStorage.removeMultiple([
             STORAGE_KEYS.AUTH_TOKEN,
             STORAGE_KEYS.AUTH_USER,
             STORAGE_KEYS.AUTH_REFRESH_TOKEN,
             STORAGE_KEYS.AUTH_REMEMBER_ME,
           ]).catch((error) => {
-            // Silently fail - we already cleared from localStorage
-            logger.error('Error clearing AsyncStorage on tab close:', error);
+            logger.error('Error clearing storage on tab close:', error);
           });
 
           logger.info('Auth data cleared successfully');

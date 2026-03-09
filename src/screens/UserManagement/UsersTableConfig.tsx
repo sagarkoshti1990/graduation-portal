@@ -23,7 +23,7 @@ import logger from '@utils/logger';
  * Extracts role label from nested user_organizations structure
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const useRole = (user: any): string => {
+const useRole = (user: Record<string, unknown>): string => {
   return user?.user_organizations?.[0]?.organization?.roles?.[0]?.role?.label ||
     user?.role ||
     '-';
@@ -34,7 +34,7 @@ const useRole = (user: any): string => {
  * Extracts province from API response, returns "-" if not found
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getProvince = (user: any): string => {
+const getProvince = (user: Record<string, unknown>): string => {
   return user?.province || user?.province_name || user?.location?.province || '-';
 };
 
@@ -43,7 +43,7 @@ const getProvince = (user: any): string => {
  * Extracts site from API response, returns "-" if not found
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getSite = (user: any): string => {
+const getSite = (user: Record<string, unknown>): string => {
   return user?.site || user?.site_name || user?.location?.site || '-';
 };
 
@@ -132,7 +132,7 @@ const DetailsCell: React.FC<{ details: AdminUserManagementData['details'] }> = (
 /**
  * Custom trigger for actions menu
  */
-const getCustomTrigger = (triggerProps: any) => (
+const getCustomTrigger = (triggerProps: Record<string, unknown>) => (
   <Pressable {...triggerProps} {...dataTableStyles.customTrigger}>
     <LucideIcon
       name="MoreVertical"

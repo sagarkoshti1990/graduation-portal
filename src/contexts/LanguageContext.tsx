@@ -19,7 +19,7 @@ interface LanguageContextType {
   currentLanguage: string;
   isRTL: boolean;
   changeLanguage: (languageCode: string) => Promise<ChangeLanguageResult>;
-  t: (key: string, options?: any) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(

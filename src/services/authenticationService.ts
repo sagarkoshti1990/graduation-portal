@@ -10,7 +10,7 @@ export interface LoginResponse {
   result: {
     access_token: string;
     refresh_token: string;
-    user: any;
+    user: Record<string, unknown>;
   };
 }
 
@@ -92,11 +92,12 @@ export const refreshToken = async (
     }
 
     return responseData;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; response?: { data?: unknown; status?: number } };
     logger.error('Refresh token error:', {
-      message: error?.message,
-      response: error?.response?.data,
-      status: error?.response?.status,
+      message: err?.message,
+      response: err?.response?.data,
+      status: err?.response?.status,
     });
     // Error is already handled by axios interceptor
     throw error;
@@ -181,29 +182,26 @@ export const login = async (
     }
 
     return responseData;
-  } catch (error: any) {
-    // Error is already handled by axios interceptor
+  } catch (error: unknown) {
     throw error;
   }
 };
 
 
-export const getUserProfile = async (id?: string | null): Promise<any> => {
+export const getUserProfile = async (id?: string | null): Promise<Record<string, unknown>> => {
   try {
     const response = await api.get(API_ENDPOINTS.USER_PROFILE + (id ? '/' + id : ''));
-    return response.data.result || {};
-  } catch (error: any) {
-    // Error is already handled by axios interceptor
+    return (response.data.result as Record<string, unknown>) ?? {};
+  } catch (error: unknown) {
     throw error;
   }
 };
 
-export const getEntityDetails = async (userId: string): Promise<any> => {
+export const getEntityDetails = async (userId: string): Promise<Record<string, unknown>> => {
   try {
     const response = await api.get(API_ENDPOINTS.ENTITY_DETAILS + '/' + userId);
-    return response.data.result || {};
-  } catch (error: any) {
-    // Error is already handled by axios interceptor
+    return (response.data.result as Record<string, unknown>) || {};
+  } catch (error: unknown) {
     throw error;
   }
 };

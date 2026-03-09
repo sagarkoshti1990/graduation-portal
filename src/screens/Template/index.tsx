@@ -100,7 +100,7 @@ const DevelopInterventionPlan: React.FC = () => {
     return selectedCategory?.subcategories || [];
   };
 
-  const handleIdpCreation = useCallback(async (newProjectId: any) => {
+  const handleIdpCreation = useCallback(async (newProjectId: string | undefined) => {
     logger.log('handleIdpCreation -  Project ID:', newProjectId);
     setIdpCreated(true);
     if (newProjectId) {
@@ -154,12 +154,13 @@ const DevelopInterventionPlan: React.FC = () => {
 
   const getPillarCategoryRelationships = useMemo(() => {
     // Get all pillars that have child categories from pillarData
+    type PillarItem = { _id?: string; name?: string; hasChildCategories?: boolean };
     const pillarsWithCategories = pillarData.filter(
-      (pillar: any) => pillar?.hasChildCategories,
+      (pillar: PillarItem) => pillar?.hasChildCategories,
     );
 
     return pillarsWithCategories
-      .map((pillar: any) => {
+      .map((pillar: PillarItem) => {
         const pillarId = pillar._id;
         const selection = selectionByPillar[pillarId];
 
@@ -295,12 +296,13 @@ const DevelopInterventionPlan: React.FC = () => {
 
   const handleConfirm = () => {
     // Check if all pillars with child categories have both category and subcategory selected
+    type PillarItem = { _id?: string; hasChildCategories?: boolean };
     const allPillarsHaveSelections = pillarData
-      .filter((pillar: any) => pillar?.hasChildCategories)
+      .filter((pillar: PillarItem) => pillar?.hasChildCategories)
       .every(
-        (pillar: any) =>
-          selectionByPillar[pillar._id]?.categoryId &&
-          selectionByPillar[pillar._id]?.subCategoryId,
+        (pillar: PillarItem) =>
+          selectionByPillar[pillar._id!]?.categoryId &&
+          selectionByPillar[pillar._id!]?.subCategoryId,
       );
 
     if (allPillarsHaveSelections) {
@@ -322,13 +324,14 @@ const DevelopInterventionPlan: React.FC = () => {
       const pillars = res?.data ?? [];
       setPillarData(pillars);
 
+      type PillarItem = { _id?: string; hasChildCategories?: boolean };
       const pillarIdsWithCategories = pillars
-        .filter((pillar: any) => pillar?.hasChildCategories)
-        .map((pillar: any) => pillar._id);
+        .filter((pillar: PillarItem) => pillar?.hasChildCategories)
+        .map((pillar: PillarItem) => pillar._id);
 
       const pillarIdsWithoutCategories = pillars
-        .filter((pillar: any) => pillar?.hasChildCategories === false)
-        .map((pillar: any) => pillar._id);
+        .filter((pillar: PillarItem) => pillar?.hasChildCategories === false)
+        .map((pillar: PillarItem) => pillar._id);
       setPillarIdsToGetIdp(pillarIdsWithoutCategories);
 
       // If no pillars have child categories, skip modal and directly show project player

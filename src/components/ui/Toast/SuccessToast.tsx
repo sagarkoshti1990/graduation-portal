@@ -32,7 +32,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   message,
   styles,
   iconName = 'CheckCircle',
-  iconColor = (theme.tokens.colors.success600 as any) || '#00a63e',
+  iconColor = (theme.tokens.colors.success600 as string) ?? '#00a63e',
 }) => {
   const mergedStyles = {
     toast: { ...successToastStyles.toast, ...styles?.toast },
@@ -63,7 +63,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
 };
 
 export const showSuccessToast = (
-  toast: { show: (config: any) => void },
+  toast: { show: (config: { placement?: ToastPlacement; render: (props: { id: string }) => React.ReactElement }) => void },
   message: string,
   styles?: SuccessToastStyles,
   options?: ShowSuccessToastOptions,

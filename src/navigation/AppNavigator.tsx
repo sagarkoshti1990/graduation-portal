@@ -345,8 +345,8 @@ const AppNavigator: React.FC = () => {
                 width: '100%',
                 minHeight: '100vh',
                 height: 'auto',
-              } as any)
-              : ({ width: '100%' } as any),
+              } as Record<string, string>)
+              : ({ width: '100%' } as Record<string, string>),
           }}
         >
           {!isLoggedIn ? (

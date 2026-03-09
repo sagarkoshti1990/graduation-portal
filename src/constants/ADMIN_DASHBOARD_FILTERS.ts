@@ -3,17 +3,17 @@
  * Data-driven filter definitions for the Admin Dashboard screen
  */
 
-// Type definition for filter configuration
-// Supports all filter types: 'search', 'select', 'date', 'datepicker', etc.
+type FilterOption = { labelKey?: string; label?: string; value: string };
+
 type FilterConfig = {
-  name?: string; // Fallback if nameKey is not provided
-  nameKey?: string; // Translation key for the filter name
+  name?: string;
+  nameKey?: string;
   attr: string;
-  type?: string; // Optional: supports 'search', 'select', 'date', 'datepicker', or any custom type
-  data?: any[]; // Flexible data structure - can be array of strings, objects, or any type
-  placeholder?: string; // Fallback if placeholderKey is not provided
-  placeholderKey?: string; // Translation key for the placeholder
-  [key: string]: any; // Allow additional properties for future filter types
+  type?: string;
+  data?: FilterOption[] | string[];
+  placeholder?: string;
+  placeholderKey?: string;
+  [key: string]: string | FilterOption[] | string[] | undefined;
 };
 
 // Date filter configurations (using search type with date placeholder)

@@ -35,7 +35,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 /**
  * Custom trigger for actions menu
  */
-const getCustomTrigger = (triggerProps: any) => (
+const getCustomTrigger = (triggerProps: Record<string, unknown>) => (
   <Pressable {...triggerProps} {...dataTableStyles.customTrigger}>
     <LucideIcon
       name="MoreVertical"

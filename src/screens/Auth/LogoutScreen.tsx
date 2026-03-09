@@ -13,7 +13,6 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { loginStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
 import logger from '@utils/logger';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import offlineStorage from '../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { resetToScreen } from '@utils/navigationRef';
@@ -27,11 +26,11 @@ const LogoutScreen: React.FC = () => {
       try {
         logger.info('Logging out user - clearing all tokens and data');
         
-        // Clear all tokens from AsyncStorage
-        await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        await AsyncStorage.removeItem(STORAGE_KEYS.INTERNAL_ACCESS_TOKEN);
+        // Clear all tokens and data from offline storage
+        await offlineStorage.remove(STORAGE_KEYS.AUTH_TOKEN);
+        await offlineStorage.remove(STORAGE_KEYS.INTERNAL_ACCESS_TOKEN);
         
-        // Clear all data from offline storage
+        // Clear remaining auth data
         await offlineStorage.remove(STORAGE_KEYS.AUTH_USER);
         await offlineStorage.remove(STORAGE_KEYS.AUTH_REFRESH_TOKEN);
         await offlineStorage.remove(STORAGE_KEYS.ENTITY_TYPES);

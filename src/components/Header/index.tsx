@@ -96,7 +96,7 @@ const Header: React.FC<{
     logger.log('Menu selected:', key);
     if (key === 'myProfile') {
       const userProfile = await getUserProfile();
-      setAuthUser(userProfile);
+      setAuthUser(userProfile as User);
     } else if (key === 'logout') {
       logout();
     }
@@ -112,7 +112,7 @@ const Header: React.FC<{
 
     if (key === 'myProfile') {
       const userProfile = await getUserProfile();
-      setAuthUser(userProfile);
+      setAuthUser(userProfile as User);
     } else if (onHamburgerMenuSelect) {
       // Pass other menu items to parent handler (for navigation, logout, etc.)
       onHamburgerMenuSelect(key);

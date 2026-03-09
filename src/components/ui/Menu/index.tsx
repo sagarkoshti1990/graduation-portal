@@ -24,16 +24,16 @@ export interface MenuItemData {
   key: string;
   label: string;
   textValue: string;
-  icon?: any;
+  icon?: React.ComponentType<{ size?: string }>;
   iconSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-  iconElement?: React.ReactNode; // Custom ReactNode for icon (e.g., React.createElement pattern)
-  iconName?: string; // LucideIcon name (e.g., 'Home', 'User', 'LogOut')
-  iconColor?: string; // Icon color value
-  iconSizeValue?: number; // Icon size in pixels
+  iconElement?: React.ReactNode;
+  iconName?: string;
+  iconColor?: string;
+  iconSizeValue?: number;
   color?: string;
-  showDividerAfter?: boolean; // Render divider after this menu item
-  route?: string; // Navigation route name for menu items that navigate
-  isComingSoon?: boolean; // Render coming soon badge if true
+  showDividerAfter?: boolean;
+  route?: string;
+  isComingSoon?: boolean;
 }
 
 export interface CustomMenuProps {
@@ -54,13 +54,13 @@ export interface CustomMenuProps {
   offset?: number;
   disabledKeys?: string[];
   triggerLabel?: string;
-  trigger?: (triggerProps: any) => React.ReactElement;
+  trigger?: (triggerProps: Record<string, unknown>) => React.ReactElement;
   onSelect?: (key: string) => void;
-  menuProps?: any;
-  triggerProps?: any;
+  menuProps?: Record<string, unknown>;
+  triggerProps?: Record<string, unknown>;
 }
 
-const DefaultTrigger: React.FC<{ label: string; triggerProps: any }> = ({
+const DefaultTrigger: React.FC<{ label: string; triggerProps: Record<string, unknown> }> = ({
   label,
   triggerProps,
 }) => {
@@ -90,7 +90,7 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
   };
 
   const renderTrigger = React.useCallback(
-    (defaultTriggerProps: any) => {
+    (defaultTriggerProps: Record<string, unknown>) => {
       // If custom trigger provided, use it
       if (trigger) {
         return trigger(defaultTriggerProps);

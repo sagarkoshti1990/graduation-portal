@@ -5,8 +5,8 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import offlineStorage from '../services/offlineStorage';
 import logger from '@utils/logger';
 import { usePlatform } from '@utils/platform';
 
@@ -66,7 +66,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
           localStorage.setItem(STORAGE_KEYS.COLOR_MODE, mode);
         }
       } else {
-        await AsyncStorage.setItem(STORAGE_KEYS.COLOR_MODE, mode);
+        await offlineStorage.create(STORAGE_KEYS.COLOR_MODE, mode);
       }
     } catch (error) {
       logger.error('Error saving color mode:', error);

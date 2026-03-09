@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './STORAGE_KEYS';
 import { isWeb } from '@utils/platform';
 import logger from '@utils/logger';
+import offlineStorage from '../services/offlineStorage';
 
 declare const process:
   | {
@@ -15,26 +15,13 @@ declare const process:
 // Helper function to get access token from AsyncStorage
 export const getAccessToken = async (): Promise<string | null> => {
   try {
-    if (isWeb) {
-      // On web, check both localStorage and sessionStorage
-      if (typeof window !== 'undefined') {
-        // First check localStorage (persistent)
-    const localStorageToken = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-
-        if (localStorageToken) {
-          return localStorageToken;
-        }
-        // Then check sessionStorage (temporary)
-        const sessionStorageToken = window.sessionStorage?.getItem(STORAGE_KEYS.AUTH_TOKEN);
-        if (sessionStorageToken) {
-          return sessionStorageToken;
-        }
-      }
-      return null;
-    } else {
-      // On native platforms, use AsyncStorage
-      return await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const token = await offlineStorage.read<string>(STORAGE_KEYS.AUTH_TOKEN);
+    if (token) return token;
+    if (isWeb && typeof window !== 'undefined' && window.sessionStorage) {
+      const sessionToken = window.sessionStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      if (sessionToken) return sessionToken;
     }
+    return null;
   } catch (error) {
     logger.error('Error getting token:', error);
     return null;

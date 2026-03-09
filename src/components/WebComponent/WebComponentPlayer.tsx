@@ -115,7 +115,7 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: P
         })();
         true;
       `;
-      console.log('injectedJS', injectedJS);
+      logger.log('injectedJS', injectedJS);
       webViewRef.current.injectJavaScript(injectedJS);
     };
 

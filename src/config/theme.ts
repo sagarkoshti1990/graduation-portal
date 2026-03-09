@@ -134,13 +134,13 @@ export const theme = {
       evidenceRequiredBorder: '#ffd230',
     },
     fonts: {
-      ...((gluestackConfig.tokens as any).fonts || {}),
+      ...(((gluestackConfig.tokens as Record<string, unknown>).fonts as Record<string, unknown>) ?? {}),
       body: 'Inter',
       heading: 'Inter',
       mono: 'Inter',
     },
     sizes: {
-      ...((gluestackConfig.tokens as any).sizes || {}),
+      ...(((gluestackConfig.tokens as Record<string, unknown>).sizes as Record<string, unknown>) ?? {}),
       container: {
         0: '100%',    
         sm: '540px',

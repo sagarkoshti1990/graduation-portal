@@ -16,7 +16,7 @@ export interface ProjectData {
   status: (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
   progress: number;
   tasks?: Task[];
-  metaInformation?: any;
+  metaInformation?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   children?: Task[];
@@ -39,10 +39,10 @@ export interface Task {
     minFiles?: number; // Minimum files required for file-type tasks
     maxFiles?: number; // Maximum files allowed for file-type tasks
     formCompleted?: boolean; // For observation tasks
-    [key: string]: any;
+    [key: string]: unknown;
     buttonLabel?: string;
   };
-  solutionDetails?: any;
+  solutionDetails?: unknown;
   parentId?:string;
   externalId?:string;
   isDeleted?:boolean;
@@ -99,7 +99,7 @@ export interface RenderActionButtonProps {
   isReadOnly: boolean;
   isEdit: boolean;
   t: (key: string) => string;
-  metaInfo?: any;
+  metaInfo?: Record<string, unknown>;
 }
 
 export interface RenderDividerProps {

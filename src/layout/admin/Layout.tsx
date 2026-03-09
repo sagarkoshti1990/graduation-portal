@@ -45,7 +45,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
     <SafeAreaView
       {...layoutStyles.container}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      style={isWeb ? ({ height: '100vh' } as any) : undefined}
+      style={isWeb ? ({ height: '100vh' } as Record<string, string>) : undefined}
     >
       {/* Sidebar */}
       <AdminSidebar

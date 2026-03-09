@@ -14,7 +14,7 @@ import {
   ChevronDownIcon,
   SelectPortal,
 } from '@gluestack-ui/themed';
-import { getSelectTriggerStyles } from './Styles';
+import { getSelectTriggerStyles, type SelectTriggerStylesReturn } from './Styles';
 
 type Option = {
   value: string;
@@ -124,7 +124,7 @@ export default function Select({
       isDisabled={disabled}
     >
       <SelectTrigger
-        {...((getSelectTriggerStyles as any)(bg, borderColor, size, borderRadius) as any)}
+        {...(getSelectTriggerStyles(bg, borderColor, size, borderRadius) as SelectTriggerStylesReturn)}
         disabled={disabled}
         opacity={disabled ? 0.5 : 1}
       >

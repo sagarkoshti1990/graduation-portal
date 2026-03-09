@@ -22,12 +22,26 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
 import logger from '@utils/logger';
 
+/** Profile/API shape for modal display (role, province, site may be string or object) */
+type UserProfileDisplay = Record<string, unknown> & {
+  role?: string | { label?: string };
+  province?: string | { label?: string };
+  site?: string | { label?: string };
+  createdAt?: string;
+  created_at?: string;
+};
+type UserBaseWithOrgs = AdminUserManagementData & {
+  user_organizations?: Array<{ roles?: Array<{ role?: { label?: string } }> }>;
+  province?: string | { label?: string };
+  site?: string | { label?: string };
+};
+
 /**
  * ProfileModalHeader - Header component for the profile modal
  */
 interface ProfileModalHeaderProps {
   selectedUserBase: AdminUserManagementData | null;
-  selectedUserProfile: any | null;
+  selectedUserProfile: UserProfileDisplay | null;
   isMobile: boolean;
   t: (key: string) => string;
 }
@@ -38,16 +52,16 @@ const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
   isMobile,
   t,
 }) => {
+  const base = selectedUserBase as UserBaseWithOrgs | null;
   const roles =
-    (selectedUserBase as any)?.user_organizations?.[0]?.roles
-      ?.map((r: any) => r?.role?.label)
-      .filter(Boolean) || [];
+    base?.user_organizations?.[0]?.roles
+      ?.map((r) => (r?.role as { label?: string })?.label)
+      .filter((x): x is string => Boolean(x)) ?? [];
 
-  // Ensure we never render an object as text (prevents React error #31)
   const profileRole =
-    typeof (selectedUserProfile as any)?.role === 'string'
-      ? (selectedUserProfile as any)?.role
-      : (selectedUserProfile as any)?.role?.label;
+    typeof selectedUserProfile?.role === 'string'
+      ? selectedUserProfile.role
+      : (selectedUserProfile?.role as { label?: string } | undefined)?.label;
 
   const roleLabel =
     roles[0] ||
@@ -210,8 +224,8 @@ const UserManagementScreen = () => {
       showAlert('success', t('admin.users.deactivate.success') || 'User deactivated successfully');
       closeDeactivateModal();
       setRefetchKey(k => k + 1);
-    } catch (error: any) {
-      showAlert('error', error?.message || t('common.somethingWentWrong'));
+    } catch (error: unknown) {
+      showAlert('error', (error as Error)?.message ?? t('common.somethingWentWrong'));
       setDeactivateState(prev => ({ ...prev, isSubmitting: false }));
     }
   }, [closeDeactivateModal, deactivateState.user, showAlert, t]);
@@ -233,8 +247,8 @@ const UserManagementScreen = () => {
     try {
       const profile = await getUserProfile(user.id);
       setSelectedUserProfile(profile);
-    } catch (error: any) {
-      showAlert('error', error?.message || t('common.somethingWentWrong'));
+    } catch (error: unknown) {
+      showAlert('error', (error as Error)?.message ?? t('common.somethingWentWrong'));
     } finally {
       setProfileLoading(false);
     }
@@ -291,10 +305,10 @@ const UserManagementScreen = () => {
       );
 
       closeResetPasswordModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       showAlert(
         'error',
-        error?.message || t('admin.users.resetPassword.error') || 'Failed to reset password',
+        (error as Error)?.message ?? t('admin.users.resetPassword.error') ?? 'Failed to reset password',
         { placement: 'bottom' }
       );
       setResetPasswordState(prev => ({ ...prev, isSubmitting: false }));
@@ -499,11 +513,11 @@ const UserManagementScreen = () => {
       // Trigger fetchUsers by updating a dummy filter or refetching
       setFilters((prev) => ({ ...prev, _refresh: Date.now() }));
 
-    } catch (error: any) {
-      // Use API error message if available, otherwise use generic error message
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.message ??
+        err?.message ??
         t('admin.actions.uploadError');
 
       showAlert('error', errorMessage);
@@ -524,7 +538,7 @@ const UserManagementScreen = () => {
         description="admin.userManagementDescription"
         right={
           <HStack space="md" alignItems="center">
-            <Button variant={"outlineghost" as any}
+            <Button variant="outline"
               onPress={() => setIsUploadModalOpen(true)}
               isDisabled={isUploading}
             >
@@ -644,13 +658,13 @@ const UserManagementScreen = () => {
             onPress={handleUploadCSV}
           >
             <Card
-              {...(styles.uploadOptionCard as any)}
+              {...(styles.uploadOptionCard as Record<string, unknown>)}
               bg="$white"
             >
               <HStack space="md" alignItems="center">
                 {/* Icon Container */}
                 <Box
-                  {...(styles.uploadCSVIconContainer as any)}
+                  {...(styles.uploadCSVIconContainer as Record<string, unknown>)}
                 >
                   <LucideIcon
                     name="FileUp"
@@ -682,13 +696,13 @@ const UserManagementScreen = () => {
           {/* Add User Option - Disabled */}
           <Pressable disabled>
             <Card
-              {...(styles.uploadOptionCardDisabled as any)}
+              {...(styles.uploadOptionCardDisabled as Record<string, unknown>)}
               bg="$white"
             >
               <HStack space="md" alignItems="center">
                 {/* Icon Container */}
                 <Box
-                  {...(styles.addUserIconContainer as any)}
+                  {...(styles.addUserIconContainer as Record<string, unknown>)}
                 >
                   <LucideIcon
                     name="UserPlus"
@@ -827,28 +841,20 @@ const UserManagementScreen = () => {
                     <VStack flex={1} space="xs">
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.province')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {selectedUserProfile?.province?.label ||
-                          (typeof (selectedUserProfile as any)?.province === 'string'
-                            ? (selectedUserProfile as any)?.province
-                            : '') ||
-                          (selectedUserBase as any)?.province?.label ||
-                          (typeof (selectedUserBase as any)?.province === 'string'
-                            ? (selectedUserBase as any)?.province
-                            : '') ||
+                        {(selectedUserProfile?.province as { label?: string } | undefined)?.label ||
+                          (typeof selectedUserProfile?.province === 'string' ? selectedUserProfile.province : '') ||
+                          ((selectedUserBase as UserBaseWithOrgs)?.province as { label?: string } | undefined)?.label ||
+                          (typeof (selectedUserBase as UserBaseWithOrgs)?.province === 'string' ? (selectedUserBase as UserBaseWithOrgs).province : '') ||
                           '-'}
                       </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.site')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {selectedUserProfile?.site?.label ||
-                          (typeof (selectedUserProfile as any)?.site === 'string'
-                            ? (selectedUserProfile as any)?.site
-                            : '') ||
-                          (selectedUserBase as any)?.site?.label ||
-                          (typeof (selectedUserBase as any)?.site === 'string'
-                            ? (selectedUserBase as any)?.site
-                            : '') ||
+                        {(selectedUserProfile?.site as { label?: string } | undefined)?.label ||
+                          (typeof selectedUserProfile?.site === 'string' ? selectedUserProfile.site : '') ||
+                          ((selectedUserBase as UserBaseWithOrgs)?.site as { label?: string } | undefined)?.label ||
+                          (typeof (selectedUserBase as UserBaseWithOrgs)?.site === 'string' ? (selectedUserBase as UserBaseWithOrgs).site : '') ||
                           '-'}
                       </Text>
                     </VStack>
@@ -906,12 +912,12 @@ const UserManagementScreen = () => {
 
           {/* Footer */}
           <HStack space="md" alignItems="center" justifyContent="flex-end" mt="$4">
-            <Button variant={"outlineghost" as any}
+            <Button variant="outline"
               onPress={closeProfileModal}
             >
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close')}</ButtonText>
             </Button>
-            <Button variant={"solid" as any}
+            <Button variant="solid"
               onPress={() => showAlert('info', t('common.comingSoon'))}
             >
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.editUser')}</ButtonText>

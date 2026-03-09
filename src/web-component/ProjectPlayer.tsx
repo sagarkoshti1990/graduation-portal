@@ -13,8 +13,8 @@ import {
   ScrollView,
   ButtonText,
 } from '@gluestack-ui/themed';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '@utils/logger';
+import offlineStorage from '../services/offlineStorage';
 // import { FileUploadService } from 'src/services/FileUploadService';
 
 // ---------- Types ----------
@@ -44,7 +44,7 @@ type ProjectData = {
   type: 'bundle' | 'single';
   title: string;
   description?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   projects?: Project[];
   tasks?: Task[];
   synced?: boolean;
@@ -77,7 +77,7 @@ function openIDB(): Promise<IDBDatabase> {
   });
 }
 
-async function idbPut(store: string, value: any) {
+async function idbPut(store: string, value: unknown) {
   const db = await openIDB();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(store, 'readwrite');
@@ -87,12 +87,12 @@ async function idbPut(store: string, value: any) {
   });
 }
 
-async function idbGet(store: string, key: string) {
+async function idbGet<T = unknown>(store: string, key: string): Promise<T | undefined> {
   const db = await openIDB();
-  return new Promise<any>((resolve, reject) => {
+  return new Promise<T | undefined>((resolve, reject) => {
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).get(key);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => resolve(req.result as T | undefined);
     req.onerror = () => reject(req.error);
   });
 }
@@ -102,16 +102,16 @@ async function mobileSaveFileBase64(
   id: string,
   meta: FileMeta & { base64: string; projectId: string },
 ) {
-  await AsyncStorage.setItem(
+  await offlineStorage.create(
     `projectPlayer_file_${meta.projectId}_${id}`,
-    JSON.stringify(meta),
+    meta,
   );
 }
 async function mobileGetFileBase64(projectId: string, id: string) {
-  const raw = await AsyncStorage.getItem(
+  const data = await offlineStorage.read<FileMeta & { base64: string; projectId: string }>(
     `projectPlayer_file_${projectId}_${id}`,
   );
-  return raw ? JSON.parse(raw) : null;
+  return data ?? null;
 }
 
 // ---------- Component ----------
@@ -147,13 +147,9 @@ const ProjectPlayer: React.FC<Props> = props => {
           if (saved) setProject(saved);
           else await idbPut(STORE_PROJECTS, data);
         } else {
-          const raw = await AsyncStorage.getItem(`projectPlayer_${data.id}`);
-          if (raw) setProject(JSON.parse(raw));
-          else
-            await AsyncStorage.setItem(
-              `projectPlayer_${data.id}`,
-              JSON.stringify(data),
-            );
+          const saved = await offlineStorage.read<ProjectData>(`projectPlayer_${data.id}`);
+          if (saved) setProject(saved);
+          else await offlineStorage.create(`projectPlayer_${data.id}`, data);
         }
       } catch (e) {
         logger.warn('Offline load failed', e);
@@ -168,10 +164,7 @@ const ProjectPlayer: React.FC<Props> = props => {
         if (typeof window !== 'undefined' && 'indexedDB' in window) {
           await idbPut(STORE_PROJECTS, project);
         } else {
-          await AsyncStorage.setItem(
-            `projectPlayer_${project.id}`,
-            JSON.stringify(project),
-          );
+          await offlineStorage.create(`projectPlayer_${project.id}`, project);
         }
       } catch (e) {
         logger.warn('Offline save failed', e);

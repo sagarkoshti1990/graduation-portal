@@ -55,13 +55,25 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
 
     const response = await api.get<ParticipantSearchResponse>(endpoint);
     return response.data;
-  } catch (error: any) {
-    // Error is already handled by axios interceptor
+  } catch (error: unknown) {
     throw error;
   }
 };
 
-export const getParticipantById = (id: string): any => {
+export interface ParticipantByIdResult {
+  id: string;
+  name: string;
+  contact: string;
+  status: string;
+  progress?: number;
+  pathway?: string;
+  graduationProgress?: number;
+  graduationDate?: string;
+  email: string;
+  address: string;
+}
+
+export const getParticipantById = (id: string): ParticipantByIdResult | undefined => {
   const participant = PARTICIPANTS_DATA.find(p => p.id === id);
   if (!participant) return undefined;
   return {
@@ -94,8 +106,7 @@ export const getParticipantProfile = async (id: string): Promise<User |undefined
     const userProfile = await getUserProfile(id);
 
     return userProfile;
-  } catch (error: any) {
-    // Error is already handled by axios interceptor
+  } catch (error: unknown) {
     throw error;
   }
 };
@@ -167,7 +178,7 @@ export const getSitesByProvince = (provinceValue: string): Site[] => {
   return SITES;
 };
 
-export const getEntityDetails = async (userId: string): Promise<any> => {
+export const getEntityDetails = async (userId: string): Promise<{ data: unknown }> => {
   try {
     const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(userId));
 
@@ -182,10 +193,10 @@ export const updateEntityDetails = async ({
   entityId,
   entityUpdates,
 }: {
-  userId:string;
+  userId: string;
   entityId: string;
-  entityUpdates: any;
-}): Promise<any> => {
+  entityUpdates: Record<string, unknown>;
+}): Promise<unknown> => {
   try {
 
     const requestBody = {

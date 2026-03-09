@@ -21,7 +21,7 @@ export const useTaskActions = () => {
         }
       }
       // Always update if we have a status change, regardless of files
-      const updateData: any = { status };
+      const updateData: { status: TaskStatus; attachments?: Attachment[] } = { status };
       if (attachments.length > 0) {
         updateData.attachments = attachments;
       }

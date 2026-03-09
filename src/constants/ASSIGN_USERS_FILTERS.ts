@@ -36,7 +36,7 @@ export const ParticipantSearchFilter: FilterConfig = {
  * @param filters - Current filter values to check if province is selected
  * @returns Object containing filter configurations and supervisors data
  */
-export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
+export const useSupervisorFilterOptions = (filters: Record<string, unknown> = {}): {
   filters: ReadonlyArray<FilterConfig>;
   supervisors: AdminUserManagementData[];
 } => {
@@ -57,7 +57,7 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
   // Fetch supervisors - all supervisors initially, filtered by province when selected
   useEffect(() => {
     const fetchSupervisors = async () => {
-      const selectedProvince = filters.filterByProvince;
+      const selectedProvince = filters.filterByProvince as string | undefined;
       
       try {
         // Fetch all supervisors if no province selected, or filtered by province if selected
@@ -77,7 +77,7 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
     };
 
     fetchSupervisors();
-  }, [filters.filterByProvince]); // Re-fetch when province filter changes
+  }, [filters.filterByProvince]);
 
   // Build dynamic filter options with API data
   return useMemo(() => {
@@ -91,9 +91,9 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
     ];
 
     // Build supervisor filter from API supervisors
-    const supervisorFilterOptions = supervisors.map((supervisor: any) => {
-      const name = supervisor.name || supervisor.full_name || supervisor.email || 'Unknown';
-      const value = supervisor.id || supervisor._id || supervisor.email || name;
+    const supervisorFilterOptions = supervisors.map((supervisor: AdminUserManagementData) => {
+      const name = supervisor.name ?? (supervisor as { full_name?: string }).full_name ?? supervisor.email ?? 'Unknown';
+      const value = String(supervisor.id ?? (supervisor as { _id?: string })._id ?? supervisor.email ?? name);
       return {
         label: name,
         value: value,

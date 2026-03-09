@@ -41,7 +41,7 @@ export interface UploadComponentProps {
 export interface ObservationPopupFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Record<string, unknown>) => void;
   formId: string;
 }
 
@@ -102,7 +102,7 @@ export interface ProjectPlayerConfig {
   };
   maxFileSize?: number; // in MB
   baseUrl?: string;
-  accessToken?: any;
+  accessToken?: () => Promise<string | null>;
   language?: string;
   showAddCustomTaskButton?: boolean; // Config to show/hide AddCustomTask button
   showSubmitButton?: boolean; // Config to show/hide Submit Intervention Plan button
@@ -115,13 +115,13 @@ export interface ProjectPlayerConfig {
     name: string;
     email?: string;
     role?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   redirectionLinks?: {
     unauthorizedRedirectUrl?: string;
     // loginRedirectUrl?: string;
     // homeRedirectUrl?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -133,14 +133,14 @@ export interface ProjectPlayerData {
   data?: ProjectData;
   categoryIds?: string[]; // Array of category IDs (pillar IDs without categories + selected subcategory IDs)
   selectedPathway?: string;
-  pillarCategoryRelation?: any;
+  pillarCategoryRelation?: Array<{ pillarId?: string; selectedCategoryId?: string }>;
   province?:string;
 }
 
 export interface ProjectPlayerProps {
   config: ProjectPlayerConfig;
   data?: ProjectPlayerData;
-  projectData?: any; // as per mock data json
+  projectData?: ProjectData | null;
   onTaskUpdate?: (task: Task) => void;
   onTaskCompletionChange?: (areAllCompleted: boolean) => void; // Callback when task completion status changes
   onProgressChange?: (progress: number) => void; // Callback for progress updates
@@ -194,11 +194,11 @@ export interface EvidencePreviewModalProps {
 export interface FileUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (method: 'camera' | 'device', files?: any[]) => void;
-  onConfirm?: (files?: any[]) => void;
+  onUpload: (method: 'camera' | 'device', files?: File[]) => void;
+  onConfirm?: (files?: File[]) => void;
   taskName: string;
   participantName?: string;
-  existingAttachments?: any[];
+  existingAttachments?: Attachment[];
   isConsent?: boolean;
 }
 

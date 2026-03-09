@@ -51,7 +51,7 @@ export const getSignedUrl = async (fileName: string): Promise<SignedUrlResponse>
     });
     
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error getting signed URL:', error);
     throw error;
   }
@@ -107,7 +107,7 @@ export const bulkUserCreate = async (
     };
     
     // Get organization and tenant codes from stored user data
-    const userData = await offlineStorage.read<any>(STORAGE_KEYS.AUTH_USER);
+    const userData = await offlineStorage.read<Record<string, unknown> & { tenant_code?: string; organizations?: Array<{ code?: string }> }>(STORAGE_KEYS.AUTH_USER);
     const tenantCode = userData?.tenant_code;
     const orgCode = userData?.organizations?.[0]?.code;
     
@@ -162,7 +162,7 @@ export const bulkUserCreate = async (
     );
     
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error triggering bulk user create:', error);
     throw error;
   }

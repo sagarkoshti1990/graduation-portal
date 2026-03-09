@@ -38,11 +38,8 @@ apiClient.interceptors.response.use(
 
       if (isWeb) {
         window.location.href = redirectUrl;
-      } else {
-        const routeName = redirectUrl.startsWith('/')
-          ? redirectUrl.slice(1)
-          : redirectUrl;
       }
+      // On native, redirectUrl could be used for deep linking if needed
     }
     return Promise.reject(error);
   },
@@ -107,8 +104,8 @@ export const getProjectDetails = async (
 
 export const updateTask = async (
   projectId: string,
-  requestBody: any,
-): Promise<ApiResponse<any>> => {
+  requestBody: Record<string, unknown>,
+): Promise<ApiResponse<unknown>> => {
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_TASK(projectId),
@@ -128,7 +125,7 @@ export const updateProjectInfo = async (projectId: string, programUsersRef: stri
       programUserMappingReference: programUsersRef
     });
     return response.data.result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     throw error;
   }
 };
@@ -189,8 +186,8 @@ export const submitInterventionPlan = async (
 export const getSolutionDetails = async (
   solutionId: string,
   taskId: string,
-  payload: any = {}
-): Promise<ApiResponse<any>> => {
+  payload: Record<string, unknown> = {}
+): Promise<ApiResponse<unknown>> => {
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.GET_SOLUTION_DETAILS(solutionId, taskId),
@@ -240,7 +237,9 @@ export const uploadFiles = async (
     });
     if (response?.data?.[id]) {
       const responceData = await Promise.all(files.map(async file => {
-        const presignedUrl = response.data[id].files.find(f => f.file === file.name);
+        const presignedUrl = response.data[id].files.find(
+          (f: { file?: string; url?: string }) => f.file === file.name,
+        );
         
         // Upload file to presigned URL
         const res = await fetch(presignedUrl?.url, {

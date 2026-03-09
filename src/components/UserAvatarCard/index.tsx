@@ -31,20 +31,28 @@ import DataTable from '@components/DataTable';
 import type { ColumnDef } from '@app-types/components';
 import logger from '@utils/logger';
 
+interface AssignableItem {
+  value: string;
+  labelKey: string;
+  id?: string;
+  location?: string;
+  status?: string;
+}
+
 interface UserAvatarCardProps {
- title: string;
- description: string;
- filterOptions?: any;
- onChange?: (values: Record<string, any>) => void;
- selectedValues?: Record<string, any>;
- showSelectedCard?: boolean;
- showLcList?: boolean;
- showLcListforSupervisorTeam?: boolean;
- onLcSelect?: (lc: any) => void;
- onAssign?: (selectedLCs: any[]) => void;
- lcList?: any[]; // Optional filtered LC list (if not provided, uses default selectedLCList)
- isParticipantList?: boolean; // Flag to indicate if this is a participant list (different button text)
- isLoading?: boolean; // Loading state for the data table
+  title: string;
+  description: string;
+  filterOptions?: unknown;
+  onChange?: (values: Record<string, unknown>) => void;
+  selectedValues?: Record<string, unknown>;
+  showSelectedCard?: boolean;
+  showLcList?: boolean;
+  showLcListforSupervisorTeam?: boolean;
+  onLcSelect?: (lc: AssignableItem) => void;
+  onAssign?: (selected: AssignableItem[]) => void;
+  lcList?: AssignableItem[];
+  isParticipantList?: boolean;
+  isLoading?: boolean;
 }
 
 
@@ -66,14 +74,14 @@ const UserAvatarCard = ({
   const { t } = useLanguage();
   const { showAlert } = useAlert();
 
-  const [selectedLc, setSelectedLc] = useState<any>(null);
+  const [selectedLc, setSelectedLc] = useState<AssignableItem | null>(null);
   const [selectedLCs, setSelectedLCs] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingAssignment, setPendingAssignment] = useState<{
-    selectedLCs?: any[];
-    selectedParticipants?: any[];
-    supervisorData?: any;
-    lcData?: any;
+    selectedLCs?: AssignableItem[];
+    selectedParticipants?: AssignableItem[];
+    supervisorData?: { name?: string };
+    lcData?: { labelKey?: string };
   } | null>(null);
   // Pagination state for participants table
   const [_currentPage, setCurrentPage] = useState(1);
@@ -82,13 +90,13 @@ const UserAvatarCard = ({
   // Use provided lcList or fall back to empty array
   const displayLCList = lcList || [];
 
-  const participantColumns: ColumnDef<any>[] = useMemo(() => [
+  const participantColumns: ColumnDef<AssignableItem>[] = useMemo(() => [
     {
       key: 'name',
       label: 'admin.assignUsers.participant',
       align: 'left',
       flex: 1,
-      render: (item: any) => (
+      render: (item: AssignableItem) => (
         <HStack
           {...(AssignUsersStyles.viewstyles as ViewProps)}
           flex={1}
@@ -96,23 +104,13 @@ const UserAvatarCard = ({
           alignItems="center"
           space="sm"
         >
-          {/* Checkbox + Avatar managed inside name (no separate columns) */}
           <Pressable
-            onPress={(_e: any) => {
-              // Stop event propagation to prevent row click from firing
-              // This prevents the checkbox click from triggering the row's onRowClick
+            onPress={() => {}}
+            $web-onClick={(e: { stopPropagation?: () => void }) => {
+              if (e?.stopPropagation) e.stopPropagation();
             }}
-            $web-onClick={(e: any) => {
-              // For web, stop click event propagation
-              if (e?.stopPropagation) {
-                e.stopPropagation();
-              }
-            }}
-            $web-onMouseDown={(e: any) => {
-              // Also stop mousedown propagation for web
-              if (e?.stopPropagation) {
-                e.stopPropagation();
-              }
+            $web-onMouseDown={(e: { stopPropagation?: () => void }) => {
+              if (e?.stopPropagation) e.stopPropagation();
             }}
           >
             <Checkbox
@@ -183,13 +181,13 @@ const UserAvatarCard = ({
     },
   ], [selectedLCs, t]);
 
-  const linkageChampionColumns: ColumnDef<any>[] = useMemo(() => [
+  const linkageChampionColumns: ColumnDef<AssignableItem>[] = useMemo(() => [
     {
       key: 'lcInfo',
       label: 'admin.assignUsers.linkageChampion',
       align: 'left',
       flex: 1,
-      render: (lc: any) => (
+      render: (lc: AssignableItem) => (
         <HStack
           {...(AssignUsersStyles.viewstyles as ViewProps)}
           flex={1}
@@ -199,17 +197,17 @@ const UserAvatarCard = ({
         >
           {/* Checkbox managed inside lcInfo (no separate checkbox column) */}
           <Pressable
-            onPress={(_e: any) => {
+            onPress={() => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
-            $web-onClick={(e: any) => {
+            $web-onClick={(e: { stopPropagation?: () => void }) => {
               // For web, stop click event propagation
               if (e?.stopPropagation) {
                 e.stopPropagation();
               }
             }}
-            $web-onMouseDown={(e: any) => {
+            $web-onMouseDown={(e: { stopPropagation?: () => void }) => {
               // Also stop mousedown propagation for web
               if (e?.stopPropagation) {
                 e.stopPropagation();
@@ -271,7 +269,7 @@ const UserAvatarCard = ({
       label: '',
       align: 'right',
       flex: 1,
-      render: (lc: any) => (
+      render: (lc: AssignableItem) => (
         <HStack width="100%" justifyContent="flex-end">
           <Badge
             variant="outline"
@@ -296,7 +294,7 @@ const UserAvatarCard = ({
     },
   ], [selectedLCs, t]);
  // Handler to receive filter changes from FilterButton and pass to parent
- const handleFilterChange = (values: Record<string, any>) => {
+  const handleFilterChange = (values: Record<string, unknown>) => {
    // Call parent's onChange handler if provided
    onChange?.(values);
  };
@@ -304,7 +302,7 @@ const UserAvatarCard = ({
 
   return (
     <Card {...(AssignUsersStyles.coverCardStyles as ViewProps)}>
-      <Heading {...(AssignUsersStyles.headingStyles as any)}>{t(title)}</Heading>
+      <Heading {...(AssignUsersStyles.headingStyles as Record<string, unknown>)}>{t(title)}</Heading>
       <Text {...(AssignUsersStyles.descriptionTextStyles as TextProps)}>
         {(() => {
           const translatedDescription = t(description);
@@ -397,12 +395,11 @@ const UserAvatarCard = ({
               data={displayLCList || []}
               showHeader={false}
               columns={participantColumns}
-              getRowKey={(item: any) => item.value}
+              getRowKey={(item: AssignableItem) => item.value}
               isLoading={isLoading}
               emptyMessage="common.noDataFound"
               responsive={true}
-              onRowClick={(item: any) => {
-                // Toggle checkbox selection on row click
+              onRowClick={(item: AssignableItem) => {
                 setSelectedLCs((prev) => {
                   const newSet = new Set(prev);
                   if (newSet.has(item.value)) {
@@ -435,12 +432,11 @@ const UserAvatarCard = ({
               data={displayLCList || []}
               showHeader={false}
               columns={linkageChampionColumns}
-              getRowKey={(item: any) => item.value}
+              getRowKey={(item: AssignableItem) => item.value}
               isLoading={isLoading}
               emptyMessage="common.noDataFound"
               responsive={true}
-              onRowClick={(item: any) => {
-                // Toggle checkbox selection on row click
+              onRowClick={(item: AssignableItem) => {
                 setSelectedLCs((prev) => {
                   const newSet = new Set(prev);
                   if (newSet.has(item.value)) newSet.delete(item.value);
@@ -472,7 +468,7 @@ const UserAvatarCard = ({
           mt={'$3'}
           onPress={() => {
             const selectedValuesArray = Array.from(selectedLCs);
-            const selectedObjects = displayLCList.filter((item: any) =>
+            const selectedObjects = displayLCList.filter((item: AssignableItem) =>
               selectedValuesArray.includes(item.value)
             );
             
@@ -595,7 +591,7 @@ const UserAvatarCard = ({
                   {t('admin.assignUsers.linkageChampions')}:
                 </Text>
                 <VStack space="xs" marginLeft="$4">
-                  {pendingAssignment.selectedLCs.map((lc: any, index: number) => (
+                  {pendingAssignment.selectedLCs.map((lc: AssignableItem, index: number) => (
                     <HStack key={`${lc.value}-${index}`} space="sm" alignItems="center">
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground" fontWeight="$medium">
                         • {lc.labelKey}
@@ -691,7 +687,7 @@ const UserAvatarCard = ({
                   {t('admin.assignUsers.participants')}:
                 </Text>
                 <VStack space="xs" marginLeft="$4">
-                  {pendingAssignment.selectedParticipants?.map((participant: any, index: number) => (
+                  {pendingAssignment.selectedParticipants?.map((participant: AssignableItem, index: number) => (
                     <HStack key={`${participant.value}-${index}`} space="sm" alignItems="center">
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground" fontWeight="$medium">
                         • {participant.labelKey}
@@ -708,7 +704,7 @@ const UserAvatarCard = ({
 
 
      {showLcListforSupervisorTeam &&
-       displayLCList?.map((lc: any) => {
+       displayLCList?.map((lc: AssignableItem) => {
          const isSelected = selectedLc?.value === lc.value;
 
 

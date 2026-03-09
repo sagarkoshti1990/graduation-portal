@@ -1,7 +1,7 @@
 // Validation utilities for forms and data
 
 export const validators = {
-  required: (value: any): string | undefined => {
+  required: (value: unknown): string | undefined => {
     if (!value || (typeof value === 'string' && !value.trim())) {
       return 'This field is required';
     }
@@ -56,8 +56,8 @@ export const validators = {
 
 // Validate a form object against a schema
 export const validateForm = (
-  data: Record<string, any>,
-  schema: Record<string, any>,
+  data: Record<string, unknown>,
+  schema: Record<string, unknown>,
 ): Record<string, string> => {
   const errors: Record<string, string> = {};
 
@@ -65,8 +65,9 @@ export const validateForm = (
     const rules = schema[field];
     const value = data[field];
 
+    type ValidatorFn = (v: unknown) => string | undefined;
     if (Array.isArray(rules)) {
-      for (const rule of rules) {
+      for (const rule of rules as ValidatorFn[]) {
         const error = rule(value);
         if (error) {
           errors[field] = error;
@@ -74,7 +75,7 @@ export const validateForm = (
         }
       }
     } else if (typeof rules === 'function') {
-      const error = rules(value);
+      const error = (rules as ValidatorFn)(value);
       if (error) {
         errors[field] = error;
       }

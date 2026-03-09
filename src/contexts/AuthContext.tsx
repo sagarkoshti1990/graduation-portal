@@ -23,7 +23,7 @@ export interface User {
   name: string;
   role?: UserRole;
   languages?: string[] | null;
-  [key: string]: any; // Allow additional user properties from API
+  [key: string]: unknown;
 }
 
 interface AuthContextType {
@@ -38,8 +38,16 @@ interface AuthContextType {
   logout: () => Promise<void>;
   setIsLoggedIn: (value: boolean) => void;
   loading: boolean;
-  navbarData: any;
-  setNavbarData: (data: any) => void;
+  navbarData: unknown;
+  setNavbarData: (data: unknown) => void;
+}
+
+interface ApiOrganization {
+  roles?: Array<{ title?: string }>;
+}
+
+interface ApiUserData {
+  organizations?: ApiOrganization[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,39 +60,29 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * @returns UserRole based on role priority (Admin > Supervisor > LC)
  * @throws Error if user doesn't have any authorized role
  */
-const determineUserRole = (userData: any): UserRole => {
-  // Check for admin roles first (priority) - only 'admin', not 'tenant_admin'
-  const adminOrganizations = userData.organizations.filter((org: any) => {
-    if (!org?.roles || !Array.isArray(org.roles)) {
-      return false;
-    }
-    return org.roles.some((role: any) => ADMIN_ROLES.includes(role?.title));
+const determineUserRole = (userData: ApiUserData): UserRole => {
+  const organizations = userData.organizations ?? [];
+  const adminOrganizations = organizations.filter((org: ApiOrganization) => {
+    if (!org?.roles || !Array.isArray(org.roles)) return false;
+    return org.roles.some((role) => ADMIN_ROLES.includes(role?.title));
   });
-
   if (adminOrganizations.length > 0) {
     logger.info('User has admin role based on organizations');
     return 'Admin';
   }
 
-  // Check for supervisor roles (tenant_admin, supervisor)
-  const supervisorOrganizations = userData.organizations.filter((org: any) => {
-    if (!org?.roles || !Array.isArray(org.roles)) {
-      return false;
-    }
-    return org.roles.some((role: any) => SUPERVISOR_ROLES.includes(role?.title));
+  const supervisorOrganizations = organizations.filter((org: ApiOrganization) => {
+    if (!org?.roles || !Array.isArray(org.roles)) return false;
+    return org.roles.some((role) => SUPERVISOR_ROLES.includes(role?.title));
   });
-
   if (supervisorOrganizations.length > 0) {
     logger.info('User has supervisor role based on organizations');
     return 'Supervisor';
   }
 
-  // Check for LC roles
-  const lcOrganizations = userData.organizations.filter((org: any) => {
-    if (!org?.roles || !Array.isArray(org.roles)) {
-      return false;
-    }
-    return org.roles.some((role: any) => LC_ROLES.includes(role?.title));
+  const lcOrganizations = organizations.filter((org: ApiOrganization) => {
+    if (!org?.roles || !Array.isArray(org.roles)) return false;
+    return org.roles.some((role) => LC_ROLES.includes(role?.title));
   });
 
   if (lcOrganizations.length > 0) {
@@ -106,7 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [navbarData, setNavbarData] = useState<any>(null);
+  const [navbarData, setNavbarData] = useState<unknown>(null);
 
   useEffect(() => {
     // Setup tab close handler for web platform (config-driven)
@@ -207,14 +205,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         let determinedRole: UserRole;
         try {
           determinedRole = determineUserRole(userData);
-        } catch (roleError: any) {
-          // Check if error message matches our known unauthorized message
+        } catch (roleError: unknown) {
+          const err = roleError as { message?: string };
           const isUnauthorizedError =
-            roleError.message?.includes('Unauthorized') ||
-            roleError.message?.includes('not authorized');
+            err.message?.includes('Unauthorized') ||
+            err.message?.includes('not authorized');
           const message = isUnauthorizedError
             ? t('auth.roleNotAuthorized')
-            : roleError.message || t('auth.roleNotAuthorized');
+            : err.message ?? t('auth.roleNotAuthorized');
           logger.warn(
             `${isAdmin ? 'Admin ' : ''}User role not authorized:`,
             message,
@@ -245,8 +243,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         logger.warn(`${isAdmin ? 'Admin ' : ''}Login failed:`, message);
         return { success: false, message };
       }
-    } catch (error: any) {
-      const message = error?.message || t('auth.errorOccurredDuringLogin');
+    } catch (error: unknown) {
+      const message = (error as Error)?.message ?? t('auth.errorOccurredDuringLogin');
       logger.error(`${isAdmin ? 'Admin ' : ''}Login error:`, error);
       return { success: false, message };
     }
@@ -321,15 +319,12 @@ export const useIsSupervisor = (): boolean => {
       return true;
     }
     
-    // Also check user's actual organizations for supervisor role titles
-    if (user && (user as any).organizations) {
-      const organizations = (user as any).organizations;
-      const hasSupervisorRole = organizations.some((org: any) => {
-        if (!org?.roles || !Array.isArray(org.roles)) {
-          return false;
-        }
-        return org.roles.some((role: any) => {
-          const roleTitle = role?.title?.toLowerCase() || '';
+    const orgs = (user as User & { organizations?: ApiOrganization[] }).organizations;
+    if (user && orgs) {
+      const hasSupervisorRole = orgs.some((org: ApiOrganization) => {
+        if (!org?.roles || !Array.isArray(org.roles)) return false;
+        return org.roles.some((role) => {
+          const roleTitle = role?.title?.toLowerCase() ?? '';
           return roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
         });
       });

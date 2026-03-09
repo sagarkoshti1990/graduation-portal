@@ -17,13 +17,13 @@ export const MAIN_MENU_ITEMS: SidebarItem[] = [
   {
     key: 'user-management',
     label: 'admin.menu.userManagement',
-    icon: 'Users', // Lucide icon name
+    icon: 'Users',
     route: 'user-management',
   },
   {
     key: 'assign-users',
     label: 'admin.menu.assignUsers',
-    icon: 'UserCheck', // Lucide icon name - distinct from Users icon
+    icon: 'UserCheck',
     route: 'assign-users',
   },
   // {
@@ -59,19 +59,19 @@ export const MORE_INFORMATION_MENU_ITEMS: SidebarItem[] = [
   {
     key: 'csv-templates',
     label: 'admin.menu.csvImportTemplates',
-    icon: 'FileDown', // Lucide icon name
+    icon: 'FileDown',
     route: 'csv-templates',
   },
   {
     key: 'password-policy',
     label: 'admin.menu.passwordManagementPolicy',
-    icon: 'Lock', // Lucide icon name
-    route: 'PasswordPolicy', // Placeholder route
+    icon: 'Lock',
+    route: 'PasswordPolicy',
   },
   {
     key: 'profile-permissions',
     label: 'admin.menu.profileFieldEditPermissions',
-    icon: 'FilePenLine', // Lucide icon name
-    route: 'ProfilePermissions', // Placeholder route
+    icon: 'FilePenLine',
+    route: 'ProfilePermissions',
   },
 ];

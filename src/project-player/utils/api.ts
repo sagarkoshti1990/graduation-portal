@@ -119,8 +119,8 @@ export const api = {
   // Add custom task
   addTask: async (
     projectId: string,
-    taskData: any,
-  ): Promise<ApiResponse<any>> => {
+    taskData: Record<string, unknown>,
+  ): Promise<ApiResponse<unknown>> => {
     try {
       const response = await fetch(
         `${API_CONFIG.baseUrl}/project/${projectId}/task`,

@@ -19,7 +19,7 @@ import logger from '@utils/logger';
 interface LayoutProps {
   title: string;
   children: React.ReactNode;
-  navigation?: any;
+  navigation?: unknown;
   pendingSyncCount?: number;
   disableScroll?: boolean;
   pageName?: string; // Page name for title setting

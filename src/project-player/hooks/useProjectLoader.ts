@@ -13,8 +13,8 @@ import {
 import { updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
 import { useAuth } from '@contexts/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '@utils/logger';
+import offlineStorage from '../../services/offlineStorage';
 
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
@@ -41,19 +41,21 @@ export const useProjectLoader = (
               projectData = res.data;
             } else {
               try {
-              const createdProject = await createProjectForEntity(entityId, province || '');
+              if (!entityId) throw new Error('entityId is required');
+              const createdProject = await createProjectForEntity(entityId, province ?? '');
 
               if (createdProject && typeof createdProject === 'object' && '_id' in createdProject && createdProject._id) {
+                const projectId = createdProject._id as string;
                 await updateEntityDetails({
-                  userId: `${user?.id}`,
-                  entityId:entityId,
-                 entityUpdates:{
-                   onBoardedProjectId: createdProject._id,
-                 }
+                  userId: user?.id ?? '',
+                  entityId,
+                  entityUpdates: {
+                    onBoardedProjectId: projectId,
+                  },
                 });
-                const ref = await AsyncStorage.getItem('my_program_user_ref');
-                if (ref && createdProject._id) {
-                  await updateProjectInfo(createdProject._id, ref);
+                const ref = await offlineStorage.read<string>('my_program_user_ref');
+                if (ref && projectId) {
+                  await updateProjectInfo(projectId, ref);
                 }
               }
               projectData = createdProject;
@@ -75,7 +77,7 @@ export const useProjectLoader = (
           const templatesData = await getProjectCategoryList();
           const selectedPathway = data?.selectedPathway;
           const pathwayData = templatesData?.find(
-            (template: any) => template._id === selectedPathway,
+            (template: { _id?: string }) => template._id === selectedPathway,
           );
           const categoryIdsString = data?.categoryIds.join(',');
           const taskResponse = await getTaskDetails(categoryIdsString);
@@ -83,12 +85,12 @@ export const useProjectLoader = (
 
           const updatedPathwayData = {
             ...pathwayData,
-            children: pathwayData?.children?.map((child: any) => {
-              let taskEntry = taskResult?.[child._id];
+            children: pathwayData?.children?.map((child: { _id?: string }) => {
+              let taskEntry = child._id != null ? taskResult?.[child._id] : undefined;
 
               if (!taskEntry) {
                 const relation = data?.pillarCategoryRelation?.find(
-                  (rel: any) => rel.pillarId === child._id,
+                  (rel: { pillarId?: string; selectedCategoryId?: string }) => rel.pillarId === child._id,
                 );
 
                 const newChildId = relation?.selectedCategoryId;

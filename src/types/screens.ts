@@ -34,17 +34,20 @@ export interface ParticipantsQueryParams {
 }
 
 export interface TemplateData {
-    id: string;
-    title: string;
-    description: string;
-    tag: string;
-    pillarsCount: number;
-    tasksCount: number;
-    version: string;
-    includedPillars: {
-        name: string;
-        tasks: number;
-    }[];
+  id: string;
+  title?: string;
+  name?: string;
+  description: string;
+  tag: string;
+  badgeBg?: string;
+  badgeTextColor?: string;
+  pillarsCount: number;
+  tasksCount: number;
+  version: string;
+  includedPillars: {
+    name: string;
+    tasks: number;
+  }[];
 }
 
 export interface InterventionPlanProps {
@@ -54,22 +57,6 @@ export interface InterventionPlanProps {
   participantProfile?: unknown;
   onIdpCreation?: (projectId?: string) => void;
   onProgressChange?: (progress: number) => void;
-}
-
-export interface TemplateData {
-  id: string;
-  name: string;
-  description: string;
-  tag: string;
-  badgeBg?: string; // Badge background color token
-  badgeTextColor?: string; // Badge text color token
-  pillarsCount: number;
-  tasksCount: number;
-  version: string;
-  includedPillars: {
-    name: string;
-    tasks: number;
-  }[];
 }
 
 export interface ParticipantHeaderProps {
