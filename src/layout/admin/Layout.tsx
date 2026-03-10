@@ -111,37 +111,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
       {isWeb && !isMobile && (
         <Pressable
           onPress={() => setDrawerOpen(!isDrawerOpen)}
-          style={{
-            position: 'absolute',
-            // Position it slightly below the header area
-            top: 60,
-            // Sidebar widths:
-            // - Expanded: $64 (~256px)
-            // - Collapsed rail: 56px
-            // Center the button on the sidebar edge.
-            left: isDrawerOpen ? 256 - 14 : 56 - 14,
-            zIndex: 1000,
-          }}
+          style={layoutStyles.desktopSidebarToggleWrapper(isDrawerOpen)}
         >
           {(state: any) => {
             const isHovered = state?.hovered || state?.pressed || false;
             return (
-              <Box
-                width="$6"
-                height="$6"
-                borderRadius={999}
-                bg="$white"
-                borderWidth={1}
-                borderColor={isHovered ? '$primary600' : '$borderLight300'}
-                alignItems="center"
-                justifyContent="center"
-                shadowColor="$black"
-                shadowOffset={{ width: 0, height: 2 } as any}
-                shadowOpacity={0.12}
-                shadowRadius={6}
-                elevation={3}
-                $web-cursor="pointer"
-              >
+              <Box {...layoutStyles.desktopSidebarToggleButton(isHovered)}>
                 <LucideIcon
                   name={isDrawerOpen ? 'ChevronLeft' : 'ChevronRight'}
                   size={16}

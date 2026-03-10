@@ -172,6 +172,17 @@ export const sidebarStyles = {
     p: '$2' as const,
     mb: '$6' as const,
   },
+
+  // Collapsed sidebar
+  collapsedScroll: {
+    flex: 1,
+    px: '$2' as const,
+    py: '$3' as const,
+  },
+  collapsedScrollContentContainer: {
+    alignItems: 'center' as const,
+    paddingBottom: 16,
+  },
 };
 
 // Sidebar Item Styles
@@ -221,4 +232,15 @@ export const sidebarItemStyles = {
     bg: '$accent200' as const,
   },
   // active background handled in container()
+
+  // Collapsed item icon wrapper
+  collapsedIconContainer: (bg: any) => ({
+    width: 40,
+    height: 40,
+    borderRadius: '$md' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    bg,
+    '$web-cursor': 'pointer' as const,
+  }),
 };

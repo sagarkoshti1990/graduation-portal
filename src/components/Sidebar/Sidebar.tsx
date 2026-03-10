@@ -125,19 +125,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           const isHovered = state?.hovered || state?.pressed || false;
           const bg = isActive || isHovered ? '$accent200' : 'transparent';
           const iconColor = isActive
-            ? theme.tokens.colors.primary600
-            : theme.tokens.colors.textLight600;
+            ? '$primary600'
+            : '$textLight600';
 
           return (
-            <Box
-              width={40}
-              height={40}
-              borderRadius="$md"
-              alignItems="center"
-              justifyContent="center"
-              bg={bg as any}
-              $web-cursor="pointer"
-            >
+            <Box {...sidebarItemStyles.collapsedIconContainer(bg as any)}>
               <LucideIcon name={item.icon} size={20} color={iconColor} />
             </Box>
           );
@@ -171,8 +163,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 size={16}
                 color={
                   isActive
-                    ? theme.tokens.colors.textForeground
-                    : theme.tokens.colors.textLight600
+                    ? '$textForeground'
+                    : '$textLight600'
                 }
               />
               <Text {...sidebarItemStyles.itemText(isActive)}>
@@ -304,13 +296,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </HStack>
 
       <ScrollView
-        flex={1}
-        px="$2"
-        py="$3"
-        contentContainerStyle={{
-          alignItems: 'center',
-          paddingBottom: 16,
-        }}
+        {...sidebarStyles.collapsedScroll}
+        contentContainerStyle={sidebarStyles.collapsedScrollContentContainer as any}
       >
         <VStack space="md" alignItems="center">
           {MAIN_MENU_ITEMS.map(item => renderCollapsedItem(item))}
