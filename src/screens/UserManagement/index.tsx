@@ -13,7 +13,7 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
+import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser } from '../../services/usersService';
 import type { 
   // UserSearchParams,
    Role
@@ -144,6 +144,7 @@ const UserManagementScreen = () => {
   type ProfileTab = 'DETAILS' | 'ACTIVITY' | 'PERMISSIONS';
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileTab, setProfileTab] = useState<ProfileTab>('DETAILS');
+  const [editTab, setEditTab] = useState<ProfileTab>('DETAILS');
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserBase, setSelectedUserBase] = useState<AdminUserManagementData | null>(null);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
@@ -161,6 +162,15 @@ const UserManagementScreen = () => {
   const [deactivateState, setDeactivateState] = useState({
     user: null as AdminUserManagementData | null,
     isSubmitting: false,
+  });
+
+  // Edit User modal state (only editable fields should live here)
+  const [editUserState, setEditUserState] = useState({
+    user: null as AdminUserManagementData | null,
+    userProfile: null as any | null,
+    name: '',
+    isSubmitting: false,
+    isLoading: false,
   });
 
   const closeDeactivateModal = useCallback(() => {
@@ -186,6 +196,60 @@ const UserManagementScreen = () => {
       setDeactivateState(prev => ({ ...prev, isSubmitting: false }));
     }
   }, [closeDeactivateModal, deactivateState.user, showAlert, t]);
+
+  const openEditUserModal = useCallback(async (user: AdminUserManagementData) => {
+    setEditTab('DETAILS');
+    setEditUserState({
+      user,
+      userProfile: null,
+      name: user.name || '',
+      isSubmitting: false,
+      isLoading: true,
+    });
+    try {
+      const profile = await getUserProfile(user.id);
+      setEditUserState(prev => ({
+        ...prev,
+        userProfile: profile,
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      showAlert('error', error?.message || t('common.somethingWentWrong'));
+      setEditUserState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, [showAlert, t]);
+
+  const closeEditUserModal = useCallback(() => {
+    setEditTab('DETAILS');
+    setEditUserState({
+      user: null,
+      userProfile: null,
+      name: '',
+      isSubmitting: false,
+      isLoading: false,
+    });
+  }, []);
+
+  const handleSaveEditUser = useCallback(async () => {
+    if (!editUserState.user) return;
+
+    // Validate required fields
+    if (!editUserState.name?.trim()) {
+      showAlert('error', t('admin.users.edit.nameRequired') || 'Name is required');
+      return;
+    }
+
+    setEditUserState(prev => ({ ...prev, isSubmitting: true }));
+    try {
+      await updateOrgAdminUser(editUserState.user.id, { name: editUserState.name.trim() });
+      showAlert('success', t('admin.users.edit.success') || 'User Updated Successfully.');
+      closeEditUserModal();
+      setRefetchKey(k => k + 1);
+    } catch (error: any) {
+      showAlert('error', error?.message || t('common.somethingWentWrong'));
+      setEditUserState(prev => ({ ...prev, isSubmitting: false }));
+    }
+  }, [closeEditUserModal, editUserState.user, editUserState.name]);
 
   const closeProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
@@ -275,10 +339,11 @@ const UserManagementScreen = () => {
   const columns = useMemo(
     () => getUsersColumns({ 
       onViewProfile: openProfileModal,
+      onEdit: openEditUserModal,
       onResetPassword: openResetPasswordModal,
       onDeactivate: openDeactivateModal,
     }),
-    [openProfileModal, openResetPasswordModal, openDeactivateModal]
+    [openProfileModal, openEditUserModal, openResetPasswordModal, openDeactivateModal]
   );
 
   // Ref to track previous roles length to detect when roles are first loaded
@@ -882,11 +947,18 @@ const UserManagementScreen = () => {
             >
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close')}</ButtonText>
             </Button>
-            <Button variant={"solid" as any}
-              onPress={() => showAlert('info', t('common.comingSoon'))}
+            {/* <Button variant={"solid" as any}
+              onPress={() => {
+                if (selectedUserBase) {
+                  openEditUserModal(selectedUserBase);
+                  closeProfileModal();
+                } else {
+                  showAlert('info', t('common.comingSoon'));
+                }
+              }}
             >
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.editUser')}</ButtonText>
-            </Button>
+            </Button> */}
           </HStack>
         </VStack>
       </Modal>
@@ -1059,6 +1131,217 @@ const UserManagementScreen = () => {
             </ButtonText>
           </Button>
         </HStack>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={!!editUserState.user?.id}
+        onClose={closeEditUserModal}
+        size="lg"
+        showCloseButton={true}
+        closeOnOverlayClick={!editUserState.isSubmitting}
+        contentProps={{ bg: '$white' }}
+        headerContent={
+          <ProfileModalHeader
+            selectedUserBase={editUserState.user}
+            selectedUserProfile={editUserState.userProfile}
+            isMobile={isMobile}
+            t={t}
+          />
+        }
+      >
+        <VStack space="md" width="100%">
+          {/* Content */}
+          {editUserState.isLoading ? (
+            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+              {t('common.loading')}
+            </Text>
+          ) : editTab !== 'DETAILS' ? (
+            <VStack space="sm" alignItems="center" py="$8">
+              <Text {...TYPOGRAPHY.h4} color="$textForeground">
+                {t('common.comingSoon')}
+              </Text>
+              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                {editTab === 'ACTIVITY'
+                  ? t('admin.users.profileModal.activityComingSoonDescription')
+                  : t('admin.users.profileModal.permissionsComingSoonDescription')}
+              </Text>
+            </VStack>
+          ) : (
+            <VStack space="lg" alignItems="stretch">
+              {/* Personal Information */}
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon name="User" size={16} color="$textMutedForeground" />
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                    {t('admin.users.profileModal.personalInformation')}
+                  </Text>
+                </HStack>
+                <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                  <HStack space="lg" justifyContent="space-between">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.profileModal.fullName')}
+                      </Text>
+                      <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
+                        <InputField
+                          value={editUserState.name}
+                          onChangeText={(text) => setEditUserState(prev => ({ ...prev, name: text }))}
+                          placeholder={t('admin.users.profileModal.fullName')}
+                          {...styles.editUserEditableInputField}
+                        />
+                      </Input>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.email')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.userProfile?.email || editUserState.user?.email || '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.profileModal.phoneNumber')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.userProfile?.phoneNumber ||
+                          editUserState.userProfile?.phone_number ||
+                          editUserState.userProfile?.phone ||
+                          (editUserState.user as any)?.phoneNumber ||
+                          (editUserState.user as any)?.phone_number ||
+                          (editUserState.user as any)?.phone ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.profileModal.idNumber')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.userProfile?.idNumber ||
+                          editUserState.userProfile?.id_number ||
+                          editUserState.userProfile?.id ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Card>
+              </VStack>
+
+              <Divider />
+
+              {/* Geographic Assignment */}
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon name="MapPin" size={16} color="$textMutedForeground" />
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                    {t('admin.users.profileModal.geographicAssignment')}
+                  </Text>
+                </HStack>
+                <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                  <HStack space="lg" justifyContent="space-between">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.province')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.userProfile?.province?.label ||
+                          (typeof (editUserState.userProfile as any)?.province === 'string'
+                            ? (editUserState.userProfile as any)?.province
+                            : '') ||
+                          (editUserState.user as any)?.province?.label ||
+                          (typeof (editUserState.user as any)?.province === 'string'
+                            ? (editUserState.user as any)?.province
+                            : '') ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.profileModal.districtMunicipality') || t('admin.users.site')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.userProfile?.site?.label ||
+                          (typeof (editUserState.userProfile as any)?.site === 'string'
+                            ? (editUserState.userProfile as any)?.site
+                            : '') ||
+                          (editUserState.user as any)?.site?.label ||
+                          (typeof (editUserState.user as any)?.site === 'string'
+                            ? (editUserState.user as any)?.site
+                            : '') ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Card>
+              </VStack>
+
+              <Divider />
+
+              {/* Role & Assignment */}
+              <VStack space="sm">
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon name="Shield" size={16} color="$textMutedForeground" />
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                    {t('admin.users.profileModal.roleAndAssignment')}
+                  </Text>
+                </HStack>
+                <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                  <HStack space="lg" justifyContent="space-between">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.role')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const roles =
+                            (editUserState.user as any)?.user_organizations?.[0]?.roles
+                              ?.map((r: any) => r?.role?.label)
+                              .filter(Boolean) || [];
+
+                          const profileRole =
+                            typeof (editUserState.userProfile as any)?.role === 'string'
+                              ? (editUserState.userProfile as any)?.role
+                              : (editUserState.userProfile as any)?.role?.label;
+
+                          return roles[0] || profileRole || editUserState.user?.role || '-';
+                        })()}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                        {t('admin.users.profileModal.dateJoined')}
+                      </Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {editUserState.userProfile?.createdAt ||
+                          editUserState.userProfile?.created_at ||
+                          '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Card>
+              </VStack>
+            </VStack>
+          )}
+
+          {/* Footer (match Profile modal UI) */}
+          <HStack space="md" alignItems="center" justifyContent="flex-end" mt="$4">
+            <Button variant={"outlineghost" as any} onPress={closeEditUserModal}>
+              <ButtonText {...TYPOGRAPHY.bodySmall}>
+                {t('admin.users.profileModal.close') || (t('common.close') || 'Close')}
+              </ButtonText>
+            </Button>
+            <Button variant={"solid" as any} onPress={handleSaveEditUser}>
+              <ButtonText {...TYPOGRAPHY.bodySmall}>
+                {t('admin.users.profileModal.editUser')}
+              </ButtonText>
+            </Button>
+          </HStack>
+        </VStack>
       </Modal>
 
       {/* Hidden File Input for CSV Upload - triggers native file picker on "Upload CSV" click */}
