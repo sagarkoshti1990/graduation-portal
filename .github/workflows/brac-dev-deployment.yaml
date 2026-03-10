@@ -26,14 +26,6 @@ jobs:
         uses: actions/checkout@v4
 
       # =========================
-      # Prepare ENV for Build
-      # =========================
-      - name: Create .env for Docker build
-        run: |
-          echo "${{ secrets.DEV_ENV_BRAC }}" > .env
-          ls -ltra .env
-
-      # =========================
       # AWS Authentication
       # =========================
       - name: Configure AWS credentials
