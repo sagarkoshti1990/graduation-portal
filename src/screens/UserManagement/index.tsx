@@ -249,7 +249,7 @@ const UserManagementScreen = () => {
       showAlert('error', error?.message || t('common.somethingWentWrong'));
       setEditUserState(prev => ({ ...prev, isSubmitting: false }));
     }
-  }, [closeEditUserModal, editUserState.user, editUserState.name, showAlert, t]);
+  }, [closeEditUserModal, editUserState.user, editUserState.name]);
 
   const closeProfileModal = useCallback(() => {
     setIsProfileModalOpen(false);
