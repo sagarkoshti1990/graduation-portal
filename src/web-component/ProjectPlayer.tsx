@@ -143,7 +143,7 @@ const ProjectPlayer: React.FC<Props> = props => {
     (async () => {
       try {
         if (typeof window !== 'undefined' && 'indexedDB' in window) {
-          const saved = await idbGet(STORE_PROJECTS, data.id);
+          const saved = await idbGet<ProjectData>(STORE_PROJECTS, data.id);
           if (saved) setProject(saved);
           else await idbPut(STORE_PROJECTS, data);
         } else {
@@ -230,7 +230,7 @@ const ProjectPlayer: React.FC<Props> = props => {
                   resolveReader();
                 };
                 reader.onerror = () => {
-                  logger.warn('File read failed for:', file.name);
+                  logger.warn('File read failed for:', file.name, reader.error);
                   resolveReader();
                 };
                 reader.readAsDataURL(file);

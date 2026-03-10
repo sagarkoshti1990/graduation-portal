@@ -19,6 +19,7 @@ export type UserRole = 'Admin' | 'Supervisor' | 'LC';
 
 export interface User {
   id: string;
+  userId: string;
   email: string;
   name: string;
   role?: UserRole;

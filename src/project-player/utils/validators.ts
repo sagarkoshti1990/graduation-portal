@@ -2,7 +2,11 @@
 
 export const validators = {
   required: (value: unknown): string | undefined => {
-    if (!value || (typeof value === 'string' && !value.trim())) {
+    if (
+      value === null ||
+      value === undefined ||
+      (typeof value === 'string' && !value.trim())
+    ) {
       return 'This field is required';
     }
     return undefined;

@@ -218,7 +218,8 @@ api.interceptors.response.use(
     // Handle other error status codes
     if (error.response) {
       const status = error.response.status;
-      const data = error.response.data as Record<string, unknown>;
+      const data = (error.response.data as Record<string, unknown> | null) ?? {};
+      const rawMessage = data?.message;
 
       logger.error(
         `API Error: ${status} - ${error.config?.method?.toUpperCase()} ${
@@ -226,13 +227,18 @@ api.interceptors.response.use(
         }`,
         {
           status,
-          message: data?.message || error.message,
+          message:
+            typeof rawMessage === 'string' && rawMessage.trim() !== ''
+              ? rawMessage
+              : error.message,
           data,
         },
       );
 
       const errorMessage =
-        (data?.message as string) ?? `Request failed with status ${status}`;
+        typeof rawMessage === 'string' && rawMessage.trim() !== ''
+          ? rawMessage
+          : `Request failed with status ${status}`;
       return Promise.reject(new Error(errorMessage));
     }
 

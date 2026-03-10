@@ -80,7 +80,7 @@ const DevelopInterventionPlan: React.FC = () => {
             const participantData = {...(userDetails || {}),...rest}
             setParticipant(participantData);
           } catch (err) {
-            logger.log(err);
+            logger.error('Failed to fetch entity details', err);
           }
         }
       };
@@ -105,14 +105,13 @@ const DevelopInterventionPlan: React.FC = () => {
     setIdpCreated(true);
     if (newProjectId) {
       // Extract project ID from the response
-      setProjectId(projectId);
-
+      setProjectId(newProjectId);
 
       const response = await getProjectDetails(newProjectId);
       const project = response?.data;
       // update entity to IN_PROGRESS
       await updateEntityDetails({
-        userId: user?.userId,
+        userId: user?.userId || '',
         entityId: participantId,
         entityUpdates: {
           idpProjectId: newProjectId,

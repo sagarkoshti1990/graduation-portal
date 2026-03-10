@@ -117,7 +117,7 @@ const fetchUser = async (id: string): Promise<User> => {
 
 ## CodeRabbit AI Coverage (87 checkbox checks; 120+ total with Comprehensive Review Checklist)
 
-### Static Analysis (7) - MUST CHECK ALL
+### Static Analysis (5) - MUST CHECK ALL
 - [ ] Linter errors, TypeScript errors (Run ReadLints tool)
 - [ ] **Unused code, dead code** (unused imports, variables, functions)
 - [ ] **Circular dependencies** (check import cycles)
@@ -176,6 +176,14 @@ const fetchUser = async (id: string): Promise<User> => {
 - [ ] **No dependency vulnerabilities** (check package.json for CVEs)
 - [ ] **Secure storage** (no plaintext sensitive data, use encrypted storage)
 - [ ] **No sensitive data in console logs** (PII, tokens, passwords)
+
+### CodeRabbit-style alignment (apply when fixing PR feedback)
+- [ ] **API error message**: Normalize `data.message` before throwing (check `typeof rawMessage === 'string' && rawMessage.trim() !== ''`; fallback to status text).
+- [ ] **Storage fallbacks**: Guard `localStorage` / `process` before use (e.g. `typeof window !== 'undefined' && window.localStorage`, `process?.env?.API_BASE_URL`).
+- [ ] **useEffect deps**: Do not include `error` (or other state set inside the effect) in dependency arrays when it would cause re-run loops.
+- [ ] **Required validators**: Treat only `null`/`undefined`/blank string as empty; allow valid falsy values like `0` and `false`.
+- [ ] **ApiResponse shape**: Service functions that return `ApiResponse<T>` must return `{ data }` on success and matching shape on error (e.g. `handleApiError`).
+- [ ] **Presigned URL / optional lookup**: Fail fast with a clear error if a required value (e.g. presigned URL for a file) is missing before calling `fetch` or similar.
 
 ### Error Handling (7) - MUST CHECK ALL
 - [ ] **Try-catch blocks for async** (all async/await wrapped in try-catch)

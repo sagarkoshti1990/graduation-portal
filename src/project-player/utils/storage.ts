@@ -39,9 +39,9 @@ export const storage = {
       });
     } catch (error) {
       logger.error('Error saving project:', error);
-      // Fallback to localStorage
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(
+      // Fallback to localStorage only if available (avoid masking IndexedDB error)
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.setItem(
           `project_${projectData._id}`,
           JSON.stringify(projectData),
         );
@@ -63,9 +63,12 @@ export const storage = {
       });
     } catch (error) {
       logger.error('Error getting project:', error);
-      // Fallback to localStorage
-      const data = localStorage.getItem(`project_${projectId}`);
-      return data ? JSON.parse(data) : null;
+      // Fallback to localStorage only if available (avoid masking IndexedDB error)
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        const data = window.localStorage.getItem(`project_${projectId}`);
+        return data ? JSON.parse(data) : null;
+      }
+      return null;
     }
   },
 
@@ -83,8 +86,10 @@ export const storage = {
       });
     } catch (error) {
       logger.error('Error deleting project:', error);
-      // Fallback to localStorage
-      localStorage.removeItem(`project_${projectId}`);
+      // Fallback to localStorage only if available (avoid masking IndexedDB error)
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.removeItem(`project_${projectId}`);
+      }
     }
   },
 
@@ -102,7 +107,20 @@ export const storage = {
       });
     } catch (error) {
       logger.error('Error getting all projects:', error);
-      return [];
+      if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+        return [];
+      }
+      return Object.keys(window.localStorage)
+        .filter(key => key.startsWith('project_'))
+        .flatMap(key => {
+          const raw = window.localStorage.getItem(key);
+          if (!raw) return [];
+          try {
+            return [JSON.parse(raw)];
+          } catch {
+            return [];
+          }
+        });
     }
   },
 };

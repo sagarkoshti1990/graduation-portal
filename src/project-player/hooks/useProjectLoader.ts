@@ -126,7 +126,7 @@ export const useProjectLoader = (
     };
 
     loadData();
-  }, [config.mode, data, error, user?.id]);
+  }, [config.mode, data, user?.id]);
 
   return { projectData, isLoading, error };
 };

@@ -36,11 +36,10 @@ const AssignUsersScreen = () => {
  const isSupervisor = useIsSupervisor();
  type AssignTab = 'LC_TO_SUPERVISOR' | 'PARTICIPANT_TO_LC';
 
- // Log logged-in user role
+ // Log logged-in user role (minimal signals only; no full user object in production)
  useEffect(() => {
    logger.log('Logged in user role:', user?.role);
    logger.log('Is Supervisor:', isSupervisor);
-   logger.log('Full user object:', user);
  }, [user, isSupervisor]);
 
  // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR

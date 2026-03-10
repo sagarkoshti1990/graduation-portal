@@ -204,10 +204,10 @@ export const readMultiple = async <T>(
   keys: string[]
 ): Promise<Array<{ key: string; value: T | null }>> => {
   try {
-    const values = await AsyncStorage.multiGet(keys) as [string, string][];
+    const values = await AsyncStorage.multiGet(keys);
     const result = values.map(([key, value]) => ({
       key,
-      value: value ? (JSON.parse(value) as T) : null,
+      value: value != null ? (JSON.parse(value) as T) : null,
     }));
     logger.info(`OfflineStorage: Read ${keys.length} keys`);
     return result;

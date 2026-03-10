@@ -112,7 +112,7 @@ export const updateTask = async (
       requestBody,
     );
 
-    return response.data.result;
+    return { data: response.data.result };
   } catch (error) {
     return handleApiError(error);
   }
@@ -236,13 +236,17 @@ export const uploadFiles = async (
       }
     });
     if (response?.data?.[id]) {
-      const responceData = await Promise.all(files.map(async file => {
+      const responseData = await Promise.all(files.map(async file => {
         const presignedUrl = response.data[id].files.find(
           (f: { file?: string; url?: string }) => f.file === file.name,
         );
-        
+
+        if (!presignedUrl?.url) {
+          throw new Error(`Missing presigned URL for ${file.name}`);
+        }
+
         // Upload file to presigned URL
-        const res = await fetch(presignedUrl?.url, {
+        const res = await fetch(presignedUrl.url, {
           method: 'PUT',
           body: file
         });
@@ -258,12 +262,12 @@ export const uploadFiles = async (
           name: file.name,
           sourcePath: presignedUrl?.payload?.sourcePath,
           type: file?.type,
-          url: presignedUrl?.url ? presignedUrl.url.split('?')[0] : undefined,
-          size:file?.size
+          url: presignedUrl.url.split('?')[0],
+          size: file?.size
         }
       }));
-      
-      return { data: responceData };
+
+      return { data: responseData };
     }
     return { data: [] };
   } catch (error) {

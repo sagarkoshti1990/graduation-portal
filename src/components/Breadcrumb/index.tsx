@@ -1,5 +1,4 @@
 import React from 'react';
-import type { AccessibilityRole } from 'react-native';
 import { HStack, Text, Pressable } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -87,7 +86,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
     <HStack 
       {...breadcrumbStyles.container}
       className={className}
-      accessibilityRole={'navigation' as AccessibilityRole}
+      accessibilityRole="navigation"
       accessibilityLabel="Breadcrumb navigation"
     >
       {/* Back Arrow Button */}

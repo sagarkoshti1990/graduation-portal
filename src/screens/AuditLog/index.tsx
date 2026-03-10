@@ -17,8 +17,8 @@ const AuditLogScreen = () => {
   const columns = getAuditLogColumns();
 
   const handleRowClick = (entry: AuditLogEntry) => {
-    // Handle row click if needed
-    logger.log('Clicked entry:', entry);
+    // Handle row click if needed (logger is dev-only; log non-sensitive id only)
+    logger.log('Clicked entry id:', entry.id);
   };
 
   return(
