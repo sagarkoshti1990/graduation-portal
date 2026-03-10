@@ -32,7 +32,7 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
       page: page.toString(),
       limit: limit.toString(),
       search: search || '',
-      programId: process?.env?.GLOBAL_LC_PROGRAM_ID ?? '',
+      programId: process.env.GLOBAL_LC_PROGRAM_ID || '',
       ...(entityId ? {entityId}:{})
     });
 
