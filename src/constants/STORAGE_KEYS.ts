@@ -23,5 +23,7 @@ export const STORAGE_KEYS = {
   USER_MANAGEMENT_PAGE_SIZE: 'user_management_page_size',
   /** Participants List screen page size preference */
   PARTICIPANTS_PAGE_SIZE: 'participants_page_size',
+  /** Admin sidebar open/collapsed state (true=open, false=collapsed) */
+  ADMIN_SIDEBAR_OPEN: 'admin_sidebar_open',
 } as const;
 
