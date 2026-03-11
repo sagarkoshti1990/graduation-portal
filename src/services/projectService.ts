@@ -3,7 +3,7 @@ import TEMPLATE_CATEGORIES from '@constants/TEMPLATE_CATEGORIES';
 import { TemplateData } from '@app-types/screens';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
-import { pathwaysData } from '@constants/PROJECTDATA';
+// import { pathwaysData } from '@constants/PROJECTDATA';
 
 // TODO: Replace simulated API calls with real backend integration when API endpoints are available
 export const getProjectTemplates = async (): Promise<TemplateData[]> => {

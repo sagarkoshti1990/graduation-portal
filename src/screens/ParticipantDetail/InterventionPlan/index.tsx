@@ -18,6 +18,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   participantProfile,
   onIdpCreation,
   onProgressChange,
+  getProjectData,
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
@@ -59,7 +60,6 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
   // Handle successful IDP creation
   const handleIdpCreationSuccess = useCallback((newProjectId: string) => {
-    console.log('newProject', newProjectId);
     if (newProjectId) {
       setProjectId(newProjectId);
     }
@@ -184,6 +184,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
           data={projectPlayerData}
           onTaskUpdate={handleTaskUpdate}
           onProgressChange={onProgressChange}
+          getProjectData={getProjectData}
         />
       </Box>
     );
@@ -197,6 +198,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         data={projectPlayerData}
         onTaskUpdate={handleTaskUpdate}
         onProgressChange={onProgressChange}
+        getProjectData={getProjectData}
       />
     </Box>
   );

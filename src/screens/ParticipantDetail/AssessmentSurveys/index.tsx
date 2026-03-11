@@ -12,10 +12,12 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { ENTITY_TYPE } from '@constants/ROLES';
-import { CARD_STATUS, ENTITY_STATUS, STATUS } from '@constants/app.constant';
+import { ENTITY_STATUS, STATUS } from '@constants/app.constant';
+import { ProjectData } from 'src/project-player/types/project.types';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
+  projectData?: ProjectData | null;
 }
 
 /**
@@ -24,6 +26,7 @@ interface AssessmentSurveysProps {
  */
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   participant,
+  projectData,
 }) => {
   const { t } = useLanguage();
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
@@ -103,6 +106,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               key={card.id}
               card={card}
               userId={participant?.userId || ''}
+              certificate={projectData.certificate}
             />
           ))
         ) : (

@@ -43,6 +43,7 @@ import {
 import { PARTICIPANT_DETAILS_TABS, STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
+import { ProjectData } from 'src/project-player/types/project.types';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -92,7 +93,7 @@ export default function ParticipantDetail() {
   const [configData, setConfigData] = useState<any>(null);
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
-
+  const [projectData, setProjectData] = useState<ProjectData | null>(null);
   // Set document title with participant name
   const pageTitle = participant?.name 
     ? `${participant.name} - ${t('admin.pageTitle.participant-detail')}`
@@ -107,12 +108,11 @@ export default function ParticipantDetail() {
         const { userDetails, ...rest } = response?.result?.data?.[0]
         const participantData = { ...(userDetails || {}), ...rest }
 
-
         if(participantData?.status === STATUS.COMPLETED){
          // Verify participant completion conditions and perform certificate/graduation actions
           await verifyParticipantCompletionActions({
             participantData,
-            userId: user?.id,
+            userId: user?.id
           });
         }
         
@@ -142,11 +142,24 @@ export default function ParticipantDetail() {
       fetchEntityDetails();
     }, [fetchEntityDetails])
   );
-
   // Cleanup navbar data on component unmount
   useEffect(() => {
     return () => {
       setNavbarData(null);
+      setParticipant(undefined);
+      setStatus("");
+      setIdpCreated(false);
+      setEditedAddress({
+        street: '',
+        province: '',
+        site: '',
+      });
+      setAreAllTasksCompleted(false);
+      setUpdatedProgress(undefined);
+      setHasProgressBaseline(false);
+      setConfigData(null);
+      setProjectPlayerConfigData(null);
+      setIsLoading(true);
     };
   }, [setNavbarData]);
   
@@ -282,6 +295,7 @@ export default function ParticipantDetail() {
         onStatusUpdate={newStatus => {
           setStatus(newStatus);
         }}
+        projectData={projectData}
       />
       
       <Container px="$4" py="$6" $md-px="$6">
@@ -337,6 +351,7 @@ export default function ParticipantDetail() {
                         participantProfile={participant}
                         onIdpCreation={handleIdpCreated}
                         onProgressChange={handleProgressChange}
+                        getProjectData={setProjectData}
                       />
                     )}
                   {activeTab ===
@@ -344,6 +359,7 @@ export default function ParticipantDetail() {
                       <Box mt="$6">
                         <AssessmentSurveys
                           participant={participant as ParticipantData}
+                          projectData={projectData}
                         />
                       </Box>
                     )}

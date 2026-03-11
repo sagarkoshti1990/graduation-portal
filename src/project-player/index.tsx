@@ -69,12 +69,19 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
   onTaskUpdate,
   onTaskCompletionChange,
   onProgressChange,
+  getProjectData,
 }) => {
   const {
     projectData: loadedProject,
     isLoading,
     error,
   } = useProjectLoader(config, data ?? {});
+
+  useEffect(() => {
+    if (getProjectData && loadedProject) {
+      getProjectData(loadedProject);
+    }
+  }, [getProjectData, loadedProject]);
 
   if (isLoading) {
     return (
@@ -91,7 +98,6 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
       </Box>
     );
   }
-
   return (
     <ProjectProvider
       config={config}

@@ -213,6 +213,7 @@ export const theme = {
               _text: {
                 color: "$textForeground !important",
                 fontWeight: "$medium !important",
+                fontSize: "$sm !important",
               },
               _icon: {
                 color: "$textForeground !important",
@@ -226,6 +227,7 @@ export const theme = {
               _text: {
                 fontWeight: "$medium !important",
                 color: "$white !important",
+                fontSize: "$sm !important",
               },
               _icon: {
                 color: "$white !important",

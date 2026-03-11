@@ -1,4 +1,4 @@
-import type { ParticipantData, ParticipantSearchParams, ParticipantSearchResponse, Site } from '@app-types/participant';
+import type { ParticipantSearchParams, ParticipantSearchResponse, Site } from '@app-types/participant';
 import { PARTICIPANTS_DATA, PROVINCES, SITES } from '@constants/PARTICIPANTS_LIST';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
@@ -8,7 +8,7 @@ import { User } from '@contexts/AuthContext';
 import { getTargetedSolutions, getObservationEntities } from './solutionService';
 import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD, FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
-import { STATUS,ENTITY_STATUS } from '@constants/app.constant';
+import { STATUS,ENTITY_STATUS, PROJECT_STATUS } from '@constants/app.constant';
 /**
  * Get participants list for table view
  * Searches users by user IDs and returns the search response
@@ -239,29 +239,18 @@ export const createOrUpdateProgramUserMapping = async ({
 
 /**
  * Generate certificate for participant (Mock API)
- * @param participantId - Participant entity ID
+ * @param projectId - Project ID
  * @returns Certificate generation response
  */
-export const generateCertificate = async (participantId: string): Promise<any> => {
-  try {
-    // Mock API call - Replace with actual API when available
-    console.log('Mock: Generating certificate for participant:', participantId);
-    
-    // Simulate API call
-    const response = await api.post(API_ENDPOINTS.GENERATE_CERTIFICATE, {
-      participantId,
-      programId: process.env.GLOBAL_LC_PROGRAM_ID,
+export const generateCertificate = async (projectId: string): Promise<any> => {
+  try {  
+    const response = await api.post(API_ENDPOINTS.GENERATE_CERTIFICATE(projectId), {
+      status: PROJECT_STATUS.SUBMITTED,
     });
     
-    return response.data;
+    return response.data; 
   } catch (error) {
-    console.error('Error generating certificate:', error);
-    // Mock success response for now
-    return {
-      success: true,
-      certificateId: `CERT-${participantId}-${Date.now()}`,
-      message: 'Certificate generated successfully (Mock)',
-    };
+    throw error
   }
 };
 
@@ -303,32 +292,23 @@ const checkSolutionByKeyword = (solutionData: any, keyword: string): boolean => 
  */
 export const verifyParticipantCompletionActions = async ({
   participantData,
-  userId,
+  userId
 }: {
   participantData: any;
   userId: string;
 }): Promise<void> => {
   try {
     const participantStatus = participantData?.status;
-    const certificateId = participantData?.certificateId;
     const participantId = participantData?.id;
     const entityId = participantData?.entityId;
-
+    const idpProjectId = participantData?.idpProjectId;
+    const projectStatus = participantData?.idpProgress.projectStatus;
+    
     // Check if conditions are met: status is COMPLETED or certificate already exists
-    if (participantStatus !== STATUS.COMPLETED && !certificateId) {
-      logger.info('Participant completion actions skipped - conditions not met', {
-        participantId,
-        status: participantStatus,
-        hasCertificate: !!certificateId,
-      });
+    if (participantStatus !== STATUS.COMPLETED) {
+      logger.info('Participant completion actions skipped - conditions not met');
       return;
     }
-
-    logger.info('Starting participant completion verification', {
-      participantId,
-      status: participantStatus,
-      certificateId,
-    });
 
     // 1. Fetch targeted solutions with certificate and ENDLINE keywords
     const combinedKeywords = FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',');
@@ -381,10 +361,9 @@ export const verifyParticipantCompletionActions = async ({
     
     if (certificateSolution) {
       const isCertificateCompleted = certificateSolution.entity?.status === ENTITY_STATUS.COMPLETED;
-      console.log('isCertificateCompleted', isCertificateCompleted,certificateId,isCertificateCompleted,isCertificateCompleted && !certificateId);
-      if (isCertificateCompleted && !certificateId) {
+      if (isCertificateCompleted && projectStatus === PROJECT_STATUS.COMPLETED) {
         try {
-          const certificateResult = await generateCertificate(entityId);
+          const certificateResult = await generateCertificate(idpProjectId);
           logger.info('Certificate generated successfully', {
             participantId,
             certificateResult,
@@ -395,21 +374,13 @@ export const verifyParticipantCompletionActions = async ({
             error,
           });
         }
-      } else if (certificateId) {
-        logger.info('Certificate already exists, skipping generation', {
-          participantId,
-          certificateId,
-        });
+      } else if (projectStatus === PROJECT_STATUS.SUBMITTED) {
+        logger.info('Project is already submitted, skipping certificate generation');
       } else {
-        logger.info('Certificate solution not yet completed', {
-          participantId,
-          entityStatus: certificateSolution.entity?.status,
-        });
+        logger.info('Project is not completed, skipping certificate generation');
       }
     } else {
-      logger.warn('Certificate solution not found in targeted solutions', {
-        participantId,
-      });
+      logger.warn('Certificate solution not found in targeted solutions, skipping certificate generation');
     }
 
     // 4. Process ENDLINE solution

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { Linking, Platform, Image } from 'react-native';
 import {
   HStack,
   VStack,
@@ -13,11 +14,12 @@ import {
   useAlert,
   ButtonIcon,
   Container,
+  Modal,
 } from '@ui';
 import { participantHeaderStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import ParticipantProgressCard from './ParticipantProgressCard';
-import { STATUS, TASK_STATUS } from '@constants/app.constant';
+import { STATUS, TASK_STATUS, PROJECT_STATUS } from '@constants/app.constant';
 import { updateEntityDetails } from '../../../services/participantService';
 import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
@@ -34,7 +36,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   onViewProfile,
   areAllTasksCompleted = false,
   onStatusUpdate,
-  updatedProgress
+  updatedProgress,
+  projectData
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
@@ -45,6 +48,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
   const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const showSuccess = (message: string) => {
     showSuccessToast(toast, message);
   };
@@ -131,6 +135,20 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     navigation.push('log-visit', { id: participantId });
   };
 
+  const handleCertificateDownload = () => {
+    const pdfUrl = (projectData as any)?.certificate?.pdfUrl;
+    if (!pdfUrl) return;
+    if (Platform.OS === 'web') {
+      window.open(pdfUrl, '_blank');
+    } else {
+      Linking.openURL(pdfUrl);
+    }
+  };
+
+  const openCertificateModal = () => {
+    setIsCertificateModalOpen(true);
+  };
+
   const renderStatusBadge = () => {
     if (status === STATUS.DROPOUT) {
       return (
@@ -197,6 +215,83 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   };
 
   /**
+   * Render Certificate View Button
+   * Shows when projectData status is submitted and certificate (svgUrl or pdfUrl) exists
+   */
+  const renderCertificateDownloadButton = () => {
+    const isSubmitted = projectData?.status === PROJECT_STATUS.SUBMITTED;
+    const certificate = (projectData as any)?.certificate;
+    const svgUrl = certificate?.svgUrl;
+    const pdfUrl = certificate?.pdfUrl;
+    if (!isSubmitted || (!svgUrl && !pdfUrl)) return null;
+    return (
+      <Button variant="solid" size="sm" onPress={openCertificateModal}>
+        <ButtonIcon as={LucideIcon} name="FileCheck" size={16} />
+        <ButtonText {...participantHeaderStyles.outlineButtonText}>
+          {t('participantDetail.header.viewCertificate')}
+        </ButtonText>
+      </Button>
+    );
+  };
+
+  /**
+   * Certificate preview modal: shows SVG preview and Download button
+   */
+  const renderCertificateModal = () => {
+    const certificate = (projectData as any)?.certificate;
+    const svgUrl = certificate?.svgUrl;
+    const pdfUrl = certificate?.pdfUrl;
+    if (!certificate) return null;
+    const certificatePreviewStyle = { maxWidth: '100%', height: 'auto', objectFit: 'contain' as const };
+    const certificateImageStyle = { width: '100%' as const, aspectRatio: 1.4 };
+    return (
+      <Modal
+        isOpen={isCertificateModalOpen}
+        onClose={() => setIsCertificateModalOpen(false)}
+        headerTitle={t('participantDetail.header.viewCertificate')}
+        size="lg"
+        footerContent={
+          <HStack space="md" width="$full" justifyContent="flex-end">
+            <Button variant="outlineghost" onPress={() => setIsCertificateModalOpen(false)}>
+              <ButtonText>{t('common.cancel')}</ButtonText>
+            </Button>
+            <Button variant="solid" onPress={handleCertificateDownload}>
+              <ButtonIcon as={LucideIcon} name="Download" size={16} />
+              <ButtonText>{t('participantDetail.header.downloadCertificate')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <VStack space="md" width="$full">
+          {svgUrl ? (
+            <Box width="$full" maxHeight={500} alignItems="center" justifyContent="center">
+              {Platform.OS === 'web' ? (
+                <img
+                  src={svgUrl}
+                  alt={t('participantDetail.header.viewCertificate')}
+                  style={certificatePreviewStyle}
+                />
+              ) : (
+                <Image
+                  source={{ uri: svgUrl }}
+                  style={certificateImageStyle}
+                  resizeMode="contain"
+                />
+              )}
+            </Box>
+          ) : (
+            <Text color="$textMutedForeground">
+              {pdfUrl
+                ? t('participantDetail.header.downloadCertificate')
+                : t('participantDetail.header.viewCertificate')}
+            </Text>
+          )}
+        </VStack>
+      </Modal>
+    );
+  };
+
+  /**
    * Render Action Buttons
    * Displays action buttons based on participant status
    *
@@ -204,9 +299,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderActionButtons = () => {
     const secondButton = renderSecondButton();
+    const certificateButton = renderCertificateDownloadButton();
 
-    // If there's a second button, wrap both in HStack
-    if (secondButton) {
+    // If there's a second button or certificate button, wrap in HStack
+    if (secondButton || certificateButton) {
       return (
         <HStack
           {...participantHeaderStyles.actionButtonsContainer}
@@ -215,6 +311,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         >
           {renderViewProfileButton()}
           {secondButton}
+          {certificateButton}
         </HStack>
       );
     }
@@ -300,6 +397,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           />
         </Container>
       </Box>
+      {renderCertificateModal()}
     </>
   );
 };

@@ -25,7 +25,6 @@ import {
   TASK_STATUS,
   TASK_TYPE,
   PROJECT_MODES,
-  BADGE_TYPES,
 } from '../../../constants/app.constant';
 import { TaskCardProps } from '../../types/components.types';
 import { Task } from '../../types/project.types';
@@ -41,6 +40,7 @@ import { renderCustomTaskActions, renderModals } from './renderHelpers';
 import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { getSolutionDetails } from '../../services/projectPlayerService';
+import logger from '@utils/logger';
 
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
@@ -388,7 +388,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     // Task badge rendering (Evidence Required / Optional)
     // In Edit mode, hide Optional badges - only show 'required' type badges
-    const isEditModeForBadge = isEdit && !isPreview;
+    // const isEditModeForBadge = isEdit && !isPreview;
     // In preview mode, show badge for deletable tasks even if metaInformation is not set
     const shouldShowBadge =
       (isPreview && task?.isDeletable);
@@ -484,7 +484,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     ) : null;
 
     // In Edit mode only (non-preview), hide description
-    const showDescription = !isEditModeOnly || !uiConfig.showAsCard;
+    // const showDescription = !isEditModeOnly || !uiConfig.showAsCard;
 
     // Wrap content in Pressable for Observation tasks in Edit mode to allow opening the form by clicking the text
     const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -762,7 +762,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       participantName={!isChildOfProject ? config.profileInfo?.name : undefined}
       existingAttachments={task?.attachments}
       onUpload={method => {
-        console.log('Upload method selected:', method);
+        logger.info('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
         setIsStatusUpdating(true);
