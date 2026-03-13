@@ -1279,9 +1279,10 @@
         "fullName": "Full Name",
         "phoneNumber": "Phone Number",
         "idNumber": "ID Number",
+        "districtMunicipality": "District/Municipality",
         "dateJoined": "Date Joined",
         "close": "Close",
-        "editUser": "Edit User",
+        "editUser": "Save",
         "defaultRole": "Admin",
         "activityComingSoonDescription": "Activity tab will be available soon.",
         "permissionsComingSoonDescription": "Permissions tab will be available soon."
@@ -1309,6 +1310,11 @@
         "submit": "Reset Password",
         "success": "Password reset successfully",
         "error": "Failed to reset password"
+      },
+      "edit": {
+        "nameRequired": "Name is required",
+        "success": "User Updated Successfully.",
+        "error": "Failed to update user"
       },
       "deactivate": {
         "success": "User deactivated successfully"

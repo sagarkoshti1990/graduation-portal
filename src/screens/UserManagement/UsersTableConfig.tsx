@@ -149,14 +149,14 @@ const getUserMenuItems = (
       iconColor: theme.tokens.colors.textForeground,
       iconSizeValue: 20,
     },
-    // {
-    //   key: 'edit',
-    //   label: 'admin.users.actionMenu.edit',
-    //   textValue: 'Edit',
-    //   iconName: 'Pencil',
-    //   iconColor: theme.tokens.colors.textForeground,
-    //   iconSizeValue: 20,
-    // },
+    {
+      key: 'edit',
+      label: 'admin.users.actionMenu.edit',
+      textValue: 'Edit',
+      iconName: 'Pencil',
+      iconColor: theme.tokens.colors.textForeground,
+      iconSizeValue: 20,
+    },
     // {
     //   key: 'reset-password',
     //   label: 'admin.users.actionMenu.resetPassword',
@@ -188,9 +188,10 @@ const getUserMenuItems = (
 const ActionsColumn: React.FC<{
   user: AdminUserManagementData;
   onViewProfile?: (user: AdminUserManagementData) => void;
+  onEdit?: (user: AdminUserManagementData) => void;
   onResetPassword?: (user: AdminUserManagementData) => void;
   onDeactivate?: (user: AdminUserManagementData) => void;
-}> = ({ user, onViewProfile, onResetPassword, onDeactivate }) => {
+}> = ({ user, onViewProfile, onEdit, onResetPassword, onDeactivate }) => {
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'Admin';
@@ -232,8 +233,7 @@ const ActionsColumn: React.FC<{
         onViewProfile?.(user);
         break;
       case 'edit':
-        console.log('Edit user:', user.id);
-        // TODO: Open edit modal or navigate to edit page
+        onEdit?.(user);
         break;
       case 'reset-password':
         // Prevent event propagation to avoid triggering other elements
@@ -267,6 +267,7 @@ const ActionsColumn: React.FC<{
  */
 export const getUsersColumns = (handlers?: {
   onViewProfile?: (user: AdminUserManagementData) => void;
+  onEdit?: (user: AdminUserManagementData) => void;
   onResetPassword?: (user: AdminUserManagementData) => void;
   onDeactivate?: (user: AdminUserManagementData) => void;
 }): ColumnDef<AdminUserManagementData>[] => [
@@ -417,6 +418,7 @@ export const getUsersColumns = (handlers?: {
       <ActionsColumn 
         user={user} 
         onViewProfile={handlers?.onViewProfile}
+        onEdit={handlers?.onEdit}
         onResetPassword={handlers?.onResetPassword}
         onDeactivate={handlers?.onDeactivate}
       />

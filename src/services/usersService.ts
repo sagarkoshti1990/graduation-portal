@@ -449,3 +449,23 @@ export const deactivateUser = async (ids: Array<string | number>): Promise<any> 
     throw error;
   }
 };
+
+/**
+ * Update user (Org Admin)
+ *
+ * API: POST /api/user/v1/org-admin/updateUser/:id
+ * Body: { "name": "New Name", ... }
+ */
+export const updateOrgAdminUser = async (
+  userId: string | number,
+  payload: { name?: string }
+): Promise<any> => {
+  try {
+    const idStr = String(userId);
+    const endpoint = `${API_ENDPOINTS.ORG_ADMIN_UPDATE_USER}/${idStr}`;
+    const response = await api.post(endpoint, payload);
+    return response.data?.result ?? response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
