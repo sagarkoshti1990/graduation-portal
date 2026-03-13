@@ -181,7 +181,6 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           showAlert('error', t('logVisit.multipleAssessemtsNotAllowed'));
           return;
         }
-        console.log('observationData', observationData);
         const observationId = observationData?.result?._id;
         if (observationId) {
           const newData = observationData?.result?.entities?.find(
@@ -403,14 +402,18 @@ const buildDefaultValuesFromObservation = (
           for (const pageQuestion of question.pageQuestions) {
             // pageQuestion.question is an array of strings, key is a string. Compare lowercase.
             const keyFound = userDataKeys.find(key => 
-              pageQuestion.question
-                .map((q: string) => (typeof q === 'string' ? q.toLowerCase() : ''))
-                .some(
-                  (qString: string) =>
-                    (typeof key === 'string' && typeof qString === 'string'
-                      ? key.toLowerCase() === qString.toLowerCase()
-                      : false)
-                )
+              Array.isArray(pageQuestion?.question)
+                ? pageQuestion.question
+                    .map((q: string) => (typeof q === 'string' ? q?.toLowerCase() : ''))
+                    .some(
+                      (qString: string) =>
+                        (typeof key === 'string' && typeof qString === 'string'
+                          ? key.toLowerCase() === qString.toLowerCase()
+                          : false)
+                    )
+                : (() => { 
+                    throw new Error("pageQuestion.question is not an array"); 
+                  })()
             );
             if (keyFound !== undefined) {
               defaultValues[pageQuestion._id] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };

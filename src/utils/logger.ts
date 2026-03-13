@@ -14,15 +14,13 @@ declare const __DEV__: boolean;
  * - Defined by webpack.DefinePlugin for web builds
  * - Falls back to NODE_ENV check if not available
  */
-const isDev = (): boolean => {
+export const isDev = (): boolean => {
   try {
     // @ts-expect-error - __DEV__ is a compile-time constant replaced by bundlers
-    return typeof __DEV__ !== 'undefined' ? __DEV__ : false;
-  } catch {
-    // Fallback to NODE_ENV check if __DEV__ is not available
-    return (
-      typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'
-    );
+    return process.env.ENVIRONMENT !== 'production'
+  } catch (error) {
+    console.log('error', error);
+    return false;
   }
 };
 

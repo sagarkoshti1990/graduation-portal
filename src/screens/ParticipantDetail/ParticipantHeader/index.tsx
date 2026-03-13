@@ -9,8 +9,6 @@ import {
   Button,
   ButtonText,
   LucideIcon,
-  showSuccessToast,
-  useToast,
   useAlert,
   ButtonIcon,
   Container,
@@ -43,14 +41,15 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const { t } = useLanguage();
   const { user } = useAuth()
   const { isWeb, isMobile } = usePlatform();
-  const toast = useToast();
   const { showAlert } = useAlert();
 
   const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const showSuccess = (message: string) => {
-    showSuccessToast(toast, message);
+    showAlert('error',message,{
+      duration: 100000,
+    });
   };
 
   // Update status when participant prop changes
