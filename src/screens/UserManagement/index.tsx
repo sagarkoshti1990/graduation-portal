@@ -462,7 +462,24 @@ const UserManagementScreen = () => {
 
   // Handle filter changes
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
-    setFilters(newFilters);
+    setFilters((prev) => {
+      const prevProvince = prev?.province;
+      const nextProvince = newFilters?.province;
+
+      // Province -> Site is a dependent relationship.
+      // If province changes (or is cleared), the previously selected site may become invalid
+      // and would incorrectly keep returning "no users found".
+      const provinceChanged = prevProvince !== nextProvince;
+      const provinceCleared = !nextProvince || nextProvince === 'all-provinces';
+
+      if (provinceChanged || provinceCleared) {
+        const next = { ...newFilters };
+        delete next.site;
+        return next;
+      }
+
+      return newFilters;
+    });
     setCurrentPage(1); // Reset to first page when filters change
   }, []);
 
