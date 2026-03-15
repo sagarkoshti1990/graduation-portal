@@ -37,7 +37,7 @@ export const LOG_VISIT_CARDS: AssessmentSurveyCardData[] = [
 
 export const CERTIFICATE_KEYWORD = "CERTIFICATE";
 export const ENDLINE_KEYWORD = "ENDLINE";
-export const LOG_VISIT_KEYWORD = "LOG_VISIT";
+export const LOG_VISIT_KEYWORD = "CHECK_INS";
 export const GROUP_CHECK_IN_KEYWORD = "GROUP_CHECK_IN";
 export const PARTICIPANT_LOG_VISIT_KEYWORD = "LOG_VISIT";
 export const ASSESSMENT_SURVEYS_KEYWORD = "ASSESSMENT_SURVEY";

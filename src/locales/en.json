@@ -1900,7 +1900,8 @@
       "observationIdNotFound": "Observation ID not found",
       "entityIdNotFound": "Entity ID not found for participant",
       "userNotFound": "User not found"
-    }
+    },
+    "submissionDate": "Form Submitted"
   },
   "lcProfile": {
     "myProfile": "My Profile",
