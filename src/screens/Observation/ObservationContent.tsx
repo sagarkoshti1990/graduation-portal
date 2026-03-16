@@ -316,6 +316,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
       showToast: false,
+      saveProgressStorageType: "server",
        dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
           status:STATUS
