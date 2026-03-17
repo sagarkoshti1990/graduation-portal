@@ -1,6 +1,7 @@
 import { User } from '@contexts/AuthContext';
 import { STATUS } from '../constants/app.constant';
 import { ParticipantStatus, PathwayType } from './participant';
+import { ProjectData } from 'src/project-player/types/project.types';
 export type StatusType = (typeof STATUS)[keyof typeof STATUS];
 export interface Participant {
   userId: string;
@@ -54,6 +55,7 @@ export interface InterventionPlanProps {
     participantProfile?:any;
     onIdpCreation?: (projectId?: string) => void;
     onProgressChange?: (progress: number) => void;
+    getProjectData?: (projectData: ProjectData) => void;
 }
 
 export interface TemplateData {
@@ -81,6 +83,7 @@ export interface ParticipantHeaderProps {
   onViewProfile?: () => void;
   areAllTasksCompleted?: boolean;
   onStatusUpdate?: (newStatus: string) => void;
+  projectData?: ProjectData | null;
 }
 
 export type SubCategory = {

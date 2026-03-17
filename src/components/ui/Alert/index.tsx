@@ -13,6 +13,7 @@ import { LucideIcon } from '@ui';
 import { theme } from '@config/theme';
 import type { AlertOptions } from '@app-types/components';
 import { useLanguage } from '@contexts/LanguageContext';
+import { isDev } from '@utils/logger';
 
 /*
   Example usage:
@@ -55,6 +56,7 @@ const ToastContent = ({
   variant, 
   icon, 
   description, 
+  subDescription,
   duration,
   onClose 
 }: {
@@ -63,6 +65,7 @@ const ToastContent = ({
   variant: 'outline' | 'solid' | 'accent';
   icon: { name: string; color: string };
   description: string;
+  subDescription: string;
   duration: number;
   onClose: () => void;
 }) => {
@@ -97,6 +100,9 @@ const ToastContent = ({
               <LucideIcon name={icon.name} size={16} color={icon.color} />
               <VStack space="xs" flex={1}>
                 <ToastDescription>{t(description)}</ToastDescription>
+                {subDescription && (
+                  <ToastDescription color="$textLight500" fontSize={10} lineHeight={10}>{t(subDescription)}</ToastDescription>
+                )}
               </VStack>
             </HStack>
             {/* Close button */}
@@ -133,6 +139,7 @@ const ToastContent = ({
 
 export const useAlert = () => {
   const toast = useToast();
+  const { t } = useLanguage();
 
   const showAlert = (
     action: 'error' | 'warning' | 'success' | 'info' | 'attention',
@@ -149,7 +156,7 @@ export const useAlert = () => {
 
     // Convert placement format if needed (Gluestack UI uses spaces, not hyphens)
     const gluestackPlacement = placement.replace('-', ' ') as any;
-    
+
     const toastId = toast.show({
       placement: gluestackPlacement,
       duration,
@@ -160,7 +167,8 @@ export const useAlert = () => {
             action={action}
             variant={variant as 'outline' | 'solid' | 'accent'}
             icon={icon}
-            description={description}
+            description={isDev() || action !== 'error' ? description : t('common.serverError500')}
+            subDescription={isDev() || action !== 'error' ? '' : description}
             duration={duration}
             onClose={() => toast.close(id)}
           />

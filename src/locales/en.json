@@ -1729,6 +1729,8 @@
       "viewProfile": "View Profile",
       "enrollParticipant": "Enroll Participant",
       "logVisit": "Individual Check-Ins",
+      "downloadCertificate": "Download Certificate",
+      "viewCertificate": "View Certificate",
       "checkInsHistory": "Check-ins History",
       "checkInsHistoryDescription": "Past forms and surveys for {{name}}",
       "droppedOut": "Dropped Out",
@@ -1864,7 +1866,8 @@
     "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
     "dropoutSuccess": "Participant marked as dropout",
     "dropoutError": "Failed to mark participant as dropout",
-    "observationLogs": "Observation Logs"
+    "observationLogs": "Observation Logs",
+    "viewAndDownloadCertificate": "View & Download Certificate"
   },
   "logVisit": {
     "noSolutions": "No solutions found",
@@ -1897,7 +1900,8 @@
       "observationIdNotFound": "Observation ID not found",
       "entityIdNotFound": "Entity ID not found for participant",
       "userNotFound": "User not found"
-    }
+    },
+    "submissionDate": "Form Submitted"
   },
   "lcProfile": {
     "myProfile": "My Profile",

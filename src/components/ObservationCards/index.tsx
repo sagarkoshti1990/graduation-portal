@@ -17,7 +17,7 @@ import { LucideIcon } from '@ui';
 import { assessmentSurveyCardStyles } from './Styles';
 import { CARD_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
-import { ICONS } from '@constants/LOG_VISIT_CARDS';
+import { CERTIFICATE_KEYWORD, ICONS } from '@constants/LOG_VISIT_CARDS';
 
 interface IconMeta {
   icon: string;
@@ -32,6 +32,7 @@ interface IconMeta {
 export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   card,
   userId,
+  certificate,
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
@@ -44,7 +45,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
       ICONS?.[card?.name?.toLowerCase() as keyof typeof ICONS];
     setIconMeta(iconMeta as IconMeta);
   }, [card]);
-
+  
   return (
     <Card
       {...assessmentSurveyCardStyles.cardContainer}
@@ -110,42 +111,64 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
             <Text {...assessmentSurveyCardStyles.additionalInfo}>
               {t(description)}
             </Text>
-
-            {/* Action Button */}
-            {entity?.status && (
-              <Button
-                $md-width="fit-content"
-                // @ts-ignore
-                variant={entity?.status === CARD_STATUS.COMPLETED ? "outlineghost" : "solid"}
-                onPress={() => {
-                  if (navigationUrl && userId) {
-                    // @ts-ignore
-                    navigation.navigate(navigationUrl as never, {
-                      id: userId || '',
-                      solutionId: card?.solutionId || card?.id,
-                      submissionNumber: entity?.submissionsCount,
-                    });
-                  } else {
-                    logger.log('userId is required');
-                  }
-                }}
-              >
-                <ButtonIcon
-                  as={LucideIcon}
-                  name="FileText"
-                  size={16}
-
-                />
-                <ButtonText
-                  {...assessmentSurveyCardStyles.buttonText}
-
+            <HStack space="sm" alignItems="center">
+              {/* Action Button */}
+              {entity?.status && (
+                <Button
+                  $md-width="fit-content"
+                  // @ts-ignore
+                  variant={entity?.status === CARD_STATUS.COMPLETED ? "outlineghost" : "solid"}
+                  onPress={() => {
+                    if (navigationUrl && userId) {
+                      // @ts-ignore
+                      navigation.navigate(navigationUrl as never, {
+                        id: userId || '',
+                        solutionId: card?.solutionId || card?.id,
+                        submissionNumber: entity?.submissionsCount,
+                      });
+                    } else {
+                      logger.log('userId is required');
+                    }
+                  }}
                 >
-                  {entity?.status === CARD_STATUS.COMPLETED
-                    ? `${t('actions.view')} ${t(card?.name)}`
-                    : `${t('actions.fill')} ${t(card?.name)}`}
-                </ButtonText>
-              </Button>
-            )}
+                  <ButtonIcon
+                    as={LucideIcon}
+                    name="FileText"
+                    size={16}
+
+                  />
+                  <ButtonText
+                    {...assessmentSurveyCardStyles.buttonText}
+
+                  >
+                    {entity?.status === CARD_STATUS.COMPLETED
+                      ? `${t('actions.view')} ${t(card?.name)}`
+                      : `${t('actions.fill')} ${t(card?.name)}`}
+                  </ButtonText>
+                </Button>
+              )}
+              {certificate && card?.keywords?.includes(CERTIFICATE_KEYWORD) && (
+                  <Button
+                    $md-width="fit-content"
+                    // @ts-ignore
+                    variant={"solid"}
+                    $display="none"
+                  >
+                    <ButtonIcon
+                      as={LucideIcon}
+                      name="Certificate"
+                      size={16}
+
+                    />
+                    <ButtonText
+                      {...assessmentSurveyCardStyles.buttonText}
+
+                    >
+                      {t('actions.viewAndDownloadCertificate')}
+                    </ButtonText>
+                  </Button>
+                )}
+                </HStack>
           </VStack>
         )}
       </VStack>

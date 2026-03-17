@@ -130,6 +130,7 @@ export interface ModalProps extends Omit<ComponentProps<typeof GluestackModalTyp
   headerIcon?: ReactNode; // Icon section (can be any ReactNode)
   showCloseButton?: boolean; // Default: true
   headerAlignment?: 'center' | 'flex-start' | 'flex-end' | 'baseline'; // Alignment for header items
+  headerRightContent?: ReactNode; // Right content for header (can be any ReactNode)
   // Body props - This is the only part that changes per requirement
   children: ReactNode; // Flexible body content
   // Footer props - Either use footerContent (custom) or button texts (simple buttons)

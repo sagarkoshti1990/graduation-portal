@@ -17,6 +17,8 @@ export interface TargetedSolutionsParams {
   limit?: number;
   search?: string;
   showReferenceFrom?: boolean;
+  'filter[keywords]'?: string;
+  [key: string]: any; // Allow additional dynamic parameters
 }
 
 /**

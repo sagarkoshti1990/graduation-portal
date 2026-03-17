@@ -330,7 +330,10 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
                             )}
                           </HStack>
                           {/* Card Description */}
-                          <HStack>
+                          <HStack alignItems="center" space="xs" >
+                            <Text {...assessmentSurveyCardStyles.description}>
+                              {t('logVisit.submissionDate')} :
+                            </Text>
                             {submission.submissionDate && (
                               <HStack alignItems="center" space="xs">
                                 <LucideIcon

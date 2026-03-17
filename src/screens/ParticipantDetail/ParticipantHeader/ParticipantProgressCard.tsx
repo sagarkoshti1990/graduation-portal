@@ -2,7 +2,6 @@ import React from 'react';
 import { VStack, HStack, Text, Box, Progress, ProgressFilledTrack } from '@ui';
 import { participantHeaderStyles, getStatusCard } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
-import type { ParticipantStatus } from '@app-types/participant';
 import { LucideIcon } from '@ui';
 import { theme } from '@config/theme';
 import { STATUS } from '@constants/app.constant';

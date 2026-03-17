@@ -164,6 +164,7 @@ const ProjectComponent: React.FC = () => {
         userId,
         entityId: config.profileInfo?.entityId || userId, // Fallback to userId if entityId not available
         projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
+        baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
       };
 
       // Call API to submit intervention plan
