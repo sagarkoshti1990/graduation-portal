@@ -48,6 +48,14 @@ export const commonModalContentStyles = {
   ...commonModalWebStyles,
 } as const;
 
+export const commonModalCloseButtonStyles = {
+  style: {
+    top: '1rem' as const,
+    right: '1rem' as const,
+    position: 'absolute' as const,
+  },
+} as const;
+
 /**
  * Profile Variant Styles for Modal
  * Styles specific to profile variant display

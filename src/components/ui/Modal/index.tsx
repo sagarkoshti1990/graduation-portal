@@ -22,7 +22,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
 import { useLanguage } from '@contexts/LanguageContext';
 import { ModalProps } from '@app-types/components';
-import { commonModalContentStyles, commonModalContainerStyles, profileStyles } from './Styles';
+import { commonModalContentStyles, commonModalContainerStyles, profileStyles, commonModalCloseButtonStyles } from './Styles';
 import { usePlatform } from '@utils/platform';
 
 /**
@@ -60,6 +60,7 @@ const Modal: React.FC<ModalProps> = ({
   headerDescription,
   headerIcon,
   showCloseButton = true,
+  headerRightContent,
   headerAlignment = 'center',
   headerProps,
   // Body props
@@ -148,25 +149,17 @@ const Modal: React.FC<ModalProps> = ({
                   )}
                 </>
               )}
-
-              {/* Close Button */}
-              {showCloseButton && (
-                <Pressable onPress={onClose} accessibilityLabel={t('common.close')} accessibilityRole="button">
-                  <Box
-                    padding="$2"
-                    borderRadius="$sm"
-                    $web-cursor="pointer"
-                    sx={{
-                      ':hover': {
-                        bg: '$backgroundLight100',
-                      },
-                    }}
-                  >
-                    <GluestackIcon as={CloseIcon} size="xl" color="$textLight600" />
-                  </Box>
-                </Pressable>
-              )}
             </HStack>
+
+            {/* Close Button */}
+            {showCloseButton && (
+              <Pressable onPress={onClose} accessibilityLabel={t('common.close')} accessibilityRole="button" {...commonModalCloseButtonStyles}>
+                <GluestackIcon as={CloseIcon} size="md" color="$textLight600" />
+              </Pressable>
+            )}
+            {headerRightContent && (
+              headerRightContent
+            )}
           </ModalHeader>
         )}
 
