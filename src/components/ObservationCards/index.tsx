@@ -186,6 +186,7 @@ export const StatusBadge: React.FC<{ status: string,preFix?: any }> = ({ status,
       case CARD_STATUS.COMPLETED:
         return assessmentSurveyCardStyles.statusBadgeCompleted;
       case CARD_STATUS.IN_PROGRESS:
+      case CARD_STATUS.DRAFT:
         return assessmentSurveyCardStyles.statusBadgeInProgress;
       case CARD_STATUS.NOT_STARTED:
       default:
@@ -211,7 +212,7 @@ export const StatusBadge: React.FC<{ status: string,preFix?: any }> = ({ status,
                   ? '$white'
                   : status === CARD_STATUS.COMPLETED
                   ? '$success600'
-                  : status === CARD_STATUS.IN_PROGRESS
+                  : status === CARD_STATUS.IN_PROGRESS || status === CARD_STATUS.DRAFT
                   ? '$warning600'
                   : '$textMuted',
             })
@@ -221,7 +222,7 @@ export const StatusBadge: React.FC<{ status: string,preFix?: any }> = ({ status,
             ? assessmentSurveyCardStyles.statusBadgeTextGraduated
             : status === CARD_STATUS.COMPLETED
               ? assessmentSurveyCardStyles.statusBadgeTextCompleted
-              : status === CARD_STATUS.IN_PROGRESS
+              : status === CARD_STATUS.IN_PROGRESS || status === CARD_STATUS.DRAFT
                 ? assessmentSurveyCardStyles.statusBadgeTextWarning
                 : assessmentSurveyCardStyles.statusBadgeText)}
         >

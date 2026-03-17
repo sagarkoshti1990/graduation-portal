@@ -70,6 +70,7 @@ export const CARD_STATUS = {
   IN_PROGRESS: 'started',
   COMPLETED: 'completed',
   GRADUATED: 'graduated',
+  DRAFT: 'draft',
 } as const;
 
 /**
