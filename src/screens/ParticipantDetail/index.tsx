@@ -242,8 +242,10 @@ export default function ParticipantDetail() {
   }
 
   const handleSaveAddress = async () => {
-    if (
-      !editedAddress.street || !editedAddress.email) {
+    const street = editedAddress.street?.trim() ?? '';
+    const email = editedAddress.email?.trim() ?? '';
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!street || !email || !isValidEmail) {
       showAlert('warning', t('participantDetail.profileModal.fillAllFields'), {
         placement: 'bottom',
       });
@@ -251,16 +253,6 @@ export default function ParticipantDetail() {
     }
 
     try {
-      setParticipant(
-        (prev: User | undefined) =>
-        ({
-          ...(prev as User),
-          location: `${editedAddress.street || ""}`,
-          email: `${editedAddress.email || ""}`,
-          // ${editedAddress.province}, ${editedAddress.site}
-        } as User),
-      );
-
       const programId = process.env.GLOBAL_LC_PROGRAM_ID;
       if (!programId) {
         showAlert('error', t('common.error'), { placement: 'bottom' });
@@ -270,12 +262,21 @@ export default function ParticipantDetail() {
         entityId: String(participant?.id),
         programId,
         updateData: {
-          location: editedAddress.street,
-          email: editedAddress.email,
+          location: street,
+          email,
         },
       };
       const res = await updateParticipantAddress(reqBody);
       if (res) {
+        setParticipant((prev: User | undefined) =>
+          prev
+            ? ({
+                ...prev,
+                location: street,
+                email,
+              } as User)
+            : prev,
+        );
         setIsEditingAddress(false);
         showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
           placement: 'bottom',

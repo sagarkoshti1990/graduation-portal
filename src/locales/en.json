@@ -9,7 +9,8 @@
       "addressFields": {
         "street": "Street Address",
         "province": "Province",
-        "site": "Site"
+        "site": "Site",
+        "serviceArea": "Service Area"
       }
     },
     "comingSoon": "Coming Soon",

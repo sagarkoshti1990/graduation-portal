@@ -105,7 +105,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           return;
         }
       } else {
-        observationSubmissionsLast = observationSubmissions.result.find((submissionItem: any) => submissionItem.status === CARD_STATUS.IN_PROGRESS || submissionItem.status === CARD_STATUS.NOT_STARTED);
+        observationSubmissionsLast = observationSubmissions.result.find((submissionItem: any) => submissionItem.status === CARD_STATUS.IN_PROGRESS || submissionItem.status === CARD_STATUS.NOT_STARTED || submissionItem.status === CARD_STATUS.DRAFT);
         if (!observationSubmissionsLast) {
           observationSubmissionsLast = observationSubmissions.result?.[0] || null;
         }

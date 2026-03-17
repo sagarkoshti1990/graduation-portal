@@ -88,6 +88,15 @@ const Header: React.FC<{
   const [authUser, setAuthUser] = useState<User | null>(null);
   const { showAlert } = useAlert();
 
+  const openMyProfile = async () => {
+    try {
+      const userProfile = await getUserProfile();
+      setAuthUser(userProfile);
+    } catch (error: any) {
+      showAlert('error', error?.message || t('common.somethingWentWrong'));
+    }
+  };
+
   const languageCodes =
     Array.isArray(authUser?.languages) && authUser.languages.filter(Boolean).length > 0
       ? (authUser.languages.filter(Boolean) as string[])
@@ -97,8 +106,7 @@ const Header: React.FC<{
     // Handle menu item selection
     logger.log('Menu selected:', key);
     if (key === 'myProfile') {
-      const userProfile = await getUserProfile();
-      setAuthUser(userProfile);
+      await openMyProfile();
     } else if (key === 'logout') {
       logout();
     }
@@ -113,12 +121,7 @@ const Header: React.FC<{
     }
 
     if (key === 'myProfile') {
-      try{
-        const userProfile = await getUserProfile();
-        setAuthUser(userProfile);
-      } catch (error: any) {
-        showAlert('error', error?.message || t('common.somethingWentWrong'));
-      }
+      await openMyProfile();
     } else if (onHamburgerMenuSelect) {
       // Pass other menu items to parent handler (for navigation, logout, etc.)
       onHamburgerMenuSelect(key);
@@ -387,9 +390,9 @@ const Header: React.FC<{
                 <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
                {t('common.profileFields.addressFields.province')}: {authUser?.province?.label || "-"}
               </Text> */}
-              <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
-               {t('common.profileFields.addressFields.site')}: {authUser?.site?.label || '-'}
-              </Text>
+                <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+                  {t('common.profileFields.addressFields.site')}: {authUser?.site?.label || '-'}
+                </Text>
               </Box>
             </Box>
 
