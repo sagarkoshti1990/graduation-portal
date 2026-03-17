@@ -243,7 +243,7 @@ export default function ParticipantDetail() {
 
   const handleSaveAddress = async () => {
     if (
-      !editedAddress.street) {
+      !editedAddress.street || !editedAddress.email) {
       showAlert('warning', t('participantDetail.profileModal.fillAllFields'), {
         placement: 'bottom',
       });
@@ -255,7 +255,8 @@ export default function ParticipantDetail() {
         (prev: User | undefined) =>
         ({
           ...(prev as User),
-          location: `${editedAddress.street}`,
+          location: `${editedAddress.street || ""}`,
+          email: `${editedAddress.email || ""}`,
           // ${editedAddress.province}, ${editedAddress.site}
         } as User),
       );
@@ -270,6 +271,7 @@ export default function ParticipantDetail() {
         programId,
         updateData: {
           location: editedAddress.street,
+          email: editedAddress.email,
         },
       };
       const res = await updateParticipantAddress(reqBody);
@@ -450,7 +452,7 @@ export default function ParticipantDetail() {
               {t('common.profileFields.contact')}
             </Text>
             <VStack space="sm">
-              <Text {...profileStyles.fieldValue}>{participant!.contact}</Text>
+              <Text {...profileStyles.fieldValue}>{participant!.phone_code || ""} {participant!.phone || ""}</Text>
               {isEditingAddress ? (
                 <VStack space="sm">
                   {/* Street Address Input */}
@@ -476,23 +478,6 @@ export default function ParticipantDetail() {
           </VStack>
 
           {/* Address Section */}
-
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.addressFields.province')}
-            </Text>
-            <Text {...profileStyles.fieldValue}>{participant?.province?.label}</Text>
-          </VStack>
-          
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.addressFields.site')}
-            </Text>
-            <Text {...profileStyles.fieldValue}>
-              {participant?.site?.label}
-            </Text>
-          </VStack>
-
           <VStack space="xs" {...profileStyles.fieldSection}>
             <Text {...profileStyles.fieldLabel}>
               {t('common.profileFields.address')}
@@ -523,6 +508,12 @@ export default function ParticipantDetail() {
             ) : (
               <Text {...profileStyles.fieldValue}>{participant?.location || '-'}</Text>
             )}
+            <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+              {t('common.profileFields.addressFields.province')}: {participant?.province?.label || "-"}
+            </Text>
+            <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+              {t('common.profileFields.addressFields.site')}: {participant?.site?.label || '-'}
+            </Text>
           </VStack>
         </VStack>
       </Modal>

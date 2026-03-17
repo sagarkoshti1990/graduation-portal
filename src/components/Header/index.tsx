@@ -22,6 +22,7 @@ import {
   ChevronDownIcon,
   Modal,
   LucideIcon,
+  useAlert
 } from '@ui';
 import { useGlobal } from '@contexts/GlobalContext';
 import { stylesHeader } from './Styles';
@@ -85,6 +86,7 @@ const Header: React.FC<{
   const { isMobile } = usePlatform();
   const { t, currentLanguage, changeLanguage } = useLanguage();
   const [authUser, setAuthUser] = useState<User | null>(null);
+  const { showAlert } = useAlert();
 
   const languageCodes =
     Array.isArray(authUser?.languages) && authUser.languages.filter(Boolean).length > 0
@@ -111,8 +113,12 @@ const Header: React.FC<{
     }
 
     if (key === 'myProfile') {
-      const userProfile = await getUserProfile();
-      setAuthUser(userProfile);
+      try{
+        const userProfile = await getUserProfile();
+        setAuthUser(userProfile);
+      } catch (error: any) {
+        showAlert('error', error?.message || t('common.somethingWentWrong'));
+      }
     } else if (onHamburgerMenuSelect) {
       // Pass other menu items to parent handler (for navigation, logout, etc.)
       onHamburgerMenuSelect(key);
@@ -360,7 +366,7 @@ const Header: React.FC<{
                   {...profileStyles.fieldLabel}
                   flexShrink={1}
                 >
-                  {`${authUser?.phone_code} ${authUser?.phone}`}
+                  {`${authUser?.phone_code || ''} ${authUser?.phone || ''}`}
                 </Text>
               </Box>
             </Box>
@@ -372,12 +378,18 @@ const Header: React.FC<{
                 <Text {...profileStyles.fieldValue}>{t('lcProfile.serviceArea')}</Text>
               </HStack>
               <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
-                <Text 
+                {/* <Text 
                   {...profileStyles.fieldLabel}
                   flexShrink={1}
                 >
-                  {authUser?.location}
+                  {authUser?.location || '-'}
                 </Text>
+                <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+               {t('common.profileFields.addressFields.province')}: {authUser?.province?.label || "-"}
+              </Text> */}
+              <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+               {t('common.profileFields.addressFields.site')}: {authUser?.site?.label || '-'}
+              </Text>
               </Box>
             </Box>
 
