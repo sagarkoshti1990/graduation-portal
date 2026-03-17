@@ -6,7 +6,7 @@
 import { STATUS } from '@constants/app.constant';
 
 // Type for status card status values
-type StatusCardStatus = typeof STATUS.IN_PROGRESS | typeof STATUS.COMPLETED | typeof STATUS.DROPOUT;
+type StatusCardStatus = typeof STATUS.IN_PROGRESS | typeof STATUS.COMPLETED | typeof STATUS.GRADUATED | typeof STATUS.DROPOUT;
 
 // Common status card base styles
 const statusCardBase = {
@@ -39,6 +39,7 @@ export const getStatusCard = (status: StatusCardStatus) => {
         bg: '$white' as const,
       };
     case STATUS.COMPLETED:
+    case STATUS.GRADUATED:
       return {
         ...statusCardBase,
         borderColor: '$success300' as const,
@@ -68,9 +69,6 @@ export const participantHeaderStyles = {
   // Progress card wrapper (rendered after PageHeader)
   progressStickyContainer: {
     bg: '$white' as const,
-    px: '$4' as const,
-    '$md-px': '$6' as const,
-    pb: '$4' as const,
     shadowColor: '$shadowColor' as const,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
@@ -264,15 +262,21 @@ export const participantHeaderStyles = {
   },
 
   // In Progress specific styles
-  progressCardTitle: {
+  progressCardTitleTop: {
     ...statusCardTitleBase,
-    mb: '$2' as const,
+    mb: '$1' as const,
+  },
+  progressCardTitleBottom: {
+    ...statusCardTitleBase,
+    mt: '$1' as const,
   },
   // Completed specific styles
   completedCardTitle: statusCardTitleBase,
   completedCardContent: {
     space: 'md' as const,
     alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    width: '$full' as const,
   },
   completedStatus: {
     fontSize: '$md' as const,

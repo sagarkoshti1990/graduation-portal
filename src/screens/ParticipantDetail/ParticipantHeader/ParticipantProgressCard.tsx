@@ -16,7 +16,7 @@ const ParticipantProgressCard: React.FC<ParticipantProgressCardProps> = ({
   const { t } = useLanguage();
 
   // Return null if status is invalid or not provided
-  if (!status || ![STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.DROPOUT].includes(status)) {
+  if (!status || ![STATUS.IN_PROGRESS, STATUS.COMPLETED,STATUS.GRADUATED, STATUS.DROPOUT].includes(status)) {
     return null;
   }
 
@@ -47,77 +47,77 @@ const ParticipantProgressCard: React.FC<ParticipantProgressCardProps> = ({
   // Note: Since dropout is handled above with early return, status here is always STATUS.IN_PROGRESS or STATUS.COMPLETED
   return (
     <Box
-      {...getStatusCard(status as typeof STATUS.IN_PROGRESS | typeof STATUS.COMPLETED)}
+      {...getStatusCard(status as typeof STATUS.IN_PROGRESS | typeof STATUS.COMPLETED | typeof STATUS.GRADUATED)}
       // @ts-ignore - Web-specific props not in Gluestack UI types
       $web-boxShadow={participantHeaderStyles.statusCardBoxShadow}
       $web-backgroundImage={participantHeaderStyles.statusCardBackgroundImage}
     >
-      <HStack
-        flexDirection="row"
-        justifyContent="space-between"
-        alignItems="center"
-        space="sm"
-      >
-        {/* Title: Conditionally render based on status */}
-        <Text
-          {...(status === STATUS.IN_PROGRESS
-            ? participantHeaderStyles.progressCardTitle
-            : participantHeaderStyles.completedCardTitle)}
-        >
-          {t(
-            status === STATUS.IN_PROGRESS
-              ? 'participantDetail.header.graduationReadiness'
-              : 'participantDetail.header.programStatus'
-          )}
-        </Text>
-        <Text {...participantHeaderStyles.progressPercentage}>
-          {updatedProgress !== progress ? updatedProgress : progress}%
-        </Text>
-      </HStack>
-      {/* Content: Conditionally render based on status */}
-      {status === STATUS.IN_PROGRESS ? (
-        <>
-        <VStack
-          {...participantHeaderStyles.progressCardContent}
-          $md-flexDirection="row"
-          $md-justifyContent="space-between"
-          $md-alignItems="center"
-          space="sm"
-        >
-
-          <Box
-            {...participantHeaderStyles.progressBarContainer}
-            $md-width="auto"
+      <HStack {...participantHeaderStyles.completedCardContent}>
+        <VStack flex={1}>
+          {/* Title: Conditionally render based on status */}
+          <Text
+            {...(status === STATUS.IN_PROGRESS
+              ? participantHeaderStyles.progressCardTitleTop
+              : participantHeaderStyles.completedCardTitle)}
           >
-            <Progress
-              value={updatedProgress !== undefined ? updatedProgress : progress}
-              {...participantHeaderStyles.progressBarBackground}
-            >
-              <ProgressFilledTrack {...participantHeaderStyles.progressBarFill} />
-            </Progress>
-          </Box>
+            {t(
+              status === STATUS.IN_PROGRESS
+                ? 'participantDetail.header.graduationReadiness'
+                : 'participantDetail.header.programStatus'
+            )}
+          </Text>
+          {/* Content: Conditionally render based on status */}
+          {status === STATUS.IN_PROGRESS ? (
+            <>
+              <VStack
+                {...participantHeaderStyles.progressCardContent}
+                $md-flexDirection="row"
+                $md-justifyContent="space-between"
+                $md-alignItems="center"
+                space="sm"
+              >
+                <Box
+                  {...participantHeaderStyles.progressBarContainer}
+                  $md-width="auto"
+                >
+                  <Progress
+                    value={updatedProgress !== undefined ? updatedProgress : progress}
+                    {...participantHeaderStyles.progressBarBackground}
+                  >
+                    <ProgressFilledTrack {...participantHeaderStyles.progressBarFill} />
+                  </Progress>
+                </Box>
+              </VStack>
+              {updatedProgress !== progress ? (
+                <Text {...participantHeaderStyles.progressCardTitleBottom}>
+                  {t('participantDetail.header.previous')}: {progress}%
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <VStack flex={1} space="xs">
+              <Text {...participantHeaderStyles.completedStatus}>
+                {status === STATUS.GRADUATED ? t('participantDetail.header.graduatedStatus') : t('participantDetail.header.completeStatus')}
+              </Text>
+              {date && (
+                <Text {...participantHeaderStyles.completedDate}>
+                  {date
+                    ? t('participantDetail.header.graduatedOn', { date })
+                    : t('participantDetail.header.graduationDateNotAvailable')}
+                </Text>
+              )}
+            </VStack>
+          )}
         </VStack>
-        {updatedProgress !== progress ? (
-          <Text {...participantHeaderStyles.progressCardTitle}>
-         {t('participantDetail.header.previous')}: {progress}%
-        </Text>
-        ): null}
-        </>
-      ) : (
-        <HStack {...participantHeaderStyles.completedCardContent}>
-          <VStack flex={1} space="xs">
-            <Text {...participantHeaderStyles.completedStatus}>
-              {t('participantDetail.header.graduatedComplete')}
-            </Text>
-            <Text {...participantHeaderStyles.completedDate}>
-              {date
-                ? t('participantDetail.header.graduatedOn', { date })
-                : t('participantDetail.header.graduationDateNotAvailable')}
-            </Text>
-          </VStack>
-          <LucideIcon name="CircleCheck" size={50} color={theme.tokens.colors.accent300} />
-        </HStack>
-      )}
+
+        {status === STATUS.IN_PROGRESS ? (
+          <Text {...participantHeaderStyles.progressPercentage}>
+            {updatedProgress !== progress ? updatedProgress : progress}%
+          </Text>
+        ) :
+          <LucideIcon name="CircleCheck" size={40} color={theme.tokens.colors.accent300} />
+        }
+      </HStack>
     </Box>
   );
 };

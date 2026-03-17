@@ -387,7 +387,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
             : undefined
         }
       >
-        <Container>
+        <Container px="$4" pb="$4">
           <ParticipantProgressCard
             status={status as ParticipantStatus}
             graduationProgress={graduationProgressProp ?? graduationProgress}
