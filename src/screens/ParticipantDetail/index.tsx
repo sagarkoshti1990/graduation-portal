@@ -452,7 +452,7 @@ export default function ParticipantDetail() {
         cancelButtonText={t('common.cancel')}
         confirmButtonText={
           isEditingAddress
-            ? t('participantDetail.profileModal.saveLocation')
+            ? t('participantDetail.profileModal.save')
             : undefined
         }
         onCancel={() => {

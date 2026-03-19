@@ -1751,6 +1751,7 @@
       "title": "Participant Profile",
       "subtitle": "View basic profile information for {{name}}",
       "editAddress": "Edit Address",
+      "save": "Save",
       "saveLocation": "Save Location",
       "selectProvince": "Select province",
       "selectSite": "Select site",
