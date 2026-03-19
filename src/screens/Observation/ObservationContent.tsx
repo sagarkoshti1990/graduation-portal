@@ -317,7 +317,8 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       showPrivacyPopup: false,
       showToast: false,
       saveProgressStorageType: "server",
-       dynamicEntityTyperequireDynamicAnswers:{
+      showNextTabButton: true,
+      dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
           status:STATUS
         }
