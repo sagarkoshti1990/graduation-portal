@@ -609,11 +609,11 @@ lib-entity-dropdown-input mat-chip {
 /* end entity-modal-content styles */
 
 /* start mat-icon styles */
-.mat-icon {
+/* .mat-icon {
   height: 20px !important;
   width: 20px !important;
   font-size: 20px !important;
-}
+} */
 .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-floating-label {
   top:50% !important;
 }
