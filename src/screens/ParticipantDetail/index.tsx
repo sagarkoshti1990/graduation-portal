@@ -96,6 +96,11 @@ export default function ParticipantDetail() {
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [addressFieldErrors, setAddressFieldErrors] = useState<{
+    street?: string;
+    email?: string;
+    form?: string;
+  }>({});
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('admin.pageTitle.participant-detail')}`
@@ -241,21 +246,53 @@ export default function ParticipantDetail() {
     return <NotFound message="participantDetail.notFound.title" />;
   }
 
+  const handleAddressFieldChange = (field: 'email' | 'street', value: string) => {
+    const next = value ?? '';
+    setEditedAddress(prev =>
+      field === 'email'
+        ? { ...prev, email: next }
+        : { ...prev, street: next },
+    );
+    setAddressFieldErrors(prev => ({
+      ...prev,
+      ...(field === 'email'
+        ? { email: undefined }
+        : { street: undefined }),
+      form: undefined,
+    }));
+  };
+
   const handleSaveAddress = async () => {
     const street = editedAddress.street?.trim() ?? '';
     const email = editedAddress.email?.trim() ?? '';
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!street || !email || !isValidEmail) {
-      showAlert('warning', t('participantDetail.profileModal.fillAllFields'), {
-        placement: 'bottom',
-      });
+
+    const nextErrors: {
+      street?: string;
+      email?: string;
+      form?: string;
+    } = {};
+    if (!street) {
+      nextErrors.street = t('participantDetail.profileModal.streetRequired');
+    }
+    if (!email) {
+      nextErrors.email = t('participantDetail.profileModal.emailRequired');
+    } else if (!isValidEmail) {
+      nextErrors.email = t('participantDetail.profileModal.emailInvalid');
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setAddressFieldErrors(nextErrors);
       return;
     }
+
+    setAddressFieldErrors({});
 
     try {
       const programId = process.env.GLOBAL_LC_PROGRAM_ID;
       if (!programId) {
-        showAlert('error', t('common.error'), { placement: 'bottom' });
+        setAddressFieldErrors({
+          form: t('participantDetail.profileModal.saveConfigurationError'),
+        });
         return;
       }
       const reqBody = {
@@ -278,6 +315,7 @@ export default function ParticipantDetail() {
             : prev,
         );
         setIsEditingAddress(false);
+        setAddressFieldErrors({});
         showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
           placement: 'bottom',
         });
@@ -383,6 +421,7 @@ export default function ParticipantDetail() {
         onClose={() => {
           setIsProfileModalOpen(false);
           setIsEditingAddress(false);
+          setAddressFieldErrors({});
           setEditedAddress({
             email: participant?.email,
             street: participant?.location,
@@ -399,6 +438,7 @@ export default function ParticipantDetail() {
             <Pressable
             onPress={() => {
               setIsEditingAddress(editing => !editing);
+              setAddressFieldErrors({});
             }}
           >
             <LucideIcon
@@ -418,6 +458,7 @@ export default function ParticipantDetail() {
         onCancel={() => {
           setIsProfileModalOpen(false);
           setIsEditingAddress(false);
+          setAddressFieldErrors({});
           setEditedAddress({
             email: participant?.email,
             street: participant?.location,
@@ -466,10 +507,17 @@ export default function ParticipantDetail() {
                         placeholder={t(
                           'common.profileFields.email',
                         )}
-                        value={editedAddress?.email || ''}
-                        onChangeText={value => setEditedAddress(prev => ({ ...prev, email: value }))}
+                        value={editedAddress?.email ?? ''}
+                        onChangeText={value =>
+                          handleAddressFieldChange('email', value)
+                        }
                       />
                     </Input>
+                    {addressFieldErrors.email ? (
+                      <Text size="xs" color="$error600" mt="$1">
+                        {addressFieldErrors.email}
+                      </Text>
+                    ) : null}
                   </VStack>
                 </VStack>
               ) : (
@@ -496,14 +544,21 @@ export default function ParticipantDetail() {
                         'common.profileFields.addressFields.street',
                       )}
                       value={editedAddress?.street || ''}
-                      onChangeText={value => {
-                        setEditedAddress(prev => ({
-                          ...prev,
-                          street: value,
-                        }));
-                      }}
+                      onChangeText={value =>
+                        handleAddressFieldChange('street', value)
+                      }
                     />
                   </Input>
+                  {addressFieldErrors.street ? (
+                    <Text size="xs" color="$error600" mt="$1">
+                      {addressFieldErrors.street}
+                    </Text>
+                  ) : null}
+                  {addressFieldErrors.form ? (
+                    <Text size="xs" color="$error600" mt="$1">
+                      {addressFieldErrors.form}
+                    </Text>
+                  ) : null}
                 </VStack>
               </VStack>
             ) : (

@@ -5,6 +5,7 @@
       "name": "Name",
       "id": "ID",
       "contact": "Contact",
+      "email": "Email",
       "address": "Address",
       "addressFields": {
         "street": "Street Address",
@@ -1754,7 +1755,11 @@
       "selectProvince": "Select province",
       "selectSite": "Select site",
       "addressUpdated": "Profile updated successfully",
-      "fillAllFields": "Please fill in all required fields (Street) before saving."
+      "fillAllFields": "Please fill in all required fields (Street) before saving.",
+      "streetRequired": "Street address is required.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Please enter a valid email address.",
+      "saveConfigurationError": "Unable to save. Program configuration is missing."
     },
     "pathways": {
       "employment": "Employment Pathway",
