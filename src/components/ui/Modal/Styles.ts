@@ -116,7 +116,7 @@ export const profileStyles = {
     variant: 'outline' as const,
     size: 'md' as const,
     borderWidth: 1,
-    borderColor: 'transparent' as const,
+    borderColor: '$borderColor' as const,
     borderRadius: '$md' as const,
     bg: '$white' as const,
   },

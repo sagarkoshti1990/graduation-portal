@@ -5,11 +5,13 @@
       "name": "Name",
       "id": "ID",
       "contact": "Contact",
+      "email": "Email",
       "address": "Address",
       "addressFields": {
         "street": "Street Address",
         "province": "Province",
-        "site": "Site"
+        "site": "Site",
+        "serviceArea": "Service Area"
       }
     },
     "comingSoon": "Coming Soon",
@@ -1736,7 +1738,8 @@
       "droppedOut": "Dropped Out",
       "graduationReadiness": "Graduation Readiness",
       "programStatus": "Program Status",
-      "graduatedComplete": "Graduated - 100% Complete",
+      "completeStatus": "Completed - 100% Complete",
+      "graduatedStatus": "Graduated - 100% Complete",
       "graduatedOn": "Graduated on {{date}}",
       "graduationDateNotAvailable": "Graduation date not available",
       "participantDroppedOut": "Participant Dropped Out",
@@ -1748,11 +1751,16 @@
       "title": "Participant Profile",
       "subtitle": "View basic profile information for {{name}}",
       "editAddress": "Edit Address",
+      "save": "Save",
       "saveLocation": "Save Location",
       "selectProvince": "Select province",
       "selectSite": "Select site",
       "addressUpdated": "Profile updated successfully",
-      "fillAllFields": "Please fill in all required fields (Street) before saving."
+      "fillAllFields": "Please fill in all required fields (Street) before saving.",
+      "streetRequired": "Street address is required.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Please enter a valid email address.",
+      "saveConfigurationError": "Unable to save. Program configuration is missing."
     },
     "pathways": {
       "employment": "Employment Pathway",

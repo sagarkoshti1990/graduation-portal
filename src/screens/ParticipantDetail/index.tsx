@@ -96,6 +96,11 @@ export default function ParticipantDetail() {
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [addressFieldErrors, setAddressFieldErrors] = useState<{
+    street?: string;
+    email?: string;
+    form?: string;
+  }>({});
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('admin.pageTitle.participant-detail')}`
@@ -143,29 +148,26 @@ export default function ParticipantDetail() {
   useFocusEffect(
     useCallback(() => {
       fetchEntityDetails();
+      return () => {
+        setNavbarData(null);
+        setParticipant(undefined);
+        setStatus("");
+        setIdpCreated(false);
+        setEditedAddress({
+          email: '',
+          street: '',
+          province: '',
+          site: '',
+        });
+        setAreAllTasksCompleted(false);
+        setUpdatedProgress(undefined);
+        setHasProgressBaseline(false);
+        setConfigData(null);
+        setProjectPlayerConfigData(null);
+        setIsLoading(true);
+      };
     }, [fetchEntityDetails])
   );
-  // Cleanup navbar data on component unmount
-  useEffect(() => {
-    return () => {
-      setNavbarData(null);
-      setParticipant(undefined);
-      setStatus("");
-      setIdpCreated(false);
-      setEditedAddress({
-        email: '',
-        street: '',
-        province: '',
-        site: '',
-      });
-      setAreAllTasksCompleted(false);
-      setUpdatedProgress(undefined);
-      setHasProgressBaseline(false);
-      setConfigData(null);
-      setProjectPlayerConfigData(null);
-      setIsLoading(true);
-    };
-  }, [setNavbarData]);
 
   // Re-fetch when idpCreated changes
   useEffect(() => {
@@ -241,40 +243,76 @@ export default function ParticipantDetail() {
     return <NotFound message="participantDetail.notFound.title" />;
   }
 
+  const handleAddressFieldChange = (field: 'email' | 'street', value: string) => {
+    const next = value ?? '';
+    setEditedAddress(prev =>
+      field === 'email'
+        ? { ...prev, email: next }
+        : { ...prev, street: next },
+    );
+    setAddressFieldErrors(prev => ({
+      ...prev,
+      ...(field === 'email'
+        ? { email: undefined }
+        : { street: undefined }),
+      form: undefined,
+    }));
+  };
+
   const handleSaveAddress = async () => {
-    if (
-      !editedAddress.street) {
-      showAlert('warning', t('participantDetail.profileModal.fillAllFields'), {
-        placement: 'bottom',
-      });
+    const street = editedAddress.street?.trim() ?? '';
+    const email = editedAddress.email?.trim() ?? '';
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    const nextErrors: {
+      street?: string;
+      email?: string;
+      form?: string;
+    } = {};
+    if (!street) {
+      nextErrors.street = t('participantDetail.profileModal.streetRequired');
+    }
+    if (!email) {
+      nextErrors.email = t('participantDetail.profileModal.emailRequired');
+    } else if (!isValidEmail) {
+      nextErrors.email = t('participantDetail.profileModal.emailInvalid');
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setAddressFieldErrors(nextErrors);
       return;
     }
 
-    try {
-      setParticipant(
-        (prev: User | undefined) =>
-        ({
-          ...(prev as User),
-          location: `${editedAddress.street}`,
-          // ${editedAddress.province}, ${editedAddress.site}
-        } as User),
-      );
+    setAddressFieldErrors({});
 
+    try {
       const programId = process.env.GLOBAL_LC_PROGRAM_ID;
       if (!programId) {
-        showAlert('error', t('common.error'), { placement: 'bottom' });
+        setAddressFieldErrors({
+          form: t('participantDetail.profileModal.saveConfigurationError'),
+        });
         return;
       }
       const reqBody = {
         entityId: String(participant?.id),
         programId,
         updateData: {
-          location: editedAddress.street,
+          location: street,
+          email,
         },
       };
       const res = await updateParticipantAddress(reqBody);
       if (res) {
+        setParticipant((prev: User | undefined) =>
+          prev
+            ? ({
+                ...prev,
+                location: street,
+                email,
+              } as User)
+            : prev,
+        );
         setIsEditingAddress(false);
+        setAddressFieldErrors({});
         showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
           placement: 'bottom',
         });
@@ -380,6 +418,7 @@ export default function ParticipantDetail() {
         onClose={() => {
           setIsProfileModalOpen(false);
           setIsEditingAddress(false);
+          setAddressFieldErrors({});
           setEditedAddress({
             email: participant?.email,
             street: participant?.location,
@@ -396,6 +435,7 @@ export default function ParticipantDetail() {
             <Pressable
             onPress={() => {
               setIsEditingAddress(editing => !editing);
+              setAddressFieldErrors({});
             }}
           >
             <LucideIcon
@@ -409,12 +449,13 @@ export default function ParticipantDetail() {
         cancelButtonText={t('common.cancel')}
         confirmButtonText={
           isEditingAddress
-            ? t('participantDetail.profileModal.saveLocation')
+            ? t('participantDetail.profileModal.save')
             : undefined
         }
         onCancel={() => {
           setIsProfileModalOpen(false);
           setIsEditingAddress(false);
+          setAddressFieldErrors({});
           setEditedAddress({
             email: participant?.email,
             street: participant?.location,
@@ -450,7 +491,7 @@ export default function ParticipantDetail() {
               {t('common.profileFields.contact')}
             </Text>
             <VStack space="sm">
-              <Text {...profileStyles.fieldValue}>{participant!.contact}</Text>
+              <Text {...profileStyles.fieldValue}>{participant!.phone_code || ""} {participant!.phone || ""}</Text>
               {isEditingAddress ? (
                 <VStack space="sm">
                   {/* Street Address Input */}
@@ -463,10 +504,17 @@ export default function ParticipantDetail() {
                         placeholder={t(
                           'common.profileFields.email',
                         )}
-                        value={editedAddress?.email || ''}
-                        onChangeText={value => setEditedAddress(prev => ({ ...prev, email: value }))}
+                        value={editedAddress?.email ?? ''}
+                        onChangeText={value =>
+                          handleAddressFieldChange('email', value)
+                        }
                       />
                     </Input>
+                    {addressFieldErrors.email ? (
+                      <Text size="xs" color="$error600" mt="$1">
+                        {addressFieldErrors.email}
+                      </Text>
+                    ) : null}
                   </VStack>
                 </VStack>
               ) : (
@@ -476,23 +524,6 @@ export default function ParticipantDetail() {
           </VStack>
 
           {/* Address Section */}
-
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.addressFields.province')}
-            </Text>
-            <Text {...profileStyles.fieldValue}>{participant?.province?.label}</Text>
-          </VStack>
-          
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.addressFields.site')}
-            </Text>
-            <Text {...profileStyles.fieldValue}>
-              {participant?.site?.label}
-            </Text>
-          </VStack>
-
           <VStack space="xs" {...profileStyles.fieldSection}>
             <Text {...profileStyles.fieldLabel}>
               {t('common.profileFields.address')}
@@ -510,19 +541,32 @@ export default function ParticipantDetail() {
                         'common.profileFields.addressFields.street',
                       )}
                       value={editedAddress?.street || ''}
-                      onChangeText={value => {
-                        setEditedAddress(prev => ({
-                          ...prev,
-                          street: value,
-                        }));
-                      }}
+                      onChangeText={value =>
+                        handleAddressFieldChange('street', value)
+                      }
                     />
                   </Input>
+                  {addressFieldErrors.street ? (
+                    <Text size="xs" color="$error600" mt="$1">
+                      {addressFieldErrors.street}
+                    </Text>
+                  ) : null}
+                  {addressFieldErrors.form ? (
+                    <Text size="xs" color="$error600" mt="$1">
+                      {addressFieldErrors.form}
+                    </Text>
+                  ) : null}
                 </VStack>
               </VStack>
             ) : (
               <Text {...profileStyles.fieldValue}>{participant?.location || '-'}</Text>
             )}
+            <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+              {t('common.profileFields.addressFields.province')}: {participant?.province?.label || "-"}
+            </Text>
+            <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
+              {t('common.profileFields.addressFields.site')}: {participant?.site?.label || '-'}
+            </Text>
           </VStack>
         </VStack>
       </Modal>
