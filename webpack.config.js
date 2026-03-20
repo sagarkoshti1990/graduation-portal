@@ -3,6 +3,40 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 const Dotenv = require('dotenv-webpack');
 const fs = require('fs');
+const crypto = require('crypto');
+
+/** Same value in DefinePlugin + emitted web-app-version.json for stale-cache detection after deploy */
+const webAppBuildId =
+  process.env.WEB_BUILD_ID || crypto.randomBytes(8).toString('hex');
+
+class EmitWebAppVersionPlugin {
+  constructor(buildId) {
+    this.buildId = buildId;
+  }
+
+  apply(compiler) {
+    const { RawSource } = webpack.sources;
+    const pluginName = 'EmitWebAppVersionPlugin';
+    compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
+      compilation.hooks.processAssets.tap(
+        {
+          name: pluginName,
+          stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONS,
+        },
+        () => {
+          const json = JSON.stringify({
+            buildId: this.buildId,
+            builtAt: new Date().toISOString(),
+          });
+          compilation.emitAsset(
+            'web-app-version.json',
+            new RawSource(json)
+          );
+        }
+      );
+    });
+  }
+}
 
 module.exports = (env = {}, argv = {}) => {
   const mode =
@@ -303,6 +337,8 @@ module.exports = (env = {}, argv = {}) => {
         // Inject environment variables from .env file
         // Use allEnvVars which includes both .env file vars and system vars
         ...getEnvVars(allEnvVars),
+        // After .env spread so deploy id always matches emitted web-app-version.json
+        'process.env.WEB_APP_BUILD_ID': JSON.stringify(webAppBuildId),
         }),
       // Ignore native-only modules entirely
       new webpack.IgnorePlugin({
@@ -313,6 +349,7 @@ module.exports = (env = {}, argv = {}) => {
       new webpack.IgnorePlugin({
         resourceRegExp: /^@env$/,
       }),
+      new EmitWebAppVersionPlugin(webAppBuildId),
       // Copy web-component folder from public to dist using custom plugin
       new CopyWebComponentPlugin(),
     ],
