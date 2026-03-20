@@ -636,3 +636,9 @@ lib-entity-dropdown-input mat-chip {
   padding: 8px !important;
 }
 /* end mat-icon styles */
+
+/*  */
+.preview-label {
+  max-width: 50% !important;
+  flex-shrink: 1 !important;
+}

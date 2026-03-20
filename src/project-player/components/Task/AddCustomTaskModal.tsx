@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Button,
   ButtonText,
+  ButtonSpinner,
   HStack,
   VStack,
   Text,
@@ -9,8 +10,9 @@ import {
   InputField,
   Textarea,
   TextareaInput,
+  useToast,
 } from '@gluestack-ui/themed';
-import { LucideIcon, Modal } from '@ui';
+import { LucideIcon, Modal, showSuccessToast, useAlert } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Select from '@ui/Inputs/Select';
@@ -32,6 +34,8 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
   mode = 'add',
 }) => {
   const { t } = useLanguage();
+  const toast = useToast();
+  const { showAlert } = useAlert();
   const {
     projectData,
     addTask,
@@ -39,6 +43,8 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     mode: playerMode,
   } = useProjectContext();
   const { isMobile } = usePlatform();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state - merged into single object
   const [formData, setFormData] = useState({
@@ -116,6 +122,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
   }, [isEditMode, task, propPillarId, findParentPillar, resetForm]);
 
   const handleCloseModal = useCallback(() => {
+    if (isSubmitting) return;
     // Reset form when closing (preserve pillar if provided in add mode)
     if (!propPillarId && !isEditMode) {
       resetForm();
@@ -128,37 +135,61 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
       }));
     }
     onClose();
-  }, [propPillarId, isEditMode, resetForm, onClose]);
+  }, [isSubmitting, propPillarId, isEditMode, resetForm, onClose]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const { taskName, instructions, serviceProvider, selectedPillar } =
       formData;
-     const pillarIdToUse = propPillarId || selectedPillar;
+    const pillarIdToUse = propPillarId || selectedPillar;
 
     if (isEditMode && task) {
-      // Update existing task
-      updateTask(task._id, {
-        name: taskName,
-        description: instructions,
-        serviceProvider: serviceProvider,
-        parentId:task?.parentId,
-        pillarName:findParentPillar(task?.parentId || '')?.label
-      });
-    } else {
-      const newTask: Task = {
-        _id: crypto.randomUUID(),
-        name: taskName,
-        description: instructions,
-        type: 'simple',
-        externalId:crypto.randomUUID(),
-        status: TASK_STATUS.TO_DO,
-        isCustomTask: true,
-        serviceProvider: serviceProvider || undefined,
-        parentId:pillarIdToUse
-      };
-      addTask(pillarIdToUse, newTask);
+      setIsSubmitting(true);
+      try {
+        await updateTask(task._id, {
+          name: taskName,
+          description: instructions,
+          serviceProvider: serviceProvider,
+          parentId: task?.parentId,
+          pillarName: findParentPillar(task?.parentId || '')?.label,
+        });
+        showSuccessToast(toast, t('projectPlayer.customTaskUpdateSuccess'));
+        handleCloseModal();
+      } catch (e) {
+        showAlert(
+          'error',
+          e instanceof Error ? e.message : t('common.serverError500'),
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
     }
-    handleCloseModal();
+
+    const newTask: Task = {
+      _id: crypto.randomUUID(),
+      name: taskName,
+      description: instructions,
+      type: 'simple',
+      externalId: crypto.randomUUID(),
+      status: TASK_STATUS.TO_DO,
+      isCustomTask: true,
+      serviceProvider: serviceProvider || undefined,
+      parentId: pillarIdToUse,
+    };
+
+    setIsSubmitting(true);
+    try {
+      await addTask(pillarIdToUse!, newTask);
+      showSuccessToast(toast, t('projectPlayer.customTaskAddSuccess'));
+      handleCloseModal();
+    } catch (e) {
+      showAlert(
+        'error',
+        e instanceof Error ? e.message : t('common.serverError500'),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [
     formData,
     isEditMode,
@@ -167,7 +198,10 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     updateTask,
     addTask,
     handleCloseModal,
-    findParentPillar
+    findParentPillar,
+    toast,
+    t,
+    showAlert,
   ]);
 
   const parentPillarName =
@@ -187,6 +221,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleCloseModal}
+      confirmLoading={isSubmitting}
       headerTitle={
         isEditMode
           ? 'projectPlayer.editCustomTask'
@@ -210,6 +245,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
           <Button
             {...addCustomTaskModalStyles.cancelButton}
             onPress={handleCloseModal}
+            isDisabled={isSubmitting}
             width={isMobile ? '100%' : 'auto'}
           >
             <ButtonText color="$textPrimary" {...TYPOGRAPHY.button}>
@@ -221,16 +257,20 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
           <Button
             {...addCustomTaskModalStyles.submitButton}
             onPress={handleSubmit}
-            isDisabled={!isFormValid}
-            opacity={!isFormValid ? 0.5 : 1}
+            isDisabled={!isFormValid || isSubmitting}
+            opacity={!isFormValid || isSubmitting ? 0.5 : 1}
             width={isMobile ? '100%' : 'auto'}
           >
             <HStack {...addCustomTaskModalStyles.submitButtonContent}>
-              <LucideIcon
-                name={isEditMode ? 'Check' : 'Plus'}
-                size={16}
-                color={theme.tokens.colors.backgroundPrimary.light}
-              />
+              {isSubmitting ? (
+                <ButtonSpinner />
+              ) : (
+                <LucideIcon
+                  name={isEditMode ? 'Check' : 'Plus'}
+                  size={16}
+                  color={theme.tokens.colors.backgroundPrimary.light}
+                />
+              )}
               <ButtonText
                 color="$backgroundPrimary.light"
                 {...TYPOGRAPHY.button}

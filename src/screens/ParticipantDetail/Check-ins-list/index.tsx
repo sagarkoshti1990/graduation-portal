@@ -42,8 +42,8 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
   const route = useRoute<LogVisitRouteProp>();
   const navigation = useNavigation();
   const { t } = useLanguage();
-  const {user, setNavbarData } = useAuth();
-  
+  const { user, setNavbarData } = useAuth();
+
   // Use prop if provided, otherwise fall back to route params
   const id = propId || route.params?.id;
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
@@ -127,15 +127,17 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         subtitle={t('participantDetail.header.checkInsHistoryDescription', { name: participant?.name || '' })}
         onBackPress={handleBackPress}
         rightSection={
-          <Select
-            options={solutions.map(solution => ({
-              label: solution.name || solution.id,
-              value: solution.solutionId || solution.id,
-            }))}
-            value={selectedSolution}
-            onChange={setSelectedSolution}
-            placeholder={t('logVisit.selectSolutionPlaceholder')}
-          />
+          <Box width="100%" minWidth={0} $md-width="auto" $md-minWidth={220}>
+            <Select
+              options={solutions.map(solution => ({
+                label: solution.name || solution.id,
+                value: solution.solutionId || solution.id,
+              }))}
+              value={selectedSolution}
+              onChange={setSelectedSolution}
+              placeholder={t('logVisit.selectSolutionPlaceholder')}
+            />
+          </Box>
         }
       />
       <CheckInsListContent

@@ -139,7 +139,9 @@ export interface ModalProps extends Omit<ComponentProps<typeof GluestackModalTyp
   cancelButtonText?: string | ReactNode; // Cancel button text (if provided, cancel button will be shown)
   confirmButtonText?: string | ReactNode; // Confirm button text (if provided, confirm button will be shown)
   onCancel?: () => void; // Cancel button handler (defaults to onClose if not provided)
-  onConfirm?: () => void; // Confirm button handler
+  onConfirm?: () => void | Promise<void>;
+  /** Shows spinner on confirm and blocks closing while true */
+  confirmLoading?: boolean;
   confirmButtonColor?: string; // Confirm button color (defaults to primary500)
   confirmButtonVariant?: 'solid' | 'outline' | 'link'; // Confirm button variant
   // Additional styling

@@ -292,6 +292,7 @@ export const renderModals = ({
   modalState,
   onCloseModal,
   onConfirmDelete,
+  confirmDeleteLoading = false,
   taskName,
   t,
 }: RenderModalsProps): React.ReactElement => {
@@ -315,6 +316,7 @@ export const renderModals = ({
         confirmButtonText={t('common.delete')}
         cancelButtonText={t('common.cancel')}
         onConfirm={onConfirmDelete}
+        confirmLoading={confirmDeleteLoading}
         confirmButtonColor={theme.tokens.colors.primary500}
       >
         <Text {...TYPOGRAPHY.paragraph} color="$textSecondary">

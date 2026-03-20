@@ -1,20 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import {
-  VStack,
-  HStack,
-  Box,
-  Text,
-  Input,
-  InputField,
-  Pressable,
-  Container,
-} from '@ui';
+import { HStack, Box, Container } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
+import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
   getParticipantsList,
   // getSitesByProvince,
-  updateParticipantAddress,
   verifyParticipantCompletionActions
 } from '../../services/participantService';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -30,10 +21,8 @@ import type {
   ParticipantStatus,
   // PathwayType,
 } from '@app-types/participant';
-import { Modal, useAlert, LucideIcon, Loader } from '@ui';
+import { Loader } from '@ui';
 import { usePlatform } from '@utils/platform';
-import { profileStyles } from '@components/ui/Modal/Styles';
-import { theme } from '@config/theme';
 import ProjectPlayer, { ProjectPlayerData } from '../../project-player/index';
 import {
   MODE,
@@ -65,27 +54,14 @@ export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth()
   const { t } = useLanguage();
-  const { showAlert } = useAlert();
   const { isWeb } = usePlatform();
   // Extract the id parameter from the route
   const participantId = route.params?.id;
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('intervention-plan');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [status, setStatus] = useState('');
   const [idpCreated, setIdpCreated] = useState(false);
-  const [editedAddress, setEditedAddress] = useState<{
-    email: string;
-    street: string;
-    province: string;
-    site: string;
-  }>({
-    email: '',
-    street: '',
-    province: '',
-    site: '',
-  });
   const [participant, setParticipant] = useState<User | undefined>();
   const [areAllTasksCompleted, setAreAllTasksCompleted] = useState(false);
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
@@ -96,11 +72,6 @@ export default function ParticipantDetail() {
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
-  const [addressFieldErrors, setAddressFieldErrors] = useState<{
-    street?: string;
-    email?: string;
-    form?: string;
-  }>({});
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('admin.pageTitle.participant-detail')}`
@@ -128,12 +99,6 @@ export default function ParticipantDetail() {
           subtitle: participantData?.name,
         });
         setStatus(participantData?.status);
-        setEditedAddress({
-          email: participantData?.email || '',
-          street: participantData?.location || '',
-          province: participantData?.province?.label || '',
-          site: participantData?.site?.label || participantData?.site || '',
-        });
       } catch (error) {
         console.log(error);
       } finally {
@@ -153,12 +118,6 @@ export default function ParticipantDetail() {
         setParticipant(undefined);
         setStatus("");
         setIdpCreated(false);
-        setEditedAddress({
-          email: '',
-          street: '',
-          province: '',
-          site: '',
-        });
         setAreAllTasksCompleted(false);
         setUpdatedProgress(undefined);
         setHasProgressBaseline(false);
@@ -166,7 +125,7 @@ export default function ParticipantDetail() {
         setProjectPlayerConfigData(null);
         setIsLoading(true);
       };
-    }, [fetchEntityDetails])
+    }, [fetchEntityDetails, setNavbarData])
   );
 
   // Re-fetch when idpCreated changes
@@ -234,6 +193,23 @@ export default function ParticipantDetail() {
     setUpdatedProgress(progress);
   };
 
+  const handleParticipantAddressSaved = useCallback(
+    (patch: { location: string; email: string }) => {
+      setParticipant((prev: User | undefined) =>
+        prev
+          ? ({
+              ...prev,
+              location: patch.location,
+              email: patch.email,
+            } as User)
+          : prev,
+      );
+    },
+    [],
+  );
+
+  const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
+
   if (isLoading) {
     return <Loader fullScreen message="Loading participant details..." />;
   }
@@ -242,87 +218,6 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-
-  const handleAddressFieldChange = (field: 'email' | 'street', value: string) => {
-    const next = value ?? '';
-    setEditedAddress(prev =>
-      field === 'email'
-        ? { ...prev, email: next }
-        : { ...prev, street: next },
-    );
-    setAddressFieldErrors(prev => ({
-      ...prev,
-      ...(field === 'email'
-        ? { email: undefined }
-        : { street: undefined }),
-      form: undefined,
-    }));
-  };
-
-  const handleSaveAddress = async () => {
-    const street = editedAddress.street?.trim() ?? '';
-    const email = editedAddress.email?.trim() ?? '';
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    const nextErrors: {
-      street?: string;
-      email?: string;
-      form?: string;
-    } = {};
-    if (!street) {
-      nextErrors.street = t('participantDetail.profileModal.streetRequired');
-    }
-    if (!email) {
-      nextErrors.email = t('participantDetail.profileModal.emailRequired');
-    } else if (!isValidEmail) {
-      nextErrors.email = t('participantDetail.profileModal.emailInvalid');
-    }
-    if (Object.keys(nextErrors).length > 0) {
-      setAddressFieldErrors(nextErrors);
-      return;
-    }
-
-    setAddressFieldErrors({});
-
-    try {
-      const programId = process.env.GLOBAL_LC_PROGRAM_ID;
-      if (!programId) {
-        setAddressFieldErrors({
-          form: t('participantDetail.profileModal.saveConfigurationError'),
-        });
-        return;
-      }
-      const reqBody = {
-        entityId: String(participant?.id),
-        programId,
-        updateData: {
-          location: street,
-          email,
-        },
-      };
-      const res = await updateParticipantAddress(reqBody);
-      if (res) {
-        setParticipant((prev: User | undefined) =>
-          prev
-            ? ({
-                ...prev,
-                location: street,
-                email,
-              } as User)
-            : prev,
-        );
-        setIsEditingAddress(false);
-        setAddressFieldErrors({});
-        showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
-          placement: 'bottom',
-        });
-      }
-    } catch (error) {
-      showAlert('error', t('common.error'), {
-        placement: 'bottom',
-      });
-    }
-  };
 
   return (
     <Box flex={1} bg="$accent100">
@@ -412,164 +307,13 @@ export default function ParticipantDetail() {
         )}
       </Container>
 
-      {/* Profile Modal */}
-      <Modal
+      <ParticipantProfileModal
         isOpen={isProfileModalOpen}
-        onClose={() => {
-          setIsProfileModalOpen(false);
-          setIsEditingAddress(false);
-          setAddressFieldErrors({});
-          setEditedAddress({
-            email: participant?.email,
-            street: participant?.location,
-            province: participant?.province?.label,
-            site: '',
-          });
-        }}
-        headerTitle={t('participantDetail.profileModal.title')}
-        headerDescription={t('participantDetail.profileModal.subtitle', {
-          name: participant?.name,
-        })}
-        showCloseButton={false}
-        headerRightContent={
-            <Pressable
-            onPress={() => {
-              setIsEditingAddress(editing => !editing);
-              setAddressFieldErrors({});
-            }}
-          >
-            <LucideIcon
-              name="Pencil"
-              size={16}
-              color={theme.tokens.colors.primary500}
-            />
-          </Pressable>
-        }
-        size={isWeb ? 'sm' : 'lg'}
-        cancelButtonText={t('common.cancel')}
-        confirmButtonText={
-          isEditingAddress
-            ? t('participantDetail.profileModal.save')
-            : undefined
-        }
-        onCancel={() => {
-          setIsProfileModalOpen(false);
-          setIsEditingAddress(false);
-          setAddressFieldErrors({});
-          setEditedAddress({
-            email: participant?.email,
-            street: participant?.location,
-            province: participant?.province?.label,
-            site: participant?.site?.label,
-          });
-        }}
-        onConfirm={handleSaveAddress}
-      >
-        <VStack space="lg">
-          {/* Name Field */}
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.name')}
-            </Text>
-            <Text {...profileStyles.fieldValue}>{participant!.name}</Text>
-          </VStack>
-
-          {/* ID Field (externalId) */}
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.id')}
-            </Text>
-            <Text {...profileStyles.fieldValue}>{participant!.id}</Text>
-          </VStack>
-
-          {/* Contact Section */}
-          <VStack
-            space="xs"
-            {...(participant!.location ? profileStyles.fieldSection : {})}
-          >
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.contact')}
-            </Text>
-            <VStack space="sm">
-              <Text {...profileStyles.fieldValue}>{participant!.phone_code || ""} {participant!.phone || ""}</Text>
-              {isEditingAddress ? (
-                <VStack space="sm">
-                  {/* Street Address Input */}
-                  <VStack space="xs">
-                    <Input
-                      {...profileStyles.input}
-                      $focus-borderColor={theme.tokens.colors.inputFocusBorder}
-                    >
-                      <InputField
-                        placeholder={t(
-                          'common.profileFields.email',
-                        )}
-                        value={editedAddress?.email ?? ''}
-                        onChangeText={value =>
-                          handleAddressFieldChange('email', value)
-                        }
-                      />
-                    </Input>
-                    {addressFieldErrors.email ? (
-                      <Text size="xs" color="$error600" mt="$1">
-                        {addressFieldErrors.email}
-                      </Text>
-                    ) : null}
-                  </VStack>
-                </VStack>
-              ) : (
-                <Text {...profileStyles.fieldValue}>{editedAddress?.email || '-'}</Text>
-              )}
-            </VStack>
-          </VStack>
-
-          {/* Address Section */}
-          <VStack space="xs" {...profileStyles.fieldSection}>
-            <Text {...profileStyles.fieldLabel}>
-              {t('common.profileFields.address')}
-            </Text>
-            {isEditingAddress ? (
-              <VStack space="sm">
-                {/* Street Address Input */}
-                <VStack space="xs">
-                  <Input
-                    {...profileStyles.input}
-                    $focus-borderColor={theme.tokens.colors.inputFocusBorder}
-                  >
-                    <InputField
-                      placeholder={t(
-                        'common.profileFields.addressFields.street',
-                      )}
-                      value={editedAddress?.street || ''}
-                      onChangeText={value =>
-                        handleAddressFieldChange('street', value)
-                      }
-                    />
-                  </Input>
-                  {addressFieldErrors.street ? (
-                    <Text size="xs" color="$error600" mt="$1">
-                      {addressFieldErrors.street}
-                    </Text>
-                  ) : null}
-                  {addressFieldErrors.form ? (
-                    <Text size="xs" color="$error600" mt="$1">
-                      {addressFieldErrors.form}
-                    </Text>
-                  ) : null}
-                </VStack>
-              </VStack>
-            ) : (
-              <Text {...profileStyles.fieldValue}>{participant?.location || '-'}</Text>
-            )}
-            <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
-              {t('common.profileFields.addressFields.province')}: {participant?.province?.label || "-"}
-            </Text>
-            <Text {...profileStyles.fieldValue} color={'$textMutedForeground' as const}>
-              {t('common.profileFields.addressFields.site')}: {participant?.site?.label || '-'}
-            </Text>
-          </VStack>
-        </VStack>
-      </Modal>
+        onClose={closeProfileModal}
+        participant={participant}
+        isWeb={isWeb}
+        onParticipantSaved={handleParticipantAddressSaved}
+      />
     </Box>
   );
 }

@@ -120,7 +120,8 @@ export interface RenderModalsProps {
     task?: Task;
   };
   onCloseModal: () => void;
-  onConfirmDelete: () => void;
+  onConfirmDelete: () => void | Promise<void>;
+  confirmDeleteLoading?: boolean;
   taskName: string;
   t: (key: string, values?: Record<string, unknown>) => string;
 }

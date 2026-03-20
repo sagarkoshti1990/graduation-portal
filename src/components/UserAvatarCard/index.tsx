@@ -69,7 +69,8 @@ const UserAvatarCard = ({
   const { showAlert } = useAlert();
 
   const [selectedLc, setSelectedLc] = useState<any>(null);
-  const [selectedLCs, setSelectedLCs] = useState<Set<string>>(new Set());
+  /** Full row objects keyed by `value`, so assign payload matches selection count after search/pagination changes. */
+  const [selectedLCs, setSelectedLCs] = useState<Map<string, any>>(new Map());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingAssignment, setPendingAssignment] = useState<{
     selectedLCs?: any[];
@@ -77,8 +78,7 @@ const UserAvatarCard = ({
     supervisorData?: any;
     lcData?: any;
   } | null>(null);
-  // Pagination state for participants table
-  const [currentPage, setCurrentPage] = useState(1);
+  // Page size for assign tables (DataTable keeps current page internally)
   const [pageSize, setPageSize] = useState(5);
   
   // Use provided lcList or fall back to empty array
@@ -122,10 +122,10 @@ const UserAvatarCard = ({
               isChecked={selectedLCs.has(item.value)}
               onChange={(checked: boolean) => {
                 setSelectedLCs((prev) => {
-                  const newSet = new Set(prev);
-                  if (checked) newSet.add(item.value);
-                  else newSet.delete(item.value);
-                  return newSet;
+                  const next = new Map(prev);
+                  if (checked) next.set(item.value, item);
+                  else next.delete(item.value);
+                  return next;
                 });
               }}
             >
@@ -223,10 +223,10 @@ const UserAvatarCard = ({
               isChecked={selectedLCs.has(lc.value)}
               onChange={(checked: boolean) => {
                 setSelectedLCs((prev) => {
-                  const newSet = new Set(prev);
-                  if (checked) newSet.add(lc.value);
-                  else newSet.delete(lc.value);
-                  return newSet;
+                  const next = new Map(prev);
+                  if (checked) next.set(lc.value, lc);
+                  else next.delete(lc.value);
+                  return next;
                 });
               }}
             >
@@ -406,13 +406,10 @@ const UserAvatarCard = ({
               onRowClick={(item: any) => {
                 // Toggle checkbox selection on row click
                 setSelectedLCs((prev) => {
-                  const newSet = new Set(prev);
-                  if (newSet.has(item.value)) {
-                    newSet.delete(item.value);
-                  } else {
-                    newSet.add(item.value);
-                  }
-                  return newSet;
+                  const next = new Map(prev);
+                  if (next.has(item.value)) next.delete(item.value);
+                  else next.set(item.value, item);
+                  return next;
                 });
               }}
               pagination={{
@@ -422,12 +419,8 @@ const UserAvatarCard = ({
                 showPageSizeSelector: true,
                 pageSizeOptions: [5, 10, 25, 50],
               }}
-              onPageChange={(page: number) => {
-                setCurrentPage(page);
-              }}
               onPageSizeChange={(size: number) => {
                 setPageSize(size);
-                setCurrentPage(1); // Reset to first page when page size changes
               }}
             />
           </Box>
@@ -444,10 +437,10 @@ const UserAvatarCard = ({
               onRowClick={(item: any) => {
                 // Toggle checkbox selection on row click
                 setSelectedLCs((prev) => {
-                  const newSet = new Set(prev);
-                  if (newSet.has(item.value)) newSet.delete(item.value);
-                  else newSet.add(item.value);
-                  return newSet;
+                  const next = new Map(prev);
+                  if (next.has(item.value)) next.delete(item.value);
+                  else next.set(item.value, item);
+                  return next;
                 });
               }}
               pagination={{
@@ -457,12 +450,8 @@ const UserAvatarCard = ({
                 showPageSizeSelector: true,
                 pageSizeOptions: [5, 10, 25, 50],
               }}
-              onPageChange={(page: number) => {
-                setCurrentPage(page);
-              }}
               onPageSizeChange={(size: number) => {
                 setPageSize(size);
-                setCurrentPage(1);
               }}
             />
           </Box>
@@ -473,10 +462,7 @@ const UserAvatarCard = ({
           {...titleHeaderStyles.solidButton}
           mt={'$3'}
           onPress={() => {
-            const selectedValuesArray = Array.from(selectedLCs);
-            const selectedObjects = displayLCList.filter((item: any) =>
-              selectedValuesArray.includes(item.value)
-            );
+            const selectedObjects = Array.from(selectedLCs.values());
             
             if (isParticipantList) {
               // Handle assign Participants to LC - show confirmation modal
@@ -536,7 +522,7 @@ const UserAvatarCard = ({
                 if (onAssign && pendingAssignment.selectedLCs) {
                   await onAssign(pendingAssignment.selectedLCs);
                   // Clear selection only after successful assignment
-                  setSelectedLCs(new Set());
+                  setSelectedLCs(new Map());
                   
                   // Show success alert
                   const supervisorName = pendingAssignment.supervisorData?.name || 
@@ -632,7 +618,7 @@ const UserAvatarCard = ({
                 if (onAssign && pendingAssignment.selectedParticipants) {
                   await onAssign(pendingAssignment.selectedParticipants);
                   // Clear selection only after successful assignment
-                  setSelectedLCs(new Set());
+                  setSelectedLCs(new Map());
                   
                   // Show success alert
                   const lcName = pendingAssignment.lcData?.labelKey || 

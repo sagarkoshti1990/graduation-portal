@@ -10,6 +10,7 @@ import {
   Button,
   ButtonText,
   Container,
+  ButtonIcon,
 } from '@ui';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Modal from '@components/ui/Modal';
@@ -18,7 +19,7 @@ import Select from '@components/ui/Inputs/Select';
 import templateStyles from './styles';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
-import { createOrUpdateProgramUserMapping, getParticipantById, getParticipantsList , updateEntityDetails} from '../../services/participantService';
+import { createOrUpdateProgramUserMapping, getParticipantById, getParticipantsList, updateEntityDetails } from '../../services/participantService';
 import {
   getProjectCategoryList,
 } from '../../services/projectService';
@@ -30,18 +31,19 @@ import {
   PROJECT_PLAYER_CONFIGS,
 } from '@constants/PROJECTDATA';
 import { ProjectPlayerData } from 'src/project-player/types/components.types';
-import { getCategoryList, getProjectDetails} from '../../project-player/services/projectPlayerService';
+import { getCategoryList, getProjectDetails } from '../../project-player/services/projectPlayerService';
 import { useAuth } from '@contexts/AuthContext';
 import { STATUS, PATHWAY_TAGS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
+import { PageHeader } from '@components/PageHeader';
 
 
 const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useLanguage();
-  const { isWeb , isMobile} = usePlatform();
-  const { user } = useAuth();
+  const { isMobile } = usePlatform();
+  const { user, setNavbarData } = useAuth();
 
   const participantId = (route.params as { id?: string })?.id || '';
 
@@ -71,21 +73,24 @@ const DevelopInterventionPlan: React.FC = () => {
   /* -------------------- DERIVED -------------------- */
   const participantName = participant?.name || '-';
 
-    useEffect(() => {
-      const fetchEntityDetails = async () => {
-        if (participantId && user?.id) {
-          try {
-            const response = await getParticipantsList({entityId:participantId,userId:user?.id})
-            const {userDetails,...rest} = response?.result?.data?.[0]
-            const participantData = {...(userDetails || {}),...rest}
-            setParticipant(participantData);
-          } catch (error) {
-            console.log(error);
-          }
+  useEffect(() => {
+    const fetchEntityDetails = async () => {
+      if (participantId && user?.id) {
+        try {
+          const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
+          const { userDetails, ...rest } = response?.result?.data?.[0]
+          const participantData = { ...(userDetails || {}), ...rest }
+          setParticipant(participantData);
+          setNavbarData({
+            subtitle: participantData?.name,
+          });
+        } catch (error) {
+          console.log(error);
         }
-      };
-      fetchEntityDetails();
-    }, [participantId,user?.id, idpCreated]);
+      }
+    };
+    fetchEntityDetails();
+  }, [participantId, user?.id, idpCreated, setNavbarData]);
 
   const getCategoriesForPillar = (pillarId: string) =>
     pillarCategoryMap.find(p => p.pillarId === pillarId)?.categories || [];
@@ -101,7 +106,7 @@ const DevelopInterventionPlan: React.FC = () => {
   };
 
   const handleIdpCreation = useCallback(async (newProjectId: any) => {
-    console.log('handleIdpCreation -  Project ID:', newProjectId);
+    // console.log('handleIdpCreation -  Project ID:', newProjectId);
     setIdpCreated(true);
     if (newProjectId) {
       // Extract project ID from the response
@@ -111,7 +116,7 @@ const DevelopInterventionPlan: React.FC = () => {
       const response = await getProjectDetails(newProjectId);
       const project = response?.data;
       // update entity to IN_PROGRESS
-      const res = await updateEntityDetails({
+      await updateEntityDetails({
         userId: user?.userId,
         entityId: participantId,
         entityUpdates: {
@@ -120,8 +125,8 @@ const DevelopInterventionPlan: React.FC = () => {
         },
       });
 
-     // create user program Mapping for the participant
-      const userProgramMapping = await createOrUpdateProgramUserMapping({
+      // create user program Mapping for the participant
+      await createOrUpdateProgramUserMapping({
         userId: participantId,
         programId: project.programId,
         metaInformation: {
@@ -137,9 +142,10 @@ const DevelopInterventionPlan: React.FC = () => {
       //     status: STATUS.IN_PROGRESS,
       //   },
       // });
-    navigation.navigate('participant-detail', { id: route.params?.id });
+      // @ts-ignore
+      navigation.navigate('participant-detail' as never, { id: route.params?.id as never });
     }
-  }, []);
+  }, [navigation, participantId, projectId, user?.userId, route.params?.id]);
 
   const handleChangePathway = useCallback(() => {
     setShowProjectPlayerPreview(false);
@@ -234,7 +240,7 @@ const DevelopInterventionPlan: React.FC = () => {
   const ProjectPlayerConfigData: ProjectPlayerData = useMemo(
     () => ({
       projectId: projectId || participant?.idpProjectId,
-      categoryIds: categoryIdsArray, 
+      categoryIds: categoryIdsArray,
       selectedPathway: selectedPathway,
       pillarCategoryRelation: getPillarCategoryRelationships,
     }),
@@ -340,7 +346,7 @@ const DevelopInterventionPlan: React.FC = () => {
       setIsModalOpen(true);
 
       const pillarCategoryHierarchy: PillarCategoryMap[] = await Promise.all(
-        pillarIdsWithCategories.map(async (pillarId:any) => {
+        pillarIdsWithCategories.map(async (pillarId: any) => {
           // 1️⃣ categories under pillar
           const categoryList = await getCategoryList(pillarId);
           // const categoryList = categoryDetailsMockData.result;
@@ -355,9 +361,9 @@ const DevelopInterventionPlan: React.FC = () => {
                 // const subCategoryList = subCategoryDetailsMockData.result;
                 subcategories = Array.isArray(subCategoryList?.data)
                   ? subCategoryList.data.map((sc: any) => ({
-                      id: sc?._id ?? '',
-                      label: sc?.name ?? '',
-                    }))
+                    id: sc?._id ?? '',
+                    label: sc?.name ?? '',
+                  }))
                   : [];
               }
 
@@ -401,44 +407,32 @@ const DevelopInterventionPlan: React.FC = () => {
   /* -------------------- UI -------------------- */
 
   return (
-    <VStack flex={1} h="100vh" maxHeight="100vh" overflow="hidden" {...(templateStyles.container as any)}>
-      {/* Header */}
-      <Box flexShrink={0} {...(templateStyles.headerContainer as any)}>
-        <Box {...(templateStyles.contentContainer as any)}>
-          <HStack {...(templateStyles.navigationRow as any)}>
-            <Pressable onPress={handleBackPress}>
-              <HStack {...(templateStyles.backLinkContainer as any)}>
-                <LucideIcon
-                  name="ArrowLeft"
-                  size={20}
-                  color={theme.tokens.colors.textPrimary}
-                />
-                <Text {...(templateStyles.backLinkText as any)}>
-                  {t('template.backButton')}
-                </Text>
-              </HStack>
-            </Pressable>
-
-            <Pressable onPress={handleViewCheckIns}>
-              <Box {...(templateStyles.viewCheckInsButton as any)}>
-                <LucideIcon name="History" size={16} />
-                <Text {...(templateStyles.viewCheckInsButtonText as any)}>
-                  {t('logVisit.viewCheckIns')}
-                </Text>
-              </Box>
-            </Pressable>
-          </HStack>
-
-          <VStack {...(templateStyles.headerContent as any)}>
-            <Text {...(templateStyles.pageTitle as any)}>
-              {t('template.pageTitle')}
-            </Text>
-            <Text {...(templateStyles.pageSubtitle as any)}>
-              {t('template.pageSubtitle', { name: participantName })}
-            </Text>
-          </VStack>
-        </Box>
-      </Box>
+    <VStack flex={1} {...(templateStyles.container as any)}>
+      <PageHeader
+        onBackPress={handleBackPress}
+        backButtonText={t('template.backButton')}
+        _content={templateStyles.backLinkContainer}
+        _container={
+          {
+            py: "$4",
+            px: "$6",
+          }
+        }
+        rightSection={<Button variant="outlineghost" onPress={handleViewCheckIns}>
+          <ButtonIcon as={LucideIcon} name="History" size={16} />
+          <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
+        </Button>
+        }
+      >
+        <VStack {...(templateStyles.headerContent as any)}>
+          <Text {...(templateStyles.pageTitle as any)}>
+            {t('template.pageTitle')}
+          </Text>
+          <Text {...(templateStyles.pageSubtitle as any)}>
+            {t('template.pageSubtitle', { name: participantName })}
+          </Text>
+        </VStack>
+      </PageHeader>
 
       <Container flex={1} {...(templateStyles.mainContent as any)}>
         {/* Loading */}
@@ -456,115 +450,115 @@ const DevelopInterventionPlan: React.FC = () => {
         )}
 
         {/* Templates */}
-        {!isLoading &&
-          !error &&
-          !showProjectPlayerPreview && (
-        <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          {templates?.map(pathway => (
-            <Pressable
-              key={pathway?._id}
-              {...(templateStyles.pressableCard as any)}
-              // onPress={handleCategorySelection()}
-              onPress={() => handlePathwaySelection(pathway._id)}
-            >
-              <HStack space="md" alignItems="flex-start">
-                <Box
-                  {...(templateStyles.iconBox as any)}
-                  {...(templateStyles.iconContainer as any)}
+        {!isLoading && !error && !showProjectPlayerPreview && (
+          <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+            <VStack gap="$4">
+              {templates?.map(pathway => (
+                <Pressable
+                  key={pathway?._id}
+                  {...(templateStyles.pressableCard as any)}
+                  // onPress={handleCategorySelection()}
+                  onPress={() => handlePathwaySelection(pathway._id)}
                 >
-                  <LucideIcon
-                    name="FileText"
-                    size={25}
-                    color={theme.tokens.colors.gray600}
-                  />
-                </Box>
-                <VStack flex={1} space="xs">
-                  <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
-                    {pathway.name}
-                  </Text>
-                  <Text
-                    {...TYPOGRAPHY.bodySmall}
-                    color="$textMutedForeground"
-                    lineHeight="$lg"
-                  >
-                    {pathway.description}
-                  </Text>
-                  <HStack
-                    space="sm"
-                    alignItems="center"
-                    flexWrap="wrap"
-                    mt="$2"
-                  >
+                  <HStack space="md" alignItems="flex-start">
                     <Box
-                      {...(templateStyles.badge as any)}
-                      bg={
-                        String(pathway.metaInformation?.tags || '')
-                          .toLowerCase()
-                          .includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase())
-                          ? '$badgeSuccessBg'
-                          : '$badgeInfoBg'
-                      }
+                      {...(templateStyles.iconBox as any)}
+                      {...(templateStyles.iconContainer as any)}
                     >
-                      <Text
-                        {...TYPOGRAPHY.caption}
-                        fontWeight="$medium"
-                        color={
-                          String(pathway.metaInformation?.tags || '')
-                            .toLowerCase()
-                            .includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase())
-                            ? '$badgeSuccessText'
-                            : '$badgeInfoText'
-                        }
-                      >
-                        {pathway.metaInformation?.tags || ''}
-                      </Text>
+                      <LucideIcon
+                        name="ClipboardList"
+                        size={25}
+                        color={theme.tokens.colors.gray600}
+                      />
                     </Box>
-                    <Text
-                      {...TYPOGRAPHY.caption}
-                      color="$textMutedForeground"
-                      mr="$2"
-                    >
-                      {pathway?.children.length}{' '}
-                      {t('template.pathwayCard.pillars')}
-                    </Text>
-                  </HStack>
-                  <Box {...(templateStyles.pillarsSection as any)}>
-                    <Text {...TYPOGRAPHY.label} color="$textLight900" mb="$2">
-                      {t('template.pathwayCard.includedPillars')}
-                    </Text>
-                    <VStack>
-                      {pathway?.children?.map(
-                        (
-                          pillar: { name: string; tasks: number },
-                          index: number,
-                        ) => (
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
+                        {pathway.name}
+                      </Text>
+                      <Text
+                        {...TYPOGRAPHY.bodySmall}
+                        color="$textMutedForeground"
+                        lineHeight="$lg"
+                      >
+                        {pathway.description}
+                      </Text>
+                      <HStack
+                        space="sm"
+                        alignItems="center"
+                        flexWrap="wrap"
+                        mt="$2"
+                      >
+                        <Box
+                          {...(templateStyles.badge as any)}
+                          bg={
+                            String(pathway.metaInformation?.tags || '')
+                              .toLowerCase()
+                              .includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase())
+                              ? '$badgeSuccessBg'
+                              : '$badgeInfoBg'
+                          }
+                        >
                           <Text
-                            key={index}
-                            {...TYPOGRAPHY.bodySmall}
-                            color="$textMutedForeground"
-                            mb="$1"
+                            {...TYPOGRAPHY.caption}
+                            fontWeight="$medium"
+                            color={
+                              String(pathway.metaInformation?.tags || '')
+                                .toLowerCase()
+                                .includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase())
+                                ? '$badgeSuccessText'
+                                : '$badgeInfoText'
+                            }
                           >
-                            <Text color="$hoverBorder" mr="$2">
-                              •{' '}
-                            </Text>
-                            {pillar.name}
-                            {/* ({pillar.tasks}{' '}
-                            {t('template.pathwayCard.tasksLabel')}) */}
+                            {pathway.metaInformation?.tags || ''}
                           </Text>
-                        ),
-                      )}
+                        </Box>
+                        <Text
+                          {...TYPOGRAPHY.caption}
+                          color="$textMutedForeground"
+                          mr="$2"
+                        >
+                          {pathway?.children.length}{' '}
+                          {t('template.pathwayCard.pillars')}
+                        </Text>
+                      </HStack>
+                      <Box {...(templateStyles.pillarsSection as any)}>
+                        <Text {...TYPOGRAPHY.label} color="$textLight900" mb="$2">
+                          {t('template.pathwayCard.includedPillars')}
+                        </Text>
+                        <VStack>
+                          {pathway?.children?.map(
+                            (
+                              pillar: { name: string; tasks: number },
+                              index: number,
+                            ) => (
+                              <Text
+                                key={index}
+                                {...TYPOGRAPHY.bodySmall}
+                                color="$textMutedForeground"
+                                mb="$1"
+                              >
+                                <Text color="$hoverBorder" mr="$2">
+                                  •{' '}
+                                </Text>
+                                {pillar.name}
+                                {/* ({pillar.tasks}{' '}
+                            {t('template.pathwayCard.tasksLabel')}) */}
+                              </Text>
+                            ),
+                          )}
+                        </VStack>
+                      </Box>
                     </VStack>
-                  </Box>
-                </VStack>
-              </HStack>
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+                  </HStack>
+                </Pressable>
+              ))}
+            </VStack>
+          </ScrollView>
+        )}
 
         {!isLoading && !error && showProjectPlayerPreview && (
-        <Box flex={1} h="100%" overflow="hidden">
-          <ProjectPlayer config={configData} data={ProjectPlayerConfigData} />
+          <Box flex={1} h="100%" overflow="hidden">
+            <ProjectPlayer config={configData} data={ProjectPlayerConfigData} />
           </Box>
         )}
       </Container>
@@ -635,7 +629,7 @@ const DevelopInterventionPlan: React.FC = () => {
             </Button>
           </Box>
         }
-        //size={isWeb ? 'md' : 'lg'}
+      //size={isWeb ? 'md' : 'lg'}
       >
         <VStack gap="$1">
           <Text {...TYPOGRAPHY.bodySmall} color="$textSecondary" mb="$2">
@@ -649,32 +643,32 @@ const DevelopInterventionPlan: React.FC = () => {
                     {/* {t('template.categoryModal.categoryLabel')} */}
                     Category of {pillar?.name}
                   </Text>
-                 <Box {...(templateStyles.selectWrapper as any)}>
-                  <Select
-                    options={getCategoriesForPillar(pillar._id).map(c => ({
-                      label: c.label,
-                      value: c.id,
-                    }))}
-                    value={selectionByPillar[pillar._id]?.categoryId || ''}
-                    onChange={value => {
-                      const selectedCategory = getCategoriesForPillar(
-                        pillar._id,
-                      ).find(c => c.id === value);
-                      setSelectionByPillar(prev => ({
-                        ...prev,
-                        [pillar._id]: {
-                          categoryId: value,
-                          categoryName: selectedCategory?.label || '',
-                          subCategoryId: '', // reset
-                          subCategoryName: '', // reset
-                        },
-                      }));
-                    }}
-                    placeholder={t(
-                      'template.categoryModal.categoryPlaceholder',
-                    )}
-                    borderColor="$transparent"
-                  />
+                  <Box {...(templateStyles.selectWrapper as any)}>
+                    <Select
+                      options={getCategoriesForPillar(pillar._id).map(c => ({
+                        label: c.label,
+                        value: c.id,
+                      }))}
+                      value={selectionByPillar[pillar._id]?.categoryId || ''}
+                      onChange={value => {
+                        const selectedCategory = getCategoriesForPillar(
+                          pillar._id,
+                        ).find(c => c.id === value);
+                        setSelectionByPillar(prev => ({
+                          ...prev,
+                          [pillar._id]: {
+                            categoryId: value,
+                            categoryName: selectedCategory?.label || '',
+                            subCategoryId: '', // reset
+                            subCategoryName: '', // reset
+                          },
+                        }));
+                      }}
+                      placeholder={t(
+                        'template.categoryModal.categoryPlaceholder',
+                      )}
+                      borderColor="$transparent"
+                    />
                   </Box>
                 </VStack>
 
@@ -695,35 +689,34 @@ const DevelopInterventionPlan: React.FC = () => {
                     }
                   >
                     <Box {...(templateStyles.selectWrapper as any)}>
-                    <Select
-                      key={`subcategory-${pillar._id}-${
-                        selectionByPillar[pillar._id]?.categoryId || 'none'
-                      }`}
-                      options={getSubCategoriesForPillar(pillar._id).map(
-                        sc => ({
-                          label: sc.label,
-                          value: sc.id,
-                        }),
-                      )}
-                      value={selectionByPillar[pillar._id]?.subCategoryId || ''}
-                      onChange={value => {
-                        const selectedSubCategory = getSubCategoriesForPillar(
-                          pillar._id,
-                        ).find(sc => sc.id === value);
-                        setSelectionByPillar(prev => ({
-                          ...prev,
-                          [pillar._id]: {
-                            ...prev[pillar._id],
-                            subCategoryId: value,
-                            subCategoryName: selectedSubCategory?.label || '',
-                          },
-                        }));
-                      }}
-                      placeholder={t(
-                        'template.categoryModal.subCategoryPlaceholder',
-                      )}
-                      borderColor="$transparent"
-                    />
+                      <Select
+                        key={`subcategory-${pillar._id}-${selectionByPillar[pillar._id]?.categoryId || 'none'
+                          }`}
+                        options={getSubCategoriesForPillar(pillar._id).map(
+                          sc => ({
+                            label: sc.label,
+                            value: sc.id,
+                          }),
+                        )}
+                        value={selectionByPillar[pillar._id]?.subCategoryId || ''}
+                        onChange={value => {
+                          const selectedSubCategory = getSubCategoriesForPillar(
+                            pillar._id,
+                          ).find(sc => sc.id === value);
+                          setSelectionByPillar(prev => ({
+                            ...prev,
+                            [pillar._id]: {
+                              ...prev[pillar._id],
+                              subCategoryId: value,
+                              subCategoryName: selectedSubCategory?.label || '',
+                            },
+                          }));
+                        }}
+                        placeholder={t(
+                          'template.categoryModal.subCategoryPlaceholder',
+                        )}
+                        borderColor="$transparent"
+                      />
                     </Box>
                   </Box>
                 </VStack>
@@ -738,41 +731,41 @@ const DevelopInterventionPlan: React.FC = () => {
                 selectionByPillar[pillar._id]?.categoryId &&
                 selectionByPillar[pillar._id]?.subCategoryId,
             ) && (
-            <Box {...(templateStyles.summaryBox as any)}>
-              {pillarData
-                .filter((pillar: any) => pillar?.hasChildCategories)
-                .map((pillar: any) => {
-                  const selection = selectionByPillar[pillar._id];
+              <Box {...(templateStyles.summaryBox as any)}>
+                {pillarData
+                  .filter((pillar: any) => pillar?.hasChildCategories)
+                  .map((pillar: any) => {
+                    const selection = selectionByPillar[pillar._id];
 
-                  if (!selection?.categoryId || !selection?.subCategoryId) {
-                    return null;
-                  }
-                                     
-                  return (
-                    <React.Fragment key={pillar._id}>
-                      <Text
-                        key={pillar._id}
-                        {...TYPOGRAPHY.bodySmall}
-                        color="$blue800"
-                        fontWeight="$semibold"
-                        mb="$1"
-                      >
-                        {t('template.categoryModal.selectedLabel', {
-                          category: selection.categoryName,
-                          subcategory: selection.subCategoryName,
-                        })}
-                      </Text>
-                      <Text
-                        {...TYPOGRAPHY.caption}
-                        color="$blue700"
-                      >
-                        {t('template.categoryModal.selectedDescription')}
-                      </Text>
-                    </React.Fragment>
-                  );
-                })}
-            </Box>
-          )}
+                    if (!selection?.categoryId || !selection?.subCategoryId) {
+                      return null;
+                    }
+
+                    return (
+                      <React.Fragment key={pillar._id}>
+                        <Text
+                          key={pillar._id}
+                          {...TYPOGRAPHY.bodySmall}
+                          color="$blue800"
+                          fontWeight="$semibold"
+                          mb="$1"
+                        >
+                          {t('template.categoryModal.selectedLabel', {
+                            category: selection.categoryName,
+                            subcategory: selection.subCategoryName,
+                          })}
+                        </Text>
+                        <Text
+                          {...TYPOGRAPHY.caption}
+                          color="$blue700"
+                        >
+                          {t('template.categoryModal.selectedDescription')}
+                        </Text>
+                      </React.Fragment>
+                    );
+                  })}
+              </Box>
+            )}
         </VStack>
       </Modal>
     </VStack>
