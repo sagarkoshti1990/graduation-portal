@@ -6,6 +6,16 @@ export const templateStyles = {
       mr: '$4',
     },
   },
+  leftSection: {
+    width: 'auto',
+  },
+  rightSection: {
+    width: 'auto',
+  },
+  headerContainer: {
+    py: "$4",
+    px: "$6",
+  },
   pressableCard: {
     px: '$4',
     py: '$4',
@@ -96,6 +106,7 @@ export const templateStyles = {
     py: '$0' as const,
     pb: '$4' as const,
     '$md-px': '$0' as const,
+    flexWrap: 'nowrap' as const,
   },
   headerContent: {
     flexDirection: 'column',
