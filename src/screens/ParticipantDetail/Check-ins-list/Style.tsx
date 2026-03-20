@@ -56,8 +56,10 @@ export const logVisitStyles = {
   selectSolutionCard: {
     maxWidth: 500 as const,
     width: '100%' as const,
-    px: 40 as const,
-    py: 40 as const,
+    px: '$4' as const,
+    py: '$6' as const,
+    '$md-px': '$10' as const,
+    '$md-py': '$10' as const,
     alignSelf: 'center' as const,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
