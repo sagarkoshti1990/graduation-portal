@@ -114,7 +114,7 @@ const LogVisit: React.FC = () => {
           // @ts-ignore
           navigation.navigate('check-ins-list', { id: route.params?.id });
         }}>
-          <ButtonIcon as={LucideIcon} name="Clock" size={16} />
+          <ButtonIcon as={LucideIcon} name="History" size={16} />
           <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
         </Button>}
       />

@@ -7,12 +7,12 @@ export const templateStyles = {
     },
   },
   pressableCard: {
-    mb: '$4',
-    mt: '$1',
-    p: '$2',
+    px: '$4',
+    py: '$4',
+    pb: "$6",
     bg: '$white',
     borderWidth: 1,
-    borderColor: '$borderLight300',
+    borderColor: '$borderColor',
     borderRadius: '$xl',
     _pressed: { opacity: 0.8 },
     $web: {
@@ -29,8 +29,8 @@ export const templateStyles = {
   iconBox: {
     width: '$10',
     height: '$10',
-    borderRadius: '$md',
-    bg: '$gray100',
+    borderRadius: '$xl',
+    bg: '$accent200',
     justifyContent: 'center',
     alignItems: 'center',
     mr: '$3',
@@ -56,16 +56,13 @@ export const templateStyles = {
     justifyContent: 'center',
   },
   container: {
-    flex: 1,
-    height: '100vh',
-    maxHeight: '100vh',
-    overflow: 'hidden',
-    bg: '$bgSecondary',
+    flex: 1
   },
   mainContent: {
     flex: 1,
-    px: '$3',
-    py: '$2',
+    px: '$4',
+    py: '$6',
+    "$md-px": '$6',
   },
   modalFooter: {
     flexDirection: 'column-reverse',
@@ -93,35 +90,12 @@ export const templateStyles = {
     borderRadius: '$xl',
     overflow: 'hidden',
   },
-  headerContainer: {
-    bg: '$white',
-    px: '$6',
-    py: '$5',
-    borderBottomWidth: 1,
-    borderBottomColor: '$borderLight200',
-    mb: '$2',
-    flexShrink: 0,
-  },
-  contentContainer: {
-    width: '100%',
-    maxWidth: 1150,
-    alignSelf: 'center',
-  },
-  navigationRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    mb: '$4',
-  },
   backLinkContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backLinkText: {
-    fontSize: '$sm',
-    fontWeight: '$medium',
-    color: '$textPrimary',
-    ml: '$2',
+    alignItems: 'center' as const,
+    px: '$0' as const,
+    py: '$0' as const,
+    pb: '$4' as const,
+    '$md-px': '$0' as const,
   },
   headerContent: {
     flexDirection: 'column',
@@ -137,22 +111,6 @@ export const templateStyles = {
   pageSubtitle: {
     fontSize: '$md',
     color: '$textSecondary',
-  },
-  viewCheckInsButton: {
-    borderWidth: 1,
-    borderColor: '$borderLight300',
-    borderRadius: '$md',
-    px: '$4',
-    py: '$2',
-    bg: '$white',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: '$2',
-  },
-  viewCheckInsButtonText: {
-    color: '$textPrimary',
-    fontSize: '$sm',
-    fontWeight: '$medium',
   },
 };
 

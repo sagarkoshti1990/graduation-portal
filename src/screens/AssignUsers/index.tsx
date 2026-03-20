@@ -35,13 +35,6 @@ const AssignUsersScreen = () => {
  const isSupervisor = useIsSupervisor();
  type AssignTab = 'LC_TO_SUPERVISOR' | 'PARTICIPANT_TO_LC';
 
- // Log logged-in user role
- useEffect(() => {
-   console.log('Logged in user role:', user?.role);
-   console.log('Is Supervisor:', isSupervisor);
-   console.log('Full user object:', user);
- }, [user, isSupervisor]);
-
  // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR
  const [activeTab, setActiveTab] = useState<AssignTab>(
    isSupervisor ? 'PARTICIPANT_TO_LC' : 'LC_TO_SUPERVISOR'

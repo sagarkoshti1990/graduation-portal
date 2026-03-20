@@ -6,6 +6,7 @@ import {
   ScrollView,
   Button,
   ButtonText,
+  ButtonSpinner,
   HStack,
   Text,
   Pressable,
@@ -39,6 +40,8 @@ const ProjectComponent: React.FC = () => {
   const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChangePathwayOpen, setIsChangePathwayOpen] = useState(false);
+  const [isSubmittingInterventionPlan, setIsSubmittingInterventionPlan] =
+    useState(false);
   const { showAlert } = useAlert();
 
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
@@ -95,6 +98,7 @@ const ProjectComponent: React.FC = () => {
   const onSubmitInterventionPlan = async () => {
     if (!projectData) return;
 
+    setIsSubmittingInterventionPlan(true);
     try {
       // Collect all custom tasks grouped by template/pillar
       const templates: Array<{
@@ -185,6 +189,8 @@ const ProjectComponent: React.FC = () => {
     } catch (error) {
       console.error('Error submitting intervention plan:', error);
       showAlert('error', t('projectPlayer.error.submitFailed'));
+    } finally {
+      setIsSubmittingInterventionPlan(false);
     }
   };
 
@@ -430,15 +436,10 @@ const ProjectComponent: React.FC = () => {
                   <Box {...projectComponentStyles.footerButtonContainer}>
                     {/* Change Pathway Button */}
                     <Button
-                      borderRadius="$md"
-                      paddingHorizontal="$4"
-                      paddingVertical="$2"
+                      variant="outlineghost"
                       onPress={() => {
                         setIsChangePathwayOpen(true);
                       }}
-                      $hover-borderColor="$primary500"
-                      $hover-bg="$error50"
-                      {...projectComponentStyles.changePathwayButton}
                     >
                       <ButtonText
                         color="$textPrimary"
@@ -451,24 +452,28 @@ const ProjectComponent: React.FC = () => {
 
                     {/* Submit Intervention Plan Button */}
                     <Button
-                      bg="$primary500"
-                      borderRadius="$md"
-                      paddingHorizontal="$6"
-                      paddingVertical="$2"
+                      variant="solid"
                       onPress={onSubmitInterventionPlan}
-                      isDisabled={isSubmitDisabled}
-                      opacity={isSubmitDisabled ? 0.5 : 1}
-                      $hover-bg="$primary600"
+                      isDisabled={
+                        isSubmitDisabled || isSubmittingInterventionPlan
+                      }
+                      opacity={
+                        isSubmitDisabled || isSubmittingInterventionPlan
+                          ? 0.5
+                          : 1
+                      }
                       $web-cursor="pointer"
-                      {...projectComponentStyles.submitButton}
                     >
+                      {isSubmittingInterventionPlan && (
+                        <ButtonSpinner />
+                      )}
                       <ButtonText
                         color="$backgroundPrimary.light"
                         {...TYPOGRAPHY.button}
                         fontWeight="$semibold"
                       >
                         {t(
-                          'participantDetail.interventionPlan.createInterventionPlan',
+                          'participantDetail.interventionPlan.submitInterventionPlan',
                         )}
                       </ButtonText>
                     </Button>
