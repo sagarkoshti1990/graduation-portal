@@ -412,12 +412,9 @@ const DevelopInterventionPlan: React.FC = () => {
         onBackPress={handleBackPress}
         backButtonText={t('template.backButton')}
         _content={templateStyles.backLinkContainer}
-        _container={
-          {
-            py: "$4",
-            px: "$6",
-          }
-        }
+        _leftSection={templateStyles.leftSection}
+        _rightSection={templateStyles.rightSection}
+        _container={templateStyles.headerContainer}
         rightSection={<Button variant="outlineghost" onPress={handleViewCheckIns}>
           <ButtonIcon as={LucideIcon} name="History" size={16} />
           <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>

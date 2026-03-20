@@ -1,5 +1,5 @@
-import React from 'react';
-import { I18nManager } from 'react-native';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { I18nManager, Platform, Pressable, ScrollView } from 'react-native';
 import i18n from '@config/i18n';
 import {
   SelectItem,
@@ -13,8 +13,17 @@ import {
   SelectTrigger,
   ChevronDownIcon,
   SelectPortal,
+  Box,
+  HStack,
+  Text,
 } from '@gluestack-ui/themed';
+import { LucideIcon } from '@ui';
 import { getSelectTriggerStyles } from './Styles';
+
+let ReactDOM: any = null;
+if (Platform.OS === 'web') {
+  ReactDOM = require('react-dom');
+}
 
 type Option = {
   value: string;
@@ -23,7 +32,6 @@ type Option = {
   isRTL?: boolean;
 };
 
-// Input format can be strings, objects, or already normalized Option[]
 type RawOption = string | { label?: string; name?: string; value: string | null } | Option;
 
 type SelectProps = {
@@ -35,91 +43,312 @@ type SelectProps = {
   borderColor?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: string;
-  disabled?: boolean; // Support for disabling select (used in district filter)
+  disabled?: boolean;
 };
 
-export default function Select({
-  options,
-  value,
-  onChange,
-  placeholder,
-  bg='$white',
-  borderColor='$borderColor',
-  size = 'sm',
-  borderRadius = '$xl',
-  disabled = false,
-}: SelectProps) {
-  // Normalize options: handle strings, objects, or already normalized Option[]
-  const normalizedOptions: Option[] = options.map((e: RawOption, index: number) => {
-    // If already normalized Option format (has value and optional name/nativeName)
-    if (typeof e === 'object' && 'value' in e && typeof e.value === 'string' && ('name' in e || 'nativeName' in e)) {
+function normalizeOptions(options: RawOption[]): Option[] {
+  return options.map((e: RawOption, index: number) => {
+    if (
+      typeof e === 'object' &&
+      'value' in e &&
+      typeof e.value === 'string' &&
+      ('name' in e || 'nativeName' in e)
+    ) {
       return e as Option;
     }
-    
-    // If string format
     if (typeof e === 'string') {
-      return {
-        value: e,
-        name: e,
-      };
+      return { value: e, name: e };
     }
-    
-    // If object with label/value format (from Filter component)
     if (typeof e === 'object' && e !== null) {
       let optionValue: string;
       let optionName: string;
-      
       if ('value' in e && e.value !== undefined) {
-        // Use marker for actual null, keep string "null" as is
         optionValue = e.value === null ? '__NULL_VALUE__' : String(e.value);
       } else {
         optionValue = '';
       }
-      
-      // Prefer label, then name, then value
-      optionName = ('label' in e ? e.label : undefined) ?? 
-                   ('name' in e ? e.name : undefined) ?? 
-                   optionValue;
-      
-      return {
-        value: optionValue,
-        name: optionName,
-      };
+      optionName =
+        ('label' in e ? e.label : undefined) ??
+        ('name' in e ? e.name : undefined) ??
+        optionValue;
+      return { value: optionValue, name: optionName };
     }
-    
-    // Fallback
-    return {
-      value: String(index),
-      name: 'Unknown',
-    };
+    return { value: String(index), name: 'Unknown' };
   });
+}
 
-  const selectedOption = normalizedOptions.find(opt => opt.value === value);
+function resolveRefToDom(node: unknown): HTMLElement | null {
+  if (!node) return null;
+  const n = node as any;
+  if (typeof n.getBoundingClientRect === 'function') {
+    return n as HTMLElement;
+  }
+  const inner = n._nativeNode ?? n.current ?? n;
+  if (inner && typeof inner.getBoundingClientRect === 'function') {
+    return inner as HTMLElement;
+  }
+  return null;
+}
+
+const DROPDOWN_Z = 100000;
+
+const SELECT_SIZE_HEIGHT: Record<NonNullable<SelectProps['size']>, string> = {
+  xs: '$8',
+  sm: '$9',
+  md: '$10',
+  lg: '$11',
+  xl: '$12',
+};
+
+/** Web: custom dropdown portaled to document.body so it stacks above modals and escapes overflow clipping. */
+function WebSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  bg = '$white',
+  borderColor = '$borderColor',
+  size = 'sm',
+  borderRadius = '$xl',
+  disabled = false,
+}: SelectProps) {
+  const normalizedOptions = useMemo(() => normalizeOptions(options), [options]);
+  const valueKey = String(value ?? '');
+  const selectedOption = normalizedOptions.find(opt => opt.value === valueKey);
   const displayValue =
-    selectedOption?.nativeName ||
-    selectedOption?.name ||
-    selectedOption?.value ||
-    '';
+    selectedOption?.nativeName || selectedOption?.name || selectedOption?.value || '';
 
-  // Get localized placeholder with fallback
   const localizedPlaceholder =
     placeholder ?? i18n.t('common.selectOption', 'Select an option');
 
-  // Determine writing direction for RTL support
+  const writingDirection = I18nManager.isRTL ? 'rtl' : 'ltr';
+  const listId = useId().replace(/:/g, '');
+  const triggerRef = useRef<any>(null);
+  /** Must use ref for outside-click checks — RN Web may not forward `data-*` to the DOM, so querySelector was null and every click closed the menu before onPress. */
+  const dropdownRef = useRef<any>(null);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const updatePosition = useCallback(() => {
+    const el = resolveRefToDom(triggerRef.current);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+    updatePosition();
+    const onScrollOrResize = () => updatePosition();
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+    let removeListeners: (() => void) | undefined;
+    const timeoutId = window.setTimeout(() => {
+      const getDropdownRoot = (): HTMLElement | null => {
+        const fromRef = resolveRefToDom(dropdownRef.current);
+        if (fromRef) return fromRef;
+        return document.getElementById(`select-list-${listId}`);
+      };
+      const handlePointer = (e: MouseEvent | TouchEvent) => {
+        const target = e.target as Node | null;
+        if (!target) return;
+        const triggerEl = resolveRefToDom(triggerRef.current);
+        const dropdownEl = getDropdownRoot();
+        if (triggerEl?.contains(target)) return;
+        if (dropdownEl?.contains(target)) return;
+        setOpen(false);
+      };
+      document.addEventListener('click', handlePointer, false);
+      document.addEventListener('touchend', handlePointer, false);
+      removeListeners = () => {
+        document.removeEventListener('click', handlePointer, false);
+        document.removeEventListener('touchend', handlePointer, false);
+      };
+    }, 0);
+    return () => {
+      window.clearTimeout(timeoutId);
+      removeListeners?.();
+    };
+  }, [open, listId]);
+
+  const emitChange = (stringValue: string) => {
+    const opt = normalizedOptions.find(o => o.value === stringValue);
+    const label = opt?.nativeName || opt?.name || '';
+    onChange(stringValue, label);
+  };
+
+  const triggerStyles = getSelectTriggerStyles(bg, borderColor, size, borderRadius) as any;
+
+  const dropdownPanelWebStyle = {
+    position: 'fixed' as const,
+    top: pos.top,
+    left: pos.left,
+    width: pos.width,
+    zIndex: DROPDOWN_Z,
+    maxHeight: 280,
+    borderRadius: 12,
+    overflow: 'hidden' as const,
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+  };
+
+  const dropdown = open ? (
+    <Box
+      ref={dropdownRef}
+      data-select-dropdown={listId}
+      nativeID={`select-list-${listId}`}
+      id={`select-list-${listId}`}
+      bg="$white"
+      borderWidth={1}
+      borderColor="$borderColor"
+      // RN Web ViewStyle omits `position: fixed`; this panel is web-only (portaled).
+      style={dropdownPanelWebStyle as any}
+      {...(Platform.OS === 'web'
+        ? {
+            // Prevent document outside-click listener from seeing clicks that started inside the menu
+            onClick: (e: any) => e.stopPropagation(),
+          }
+        : {})}
+    >
+      <ScrollView style={{ maxHeight: 280 } as any}>
+        {normalizedOptions.map((option, index) => {
+          const label = option.nativeName || option.name || option.value;
+          const isSelected = option.value === valueKey;
+          return (
+            <Pressable
+              key={option?.value ?? option?.name ?? String(index)}
+              onPress={() => {
+                emitChange(option.value);
+                setOpen(false);
+              }}
+              accessibilityRole="menuitem"
+              accessibilityState={{ selected: isSelected }}
+            >
+              <HStack
+                alignItems="center"
+                justifyContent="space-between"
+                py="$2.5"
+                px="$3"
+                bg={isSelected ? '$background50' : 'transparent'}
+              >
+                <Text
+                  flex={1}
+                  fontSize="$sm"
+                  fontFamily="Inter"
+                  color="$textForeground"
+                  style={{ writingDirection }}
+                >
+                  {label}
+                </Text>
+                {isSelected ? (
+                  <LucideIcon name="Check" size={18} color="$textForeground" />
+                ) : (
+                  <Box w="$4.5" h="$4.5" />
+                )}
+              </HStack>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </Box>
+  ) : null;
+
+  return (
+    <>
+      <Box ref={triggerRef} position="relative" w="$full" style={{ overflow: 'visible' } as any}>
+        <Pressable
+          disabled={disabled}
+          onPress={() => !disabled && setOpen(o => !o)}
+          accessibilityRole="button"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={`select-list-${listId}`}
+        >
+          <HStack
+            {...triggerStyles}
+            h={SELECT_SIZE_HEIGHT[size]}
+            alignItems="center"
+            opacity={disabled ? 0.5 : 1}
+            pointerEvents={disabled ? 'none' : 'auto'}
+          >
+            <Text
+              flex={1}
+              fontSize="$sm"
+              lineHeight="$sm"
+              fontFamily="Inter"
+              color={displayValue ? '$textForeground' : '$text500'}
+              px="$3"
+              numberOfLines={1}
+              style={{ writingDirection }}
+            >
+              {displayValue || localizedPlaceholder}
+            </Text>
+            <Box mr="$3">
+              <LucideIcon name="ChevronDown" size={16} color="$textMutedForeground" />
+            </Box>
+          </HStack>
+        </Pressable>
+      </Box>
+      {Platform.OS === 'web' && ReactDOM && dropdown
+        ? ReactDOM.createPortal(dropdown, document.body)
+        : null}
+    </>
+  );
+}
+
+function NativeSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  bg = '$white',
+  borderColor = '$borderColor',
+  size = 'sm',
+  borderRadius = '$xl',
+  disabled = false,
+}: SelectProps) {
+  const normalizedOptions = useMemo(() => normalizeOptions(options), [options]);
+  const valueKey = String(value ?? '');
+  const selectedOption = normalizedOptions.find(opt => opt.value === valueKey);
+  const displayValue =
+    selectedOption?.nativeName || selectedOption?.name || selectedOption?.value || '';
+
+  const localizedPlaceholder =
+    placeholder ?? i18n.t('common.selectOption', 'Select an option');
+
   const writingDirection = I18nManager.isRTL ? 'rtl' : 'ltr';
 
   const handleValueChange = (newValue: string | undefined) => {
     if (newValue !== undefined && newValue !== null) {
       const stringValue = String(newValue);
-      // Allow empty strings and special markers (like __NULL_VALUE__) to pass through
-      // Empty strings are valid selections for filters (e.g., "String Null" option)
-      onChange(stringValue, selectedOption?.name || '');
+      const opt = normalizedOptions.find(o => o.value === stringValue);
+      onChange(stringValue, opt?.nativeName || opt?.name || '');
     }
   };
 
   return (
     <GluestackSelect
-      selectedValue={value}
+      selectedValue={valueKey}
       onValueChange={handleValueChange}
       isDisabled={disabled}
     >
@@ -136,7 +365,7 @@ export default function Select({
           editable={!disabled}
           // @ts-ignore - writingDirection is a valid style prop but may not be in types
           style={{ writingDirection, backgroundColor: bg }}
-          fontFamily='Inter'
+          fontFamily="Inter"
         />
         <SelectIcon mr="$3">
           <ChevronDownIcon />
@@ -159,4 +388,11 @@ export default function Select({
       </SelectPortal>
     </GluestackSelect>
   );
+}
+
+export default function Select(props: SelectProps) {
+  if (Platform.OS === 'web') {
+    return <WebSelect {...props} />;
+  }
+  return <NativeSelect {...props} />;
 }

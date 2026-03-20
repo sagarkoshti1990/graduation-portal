@@ -27,6 +27,10 @@ export interface PageHeaderProps {
   _container?: any;
   /** Root (outer) styles - overrides `pageHeaderStyles.container` (shadow/border, etc.) */
   _css?: any;
+  /** Left section styles */
+  _leftSection?: any;
+  /** Right section styles */
+  _rightSection?: any;
 }
 
 /**
@@ -43,12 +47,14 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   _content,
   _container,
   _css,
+  _leftSection,
+  _rightSection,
 }) => {
   return (
     <VStack {...pageHeaderStyles.container} {..._css}>
       <Container {..._container}>
         <HStack {...pageHeaderStyles.content} {..._content}>
-          <HStack {...pageHeaderStyles.leftSection}>
+          <HStack {...pageHeaderStyles.leftSection} {..._leftSection}>
             {/* @ts-ignore: ghost variant is defined in theme */}
             {onBackPress &&
               <Button variant={"ghost" as any} onPress={onBackPress}>
@@ -67,7 +73,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               )}
             </VStack>
           </HStack>
-          {rightSection ? <Box {...pageHeaderStyles.rightSection}>{rightSection}</Box> : null}
+          {rightSection ? <Box {...pageHeaderStyles.rightSection} {..._rightSection}>{rightSection}</Box> : null}
         </HStack>
         {children}
       </Container>
