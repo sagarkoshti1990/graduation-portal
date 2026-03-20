@@ -49,6 +49,9 @@ form.main {
   margin: 0 !important;
   gap: 1rem !important;
 }
+.btn-primary:disabled {
+  opacity: 0.5 !important;
+}
 /* lib-page-questions-grid .custom-font {
   max-height: calc(100vh - 357px) !important;
   min-height: calc(100vh - 357px) !important;

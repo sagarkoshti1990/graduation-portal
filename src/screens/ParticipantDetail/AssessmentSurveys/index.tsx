@@ -106,7 +106,6 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               key={card.id}
               card={card}
               userId={participant?.userId || ''}
-              certificate={projectData.certificate}
             />
           ))
         ) : (

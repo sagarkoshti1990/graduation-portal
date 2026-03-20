@@ -148,29 +148,26 @@ export default function ParticipantDetail() {
   useFocusEffect(
     useCallback(() => {
       fetchEntityDetails();
+      return () => {
+        setNavbarData(null);
+        setParticipant(undefined);
+        setStatus("");
+        setIdpCreated(false);
+        setEditedAddress({
+          email: '',
+          street: '',
+          province: '',
+          site: '',
+        });
+        setAreAllTasksCompleted(false);
+        setUpdatedProgress(undefined);
+        setHasProgressBaseline(false);
+        setConfigData(null);
+        setProjectPlayerConfigData(null);
+        setIsLoading(true);
+      };
     }, [fetchEntityDetails])
   );
-  // Cleanup navbar data on component unmount
-  useEffect(() => {
-    return () => {
-      setNavbarData(null);
-      setParticipant(undefined);
-      setStatus("");
-      setIdpCreated(false);
-      setEditedAddress({
-        email: '',
-        street: '',
-        province: '',
-        site: '',
-      });
-      setAreAllTasksCompleted(false);
-      setUpdatedProgress(undefined);
-      setHasProgressBaseline(false);
-      setConfigData(null);
-      setProjectPlayerConfigData(null);
-      setIsLoading(true);
-    };
-  }, [setNavbarData]);
 
   // Re-fetch when idpCreated changes
   useEffect(() => {

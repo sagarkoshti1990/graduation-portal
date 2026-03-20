@@ -45,109 +45,111 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
       ICONS?.[card?.name?.toLowerCase() as keyof typeof ICONS];
     setIconMeta(iconMeta as IconMeta);
   }, [card]);
-  
-  return (
-    <Card
-      {...assessmentSurveyCardStyles.cardContainer}
-      $web-boxShadow="none" // Remove shadow on web
-    >
-      <VStack space="lg">
-        {/* Card Header with Icon, name, Description, Action Button and Status Badge */}
-        <HStack {...assessmentSurveyCardStyles.cardHeader}>
-          <HStack
-            alignItems="flex-start"
-            space={entity?.status ? 'sm' : 'lg'}
-            flex={1}
-          >
-            <Box
-              {...(!entity?.status && {
-                ...assessmentSurveyCardStyles.iconContainer,
-                bg: iconMeta?.color || '$primary500',
-              })}
-            >
-              <LucideIcon
-                name={iconMeta?.icon || 'info'}
-                size={!entity?.status ? 24 : 20}
-                color={iconMeta?.iconColor || '$white'}
-              />
-            </Box>
-            <VStack flex={1} space="md">
-              <Text {...assessmentSurveyCardStyles.title}>{t(name)}</Text>
-              {/* Card Description */}
-              {!entity?.status && (
-                <VStack space="sm">
-                  <Text {...assessmentSurveyCardStyles.description}>
-                    {t(description)}
-                  </Text>
-                </VStack>
-              )}
-            </VStack>
-            {/* Status Badge - only show if status exists */}
-            {entity?.status && <StatusBadge status={entity?.status} />}
-          </HStack>
 
-          {/* Navigation Arrow - show if navigationUrl exists */}
-          {!entity?.status && navigationUrl && (
-            <Pressable
-              onPress={() => {
-                // @ts-ignore
-                navigation.navigate(navigationUrl as never, {
-                  id: userId || '',
-                  solutionId: card?.solutionId || card?.id,
-                });
-              }}
-              $web-cursor="pointer"
+  return (
+    <Pressable
+      {...(!entity?.status && navigationUrl && {
+        onPress: () => {
+          // @ts-ignore
+          navigation.navigate(navigationUrl as never, {
+            id: userId || '',
+            solutionId: card?.solutionId || card?.id,
+          });
+        }
+      })}
+      $web-cursor={!entity?.status && navigationUrl ? 'pointer' : 'auto'}
+      width='$full'
+    >
+      <Card
+        {...assessmentSurveyCardStyles.cardContainer}
+        $web-boxShadow="none" // Remove shadow on web
+      >
+        <VStack space="lg">
+          {/* Card Header with Icon, name, Description, Action Button and Status Badge */}
+          <HStack {...assessmentSurveyCardStyles.cardHeader}>
+            <HStack
+              alignItems="flex-start"
+              space={entity?.status ? 'sm' : 'lg'}
+              flex={1}
             >
+              <Box
+                {...(!entity?.status && {
+                  ...assessmentSurveyCardStyles.iconContainer,
+                  bg: iconMeta?.color || '$primary500',
+                })}
+              >
+                <LucideIcon
+                  name={iconMeta?.icon || 'info'}
+                  size={!entity?.status ? 24 : 20}
+                  color={iconMeta?.iconColor || '$white'}
+                />
+              </Box>
+              <VStack flex={1} space="md">
+                <Text {...assessmentSurveyCardStyles.title}>{t(name)}</Text>
+                {/* Card Description */}
+                {!entity?.status && (
+                  <VStack space="sm">
+                    <Text {...assessmentSurveyCardStyles.description}>
+                      {t(description)}
+                    </Text>
+                  </VStack>
+                )}
+              </VStack>
+              {/* Status Badge - only show if status exists */}
+              {entity?.status && <StatusBadge status={entity?.status} />}
+            </HStack>
+
+            {/* Navigation Arrow - show if navigationUrl exists */}
+            {!entity?.status && navigationUrl && (
               <LucideIcon
                 name="ArrowRight"
                 size={20}
                 color={"$textMutedForeground"}
               />
-            </Pressable>
-          )}
-        </HStack>
-        {entity?.status && (
-          <VStack space="lg">
-            <Text {...assessmentSurveyCardStyles.additionalInfo}>
-              {t(description)}
-            </Text>
-            <HStack space="sm" alignItems="center">
-              {/* Action Button */}
-              {entity?.status && (
-                <Button
-                  $md-width="fit-content"
-                  // @ts-ignore
-                  variant={entity?.status === CARD_STATUS.COMPLETED ? "outlineghost" : "solid"}
-                  onPress={() => {
-                    if (navigationUrl && userId) {
-                      // @ts-ignore
-                      navigation.navigate(navigationUrl as never, {
-                        id: userId || '',
-                        solutionId: card?.solutionId || card?.id,
-                        submissionNumber: entity?.submissionsCount,
-                      });
-                    } else {
-                      logger.log('userId is required');
-                    }
-                  }}
-                >
-                  <ButtonIcon
-                    as={LucideIcon}
-                    name="FileText"
-                    size={16}
-
-                  />
-                  <ButtonText
-                    {...assessmentSurveyCardStyles.buttonText}
-
+            )}
+          </HStack>
+          {entity?.status && (
+            <VStack space="lg">
+              <Text {...assessmentSurveyCardStyles.additionalInfo}>
+                {t(description)}
+              </Text>
+              <HStack space="sm" alignItems="center">
+                {/* Action Button */}
+                {entity?.status && (
+                  <Button
+                    $md-width="fit-content"
+                    // @ts-ignore
+                    variant={entity?.status === CARD_STATUS.COMPLETED ? "outlineghost" : "solid"}
+                    onPress={() => {
+                      if (navigationUrl && userId) {
+                        // @ts-ignore
+                        navigation.navigate(navigationUrl as never, {
+                          id: userId || '',
+                          solutionId: card?.solutionId || card?.id,
+                          submissionNumber: entity?.submissionsCount,
+                        });
+                      } else {
+                        logger.log('userId is required');
+                      }
+                    }}
                   >
-                    {entity?.status === CARD_STATUS.COMPLETED
-                      ? `${t('actions.view')} ${t(card?.name)}`
-                      : `${t('actions.fill')} ${t(card?.name)}`}
-                  </ButtonText>
-                </Button>
-              )}
-              {certificate && card?.keywords?.includes(CERTIFICATE_KEYWORD) && (
+                    <ButtonIcon
+                      as={LucideIcon}
+                      name="FileText"
+                      size={16}
+
+                    />
+                    <ButtonText
+                      {...assessmentSurveyCardStyles.buttonText}
+
+                    >
+                      {entity?.status === CARD_STATUS.COMPLETED
+                        ? `${t('actions.view')} ${t(card?.name)}`
+                        : `${t('actions.fill')} ${t(card?.name)}`}
+                    </ButtonText>
+                  </Button>
+                )}
+                {certificate && card?.keywords?.includes(CERTIFICATE_KEYWORD) && (
                   <Button
                     $md-width="fit-content"
                     // @ts-ignore
@@ -168,15 +170,16 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                     </ButtonText>
                   </Button>
                 )}
-                </HStack>
-          </VStack>
-        )}
-      </VStack>
-    </Card>
+              </HStack>
+            </VStack>
+          )}
+        </VStack>
+      </Card>
+    </Pressable>
   );
 };
 
-export const StatusBadge: React.FC<{ status: string,preFix?: any }> = ({ status, preFix }) => {
+export const StatusBadge: React.FC<{ status: string, preFix?: any }> = ({ status, preFix }) => {
   // Get status badge styling based on status type
   const getStatusBadgeStyle = () => {
     if (!status) return null;
@@ -207,15 +210,15 @@ export const StatusBadge: React.FC<{ status: string,preFix?: any }> = ({ status,
           )}
         {React.isValidElement(preFix)
           ? React.cloneElement(preFix, {
-              color:
-                status === CARD_STATUS.GRADUATED
-                  ? '$white'
-                  : status === CARD_STATUS.COMPLETED
+            color:
+              status === CARD_STATUS.GRADUATED
+                ? '$white'
+                : status === CARD_STATUS.COMPLETED
                   ? '$success600'
                   : status === CARD_STATUS.IN_PROGRESS || status === CARD_STATUS.DRAFT
-                  ? '$warning600'
-                  : '$textMuted',
-            })
+                    ? '$warning600'
+                    : '$textMuted',
+          })
           : preFix}
         <Text
           {...(status === CARD_STATUS.GRADUATED
