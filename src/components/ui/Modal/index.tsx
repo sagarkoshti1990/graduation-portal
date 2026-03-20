@@ -15,6 +15,7 @@ import {
   Icon as GluestackIcon,
   Button,
   ButtonText,
+  ButtonSpinner,
   ScrollView,
 } from '@gluestack-ui/themed';
 import { Pressable } from 'react-native';
@@ -71,6 +72,7 @@ const Modal: React.FC<ModalProps> = ({
   confirmButtonText,
   onCancel,
   onConfirm,
+  confirmLoading = false,
   confirmButtonColor = theme.tokens.colors.primary500,
   confirmButtonVariant = 'solid',
   // Additional styling
@@ -88,15 +90,22 @@ const Modal: React.FC<ModalProps> = ({
   // Determine if footer should be shown
   const hasFooter = footerContent || cancelButtonText || confirmButtonText;
   
-  // Handle cancel - use onCancel if provided, otherwise use onClose
-  const handleCancel = onCancel || onClose;
+  const handleClose = () => {
+    if (confirmLoading) return;
+    onClose();
+  };
+
+  const handleCancel = () => {
+    if (confirmLoading) return;
+    (onCancel || onClose)();
+  };
 
   return (
     <GluestackModal 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       size={size}
-      closeOnOverlayClick={closeOnOverlayClick}
+      closeOnOverlayClick={confirmLoading ? false : closeOnOverlayClick}
       {...commonModalContainerStyles}
       {...modalProps} // Pass through all Gluestack Modal props
     >
@@ -153,7 +162,7 @@ const Modal: React.FC<ModalProps> = ({
 
             {/* Close Button */}
             {showCloseButton && (
-              <Pressable onPress={onClose} accessibilityLabel={t('common.close')} accessibilityRole="button" {...commonModalCloseButtonStyles}>
+              <Pressable onPress={handleClose} disabled={confirmLoading} accessibilityLabel={t('common.close')} accessibilityRole="button" {...commonModalCloseButtonStyles}>
                 <GluestackIcon as={CloseIcon} size="md" color="$textLight600" />
               </Pressable>
             )}
@@ -180,6 +189,7 @@ const Modal: React.FC<ModalProps> = ({
                   <Button
                     {...profileStyles.cancelButton}
                     onPress={handleCancel}
+                    isDisabled={confirmLoading}
                   >
                     <ButtonText color={theme.tokens.colors.textPrimary} {...TYPOGRAPHY.button}>
                       {typeof cancelButtonText === 'string' ? t(cancelButtonText) : cancelButtonText}
@@ -194,10 +204,16 @@ const Modal: React.FC<ModalProps> = ({
                     bg={confirmButtonColor}
                     onPress={onConfirm}
                     $hover-bg={confirmButtonColor}
+                    isDisabled={confirmLoading}
                   >
-                    <ButtonText color={theme.tokens.colors.modalBackground} {...TYPOGRAPHY.button}>
-                      {typeof confirmButtonText === 'string' ? t(confirmButtonText) : confirmButtonText}
-                    </ButtonText>
+                    <HStack space="sm" alignItems="center">
+                      {confirmLoading && (
+                        <ButtonSpinner color={theme.tokens.colors.modalBackground} />
+                      )}
+                      <ButtonText color={theme.tokens.colors.modalBackground} {...TYPOGRAPHY.button}>
+                        {typeof confirmButtonText === 'string' ? t(confirmButtonText) : confirmButtonText}
+                      </ButtonText>
+                    </HStack>
                   </Button>
                 )}
               </HStack>

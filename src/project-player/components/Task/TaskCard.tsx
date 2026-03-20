@@ -67,6 +67,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   );
   const [isRejected, setIsRejected] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [confirmDeleteLoading, setConfirmDeleteLoading] = useState(false);
   const participantId = (route.params as any)?.id;
   // Modal state management (from Incoming)
   type ModalType = 'edit' | 'delete' | null;
@@ -138,10 +139,20 @@ const TaskCard: React.FC<TaskCardProps> = ({
     setModalState({ type: null });
   };
 
-  const handleConfirmDelete = () => {
-    deleteTask(task?._id);
-    closeModal();
-    showSuccess(t('projectPlayer.taskDeleted'));
+  const handleConfirmDelete = async () => {
+    if (!task?._id) return;
+    setConfirmDeleteLoading(true);
+    try {
+      await deleteTask(task._id);
+      closeModal();
+      showSuccess(t('projectPlayer.taskDeleted'));
+    } catch (e) {
+      showError(
+        e instanceof Error ? e.message : t('common.serverError500'),
+      );
+    } finally {
+      setConfirmDeleteLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -1080,6 +1091,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         modalState,
         onCloseModal: closeModal,
         onConfirmDelete: handleConfirmDelete,
+        confirmDeleteLoading,
         taskName: task?.name,
         t,
       })}

@@ -67,10 +67,10 @@ export interface ProjectContextValue {
   config: ProjectPlayerConfig; // Full config object
 
   // Actions
-  updateTask: (taskId: string, updates: Partial<Task>) => void;
+  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   updateProjectInfo: (updates: Partial<ProjectData>) => void;
-  addTask: (pillarId: string, task: Task) => void; // Updated signature
-  deleteTask: (taskId: string) => void;
+  addTask: (pillarId: string, task: Task) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
   saveLocal: () => void;
   syncToServer: () => Promise<void>;
   addedToPlanTaskIds: string[];

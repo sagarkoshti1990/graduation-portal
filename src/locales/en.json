@@ -127,6 +127,8 @@
     "deleteTask": "Delete Task",
     "confirmDeleteTask": "Are you sure you want to delete '{{taskName}}'? This action cannot be undone.",
     "taskDeleted": "Task deleted successfully",
+    "customTaskAddSuccess": "Custom task added successfully",
+    "customTaskUpdateSuccess": "Custom task updated successfully",
     "evidencePreview": "Evidence Preview",
     "viewAllUploadedEvidence": "View all uploaded evidence files for this task",
     "imagePreviewPlaceholder": "Image preview would be displayed here",
