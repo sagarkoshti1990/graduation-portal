@@ -23,17 +23,11 @@ import { usePlatform } from '@utils/platform';
 import {
   MAIN_MENU_ITEMS,
   MORE_INFORMATION_MENU_ITEMS,
+  USER_STORY_MENU_ITEMS,
+  type SidebarMenuItem,
 } from '@constants/ADMIN_SIDEBAR_MENU';
 import { useLanguage } from '@contexts/LanguageContext';
 import { theme } from '@config/theme';
-
-interface SidebarItem {
-  key: string;
-  label: string;
-  icon: string; // Lucide icon name
-  route?: string;
-  children?: SidebarItem[];
-}
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -52,8 +46,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     new Set(['user-management']),
   );
   const [expandedMoreInfo, setExpandedMoreInfo] = useState(true);
+  const [expandedUserStory, setExpandedUserStory] = useState(true);
   const [activeRoute, setActiveRoute] = useState<string>('');
   const { t } = useLanguage();
+  const { isWeb } = usePlatform();
 
   // Sync activeRoute with the current route from navigation
   useEffect(() => {
@@ -95,6 +91,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     }
   };
 
+  /** Static help HTML under /public/help — web only */
+  const openHelpInNewTab = (href: string) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.open(href, '_blank', 'noopener,noreferrer');
+  };
+
   const toggleExpand = (key: string) => {
     const newExpanded = new Set(expandedItems);
     if (newExpanded.has(key)) {
@@ -105,7 +109,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     setExpandedItems(newExpanded);
   };
 
-  const renderCollapsedItem = (item: SidebarItem) => {
+  const renderCollapsedItem = (item: SidebarMenuItem) => {
     const isActive = activeRoute === item.route;
     const hasChildren = item.children && item.children.length > 0;
 
@@ -113,6 +117,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <Pressable
         key={item.key}
         onPress={() => {
+          if (item.href) {
+            openHelpInNewTab(item.href);
+            return;
+          }
           // In collapsed mode, we don't support expanding children; just navigate
           if (!hasChildren) {
             handleNavigation(item.route);
@@ -138,7 +146,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     );
   };
 
-  const renderSidebarItem = (item: SidebarItem, isChild = false) => {
+  const renderSidebarItem = (item: SidebarMenuItem, isChild = false) => {
     const isExpanded = expandedItems.has(item.key);
     const hasChildren = item.children && item.children.length > 0;
     const isActive = activeRoute === item.route;
@@ -147,6 +155,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <Box key={item.key}>
         <Pressable
           onPress={() => {
+            if (item.href) {
+              openHelpInNewTab(item.href);
+              if (isMobile) {
+                handleClose();
+              }
+              return;
+            }
             if (hasChildren) {
               toggleExpand(item.key);
             } else {
@@ -268,6 +283,34 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </VStack>
           )}
         </Box>
+
+        {/* USER STORY — static help guides, web only (new tab) */}
+        {isWeb && (
+          <>
+            <Divider my="$4" />
+            <Box>
+              <Pressable
+                onPress={() => setExpandedUserStory(!expandedUserStory)}
+                {...sidebarStyles.quickActionsHeader}
+              >
+                <HStack {...sidebarStyles.quickActionsTitleContainer}>
+                  <Text {...sidebarStyles.quickActionsTitle}>
+                    {t('admin.menu.userStory')}
+                  </Text>
+                  <Icon
+                    as={expandedUserStory ? ChevronUpIcon : ChevronDownIcon}
+                    {...sidebarStyles.quickActionsChevron}
+                  />
+                </HStack>
+              </Pressable>
+              {expandedUserStory && (
+                <VStack {...sidebarStyles.quickActionsContent}>
+                  {USER_STORY_MENU_ITEMS.map(item => renderSidebarItem(item))}
+                </VStack>
+              )}
+            </Box>
+          </>
+        )}
       </ScrollView>
 
       {/* Bottom: Language & System Status */}
@@ -308,6 +351,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <VStack space="md" alignItems="center">
           {MORE_INFORMATION_MENU_ITEMS.map(item => renderCollapsedItem(item))}
         </VStack>
+
+        {isWeb && (
+          <>
+            <Divider my="$4" />
+            <VStack space="md" alignItems="center">
+              {USER_STORY_MENU_ITEMS.map(item => renderCollapsedItem(item))}
+            </VStack>
+          </>
+        )}
       </ScrollView>
     </>
   );

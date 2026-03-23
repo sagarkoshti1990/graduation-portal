@@ -1,12 +1,15 @@
-interface SidebarItem {
+export interface SidebarMenuItem {
   key: string;
   label: string;
   icon: string; // Lucide icon name
+  /** In-app route (React Navigation) */
   route?: string;
-  children?: SidebarItem[];
+  /** Static help URL path (web only), opens in new tab — use with `route` omitted */
+  href?: string;
+  children?: SidebarMenuItem[];
 }
 
-export const MAIN_MENU_ITEMS: SidebarItem[] = [
+export const MAIN_MENU_ITEMS: SidebarMenuItem[] = [
   // Dashboard is hidden from menu but still accessible via /admin-dashboard URL
   // {
   //   key: 'dashboard',
@@ -40,7 +43,7 @@ export const MAIN_MENU_ITEMS: SidebarItem[] = [
   // },
 ];
 
-// export const QUICK_ACTION_MENU_ITEMS: SidebarItem[] = [
+// export const QUICK_ACTION_MENU_ITEMS: SidebarMenuItem[] = [
 //   {
 //     key: 'upload-users',
 //     label: 'admin.menu.uploadUsers',
@@ -55,7 +58,7 @@ export const MAIN_MENU_ITEMS: SidebarItem[] = [
 //   },
 // ];
 
-export const MORE_INFORMATION_MENU_ITEMS: SidebarItem[] = [
+export const MORE_INFORMATION_MENU_ITEMS: SidebarMenuItem[] = [
   {
     key: 'csv-templates',
     label: 'admin.menu.csvImportTemplates',
@@ -73,5 +76,27 @@ export const MORE_INFORMATION_MENU_ITEMS: SidebarItem[] = [
     label: 'admin.menu.profileFieldEditPermissions',
     icon: 'FilePenLine', // Lucide icon name
     route: 'ProfilePermissions', // Placeholder route
+  },
+];
+
+/** GBL help guides — shown in admin sidebar on web only; opens static HTML in a new tab */
+export const USER_STORY_MENU_ITEMS: SidebarMenuItem[] = [
+  {
+    key: 'user-story-admin-guide',
+    label: 'admin.menu.userStoryGblAdminGuide',
+    icon: 'BookOpen',
+    href: '/help/gbl-guide-admin.html',
+  },
+  {
+    key: 'user-story-dashboard-guide',
+    label: 'admin.menu.userStoryGblDashboardGuide',
+    icon: 'LayoutDashboard',
+    href: '/help/gbl-guide-dashboard.html',
+  },
+  {
+    key: 'user-story-lc-guide',
+    label: 'admin.menu.userStoryGblLcGuide',
+    icon: 'MapPin',
+    href: '/help/gbl-guide-lclf.html',
   },
 ];
