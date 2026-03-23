@@ -34,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
 
   // Set document title for web - memoize to avoid recalculation
   const pageTitle = useMemo(() => 
-    pageName ? t(`admin.pageTitle.${pageName}`) : title,
+    pageName ? t(`lc.pageTitle.${pageName}`) : title,
     [pageName, title, t]
   );
   useDocumentTitle(pageTitle);

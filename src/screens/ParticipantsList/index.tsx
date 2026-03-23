@@ -66,7 +66,7 @@ const ParticipantsList: React.FC = () => {
   const { user } = useAuth();
 
   // Set document title
-  useDocumentTitle(t('admin.pageTitle.participants'));
+  useDocumentTitle(t('lc.pageTitle.participants'));
 
   // State management
   const [participants, setParticipants] = useState<Participant[]>([]);

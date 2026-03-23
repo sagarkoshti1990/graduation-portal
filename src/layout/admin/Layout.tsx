@@ -38,7 +38,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
   useDocumentTitle(pageTitle);
 
   const handleCloseDrawer = () => {
-    setDrawerOpen(false);
+    setIsDrawerOpen(false);
   };
 
   useEffect(() => {

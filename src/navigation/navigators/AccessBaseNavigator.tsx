@@ -74,7 +74,7 @@ const AccessBaseNavigator: React.FC<{
           name={page.name}
           component={page.wrappedComponent}
           options={{
-            title: t(`admin.pageTitle.${page.name}`),
+            title: t(`lc.pageTitle.${page.name}`),
           }}
         />
       ))}

@@ -74,8 +74,8 @@ export default function ParticipantDetail() {
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   // Set document title with participant name
   const pageTitle = participant?.name
-    ? `${participant.name} - ${t('admin.pageTitle.participant-detail')}`
-    : t('admin.pageTitle.participant-detail');
+    ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
+    : t('lc.pageTitle.participant-detail');
   useDocumentTitle(pageTitle);
 
   const fetchEntityDetails = useCallback(async () => {
