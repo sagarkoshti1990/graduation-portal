@@ -21,6 +21,7 @@ const mimeTypes = {
   '.eot': 'application/vnd.ms-fontobject',
   '.otf': 'application/font-otf',
   '.wasm': 'application/wasm',
+  '.webmanifest': 'application/manifest+json',
   '.pdf': 'application/pdf',
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   '.doc': 'application/msword',

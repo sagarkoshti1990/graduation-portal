@@ -70,23 +70,10 @@ module.exports = (env = {}, argv = {}) => {
   // Merge with system environment variables (system vars take precedence)
   const allEnvVars = { ...envVars, ...process.env };
 
-  // Custom plugin to copy web-component folder
-  class CopyWebComponentPlugin {
+  // Copy selected public assets into dist (PWA icons, manifest, web-component, etc.)
+  class CopyPublicToDistPlugin {
     apply(compiler) {
-      compiler.hooks.afterEmit.tap('CopyWebComponentPlugin', (compilation) => {
-        const sourceDir = path.resolve(__dirname, 'public/web-component');
-        const destDir = path.resolve(__dirname, 'dist/web-component');
-
-        if (!fs.existsSync(sourceDir)) {
-          return;
-        }
-
-        // Create destination directory if it doesn't exist
-        if (!fs.existsSync(destDir)) {
-          fs.mkdirSync(destDir, { recursive: true });
-        }
-
-        // Copy all files from source to destination
+      compiler.hooks.afterEmit.tap('CopyPublicToDistPlugin', () => {
         const copyRecursiveSync = (src, dest) => {
           const exists = fs.existsSync(src);
           const stats = exists && fs.statSync(src);
@@ -102,16 +89,48 @@ module.exports = (env = {}, argv = {}) => {
                 path.join(dest, childItemName)
               );
             });
-          } else {
+          } else if (exists) {
+            const destParent = path.dirname(dest);
+            if (!fs.existsSync(destParent)) {
+              fs.mkdirSync(destParent, { recursive: true });
+            }
             fs.copyFileSync(src, dest);
           }
         };
 
+        const distRoot = path.resolve(__dirname, 'dist');
+        const jobs = [
+          ['public/web-component', 'dist/web-component'],
+          ['public/pwa', 'dist/pwa'],
+        ];
+        const singleFiles = [
+          ['public/manifest.webmanifest', 'dist/manifest.webmanifest'],
+          ['public/storage-keys.js', 'dist/storage-keys.js'],
+        ];
+
         try {
-          copyRecursiveSync(sourceDir, destDir);
-          console.log('✓ Copied web-component folder to dist');
+          for (const [relSrc, relDest] of jobs) {
+            const sourceDir = path.resolve(__dirname, relSrc);
+            const destDir = path.resolve(__dirname, relDest);
+            if (fs.existsSync(sourceDir)) {
+              copyRecursiveSync(sourceDir, destDir);
+            }
+          }
+          for (const [relSrc, relDest] of singleFiles) {
+            const sourceFile = path.resolve(__dirname, relSrc);
+            const destFile = path.resolve(__dirname, relDest);
+            if (fs.existsSync(sourceFile)) {
+              copyRecursiveSync(sourceFile, destFile);
+            }
+          }
+          if (fs.existsSync(path.join(distRoot, 'web-component'))) {
+            console.log('✓ Copied web-component folder to dist');
+          }
+          if (fs.existsSync(path.join(distRoot, 'pwa'))) {
+            console.log('✓ Copied PWA assets (public/pwa) to dist');
+          }
         } catch (error) {
-          console.error('Error copying web-component folder:', error);
+          console.error('Error copying public assets to dist:', error);
         }
       });
     }
@@ -350,8 +369,7 @@ module.exports = (env = {}, argv = {}) => {
         resourceRegExp: /^@env$/,
       }),
       new EmitWebAppVersionPlugin(webAppBuildId),
-      // Copy web-component folder from public to dist using custom plugin
-      new CopyWebComponentPlugin(),
+      new CopyPublicToDistPlugin(),
     ],
     performance: {
       hints: isProduction ? 'warning' : false,
