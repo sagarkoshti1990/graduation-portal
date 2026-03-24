@@ -418,7 +418,11 @@ const buildDefaultValuesFromObservation = (
                   })()
             );
             if (keyFound !== undefined) {
-              defaultValues[pageQuestion._id] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
+              let value = typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value;
+              if(pageQuestion.responseType === "radio") {
+                value = pageQuestion.options.find((option: any) => option.value === value || option.label === value || (typeof option.label === "string" && typeof value === "string" && option.label.toLowerCase().includes(value.toLowerCase())))?.value;
+              }
+              defaultValues[pageQuestion._id] = { value: value, readonly: userData[keyFound]?.readonly === false ? false : true };
             }
           }
         } else {
