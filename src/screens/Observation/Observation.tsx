@@ -80,7 +80,7 @@ const Observation: React.FC = () => {
           "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
           "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
           "What is your name?":{value:newData?.name, readonly: false},
-          "What is your ID number?":newData?.userId,
+          "What is your ID number?":{value:newData?.userDetails?.national_id?.label || "", readonly: false},
           // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
           "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
           "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
