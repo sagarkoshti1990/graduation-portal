@@ -1184,6 +1184,10 @@
       "main": "Main Navigation",
       "quickActions": "Quick Actions",
       "moreInformation": "MORE INFORMATION",
+      "userStory": "USER STORY",
+      "userStoryGblAdminGuide": "GBL Admin Guide",
+      "userStoryGblDashboardGuide": "GBL Dashboard Guide",
+      "userStoryGblLcGuide": "GBL LC Guide",
       "csvImportTemplates": "CSV Import Templates",
       "passwordManagementPolicy": "Password Management Policy",
       "profileFieldEditPermissions": "Profile Field Edit Permissions"

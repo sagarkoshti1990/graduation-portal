@@ -1,0 +1,636 @@
+/* Shared styles for GBL help guides (Admin, Dashboard, Field Staff). */
+
+:root{
+  --brand:#8B2842;
+  --brand-dark:#6b1f32;
+  --brand-light: rgba(139,40,66,.06);
+  --navy:#002851;
+  --accent:#f59e0b;
+  --green:#22c55e;
+  --danger:#dc2626;
+
+  --bg:#fafbfc;
+  --surface:#ffffff;
+  --surface-2:#f8fafc;
+  --border:#e2e8f0;
+  --text:#0f172a;
+  --muted:#475569;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 10px 24px rgba(15,23,42,.08);
+  --radius:14px;
+
+  /* Admin web app sidebar (AdminSidebar + theme.ts / Gluestack tokens) */
+  --app-bg-sidebar:#f8fafc;
+  --app-border-sidebar:#d4d4d4;
+  --app-sidebar-section:#8c8c8c;
+  --app-sidebar-item:#262626;
+  --app-sidebar-item-muted:#737373;
+  --app-sidebar-active-bg:#f1f5f9;
+  --app-sidebar-active-text:#2d2d2d;
+  --app-sidebar-hover-bg:#f1f5f9;
+  --app-sidebar-radius:6px;
+
+  --sidebar-w:256px;
+  --content-max:1100px;
+  /* Sticky header height (used for scroll-margin / anchor offset) */
+  --header-offset:72px;
+  --header-bg:#fafafa;
+  --header-border:#e5e5e5;
+  --header-text-strong:#171717;
+  --header-text-muted:#737373;
+  --header-badge-bg:#dc2626;
+  --focus: 0 0 0 3px rgba(139,40,66,.25);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  font-size:15px;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* -----------------------------
+   Help guide page header: main title left, programme / version lines right
+------------------------------ */
+.header{
+  background:var(--header-bg);
+  color:var(--header-text-strong);
+  padding:10px 24px;
+  position:sticky;
+  top:0;
+  z-index:100;
+  border-bottom:1px solid var(--header-border);
+  box-shadow:0 1px 3px rgba(15,23,42,.06);
+}
+.header-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px 24px;
+  width:100%;
+  max-width:100%;
+}
+/* Legacy: header logo removed (brand lives in .sidebar-brand); keep rule if any page still uses it */
+.header .logo{width:56px;height:56px;object-fit:contain;background:#fff;border-radius:6px;padding:4px}
+/* Help guides: main title left, programme / version lines right */
+.header-title-block{
+  flex:1;
+  min-width:0;
+  text-align:left;
+}
+.header-title-block h1{
+  font-size:1.05rem;
+  font-weight:600;
+  margin:0;
+  color:var(--header-text-strong);
+  line-height:1.3;
+}
+body[data-help-page="dashboard"] .header-title-block h1{font-weight:700}
+.header-meta-block{
+  flex:0 1 auto;
+  /* max-width:min(52%,420px); */
+  text-align:right;
+}
+.header-meta-block p,
+.header-meta-block .sub{
+  font-size:.75rem;
+  color:var(--header-text-muted);
+  margin:0;
+}
+.header-meta-block .sub{margin-bottom:4px}
+.header-meta-block .header-meta,
+.header-meta-block .meta{margin-top:4px}
+.header-text{min-width:0;flex:1}
+.header-text h1{font-size:1.05rem;font-weight:600;margin-bottom:2px;color:var(--header-text-strong);line-height:1.3}
+body[data-help-page="dashboard"] .header-text h1{font-weight:700}
+.header-text p{font-size:.75rem;color:var(--header-text-muted);margin:0}
+.header-text .header-meta{margin-top:4px}
+.header-badge{display:none}
+
+/* Right cluster: notifications + user (parity with src/components/Header) */
+.header-actions{
+  display:flex;
+  align-items:center;
+  flex-shrink:0;
+  gap:20px;
+}
+.header-notify{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:44px;
+  height:44px;
+  padding:0;
+  border:none;
+  background:transparent;
+  border-radius:999px;
+  cursor:default;
+  color:var(--header-text-strong);
+}
+.header-notify:focus-visible{outline:none;box-shadow:var(--focus)}
+.header-notify-icon{width:22px;height:22px}
+.header-notify-badge{
+  position:absolute;
+  top:4px;
+  right:2px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  background:var(--header-badge-bg);
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  line-height:18px;
+  text-align:center;
+  box-sizing:border-box;
+}
+.header-user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:default;
+  padding:4px 0 4px 4px;
+  border-radius:10px;
+}
+.header-avatar{
+  width:36px;
+  height:36px;
+  border-radius:999px;
+  background:var(--brand);
+  color:#fff;
+  font-size:.85rem;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.header-user-text{display:flex;flex-direction:column;gap:0;line-height:1.25;text-align:left}
+.header-user-name{font-size:.875rem;font-weight:600;color:var(--header-text-strong)}
+.header-user-role{font-size:.8125rem;color:var(--header-text-muted)}
+.header-chevron{width:20px;height:20px;color:var(--header-text-muted);flex-shrink:0}
+
+/* -----------------------------
+   Shared layout + sidebar
+------------------------------ */
+/* Row: sidebar (col 1) + .main (col 2: header + content). Matches app shell. */
+.layout{display:flex;min-height:100vh;width:100%;margin:0;align-items:stretch}
+
+/* Main column: header is sticky within this column only (not full viewport width). */
+.main{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+
+.sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  background:var(--app-bg-sidebar);
+  color:var(--app-sidebar-item-muted);
+  /* Mirrors ScrollView px="$4" py="$3" in AdminSidebar */
+  padding:12px 16px 16px;
+  position:sticky;
+  top:0;
+  align-self:flex-start;
+  height:100vh;
+  max-height:100vh;
+  overflow:hidden;
+  border-right:1px solid var(--app-border-sidebar);
+}
+.sidebar-panel::-webkit-scrollbar{width:6px}
+.sidebar-panel::-webkit-scrollbar-track{background:transparent}
+.sidebar-panel::-webkit-scrollbar-thumb{background:rgba(15,23,42,.18);border-radius:999px}
+
+/* Logo + title block (matches Admin app sidebar brand row) */
+.sidebar-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:4px 4px 16px;
+  margin:0 0 4px;
+  border-bottom:1px solid var(--app-border-sidebar);
+}
+.sidebar-logo{
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:8px;
+  padding:4px;
+  flex-shrink:0;
+  box-shadow:0 1px 2px rgba(15,23,42,.06);
+}
+.sidebar-brand-text{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.sidebar-brand-title{
+  font-size:15px;
+  font-weight:700;
+  line-height:1.25;
+  color:var(--app-sidebar-item);
+}
+.sidebar-brand-sub{
+  font-size:12px;
+  font-weight:500;
+  color:var(--app-sidebar-item-muted);
+  line-height:1.3;
+}
+.sidebar-brand + h3,
+.sidebar-brand + .sidebar-section{margin-top:12px}
+
+/* Section titles: same as sidebarStyles.sectionTitle + quickActions header spacing */
+.sidebar-section,
+.sidebar h3{
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--app-sidebar-section);
+  padding:8px 12px;
+  margin:16px 0 8px;
+  min-height:32px;
+  display:flex;
+  align-items:center;
+}
+.sidebar-section:first-child,
+.sidebar h3:first-child{margin-top:4px}
+
+.sidebar ul{
+  list-style:none;
+  padding:0;
+  margin:0 0 8px;
+}
+.sidebar ul li{margin:0;padding:0}
+
+.sidebar a{
+  display:block;
+  padding:8px 12px;
+  margin-bottom:4px;
+  border-radius:var(--app-sidebar-radius);
+  color:var(--app-sidebar-item);
+  text-decoration:none;
+  font-size:14px;
+  font-weight:400;
+  line-height:1.4;
+  border-left:none;
+  transition:background .15s ease, color .15s ease;
+}
+.sidebar a:hover{
+  background:var(--app-sidebar-hover-bg);
+  color:var(--app-sidebar-active-text);
+  text-decoration:none;
+}
+.sidebar a.active{
+  background:var(--app-sidebar-active-bg);
+  color:var(--app-sidebar-active-text);
+  font-weight:500;
+}
+.sidebar a[aria-current="true"]{font-weight:500}
+/* Child rows: ml="$6" in app */
+.sidebar a.sub{
+  margin-left:24px;
+  padding-left:12px;
+  font-size:14px;
+  color:var(--app-sidebar-item);
+}
+.sidebar a.sub:hover,
+.sidebar a.sub.active{color:var(--app-sidebar-active-text)}
+/* LCLF guide: nested items use <li class="sub"><a>… */
+.sidebar ul li.sub > a{
+  margin-left:24px;
+  padding-left:12px;
+}
+
+/* Collapsible sidebar (help guides) */
+.sidebar{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  padding-top:8px;
+}
+.sidebar-panel{
+  flex:1;
+  min-width:0;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-bottom:8px;
+  /* Small inset so labels don’t touch the thumb; scrollbar runs along the sidebar’s right edge (no outer gutter) */
+  padding-right:4px;
+  box-sizing:border-box;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(15,23,42,.22) transparent;
+}
+/* Collapse control: circular “floating” handle on the sidebar edge (matches app-style reference) */
+.sidebar-toggle{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  margin:0 4px 8px auto;
+  padding:0;
+  border:1px solid #e5e5e5;
+  border-radius:50%;
+  background:#fff;
+  color:#94a3b8;
+  cursor:pointer;
+  box-shadow:0 1px 2px rgba(15,23,42,.08),0 4px 12px rgba(15,23,42,.1);
+  transition:background .15s ease,color .15s ease,box-shadow .15s ease,border-color .15s ease;
+}
+.sidebar-toggle:hover{
+  background:#fff;
+  color:#64748b;
+  border-color:#d4d4d4;
+  box-shadow:0 2px 4px rgba(15,23,42,.1),0 6px 16px rgba(15,23,42,.12);
+}
+.sidebar-toggle:focus-visible{
+  outline:2px solid var(--brand);
+  outline-offset:3px;
+}
+.sidebar-toggle-icon{
+  display:block;
+  flex-shrink:0;
+  transition:transform .2s ease;
+}
+/* Desktop: half on sidebar, half on main — aligned with brand row */
+@media(min-width:769px){
+  /* Sidebar paints above .main so the handle isn’t hidden under the sticky header */
+  .main{position:relative;z-index:1}
+  .sidebar{
+    position:sticky;
+    z-index:5;
+    /* Must be 0: any padding-right here sits *outside* .sidebar-panel and shows as a blank strip beside the scrollbar */
+    padding-right:0;
+    /* Allow toggle to extend past the edge (base .sidebar uses overflow:hidden, which clipped it) */
+    overflow:visible;
+  }
+  .sidebar-toggle{
+    position:absolute;
+    right:0;
+    top:calc(8px + 4px + 24px - 16px);
+    margin:0;
+    z-index:110;
+    transform:translateX(50%);
+  }
+  body.help-sidebar-collapsed .sidebar{
+    padding-right:6px;
+    overflow:visible;
+  }
+  body.help-sidebar-collapsed .sidebar-toggle{
+    top:14px;
+    transform:translateX(50%);
+  }
+  /* Keep brand text clear of the straddling toggle without adding a gutter next to the scrollbar */
+  .sidebar-panel > .sidebar-brand{padding-right:36px}
+}
+body.help-sidebar-collapsed .sidebar{
+  width:48px;
+  min-width:48px;
+  padding:10px 6px;
+}
+@media(max-width:768px){
+  body.help-sidebar-collapsed .sidebar{overflow:hidden}
+}
+body.help-sidebar-collapsed .sidebar-panel{display:none}
+body.help-sidebar-collapsed .sidebar-toggle-icon{transform:rotate(180deg)}
+
+.content{flex:1;padding:32px 40px}
+.content > *{max-width:var(--content-max);margin-left:auto;margin-right:auto}
+
+/* -----------------------------
+   Admin + Dashboard sections
+------------------------------ */
+section{margin-bottom:48px;scroll-margin-top:110px}
+section h2{
+  font-size:1.4rem;
+  color:var(--text);
+  border-bottom:1px solid var(--border);
+  padding-bottom:10px;
+  margin-bottom:16px;
+  position:relative;
+}
+section h2::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-1px;
+  width:76px;
+  height:2px;
+  background:var(--brand);
+  border-radius:2px;
+}
+section h3{font-size:1.05rem;color:var(--navy);margin:22px 0 10px}
+section p{margin-bottom:12px;font-size:.95rem;color:rgba(15,23,42,.92)}
+
+/* Screenshots */
+.screen-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:16px 0;box-shadow:var(--shadow)}
+.screen-cap{background:var(--surface-2);color:var(--brand);font-size:.78rem;padding:9px 14px;font-style:normal;font-weight:650;border-bottom:1px solid var(--border)}
+.screen-wrap img{width:100%;display:block}
+
+/* Steps */
+.steps{counter-reset:step;list-style:none;margin:12px 0}
+.steps li{position:relative;padding:12px 14px 12px 52px;margin-bottom:10px;background:var(--surface);border-radius:12px;border:1px solid var(--border);font-size:.9rem}
+.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:14px;top:50%;transform:translateY(-50%);width:26px;height:26px;background:var(--brand);color:#fff;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.86rem;background:var(--surface);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)}
+th{background:var(--surface-2);color:var(--text);padding:11px 14px;text-align:left;font-weight:750;border-bottom:1px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:rgba(248,250,252,.75)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:600}
+body[data-help-page="dashboard"] .badge{border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-admin{background:#fee2e2;color:#991b1b}
+.badge-sup{background:#fef3c7;color:#92400e}
+.badge-both{background:#dbeafe;color:#1e40af}
+.badge-req{background:#dcfce7;color:#166534}
+.badge-opt{background:#f3f4f6;color:#374151}
+
+/* Callouts */
+.tip{background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid var(--green);padding:12px 16px;border-radius:12px;margin:14px 0;font-size:.9rem}
+.tip strong{color:#166534}
+.warn{background:#fffbeb;border:1px solid #fde68a;border-left:4px solid var(--accent);padding:12px 16px;border-radius:12px;margin:14px 0;font-size:.9rem}
+.warn strong{color:#92400e}
+.critical{background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #ef4444;padding:12px 16px;border-radius:12px;margin:14px 0;font-size:.9rem}
+.critical strong{color:#991b1b}
+.info{background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #3b82f6;padding:12px 16px;border-radius:12px;margin:14px 0;font-size:.9rem}
+.info strong{color:#1e40af}
+
+/* Role comparison (Admin guide) */
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.role-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow)}
+.role-card.admin{border-color:var(--brand)}
+.role-card.supervisor{border-color:var(--accent)}
+.role-card h4{font-size:.95rem;margin-bottom:10px}
+.role-card.admin h4{color:var(--brand)}
+.role-card.supervisor h4{color:#92400e}
+.role-card ul{font-size:.82rem;padding-left:18px}
+.role-card ul li{margin-bottom:4px}
+
+/* Footer */
+.footer{background:var(--surface-2);color:rgba(71,85,105,.9);text-align:center;padding:22px;font-size:.85rem;margin-top:40px;border-top:1px solid var(--border)}
+.footer img{width:36px;vertical-align:middle;margin-right:8px;opacity:.8}
+
+/* Accessibility */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible{outline:none;box-shadow:var(--focus);border-radius:10px}
+::selection{background:rgba(139,40,66,.18)}
+
+/* -----------------------------
+   Field Staff (LCLF) guide — uses same .header as admin/dashboard
+------------------------------ */
+body[data-help-page="lclf"] .header-title-block h1{font-weight:700}
+
+/* LCLF uses same row layout as admin/dashboard; sidebar/header rules inherited. */
+body[data-help-page="lclf"] .sidebar{flex-shrink:0}
+/* LCLF: h3 + links use same rules as .sidebar-section / .sidebar a above */
+
+body[data-help-page="lclf"] .content{padding:36px 44px;background:var(--surface)}
+
+body[data-help-page="lclf"] .section{margin-bottom:52px;border-top:1px solid var(--border);padding-top:24px;scroll-margin-top:calc(var(--header-offset) + 16px)}
+body[data-help-page="lclf"] .section h2{
+  font-size:1.55rem;
+  color:var(--text);
+  margin-bottom:10px;
+  position:relative;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+body[data-help-page="lclf"] .section h2::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-1px;
+  width:76px;
+  height:2px;
+  background:var(--brand);
+  border-radius:2px;
+}
+body[data-help-page="lclf"] .section > p{margin-bottom:16px;color:rgba(15,23,42,.72)}
+body[data-help-page="lclf"] .section h3{font-size:1.08rem;margin:26px 0 10px;color:var(--navy);border-bottom:1px solid var(--border);padding-bottom:8px}
+body[data-help-page="lclf"] .section h4{font-size:.95rem;margin:18px 0 7px;color:var(--brand);font-weight:800}
+
+body[data-help-page="lclf"] .steps{counter-reset:step;list-style:none;padding:0;margin:0 0 16px}
+body[data-help-page="lclf"] .steps li{counter-increment:step;display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+body[data-help-page="lclf"] .steps li::before{
+  content:counter(step);
+  background:var(--brand);
+  color:#fff;
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.78rem;
+  font-weight:800;
+  flex-shrink:0;
+  margin-top:2px;
+}
+
+body[data-help-page="lclf"] .tip, body[data-help-page="lclf"] .warn, body[data-help-page="lclf"] .critical{padding:12px 16px;border-radius:12px;margin:14px 0;font-size:.9rem;border:1px solid transparent}
+body[data-help-page="lclf"] .tip{background:#f0fdf4;border-color:#bbf7d0;border-left:4px solid var(--green)}
+body[data-help-page="lclf"] .tip::before{content:"Tip: ";font-weight:800;color:#166534}
+body[data-help-page="lclf"] .warn{background:#fffbeb;border-color:#fde68a;border-left:4px solid var(--accent)}
+body[data-help-page="lclf"] .warn::before{content:"Note: ";font-weight:800;color:#92400e}
+body[data-help-page="lclf"] .critical{background:#fef2f2;border-color:#fecaca;border-left:4px solid var(--danger)}
+body[data-help-page="lclf"] .critical::before{content:"Important: ";font-weight:800;color:var(--danger)}
+
+body[data-help-page="lclf"] td{vertical-align:top}
+body[data-help-page="lclf"] td strong{color:var(--brand)}
+body[data-help-page="lclf"] .badge{border-radius:999px;font-size:.72rem;font-weight:800;margin-left:6px}
+body[data-help-page="lclf"] .badge-req{background:#fee2e2;color:#991b1b}
+body[data-help-page="lclf"] .badge-opt{background:#dbeafe;color:#1e40af}
+
+body[data-help-page="lclf"] .screen-wrap{margin:18px 0}
+body[data-help-page="lclf"] .screen-label{background:var(--surface-2);padding:9px 14px;font-size:.78rem;color:var(--brand);border-bottom:1px solid var(--border);font-style:normal;font-weight:650}
+body[data-help-page="lclf"] .screen-wrap img{max-width:100%;display:block}
+
+/* -----------------------------
+   Utilities (replace inline styles)
+------------------------------ */
+.visually-hidden{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+.help-list-tight{margin:0 0 14px 20px;line-height:2.1}
+.help-footer-note{margin-top:48px;padding:24px;background:var(--brand-light);border-radius:8px;text-align:center;color:var(--muted);font-size:.875rem;border:1px solid var(--border)}
+.help-footer-logo{width:48px;display:block;margin:0 auto 12px}
+.help-footer-title{color:var(--brand)}
+
+body[data-help-page="lclf"] .nav-path{font-size:.8rem;color:rgba(71,85,105,.95);margin-bottom:10px;background:var(--surface-2);padding:7px 10px;border-radius:10px;display:inline-block;border:1px solid var(--border)}
+body[data-help-page="lclf"] .nav-path span{color:var(--brand);font-weight:750}
+
+/* -----------------------------
+   Responsive
+------------------------------ */
+@media(max-width:768px){
+  .layout{flex-direction:column;min-height:0}
+  .main{min-height:0;width:100%}
+  .sidebar{width:100%;height:auto;max-height:none;position:relative;top:0;align-self:stretch}
+  body.help-sidebar-collapsed .sidebar{
+    width:100%;
+    min-width:unset;
+    flex-direction:row;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    padding:10px 12px;
+  }
+  body.help-sidebar-collapsed .sidebar-toggle{
+    margin:0;
+    align-self:center;
+    position:relative;
+    right:auto;
+    top:auto;
+    transform:none;
+    z-index:auto;
+  }
+  .content{padding:20px}
+  .role-cards{grid-template-columns:1fr}
+}
+
+@media(max-width:900px){
+  body[data-help-page="lclf"] .sidebar{width:256px;min-width:256px}
+  body[data-help-page="lclf"] .content{padding:24px 28px}
+}
+
+@media(max-width:600px){
+  .header{padding:8px 14px}
+  .header-inner{flex-wrap:wrap;gap:10px}
+  .header-actions{gap:12px}
+  .header-user-text{display:none}
+  .header-text h1{font-size:.95rem}
+  .header-title-block h1{font-size:.95rem}
+  body[data-help-page] .header-inner{flex-direction:column;align-items:stretch}
+  body[data-help-page] .header-meta-block{max-width:100%;text-align:left}
+  body[data-help-page="lclf"] .layout{flex-direction:column;min-height:0}
+  body[data-help-page="lclf"] .main{width:100%;min-height:0}
+  body[data-help-page="lclf"] .sidebar{width:100%;min-width:unset;height:auto;max-height:none;position:static;top:0;align-self:stretch}
+  body[data-help-page="lclf"] .content{padding:16px}
+  body[data-help-page="lclf"] table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
