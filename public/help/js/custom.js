@@ -31,18 +31,28 @@
     }
   };
 
-  const getOffset = () => {
-    const page = document.body?.dataset?.helpPage;
-    if (page === 'lclf') return 18;
-    const header = document.querySelector('.header');
-    const h = header?.getBoundingClientRect?.().height;
-    return (h || 92) + 18;
-  };
-
   const sectionEls = () =>
     Array.from(linkById.keys())
       .map((id) => document.getElementById(id))
       .filter(Boolean);
+
+  /** Viewport px from top: section is “active” when its top edge is at or above this line. Must match anchor offset (see section { scroll-margin-top } in style.css). */
+  const getActivateLinePx = (sections) => {
+    const header = document.querySelector('.header');
+    const rectH = header?.getBoundingClientRect?.().height;
+    const hh = rectH || header?.offsetHeight || 0;
+    const cssVar = getComputedStyle(document.documentElement).getPropertyValue('--header-offset');
+    const cssH = Number.parseFloat((cssVar || '').trim());
+    const headerLine = hh || (Number.isFinite(cssH) ? cssH : 92);
+
+    let maxScrollMargin = 0;
+    for (const el of sections) {
+      const m = Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+      if (m > maxScrollMargin) maxScrollMargin = m;
+    }
+
+    return Math.max(headerLine + 18, maxScrollMargin);
+  };
 
   const updateFromHash = () => {
     const id = safeDecode((location.hash || '').slice(1));
@@ -59,13 +69,17 @@
     ticking = true;
     window.requestAnimationFrame(() => {
       ticking = false;
-      const y = window.scrollY + getOffset();
+      const els = sectionEls();
+      if (!els.length) return;
+      const line = getActivateLinePx(els);
       let current = '';
-      for (const el of sectionEls()) {
-        const top = el.getBoundingClientRect().top + window.scrollY;
-        if (top <= y) current = el.id;
+      let first = '';
+      for (const el of els) {
+        if (!first) first = el.id;
+        const top = el.getBoundingClientRect().top;
+        if (top <= line) current = el.id;
       }
-      if (current) setActive(current);
+      setActive(current || first);
     });
   };
 
