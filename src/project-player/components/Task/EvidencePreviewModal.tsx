@@ -16,6 +16,7 @@ import Modal from '@ui/Modal';
 import { useLanguage } from '@contexts/LanguageContext';
 import { evidencePreviewModalStyles as styles } from './Styles';
 import { EvidencePreviewModalProps, EvidenceAttachment } from '../../types/components.types';
+import logger from '@utils/logger';
 
 const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
     isOpen,
@@ -50,11 +51,11 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
                     await Linking.openURL(attachment.url);
                 } else {
                     Alert.alert(t('projectPlayer.cannotOpenFile'), t('projectPlayer.unableToOpenFile'));
-                    console.warn('Cannot open URL:', attachment.url);
+                    logger.warn('Cannot open URL:', attachment.url);
                 }
             }
         } catch (error) {
-            console.error('Failed to open URL:', error);
+            logger.error('Failed to open URL:', error);
         }
     };
 

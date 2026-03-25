@@ -35,7 +35,7 @@ export const projectComponentStyles = {
     marginVertical: '$4',
   },
   pillarContainer: {
-    space: 'xs' as const, // Reduced spacing between accordions
+    space: 'md' as const, // Reduced spacing between accordions
   },
   taskContainer: {
     padding: '$4',
@@ -121,21 +121,16 @@ export const projectInfoCardStyles = {
   },
   previewContainer: {
     bg: '$white',
-    paddingTop: '$4',
-    paddingLeft: '$6',
-    paddingRight: '$6',
-    paddingBottom: '$4',
-    marginBottom: '$6',
+    py: '$4',
+    px: '$4',
     borderWidth: 2,
     borderColor: '$error200',
     borderRadius: '$2xl',
   },
   onboardingContainer: {
     bg: 'transparent',
-    paddingTop: '$5',
-    paddingLeft: '$5',
-    paddingRight: '$5',
-    paddingBottom: '$0',
+    py: '$4',
+    px: '$4',
     borderWidth: 0,
   },
   pathwayTag: {
@@ -156,11 +151,10 @@ export const projectInfoCardStyles = {
   header: {
     justifyContent: 'space-between' as const,
     alignItems: 'flex-start' as const,
-    width: '100%',
-    marginBottom: '$3.5',
+    width: '100%'
   },
   leftSection: {
-    space: 'md' as const,
+    gap: '$2' as const,
     flex: 1,
   },
   rightSection: {

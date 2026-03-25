@@ -417,7 +417,7 @@ const DevelopInterventionPlan: React.FC = () => {
         _container={templateStyles.headerContainer}
         rightSection={<Button variant="outlineghost" onPress={handleViewCheckIns}>
           <ButtonIcon as={LucideIcon} name="History" size={16} />
-          <ButtonText {...TYPOGRAPHY.bodySmall} $sm-display={'none'} $md-display={'flex'}>{t('logVisit.viewCheckIns')}</ButtonText>
+          <ButtonText {...TYPOGRAPHY.bodySmall} display={'none'} $md-display={'flex'}>{t('logVisit.viewCheckIns')}</ButtonText>
         </Button>
         }
       >

@@ -224,7 +224,6 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
           <AccordionHeader>
             <AccordionTrigger
               {...taskAccordionStyles.accordionTrigger}
-              padding={isWeb ? '$5' : '$1'}
             >
               {({ isExpanded }: { isExpanded: boolean }) => (
                 <>
@@ -291,11 +290,10 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
           {/* Accordion Content - Collapsible in preview mode */}
           <AccordionContent
             {...taskAccordionStyles.accordionContent}
-            paddingHorizontal={isWeb ? '$5' : '$2'}
           >
             {/* Info Banner - Always show for Social Protection in Preview Mode */}
             {isSocialProtection && (
-              <Box {...taskAccordionStyles.infoBanner}>
+              <Box {...taskAccordionStyles.infoBanner} display={'none'} $md-display={'flex'}>
                 <HStack {...taskAccordionStyles.infoBannerContent}>
                   <LucideIcon
                     name="Info"

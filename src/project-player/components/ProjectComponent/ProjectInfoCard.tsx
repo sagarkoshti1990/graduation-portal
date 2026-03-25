@@ -46,13 +46,6 @@ const hasChildren =
         : isNaked
           ? projectInfoCardStyles.onboardingContainer
           : projectInfoCardStyles.container)}
-      paddingTop={
-        !hasChildren &&
-          (ONBOARDING_PROJECT_TITLES.includes(project?.title || '') ||
-            ONBOARDING_PROJECT_TITLES.includes(project?.name || ''))
-          ? '$6'
-          : '$5'
-      }
       marginBottom={0}
     >
       <HStack {...projectInfoCardStyles.header}
@@ -147,7 +140,7 @@ const hasChildren =
                 <HStack space="sm" alignItems="center">
                   <LucideIcon
                     name="ClipboardList"
-                    size={24}
+                    size={20}
                     color={theme.tokens.colors.error600}
                   />
                   <Text {...TYPOGRAPHY.h4} color="$textPrimary" fontWeight="$medium">
@@ -161,18 +154,17 @@ const hasChildren =
           {!hasChildren ? null : (
             // Only show description in preview mode when there are children/pillars
             isPreview && project?.description && (
-              <VStack space="sm" mt="$2">
+              <VStack space="lg">
                 <Text
-                  {...TYPOGRAPHY.paragraph}
+                  {...TYPOGRAPHY.bodySmall}
                   color="$textSecondary"
-                  lineHeight="$lg"
-                  $sm-display={'none'}
+                  display={'none'}
                   $md-display={'flex'}
                 >
                   {project?.description}
                 </Text>
                 {/* Pathway Tag + Version below description */}
-                <HStack space="sm" alignItems="center" mt="$1">
+                <HStack space="sm" alignItems="center">
                   {(() => {
                     const title = (project?.title || project?.name || '').toLowerCase();
                     const isEntrepreneurship = title.includes(PATHWAY_TAGS.ENTREPRENEURSHIP.toLowerCase());
