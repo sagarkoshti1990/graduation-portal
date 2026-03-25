@@ -445,7 +445,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Pressable
               {...triggerProps}
               onPress={() => {
-                if (!isManualToggleDisabled) {
+                if (!isManualToggleDisabled && !isStatusUpdating) {
                   handleCheckboxChange(!isCompleted);
                 }
               }}
@@ -462,7 +462,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 justifyContent="center"
               >
                 {isStatusUpdating ? (
-                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                  <Spinner size="small" color={isDone ? "$primary500": "$white"} />
                 ) : (
                   <Text
                     {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}

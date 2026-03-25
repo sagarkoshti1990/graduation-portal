@@ -166,6 +166,8 @@ const hasChildren =
                   {...TYPOGRAPHY.paragraph}
                   color="$textSecondary"
                   lineHeight="$lg"
+                  $sm-display={'none'}
+                  $md-display={'flex'}
                 >
                   {project?.description}
                 </Text>
@@ -189,7 +191,7 @@ const hasChildren =
                       </Box>
                     );
                   })()}
-                  <Text {...projectInfoCardStyles.versionText}>v2.1</Text>
+                  {/* <Text {...projectInfoCardStyles.versionText}>v2.1</Text> */}
                 </HStack>
               </VStack>
             )

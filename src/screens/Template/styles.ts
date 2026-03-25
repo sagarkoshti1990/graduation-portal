@@ -15,6 +15,7 @@ export const templateStyles = {
   headerContainer: {
     py: "$4",
     px: "$6",
+    "$sm-px": "$4",
   },
   pressableCard: {
     px: '$4',
@@ -105,6 +106,7 @@ export const templateStyles = {
     px: '$0' as const,
     py: '$0' as const,
     pb: '$4' as const,
+    "$sm-pb": '$2' as const,
     '$md-px': '$0' as const,
     flexWrap: 'nowrap' as const,
   },

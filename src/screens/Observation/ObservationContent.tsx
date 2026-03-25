@@ -419,8 +419,15 @@ const buildDefaultValuesFromObservation = (
             );
             if (keyFound !== undefined) {
               let value = typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value;
-              if(pageQuestion.responseType === "radio") {
-                value = pageQuestion.options.find((option: any) => option.value === value || option.label === value || (typeof option.label === "string" && typeof value === "string" && option.label.toLowerCase().includes(value.toLowerCase())))?.value;
+              if (pageQuestion.responseType === "radio") {
+                value = pageQuestion.options.find(
+                  (option: any) =>
+                    option.value === value ||
+                    option.label === value ||
+                    (option.label != null &&
+                      value != null &&
+                      option.label.toString().toLowerCase() === value.toString().toLowerCase())
+                )?.value;
               }
               defaultValues[pageQuestion._id] = { value: value, readonly: userData[keyFound]?.readonly === false ? false : true };
             }

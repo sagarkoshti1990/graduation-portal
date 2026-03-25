@@ -268,7 +268,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         onConfirm={modalType === 'dropout' ? (dropoutLoading ? undefined : handleDropoutConfirm) : undefined}
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
         bodyProps={modalType !== 'dropout' ? {padding: 0,paddingTop: 0,paddingBottom: 0} : {}}
-        headerProps={modalType !== 'dropout' ? {paddingBottom: 0,paddingTop: "$2"} : {}}
+        headerProps={modalType === 'log-visit' ? {paddingBottom: 0,paddingTop: "$2"} : {}}
       >
         {modalType === 'dropout' && (
           <VStack space="lg">

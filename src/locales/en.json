@@ -1713,7 +1713,8 @@
     "testAccountsCredentials": "admin@brac.net | supervisor@brac.net | lc@brac.net",
     "title": "Generating Better Livelihoods",
     "adminLogin": "Login as Admin / Supervisor",
-    "adminLoginFailed": "Admin / Supervisor login failed"
+    "adminLoginFailed": "Admin / Supervisor login failed",
+    "logIn": "Log In"
   },
   "logout": {
     "sessionExpired": "Session Expired",
