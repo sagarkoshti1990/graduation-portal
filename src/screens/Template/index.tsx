@@ -417,21 +417,21 @@ const DevelopInterventionPlan: React.FC = () => {
         _container={templateStyles.headerContainer}
         rightSection={<Button variant="outlineghost" onPress={handleViewCheckIns}>
           <ButtonIcon as={LucideIcon} name="History" size={16} />
-          <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
+          <ButtonText {...TYPOGRAPHY.bodySmall} display={'none'} $md-display={'flex'}>{t('logVisit.viewCheckIns')}</ButtonText>
         </Button>
         }
       >
         <VStack {...(templateStyles.headerContent as any)}>
-          <Text {...(templateStyles.pageTitle as any)}>
+          <Text {...(TYPOGRAPHY.h4 as any)}>
             {t('template.pageTitle')}
           </Text>
-          <Text {...(templateStyles.pageSubtitle as any)}>
+          <Text {...(TYPOGRAPHY.bodySmall as any)}>
             {t('template.pageSubtitle', { name: participantName })}
           </Text>
         </VStack>
       </PageHeader>
 
-      <Container flex={1} {...(templateStyles.mainContent as any)}>
+      <Container flex={1}>
         {/* Loading */}
         {isLoading && (
           <Box py="$10" alignItems="center">
@@ -449,7 +449,7 @@ const DevelopInterventionPlan: React.FC = () => {
         {/* Templates */}
         {!isLoading && !error && !showProjectPlayerPreview && (
           <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-            <VStack gap="$4">
+            <VStack gap="$4" {...(templateStyles.mainContent as any)}>
               {templates?.map(pathway => (
                 <Pressable
                   key={pathway?._id}
@@ -554,9 +554,7 @@ const DevelopInterventionPlan: React.FC = () => {
         )}
 
         {!isLoading && !error && showProjectPlayerPreview && (
-          <Box flex={1} h="100%" overflow="hidden">
-            <ProjectPlayer config={configData} data={ProjectPlayerConfigData} />
-          </Box>
+          <ProjectPlayer config={configData} data={ProjectPlayerConfigData} />
         )}
       </Container>
 

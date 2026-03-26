@@ -1,8 +1,12 @@
-import { useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
+import { useEffect } from 'react';
+import { navigationRef } from '@utils/navigationRef';
 
-const POLL_MS = 5 * 60 * 1000;
 const VERSION_URL = '/web-app-version.json';
+/** Avoid reload storms if the main bundle stays cached while version.json updates */
+const RELOAD_COOLDOWN_MS = 45_000;
+const LAST_AUTO_RELOAD_KEY = '__web_deploy_last_autoreload_ms';
+/** Coalesce rapid navigation transitions into one check */
+const NAV_DEBOUNCE_MS = 400;
 
 async function fetchRemoteBuildId(): Promise<string | null> {
   try {
@@ -19,58 +23,52 @@ async function fetchRemoteBuildId(): Promise<string | null> {
 }
 
 export function useWebDeploymentUpdate(): void {
-  const dismissedRef = useRef(false);
-
   useEffect(() => {
     if (typeof __DEV__ !== 'undefined' && __DEV__) return;
 
-    // Inlined by webpack DefinePlugin (webpack.config.js); not Node at runtime on web
-    // @ts-ignore process.env is injected by webpack DefinePlugin on web builds
+    // @ts-ignore injected on web builds
     const localBuildId = process.env.WEB_APP_BUILD_ID ?? '';
     if (!localBuildId) return;
 
+    let checkInFlight = false;
     const check = async () => {
-      if (dismissedRef.current) return;
-      const remote = await fetchRemoteBuildId();
-      if (!remote || remote === localBuildId) return;
+      if (checkInFlight) return;
+      checkInFlight = true;
+      try {
+        const remoteBuildId = await fetchRemoteBuildId();
+        if (!remoteBuildId || remoteBuildId === localBuildId) return;
 
-      dismissedRef.current = true;
-      Alert.alert(
-        'Update available',
-        'A new version is live. Refresh the page to load the latest code (this clears cached scripts).',
-        [
-          {
-            text: 'Later',
-            style: 'cancel',
-            onPress: () => {
-              dismissedRef.current = false;
-            },
-          },
-          {
-            text: 'Refresh',
-            onPress: () => {
-              window.location.reload();
-            },
-          },
-        ],
-        { cancelable: true }
-      );
+        const lastReload = Number(
+          sessionStorage.getItem(LAST_AUTO_RELOAD_KEY) || '0'
+        );
+        if (Date.now() - lastReload < RELOAD_COOLDOWN_MS) return;
+
+        sessionStorage.setItem(LAST_AUTO_RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+      } finally {
+        checkInFlight = false;
+      }
     };
 
-    const interval = setInterval(check, POLL_MS);
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') check();
+    /** One scheduler for mount + nav so the first `state` event does not double-fetch with mount. */
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleCheck = (delayMs: number) => {
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        check().catch(() => {});
+      }, delayMs);
     };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', check);
 
-    const initial = window.setTimeout(check, 15000);
+    scheduleCheck(0);
+
+    const onNavigationState = () => scheduleCheck(NAV_DEBOUNCE_MS);
+
+    const unsubscribe = navigationRef.addListener('state', onNavigationState);
 
     return () => {
-      clearInterval(interval);
-      clearTimeout(initial);
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('focus', check);
+      unsubscribe();
+      if (debounceTimer != null) clearTimeout(debounceTimer);
     };
   }, []);
 }

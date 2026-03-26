@@ -118,7 +118,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     // Map other statuses to their respective configs
     const statusConfigMap: Record<string, ProjectPlayerConfig> = {
       [STATUS.IN_PROGRESS]: MODE.editMode,
-      [STATUS.COMPLETED]: MODE.editMode,
+      [STATUS.COMPLETED]: MODE.readOnlyMode,
       [STATUS.DROPOUT]: MODE.readOnlyMode,
       [STATUS.GRADUATED]: MODE.readOnlyMode,
     };
@@ -189,7 +189,6 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       </Box>
     );
   }
-
   // Fallback: render ProjectPlayer for any other status
   return (
     <Box flex={1} mt="$1">

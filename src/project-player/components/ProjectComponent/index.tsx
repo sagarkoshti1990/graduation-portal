@@ -203,48 +203,47 @@ const ProjectComponent: React.FC = () => {
       <VStack flex={1}>
         <ScrollView flex={1}
           {...projectComponentStyles.scrollView}
-          contentContainerStyle={{ paddingBottom: 40 }}
         >
               {/* Pillar features only: +Add Custom Task button */}
-                {showPillarFeatures && (
-                  <Box {...projectComponentStyles.addCustomTaskContainer}>
-                    <Pressable onPress={() => setIsModalOpen(true)}>
-                      {(state: any) => {
-                        const isHovered =
-                          state?.hovered || state?.pressed || false;
-                        return (
-                          <Box
-                            {...addCustomTaskStyles.buttonBox}
-                            bg={isHovered ? '$primary100' : '$accent100'}
-                            borderColor={
-                              isHovered ? '$primary500' : '$mutedBorder'
-                            }
-                          >
-                            <HStack {...addCustomTaskStyles.buttonContent}>
-                              <LucideIcon
-                                name="Plus"
-                                size={18}
-                                color={
-                                  isHovered
-                                    ? theme.tokens.colors.primary700
-                                    : theme.tokens.colors.primary500
-                                }
-                                strokeWidth={2.5}
-                              />
-                              <Text
-                                {...TYPOGRAPHY.button}
-                                color={isHovered ? '$primary700' : '$primary500'}
-                                fontWeight="$semibold"
-                              >
-                                {t('projectPlayer.addCustomTask')}
-                              </Text>
-                            </HStack>
-                          </Box>
-                        );
-                      }}
-                    </Pressable>
-                  </Box>
-                )}
+          {showPillarFeatures && (
+            <Box {...projectComponentStyles.addCustomTaskContainer}>
+              <Pressable onPress={() => setIsModalOpen(true)}>
+                {(state: any) => {
+                  const isHovered =
+                    state?.hovered || state?.pressed || false;
+                  return (
+                    <Box
+                      {...addCustomTaskStyles.buttonBox}
+                      bg={isHovered ? '$primary100' : '$accent100'}
+                      borderColor={
+                        isHovered ? '$primary500' : '$mutedBorder'
+                      }
+                    >
+                      <HStack {...addCustomTaskStyles.buttonContent}>
+                        <LucideIcon
+                          name="Plus"
+                          size={18}
+                          color={
+                            isHovered
+                              ? theme.tokens.colors.primary700
+                              : theme.tokens.colors.primary500
+                          }
+                          strokeWidth={2.5}
+                        />
+                        <Text
+                          {...TYPOGRAPHY.button}
+                          color={isHovered ? '$primary700' : '$primary500'}
+                          fontWeight="$semibold"
+                        >
+                          {t('projectPlayer.addCustomTask')}
+                        </Text>
+                      </HStack>
+                    </Box>
+                  );
+                }}
+              </Pressable>
+            </Box>
+          )}
           {/* Shared content logic - pillars or onboarding tasks */}
           {(() => {
             const pillarContent = hasChildren ? (
@@ -372,10 +371,7 @@ const ProjectComponent: React.FC = () => {
 
             const content = (
               <VStack
-                paddingHorizontal={
-                  isSingleContainer ? 0 : '$1'
-                }
-                paddingTop={isSingleContainer ? 0 : '$4'}
+                p={isSingleContainer ? "$0" : "$4"}
                 space="md"
               >
                 {header}
@@ -419,6 +415,8 @@ const ProjectComponent: React.FC = () => {
                     borderColor="$warning300"
                     borderRadius="$md"
                     padding="$3"
+                    display={'none'}
+                    $md-display={'flex'}
                   >
                     <HStack space="sm" alignItems="center">
                       <LucideIcon

@@ -271,28 +271,27 @@ const TaskCard: React.FC<TaskCardProps> = ({
       return (
         <Box width={32} height={32} alignItems="center" justifyContent="center">
           {isStatusUpdating ? (
-            <Spinner size="small" color={theme.tokens.colors.primary500} />
+            <Spinner size="small" color="$primary500" />
           ) : (
-        <Checkbox
-          value={task?._id}
-          isChecked={isCompleted}
-          onChange={handleCheckboxChange}
-          isDisabled={isReadOnly}
-          size="md"
-          aria-label={`Mark ${task?.name} as ${isCompleted ? 'incomplete' : 'complete'
-            }`}
-          opacity={isReadOnly ? 0.6 : 1}
-        >
-          <CheckboxIndicator
-            borderColor={isCompleted ? '$primary500' : '$textMuted'}
-            bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
-            alignItems="center"
-            justifyContent="center"
-            borderRadius="$full"
-          >
-            <CheckboxIcon as={CheckIcon} color="$accent100" />
-          </CheckboxIndicator>
-        </Checkbox>
+            <Checkbox
+              value={task?._id}
+              isChecked={isCompleted}
+              onChange={handleCheckboxChange}
+              isDisabled={isReadOnly}
+              size="md"
+              aria-label={`Mark ${task?.name} as ${isCompleted ? 'incomplete' : 'complete'}`}
+              opacity={isReadOnly ? 0.6 : 1}
+            >
+              <CheckboxIndicator
+                borderColor={isCompleted ? '$primary500' : '$textMuted'}
+                bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="$full"
+              >
+                <CheckboxIcon as={CheckIcon} color="$accent100" />
+              </CheckboxIndicator>
+            </Checkbox>
           )}
         </Box>
       );
@@ -445,7 +444,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Pressable
               {...triggerProps}
               onPress={() => {
-                if (!isManualToggleDisabled) {
+                if (!isManualToggleDisabled && !isStatusUpdating) {
                   handleCheckboxChange(!isCompleted);
                 }
               }}
@@ -462,7 +461,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 justifyContent="center"
               >
                 {isStatusUpdating ? (
-                  <Spinner size="small" color={isDone ? theme.tokens.colors.white : theme.tokens.colors.primary500} />
+                  <Spinner size="small" color={isDone ? "$primary500": "$white"} />
                 ) : (
                   <Text
                     {...(isDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
@@ -638,15 +637,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
               return (
                 <Box
                   bg={isAddedToPlan ? '$tickButtonActiveBg' : isHovered ? '$success100' : 'transparent'}
-                  padding="$1.5"
-                  borderRadius="$md"
+                  padding="$2"
+                  borderRadius="$lg"
                   borderWidth={1}
                   borderColor={isAddedToPlan ? '$tickButtonActiveBg' : '$success500'}
                   $web-cursor="pointer"
                 >
                   <LucideIcon
                     name="Check"
-                    size={22}
+                    size={16}
                     color={isAddedToPlan ? theme.tokens.colors.white : theme.tokens.colors.success500}
                     strokeWidth={3}
                   />
@@ -665,15 +664,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
               return (
                 <Box
                   bg={isHovered ? '$error100' : 'transparent'}
-                  padding="$1.5"
-                  borderRadius="$md"
+                  padding="$2"
+                  borderRadius="$lg"
                   borderWidth={1}
                   borderColor="$error500"
                   $web-cursor="pointer"
                 >
                   <LucideIcon
                     name="X"
-                    size={22}
+                    size={16}
                     color={theme.tokens.colors.error500}
                     strokeWidth={3}
                   />
@@ -685,12 +684,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
       );
     }
 
-    const buttonStyles = isOnboardingTask
-      ? taskCardStyles.onboardingActionButton
-      : uiConfig.showAsCard
-        ? taskCardStyles.actionButtonCard
-        : taskCardStyles.actionButtonInline;
-
     const iconName = task.metaInformation?.icon || 'Upload';
 
     const defaultIconColor = isOnboardingTask
@@ -699,6 +692,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     return (
       <Button
+        // @ts-ignore
         variant={(isInterventionPlanEditMode || isOnboardingTask) ? 'outlineghost' : 'solid'}
         onPress={handleTaskClick}
         isDisabled={isReadOnly}
@@ -919,25 +913,26 @@ const TaskCard: React.FC<TaskCardProps> = ({
               : taskCardStyles.childCard?.borderColor
         }
       >
-        <Box
-          {...taskCardStyles.childCardContent}
-          padding={isMobile ? '20px 0' : '$2 0'}
+        <HStack
+          alignItems="flex-start"
+          space="md"
+          flexDirection={isMobile ? 'column' : 'row'}
         >
-          <HStack
-            alignItems="flex-start"
-            space="md"
-            flexDirection={isMobile ? 'column' : 'row'}
-          >
-            {isMobile ? (
-              isPreview ? (
-                <HStack alignItems="flex-start" space="xs" width="100%">
-                  <Box flexShrink={0} mt="$1">
-                    {renderStatusIndicator()}
-                  </Box>
-                  <Box flex={1}>
-                    {renderTaskInfo()}
-                  </Box>
-                  <Box flexShrink={0}>
+          {isMobile ? (
+            <VStack space="xs" width="100%">
+              <HStack
+                alignItems="flex-start"
+                space={isPreview ? "md" : "xs"}
+                width="100%"
+              >
+                <Box flexShrink={0}>
+                  {renderStatusIndicator()}
+                </Box>
+                <Box flex={1}>
+                  {renderTaskInfo()}
+                </Box>
+                <Box flexShrink={0}>
+                  {isPreview ? (
                     <HStack space="xs" alignItems="center">
                       {renderActionButton()}
                       {renderCustomTaskActions({
@@ -946,50 +941,42 @@ const TaskCard: React.FC<TaskCardProps> = ({
                         onDelete: openDeleteModal,
                       })}
                     </HStack>
-                  </Box>
+                  ) : (
+                    renderCustomTaskActions({
+                      isCustomTask: task?.isCustomTask || false,
+                      onEdit: openEditModal,
+                      onDelete: openDeleteModal,
+                    })
+                  )}
+                </Box>
+              </HStack>
+              {!isPreview && (
+                <Box width="100%">
+                  {renderActionButton()}
+                </Box>
+              )}
+            </VStack>
+          ) : (
+            <>
+              <Box flexShrink={0} mt="$1">
+                {renderStatusIndicator()}
+              </Box>
+              <Box flex={1} minWidth="$0">
+                {renderTaskInfo()}
+              </Box>
+              <Box flexShrink={0}>
+                <HStack space="xs" alignItems="center">
+                  {renderActionButton()}
+                  {renderCustomTaskActions({
+                    isCustomTask: task?.isCustomTask || false,
+                    onEdit: openEditModal,
+                    onDelete: openDeleteModal,
+                  })}
                 </HStack>
-              ) : (
-                <VStack space="xs" width="100%">
-                  <HStack alignItems="flex-start" space="xs">
-                    <Box flexShrink={0} mt="$1">
-                      {renderStatusIndicator()}
-                    </Box>
-                    <Box flex={1}>
-                      {renderTaskInfo()}
-                    </Box>
-                    {renderCustomTaskActions({
-                      isCustomTask: task?.isCustomTask || false,
-                      onEdit: openEditModal,
-                      onDelete: openDeleteModal,
-                    })}
-                  </HStack>
-                  <Box width="100%">
-                    {renderActionButton()}
-                  </Box>
-                </VStack>
-              )
-            ) : (
-              <>
-                <Box flexShrink={0} mt="$1">
-                  {renderStatusIndicator()}
-                </Box>
-                <Box flex={1} minWidth="$0">
-                  {renderTaskInfo()}
-                </Box>
-                <Box flexShrink={0}>
-                  <HStack space="xs" alignItems="center">
-                    {renderActionButton()}
-                    {renderCustomTaskActions({
-                      isCustomTask: task?.isCustomTask || false,
-                      onEdit: openEditModal,
-                      onDelete: openDeleteModal,
-                    })}
-                  </HStack>
-                </Box>
-              </>
-            )}
-          </HStack>
-        </Box>
+              </Box>
+            </>
+          )}
+        </HStack>
       </Card>
     );
   } else if (isChildOfProject && isPreview) {

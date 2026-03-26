@@ -183,6 +183,27 @@
     "hi": "हिन्दी"
   },
   "admin": {
+    "pageTitle": {
+      "home": "Home",
+      "user-management": "User Management",
+      "admin-dashboard": "Dashboard",
+      "template-management": "Template Management",
+      "csv-templates": "CSV Import Templates",
+      "ProfilePermissions": "Profile Field Edit Permissions",
+      "PasswordPolicy": "Password Management Policy",
+      "audit-log": "Audit Log",
+      "assign-users": "Assign Users",
+      "welcome": "Welcome",
+      "select-language": "Select Language",
+      "dashboard": "Dashboard",
+      "participant-detail": "Participant",
+      "log-visit": "Log Visit",
+      "check-ins-list": "Check-ins",
+      "observation": "Observation",
+      "template": "Develop Intervention Plan",
+      "participants": "Participants",
+      "project": "Project"
+    },
     "home": "Home",
     "dashboard": "Dashboards",
     "dashboardDescription": "Monitor key indicators organized by topic with cohort-specific filtering.",
@@ -1696,7 +1717,8 @@
     "testAccountsCredentials": "admin@brac.net | supervisor@brac.net | lc@brac.net",
     "title": "Generating Better Livelihoods",
     "adminLogin": "Login as Admin / Supervisor",
-    "adminLoginFailed": "Admin / Supervisor login failed"
+    "adminLoginFailed": "Admin / Supervisor login failed",
+    "logIn": "Log In"
   },
   "logout": {
     "sessionExpired": "Session Expired",
@@ -1939,6 +1961,19 @@
     "notes": "Notes"
   },
   "lc": {
+    "pageTitle": {
+      "welcome": "Welcome",
+      "select-language": "Select Language",
+      "dashboard": "Dashboard",
+      "participant-detail": "Participant",
+      "log-visit": "Log Visit",
+      "check-ins-list": "Check-ins",
+      "observation": "Observation",
+      "template": "Develop Intervention Plan",
+      "participants": "Participants",
+      "project": "Project",
+      "home": "Home"
+    },
     "menu": {
       "home": "Home",
       "dashboard": "Dashboard",

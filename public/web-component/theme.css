@@ -353,6 +353,9 @@ lib-checkbox-input .mat-mdc-checkbox-checked .mdc-checkbox__background {
   border-color: var(--primary-color) !important;
 }
 
+.mat-mdc-radio-button.mat-primary, .mat-mdc-radio-button.mat-accent {
+  --mdc-radio-unselected-icon-color:var(--colors-borderColor) !important;
+}
 .mat-mdc-radio-button .mdc-radio {
   --mdc-radio-state-layer-size: 20px !important;
 }
@@ -493,6 +496,10 @@ mat-select {
 .submitted lib-date-time-input-range, .submitted lib-date-time-range-input-range, .submitted lib-date-time-input-range-range,
 .submitted lib-date-time-range-input-range-range{
   opacity: 0.5 !important;
+}
+.submitted button, .submitted lib-file-upload-input mat-icon.cancelIcon, .submitted lib-file-upload-input .attachment-btn {
+  opacity: 0.5 !important;
+  display: none !important;
 }
 /* end submited field styles */
 

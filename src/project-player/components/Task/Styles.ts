@@ -10,7 +10,7 @@ export const taskCardStyles = {
     variant: 'outline' as const,
     bg: '#F6F7FB',
     borderRadius: '$xl',
-    marginBottom: '$0.5',
+    // marginBottom: '$0.5',
     borderWidth: 1,
     borderColor: '$borderColor',
   },
@@ -328,7 +328,7 @@ export const taskCardStyles = {
 
 export const taskAccordionStyles = {
   container: {
-    marginBottom: '$2',
+    
   },
   card: {
     size: 'md' as const,
@@ -395,7 +395,7 @@ export const taskAccordionStyles = {
     borderColor: '$mutedBorder',
   },
   accordionTrigger: {
-    padding: '$5',
+    padding: '$4',
   },
   accordionHeaderContent: {
     flex: 1,
@@ -406,13 +406,13 @@ export const taskAccordionStyles = {
     ml: '$4',
   },
   accordionContent: {
-    paddingHorizontal: '$5',
-    paddingBottom: '$5',
+    px: '$4',
+    pt: '$0',
+    pb: '$4',
+    mt: '$0',
   },
   accordionContentStack: {
-    space: 'md' as const,
-    paddingTop: '$3',
-    paddingHorizontal: '$1',
+    space: 'md' as const
   },
   // Progress percentage text
   progressText: {
