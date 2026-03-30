@@ -37,7 +37,7 @@ export const GUIDELINES_KEYS = [
 ];
 
 export const CSV_CONTENT_STRINGS: Record<string, string> = {
-    user_import: "username,email,role,department,province,district\njohn.doe,john@example.com,Linkage Champion,Social Services,Gauteng,Johannesburg",
+    user_import: "username,email,phone_code,phone,name,role,province,site,location,dob\njohn.doe,john@example.com,27,6789450945,John Doe,user,SA-G,SA-G-RF,A2659 Jozini Road Ntuzuma 4359,04/03/75",
     participant_assignment: "participant_email,lc_email,assignment_date\nparticipant@example.com,lc@example.com,2024-01-01",
     lc_supervisor_mapping: "lc_email,supervisor_email\nlc@example.com,supervisor@example.com",
     bulk_status_update: "user_email,new_status,reason\nuser@example.com,inactive,Resigned",
