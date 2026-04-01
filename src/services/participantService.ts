@@ -38,7 +38,7 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
       page: page.toString(),
       limit: limit.toString(),
       search: search || '',
-      programId: GLOBAL_LC_PROGRAM_ID as string,
+      programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
       ...(entityId ? {entityId}:{})
     });
 
@@ -192,7 +192,7 @@ export const updateEntityDetails = async ({
 
     const requestBody = {
       userId,
-      programId: GLOBAL_LC_PROGRAM_ID,
+      programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
       entityId,
       entityUpdates,
     };
@@ -220,7 +220,6 @@ export const createOrUpdateProgramUserMapping = async ({
   status: string;
 }): Promise<any> => {
   try {
-console.log('Creating/updating program user mapping with data:', metaInformation);
     const requestBody = {
       userId,
       programId,
