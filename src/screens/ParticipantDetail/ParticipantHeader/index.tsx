@@ -18,13 +18,13 @@ import { participantHeaderStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import ParticipantProgressCard from './ParticipantProgressCard';
 import { STATUS, TASK_STATUS, PROJECT_STATUS } from '@constants/app.constant';
-import { updateEntityDetails } from '../../../services/participantService';
+import { updateEntityDetails, createOrUpdateProgramUserMapping } from '../../../services/participantService';
 import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
 import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
 import { usePlatform } from '@utils/platform';
-import { getProjectDetails } from '../../../project-player/services/projectPlayerService';
+import { getProjectDetails, updateTask } from '../../../project-player/services/projectPlayerService';
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   participant: participantProp,
@@ -109,13 +109,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     if (!entityId) return;
 
     try {
-      await updateEntityDetails({
-        userId: `${user?.id}`,
-        entityId: entityId,
-        entityUpdates: {
-          status: STATUS.ENROLLED,
-        },
-      });
+      const projResult = await updateTask((participantProp as any)?.onBoardedProjectId, {status: TASK_STATUS.COMPLETED});
+      if (!projResult?._id) {  
+        return showAlert('error', 'Failed to update project task status');
+      }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
       // Reload page
       window.location.reload();
