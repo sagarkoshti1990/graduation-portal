@@ -84,7 +84,8 @@ const Observation: React.FC = () => {
           // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
           "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
           "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
-          "Country Code":{value:newData?.userDetails?.phone_code ? `(+${newData?.userDetails?.phone_code})` : "", readonly: false},
+          "Country Code":{value: `(+${newData?.userDetails?.phone_code || 27})`, readonly: false},
+          "Country Code (For alternative number)":{value: `(+${newData?.userDetails?.phone_code || 27})`, readonly: false},
         };
         setUserData(preFillData);
       }
