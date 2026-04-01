@@ -42,6 +42,10 @@ import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { getSolutionDetails } from '../../services/projectPlayerService';
 import logger from '@utils/logger';
+import { useAuth, User } from '@contexts/AuthContext';
+import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../services/participantService';
+import { STATUS } from '@constants/app.constant';
+
 
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
@@ -70,6 +74,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [confirmDeleteLoading, setConfirmDeleteLoading] = useState(false);
   const participantId = (route.params as any)?.id;
+  const { user } = useAuth()
+  
   // Modal state management (from Incoming)
   type ModalType = 'edit' | 'delete' | null;
   const [modalState, setModalState] = useState<{
@@ -732,9 +738,53 @@ const TaskCard: React.FC<TaskCardProps> = ({
       onConfirm={async (files) => {
         setIsStatusUpdating(true);
         try {
+          
           const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
+
           if (data?.success) {
+            console.log('Task status updated successfully after file upload', data);
             // Show success toast with task-specific message
+            let updates;
+            const attachedFiles = data?.data?.attachments?.map((file: any) => file.url) ?? [];
+            const thisDate = new Date().toISOString();
+            if (isOnboardingTask && attachedFiles.length > 0) {
+              const slaConsentTasks = [process.env.UPLOAD_CONSENT_TASK_ID, process.env.UPLOAD_SLA_TASK_ID];
+              if (slaConsentTasks.includes(task?.referenceId)) {
+                if (!user?.id || !participantId) {
+                  showError(t('projectPlayer.evidenceUploadFailed'));
+                  return;
+                }
+                if (task?.referenceId === process.env.UPLOAD_CONSENT_TASK_ID) {
+                  updates = {
+                          consentFiles: attachedFiles,
+                          consentUpdloadedAt: thisDate,
+                        }
+                } 
+                if (task?.referenceId === process.env.UPLOAD_SLA_TASK_ID) {
+                  updates = {
+                          slaFiles: attachedFiles,
+                          slaUpdloadedAt: thisDate,
+                        }
+                }
+                try {
+                  await updateEntityDetails({
+                    userId: `${user?.id}`,
+                    entityId: participantId,
+                    entityUpdates: updates
+                  });
+
+                  await createOrUpdateProgramUserMapping({
+                      userId: participantId,
+                      programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                      metaInformation: updates,
+                      status: STATUS.NOT_ONBOARDED
+                    });
+                  }catch {
+                    showError(t('projectPlayer.evidenceUploadFailed'));
+                    return;
+                 }
+              }
+            }
             showSuccess(t('projectPlayer.evidenceUploaded'));
             setShowUploadModal(false);
           } else {
