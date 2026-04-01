@@ -56,6 +56,9 @@ export const useProjectLoader = (
                   });
                   
                   const participantId = projectData.entityInformation?.externalId;
+                  if (!participantId) {
+                     throw new Error('Created project is missing entityInformation.externalId');
+                  }
                  // create user program Mapping for the participant
                   await createOrUpdateProgramUserMapping({
                     userId: participantId,

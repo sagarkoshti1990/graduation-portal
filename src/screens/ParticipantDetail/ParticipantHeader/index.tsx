@@ -18,7 +18,6 @@ import { participantHeaderStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import ParticipantProgressCard from './ParticipantProgressCard';
 import { STATUS, TASK_STATUS, PROJECT_STATUS } from '@constants/app.constant';
-import { updateEntityDetails, createOrUpdateProgramUserMapping } from '../../../services/participantService';
 import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
 import type { ParticipantStatus } from '@app-types/participant';

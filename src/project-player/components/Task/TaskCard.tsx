@@ -791,11 +791,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
             console.log('Task status updated successfully after file upload', data);
             // Show success toast with task-specific message
             let updates;
-            const attachedFiles = data?.data?.attachments.map((file: any) => file.url);;
+            const attachedFiles = data?.data?.attachments?.map((file: any) => file.url) ?? [];
             const thisDate = new Date().toISOString();
-            if (isOnboardingTask && attachedFiles) {
+            if (isOnboardingTask && attachedFiles.length > 0) {
               const slaConsentTasks = [process.env.UPLOAD_CONSENT_TASK_ID, process.env.UPLOAD_SLA_TASK_ID];
               if (slaConsentTasks.includes(task?.referenceId)) {
+                if (!user?.id || !participantId) {
+                  showError(t('projectPlayer.evidenceUploadFailed'));
+                  return;
+                }
                 if (task?.referenceId === process.env.UPLOAD_CONSENT_TASK_ID) {
                   updates = {
                           consentFiles: attachedFiles,
@@ -808,18 +812,23 @@ const TaskCard: React.FC<TaskCardProps> = ({
                           slaUpdloadedAt: thisDate,
                         }
                 }
-                await updateEntityDetails({
-                  userId: `${user?.id}`,
-                  entityId: participantId,
-                  entityUpdates: updates
-                });
-
-                await createOrUpdateProgramUserMapping({
-                    userId: participantId,
-                    programId: process.env.GLOBAL_LC_PROGRAM_ID,
-                    metaInformation: updates,
-                    status: STATUS.NOT_ONBOARDED
+                try {
+                  await updateEntityDetails({
+                    userId: `${user?.id}`,
+                    entityId: participantId,
+                    entityUpdates: updates
                   });
+
+                  await createOrUpdateProgramUserMapping({
+                      userId: participantId,
+                      programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                      metaInformation: updates,
+                      status: STATUS.NOT_ONBOARDED
+                    });
+                  }catch {
+                    showError(t('projectPlayer.evidenceUploadFailed'));
+                    return;
+                 }
               }
             }
             showSuccess(t('projectPlayer.evidenceUploaded'));

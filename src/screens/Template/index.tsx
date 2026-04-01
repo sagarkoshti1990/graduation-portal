@@ -122,7 +122,7 @@ const DevelopInterventionPlan: React.FC = () => {
         entityId: participantId,
         entityUpdates: {
           idpProjectId: newProjectId,
-          idpProjectCratedAt: thisDate,
+          idpProjectCreatedAt: thisDate,
           status: STATUS.IN_PROGRESS,
         },
       });
@@ -133,7 +133,7 @@ const DevelopInterventionPlan: React.FC = () => {
         programId: process.env.GLOBAL_LC_PROGRAM_ID,
         metaInformation: {
           idpProjectId: newProjectId,
-          idpProjectCratedAt: thisDate,
+          idpProjectCreatedAt: thisDate,
         },
         status: STATUS.IN_PROGRESS
       });

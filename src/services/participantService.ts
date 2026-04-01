@@ -405,7 +405,7 @@ export const verifyParticipantCompletionActions = async ({
           });
           await createOrUpdateProgramUserMapping({
           userId: participantId,
-          programId: GLOBAL_LC_PROGRAM_ID as string,
+          programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
           metaInformation: {
             graduatedAt: thisDate,
           },
