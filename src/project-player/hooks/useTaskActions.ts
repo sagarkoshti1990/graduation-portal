@@ -26,7 +26,7 @@ export const useTaskActions = () => {
 
       try {
         await updateTask(taskId, updateData);
-        return { success: true, data: undefined };
+        return { success: true, data: updateData };
       } catch {
         return { success: false, data: undefined };
       }

@@ -9,6 +9,8 @@ import { getTargetedSolutions, getObservationEntities } from './solutionService'
 import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD, FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
 import { STATUS,ENTITY_STATUS, PROJECT_STATUS } from '@constants/app.constant';
+
+
 /**
  * Get participants list for table view
  * Searches users by user IDs and returns the search response
@@ -36,7 +38,7 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
       page: page.toString(),
       limit: limit.toString(),
       search: search || '',
-      programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+      programId: GLOBAL_LC_PROGRAM_ID as string,
       ...(entityId ? {entityId}:{})
     });
 
@@ -190,7 +192,7 @@ export const updateEntityDetails = async ({
 
     const requestBody = {
       userId,
-      programId: process.env.GLOBAL_LC_PROGRAM_ID,
+      programId: GLOBAL_LC_PROGRAM_ID,
       entityId,
       entityUpdates,
     };
@@ -218,7 +220,7 @@ export const createOrUpdateProgramUserMapping = async ({
   status: string;
 }): Promise<any> => {
   try {
-
+console.log('Creating/updating program user mapping with data:', metaInformation);
     const requestBody = {
       userId,
       programId,
@@ -393,14 +395,23 @@ export const verifyParticipantCompletionActions = async ({
 
       if (isEndlineCompleted) {
         try {
+          const thisDate = new Date().toISOString();
           await updateEntityDetails({
             userId,
             entityId,
             entityUpdates: {
               status: STATUS.GRADUATED,
+              graduatedAt: thisDate,
             },
           });
-
+          await createOrUpdateProgramUserMapping({
+          userId: participantId,
+          programId: GLOBAL_LC_PROGRAM_ID as string,
+          metaInformation: {
+            graduatedAt: thisDate,
+          },
+          status: STATUS.GRADUATED,
+        });
           logger.info('Participant status updated to GRADUATED successfully', {
             participantId,
           });

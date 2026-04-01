@@ -10,11 +10,13 @@ import {
   getTaskDetails,
   updateProjectInfo
 } from '../services/projectPlayerService';
-import { updateEntityDetails } from '../../../src/services/participantService';
+import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@contexts/LanguageContext';
+import { STATUS } from '@constants/app.constant';
+
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
   data: ProjectPlayerData,
@@ -42,15 +44,30 @@ export const useProjectLoader = (
             } else {
               try {
                 projectData = await createProjectForEntity(entityId, province);
-
+                const thisDate = new Date().toISOString();
                 if (projectData?._id) {
                   await updateEntityDetails({
                     userId: `${user?.id}`,
                     entityId: entityId,
                     entityUpdates: {
                       onBoardedProjectId: projectData._id,
+                      onBoardingProjectCreatedAt: thisDate
                     },
                   });
+                  
+                  const participantId = projectData.entityInformation?.externalId;
+                 // create user program Mapping for the participant
+                  await createOrUpdateProgramUserMapping({
+                    userId: participantId,
+                    programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                    metaInformation: {
+                      onBoardedProjectId: projectData?._id,
+                      onBoardingProjectCreatedAt: thisDate
+                    },
+                    status: STATUS.NOT_ONBOARDED
+                  });
+                  
+
                   const ref = await AsyncStorage.getItem('my_program_user_ref');
                   if (ref) {
                     await updateProjectInfo(projectData._id, ref);

@@ -115,14 +115,27 @@ const DevelopInterventionPlan: React.FC = () => {
 
       const response = await getProjectDetails(newProjectId);
       const project = response?.data;
+      const thisDate = new Date().toISOString();
       // update entity to IN_PROGRESS
       await updateEntityDetails({
         userId: user?.userId,
         entityId: participantId,
         entityUpdates: {
           idpProjectId: newProjectId,
+          idpProjectCratedAt: thisDate,
           status: STATUS.IN_PROGRESS,
         },
+      });
+
+       // create user program Mapping for the participant
+      await createOrUpdateProgramUserMapping({
+        userId: participantId,
+        programId: process.env.GLOBAL_LC_PROGRAM_ID,
+        metaInformation: {
+          idpProjectId: newProjectId,
+          idpProjectCratedAt: thisDate,
+        },
+        status: STATUS.IN_PROGRESS
       });
 
       // create user program Mapping for the participant
@@ -131,8 +144,12 @@ const DevelopInterventionPlan: React.FC = () => {
         programId: project.programId,
         metaInformation: {
           idpProjectId: newProjectId,
+          idpProjectCratedAt: thisDate,
         },
-        status: STATUS.IN_PROGRESS
+        status: STATUS.IN_PROGRESS,
+        referenceFrom: {
+          publicProgramId: project.referenceFrom,
+        }
       });
 
       // await updateEntityDetails({
