@@ -119,7 +119,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       showAsCard: isChildOfProject,
       showAsInline: !isChildOfProject || isPreview,
       showCheckbox: isChildOfProject && !isPreview,
-      showActionButton: !isPreview || isPreview && task?.isDeletable,
+      showActionButton: !isPreview || task?.isDeletable,
       isInteractive: isEdit,
     }),
     [isChildOfProject, isPreview, isEdit, task?.isDeletable],
@@ -451,11 +451,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Pressable
               {...triggerProps}
               disabled
-              // onPress={() => {
-              //   if (!isManualToggleDisabled && !isStatusUpdating) {
-              //     handleCheckboxChange(!isCompleted);
-              //   }
-              // }}
             >
               {(state: any) => {        
                 const isHovered = state?.hovered || state?.pressed || false;
@@ -705,7 +700,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         {...taskCardStyles.actionButtonText}
         fontSize={uiConfig.showAsCard || isOnboardingTask || !isWeb ? '$xs' : undefined}
       >
-        {task.metaInformation?.buttonLabel || 'Upload'}
+        {task.metaInformation?.buttonLabel || t('projectPlayer.upload')}
       </ButtonText>
     </Button>
   };
@@ -884,7 +879,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <Box {...taskCardStyles.onboardingDesktopButtonBox}>
               {renderActionButton()}
               {renderCustomTaskActions({
-                isCustomTask: task.isCustomTask || false,
+                isCustomTask: isReadOnly ? false : task?.isCustomTask || false,
                 onEdit: openEditModal,
                 onDelete: openDeleteModal,
               })}

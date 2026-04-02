@@ -147,7 +147,8 @@ export const completeProject = async (projectId: string): Promise<any> => {
 
     return response.data.result;
   } catch (error) {
-    throw error;
+    const apiError = handleApiError(error);
+    throw new Error(apiError.error ?? 'Failed to complete project');
   }
 };
 export const getCategoryList = async (

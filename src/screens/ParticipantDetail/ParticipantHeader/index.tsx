@@ -153,9 +153,9 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       setStatus(STATUS.COMPLETED);
       onStatusUpdate?.(STATUS.COMPLETED);
       await onParticipantRefresh?.();
-      showAlert('success', 'Project completed successfully');
+      showAlert('success',t('participantDetail.header.projectCompleteSuccess'));
     } catch (error) {
-      showAlert('error', `Failed to complete project: ${error}`);
+      showAlert('error', t('participantDetail.header.projectCompleteFailure'))
     } finally {
       setIsCompletingProject(false);
     }

@@ -6,6 +6,11 @@ import { getParticipantsList } from '../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
 
+const DEFAULT_COUNTRY_CODE = 27;
+
+const formatCountryCode = (phoneCode?: string | number | null) =>
+  `(+${phoneCode || DEFAULT_COUNTRY_CODE})`;
+
 /**
  * Route parameters type definition for Observation screen
  */
@@ -74,6 +79,9 @@ const Observation: React.FC = () => {
         setNavbarData({
           subtitle: newData?.name,
         });
+        const alternatePhoneCode =
+          newData?.userDetails?.alternate_phone_code ??
+          newData?.userDetails?.phone_code;
         const preFillData = {
           "Facilitator Name":user?.name,
           "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
@@ -84,8 +92,8 @@ const Observation: React.FC = () => {
           // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
           "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
           "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
-          "Country Code":{value: `(+${newData?.userDetails?.phone_code || 27})`, readonly: false},
-          "Country Code (For alternative number)":{value: `(+${newData?.userDetails?.phone_code || 27})`, readonly: false},
+          "Country Code":{value: formatCountryCode(newData?.userDetails?.phone_code), readonly: false},
+          "Country Code (For alternative number)":{value: formatCountryCode(alternatePhoneCode), readonly: false},
         };
         setUserData(preFillData);
       }
