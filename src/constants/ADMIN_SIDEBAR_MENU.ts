@@ -97,6 +97,6 @@ export const USER_STORY_MENU_ITEMS: SidebarMenuItem[] = [
     key: 'user-story-lc-guide',
     label: 'admin.menu.userStoryGblLcGuide',
     icon: 'MapPin',
-    href: '/help/gbl-guide-lclf.html',
+    href: '/help/gbl-guide-lclf-v2.html',
   },
 ];
