@@ -13,17 +13,27 @@ import {
   ButtonIcon,
   Container,
   Modal,
+  Spinner,
 } from '@ui';
 import { participantHeaderStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import ParticipantProgressCard from './ParticipantProgressCard';
-import { STATUS, TASK_STATUS, PROJECT_STATUS } from '@constants/app.constant';
+import {
+  STATUS,
+  TASK_STATUS,
+  PROJECT_STATUS,
+  GRADUATION_READINESS_PROGRESS_THRESHOLD,
+} from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
 import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
 import { usePlatform } from '@utils/platform';
-import { getProjectDetails, updateTask } from '../../../project-player/services/projectPlayerService';
+import {
+  completeProject,
+  getProjectDetails,
+  updateTask
+} from '../../../project-player/services/projectPlayerService';
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   participant: participantProp,
@@ -34,7 +44,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   areAllTasksCompleted = false,
   onStatusUpdate,
   updatedProgress,
-  projectData
+  projectData,
+  onParticipantRefresh,
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
@@ -45,6 +56,9 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
+  const [isCompletingProject, setIsCompletingProject] = useState(false)
+  const [shouldShowCompletionButton, setShouldShowCompletionButton] =
+    useState(false)
   const showSuccess = (message: string) => {
     showAlert('error',message,{
       duration: 100000,
@@ -130,6 +144,23 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     navigation.push('log-visit', { id: participantId });
   };
 
+  const handleCompleteProject = async () => {
+    if (!participantProp?.idpProjectId || isCompletingProject) return;
+
+    try {
+      setIsCompletingProject(true);
+      await completeProject(participantProp.idpProjectId);
+      setStatus(STATUS.COMPLETED);
+      onStatusUpdate?.(STATUS.COMPLETED);
+      await onParticipantRefresh?.();
+      showAlert('success',t('participantDetail.header.projectCompleteSuccess'));
+    } catch (error) {
+      showAlert('error', t('participantDetail.header.projectCompleteFailure'))
+    } finally {
+      setIsCompletingProject(false);
+    }
+  };
+
   const handleCertificateDownload = () => {
     const pdfUrl = (projectData as any)?.certificate?.pdfUrl;
     if (!pdfUrl) return;
@@ -143,6 +174,17 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const openCertificateModal = () => {
     setIsCertificateModalOpen(true);
   };
+
+  const effectiveProgress =
+    updatedProgress ?? graduationProgressProp ?? graduationProgress;
+
+  useEffect(() => {
+    setShouldShowCompletionButton(
+      status === STATUS.IN_PROGRESS &&
+        !!participantProp?.idpProjectId &&
+        effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD,
+    );
+  }, [effectiveProgress, participantProp?.idpProjectId, status]);
 
   const renderStatusBadge = () => {
     if (status === STATUS.DROPOUT) {
@@ -390,6 +432,24 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
             updatedProgress={updatedProgress}
             graduationDate={graduationDate}
           />
+          {shouldShowCompletionButton && (
+            <Button
+              mt="$3"
+              variant="solid"
+              size="sm"
+              onPress={handleCompleteProject}
+              isDisabled={isCompletingProject}
+            >
+              {isCompletingProject ? (
+                <Spinner size="small" color="$white" />
+              ) : (
+                <ButtonIcon as={LucideIcon} name="Check" />
+              )}
+              <ButtonText>
+                {t('participantDetail.header.completeGraduationReadinessForm')}
+              </ButtonText>
+            </Button>
+          )}
         </Container>
       </Box>
       {renderCertificateModal()}

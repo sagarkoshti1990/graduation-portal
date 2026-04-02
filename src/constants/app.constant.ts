@@ -51,6 +51,8 @@ export const PROJECT_STATUS = {
   SUBMITTED: 'submitted',
 } as const;
 
+export const GRADUATION_READINESS_PROGRESS_THRESHOLD = 100;
+
 // Upload Status Constants
 export const UPLOAD_STATUS = {
   PENDING: 'pending',

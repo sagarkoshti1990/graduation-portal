@@ -426,7 +426,7 @@ const buildDefaultValuesFromObservation = (
                     option.label === value ||
                     (option.label != null &&
                       value != null &&
-                      option.label.toString().toLowerCase() === value.toString().toLowerCase())
+                      option.label?.toString().toLowerCase().includes(value?.toString().toLowerCase()))
                 )?.value;
               }
               defaultValues[pageQuestion._id] = { value: value, readonly: userData[keyFound]?.readonly === false ? false : true };

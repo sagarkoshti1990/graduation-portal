@@ -4,6 +4,7 @@ import { ApiResponse } from '../types/components.types';
 import { API_ENDPOINTS } from './apiEndpoints';
 import { isWeb } from '@utils/platform';
 import { createProjectPlanPayload } from '../types';
+import { PROJECT_STATUS } from '@constants/app.constant';
 
 export const apiClient = axios.create({
   // Use baseUrl from PROJECT_PLAYER_CONFIGS (which gets from env, with fallback)
@@ -132,6 +133,22 @@ export const updateProjectInfo = async (projectId: string, programUsersRef: stri
     return response.data.result;
   } catch (error: any) {
     throw error;
+  }
+};
+
+export const completeProject = async (projectId: string): Promise<any> => {
+  try {
+    const response = await apiClient.post(
+      API_ENDPOINTS.UPDATE_PROJECT_INFO(projectId),
+      {
+        status: PROJECT_STATUS.COMPLETED,
+      },
+    );
+
+    return response.data.result;
+  } catch (error) {
+    const apiError = handleApiError(error);
+    throw new Error(apiError.error ?? 'Failed to complete project');
   }
 };
 export const getCategoryList = async (

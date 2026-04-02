@@ -102,6 +102,7 @@ module.exports = (env = {}, argv = {}) => {
         const jobs = [
           ['public/web-component', 'dist/web-component'],
           ['public/pwa', 'dist/pwa'],
+          ['public/help', 'dist/help'],
         ];
         const singleFiles = [
           ['public/manifest.webmanifest', 'dist/manifest.webmanifest'],

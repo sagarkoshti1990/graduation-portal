@@ -233,6 +233,7 @@ export default function ParticipantDetail() {
           setStatus(newStatus);
         }}
         projectData={projectData}
+        onParticipantRefresh={fetchEntityDetails}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
