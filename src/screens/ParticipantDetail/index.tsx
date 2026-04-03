@@ -84,14 +84,27 @@ export default function ParticipantDetail() {
         isFetchingRef.current = true;
         const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
         const { userDetails, ...rest } = response?.result?.data?.[0]
-        const participantData = { ...(userDetails || {}), ...rest }
+        let participantData = { ...(userDetails || {}), ...rest }
 
         if (participantData?.status === STATUS.COMPLETED) {
           // Verify participant completion conditions and perform certificate/graduation actions
-          await verifyParticipantCompletionActions({
+          const completionActionResult = await verifyParticipantCompletionActions({
             participantData,
             userId: user?.id
           });
+
+          if (completionActionResult.success) {
+            const refreshedResponse = await getParticipantsList({
+              entityId: participantId,
+              userId: user?.id,
+            });
+            const { userDetails: refreshedUserDetails, ...refreshedRest } =
+              refreshedResponse?.result?.data?.[0] || {};
+            participantData = {
+              ...(refreshedUserDetails || {}),
+              ...refreshedRest,
+            };
+          }
         }
 
         setParticipant(participantData);
@@ -233,6 +246,7 @@ export default function ParticipantDetail() {
           setStatus(newStatus);
         }}
         projectData={projectData}
+        // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
       />
 

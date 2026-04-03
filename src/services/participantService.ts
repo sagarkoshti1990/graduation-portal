@@ -272,6 +272,11 @@ const checkSolutionByKeyword = (solutionData: any, keyword: string): boolean => 
   return true;
 };
 
+export interface ParticipantCompletionActionResult {
+  success: boolean;
+  type: 'certificate' | 'endline' | '';
+}
+
 /**
  * Verify participant completion conditions and perform required actions
  * This function handles certificate generation and participant graduation status updates
@@ -297,7 +302,7 @@ export const verifyParticipantCompletionActions = async ({
 }: {
   participantData: any;
   userId: string;
-}): Promise<void> => {
+}): Promise<ParticipantCompletionActionResult> => {
   try {
     const participantStatus = participantData?.status;
     const participantId = participantData?.id;
@@ -308,7 +313,7 @@ export const verifyParticipantCompletionActions = async ({
     // Check if conditions are met: status is COMPLETED or certificate already exists
     if (participantStatus !== STATUS.COMPLETED) {
       logger.info('Participant completion actions skipped - conditions not met');
-      return;
+      return { success: false, type: '' };
     }
 
     // 1. Fetch targeted solutions with certificate and ENDLINE keywords
@@ -323,7 +328,7 @@ export const verifyParticipantCompletionActions = async ({
       logger.warn('No targeted solutions found for certificate/ENDLINE keywords', {
         participantId,
       });
-      return;
+      return { success: false, type: '' };
     }
     
     // 2. Get entity details for each solution to check completion status
@@ -369,19 +374,14 @@ export const verifyParticipantCompletionActions = async ({
             participantId,
             certificateResult,
           });
+          return { success: true, type: 'certificate' };
         } catch (error) {
           logger.error('Failed to generate certificate', {
             participantId,
             error,
           });
         }
-      } else if (projectStatus === PROJECT_STATUS.SUBMITTED) {
-        logger.info('Project is already submitted, skipping certificate generation');
-      } else {
-        logger.info('Project is not completed, skipping certificate generation');
       }
-    } else {
-      logger.warn('Certificate solution not found in targeted solutions, skipping certificate generation');
     }
 
     // 4. Process ENDLINE solution
@@ -404,16 +404,17 @@ export const verifyParticipantCompletionActions = async ({
             },
           });
           await createOrUpdateProgramUserMapping({
-          userId: participantId,
-          programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
-          metaInformation: {
-            graduatedAt: thisDate,
-          },
-          status: STATUS.GRADUATED,
-        });
+            userId: participantId,
+            programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+            metaInformation: {
+              graduatedAt: thisDate,
+            },
+            status: STATUS.GRADUATED,
+          });
           logger.info('Participant status updated to GRADUATED successfully', {
             participantId,
           });
+          return { success: true, type: 'endline' };
         } catch (error) {
           logger.error('Failed to update participant status to GRADUATED', {
             participantId,
@@ -435,11 +436,13 @@ export const verifyParticipantCompletionActions = async ({
     logger.info('Participant completion verification completed', {
       participantId,
     });
+    return { success: false, type: '' };
   } catch (error) {
     logger.error('Error in verifyParticipantCompletionActions', {
       participantId: participantData?.id,
       error,
     });
     // Don't throw error - this is a background process that shouldn't block main flow
+    return { success: false, type: '' };
   }
 };
