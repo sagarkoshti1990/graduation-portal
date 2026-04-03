@@ -33,6 +33,7 @@ import { PARTICIPANT_DETAILS_TABS, STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
+import logger from '@utils/logger';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -84,14 +85,34 @@ export default function ParticipantDetail() {
         isFetchingRef.current = true;
         const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
         const { userDetails, ...rest } = response?.result?.data?.[0]
-        const participantData = { ...(userDetails || {}), ...rest }
+        let participantData = { ...(userDetails || {}), ...rest }
 
         if (participantData?.status === STATUS.COMPLETED) {
           // Verify participant completion conditions and perform certificate/graduation actions
-          await verifyParticipantCompletionActions({
+          const completionActionResult = await verifyParticipantCompletionActions({
             participantData,
             userId: user?.id
           });
+
+          if (completionActionResult.success) {
+            try {
+              const refreshedResponse = await getParticipantsList({
+                entityId: participantId,
+                userId: user?.id,
+              });
+              const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
+
+              if (refreshedRow) {
+                const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
+                participantData = {
+                  ...(refreshedUserDetails || {}),
+                  ...refreshedRest,
+                };
+              }
+            } catch (refreshError) {
+              logger.log('Best-effort participant refresh failed:', refreshError);
+            }
+          }
         }
 
         setParticipant(participantData);
@@ -100,7 +121,7 @@ export default function ParticipantDetail() {
         });
         setStatus(participantData?.status);
       } catch (error) {
-        console.log(error);
+        logger.log(error);
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
@@ -233,6 +254,7 @@ export default function ParticipantDetail() {
           setStatus(newStatus);
         }}
         projectData={projectData}
+        // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
       />
 
