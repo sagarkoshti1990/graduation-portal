@@ -33,6 +33,7 @@ import { PARTICIPANT_DETAILS_TABS, STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
+import logger from '@utils/logger';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -94,16 +95,23 @@ export default function ParticipantDetail() {
           });
 
           if (completionActionResult.success) {
-            const refreshedResponse = await getParticipantsList({
-              entityId: participantId,
-              userId: user?.id,
-            });
-            const { userDetails: refreshedUserDetails, ...refreshedRest } =
-              refreshedResponse?.result?.data?.[0] || {};
-            participantData = {
-              ...(refreshedUserDetails || {}),
-              ...refreshedRest,
-            };
+            try {
+              const refreshedResponse = await getParticipantsList({
+                entityId: participantId,
+                userId: user?.id,
+              });
+              const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
+
+              if (refreshedRow) {
+                const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
+                participantData = {
+                  ...(refreshedUserDetails || {}),
+                  ...refreshedRest,
+                };
+              }
+            } catch (refreshError) {
+              logger.log('Best-effort participant refresh failed:', refreshError);
+            }
           }
         }
 
@@ -113,7 +121,7 @@ export default function ParticipantDetail() {
         });
         setStatus(participantData?.status);
       } catch (error) {
-        console.log(error);
+        logger.log(error);
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
