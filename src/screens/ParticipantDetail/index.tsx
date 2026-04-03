@@ -319,7 +319,6 @@ export default function ParticipantDetail() {
                       <Box mt="$6">
                         <AssessmentSurveys
                           participant={participant as ParticipantData}
-                          projectData={projectData}
                         />
                       </Box>
                     )}

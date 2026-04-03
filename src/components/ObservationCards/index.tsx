@@ -15,7 +15,7 @@ import { AssessmentSurveyCardProps } from '@app-types/participant';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { assessmentSurveyCardStyles } from './Styles';
-import { CARD_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { CERTIFICATE_KEYWORD, ICONS } from '@constants/LOG_VISIT_CARDS';
 
@@ -32,23 +32,59 @@ interface IconMeta {
 export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   card,
   userId,
+  participantId,
+  participantStatus,
   certificate,
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
   const { name, description, navigationUrl, entity } = card;
   const [iconMeta, setIconMeta] = useState<IconMeta | null>(null);
+  const isGraduatedParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT;
+  const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
+  const shouldShowViewButton =
+    entity?.status && (isGraduatedParticipant || hasSubmittedData);
+  const shouldShowActionButton = !!entity?.status;
+  const canOpenCardFromPressable =
+    !entity?.status && !!navigationUrl && !isGraduatedParticipant;
+  const handleCardAction = () => {
+    if (!navigationUrl || !userId) {
+      logger.log('userId is required');
+      return;
+    }
+
+    if (
+      isGraduatedParticipant &&
+      entity?.allowMultipleAssessemts
+    ) {
+      if(participantId) {
+        // @ts-ignore
+        navigation.navigate('check-ins-list' as never, {
+          id: participantId,
+          solutionId: card?.solutionId,
+        });
+      }
+      return;
+    }
+
+    // @ts-ignore
+    navigation.navigate(navigationUrl as never, {
+      id: userId || '',
+      solutionId: card?.solutionId || card?.id,
+      submissionNumber: entity?.submissionsCount || 1,
+    });
+  };
 
   useEffect(() => {
-    const iconMeta =
+    const nextIconMeta =
       ICONS[card.id as keyof typeof ICONS] ||
       ICONS?.[card?.name?.toLowerCase() as keyof typeof ICONS];
-    setIconMeta(iconMeta as IconMeta);
+    setIconMeta(nextIconMeta as IconMeta);
   }, [card]);
 
   return (
     <Pressable
-      {...(!entity?.status && navigationUrl && {
+      {...(canOpenCardFromPressable && {
         onPress: () => {
           // @ts-ignore
           navigation.navigate(navigationUrl as never, {
@@ -57,7 +93,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
           });
         }
       })}
-      $web-cursor={!entity?.status && navigationUrl ? 'pointer' : 'auto'}
+      $web-cursor={canOpenCardFromPressable ? 'pointer' : 'auto'}
       width='$full'
     >
       <Card
@@ -115,23 +151,12 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
               </Text>
               <HStack space="sm" alignItems="center">
                 {/* Action Button */}
-                {entity?.status && (
+                {shouldShowActionButton && (
                   <Button
                     $md-width="fit-content"
                     // @ts-ignore
-                    variant={entity?.status === CARD_STATUS.COMPLETED ? "outlineghost" : "solid"}
-                    onPress={() => {
-                      if (navigationUrl && userId) {
-                        // @ts-ignore
-                        navigation.navigate(navigationUrl as never, {
-                          id: userId || '',
-                          solutionId: card?.solutionId || card?.id,
-                          submissionNumber: entity?.submissionsCount,
-                        });
-                      } else {
-                        logger.log('userId is required');
-                      }
-                    }}
+                    variant={shouldShowViewButton ? "outlineghost" : "solid"}
+                    onPress={handleCardAction}
                   >
                     <ButtonIcon
                       as={LucideIcon}
@@ -143,7 +168,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                       {...assessmentSurveyCardStyles.buttonText}
 
                     >
-                      {entity?.status === CARD_STATUS.COMPLETED
+                      {shouldShowViewButton
                         ? `${t('actions.view')} ${t(card?.name)}`
                         : `${t('actions.fill')} ${t(card?.name)}`}
                     </ButtonText>
@@ -154,7 +179,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                     $md-width="fit-content"
                     // @ts-ignore
                     variant={"solid"}
-                    $display="none"
+                    display="none"
                   >
                     <ButtonIcon
                       as={LucideIcon}
@@ -210,6 +235,7 @@ export const StatusBadge: React.FC<{ status: string, preFix?: any }> = ({ status
           )}
         {React.isValidElement(preFix)
           ? React.cloneElement(preFix, {
+            // @ts-ignore
             color:
               status === CARD_STATUS.GRADUATED
                 ? '$white'

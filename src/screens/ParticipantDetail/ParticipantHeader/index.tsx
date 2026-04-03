@@ -24,7 +24,7 @@ import {
   PROJECT_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
 } from '@constants/app.constant';
-import { useAuth, User } from '@contexts/AuthContext';
+import { User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
 import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
@@ -49,7 +49,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
-  const { user } = useAuth()
   const { isWeb, isMobile } = usePlatform();
   const { showAlert } = useAlert();
 
@@ -236,7 +235,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     }
 
     // Dropout: No second button
-    if (status === STATUS.DROPOUT) {
+    if (status === STATUS.DROPOUT || status === STATUS.GRADUATED) {
       return null;
     }
 
