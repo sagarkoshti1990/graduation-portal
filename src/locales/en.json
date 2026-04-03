@@ -212,7 +212,7 @@
     "backToIndicatorTypes": "Back to Indicator Types",
     "outputIndicators": {
       "title": "Output Indicators",
-      "description": "Direct program activities and deliverables: enrollment processes, LC performance tracking, and immediate program outputs.",
+      "description": "Direct program activities and deliverables: enrollment processes, Coach performance tracking, and immediate program outputs.",
       "topicsCount": "7 Topics",
       "selectTopic": "Select a Topic",
       "selectTopicDescription": "Choose a topic to view detailed indicators and analytics",
@@ -243,7 +243,7 @@
         },
         "coaching": {
           "title": "Coaching",
-          "description": "Coaching sessions, visit frequency, and LC performance tracking"
+          "description": "Coaching sessions, visit frequency, and Coach performance tracking"
         },
         "dropOuts": {
           "title": "Drop Outs",
@@ -731,10 +731,10 @@
       "metrics": {
         "assigned": {
           "title": "Assigned (CSG Lists)",
-          "subtitle": "By LC to LF"
+          "subtitle": "By Coaches"
         },
         "contacted": {
-          "title": "Contacted by LF",
+          "title": "Contacted by Coach",
           "subtitle": "contacted"
         },
         "consent": {
@@ -748,7 +748,7 @@
       },
       "insights": {
         "title": "Key Insights - Participant Targeting & Onboarding",
-        "assigned": "2,718 prospective participants assigned by LC to LF based on CSG lists across all sites.",
+        "assigned": "2,718 prospective participants assigned to Coaches based on CSG lists across all sites.",
         "contacted": "90% contact rate achieved - 2,456 participants reached through door-to-door outreach.",
         "consent": "96% signed consent forms and completed profiling - 2,609 participants onboarded.",
         "sla": "100% SLA completion - All profiled participants have signed SLAs with intervention plans."
@@ -756,11 +756,11 @@
       "graphs": {
         "sections": {
           "assigned": {
-            "header": "1.1 Prospective Participants Assigned by Supervisors to LC/LF (CSG Lists)",
+            "header": "1.1 Prospective Participants Assigned by Supervisors to Coaches (CSG Lists)",
             "meta": "Target: Participant | Time: Monthly / Per graduation cycle | Data: Assigned Participants by Supervisor"
           },
           "contacted": {
-            "header": "1.2 Prospective Participants Contacted by LC/LF",
+            "header": "1.2 Prospective Participants Contacted by Coaches",
             "meta": "Target: Participant | Time: Monthly | Data: Door-to-door outreach logs | Logic: Count contacted / total assigned → %"
           },
           "consent": {
@@ -1178,7 +1178,7 @@
       "fromDate": "From Date",
       "toDate": "To Date",
       "timePeriod": "Time Period",
-      "champions": "Linkage Champions",
+      "champions": "Coaches",
       "genders": "Genders",
       "datePlaceholder": "dd/mm/yyyy",
       "last6Months": "Last 6 Months",
@@ -1186,7 +1186,7 @@
       "lastMonth": "Last Month",
       "lastWeek": "Last Week",
       "custom": "Custom",
-      "allChampions": "All Linkage Champions",
+      "allChampions": "All Coaches",
       "allGenders": "All Genders",
       "male": "Male",
       "female": "Female",
@@ -1208,18 +1208,18 @@
       "userStory": "USER STORY",
       "userStoryGblAdminGuide": "GBL Admin Guide",
       "userStoryGblDashboardGuide": "GBL Dashboard Guide",
-      "userStoryGblLcGuide": "GBL LC Guide",
+      "userStoryGblLcGuide": "GBL Coach Guide",
       "csvImportTemplates": "CSV Import Templates",
       "passwordManagementPolicy": "Password Management Policy",
       "profileFieldEditPermissions": "Profile Field Edit Permissions"
     },
     "userManagementDescription": "Manage all users across your organization with unified controls and bulk operations.",
-    "assignUsersDescription": "Assign Linkage Champions to Supervisors and Participants to LCs",
+    "assignUsersDescription": "Assign Coaches to Supervisors and Participants to Coaches",
     "actions": {
       "bulkUploadCSV": "Bulk Upload (CSV)",
       "createUser": "Create User",
-      "lctosupervisior": "LC to Supervisor",
-      "participanttolc": "Participant to LC",
+      "lctosupervisior": "Coach to Supervisor",
+      "participanttolc": "Participant to Coach",
       "exportCSV": "Export CSV",
       "uploadUsers": "Upload Users",
       "uploadUsersDescription": "Choose how you would like to add users to the system.",
@@ -1250,7 +1250,7 @@
       "uploadErrorBulkCreate": "File uploaded but failed to process. Please contact support.",
       "csvValidationError": "Please select a valid CSV file",
       "uploadErrorFilePathNotFound": "File path not found in upload response. Please try again.",
-      "assignLCsToSupervisor": "Assign LCs to Supervisor"
+      "assignLCsToSupervisor": "Assign Coaches to Supervisor"
     },
     "filters": {
       "role": "Role",
@@ -1262,7 +1262,7 @@
       "allRoles": "All Roles",
       "admin": "Admin",
       "supervisor": "Supervisor",
-      "linkageChampion": "Linkage Champion",
+      "linkageChampion": "Coach",
       "participant": "Participant",
       "allStatus": "All Status",
       "active": "Active",
@@ -1272,8 +1272,8 @@
       "allProvinces": "All Provinces",
       "selectSupervisor": "Select Supervisor",
       "chooseSupervisor": "Choose Supervisor",
-      "selectLC": "Select Linkage Champion",
-      "chooseLC": "Choose Linkage Champion",
+      "selectLC": "Select Coach",
+      "chooseLC": "Choose Coach",
       "allDistrict": "All District",
       "site": "Site",
       "allSites": "All Sites",
@@ -1351,8 +1351,8 @@
       "allProvinces": "All Provinces",
       "selectSupervisor": "Select Supervisor",
       "chooseSupervisor": "Choose Supervisor",
-      "selectLC": "Select Linkage Champion",
-      "chooseLC": "Choose Linkage Champion",
+      "selectLC": "Select Coach",
+      "chooseLC": "Choose Coach",
       "allDistrict": "All District",
       "allSites": "All Sites",
       "bio": "Bio",
@@ -1371,50 +1371,50 @@
       "allRoles": "All roles",
       "participants": "Participants",
       "activeLearners": "Active learners",
-      "linkageChampions": "Linkage Champions",
+      "linkageChampions": "Coaches",
       "activeCoaches": "Active coaches",
       "supervisors": "Supervisors",
       "activeSupervisors": "Active supervisors"
     },
     "assignUsers": {
-      "assignParticipantsToLCsDescription": "Assign Participants to LCs",
+      "assignParticipantsToLCsDescription": "Assign Participants to Coaches",
       "step1SelectSupervisor": "Step 1: Select Supervisor",
-      "step1SelectSupervisorAndLC": "Step 1: Select Supervisor and Linkage Champion",
-      "step1SelectLC": "Step 1: Select Linkage Champion",
+      "step1SelectSupervisorAndLC": "Step 1: Select Supervisor and Coach",
+      "step1SelectLC": "Step 1: Select Coach",
       "filterByProvince": "Filter by province and choose a supervisor",
-      "step2AssignLinkageChampions": "Step 2: Assign Linkage Champions",
-      "filterByGeography": "Filter by geography and select LCs to assign",
-      "chooseSupervisor": "Choose a supervisor to view their assigned LCs",
-      "chooseLC": "Choose Linkage Champion",
-      "step2SelectLC": "Step 2: Select Linkage Champion",
-      "chooseLcFrom": "Choose an LC from {{supervisor}}'s team",
+      "step2AssignLinkageChampions": "Step 2: Assign Coaches",
+      "filterByGeography": "Filter by geography and select Coaches to assign",
+      "chooseSupervisor": "Choose a supervisor to view their assigned Coaches",
+      "chooseLC": "Choose Coach",
+      "step2SelectLC": "Step 2: Select Coach",
+      "chooseLcFrom": "Choose a Coach from {{supervisor}}'s team",
       "step2AssignParticipants": "Step 2: Assign Participants",
       "step3AssignParticipants": "Step 3: Assign Participants",
       "filterAndSelectParticipants": "Filter and select participants to assign to {{lc}}",
       "selectParticipants": "Select Participants ({{count}} selected)",
-      "assignParticipantsToLc": "Assign {{count}} Participants to LC",
-      "assignLCsToSupervisor": "Assign {{count}} LCs to Supervisor",
-      "listOfParticipantsMappedToLc": "List of Participants Mapped to LC",
+      "assignParticipantsToLc": "Assign {{count}} Participants to Coach",
+      "assignLCsToSupervisor": "Assign {{count}} Coaches to Supervisor",
+      "listOfParticipantsMappedToLc": "List of Participants Mapped to Coach",
       "currentParticipantAssignmentsFor": "Current participant assignments for {{lc}}",
       "participant": "Participant",
-      "selectedLinkageChampions": "Selected Linkage Champions",
-      "listOfLcsMappedToSupervisor": "List of LCs Mapped to Supervisor",
-      "currentLcAssignmentsFor": "Current LC assignments for {{supervisor}}",
-      "linkageChampion": "Linkage Champion",
-      "linkageChampions": "Linkage Champions",
+      "selectedLinkageChampions": "Selected Coaches",
+      "listOfLcsMappedToSupervisor": "List of Coaches Mapped to Supervisor",
+      "currentLcAssignmentsFor": "Current Coach assignments for {{supervisor}}",
+      "linkageChampion": "Coach",
+      "linkageChampions": "Coaches",
       "email": "Email",
       "location": "Location",
       "site": "Site",
       "supervisor": "Supervisor",
-      "confirmLcAssignment": "Confirm LC Assignment",
-      "confirmLcAssignmentDescription": "You are about to assign {{count}} Linkage Champion(s) to {{supervisor}}",
+      "confirmLcAssignment": "Confirm Coach Assignment",
+      "confirmLcAssignmentDescription": "You are about to assign {{count}} Coach(es) to {{supervisor}}",
       "confirmParticipantAssignment": "Confirm Participant Assignment",
       "confirmParticipantAssignmentDescription": "You are about to assign {{count}} participant(s) to {{lc}}",
       "confirmAssignment": "Confirm Assignment",
-      "lcsAssignedSuccess": "{{count}} LC(s) assigned to {{supervisor}}",
-      "lcsAssignmentError": "Failed to assign LCs. Please try again.",
+      "lcsAssignedSuccess": "{{count}} Coach(es) assigned to {{supervisor}}",
+      "lcsAssignmentError": "Failed to assign Coaches. Please try again.",
       "participantsAssignedSuccess": "{{count}} participant(s) assigned to {{lc}} successfully!",
-      "participantsAssignmentError": "Failed to assign participant(s) to LC. Please try again.",
+      "participantsAssignmentError": "Failed to assign participant(s) to Coach. Please try again.",
       "participants": "Participants",
       "status": {
         "assigned": "Assigned",
@@ -1425,17 +1425,17 @@
       "title": "Bulk Operations & CSV Templates",
       "csvImportTemplates": "CSV Import Templates",
       "participantImportTemplate": "Participant Import Template",
-      "lcAssignmentTemplate": "LC Assignment Template",
+      "lcAssignmentTemplate": "Coach Assignment Template",
       "supervisorMappingTemplate": "Supervisor Mapping Template",
       "userMapping": "User Mapping",
       "userMappingDescription": "Use CSV uploads to map relationships between users:",
-      "assignParticipantsToLCs": "Assign participants to LCs",
-      "linkLCsToSupervisors": "Link LCs to supervisors",
+      "assignParticipantsToLCs": "Assign participants to Coaches",
+      "linkLCsToSupervisors": "Link Coaches to supervisors",
       "updateRoleHierarchies": "Update role hierarchies in bulk",
       "passwordManagement": "Password Management",
       "passwordManagementDescription": "Supervisors and admins can reset passwords for:",
       "participantsAllLevels": "Participants (all levels)",
-      "linkageChampions": "Linkage Champions (supervisors+)",
+      "linkageChampions": "Coaches (supervisors+)",
       "otherSupervisors": "Other supervisors (admin only)"
     },
     "templateManagement": {
@@ -1527,7 +1527,7 @@
         "adminSubtitle": "Global",
         "supervisor": "Supervisor",
         "supervisorSubtitle": "District",
-        "lc": "LC",
+        "lc": "Coach",
         "lcSubtitle": "Site",
         "participant": "Participant",
         "participantSubtitle": "Self",
@@ -1545,7 +1545,7 @@
         "siteLocation": "Site/Location",
         "address": "Address",
         "assignedSupervisor": "Assigned Supervisor",
-        "assignedLC": "Assigned LC",
+        "assignedLC": "Assigned Coach",
         "status": "Status (Active/Inactive)",
         "password": "Password"
       },
@@ -1560,7 +1560,7 @@
       },
       "keyRules": {
         "title": "Key Rules",
-        "rule1": "Supervisors can only edit LC profiles (limited fields)",
+        "rule1": "Supervisors can only edit Coach profiles (limited fields)",
         "rule2": "Users can edit their own profiles with broader permissions",
         "rule3": "Site/location changes always require supervisor approval",
         "rule4": "Address changes need approval if they involve site modifications"
@@ -1579,11 +1579,11 @@
         },
         "participant_assignment": {
           "title": "Participant Assignment",
-          "description": "Assign participants to Linkage Champions"
+          "description": "Assign participants to Coaches"
         },
         "lc_supervisor_mapping": {
-          "title": "LC to Supervisor Mapping",
-          "description": "Map Linkage Champions to Supervisors"
+          "title": "Coach to Supervisor Mapping",
+          "description": "Map Coaches to Supervisors"
         },
         "bulk_status_update": {
           "title": "Bulk Status Update",
@@ -1600,7 +1600,7 @@
           "Ensure all required fields are filled in",
           "Use the exact format provided in the template",
           "Email addresses must be unique and valid",
-          "Role values must match exactly: Admin, Supervisor, Linkage Champion, or Participant",
+          "Role values must match exactly: Admin, Supervisor, Coach, or Participant",
           "Province and District values must match the system's configured administrative divisions",
           "File size limit: 5MB (approximately 5,000 rows)",
           "Duplicates will be skipped with a warning"
@@ -1623,7 +1623,7 @@
           "canResetFor": [
             "All Admins",
             "All Supervisors",
-            "All Linkage Champions",
+            "All Coaches",
             "All Participants"
           ],
           "note": "No restrictions: Admins can reset passwords for any user in the system regardless of role or location."
@@ -1632,8 +1632,8 @@
           "title": "Supervisor",
           "badge": "District-Limited",
           "canResetFor": [
-            "LCs under their supervision",
-            "Participants under their LCs"
+            "Coaches under their supervision",
+            "Participants under their Coaches"
           ],
           "cannotResetFor": [
             "Other Supervisors",
@@ -1642,7 +1642,7 @@
           ]
         },
         "lc": {
-          "title": "LC",
+          "title": "Coach",
           "badge": "Participant",
           "selfServiceOnly": [
             "Can change own password",
@@ -1651,7 +1651,7 @@
           ],
           "cannotResetFor": [
             "Any other users",
-            "Participants (LC role)",
+            "Participants (Coach role)",
             "Must request reset from supervisor"
           ]
         }
@@ -1703,12 +1703,12 @@
     "pleaseEnterBothEmailAndPassword": "Please enter both email and password",
     "invalidEmailOrPassword": "Invalid email or password",
     "anErrorOccurredDuringLogin": "An error occurred during login",
-    "lcLogin": "Login as LC / LF",
+    "lcLogin": "Login as Coach",
     "testAccounts": "Test Accounts:",
     "welcomeToYourAccount": "Welcome To Your Account",
     "welcomeToYourAccountAdmin": "Welcome To Your Account Admin / Supervisor",
     "logInToContinue": "Log in to Continue",
-    "backToLogin": "Back to LC / LF Login",
+    "backToLogin": "Back to Coach Login",
     "description": "Log in to Continue",
     "username": "Username / Email",
     "password": "Password",
@@ -1945,10 +1945,10 @@
   },
   "lcProfile": {
     "myProfile": "My Profile",
-    "linkageChampionProfile": "Linkage Champion Profile",
+    "linkageChampionProfile": "Coach Profile",
     "profileDetails": "Profile Details",
     "fullName": "Full Name",
-    "lcId": "LC ID",
+    "lcId": "Coach ID",
     "emailAddress": "Email Address",
     "phoneNumber": "Phone Number",
     "serviceArea": "Service Area",
