@@ -24,7 +24,7 @@ import {
   PROJECT_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
 } from '@constants/app.constant';
-import { useAuth, User } from '@contexts/AuthContext';
+import { User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
 import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
@@ -49,7 +49,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
-  const { user } = useAuth()
   const { isWeb, isMobile } = usePlatform();
   const { showAlert } = useAlert();
 
@@ -123,8 +122,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
     try {
       const projResult = await updateTask((participantProp as any)?.onBoardedProjectId, {status: TASK_STATUS.COMPLETED});
-      if (!projResult?._id) {  
-        return showAlert('error', 'Failed to update project task status');
+      if (!(projResult as any)?._id) {
+        return showAlert('error', t('participantDetail.header.updateProjectTaskStatusFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
       // Reload page
@@ -134,7 +133,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         onStatusUpdate(STATUS.ENROLLED);
       }
     } catch (error) {
-      showAlert('error', 'Something Went Wrong');
+      showAlert('error', t('common.somethingWentWrong'));
     }
   };
 

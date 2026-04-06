@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import offlineStorage from './offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import logger from '@utils/logger';
+import i18n from '@config/i18n';
 
 export interface LoginResponse {
   responseCode: string;
@@ -72,7 +73,7 @@ export const refreshToken = async (
       logger.warn('Access token is missing or empty in refresh response', {
         responseData,
       });
-      throw new Error('Access token is required but was not provided');
+      throw new Error(i18n.t('auth.accessTokenRequired'));
     }
 
     // Save new refresh token if present and non-empty
@@ -152,7 +153,7 @@ export const login = async (
       logger.warn(
         `Access token is missing or empty in ${isAdmin ? 'admin ' : ''}login response`
       );
-      throw new Error('Access token is required but was not provided');
+      throw new Error(i18n.t('auth.accessTokenRequired'));
     }
 
     // Save refresh token only if rememberMe is true

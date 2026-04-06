@@ -14,6 +14,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '@config/i18n';
 // import { FileUploadService } from 'src/services/FileUploadService';
 
 // ---------- Types ----------
@@ -286,21 +287,21 @@ const ProjectPlayer: React.FC<Props> = props => {
 
   // ---------- File Preview ----------
   const previewFileById = async (fileId: string) => {
-    if (!project.id) return alert('❌ Missing project ID.');
+    if (!project.id) return alert(i18n.t('webComponentProjectPlayer.missingProjectId'));
     try {
       if (typeof window !== 'undefined' && 'indexedDB' in window) {
         const rec = await idbGet(STORE_FILES, fileId);
         if (!rec || rec.projectId !== project.id)
-          return alert('❌ File not found for this project.');
+          return alert(i18n.t('webComponentProjectPlayer.fileNotFoundForProject'));
         const url = URL.createObjectURL(rec.data);
         setPreviewFile({ name: rec.name, url });
       } else {
         const rec = await mobileGetFileBase64(project.id, fileId);
-        if (!rec) return alert('❌ File not found offline.');
+        if (!rec) return alert(i18n.t('webComponentProjectPlayer.fileNotFoundOffline'));
         setPreviewFile({ name: rec.name, url: rec.base64 });
       }
     } catch {
-      alert('Preview failed.');
+      alert(i18n.t('webComponentProjectPlayer.previewFailed'));
     }
   };
 
@@ -316,8 +317,7 @@ const ProjectPlayer: React.FC<Props> = props => {
     return (
       <Box p="$4" alignItems="center" justifyContent="center">
         <Text color="$red600" fontWeight="bold">
-          ❌ Error: You don’t have a unique project ID. Please pass `id` in data
-          prop.
+          {i18n.t('webComponentProjectPlayer.uniqueProjectIdRequired')}
         </Text>
       </Box>
     );

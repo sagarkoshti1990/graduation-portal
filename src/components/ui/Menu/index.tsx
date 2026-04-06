@@ -154,7 +154,7 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
                   {t(item.label)}
                 </MenuItemLabel>
               </Box>
-              {/* Coming Soon Badge */}
+              {/* Coming soon badge */}
               {item.isComingSoon && (
                 <Box
                   bg="$warning500"
@@ -164,7 +164,7 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
                   ml="$2"
                 >
                   <Text fontSize="$2xs" fontWeight="$semibold" color="$white">
-                    {t('common.comingSoon') || 'Soon'}
+                    {t('common.comingSoon') || 'Coming soon.'}
                   </Text>
                 </Box>
               )}
