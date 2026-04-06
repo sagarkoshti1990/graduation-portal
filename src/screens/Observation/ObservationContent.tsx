@@ -99,7 +99,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       if(submissionNumberInput) {
         observationSubmissionsLast = observationSubmissions.result.find((submissionItem: any) => submissionItem.submissionNumber == submissionNumberInput);
         if(!observationSubmissionsLast && submissionNumberInput !== 1) {
-          showAlert( 'error', `${t('logVisit.thisFormNotFound')} ${submissionNumberInput}`,
+          showAlert( 'error', t('logVisit.thisFormNotFound', { submissionNumberInput }),
             {duration: 10000},
           );
           return;
@@ -154,7 +154,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     } catch (error: any) {
       showAlert(
         'error',
-        `${t('observation.noParticipantFoundError')} : ${error.message}`,
+        t('observation.noParticipantFoundError'),
         {
           duration: 10000,
         },
@@ -218,9 +218,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
               } catch (error: any) {
                 showAlert(
                   'error',
-                  `${t('observation.noParticipantFoundError')} : ${
-                    error.message
-                  }`,
+                  t('observation.noParticipantFoundError'),
                   { duration: 10000 },
                 );
                 setLoadingOff();
@@ -235,7 +233,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           setLoadingOff();
         }
       } catch (error: any) {
-        showAlert('error', t('observation.noParticipantFoundError') + ' : ' + error.message);
+        showAlert('error', t('observation.noParticipantFoundError'));
         setLoadingOff();
       }
     };

@@ -53,7 +53,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ card }) => {
 
   return (
     <Box position="relative" flex={1}>
-      {/* Tooltip for Coming Soon */}
+      {/* Tooltip for coming soon */}
       {isComingSoon && showTooltip && Platform.OS === 'web' && (
         <Box
           position="absolute"
@@ -76,7 +76,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ card }) => {
             }}
           >
             <Text color="$white" fontSize="$sm" fontWeight="$medium">
-              {t('common.comingSoon') || 'Coming Soon'}
+              {t('common.comingSoon') || 'Coming soon.'}
             </Text>
           </Box>
         </Box>
@@ -162,7 +162,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ card }) => {
             </Box>
           )}
 
-          {/* Coming Soon Badge */}
+          {/* Coming soon badge */}
           {isComingSoon && (
             <Box
               position="absolute"
@@ -174,7 +174,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ card }) => {
               borderRadius="$sm"
             >
               <Text fontSize="$xs" fontWeight="$semibold" color="$white">
-                {t('common.comingSoon') || 'Coming Soon'}
+                {t('common.comingSoon') || 'Coming soon.'}
               </Text>
             </Box>
           )}

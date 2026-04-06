@@ -188,7 +188,7 @@ const UserManagementScreen = () => {
       const n = Number(deactivateState.user.id);
       const idVal = Number.isFinite(n) ? n : deactivateState.user.id;
       await deactivateUser([idVal]);
-      showAlert('success', t('admin.users.deactivate.success') || 'User deactivated successfully');
+      showAlert('success', t('admin.users.deactivate.success') || 'User deactivated successfully.');
       closeDeactivateModal();
       setRefetchKey(k => k + 1);
     } catch (error: any) {
@@ -235,14 +235,14 @@ const UserManagementScreen = () => {
 
     // Validate required fields
     if (!editUserState.name?.trim()) {
-      showAlert('error', t('admin.users.edit.nameRequired') || 'Name is required');
+      showAlert('error', t('admin.users.edit.nameRequired') || 'Enter a name.');
       return;
     }
 
     setEditUserState(prev => ({ ...prev, isSubmitting: true }));
     try {
       await updateOrgAdminUser(editUserState.user.id, { name: editUserState.name.trim() });
-      showAlert('success', t('admin.users.edit.success') || 'User Updated Successfully.');
+      showAlert('success', t('admin.users.edit.success') || 'User updated successfully.');
       closeEditUserModal();
       setRefetchKey(k => k + 1);
     } catch (error: any) {
@@ -1079,7 +1079,7 @@ const UserManagementScreen = () => {
       <Modal
         isOpen={!!deactivateState.user?.id}
         onClose={closeDeactivateModal}
-        headerTitle={t('admin.users.actionMenu.confirmDeactivate') || 'Confirm Deactivation'}
+        headerTitle={t('admin.users.actionMenu.confirmDeactivate') || 'Confirm deactivation'}
         headerDescription={(() => {
           const name = deactivateState.user?.name || '';
           const msg =
