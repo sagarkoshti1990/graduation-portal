@@ -97,7 +97,6 @@ const LoginScreen: React.FC = () => {
       if (!result.success) {
         // Use the message from the login function, or fallback to default messages
         setError(
-          result.message ||
             (isAdminMode
               ? t('login.adminLoginFailed')
               : t('login.invalidEmailOrPassword')),

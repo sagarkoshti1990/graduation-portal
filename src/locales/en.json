@@ -1702,7 +1702,7 @@
   },
   "login": {
     "pleaseEnterBothEmailAndPassword": "Please enter your email and password.",
-    "invalidEmailOrPassword": "The email or password you entered is incorrect. Please try again.",
+    "invalidEmailOrPassword": "Email or password is incorrect. Try again.",
     "anErrorOccurredDuringLogin": "Something went wrong while logging you in. Please try again.",
     "lcLogin": "Login as Coach",
     "testAccounts": "Test Accounts:",
@@ -1718,7 +1718,7 @@
     "testAccountsCredentials": "admin@brac.net | supervisor@brac.net | lc@brac.net",
     "title": "Generating Better Livelihoods",
     "adminLogin": "Login as Admin / Supervisor",
-    "adminLoginFailed": "We couldn't log you in. Please check your credentials and try again.",
+    "adminLoginFailed": "Email or password is incorrect. Try again.",
     "logIn": "Log In"
   },
   "logout": {
