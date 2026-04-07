@@ -14,6 +14,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser } from '../../services/usersService';
+import { getParticipants } from '../../services/assignUsersService';
 import type { 
   // UserSearchParams,
    Role
@@ -25,6 +26,75 @@ import { TabButton } from '@components/Tabs';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
 import logger from '@utils/logger';
+
+const programParticipantRowKey = (p: any): string => {
+  const raw = p?.userId ?? p?.userDetails?.id ?? p?.id ?? p?._id;
+  return raw != null && raw !== '' ? String(raw) : '';
+};
+
+const getPrimaryRoleTitle = (u: any): string | undefined => {
+  const t = u?.user_organizations?.[0]?.roles?.[0]?.role?.title;
+  return typeof t === 'string' ? t.toLowerCase() : undefined;
+};
+
+/**
+ * Details column: supervisors/LCs show assigned user count; participants with IDP show completion %.
+ */
+const buildDetailsForUserAndProgramRow = (
+  userRow: any,
+  programRow: any
+): any | null => {
+  if (!programRow) {
+    return null;
+  }
+  const roleTitle = getPrimaryRoleTitle(userRow);
+
+  if (roleTitle === 'tenant_admin' || roleTitle === 'org_admin') {
+    const count = programRow?.overview?.assigned ?? 0;
+    return count !== undefined ? { type: 'assigned', value: count } : null;
+  }
+
+  if (roleTitle === 'user') {
+    console.log('programRow?.metaInformation?', programRow?.metaInformation);
+    if (programRow?.status === 'IN_PROGRESS') {
+      const pct = programRow?.metaInformation?.idpProgress?.completionPercentage || 0;
+      if (typeof pct === 'number' && !Number.isNaN(pct)) {
+        return { type: 'progress', value: Math.round(Math.min(100, Math.max(0, pct))) };
+      }
+    }
+    return { type: 'progress', value: 0 };
+  }
+
+  return null;
+};
+
+const programParticipantsArrayToMap = (rows: any[]): Record<string, any> => {
+  const map: Record<string, any> = {};
+  for (const row of rows) {
+    const k = programParticipantRowKey(row);
+    if (k) {
+      map[k] = row;
+    }
+  }
+  return map;
+};
+
+const mergeUsersWithProgramParticipantMap = (
+  usersData: any[],
+  byUserId: Record<string, any>
+): any[] =>
+  usersData.map((u) => {
+    const extra = byUserId[String(u.id)];
+    if (!extra) {
+      return u;
+    }
+
+    const details = buildDetailsForUserAndProgramRow(u, extra);
+    return {
+      ...u,
+      ...(details ? { details } : {}),
+    };
+  });
 
 /**
  * ProfileModalHeader - Header component for the profile modal
@@ -128,7 +198,10 @@ const UserManagementScreen = () => {
 
   // API state management
   const [filters, setFilters] = useState<Record<string, any>>({});
+ // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
   const [users, setUsers] = useState<AdminUserManagementData[]>([]);
+  /** Program-user search rows keyed by user id; applied async after the main user list loads. */
+  const [programParticipantByUserId, setProgramParticipantByUserId] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -346,8 +419,13 @@ const UserManagementScreen = () => {
     [openProfileModal, openEditUserModal, openResetPasswordModal, openDeactivateModal]
   );
 
+ const displayUsers = useMemo(() => mergeUsersWithProgramParticipantMap(users as any[], programParticipantByUserId),
+  [users, programParticipantByUserId]
+  );
+
   // Ref to track previous roles length to detect when roles are first loaded
   const prevRolesLengthRef = useRef(0);
+  /** Bumps on each user-list fetch so late program-user responses do not apply to a stale page. */
 
   // Load pageSize from offline storage on mount
   useEffect(() => {
@@ -437,20 +515,45 @@ const UserManagementScreen = () => {
 
         const response = await getUsersList(apiParams);
 
+
         // Get raw API data
-        let usersData = response.result?.data || [];
+        const usersData = response.result?.data || [];
 
         // Get total count from API response (if available), otherwise use data length
-        const apiTotalCount = response.result?.count ?? response.result?.total ?? usersData.length;
+        const apiTotalCount = response.result?.count ?? usersData.length;
 
+        setProgramParticipantByUserId({});
+        //setDisplayUsers(usersData);
         setUsers(usersData);
-        // Use API total count
         setTotalCount(apiTotalCount);
+
+        // @ts-ignore - process.env from DefinePlugin
+        const programId = process.env.GLOBAL_LC_PROGRAM_ID;
+        const userIds = usersData.map((u: any) => u.id).filter((id: any) => id != null && id !== '');
+
+        if (programId && userIds.length > 0 && pageSize) {
+          void (async () => {
+            try {
+              const participantsResponse = await getParticipants(programId, {
+                excludeMapped: false,
+                userIds,
+              });
+             
+              const other = participantsResponse.result?.data || [];
+              setProgramParticipantByUserId(programParticipantsArrayToMap(other));
+            } catch (e) {
+              logger.error('UserManagement: getParticipants enrichment failed', e);
+            }
+          })();
+        }
       } catch (error) {
-        setUsers([]);
-        setTotalCount(0);
+          //setDisplayUsers([]);
+          setUsers([]);
+          setTotalCount(0);
+          setProgramParticipantByUserId({});
+        
       } finally {
-        setIsLoading(false);
+          setIsLoading(false);   
       }
     };
 
@@ -612,8 +715,8 @@ const UserManagementScreen = () => {
             {!isMobile && (
               <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
                 {t('admin.users.showing', {
-                  count: users.length,
-                  total: totalCount || users.length,
+                  count: displayUsers.length,
+                  total: totalCount || displayUsers.length,
                 })}
               </Text>
             )}
@@ -640,7 +743,7 @@ const UserManagementScreen = () => {
         {pageSize !== null && (
           <DataTable
             minWidth={1000}
-            data={users}
+            data={displayUsers}
             columns={columns}
             getRowKey={(user) => user.id}
             isLoading={isLoading}

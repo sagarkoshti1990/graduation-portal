@@ -87,7 +87,6 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
  * Details Component
  * Shows either assigned count or progress bar
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DetailsCell: React.FC<{ details: AdminUserManagementData['details'] }> = ({ details }) => {
   if (!details) {
     return null;
@@ -400,11 +399,14 @@ export const getUsersColumns = (handlers?: {
     key: 'details',
     label: 'admin.users.details',
     flex: 1.5,
-    render: () => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>
-        -
-      </Text>
-    ),
+    render: (user: any) =>
+      user?.details ? (
+        <DetailsCell details={user.details} />
+      ) : (
+        <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>
+          -
+        </Text>
+      ),
     mobileConfig: {
       leftRank: 4,
       showLabel: false,
