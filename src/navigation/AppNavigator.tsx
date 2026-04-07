@@ -1,42 +1,52 @@
 import React, {
-  useState,
   useEffect,
   Suspense,
   useMemo,
+  lazy,
   Component,
   ErrorInfo,
   ReactNode,
 } from 'react';
+import { Spinner } from '@gluestack-ui/themed';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { I18nManager } from 'react-native';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
-import { Spinner } from '@ui';
 import logger from '@utils/logger';
-import { isWeb, usePlatform } from '@utils/platform';
+import { isWeb as isWebPlatform, usePlatform } from '@utils/platform';
 import { navigationRef, resetToScreen } from '@utils/navigationRef';
 import AccessBaseNavigator from './navigators/AccessBaseNavigator';
-import HomeScreen from '../screens/Home';
-import UserManagementScreen from '../screens/UserManagement';
-import LoginScreen from '../screens/Auth/LoginScreen';
-import LogoutScreen from '../screens/Auth/LogoutScreen';
-import SelectLanguageScreen from '../screens/Language/Index';
-import WelcomePage from '../screens/Welcome/index';
-import ParticipantDetail from '../screens/ParticipantDetail';
-import ParticipantsList from '../screens/ParticipantsList/index';
-import ProjectPlayer from '../screens/ProjectPlayer';
-import LogVisit from '../screens/ParticipantDetail/LogVisit';
-import Observation from '../screens/Observation/Observation';
-import TemplateScreen from '../screens/Template';
-import CheckInsList from '../screens/ParticipantDetail/Check-ins-list';
-import TemplateManagementScreen from '../screens/TemplateManagement';
-import CsvImportTemplates from '../screens/CsvImportTemplates';
-import PasswordPolicy from '../screens/PasswordPolicy';
-import AuditLogScreen from '../screens/AuditLog';
-import AssignUsersScreen from '../screens/AssignUsers';
-import AdminDashboard from '../screens/AdminDashboard';
-import ProfilePermissions from '../screens/ProfilePermissions';
+
+type ScreenComponent = React.ComponentType<any>;
+type AccessPage = { name: string; path?: string; component: ScreenComponent };
+
+const lazyScreen = (
+  loader: () => Promise<{ default: ScreenComponent }>,
+): ScreenComponent => lazy(loader) as unknown as ScreenComponent;
+
+const HomeScreen = lazyScreen(() => import('../screens/Home'));
+const UserManagementScreen = lazyScreen(() => import('../screens/UserManagement'));
+const SelectLanguageScreen = lazyScreen(() => import('../screens/Language/Index'));
+const WelcomePage = lazyScreen(() => import('../screens/Welcome'));
+const LoginScreen = lazyScreen(() => import('../screens/Auth/LoginScreen'));
+const LogoutScreen = lazyScreen(() => import('../screens/Auth/LogoutScreen'));
+const ParticipantDetail = lazyScreen(() => import('../screens/ParticipantDetail'));
+const ParticipantsList = lazyScreen(() => import('../screens/ParticipantsList'));
+const ProjectPlayer = lazyScreen(() => import('../screens/ProjectPlayer'));
+const LogVisit = lazyScreen(() => import('../screens/ParticipantDetail/LogVisit'));
+const Observation = lazyScreen(() => import('../screens/Observation/Observation'));
+const TemplateScreen = lazyScreen(() => import('../screens/Template'));
+const CheckInsList = lazyScreen(() => import('../screens/ParticipantDetail/Check-ins-list'));
+const TemplateManagementScreen = lazyScreen(() => import('../screens/TemplateManagement'));
+const CsvImportTemplates = lazyScreen(() => import('../screens/CsvImportTemplates'));
+const PasswordPolicy = lazyScreen(() => import('../screens/PasswordPolicy'));
+const AuditLogScreen = lazyScreen(() => import('../screens/AuditLog'));
+const AssignUsersScreen = lazyScreen(() => import('../screens/AssignUsers'));
+const AdminDashboard = lazyScreen(() => import('../screens/AdminDashboard'));
+const ProfilePermissions = lazyScreen(() => import('../screens/ProfilePermissions'));
+
+const spinnerHeight = (isWebPlatform ? '$100vh' : '$full') as any;
 // Error Boundary for Navigation
 class NavigationErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode },
@@ -62,7 +72,7 @@ class NavigationErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        this.props.fallback || <Spinner height={isWeb ? '$100vh' : '$full'} size="large" color="$primary500" />
+        this.props.fallback || <Spinner height={spinnerHeight} size="large" color="$primary500" />
       );
     }
     return this.props.children;
@@ -74,7 +84,7 @@ const Stack = createStackNavigator();
 // Shared function to generate accessPages based on user role
 const getAccessPages = (
   userRole?: string,
-): { name: string; path?: string; component: React.ComponentType<any> }[] => {
+): AccessPage[] => {
   const role = userRole?.toLowerCase();
 
   switch (role) {
@@ -167,11 +177,7 @@ const getAccessPages = (
 
 // Function to generate linking configuration based on accessPages
 const getLinkingConfig = (
-  accessPages: {
-    name: string;
-    path?: string;
-    component: React.ComponentType<any>;
-  }[],
+  accessPages: AccessPage[],
 ) => {
   // Define the base screens that are always available in linking
   const screens: Record<string, any> = {
@@ -221,21 +227,18 @@ const getLinkingConfig = (
 // Component to render role-based navigator
 const RoleBasedNavigator: React.FC = () => {
   const { user } = useAuth();
-  const [accessPages, setAccessPages] = useState<
-    { name: string; path?: string; component: React.ComponentType<any> }[]
-  >([]);
-
-  useEffect(() => {
-    // Use shared function to get accessPages based on user role
-    setAccessPages(getAccessPages(user?.role));
-  }, [user]);
+  const accessPages = useMemo(() => getAccessPages(user?.role), [user?.role]);
 
   if (accessPages.length === 0) {
-    return <LoginScreen />;
+    return (
+      <Suspense fallback={<Spinner height={spinnerHeight} size="large" color="$primary500" />}>
+        <LoginScreen />
+      </Suspense>
+    );
   }
 
   return (
-    <Suspense fallback={<Spinner height={isWeb ? '$100vh' : '$full'} size="large" color="$primary500" />}>
+    <Suspense fallback={<Spinner height={spinnerHeight} size="large" color="$primary500" />}>
       <AccessBaseNavigator accessPages={accessPages} />
     </Suspense>
   );
@@ -244,7 +247,7 @@ const RoleBasedNavigator: React.FC = () => {
 const AppNavigator: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const { isLoggedIn, loading, user } = useAuth();
-  const { isWeb } = usePlatform();
+  const { isWeb: isWebClient } = usePlatform();
   // Generate accessPages based on user role
   const accessPages = useMemo(() => getAccessPages(user?.role), [user?.role]);
 
@@ -271,20 +274,20 @@ const AppNavigator: React.FC = () => {
   useEffect(() => {
     // Note: On React Native (not web), changing RTL requires app restart
     // This ensures the correct direction is applied
-    if (I18nManager.isRTL !== isRTL && !isWeb) {
+    if (I18nManager.isRTL !== isRTL && !isWebClient) {
       logger.log(
         'RTL direction changed, app may need restart on native platforms',
       );
     }
-  }, [isRTL, isWeb]);
+  }, [isRTL, isWebClient]);
 
   // Log current URL on web for debugging
   useEffect(() => {
-    if (isWeb) {
+    if (isWebClient) {
       logger.log('Current URL:', window.location.href);
       logger.log('Pathname:', window.location.pathname);
     }
-  }, [isWeb]);
+  }, [isWebClient]);
 
   // Navigate to main screen when user logs in successfully
   useEffect(() => {
@@ -316,7 +319,7 @@ const AppNavigator: React.FC = () => {
   }, [isLoggedIn, user?.role, accessPages.length]);
 
   if (loading) {
-    return <Spinner height={isWeb ? '$100vh' : '$full'} size="large" color="$primary500" />;
+    return <Spinner height={spinnerHeight} size="large" color="$primary500" />;
   }
 
   return (
@@ -325,14 +328,14 @@ const AppNavigator: React.FC = () => {
         ref={navigationRef}
         key={navigationKey}
         linking={linking}
-        fallback={<Spinner height={isWeb ? '$100vh' : '$full'} size="large" color="$primary500" />}
+        fallback={<Spinner height={spinnerHeight} size="large" color="$primary500" />}
         onReady={() => {
-          if (isWeb) {
+          if (isWebClient) {
             logger.log('Navigation container ready');
           }
         }}
         onStateChange={state => {
-          if (isWeb && state) {
+          if (isWebClient && state) {
             logger.log('Navigation state changed:', state);
           }
         }}
@@ -340,7 +343,7 @@ const AppNavigator: React.FC = () => {
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
-            cardStyle: isWeb
+            cardStyle: isWebClient
               ? ({
                 width: '100%',
                 minHeight: '100vh',

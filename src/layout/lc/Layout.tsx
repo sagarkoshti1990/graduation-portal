@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { StatusBar } from 'react-native';
-import { SafeAreaView, ScrollView, useColorMode, Pressable, Icon, MenuIcon, VStack } from '@gluestack-ui/themed';
+import { SafeAreaView, ScrollView, useColorMode, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
-import Header from '@components/Header';
+import LcHeader from '@components/Header/LcHeader';
 import { stylesLayout } from './Styles';
 import { LC_MENU_OPTIONS } from '@constants/PROFILE_MENU_OPTIONS';
 import { useAuth } from '@contexts/AuthContext';
@@ -55,12 +55,6 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
     }
   };
 
-  const rightSideContent = (
-    <Pressable>
-      <Icon as={MenuIcon} />
-    </Pressable>
-  );
-
   return (
     <SafeAreaView
       style={stylesLayout.safeAreaView}
@@ -79,13 +73,9 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
         - onHamburgerMenuSelect: Handles menu item selection (navigation/logout)
         - showLanguage/showTheme: Disabled for LC layout
       */}
-      <Header 
+      <LcHeader
         title={title} 
         subTitle={navbarData?.subtitle}
-        showLanguage={false} 
-        showTheme={false} 
-        userMenuPosition="left"
-        rightSideContent={rightSideContent}
         hamburgerMenuItems={LC_MENU_OPTIONS}
         onHamburgerMenuSelect={handleMenuSelect}
       />

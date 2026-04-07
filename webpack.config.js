@@ -39,10 +39,7 @@ class EmitWebAppVersionPlugin {
 }
 
 module.exports = (env = {}, argv = {}) => {
-  const mode =
-    argv.mode || env.mode || process.env.NODE_ENV === 'production'
-      ? 'production'
-      : 'development';
+  const mode = argv.mode || env.mode || process.env.NODE_ENV || 'development';
   const isProduction = mode === 'production';
 
   // Load .env file manually BEFORE DefinePlugin so variables are available
@@ -155,43 +152,86 @@ module.exports = (env = {}, argv = {}) => {
       minimize: isProduction,
       minimizer: isProduction ? ['...'] : [],
       usedExports: true,
-      sideEffects: false,
+      sideEffects: true,
       moduleIds: isProduction ? 'deterministic' : 'named',
       chunkIds: isProduction ? 'deterministic' : 'named',
       splitChunks: isProduction
         ? {
             chunks: 'all',
+            minSize: 20000,
+            maxInitialRequests: 25,
+            maxAsyncRequests: 30,
             cacheGroups: {
-              default: false,
-              vendors: false,
-              // Vendor chunk for node_modules
-              vendor: {
-                name: 'vendor',
-                chunks: 'all',
-                test: /[\\/]node_modules[\\/]/,
-                priority: 20,
-              },
-              // Common chunk for shared code
-              common: {
-                name: 'common',
-                minChunks: 2,
-                chunks: 'all',
-                priority: 10,
-                reuseExistingChunk: true,
-                enforce: true,
-              },
-              // React and ReactDOM separate chunk
               react: {
                 name: 'react',
                 test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
                 chunks: 'all',
+                priority: 50,
+                enforce: true,
+              },
+              rnw: {
+                name: 'rnw',
+                test: /[\\/]node_modules[\\/](react-native|react-native-web|react-native-safe-area-context)[\\/]/,
+                chunks: 'all',
+                priority: 45,
+                enforce: true,
+              },
+              navigation: {
+                name: 'navigation',
+                test: /[\\/]node_modules[\\/]@react-navigation[\\/]/,
+                chunks: 'all',
+                priority: 40,
+                enforce: true,
+              },
+              gluestack: {
+                name: 'gluestack',
+                test: /[\\/]node_modules[\\/](@gluestack-ui|@gluestack-style|@react-aria|@react-stately|@internationalized)[\\/]/,
+                chunks: 'all',
+                priority: 35,
+                enforce: true,
+              },
+              charts: {
+                name: 'charts',
+                test: /[\\/]node_modules[\\/](react-native-svg)[\\/]/,
+                chunks: 'all',
                 priority: 30,
+                enforce: true,
+              },
+              webview: {
+                name: 'webview',
+                test: /[\\/]node_modules[\\/](react-native-webview)[\\/]/,
+                chunks: 'all',
+                priority: 30,
+                enforce: true,
+              },
+              common: {
+                minChunks: 2,
+                chunks: 'all',
+                priority: 10,
+                reuseExistingChunk: true,
+              },
+              defaultVendors: {
+                test: /[\\/]node_modules[\\/]/,
+                chunks: 'all',
+                priority: 5,
+                reuseExistingChunk: true,
+              },
+              default: {
+                minChunks: 2,
+                priority: 1,
+                reuseExistingChunk: true,
+              },
+              styles: {
+                name: 'styles',
+                test: /\.(css)$/,
+                chunks: 'all',
+                priority: 60,
                 enforce: true,
               },
             },
           }
         : false,
-      runtimeChunk: isProduction ? { name: 'runtime' } : false,
+      runtimeChunk: isProduction ? 'single' : false,
     },
     devServer: {
       static: {

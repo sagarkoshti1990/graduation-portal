@@ -17,10 +17,10 @@ import {
   // CheckboxLabel, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   // CheckIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   Image,
-  LucideIcon,
-} from '@ui';
+} from '@gluestack-ui/themed';
 import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
+import LucideIcon from '@components/ui/LucideIcon';
 import { loginStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
 import logo500Image from '../../assets/images/logo.svg';
