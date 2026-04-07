@@ -52,7 +52,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * @returns UserRole based on role priority (Admin > Supervisor > LC)
  * @throws Error if user doesn't have any authorized role
  */
-const determineUserRole = (userData: any): UserRole => {
+const determineUserRole = (
+  userData: any,
+  unauthorizedMessage: string,
+): UserRole => {
   // Check for admin roles first (priority) - only 'admin', not 'tenant_admin'
   const adminOrganizations = userData.organizations.filter((org: any) => {
     if (!org?.roles || !Array.isArray(org.roles)) {
@@ -94,9 +97,7 @@ const determineUserRole = (userData: any): UserRole => {
 
   // If no matching roles found in organizations, throw unauthorized error
   // Note: Error message will be translated in the login function
-  throw new Error(
-    'Unauthorized: This role is not authorized to access the system',
-  );
+  throw new Error(unauthorizedMessage);
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
@@ -206,7 +207,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         // Determine user role (admin priority), throws if unauthorized
         let determinedRole: UserRole;
         try {
-          determinedRole = determineUserRole(userData);
+          determinedRole = determineUserRole(
+            userData,
+            t('auth.roleNotAuthorized'),
+          );
         } catch (roleError: any) {
           // Check if error message matches our known unauthorized message
           const isUnauthorizedError =

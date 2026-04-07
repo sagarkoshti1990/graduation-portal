@@ -46,13 +46,13 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
   const { showAlert } = useAlert();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<'dropout' | 'log-visit' | 'view-log' | null>(null);
-  
+
   // Dropout modal specific state
   const [selectedDropoutReason, setSelectedDropoutReason] = useState('');
   const [customDropoutReason, setCustomDropoutReason] = useState('');
   const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
-  
+
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
@@ -71,7 +71,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
 
   const handleMenuSelect = (key: string) => {
     // const participantId = participant.userId;
-    
+
     switch (key) {
       case 'view-log':
         setModalType('view-log');
@@ -91,12 +91,12 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         logger.log('Action:', key, 'for participant:');
     }
   };
-  
+
   // Fetch solutions for log visit modal and auto-select first solution
   useEffect(() => {
     const fetchLogVisitSolutions = async () => {
       if (modalType !== 'log-visit' && modalType !== 'view-log') return;
-      
+
       setLogVisitLoading(true);
       try {
         const data = await getTargetedSolutions({
@@ -157,15 +157,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
 
     // Get entityId from participant - it might be in different fields
     const userEntityId = (participant as any).entityId || (participant as any).entity_id || participant.userId;
-    
+
     if (!userEntityId) {
       showAlert('error', t('common.error') || 'Participant entity ID not found');
       return;
     }
 
     // Determine the final reason to save
-    const finalReason = selectedDropoutReason === 'other' 
-      ? customDropoutReason 
+    const finalReason = selectedDropoutReason === 'other'
+      ? customDropoutReason
       : DROPOUT_REASON_OPTIONS.find(option => option.value === selectedDropoutReason)?.label || selectedDropoutReason;
 
     setDropoutLoading(true);
@@ -180,7 +180,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
       });
 
       showAlert('success', t('actions.dropoutSuccess'));
-      
+
       // Close modal and reset state
       setSelectedDropoutReason('');
       setCustomDropoutReason('');
@@ -189,7 +189,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
 
       // Notify parent list so UI updates immediately (no full page refresh)
       onDropoutSuccess?.(participant.userId);
-      
+
       // Optionally refresh the page or trigger a callback to refresh participants list
       // You might want to add a callback prop or use navigation to refresh
     } catch (error: any) {
@@ -256,10 +256,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
           modalType === 'dropout'
             ? t('actions.confirmDropout') || 'Confirm Dropout'
             : modalType === 'log-visit'
-            ? t('actions.logVisit')
-            : modalType === 'view-log'
-            ? t('actions.observationLogs')
-            : ''
+              ? t('actions.logVisit')
+              : modalType === 'view-log'
+                ? t('actions.observationLogs')
+                : ''
         }
         headerIcon={
           modalType === 'dropout' ? (
@@ -277,8 +277,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         onCancel={modalType === 'dropout' ? (dropoutLoading ? undefined : handleCloseModal) : undefined}
         onConfirm={modalType === 'dropout' ? (dropoutLoading ? undefined : handleDropoutConfirm) : undefined}
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
-        bodyProps={modalType !== 'dropout' ? {padding: 0,paddingTop: 0,paddingBottom: 0} : {}}
-        headerProps={modalType === 'log-visit' ? {paddingBottom: 0,paddingTop: "$2"} : {}}
+        bodyProps={modalType !== 'dropout' ? { padding: 0, paddingTop: 0, paddingBottom: 0 } : {}}
+        headerProps={modalType === 'log-visit' ? { paddingBottom: 0, paddingTop: "$2" } : {}}
       >
         {modalType === 'dropout' && (
           <VStack space="lg">
@@ -299,7 +299,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
               >
                 {t('actions.dropoutReasonLabel') || 'Reason for Dropout'}
               </Text>
-              
+
               <Select
                 options={DROPOUT_REASON_OPTIONS}
                 value={selectedDropoutReason}
@@ -379,12 +379,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
               <ObservationContent
                 participant={participant}
                 hideElements={{ header: ['title', 'backButton'] }}
-                _css={{_header:{pageHeader:{_container:{ "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" }}}}}
+                _css={{ _header: { pageHeader: { _container: { "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" } } } }}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
                 // @ts-ignore - showAlert is a valid prop
                 showAlert={showAlert}
                 submissionNumber={selectedSubmissionNumber || undefined as any}
+                userData={{
+                  "Visit Date": { value: new Date().toISOString().split('T')[0], readonly: false },
+                }}
               />
             ) : selectedSolutionId && modalType === 'view-log' ? (
               <Box flex={1}>

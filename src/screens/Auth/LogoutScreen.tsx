@@ -86,14 +86,13 @@ const LogoutScreen: React.FC = () => {
 
             {/* Heading */}
             <Heading {...loginStyles.heading}>
-              {t('logout.sessionExpired') || 'Session Expired'}
+              {t('logout.sessionExpired')}
             </Heading>
 
             {/* Message */}
             <VStack {...loginStyles.vstack2}>
               <Text {...loginStyles.text2}>
-                {t('logout.sessionExpiredMessage') ||
-                  'Your session has expired. Please log in again to continue.'}
+                {t('logout.sessionExpiredMessage')}
               </Text>
             </VStack>
 

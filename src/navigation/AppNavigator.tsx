@@ -373,7 +373,7 @@ const AppNavigator: React.FC = () => {
             name="logout"
             component={LogoutScreen}
             options={{
-              title: t('logout.sessionExpired') || 'Session Expired',
+              title: t('logout.sessionExpired') || 'Session expired.',
             }}
           />
         </Stack.Navigator>
