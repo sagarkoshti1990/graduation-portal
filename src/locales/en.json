@@ -1718,7 +1718,7 @@
     "testAccountsCredentials": "admin@brac.net | supervisor@brac.net | lc@brac.net",
     "title": "Generating Better Livelihoods",
     "adminLogin": "Login as Admin / Supervisor",
-    "adminLoginFailed": "Login failed. Check details and try again.",
+    "adminLoginFailed": "Email or password is incorrect. Try again.",
     "logIn": "Log In"
   },
   "logout": {
