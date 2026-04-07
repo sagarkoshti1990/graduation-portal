@@ -112,7 +112,7 @@ export const getLinkageChampions = async (
  * Fetches participants that can be assigned to LCs
  * 
  * @param programId - Program ID (e.g., "6952469bd9f179bdf8abe717")
- * @param params - Optional parameters (excludeMapped, limit, province, site)
+ * @param params - Optional parameters (excludeMapped, limit, province, site, page, userIds)
  * @returns A promise resolving to the participants response from the API
  */
 export const getParticipants = async (
@@ -124,17 +124,33 @@ export const getParticipants = async (
     site?: string;
     page?: number;
     search?: string;
+    /** When set, sent in the request body to restrict results to these user IDs. */
+    userIds?: (string | number)[];
+    /**
+     * Query `type` for program user search (defaults to `user`).
+     * Pass a comma-separated list when enriching a mixed-role admin table.
+     */
+    searchType?: string;
   }
 ): Promise<UserSearchResponse> => {
   try {
-    const { excludeMapped = true, limit = 100, province, site, page = 1, search } = params || {};
+    const {
+      excludeMapped = true,
+      limit = 100,
+      province,
+      site,
+      page = 1,
+      search,
+      userIds,
+      searchType = 'user',
+    } = params || {};
     
     // Build query string
     const queryParams = new URLSearchParams({
       programId: programId,
       excludeMapped: excludeMapped.toString(),
       limit: limit.toString(),
-      type: 'user', // Participants are type 'user'
+      type: searchType,
       page: page.toString(),
     });
 
@@ -160,6 +176,12 @@ export const getParticipants = async (
     // Add meta to requestBody if it has at least one property
     if (Object.keys(meta).length > 0) {
       requestBody.meta = meta;
+    }
+
+    if (userIds && userIds.length > 0) {
+      requestBody.userIds = userIds.map((id) =>
+        typeof id === 'string' && /^\d+$/.test(id) ? Number(id) : id
+      );
     }
     
     // POST request to fetch participants
