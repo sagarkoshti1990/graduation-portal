@@ -15,7 +15,7 @@ import { AssessmentSurveyCardProps } from '@app-types/participant';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { assessmentSurveyCardStyles } from './Styles';
-import { CARD_STATUS, STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_STATUS, STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { CERTIFICATE_KEYWORD, ICONS } from '@constants/LOG_VISIT_CARDS';
 
@@ -43,7 +43,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   const isGraduatedParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT;
   const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
   const shouldShowViewButton =
-    entity?.status && (isGraduatedParticipant || hasSubmittedData);
+    entity?.status && (isGraduatedParticipant || (hasSubmittedData && !entity?.allowMultipleAssessemts));
   const shouldShowActionButton = !!entity?.status;
   const canOpenCardFromPressable =
     !entity?.status && !!navigationUrl && !isGraduatedParticipant;
@@ -66,12 +66,16 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
       }
       return;
     }
-
+    let submissionNumber = entity?.submissionsCount || 1;
+    if(entity?.allowMultipleAssessemts) {
+      submissionNumber = null;
+    }
+    
     // @ts-ignore
     navigation.navigate(navigationUrl as never, {
       id: userId || '',
       solutionId: card?.solutionId || card?.id,
-      submissionNumber: entity?.submissionsCount || 1,
+      ...(submissionNumber ? {submissionNumber} : {}),
     });
   };
 
