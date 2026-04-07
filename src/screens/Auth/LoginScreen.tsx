@@ -95,11 +95,18 @@ const LoginScreen: React.FC = () => {
       // Use the login function from AuthContext with isAdmin flag and rememberMe state
       const result = await login(email, password, isAdminMode, rememberMe);
       if (!result.success) {
-        // Use the message from the login function, or fallback to default messages
+        const fallbackMessage = isAdminMode
+          ? t('login.adminLoginFailed')
+          : t('login.invalidEmailOrPassword');
+        const explicitMessages = new Set([
+          t('auth.roleNotAuthorized'),
+          t('auth.noUserDataInResponse'),
+          t('auth.accessTokenRequired'),
+          t('auth.errorOccurredDuringLogin'),
+        ]);
+
         setError(
-            (isAdminMode
-              ? t('login.adminLoginFailed')
-              : t('login.invalidEmailOrPassword')),
+          explicitMessages.has(result.message) ? result.message : fallbackMessage,
         );
       }
       // AuthContext already handles setting isLoggedIn and user state on success
