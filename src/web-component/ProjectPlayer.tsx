@@ -14,7 +14,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n from '@config/i18n';
+import { useLanguage } from '@contexts/LanguageContext';
 // import { FileUploadService } from 'src/services/FileUploadService';
 
 // ---------- Types ----------
@@ -117,6 +117,7 @@ async function mobileGetFileBase64(projectId: string, id: string) {
 // ---------- Component ----------
 const ProjectPlayer: React.FC<Props> = props => {
   const { projectdata, previewmode = false } = props;
+  const { t } = useLanguage();
   const previewMode = previewmode === 'true';
   const data =
     typeof projectdata === 'string'
@@ -287,21 +288,21 @@ const ProjectPlayer: React.FC<Props> = props => {
 
   // ---------- File Preview ----------
   const previewFileById = async (fileId: string) => {
-    if (!project.id) return alert(i18n.t('webComponentProjectPlayer.missingProjectId'));
+    if (!project.id) return alert(t('projectPlayerWeb.missingProjectId'));
     try {
       if (typeof window !== 'undefined' && 'indexedDB' in window) {
         const rec = await idbGet(STORE_FILES, fileId);
         if (!rec || rec.projectId !== project.id)
-          return alert(i18n.t('webComponentProjectPlayer.fileNotFoundForProject'));
+          return alert(t('projectPlayerWeb.fileNotFoundForProject'));
         const url = URL.createObjectURL(rec.data);
         setPreviewFile({ name: rec.name, url });
       } else {
         const rec = await mobileGetFileBase64(project.id, fileId);
-        if (!rec) return alert(i18n.t('webComponentProjectPlayer.fileNotFoundOffline'));
+        if (!rec) return alert(t('projectPlayerWeb.fileNotFoundOffline'));
         setPreviewFile({ name: rec.name, url: rec.base64 });
       }
     } catch {
-      alert(i18n.t('webComponentProjectPlayer.previewFailed'));
+      alert(t('projectPlayerWeb.previewFailed'));
     }
   };
 
@@ -317,7 +318,7 @@ const ProjectPlayer: React.FC<Props> = props => {
     return (
       <Box p="$4" alignItems="center" justifyContent="center">
         <Text color="$red600" fontWeight="bold">
-          {i18n.t('webComponentProjectPlayer.uniqueProjectIdRequired')}
+          {t('projectPlayerWeb.invalidProjectIdMessage')}
         </Text>
       </Box>
     );

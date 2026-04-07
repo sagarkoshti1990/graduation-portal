@@ -123,7 +123,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     try {
       const projResult = await updateTask((participantProp as any)?.onBoardedProjectId, {status: TASK_STATUS.COMPLETED});
       if (!(projResult as any)?._id) {
-        return showAlert('error', t('participantDetail.header.updateProjectTaskStatusFailed'));
+        return showAlert('error', t('participantDetail.header.taskStatusUpdateFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
       // Reload page
@@ -288,7 +288,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         size="lg"
         footerContent={
           <HStack space="md" width="$full" justifyContent="flex-end">
-            <Button variant="outlineghost" onPress={() => setIsCertificateModalOpen(false)}>
+            <Button variant={"outlineghost" as any} onPress={() => setIsCertificateModalOpen(false)}>
               <ButtonText>{t('common.cancel')}</ButtonText>
             </Button>
             <Button variant="solid" onPress={handleCertificateDownload}>

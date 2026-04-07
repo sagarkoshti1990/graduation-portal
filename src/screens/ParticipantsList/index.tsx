@@ -400,13 +400,13 @@ const GroupCheckInsButton: React.FC = () => {
         });
       } else {
         // Optionally show error (toast/snackbar)
-        showAlert('error', t('participants.noGroupCheckInSolutionsFound'));
+        showAlert('error', t('participants.groupCheckInsNoSolutions'));
       }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch targeted solutions';
       logger.error('Error fetching targeted solutions:', errorMessage, err);
       // Handle error (log or UI feedback)
-      showAlert('error', t('participants.failedToFetchTargetedSolutions'));
+      showAlert('error', t('participants.fetchSolutionsError'));
     } finally {
       setIsLoading(false);
     }

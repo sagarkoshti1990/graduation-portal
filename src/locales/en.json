@@ -14,7 +14,7 @@
         "serviceArea": "Service Area"
       }
     },
-    "comingSoon": "This feature is coming soon.",
+    "comingSoon": "Coming soon.",
     "settings": "Settings",
     "logout": "Logout",
     "loading": "Loading...",
@@ -49,8 +49,8 @@
     "trendOverTime": "Trend Over Time",
     "show6MonthlyTrend": "Show 6-Monthly Trend",
     "showMonthlyTrend": "Show Monthly Trend",
-    "serverError500": "Something went wrong on our end. Please try again in a moment.",
-    "somethingWentWrong": "Something went wrong. Please try again."
+    "serverError500": "Something went wrong. Try again.",
+    "somethingWentWrong": "Something went wrong. Try again."
   },
   "projectPlayer": {
     "onboarding": "Onboarding the",
@@ -128,17 +128,17 @@
     "deleteTask": "Delete Task",
     "confirmDeleteTask": "Are you sure you want to delete '{{taskName}}'? This action cannot be undone.",
     "taskDeleted": "Task deleted successfully.",
-    "customTaskAddSuccess": "Custom task added successfully.",
-    "customTaskUpdateSuccess": "Custom task updated successfully.",
+    "customTaskAddSuccess": "Task added successfully.",
+    "customTaskUpdateSuccess": "Task updated successfully.",
     "evidencePreview": "Evidence Preview",
     "viewAllUploadedEvidence": "View all uploaded evidence files for this task",
     "imagePreviewPlaceholder": "Image preview would be displayed here",
     "noFilesUploaded": "No files uploaded yet",
     "uploadedBy": "Uploaded by {{name}}",
-    "cameraPermissionDenied": "Camera access was denied. Please enable it in settings.",
-    "storagePermissionDenied": "Storage access was denied. Please enable it in settings.",
-    "cannotOpenFile": "We couldn't open this file.",
-    "unableToOpenFile": "Unable to open this file. Please try again.",
+    "cameraPermissionDenied": "Camera access denied. Enable it in settings.",
+    "storagePermissionDenied": "Storage access denied. Enable it in settings.",
+    "cannotOpenFile": "Cannot open file.",
+    "unableToOpenFile": "Cannot open file. Try again.",
     "file": "file",
     "files": "files",
     "graduationReadiness": "Graduation Readiness",
@@ -150,7 +150,7 @@
     "addToPlan": "Add to Plan",
     "remove": "Remove",
     "evidenceUploaded": "Evidence uploaded successfully.",
-    "evidenceUploadFailed": "Evidence upload failed. Please try again.",
+    "evidenceUploadFailed": "Upload failed. Try again.",
     "evidenceRequired": "Evidence Required",
     "uploadEvidenceToMarkDone": "Upload evidence first to mark this task as done",
     "consentUploaded": "Consent uploaded successfully",
@@ -159,10 +159,10 @@
     "untitledFile": "Untitled File",
     "unknownSize": "Unknown size",
     "enrolledParticiapantSucess": "Participant enrolled successfully.",
-    "socialProtectionPreviewInfo": "Please review all Social Protection tasks. Required tasks are pre-selected; you can adjust optional ones as needed.",
+    "socialProtectionPreviewInfo": "Review all Social Protection tasks. Required tasks are pre-selected. You can change optional tasks.",
     "important": "Important",
-    "failToLoad": "Failed to load or create project",
-    "unableToLoadObservation": "We couldn't load observation details."
+    "failToLoad":"Failed to load or create project",
+    "unableToLoadObservation":"Could not load observation details."
   },
   "navigation": {
     "menu": "Menu",
@@ -1242,15 +1242,15 @@
       "dropoutReasonPlaceholder": "Enter reason for dropout...",
       "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
       "dropoutSuccess": "Participant marked as dropout.",
-      "dropoutError": "We couldn't mark the participant as dropout. Please try again.",
+      "dropoutError": "Could not mark participant as dropout. Try again.",
       "observationLogs": "Observation Logs",
-      "uploadSuccess": "CSV file uploaded successfully.",
-      "uploadError": "We couldn't upload the CSV file. Please try again.",
-      "uploadErrorSignedUrl": "We couldn't prepare the upload. Please try again.",
+      "uploadSuccess": "CSV uploaded successfully.",
+      "uploadError": "Could not upload CSV. Try again.",
+      "uploadErrorSignedUrl": "Could not prepare upload. Try again.",
       "uploadErrorFileUpload": "Failed to upload file. Please try again.",
       "uploadErrorBulkCreate": "File uploaded but failed to process. Please contact support.",
-      "csvValidationError": "Please upload a valid CSV file.",
-      "uploadErrorFilePathNotFound": "Upload failed due to a missing file path. Please try again.",
+      "csvValidationError": "Upload a valid CSV file.",
+      "uploadErrorFilePathNotFound": "Upload failed. File path missing.",
       "assignLCsToSupervisor": "Assign Coaches to Supervisor"
     },
     "filters": {
@@ -1327,7 +1327,7 @@
         "resetPassword": "Reset Password",
         "deactivate": "Deactivate",
         "confirmDeactivate": "Confirm deactivation",
-        "deactivateMessage": "Are you sure you want to deactivate {{name}}? They won't be able to access the system."
+        "deactivateMessage": "Deactivate {{name}}? They will lose access."
       },
       "resetPassword": {
         "title": "Reset Password",
@@ -1342,7 +1342,7 @@
         "error": "Failed to reset password"
       },
       "edit": {
-        "nameRequired": "Please enter a name.",
+        "nameRequired": "Enter a name.",
         "success": "User updated successfully.",
         "error": "Failed to update user"
       },
@@ -1412,10 +1412,10 @@
       "confirmParticipantAssignment": "Confirm Participant Assignment",
       "confirmParticipantAssignmentDescription": "You are about to assign {{count}} participant(s) to {{lc}}",
       "confirmAssignment": "Confirm Assignment",
-      "lcsAssignedSuccess": "{{count}} coach(es) assigned to {{supervisor}} successfully.",
-      "lcsAssignmentError": "We couldn't assign coaches. Please try again.",
-      "participantsAssignedSuccess": "{{count}} participant(s) assigned to {{lc}} successfully.",
-      "participantsAssignmentError": "We couldn't assign participants. Please try again.",
+      "lcsAssignedSuccess": "{{count}} coach(es) assigned to {{supervisor}}.",
+      "lcsAssignmentError": "Could not assign coaches. Try again.",
+      "participantsAssignedSuccess": "{{count}} participant(s) assigned to {{lc}}.",
+      "participantsAssignmentError": "Could not assign participants. Try again.",
       "participants": "Participants",
       "status": {
         "assigned": "Assigned",
@@ -1521,7 +1521,7 @@
     "profilePermissionsPage": {
       "pageTitle": "Profile Field Edit Permissions",
       "pageSubtitle": "Configuration-driven editable/read-only field settings based on user hierarchy",
-      "infoAlert": "You can edit your profile details here. Some changes may require approval.",
+      "infoAlert": "You can edit your profile. Some changes need approval.",
       "tableHeaders": {
         "profileField": "Profile Field",
         "admin": "Admin",
@@ -1607,8 +1607,8 @@
           "Duplicates will be skipped with a warning"
         ]
       },
-      "downloadSuccess": "{{title}} template downloaded successfully.",
-      "downloadMobileInfo": "Download is available on desktop/web."
+      "downloadSuccess": "{{title}} template downloaded.",
+      "downloadMobileInfo": "Download available on desktop/web."
     },
     "passwordPolicyPage": {
       "pageTitle": "Password Management Policy",
@@ -1688,8 +1688,8 @@
     }
   },
   "observation": {
-    "noParticipantFound": "This form isn't assigned to you. Please contact your administrator.",
-    "noParticipantFoundError": "We couldn't update the observation. Please try again."
+    "noParticipantFound": "This form is not assigned to you. Contact your admin.",
+    "noParticipantFoundError": "Could not update observation. Try again."
   },
   "brand": {
     "primaryName": "brac",
@@ -1701,9 +1701,9 @@
     "offline": "System Inactive"
   },
   "login": {
-    "pleaseEnterBothEmailAndPassword": "Please enter your email and password.",
+    "pleaseEnterBothEmailAndPassword": "Enter email and password.",
     "invalidEmailOrPassword": "Email or password is incorrect. Try again.",
-    "anErrorOccurredDuringLogin": "Something went wrong while logging you in. Please try again.",
+    "anErrorOccurredDuringLogin": "Something went wrong. Try logging in again.",
     "lcLogin": "Login as Coach",
     "testAccounts": "Test Accounts:",
     "welcomeToYourAccount": "Welcome To Your Account",
@@ -1718,23 +1718,23 @@
     "testAccountsCredentials": "admin@brac.net | supervisor@brac.net | lc@brac.net",
     "title": "Generating Better Livelihoods",
     "adminLogin": "Login as Admin / Supervisor",
-    "adminLoginFailed": "Email or password is incorrect. Try again.",
+    "adminLoginFailed": "Login failed. Check details and try again.",
     "logIn": "Log In"
   },
   "logout": {
-    "sessionExpired": "Session expired",
-    "sessionExpiredMessage": "Your session has expired. Please log in again."
+    "sessionExpired": "Session expired.",
+    "sessionExpiredMessage": "Session expired. Log in again."
   },
   "auth": {
     "loginAttemptedEmptyCredentials": "Login attempted with empty credentials",
     "loginAttemptedEmptyCredentialsAdmin": "Admin Login attempted with empty credentials",
     "userEntityNotFound": "User entity not found: You are not authorized to access the system",
-    "roleNotAuthorized": "You don't have access to this system. Please contact your administrator.",
+    "roleNotAuthorized": "Access denied. Contact your admin.",
     "userLoggedInSuccessfully": "User logged in successfully",
     "userLoggedInSuccessfullyAdmin": "Admin User logged in successfully",
-    "noUserDataInResponse": "We couldn't retrieve your account details. Please try again.",
-    "errorOccurredDuringLogin": "Something went wrong while logging you in. Please try again.",
-    "accessTokenRequired": "Your session is missing or expired. Please log in again."
+    "noUserDataInResponse": "Could not load account details. Try again.",
+    "errorOccurredDuringLogin": "Something went wrong. Try logging in again.",
+    "accessTokenRequired": "Session missing or expired. Log in again."
   },
   "welcome": {
     "welcomeBack": "Welcome back",
@@ -1763,7 +1763,8 @@
       "logVisit": "Individual Check-Ins",
       "completeGraduationReadinessForm": "Complete Graduation Readiness Form",
       "projectCompleteSuccess": "Project completed successfully.",
-      "projectCompleteFailure": "We couldn't complete the project. Please try again.",
+      "projectCompleteFailure": "Could not complete project. Try again.",
+      "taskStatusUpdateFailed": "Could not update task status. Try again.",
       "projectCompleteRefreshFailed": "Project status could not be confirmed after refresh",
       "downloadCertificate": "Download Certificate",
       "viewCertificate": "View Certificate",
@@ -1779,8 +1780,7 @@
       "participantDroppedOut": "Participant Dropped Out",
       "dropoutWarning": "This participant has dropped out of the program. You are viewing their records in read-only mode. No changes can be made.",
       "viewLog": "View Log",
-      "previous": "Previous",
-      "updateProjectTaskStatusFailed": "We couldn't update the task status. Please try again."
+      "previous":"Previous"
     },
     "profileModal": {
       "title": "Participant Profile",
@@ -1790,7 +1790,7 @@
       "saveLocation": "Save Location",
       "selectProvince": "Select province",
       "selectSite": "Select site",
-      "addressUpdated": "This profile has been updated successfully.",
+      "addressUpdated": "Profile updated successfully.",
       "fillAllFields": "Please fill in all required fields (Street) before saving.",
       "streetRequired": "Street address is required.",
       "emailRequired": "Email is required.",
@@ -1811,10 +1811,10 @@
       "developPlan": "Develop Intervention Plan",
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",
-      "changePathwayCofirmationMsg": "Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
-      "socialProtectionWarning": "Please complete all Social Protection tasks before assigning the plan.",
+      "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
+      "socialProtectionWarning": "Complete all Social Protection tasks before assigning the plan.",
       "actionRequired": "Action Required",
-      "warningMsg": "Please complete all Social Protection tasks before assigning the plan."
+      "warningMsg":"Complete all Social Protection tasks before assigning the plan."
     },
     "assessmentSurveys": {
       "title": "Assessment Surveys",
@@ -1876,9 +1876,9 @@
     "active": "Active",
     "inactive": "Inactive",
     "groupCheckIns": "Group Check-ins",
-    "selectStatus": "Select Status",
-    "noGroupCheckInSolutionsFound": "No group check-in solutions found.",
-    "failedToFetchTargetedSolutions": "We couldn't fetch solutions. Please try again."
+    "groupCheckInsNoSolutions": "No group check-in solutions found.",
+    "fetchSolutionsError": "Could not fetch solutions. Try again.",
+    "selectStatus":"Select Status"
   },
   "table": {
     "showing": "Showing {{start}} to {{end}} of {{total}} entries",
@@ -1910,7 +1910,7 @@
     },
     "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
     "dropoutSuccess": "Participant marked as dropout.",
-    "dropoutError": "We couldn't mark the participant as dropout. Please try again.",
+    "dropoutError": "Could not mark participant as dropout. Try again.",
     "observationLogs": "Observation Logs",
     "viewAndDownloadCertificate": "View & Download Certificate"
   },
@@ -1923,8 +1923,8 @@
     "selectVisitType": "Select visit type for {{name}}",
     "viewCheckIns": "View Check-Ins",
     "by": "By",
-    "multipleAssessemtsNotAllowed": "Only one assessment is allowed per participant.",
-    "thisFormNotFound": "We couldn't find a form with submission number #{{submissionNumberInput}}.",
+    "multipleAssessemtsNotAllowed": "Only one assessment allowed per participant.",
+    "thisFormNotFound": "Form not found for #{{submissionNumberInput}}.",
     "note": "Note:",
     "logVisitNote": "Individual/Enterprise visits are used for one-on-one coaching sessions. Group visits are for training sessions with multiple participants. Midline surveys track progress at key milestones.",
     "individualEnterpriseVisit": {
@@ -1944,7 +1944,7 @@
     "errors": {
       "observationIdNotFound": "Observation ID not found",
       "entityIdNotFound": "Entity ID not found for participant",
-      "userNotFound": "We couldn't find this user."
+      "userNotFound": "User not found."
     },
     "submissionDate": "Form Submitted"
   },
@@ -1994,7 +1994,7 @@
     "pageTitle": "Develop Intervention Plan",
     "pageSubtitle": "Select a development plan template for {{name}}",
     "backButton": "Back",
-    "IdpCreationSuccess": "Your development plan has been assigned successfully.",
+    "IdpCreationSuccess": "Plan assigned successfully.",
     "categoryModal": {
       "title": "Select Livelihood Category",
       "forParticipant": "For participant: {{name}}",
@@ -2019,33 +2019,33 @@
   },
   "permissions": {
     "camera": {
-      "title": "Camera access required",
-      "message": "Please allow camera access to continue.",
+      "title": "Camera permission required.",
+      "message": "Allow camera access to continue.",
       "buttonNeutral": "Ask Me Later",
       "buttonNegative": "Cancel",
       "buttonPositive": "OK"
     },
     "storage": {
-      "title": "Storage access required",
-      "message": "Please allow storage access to continue.",
+      "title": "Storage permissions required.",
+      "message": "Allow storage access to continue.",
       "buttonNeutral": "Ask Me Later",
       "buttonNegative": "Cancel",
       "buttonPositive": "OK"
     }
   },
-  "downloadForms": {
-    "downloadForms": "Download Forms",
-    "downloadNecessaryForms": "Download the necessary forms for the participant",
-    "Download": "Download",
-    "downloadSuccess": "Your download has started.",
-    "downloadError": "We couldn't download the file. Please try again.",
-    "downloadUriError": "We couldn't find the file. Please contact support."
+  "projectPlayerWeb": {
+    "missingProjectId": "Project ID missing.",
+    "fileNotFoundForProject": "Files not found for this project.",
+    "fileNotFoundOffline": "File not found offline.",
+    "previewFailed": "Preview failed. Try again.",
+    "invalidProjectIdMessage": "Project ID missing. Pass a valid ID."
   },
-  "webComponentProjectPlayer": {
-    "missingProjectId": "Project ID is missing.",
-    "fileNotFoundForProject": "We couldn't find files for this project.",
-    "fileNotFoundOffline": "We couldn't find this file offline.",
-    "previewFailed": "Preview failed. Please try again.",
-    "uniqueProjectIdRequired": "Project ID is missing. Please ensure a valid ID is passed."
+  "downloadForms":{
+    "downloadForms":"Download Forms",
+    "downloadNecessaryForms":"Download the necessary forms for the participant",
+    "Download":"Download",
+    "downloadSuccess":"Download started.",
+    "downloadError":"Download failed. Try again.",
+    "downloadUriError":"File not found. Contact support."
   }
 }
