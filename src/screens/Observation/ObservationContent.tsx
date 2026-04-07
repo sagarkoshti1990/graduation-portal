@@ -187,7 +187,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
             (entity: any) => entity.externalId == participant?.userId,
           );
           if (newData) {
-            fetchObservationSolution({
+            await fetchObservationSolution({
               entityId: newData._id,
               observationId: observationId,
               submissionNumberInput: !observationData.result?.allowMultipleAssessemts ? 1 : submissionNumber,
@@ -208,7 +208,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
                   data: [entityData._id],
                 });
                 if (data) {
-                  fetchObservationSolution({
+                  await fetchObservationSolution({
                     entityId: entityData._id,
                     observationId: observationId,
                     submissionNumberInput: !observationData.result?.allowMultipleAssessemts ? 1 : submissionNumber,

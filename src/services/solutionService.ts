@@ -1,4 +1,4 @@
-import api from './api';
+import api, { OBSERVATION_RETRY_CONFIG, withRetry } from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 import logger from '@utils/logger';
 import { AssessmentSurveyCardData } from '@app-types/participant';
@@ -135,6 +135,7 @@ export const getObservationEntities = async ({
     const response = await api.post(
       `${API_ENDPOINTS.OBSERVATION_ENTITIES}?solutionId=${solutionId}`,
       data,
+      withRetry(OBSERVATION_RETRY_CONFIG),
     );
 
     return response.data;
@@ -163,6 +164,7 @@ export const updateObservationEntities = async ({
     const response = await api.post(
       `${API_ENDPOINTS.UPDATE_OBSERVATION_ENTITIES}/${observationId}`,
       { data },
+      withRetry(OBSERVATION_RETRY_CONFIG),
     );
 
     logger.info('Observation entities updated successfully', {
@@ -226,6 +228,7 @@ export const searchObservationEntities = async ({
     const response = await api.post(
       `${API_ENDPOINTS.SEARCH_OBSERVATION_ENTITIES}?observationId=${observationId}&search=${search}`,
       requestBody,
+      withRetry(OBSERVATION_RETRY_CONFIG),
     );
 
     logger.info('Observation entities searched successfully', {
@@ -253,7 +256,11 @@ export const getObservationSolution = async ({
   evidenceCode: string;
 }): Promise<any> => {
   try {
-    const response = await api.post(`${API_ENDPOINTS.OBSERVATION_SOLUTION}/${observationId}?entityId=${entityId}&submissionNumber=${submissionNumber}&evidenceCode=${evidenceCode}`);
+    const response = await api.post(
+      `${API_ENDPOINTS.OBSERVATION_SOLUTION}/${observationId}?entityId=${entityId}&submissionNumber=${submissionNumber}&evidenceCode=${evidenceCode}`,
+      undefined,
+      withRetry(OBSERVATION_RETRY_CONFIG),
+    );
     return response.data;
   } catch (error) {
     logger.error('Error fetching observation solution:', error);
@@ -272,7 +279,12 @@ export const getObservationSubmissions = async ({
   filterAnswerValue?: any;
 }): Promise<any> => {
   try {
-    const response = await api.post (`${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}` + (filterAnswerValue ? `&filterAnswerValue=${filterAnswerValue}` : ''));
+    const response = await api.post(
+      `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}` +
+        (filterAnswerValue ? `&filterAnswerValue=${filterAnswerValue}` : ''),
+      undefined,
+      withRetry(OBSERVATION_RETRY_CONFIG),
+    );
     return response.data;
   } catch (error) {
     logger.error('Error fetching observation:', error);
@@ -302,7 +314,8 @@ export const createObservationSubmission = async (
   try {
     const response = await api.post(
       `${API_ENDPOINTS.CREATE_OBSERVATION_SUBMISSION}/${observationId}?entityId=${entityId}`,
-      data
+      data,
+      withRetry(OBSERVATION_RETRY_CONFIG),
     );
     return response.data;
   } catch (error) {
