@@ -23,6 +23,7 @@ import {
   TASK_STATUS,
   PROJECT_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
+  USER_STATUS,
 } from '@constants/app.constant';
 import { User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
@@ -186,11 +187,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [effectiveProgress, participantProp?.idpProjectId, status]);
 
   const renderStatusBadge = () => {
-    if (status === STATUS.DROPOUT) {
+    if (status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return (
         <Box {...participantHeaderStyles.statusBadge}>
           <Text {...participantHeaderStyles.statusBadgeText}>
-            {t('participantDetail.header.droppedOut')}
+          {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : t('participantDetail.header.droppedOut')}
           </Text>
         </Box>
       );
@@ -217,6 +218,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    * Conditionally renders based on participant status
    */
   const renderSecondButton = () => {
+    // Dropout: No second button
+    if (status === STATUS.DROPOUT || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+      return null;
+    }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
     if (status === STATUS.NOT_ENROLLED) {
       return (
@@ -232,11 +237,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           </ButtonText>
         </Button>
       );
-    }
-
-    // Dropout: No second button
-    if (status === STATUS.DROPOUT || status === STATUS.GRADUATED) {
-      return null;
     }
 
     // Enrolled, In Progress, Completed: Log Visit
@@ -426,6 +426,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       >
         <Container px="$4" pb="$4">
           <ParticipantProgressCard
+            participantName={participantProp?.name}
+            accountUserStatus={participantProp?.accountUserStatus}
             status={status as ParticipantStatus}
             graduationProgress={graduationProgressProp ?? graduationProgress}
             updatedProgress={updatedProgress}

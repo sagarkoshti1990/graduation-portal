@@ -104,9 +104,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const isManualToggleDisabled = isObservationTask || isEvidenceRequired;
 
   const onboardingTextStyle = {
-    textDecorationLine: (isOnboardingCompletedUI ? 'line-through' : 'none') as
-      | 'line-through'
-      | 'none',
+    textDecorationLine: 'none' as const,
+    // (isOnboardingCompletedUI ? 'line-through' : 'none') as
+    //   | 'line-through'
+    //   | 'none',
     opacity: isOnboardingCompletedUI ? 0.6 : 1,
   };
 
@@ -238,7 +239,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
             bg="$primary500"
             borderColor="$primary500"
           >
-            <LucideIcon name="Check" size={14} color="white" strokeWidth={3} />
+            {/* <LucideIcon name="Check" size={14} color="white" strokeWidth={3} /> */}
+            <LucideIcon name={"CheckCircle"} size={20} color={"$success500"} />
           </Box>
         );
       } else {
@@ -276,7 +278,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     if (uiConfig.showCheckbox) {
       return (
-        <Box width={32} height={32} alignItems="center" justifyContent="center">
+        <Box alignItems="center" justifyContent="center">
           {isStatusUpdating ? (
             <Spinner size="small" color="$primary500" />
           ) : (
@@ -290,118 +292,97 @@ const TaskCard: React.FC<TaskCardProps> = ({
               opacity={isReadOnly ? 0.6 : 1}
             >
               <CheckboxIndicator
-                borderColor={isCompleted ? '$primary500' : '$textMuted'}
-                bg={isCompleted ? '$primary500' : '$backgroundPrimary.light'}
                 alignItems="center"
                 justifyContent="center"
                 borderRadius="$full"
+                bg="transparent"
+                borderWidth={isCompleted ? 0 : 1}
+                sx={{
+                  _checked: {
+                    bg: "transparent",
+                  },
+                  _hover: {
+                    bg: "transparent",
+                  },
+                  _focus: {
+                    bg: "transparent",
+                  },
+                  _disabled: {
+                    bg: "transparent",
+                  },
+                }}
               >
-                <CheckboxIcon as={CheckIcon} color="$accent100" />
+                <CheckboxIcon as={LucideIcon} name={"CheckCircle"} size={20} color={"$success500"}/>
               </CheckboxIndicator>
             </Checkbox>
           )}
         </Box>
       );
     }
-
-    // Simple status circle
-    const circleSize = 20;
-    const checkSize = 15;
-
+    
     // Status Circle Logic
     const isOptional = task?.isDeletable;
+    let checkColor: string = "$textMuted";
+    let iconName: string = "Circle"; // default icon is 'CheckCircle'
 
-    let circleBorderColor = '$textMuted';
-    let circleBg = '$backgroundPrimary.light';
-    let showCheck = false;
-    let checkColor: string = theme.tokens.colors.backgroundPrimary.light;
-
-    // Onboarding: empty circle initially, brown tick only when document uploaded / task completed
     if (isOnboardingTask) {
-      showCheck = isOnboardingCompletedUI;
-      circleBorderColor = showCheck ? '$primary500' : '$textMuted';
-      circleBg = showCheck ? '$primary500' : '$backgroundPrimary.light';
-      checkColor = theme.tokens.colors.backgroundPrimary.light;
+      checkColor = isCompleted ? "$success500" : "$textMuted";
+      iconName = isCompleted ? "CheckCircle" : "Circle";
     } else if (isChildOfProject) {
       if (isOptional) {
-        // Preview mode: Show orange circle initially, green with tick when added, red with X when rejected
         if (isPreview) {
           if (isAddedToPlan) {
-            circleBorderColor = '$success500';
-            circleBg = '$success500';
-            checkColor = theme.tokens.colors.backgroundPrimary.light;
-            showCheck = true;
+            checkColor = "$success500";
+            iconName = "CheckCircle";
           } else if (isRejected) {
-            // Rejected: Just show red X icon, no circle
-            showCheck = true;
+            checkColor = "$error500";
+            iconName = "X";
           } else {
-            // Initial state - orange/warning circle
-            circleBorderColor = '$warning500';
-            circleBg = '$backgroundPrimary.light';
-            showCheck = false;
+            checkColor = "$warning500";
+            iconName = "Circle";
           }
         } else if (isAddedToPlan) {
-          // Edit mode: Added to Plan - green outlined circle with green check
-          circleBorderColor = '$success500';
-          circleBg = '$backgroundPrimary.light';
-          checkColor = theme.tokens.colors.success500;
-          showCheck = true;
+          checkColor = "$success500";
+          iconName = "CheckCircle";
         } else {
-          circleBorderColor = '$textMuted';
-          showCheck = false;
+          iconName = "CheckCircle";
         }
       } else {
-        // Mandatory Child Project Tasks
-        circleBorderColor = '$primary500';
-        circleBg = '$backgroundPrimary.light';
-        checkColor = theme.tokens.colors.primary500;
-        showCheck = true;
+        checkColor = "$success500";
+        iconName = "CheckCircle";
       }
     } else {
-      // Regular tasks
-      circleBorderColor = isCompleted ? '$success500' : '$textMuted'; // Green Border (Outlined)
-      circleBg = isCompleted ? 'transparent' : '$backgroundPrimary.light'; // Transparent BG
-      checkColor = isCompleted
-        ? theme.tokens.colors.success500
-        : theme.tokens.colors.backgroundPrimary.light; // Green Check
-      showCheck = isCompleted;
+      checkColor = isCompleted ? "$success500" : "$textMuted";
+      iconName = isCompleted ? "CheckCircle" : "Circle";
     }
 
-    return (
-      <Box
-        width={circleSize}
-        height={circleSize}
-        {...taskCardStyles.statusCircle}
-        alignSelf="center"
-        borderColor={isPreview && isRejected ? 'transparent' : circleBorderColor}
-        borderWidth={isPreview && isRejected ? 0 : taskCardStyles.statusCircle.borderWidth}
-        bg={isPreview && isRejected ? 'transparent' : circleBg}
-        opacity={isOnboardingCompletedUI ? 0.6 : 1}
-      >
-        {showCheck && (
-          <LucideIcon
-            name={isPreview && isRejected ? "X" : "Check"}
-            size={checkSize}
-            color={isPreview && isRejected ? theme.tokens.colors.error500 : checkColor}
-            strokeWidth={3}
-          />
-        )}
-      </Box>
+    // Optionally remove dev logging in production
+    // console.log('isStatusUpdating', isCompleted, isPreview && isRejected);
+
+    return isStatusUpdating ? (
+      <Spinner size="small" color="$primary500" />
+    ) : (
+      <LucideIcon
+        name={iconName}
+        size={20}
+        color={checkColor}
+      />
     );
   };
-
+  
   // Render task information (name and description) - HEAD logic with Badges
   const renderTaskInfo = () => {
     const textStyle = uiConfig.showCheckbox
       ? {
-          textDecorationLine: (isCompleted ? 'line-through' : 'none') as
-            | 'line-through'
-            | 'none',
+          textDecorationLine: 'none' as const,
+          // (isCompleted ? 'line-through' : 'none') as
+          //   | 'line-through'
+          //   | 'none',
           opacity: isCompleted ? 0.6 : 1,
         }
       : {};
 
-    const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.bodySmall : TYPOGRAPHY.h3;
+    const titleTypography = uiConfig.showAsCard ? TYPOGRAPHY.h4 : TYPOGRAPHY.h3;
 
     // Task badge rendering (Evidence Required / Optional)
     // In Edit mode, hide Optional badges - only show 'required' type badges
@@ -553,7 +534,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               {task.name}
             </Text>
           </ContentWrapper>
-            <HStack space="sm" alignItems="center" flexWrap="wrap">
+            <HStack space="sm"  alignItems="center" flexWrap="wrap">
               {statusBadge}
               {taskBadge}
               {evidenceRequiredBadge}
@@ -576,8 +557,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                               size={taskCardStyles.fileCountIcon.size}
                               color={
                                 isHovered
-                                  ? theme.tokens.colors.primary500
-                                  : theme.tokens.colors.textPrimary
+                                  ? "$primary500"
+                                  : "$textPrimary"
                               }
                             />
                             <Text
@@ -688,7 +669,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
     return <Button
       onPress={handleTaskClick}
-      isDisabled={isReadOnly}
+      isDisabled={isReadOnly || isStatusUpdating}
       size={isWeb ? (uiConfig.showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
       // @ts-ignore
       variant="outlineghost"
@@ -737,7 +718,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
           const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
 
           if (data?.success) {
-            console.log('Task status updated successfully after file upload', data);
             // Show success toast with task-specific message
             let updates;
             const attachedFiles = data?.data?.attachments?.map((file: any) => file.url) ?? [];
@@ -924,7 +904,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           flexDirection={isMobile ? 'column' : 'row'}
         >
           {isMobile ? (
-            <VStack space="xs" width="100%">
+            <VStack space="sm" width="100%">
               <HStack
                 alignItems="flex-start"
                 space={isPreview ? "md" : "xs"}

@@ -11,6 +11,7 @@ export interface Participant {
   userDetails?: User;
   idpProjectId?:string;
   certificateId?:string;
+  accountUserStatus?: string;
 }
 
 export type StatusCount = {
@@ -115,4 +116,6 @@ export interface ParticipantProgressCardProps {
   graduationProgress?: number;
   updatedProgress?: number;
   graduationDate?: string;
+  accountUserStatus?: string;
+  participantName?: string;
 }

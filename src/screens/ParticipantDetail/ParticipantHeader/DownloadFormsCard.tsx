@@ -14,9 +14,10 @@ type FormItem = {
 type Props = {
   consent?: FormItem;
   sla?: FormItem;
+  mode?: 'edit' | 'read-only';
 };
 
-const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
+const DownloadFormsCard: React.FC<Props> = ({ consent, sla, mode }) => {
   const { width } = useWindowDimensions();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -119,12 +120,14 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla }) => {
           label={consent?.label || 'Download Consent Form'}
           onPress={consent?.onPress || (() => openDownload(CONSENT_FORM_ASSET))}
           isStacked={!rowLayout}
+          isDisabled={mode === 'read-only'}
         />
 
         <DownloadRow
           label={sla?.label || 'Download SLA Form'}
           onPress={sla?.onPress || (() => openDownload(SLA_FORM_ASSET))}
           isStacked={!rowLayout}
+          isDisabled={mode === 'read-only'}
         />
       </HStack>
     </Box>
@@ -139,10 +142,12 @@ const DownloadRow = ({
   label,
   onPress,
   isStacked = false,
+  isDisabled = false,
 }: {
   label: string;
   onPress?: () => void;
   isStacked?: boolean;
+  isDisabled?: boolean;
 }) => {
   const { t } = useLanguage();
   return (
@@ -174,6 +179,7 @@ const DownloadRow = ({
         $hover-bg="$primary600"
         width={isStacked ? '$full' : 'auto'}
         marginTop={isStacked ? '$2' : '$0'}
+        isDisabled={isDisabled}
       >
         <HStack alignItems="center" space="xs">
           <LucideIcon name="Download" size={16} color="#ffffff" />

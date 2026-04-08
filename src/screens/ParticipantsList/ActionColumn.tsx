@@ -15,7 +15,7 @@ import CheckInsListContent from '../ParticipantDetail/Check-ins-list/CheckInsLis
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 import Select from '@components/ui/Inputs/Select';
 import { AssessmentSurveyCardData, ParticipantData } from '@app-types/participant';
 
@@ -206,10 +206,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     setSelectedSolutionId(submission.solutionId);
     setSelectedSubmissionNumber(submission.submissionNumber);
   };
-
   // Check if participant is Graduated or Dropout - hide menu for these statuses
-  const isReadOnlyStatus = participant.status === STATUS.GRADUATED || participant.status === STATUS.DROPOUT;
-  const isNotOnboarded = participant?.status === STATUS.NOT_ONBOARDED;
+  const isReadOnlyStatus = participant?.status === STATUS.GRADUATED || participant?.status === STATUS.DROPOUT || participant?.userDetails?.status === USER_STATUS.INACTIVE;
+  const isNotOnboarded = participant?.userDetails?.status === USER_STATUS.INACTIVE ? false : participant?.status === STATUS.NOT_ONBOARDED;
 
   return (
     <Box>

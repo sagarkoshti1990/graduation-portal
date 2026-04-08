@@ -4,26 +4,28 @@ import { participantHeaderStyles, getStatusCard } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { theme } from '@config/theme';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { ParticipantProgressCardProps } from '@app-types/screens';
 
 const ParticipantProgressCard: React.FC<ParticipantProgressCardProps> = ({
   status,
+  participantName,
   graduationProgress,
   graduationDate,
-  updatedProgress
+  updatedProgress,
+  accountUserStatus
 }) => {
   const { t } = useLanguage();
-
+  
   // Return null if status is invalid or not provided
-  if (!status || ![STATUS.IN_PROGRESS, STATUS.COMPLETED,STATUS.GRADUATED, STATUS.DROPOUT].includes(status)) {
+  if (accountUserStatus !== USER_STATUS.INACTIVE && (!status || ![STATUS.IN_PROGRESS, STATUS.COMPLETED,STATUS.GRADUATED, STATUS.DROPOUT].includes(status))) {
     return null;
   }
 
   const progress = graduationProgress ?? 0;
   const date = graduationDate;
   // Dropout: Return warning content directly
-  if (status === STATUS.DROPOUT) {
+  if (status === STATUS.DROPOUT || accountUserStatus === USER_STATUS.INACTIVE) {
     return (
       <Box {...getStatusCard(STATUS.DROPOUT as 'dropout')}>
         <HStack {...participantHeaderStyles.dropoutWarningContent}>
@@ -32,10 +34,10 @@ const ParticipantProgressCard: React.FC<ParticipantProgressCardProps> = ({
           </Box>
           <VStack {...participantHeaderStyles.dropoutWarningTextContainer}>
             <Text {...participantHeaderStyles.dropoutWarningTitle}>
-              {t('participantDetail.header.participantDroppedOut')}
+              {accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccountTitle') : t('participantDetail.header.participantDroppedOut')}
             </Text>
             <Text {...participantHeaderStyles.dropoutWarningMessage}>
-              {t('participantDetail.header.dropoutWarning')}
+              {accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccountWarning', { name: participantName }) : t('participantDetail.header.dropoutWarning')}
             </Text>
           </VStack>
         </HStack>

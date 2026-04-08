@@ -29,7 +29,7 @@ import {
   // DUMMY_PROJECT_DATA,
   PROJECT_PLAYER_CONFIGS,
 } from '@constants/PROJECTDATA';
-import { PARTICIPANT_DETAILS_TABS, STATUS } from '@constants/app.constant';
+import { PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
@@ -79,13 +79,22 @@ export default function ParticipantDetail() {
     : t('lc.pageTitle.participant-detail');
   useDocumentTitle(pageTitle);
 
+  const showOnboardingProject =
+    (participant?.accountUserStatus === USER_STATUS.INACTIVE && !participant?.idpProjectId)
+      ? "user-inactive"
+      : (status === STATUS.DROPOUT && !participant?.idpProjectId)
+      ? "dropout"
+      : status === STATUS.NOT_ENROLLED
+      ? "not_enrolled"
+      : false;
+
   const fetchEntityDetails = useCallback(async () => {
     if (participantId && user?.id && !isFetchingRef.current) {
       try {
         isFetchingRef.current = true;
         const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
         const { userDetails, ...rest } = response?.result?.data?.[0]
-        let participantData = { ...(userDetails || {}), ...rest }
+        let participantData = { ...(userDetails || {}), ...rest, accountUserStatus: userDetails?.status }
 
         if (participantData?.status === STATUS.COMPLETED) {
           // Verify participant completion conditions and perform certificate/graduation actions
@@ -107,6 +116,7 @@ export default function ParticipantDetail() {
                 participantData = {
                   ...(refreshedUserDetails || {}),
                   ...refreshedRest,
+                  accountUserStatus: refreshedUserDetails?.status,
                 };
               }
             } catch (refreshError) {
@@ -239,7 +249,7 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-
+  
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
@@ -259,13 +269,13 @@ export default function ParticipantDetail() {
       />
 
       <Container px="$4" py="$6" $md-px="$6">
-        {status === STATUS.NOT_ENROLLED ? (
+        {showOnboardingProject ? (
           <>
-            <DownloadFormsCard />
+            <DownloadFormsCard mode={showOnboardingProject === "not_enrolled" ? "edit" : "read-only"} />
             {configData && projectPlayerConfigData && (
               <ProjectPlayer
                 key={`project-player-${participantId}`}
-                config={configData}
+                config={{...configData, mode: showOnboardingProject === "not_enrolled" ? "edit" : "read-only"}}
                 data={projectPlayerConfigData}
                 onTaskCompletionChange={setAreAllTasksCompleted}
                 onProgressChange={handleProgressChange}

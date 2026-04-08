@@ -230,12 +230,12 @@ export const taskCardStyles = {
   },
   statusBadgeDoneText: {
     color: '$textPrimary',
-    fontSize: '$xs',
+    fontSize: '$sm',
     fontWeight: '$semibold',
   },
   statusBadgeDoneTextHover: {
     color: '$primary500',
-    fontSize: '$xs',
+    fontSize: '$sm',
     fontWeight: '$semibold',
   },
   statusBadgeToDo: {
@@ -244,7 +244,7 @@ export const taskCardStyles = {
   },
   statusBadgeToDoText: {
     color: '$white',
-    fontSize: '$xs',
+    fontSize: '$sm',
     fontWeight: '$semibold',
   },
 
@@ -266,10 +266,10 @@ export const taskCardStyles = {
     borderColor: '$primary500',
   },
   fileCountIcon: {
-    size: 12,
+    size: 14,
   },
   fileCountText: {
-    fontSize: '$xs',
+    fontSize: '$sm',
     color: '$textPrimary',
     fontWeight: '$semibold',
   },
