@@ -1757,6 +1757,9 @@
       "availableIds": "Available participant IDs: 1001, 1002, 1003, 1004, 1005"
     },
     "header": {
+      "inactiveAccount": "Deactivated",
+      "inactiveAccountTitle": "Participant Deactivated",
+      "inactiveAccountWarning": "Deactivated Participant: Participant account {{name}} has been deactivated. Please contact your admin",
       "backToCaseload": "Back to Caseload",
       "viewProfile": "View Profile",
       "enrollParticipant": "Enroll Participant",

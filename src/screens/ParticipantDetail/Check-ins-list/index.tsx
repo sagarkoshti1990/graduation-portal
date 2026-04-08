@@ -46,9 +46,10 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
 
   // Use prop if provided, otherwise fall back to route params
   const id = propId || route.params?.id;
+  const solutionId = route.params?.solutionId || '';
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
-  const [selectedSolution, setSelectedSolution] = useState<string>('');
+  const [selectedSolution, setSelectedSolution] = useState<string>(solutionId);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Fetch participant and solutions for header

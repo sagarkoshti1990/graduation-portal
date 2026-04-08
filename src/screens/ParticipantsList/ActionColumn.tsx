@@ -15,7 +15,7 @@ import CheckInsListContent from '../ParticipantDetail/Check-ins-list/CheckInsLis
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 import Select from '@components/ui/Inputs/Select';
 import { AssessmentSurveyCardData, ParticipantData } from '@app-types/participant';
 
@@ -50,6 +50,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
   // Dropout modal specific state
   const [selectedDropoutReason, setSelectedDropoutReason] = useState('');
   const [customDropoutReason, setCustomDropoutReason] = useState('');
+  const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
 
   // Log visit modal specific states
@@ -84,6 +85,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         break;
       case 'dropout':
         setModalType('dropout');
+        setDropoutValidationError('');
         break;
       default:
         logger.log('Action:', key, 'for participant:');
@@ -125,6 +127,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     setModalType(null);
     setSelectedDropoutReason('');
     setCustomDropoutReason('');
+    setDropoutValidationError('');
     setSelectedSolutionId('');
   }, []);
 
@@ -136,15 +139,21 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
 
     // Validate that a reason is selected
     if (!selectedDropoutReason) {
-      showAlert('error', t('actions.selectDropoutReason') || 'Please select a reason for dropout');
+      const errorMessage =
+        t('actions.selectDropoutReason') || 'Please select a reason for dropout';
+      setDropoutValidationError(errorMessage);
       return;
     }
 
     // If "other" is selected, validate that custom reason is provided
     if (selectedDropoutReason === 'other' && !customDropoutReason.trim()) {
-      showAlert('error', t('actions.enterCustomReason') || 'Please enter a custom reason');
+      const errorMessage =
+        t('actions.enterCustomReason') || 'Please enter a custom reason';
+      setDropoutValidationError(errorMessage);
       return;
     }
+
+    setDropoutValidationError('');
 
     // Get entityId from participant - it might be in different fields
     const userEntityId = (participant as any).entityId || (participant as any).entity_id || participant.userId;
@@ -175,6 +184,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
       // Close modal and reset state
       setSelectedDropoutReason('');
       setCustomDropoutReason('');
+      setDropoutValidationError('');
       setModalType(null);
 
       // Notify parent list so UI updates immediately (no full page refresh)
@@ -189,17 +199,16 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     } finally {
       setDropoutLoading(false);
     }
-  }, [participant, user?.id, showAlert, t, selectedDropoutReason, customDropoutReason]);
+  }, [participant, user?.id, showAlert, t, selectedDropoutReason, customDropoutReason, onDropoutSuccess]);
 
   const handleFormSelect = (submission: any) => {
     setModalType('log-visit');
     setSelectedSolutionId(submission.solutionId);
     setSelectedSubmissionNumber(submission.submissionNumber);
   };
-
   // Check if participant is Graduated or Dropout - hide menu for these statuses
-  const isReadOnlyStatus = participant.status === STATUS.GRADUATED || participant.status === STATUS.DROPOUT;
-  const isNotOnboarded = participant?.status === STATUS.NOT_ONBOARDED;
+  const isReadOnlyStatus = participant?.status === STATUS.GRADUATED || participant?.status === STATUS.DROPOUT || participant?.userDetails?.status === USER_STATUS.INACTIVE;
+  const isNotOnboarded = participant?.userDetails?.status === USER_STATUS.INACTIVE ? false : participant?.status === STATUS.NOT_ONBOARDED;
 
   return (
     <Box>
@@ -293,7 +302,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
               <Select
                 options={DROPOUT_REASON_OPTIONS}
                 value={selectedDropoutReason}
-                onChange={(value) => setSelectedDropoutReason(value)}
+                onChange={(value) => {
+                  setSelectedDropoutReason(value);
+                  setDropoutValidationError('');
+                }}
                 placeholder={t('actions.selectDropoutReason') || 'Select a reason'}
                 bg="$modalBackground"
                 borderColor="$inputBorder"
@@ -323,12 +335,25 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
                         t('actions.customReasonPlaceholder') || 'Enter custom reason...'
                       }
                       value={customDropoutReason}
-                      onChangeText={setCustomDropoutReason}
+                      onChangeText={(value) => {
+                        setCustomDropoutReason(value);
+                        setDropoutValidationError('');
+                      }}
                       {...dataTableStyles.modalInputField}
                       placeholderTextColor="$textMutedForeground"
                     />
                   </Input>
                 </Box>
+              )}
+
+              {!!dropoutValidationError && (
+                <Text
+                  {...TYPOGRAPHY.bodySmall}
+                  color="$error500"
+                  lineHeight="$sm"
+                >
+                  {dropoutValidationError}
+                </Text>
               )}
 
               <Text

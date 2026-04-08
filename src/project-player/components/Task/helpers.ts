@@ -55,9 +55,10 @@ export const getStatusCircleColor = (
  * Get text style for completed tasks
  */
 export const getCompletedTaskTextStyle = (isCompleted: boolean) => ({
-  textDecorationLine: (isCompleted ? 'line-through' : 'none') as
-    | 'line-through'
-    | 'none',
+  textDecorationLine: 'none' as const,
+  // (isCompleted ? 'line-through' : 'none') as
+  //   | 'line-through'
+  //   | 'none',
   opacity: isCompleted ? 0.6 : 1,
 });
 
