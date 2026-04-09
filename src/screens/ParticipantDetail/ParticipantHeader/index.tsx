@@ -275,11 +275,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderCertificateModal = () => {
     const certificate = (projectData as any)?.certificate;
-    const svgUrl = certificate?.svgUrl;
+    // const svgUrl = certificate?.svgUrl;
     const pdfUrl = certificate?.pdfUrl;
     if (!certificate) return null;
-    const certificatePreviewStyle = { maxWidth: '100%', height: 'auto', objectFit: 'contain' as const };
-    const certificateImageStyle = { width: '100%' as const, aspectRatio: 1.4 };
+    const certificatePreviewStyle = { maxWidth: '100%', height: '410px', objectFit: 'contain' as const };
     return (
       <Modal
         isOpen={isCertificateModalOpen}
@@ -298,21 +297,43 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           </HStack>
         }
       >
-        <VStack space="md" width="$full">
-          {svgUrl ? (
-            <Box width="$full" maxHeight={500} alignItems="center" justifyContent="center">
+        <VStack space="md" width="$full" >
+          {pdfUrl ? (
+            <Box width="$full"  alignItems="center" justifyContent="center">
               {Platform.OS === 'web' ? (
-                <img
-                  src={svgUrl}
-                  alt={t('participantDetail.header.viewCertificate')}
+                // Use <object> for PDF preview in web, fallback to download link if not supported
+                <iframe
+                  src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  width="100%"
+                  height="410"
                   style={certificatePreviewStyle}
+                  aria-label={t('participantDetail.header.viewCertificate')}
+                  frameBorder="0"
+                  title={t('participantDetail.header.viewCertificate')}
                 />
               ) : (
-                <Image
-                  source={{ uri: svgUrl }}
-                  style={certificateImageStyle}
-                  resizeMode="contain"
-                />
+                // On native, open PDF with a download/open button, or render a message
+                <VStack space="md" alignItems="center" width="$full">
+                  <Text color="$textMutedForeground" textAlign="center">
+                    {t('participantDetail.header.downloadCertificate')}
+                  </Text>
+                  <Button
+                    variant="solid"
+                    onPress={() => {
+                      // Open the PDF in external browser/pdf handler (native only)
+                      // Platform/Linking already imported in this file's context
+                      // Use openExternalLink if available, else fallback to Linking.openURL
+                      if (typeof openExternalLink === 'function') {
+                        openExternalLink(pdfUrl);
+                      } else if (Linking?.openURL) {
+                        Linking.openURL(pdfUrl);
+                      }
+                    }}
+                  >
+                    <ButtonIcon as={LucideIcon} name="Download" size={16} />
+                    <ButtonText>{t('participantDetail.header.downloadCertificate')}</ButtonText>
+                  </Button>
+                </VStack>
               )}
             </Box>
           ) : (

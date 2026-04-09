@@ -9,6 +9,20 @@ export interface SidebarMenuItem {
   children?: SidebarMenuItem[];
 }
 
+export const LC_USER_GUIDE_MENU_ITEM: SidebarMenuItem = {
+  key: 'user-story-lc-guide',
+  label: 'admin.menu.userStoryGblLcGuide',
+  icon: 'MapPin',
+  href: '/help/gbl-guide-lclf-v2.html',
+};
+
+export const REPORT_FEEDBACK_MENU_ITEM: SidebarMenuItem = {
+  key: 'report-feedback',
+  label: 'common.reportFeedback',
+  icon: 'MessageSquare',
+  href: process.env.REPORT_FEEDBACK_FORM_URL || 'https://forms.gle/12ZsUZs9wn2hHtfh9',
+};
+
 export const MAIN_MENU_ITEMS: SidebarMenuItem[] = [
   // Dashboard is hidden from menu but still accessible via /admin-dashboard URL
   // {
@@ -79,7 +93,7 @@ export const MORE_INFORMATION_MENU_ITEMS: SidebarMenuItem[] = [
   },
 ];
 
-/** GBL help guides — shown in admin sidebar on web only; opens static HTML in a new tab */
+/** GBL help guides and feedback links */
 export const USER_STORY_MENU_ITEMS: SidebarMenuItem[] = [
   {
     key: 'user-story-admin-guide',
@@ -93,10 +107,6 @@ export const USER_STORY_MENU_ITEMS: SidebarMenuItem[] = [
     icon: 'LayoutDashboard',
     href: '/help/gbl-guide-dashboard.html',
   },
-  {
-    key: 'user-story-lc-guide',
-    label: 'admin.menu.userStoryGblLcGuide',
-    icon: 'MapPin',
-    href: '/help/gbl-guide-lclf-v2.html',
-  },
+  LC_USER_GUIDE_MENU_ITEM,
+  REPORT_FEEDBACK_MENU_ITEM,
 ];
