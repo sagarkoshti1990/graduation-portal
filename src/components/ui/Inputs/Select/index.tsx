@@ -34,6 +34,14 @@ type Option = {
 
 type RawOption = string | { label?: string; name?: string; value: string | null } | Option;
 
+type DropdownPosition = {
+  top?: number;
+  bottom?: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+};
+
 type SelectProps = {
   options: RawOption[];
   value: string;
@@ -91,6 +99,9 @@ function resolveRefToDom(node: unknown): HTMLElement | null {
 }
 
 const DROPDOWN_Z = 100000;
+const DROPDOWN_GAP = 4;
+const VIEWPORT_MARGIN = 12;
+const DEFAULT_DROPDOWN_MAX_HEIGHT = 280;
 
 const SELECT_SIZE_HEIGHT: Record<NonNullable<SelectProps['size']>, string> = {
   xs: '$8',
@@ -127,16 +138,48 @@ function WebSelect({
   /** Must use ref for outside-click checks — RN Web may not forward `data-*` to the DOM, so querySelector was null and every click closed the menu before onPress. */
   const dropdownRef = useRef<any>(null);
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const [pos, setPos] = useState<DropdownPosition>({
+    top: 0,
+    left: 0,
+    width: 0,
+    maxHeight: DEFAULT_DROPDOWN_MAX_HEIGHT,
+  });
 
   const updatePosition = useCallback(() => {
     const el = resolveRefToDom(triggerRef.current);
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const availableBelow = Math.max(
+      0,
+      viewportHeight - rect.bottom - VIEWPORT_MARGIN - DROPDOWN_GAP,
+    );
+    const availableAbove = Math.max(
+      0,
+      rect.top - VIEWPORT_MARGIN - DROPDOWN_GAP,
+    );
+    const shouldOpenUp =
+      availableBelow < DEFAULT_DROPDOWN_MAX_HEIGHT &&
+      availableAbove > availableBelow;
+    const availableHeight = shouldOpenUp ? availableAbove : availableBelow;
+    const width = Math.min(rect.width, viewportWidth - VIEWPORT_MARGIN * 2);
+    const left = Math.min(
+      Math.max(rect.left, VIEWPORT_MARGIN),
+      Math.max(VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN),
+    );
+
     setPos({
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
+      top: shouldOpenUp ? undefined : rect.bottom + DROPDOWN_GAP,
+      bottom: shouldOpenUp
+        ? viewportHeight - rect.top + DROPDOWN_GAP
+        : undefined,
+      left,
+      width,
+      maxHeight: Math.max(
+        96,
+        Math.min(DEFAULT_DROPDOWN_MAX_HEIGHT, availableHeight),
+      ),
     });
   }, []);
 
@@ -203,10 +246,11 @@ function WebSelect({
   const dropdownPanelWebStyle = {
     position: 'fixed' as const,
     top: pos.top,
+    bottom: pos.bottom,
     left: pos.left,
     width: pos.width,
     zIndex: DROPDOWN_Z,
-    maxHeight: 280,
+    maxHeight: pos.maxHeight,
     borderRadius: 12,
     overflow: 'hidden' as const,
     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
@@ -230,7 +274,11 @@ function WebSelect({
           }
         : {})}
     >
-      <ScrollView style={{ maxHeight: 280 } as any}>
+      <ScrollView
+        nestedScrollEnabled
+        style={{ maxHeight: pos.maxHeight } as any}
+        contentContainerStyle={{ flexGrow: 0 } as any}
+      >
         {normalizedOptions.map((option, index) => {
           const label = option.nativeName || option.name || option.value;
           const isSelected = option.value === valueKey;
