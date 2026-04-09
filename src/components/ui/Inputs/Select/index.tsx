@@ -145,6 +145,22 @@ function WebSelect({
     maxHeight: DEFAULT_DROPDOWN_MAX_HEIGHT,
   });
 
+  const getDropdownRoot = useCallback((): HTMLElement | null => {
+    const fromRef = resolveRefToDom(dropdownRef.current);
+    if (fromRef) return fromRef;
+    return document.getElementById(`select-list-${listId}`);
+  }, [listId]);
+
+  const isEventTargetWithinSelect = useCallback(
+    (target: Node | null) => {
+      if (!target) return false;
+      const triggerEl = resolveRefToDom(triggerRef.current);
+      const dropdownEl = getDropdownRoot();
+      return !!(triggerEl?.contains(target) || dropdownEl?.contains(target));
+    },
+    [getDropdownRoot],
+  );
+
   const updatePosition = useCallback(() => {
     const el = resolveRefToDom(triggerRef.current);
     if (!el) return;
@@ -208,32 +224,35 @@ function WebSelect({
     if (!open || Platform.OS !== 'web') return;
     let removeListeners: (() => void) | undefined;
     const timeoutId = window.setTimeout(() => {
-      const getDropdownRoot = (): HTMLElement | null => {
-        const fromRef = resolveRefToDom(dropdownRef.current);
-        if (fromRef) return fromRef;
-        return document.getElementById(`select-list-${listId}`);
-      };
       const handlePointer = (e: MouseEvent | TouchEvent) => {
         const target = e.target as Node | null;
-        if (!target) return;
-        const triggerEl = resolveRefToDom(triggerRef.current);
-        const dropdownEl = getDropdownRoot();
-        if (triggerEl?.contains(target)) return;
-        if (dropdownEl?.contains(target)) return;
+        if (isEventTargetWithinSelect(target)) return;
+        setOpen(false);
+      };
+      const handleFocusIn = (e: FocusEvent) => {
+        const target = e.target as Node | null;
+        if (isEventTargetWithinSelect(target)) return;
+        setOpen(false);
+      };
+      const handleWindowBlur = () => {
         setOpen(false);
       };
       document.addEventListener('click', handlePointer, false);
       document.addEventListener('touchend', handlePointer, false);
+      document.addEventListener('focusin', handleFocusIn, false);
+      window.addEventListener('blur', handleWindowBlur);
       removeListeners = () => {
         document.removeEventListener('click', handlePointer, false);
         document.removeEventListener('touchend', handlePointer, false);
+        document.removeEventListener('focusin', handleFocusIn, false);
+        window.removeEventListener('blur', handleWindowBlur);
       };
     }, 0);
     return () => {
       window.clearTimeout(timeoutId);
       removeListeners?.();
     };
-  }, [open, listId]);
+  }, [open, isEventTargetWithinSelect]);
 
   const emitChange = (stringValue: string) => {
     const opt = normalizedOptions.find(o => o.value === stringValue);
