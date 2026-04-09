@@ -423,6 +423,14 @@ lib-checkbox-input .mat-mdc-checkbox-checked .mdc-checkbox__background {
   box-shadow: none !important;
 }
 
+.btn-primary .mdc-button__label .spinner-button circle {
+  stroke: white !important;
+}
+
+.btn-draft .mdc-button__label .spinner-button circle {
+  stroke: var(--text-color) !important;
+}
+
 .btn-draft, .btn-draft + .btn-primary,.btn-next-tab + .btn-primary {
   width: 100% !important;
 }
@@ -648,4 +656,21 @@ lib-entity-dropdown-input mat-chip {
 .preview-label {
   max-width: 50% !important;
   flex-shrink: 1 !important;
+}
+
+.upload-text mat-icon {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  font-size: 1.5rem !important;
+}
+.upload-text .uploading {
+  font-size: 1.5rem !important;
+}
+
+.upload-text .progress, .upload-text .note {
+  display: none !important;
+}
+.uploading-content {
+ height: auto !important;
+ background-color: transparent !important;
 }
