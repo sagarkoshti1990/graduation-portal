@@ -1817,7 +1817,7 @@
       "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
       "socialProtectionWarning": "Complete all Social Protection tasks before assigning the plan.",
       "actionRequired": "Action Required",
-      "warningMsg":"Complete all Social Protection tasks before assigning the plan."
+      "warningMsg":"Complete all Linkage to Additional Services tasks before assigning the plan."
     },
     "assessmentSurveys": {
       "title": "Assessment Surveys",
