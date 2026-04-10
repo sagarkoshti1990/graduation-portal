@@ -1,6 +1,6 @@
 import TitleHeader from '@components/TitleHeader';
 import { titleHeaderStyles } from '@components/TitleHeader/Styles';
-import { VStack, HStack, Button, Text, Card, Box, Divider, LucideIcon, Badge, BadgeText, Checkbox, CheckboxIndicator, CheckboxIcon, CheckIcon  } from '@ui';
+import { VStack, HStack, Button, Text, Card, Box, LucideIcon } from '@ui';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLanguage } from '@contexts/LanguageContext';
 import type { ViewProps, TextProps } from 'react-native';
@@ -34,6 +34,7 @@ const AssignUsersScreen = () => {
  const { user } = useAuth();
  const isSupervisor = useIsSupervisor();
  type AssignTab = 'LC_TO_SUPERVISOR' | 'PARTICIPANT_TO_LC';
+ const selectAllType: 'current' | 'all' = 'current';
 
  // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR
  const [activeTab, setActiveTab] = useState<AssignTab>(
@@ -51,9 +52,6 @@ const AssignUsersScreen = () => {
  // Get dynamic supervisor filter options (supervisor disabled until province is selected)
  const { filters: supervisorFilterOptions, supervisors: supervisorsData } = useSupervisorFilterOptions(supervisorFilterValues);
  
- // Get dynamic site filter options based on province selected in Step 1
- const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
-
  // Find the selected supervisor object from supervisorsData
  // Match by id (number) or _id (string) or email, converting to string for comparison
  const selectedSupervisor = supervisorsData.find(
@@ -74,11 +72,11 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
  // State for mapped LCs from API
  const [mappedLCs, setMappedLCs] = useState<any[]>([]);
  const [isLoadingMappedLCs, setIsLoadingMappedLCs] = useState(false);
- // State for participant filters and selected participants
+ // State for participant filters
  const [participantFilterValues, setParticipantFilterValues] = useState<Record<string, any>>({});
- const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
  // State to track assigned participants
  const [assignedParticipants, setAssignedParticipants] = useState<any[]>([]);
+ const selectedLcId = String(selectedLc?.id || selectedLc?.value || '');
  // State for participants fetched from API
  const [participants, setParticipants] = useState<any[]>([]);
  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
@@ -119,14 +117,15 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
   // Handle LC selection from filter
   if (values.selectLC && values.selectLC !== supervisorFilterValues.selectLC) {
     // Find the LC object from mappedLCs (for Participant to LC flow) or linkageChampions (for LC to Supervisor flow)
-    const lc = mappedLCs.find((lc: any) => lc.value === values.selectLC) || 
-               linkageChampions.find((lc: any) => lc.value === values.selectLC);
-    if (lc) {
+    const nextSelectedLc =
+      mappedLCs.find((mappedLc: any) => mappedLc.value === values.selectLC) ||
+      linkageChampions.find((availableLc: any) => availableLc.value === values.selectLC);
+    if (nextSelectedLc) {
       // Reset assigned participants when LC changes
-      if (lc.value !== selectedLc?.value) {
+      if (nextSelectedLc.value !== selectedLc?.value) {
         setAssignedParticipants([]);
       }
-      setSelectedLc(lc);
+      setSelectedLc(nextSelectedLc);
     }
   } else if (!values.selectLC && supervisorFilterValues.selectLC) {
     // LC was cleared
@@ -325,12 +324,12 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
        search: search && String(search).trim() ? String(search).trim() : undefined,
      });
 
-     const refreshedParticipants = (participantsResponse.result?.data || []).map((p: any) => {
+    const refreshedParticipants = (participantsResponse.result?.data || []).map((p: any) => {
        const name = p.name || p.full_name || p.email || 'Unknown';
        const value = String(p.id || p._id || p.email || name);
        const email = p.email || p.userDetails?.email || '';
-       const province = p.province?.label || p.userDetails?.province?.label || '';
-       const site =
+      const participantProvince = p.province?.label || p.userDetails?.province?.label || '';
+      const participantSite =
          p.site?.label ||
          p.userDetails?.site?.label ||
          p.userDetails?.district?.label ||
@@ -338,16 +337,16 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
          '';
 
        const locationParts = [];
-       if (province) locationParts.push(province);
-       if (site) locationParts.push(site);
+      if (participantProvince) locationParts.push(participantProvince);
+      if (participantSite) locationParts.push(participantSite);
        const location = locationParts.length > 0 ? locationParts.join(' • ') : '';
 
        return {
          labelKey: name,
          value,
          location,
-         province,
-         site,
+        province: participantProvince,
+        site: participantSite,
          status: 'unassigned',
          email,
          id: p.id || p._id,
@@ -558,21 +557,21 @@ useEffect(() => {
         const email = participant.email || participant.userDetails?.email || '';
         
         // Extract province and site from userDetails
-        const province = participant.province?.label || participant.userDetails?.province?.label || '';
-        const site = participant.site?.label || participant.userDetails?.site?.label || participant.userDetails?.district?.label || participant.userDetails?.local_municipality?.label || '';
+        const participantProvince = participant.province?.label || participant.userDetails?.province?.label || '';
+        const participantSite = participant.site?.label || participant.userDetails?.site?.label || participant.userDetails?.district?.label || participant.userDetails?.local_municipality?.label || '';
         
         // Build location string with province and site
         const locationParts = [];
-        if (province) locationParts.push(province);
-        if (site) locationParts.push(site);
+        if (participantProvince) locationParts.push(participantProvince);
+        if (participantSite) locationParts.push(participantSite);
         const location = locationParts.length > 0 ? locationParts.join(' • ') : '';
         
         return {
           labelKey: name,
           value: value,
           location: location,
-          province: province,
-          site: site,
+          province: participantProvince,
+          site: participantSite,
           status: 'unassigned',
           email: email,
           id: participant.id || participant._id,
@@ -600,7 +599,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchMappedParticipants = async () => {
     // Only fetch when in Participant to LC flow and LC is selected
-    if (activeTab !== 'PARTICIPANT_TO_LC' || !selectedLc) {
+    if (activeTab !== 'PARTICIPANT_TO_LC' || !selectedLcId) {
       setMappedParticipants([]);
       return;
     }
@@ -617,14 +616,8 @@ useEffect(() => {
         return;
       }
       
-      const lcId = String(selectedLc.id || selectedLc.value || '');
-      if (!lcId) {
-        setMappedParticipants([]);
-        return;
-      }
-      
       const response = await getMappedParticipantsForLC({
-        userId: lcId,
+        userId: selectedLcId,
         programId: programId,
         type: 'user',
         page: mappedParticipantsPage,
@@ -666,7 +659,7 @@ useEffect(() => {
   fetchMappedParticipants();
 }, [
   activeTab,
-  selectedLc?.value, // stable dependency: only refetch when LC id changes
+  selectedLcId,
   mappedParticipantsPage,
   mappedParticipantsPageSize,
 ]);
@@ -880,7 +873,9 @@ return (
               }}
               showLcList={true}
               onAssign={handleAssignLCs}
+              isLoading={isLoadingLCs}
               lcList={getAvailableLCs()}
+              selectAllType={selectAllType}
             />
 
             {/* List of LCs Mapped to Supervisor from API */}
@@ -992,6 +987,7 @@ return (
                  };
                })}
                onAssign={handleAssignParticipants}
+              selectAllType={selectAllType}
              />
 
              {/* Hardcoded List of Participants Mapped to LC - TODO: Replace with API data */}
