@@ -33,6 +33,7 @@ export interface MenuItemData {
   color?: string;
   showDividerAfter?: boolean; // Render divider after this menu item
   route?: string; // Navigation route name for menu items that navigate
+  href?: string; // External URL for menu items that open outside the app
   isComingSoon?: boolean; // Render coming soon badge if true
 }
 

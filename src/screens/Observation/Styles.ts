@@ -49,6 +49,7 @@ export const observationStyles = {
   },
   webComponentPlayerContainer: {
     flex: 1 as const,
+    justifyContent: 'center' as const,
     '$md-px': '$6' as const,
     px: '$4' as const, // padding like container padding
     py: '$6' as const,

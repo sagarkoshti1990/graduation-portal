@@ -206,7 +206,7 @@ function ParticipantProfileModalInner({
             <Text {...profileStyles.fieldValue}>
               {participant!.phone_code || ''} {participant!.phone || ''}
             </Text>
-            {isEditingAddress ? (
+            {/* {isEditingAddress ? (
               <VStack space="sm">
                 <VStack space="xs">
                   <Input
@@ -228,11 +228,11 @@ function ParticipantProfileModalInner({
                   ) : null}
                 </VStack>
               </VStack>
-            ) : (
+            ) : ( */}
               <Text {...profileStyles.fieldValue}>
                 {editedAddress?.email || '-'}
               </Text>
-            )}
+            {/* )} */}
           </VStack>
         </VStack>
 

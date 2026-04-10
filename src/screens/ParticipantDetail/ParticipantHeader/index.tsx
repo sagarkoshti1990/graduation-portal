@@ -23,6 +23,7 @@ import {
   TASK_STATUS,
   PROJECT_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
+  USER_STATUS,
 } from '@constants/app.constant';
 import { User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
@@ -186,11 +187,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [effectiveProgress, participantProp?.idpProjectId, status]);
 
   const renderStatusBadge = () => {
-    if (status === STATUS.DROPOUT) {
+    if (status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return (
         <Box {...participantHeaderStyles.statusBadge}>
           <Text {...participantHeaderStyles.statusBadgeText}>
-            {t('participantDetail.header.droppedOut')}
+          {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : t('participantDetail.header.droppedOut')}
           </Text>
         </Box>
       );
@@ -217,6 +218,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    * Conditionally renders based on participant status
    */
   const renderSecondButton = () => {
+    // Dropout: No second button
+    if (status === STATUS.DROPOUT || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+      return null;
+    }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
     if (status === STATUS.NOT_ENROLLED) {
       return (
@@ -232,11 +237,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           </ButtonText>
         </Button>
       );
-    }
-
-    // Dropout: No second button
-    if (status === STATUS.DROPOUT) {
-      return null;
     }
 
     // Enrolled, In Progress, Completed: Log Visit
@@ -275,11 +275,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderCertificateModal = () => {
     const certificate = (projectData as any)?.certificate;
-    const svgUrl = certificate?.svgUrl;
+    // const svgUrl = certificate?.svgUrl;
     const pdfUrl = certificate?.pdfUrl;
     if (!certificate) return null;
-    const certificatePreviewStyle = { maxWidth: '100%', height: 'auto', objectFit: 'contain' as const };
-    const certificateImageStyle = { width: '100%' as const, aspectRatio: 1.4 };
+    const certificatePreviewStyle = { maxWidth: '100%', height: '410px', objectFit: 'contain' as const };
     return (
       <Modal
         isOpen={isCertificateModalOpen}
@@ -298,21 +297,43 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           </HStack>
         }
       >
-        <VStack space="md" width="$full">
-          {svgUrl ? (
-            <Box width="$full" maxHeight={500} alignItems="center" justifyContent="center">
+        <VStack space="md" width="$full" >
+          {pdfUrl ? (
+            <Box width="$full"  alignItems="center" justifyContent="center">
               {Platform.OS === 'web' ? (
-                <img
-                  src={svgUrl}
-                  alt={t('participantDetail.header.viewCertificate')}
+                // Use <object> for PDF preview in web, fallback to download link if not supported
+                <iframe
+                  src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  width="100%"
+                  height="410"
                   style={certificatePreviewStyle}
+                  aria-label={t('participantDetail.header.viewCertificate')}
+                  frameBorder="0"
+                  title={t('participantDetail.header.viewCertificate')}
                 />
               ) : (
-                <Image
-                  source={{ uri: svgUrl }}
-                  style={certificateImageStyle}
-                  resizeMode="contain"
-                />
+                // On native, open PDF with a download/open button, or render a message
+                <VStack space="md" alignItems="center" width="$full">
+                  <Text color="$textMutedForeground" textAlign="center">
+                    {t('participantDetail.header.downloadCertificate')}
+                  </Text>
+                  <Button
+                    variant="solid"
+                    onPress={() => {
+                      // Open the PDF in external browser/pdf handler (native only)
+                      // Platform/Linking already imported in this file's context
+                      // Use openExternalLink if available, else fallback to Linking.openURL
+                      if (typeof openExternalLink === 'function') {
+                        openExternalLink(pdfUrl);
+                      } else if (Linking?.openURL) {
+                        Linking.openURL(pdfUrl);
+                      }
+                    }}
+                  >
+                    <ButtonIcon as={LucideIcon} name="Download" size={16} />
+                    <ButtonText>{t('participantDetail.header.downloadCertificate')}</ButtonText>
+                  </Button>
+                </VStack>
               )}
             </Box>
           ) : (
@@ -426,6 +447,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       >
         <Container px="$4" pb="$4">
           <ParticipantProgressCard
+            participantName={participantProp?.name}
+            accountUserStatus={participantProp?.accountUserStatus}
             status={status as ParticipantStatus}
             graduationProgress={graduationProgressProp ?? graduationProgress}
             updatedProgress={updatedProgress}

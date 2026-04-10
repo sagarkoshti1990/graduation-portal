@@ -17,6 +17,8 @@
     "comingSoon": "Coming soon.",
     "settings": "Settings",
     "logout": "Logout",
+    "userGuide": "User Guide",
+    "reportFeedback": "Report / Feedback",
     "loading": "Loading...",
     "save": "Save",
     "saving": "Saving...",
@@ -1757,6 +1759,9 @@
       "availableIds": "Available participant IDs: 1001, 1002, 1003, 1004, 1005"
     },
     "header": {
+      "inactiveAccount": "Deactivated",
+      "inactiveAccountTitle": "Participant Deactivated",
+      "inactiveAccountWarning": "Deactivated Participant: Participant account {{name}} has been deactivated. Please contact your admin",
       "backToCaseload": "Back to Caseload",
       "viewProfile": "View Profile",
       "enrollParticipant": "Enroll Participant",
@@ -1814,7 +1819,7 @@
       "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
       "socialProtectionWarning": "Complete all Social Protection tasks before assigning the plan.",
       "actionRequired": "Action Required",
-      "warningMsg":"Complete all Social Protection tasks before assigning the plan."
+      "warningMsg":"Complete all Linkage to Additional Services tasks before assigning the plan."
     },
     "assessmentSurveys": {
       "title": "Assessment Surveys",

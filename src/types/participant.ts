@@ -78,6 +78,8 @@ export interface AssessmentSurveyCardData {
 export interface AssessmentSurveyCardProps {
   card: AssessmentSurveyCardData;
   userId: string;
+  participantId?: string;
+  participantStatus?: string;
   certificate?: any;
 }
 

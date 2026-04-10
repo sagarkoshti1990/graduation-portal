@@ -13,32 +13,30 @@ import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { ENTITY_TYPE } from '@constants/ROLES';
 import { ENTITY_STATUS, STATUS } from '@constants/app.constant';
-import { ProjectData } from 'src/project-player/types/project.types';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
-  projectData?: ProjectData | null;
 }
+
+const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT];
 
 /**
  * AssessmentSurveys Component
  * Displays assessment survey cards based on participant status
  */
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
-  participant,
-  projectData,
+  participant
 }) => {
   const { t } = useLanguage();
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
   useEffect(() => {
     const fetchSolutions = async () => {
       try {
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore
-          'filter[keywords]': participant?.status === STATUS.COMPLETED ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
+          'filter[keywords]': readOnlyAccessStatuses.includes(participant?.status) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
           showReferenceFrom:true
         });
         const dataNew = await Promise.all(
@@ -48,7 +46,11 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 solutionId: item.solutionId,
                 id: participant?.id,
               });
-              
+              if(participant?.status === STATUS.DROPOUT) {
+                if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
+                    return null;
+                }
+              }
               return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED, submissionsCount: entity?.submissionsCount || 1 } };
             } catch (error) {
               logger.error('Failed to fetch entity for solutionId:', item.solutionId, error);
@@ -69,7 +71,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     };
 
     fetchSolutions();
-  }, [participant?.id]);
+  }, [participant?.id, participant?.onBoardedProjectId, participant?.status]);
 
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({
@@ -80,18 +82,19 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
       observationData.result?.entityType === ENTITY_TYPE.PARTICIPANT &&
       Array.isArray(observationData.result?.entities)
     ) {
-      const newData = observationData.result.entities.find(
+      const {entities, allowMultipleAssessemts} = observationData.result || {};
+      const newData = entities.find(
         (entity: any) => entity.externalId == id,
       );
       if (newData) {
-        return newData;
+        return {...newData, allowMultipleAssessemts};
       }
     }
     return {};
   };
 
   if (loading) {
-    return <Spinner height={isWeb ? '$calc(100vh - 68px)' : '$full'} size="large" color="$primary500" />;
+    return <Spinner height={isWeb ? ('$calc(100vh - 68px)' as any) : '$full'} size="large" color="$primary500" />;
   }
   
   return (
@@ -106,6 +109,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               key={card.id}
               card={card}
               userId={participant?.userId || ''}
+              participantId={participant?.id || ''}
+              participantStatus={participant?.status}
             />
           ))
         ) : (

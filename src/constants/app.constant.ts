@@ -10,6 +10,11 @@ export const STATUS = {
   GRADUATED: 'GRADUATED',
 };
 
+export const USER_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+} as const;
+
 export const ENTITY_STATUS = {
   NOT_STARTED: 'notStarted',
   STARTED: 'started',

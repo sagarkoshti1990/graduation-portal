@@ -1,5 +1,9 @@
 import { theme } from '@config/theme';
 import { MenuItemData } from '@components/ui/Menu';
+import {
+  LC_USER_GUIDE_MENU_ITEM,
+  REPORT_FEEDBACK_MENU_ITEM,
+} from '@constants/ADMIN_SIDEBAR_MENU';
 
 /**
  * Profile Menu Options - Enhanced for LC Support
@@ -63,6 +67,26 @@ export const LC_MENU_OPTIONS: MenuItemData[] = [
     iconColor: theme.tokens.colors.textForegroundColor,
     showDividerAfter: false,
     // route: 'myProfile', // Add route when myProfile screen is implemented
+  },
+  {
+    key: LC_USER_GUIDE_MENU_ITEM.key,
+    label: 'common.userGuide',
+    textValue: LC_USER_GUIDE_MENU_ITEM.key,
+    iconName: LC_USER_GUIDE_MENU_ITEM.icon,
+    iconSizeValue: 16,
+    iconColor: theme.tokens.colors.textForegroundColor,
+    showDividerAfter: false,
+    href: LC_USER_GUIDE_MENU_ITEM.href,
+  },
+  {
+    key: REPORT_FEEDBACK_MENU_ITEM.key,
+    label: REPORT_FEEDBACK_MENU_ITEM.label,
+    textValue: REPORT_FEEDBACK_MENU_ITEM.key,
+    iconName: REPORT_FEEDBACK_MENU_ITEM.icon,
+    iconSizeValue: 16,
+    iconColor: theme.tokens.colors.textForegroundColor,
+    showDividerAfter: true,
+    href: REPORT_FEEDBACK_MENU_ITEM.href,
   },
   // {
   //   key: 'serviceProviders',

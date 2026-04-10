@@ -465,7 +465,7 @@ const DevelopInterventionPlan: React.FC = () => {
 
         {/* Templates */}
         {!isLoading && !error && !showProjectPlayerPreview && (
-          <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+          <ScrollView flex={1} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={true} pb="$10">
             <VStack gap="$4" {...(templateStyles.mainContent as any)}>
               {templates?.map(pathway => (
                 <Pressable

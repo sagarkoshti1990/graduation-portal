@@ -37,6 +37,7 @@ import { profileStyles, LCProfileStyles } from '@components/ui/Modal/Styles';
 import { MenuItemData } from '@components/ui/Menu';
 import { getUserProfile } from '../../services/authenticationService';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import openExternalLink from '@utils/openExternalLink';
 
 /**
  * Header Component - Enhanced for LC Layout Support
@@ -117,6 +118,11 @@ const Header: React.FC<{
     const selectedItem = hamburgerMenuItems?.find(item => item.key === key);
     if (selectedItem?.isComingSoon) {
       // Don't proceed if item is coming soon
+      return;
+    }
+
+    if (selectedItem?.href) {
+      await openExternalLink(selectedItem.href);
       return;
     }
 
