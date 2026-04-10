@@ -354,7 +354,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           status={submission?.status || ''}
         />
 
-        <Container>
+        <Container flex={1}>
           {/* Web Component Player */}
           <Box {...observationStyles.webComponentPlayerContainer}>
             {mockData &&
