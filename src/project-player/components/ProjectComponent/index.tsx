@@ -457,7 +457,7 @@ const ProjectComponent: React.FC = () => {
                       }
                       opacity={
                         isSubmitDisabled || isSubmittingInterventionPlan
-                          ? 0.5
+                          ? 0.6
                           : 1
                       }
                       $web-cursor="pointer"
