@@ -81,6 +81,7 @@ export interface AssessmentSurveyCardProps {
   participantId?: string;
   participantStatus?: string;
   certificate?: any;
+  participantAccountUserStatus?: string;
 }
 
 /**

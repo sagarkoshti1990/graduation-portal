@@ -15,7 +15,7 @@ import { AssessmentSurveyCardProps } from '@app-types/participant';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { assessmentSurveyCardStyles } from './Styles';
-import { CARD_STATUS, ENTITY_STATUS, STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_STATUS, STATUS, USER_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { CERTIFICATE_KEYWORD, ICONS } from '@constants/LOG_VISIT_CARDS';
 
@@ -35,12 +35,13 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   participantId,
   participantStatus,
   certificate,
+  participantAccountUserStatus,
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
   const { name, description, navigationUrl, entity } = card;
   const [iconMeta, setIconMeta] = useState<IconMeta | null>(null);
-  const isGraduatedParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT;
+  const isGraduatedParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT || participantAccountUserStatus === USER_STATUS.INACTIVE;
   const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
   const shouldShowViewButton =
     entity?.status && (isGraduatedParticipant || (hasSubmittedData && !entity?.allowMultipleAssessemts));

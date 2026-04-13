@@ -78,7 +78,7 @@ const LcHeader: React.FC<LcHeaderProps> = ({
       bg={isDark ? '$backgroundDark950' : '$white'}
       shadowColor={isDark ? '$backgroundDark950' : '$shadowColor'}
     >
-      <HStack {...stylesHeader.hStack}>
+      <HStack {...stylesHeader.hStack} justifyContent="flex-start">
         {hamburgerMenuItems ? (
           <Menu
             items={hamburgerMenuItems}
@@ -90,7 +90,7 @@ const LcHeader: React.FC<LcHeaderProps> = ({
         ) : null}
 
         {isLoggedIn && (
-          <HStack {...stylesHeader.userMenuTrigger} alignItems="center" space="sm">
+          <HStack {...stylesHeader.userMenuTrigger}>
             <Avatar
               {...stylesHeader.userAvatar}
               $web-style={lcAvatarWebStyle}

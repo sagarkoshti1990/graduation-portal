@@ -12,7 +12,7 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { ENTITY_TYPE } from '@constants/ROLES';
-import { ENTITY_STATUS, STATUS } from '@constants/app.constant';
+import { ENTITY_STATUS, STATUS, USER_STATUS } from '@constants/app.constant';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
@@ -46,7 +46,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 solutionId: item.solutionId,
                 id: participant?.id,
               });
-              if(participant?.status === STATUS.DROPOUT) {
+              
+              if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT) {
                 if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
                     return null;
                 }
@@ -71,7 +72,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     };
 
     fetchSolutions();
-  }, [participant?.id, participant?.onBoardedProjectId, participant?.status]);
+  }, [participant?.id, participant?.onBoardedProjectId, participant?.status, participant?.accountUserStatus]);
 
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({
@@ -111,6 +112,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               userId={participant?.userId || ''}
               participantId={participant?.id || ''}
               participantStatus={participant?.status}
+              participantAccountUserStatus={participant?.accountUserStatus}
             />
           ))
         ) : (
