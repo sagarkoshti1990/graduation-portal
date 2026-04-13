@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
  Text,
  Card,
@@ -11,7 +11,6 @@ import {
  CheckboxLabel,
  VStack,
  HStack,
- Divider,
  Button,
  Pressable,
  Box,
@@ -32,7 +31,6 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import DataTable from '@components/DataTable';
 import type { ColumnDef } from '@app-types/components';
 
-
 interface UserAvatarCardProps {
  title: string;
  description: string;
@@ -47,6 +45,13 @@ interface UserAvatarCardProps {
  lcList?: any[]; // Optional filtered LC list (if not provided, uses default selectedLCList)
  isParticipantList?: boolean; // Flag to indicate if this is a participant list (different button text)
  isLoading?: boolean; // Loading state for the data table
+  paginationConfig?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
+  };
 }
 
 
@@ -64,6 +69,7 @@ const UserAvatarCard = ({
   lcList,
   isParticipantList = false,
   isLoading = false,
+  paginationConfig,
 }: UserAvatarCardProps) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -79,10 +85,50 @@ const UserAvatarCard = ({
     lcData?: any;
   } | null>(null);
   // Page size for assign tables (DataTable keeps current page internally)
+  const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   
   // Use provided lcList or fall back to empty array
-  const displayLCList = lcList || [];
+  const displayLCList = useMemo(() => lcList || [], [lcList]);
+  const isServerSidePaginationEnabled = !!paginationConfig;
+  const effectiveCurrentPage = paginationConfig?.page ?? currentPage;
+  const effectivePageSize = paginationConfig?.pageSize ?? pageSize;
+  const selectableItems = useMemo(() => {
+    if (isServerSidePaginationEnabled) {
+      return displayLCList;
+    }
+
+    const startIndex = (effectiveCurrentPage - 1) * effectivePageSize;
+    return displayLCList.slice(startIndex, startIndex + effectivePageSize);
+  }, [
+    displayLCList,
+    effectiveCurrentPage,
+    effectivePageSize,
+    isServerSidePaginationEnabled,
+  ]);
+  const selectableValues = useMemo(
+    () => selectableItems.map((item: any) => item.value),
+    [selectableItems]
+  );
+  const selectedSelectableCount = useMemo(
+    () => selectableValues.filter((value: string) => selectedLCs.has(value)).length,
+    [selectedLCs, selectableValues]
+  );
+  const allSelectableSelected =
+    selectableValues.length > 0 && selectedSelectableCount === selectableValues.length;
+  const hasSelectableSelection = selectedSelectableCount > 0;
+  const selectAllLabel = 'Select current page';
+
+  useEffect(() => {
+    if (isServerSidePaginationEnabled) {
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(displayLCList.length / pageSize));
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, displayLCList.length, isServerSidePaginationEnabled, pageSize]);
 
   const participantColumns: ColumnDef<any>[] = useMemo(() => [
     {
@@ -100,7 +146,7 @@ const UserAvatarCard = ({
         >
           {/* Checkbox + Avatar managed inside name (no separate columns) */}
           <Pressable
-            onPress={(e: any) => {
+            onPress={(_e: any) => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
@@ -201,7 +247,7 @@ const UserAvatarCard = ({
         >
           {/* Checkbox managed inside lcInfo (no separate checkbox column) */}
           <Pressable
-            onPress={(e: any) => {
+            onPress={(_e: any) => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
@@ -392,6 +438,41 @@ const UserAvatarCard = ({
              ? t('admin.assignUsers.selectParticipants', { count: selectedLCs.size })
              : t('admin.assignUsers.selectedLinkageChampions')}
          </Text>
+        {displayLCList.length > 0 && (
+          <HStack mt="$3" mb="$2" ml="$3" mr="$3" alignItems="center" justifyContent="space-between">
+            <Checkbox
+              value="select-all"
+              isChecked={allSelectableSelected}
+              onChange={(checked: boolean) => {
+                setSelectedLCs((prev) => {
+                  const next = new Map(prev);
+
+                  if (checked) {
+                    selectableItems.forEach((item: any) => next.set(item.value, item));
+                  } else {
+                    selectableValues.forEach((value: string) => next.delete(value));
+                  }
+
+                  return next;
+                });
+              }}
+              alignItems="center"
+            >
+              <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+              </CheckboxIndicator>
+              <CheckboxLabel color="$textForeground" ml="$2">
+                {selectAllLabel}
+              </CheckboxLabel>
+            </Checkbox>
+
+            {hasSelectableSelection && (
+              <Text {...(AssignUsersStyles.provinceName as TextProps)}>
+                {selectedSelectableCount}/{selectableItems.length}
+              </Text>
+            )}
+          </HStack>
+        )}
         {isParticipantList ? (
           // Use DataTable for participants
           <Box marginTop="$1">
@@ -414,12 +495,34 @@ const UserAvatarCard = ({
               }}
               pagination={{
                 enabled: true,
-                pageSize: pageSize,
+                pageSize: effectivePageSize,
                 maxPageNumbers: 5,
                 showPageSizeSelector: true,
                 pageSizeOptions: [5, 10, 25, 50],
+                ...(paginationConfig
+                  ? {
+                      serverSide: {
+                        total: paginationConfig.total,
+                        count: paginationConfig.page,
+                      },
+                    }
+                  : {}),
+              }}
+              onPageChange={(page: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageChange(page);
+                  return;
+                }
+
+                setCurrentPage(page);
               }}
               onPageSizeChange={(size: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageSizeChange(size);
+                  return;
+                }
+
+                setCurrentPage(1);
                 setPageSize(size);
               }}
             />
@@ -445,12 +548,34 @@ const UserAvatarCard = ({
               }}
               pagination={{
                 enabled: true,
-                pageSize: pageSize,
+                pageSize: effectivePageSize,
                 maxPageNumbers: 5,
                 showPageSizeSelector: true,
                 pageSizeOptions: [5, 10, 25, 50],
+                ...(paginationConfig
+                  ? {
+                      serverSide: {
+                        total: paginationConfig.total,
+                        count: paginationConfig.page,
+                      },
+                    }
+                  : {}),
+              }}
+              onPageChange={(page: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageChange(page);
+                  return;
+                }
+
+                setCurrentPage(page);
               }}
               onPageSizeChange={(size: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageSizeChange(size);
+                  return;
+                }
+
+                setCurrentPage(1);
                 setPageSize(size);
               }}
             />

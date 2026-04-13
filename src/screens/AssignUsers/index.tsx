@@ -1,6 +1,6 @@
 import TitleHeader from '@components/TitleHeader';
 import { titleHeaderStyles } from '@components/TitleHeader/Styles';
-import { VStack, HStack, Button, Text, Card, Box, Divider, LucideIcon, Badge, BadgeText, Checkbox, CheckboxIndicator, CheckboxIcon, CheckIcon  } from '@ui';
+import { VStack, HStack, Button, Text, Card, Box, LucideIcon } from '@ui';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLanguage } from '@contexts/LanguageContext';
 import type { ViewProps, TextProps } from 'react-native';
@@ -47,13 +47,14 @@ const AssignUsersScreen = () => {
  // State for linkage champions fetched from API
  const [linkageChampions, setLinkageChampions] = useState<any[]>([]);
  const [isLoadingLCs, setIsLoadingLCs] = useState(false);
+ const shouldLoadSupervisorFilters = !isSupervisor;
  
  // Get dynamic supervisor filter options (supervisor disabled until province is selected)
- const { filters: supervisorFilterOptions, supervisors: supervisorsData } = useSupervisorFilterOptions(supervisorFilterValues);
+ const { filters: supervisorFilterOptions, supervisors: supervisorsData } = useSupervisorFilterOptions(
+   supervisorFilterValues,
+   shouldLoadSupervisorFilters
+ );
  
- // Get dynamic site filter options based on province selected in Step 1
- const { filters: siteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
-
  // Find the selected supervisor object from supervisorsData
  // Match by id (number) or _id (string) or email, converting to string for comparison
  const selectedSupervisor = supervisorsData.find(
@@ -65,23 +66,34 @@ const AssignUsersScreen = () => {
  );
  
  const [lcFilterValues, setLcFilterValues] = useState<Record<string, any>>({});
+const shouldLoadLcSiteFilters =
+  activeTab === 'LC_TO_SUPERVISOR' && !!supervisorFilterValues.selectSupervisor;
 
 // Get dynamic site filter options for Step 2 based on province selected in Step 1
-const { filters: lcSiteFilterOptions } = useSiteFilterOptions(supervisorFilterValues.filterByProvince);
+const { filters: lcSiteFilterOptions } = useSiteFilterOptions(
+  supervisorFilterValues.filterByProvince,
+  shouldLoadLcSiteFilters
+);
 
 // Combine search filter with dynamic site filter for Step 2 (no province dropdown)
 const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
  // State for mapped LCs from API
  const [mappedLCs, setMappedLCs] = useState<any[]>([]);
  const [isLoadingMappedLCs, setIsLoadingMappedLCs] = useState(false);
- // State for participant filters and selected participants
+ // State for participant filters
  const [participantFilterValues, setParticipantFilterValues] = useState<Record<string, any>>({});
- const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
  // State to track assigned participants
  const [assignedParticipants, setAssignedParticipants] = useState<any[]>([]);
+ const selectedLcId = String(selectedLc?.id || selectedLc?.value || '');
+const selectedSupervisorId = String(
+  (selectedSupervisor as any)?.id || (selectedSupervisor as any)?._id || ''
+);
  // State for participants fetched from API
  const [participants, setParticipants] = useState<any[]>([]);
  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+const [participantsPage, setParticipantsPage] = useState(1);
+const [participantsPageSize, setParticipantsPageSize] = useState(5);
+const [participantsTotal, setParticipantsTotal] = useState(0);
  // State for mapped participants from API
  const [mappedParticipants, setMappedParticipants] = useState<any[]>([]);
  const [isLoadingMappedParticipants, setIsLoadingMappedParticipants] = useState(false);
@@ -89,10 +101,24 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
  const [mappedParticipantsPage, setMappedParticipantsPage] = useState(1);
  const [mappedParticipantsPageSize, setMappedParticipantsPageSize] = useState(5);
  const [mappedParticipantsTotal, setMappedParticipantsTotal] = useState(0);
+const shouldLoadParticipantFilters =
+  activeTab === 'PARTICIPANT_TO_LC' && !!selectedLcId;
 
  // Get dynamic participant filter options (Province and Site)
- const { filters: participantProvinceSiteFilters } = useParticipantFilterOptions(participantFilterValues.filterByProvince);
+ const { filters: participantProvinceSiteFilters } = useParticipantFilterOptions(
+   participantFilterValues.filterByProvince,
+   shouldLoadParticipantFilters
+ );
  const AssignParticipantFilterOptions = [ParticipantSearchFilter, ...participantProvinceSiteFilters];
+
+useEffect(() => {
+  setParticipantsPage(1);
+}, [
+  selectedLcId,
+  participantFilterValues.filterByProvince,
+  participantFilterValues.site,
+  participantFilterValues.search,
+]);
 
  // Handler for supervisor and LC filter changes (combined in Step 1)
  const handleSupervisorFilterChange = (values: Record<string, any>) => {
@@ -119,14 +145,15 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
   // Handle LC selection from filter
   if (values.selectLC && values.selectLC !== supervisorFilterValues.selectLC) {
     // Find the LC object from mappedLCs (for Participant to LC flow) or linkageChampions (for LC to Supervisor flow)
-    const lc = mappedLCs.find((lc: any) => lc.value === values.selectLC) || 
-               linkageChampions.find((lc: any) => lc.value === values.selectLC);
-    if (lc) {
+    const nextSelectedLc =
+      mappedLCs.find((mappedLc: any) => mappedLc.value === values.selectLC) ||
+      linkageChampions.find((availableLc: any) => availableLc.value === values.selectLC);
+    if (nextSelectedLc) {
       // Reset assigned participants when LC changes
-      if (lc.value !== selectedLc?.value) {
+      if (nextSelectedLc.value !== selectedLc?.value) {
         setAssignedParticipants([]);
       }
-      setSelectedLc(lc);
+      setSelectedLc(nextSelectedLc);
     }
   } else if (!values.selectLC && supervisorFilterValues.selectLC) {
     // LC was cleared
@@ -312,49 +339,16 @@ const AssignLCFilterOptions = [SearchFilter, ...lcSiteFilterOptions];
 
      setMappedParticipants(mappedData);
 
-     // Refresh available participants list (top table) so newly-mapped users disappear
-     const province = participantFilterValues.filterByProvince;
-     const site = participantFilterValues.site;
-     const search = participantFilterValues.search;
-
-     const participantsResponse = await getParticipants(programId, {
-       excludeMapped: true,
-       limit: 100,
-       province: province && province !== 'all-provinces' && province !== 'all-Provinces' ? province : undefined,
-       site: site && site !== 'all-sites' ? site : undefined,
-       search: search && String(search).trim() ? String(search).trim() : undefined,
-     });
-
-     const refreshedParticipants = (participantsResponse.result?.data || []).map((p: any) => {
-       const name = p.name || p.full_name || p.email || 'Unknown';
-       const value = String(p.id || p._id || p.email || name);
-       const email = p.email || p.userDetails?.email || '';
-       const province = p.province?.label || p.userDetails?.province?.label || '';
-       const site =
-         p.site?.label ||
-         p.userDetails?.site?.label ||
-         p.userDetails?.district?.label ||
-         p.userDetails?.local_municipality?.label ||
-         '';
-
-       const locationParts = [];
-       if (province) locationParts.push(province);
-       if (site) locationParts.push(site);
-       const location = locationParts.length > 0 ? locationParts.join(' • ') : '';
-
-       return {
-         labelKey: name,
-         value,
-         location,
-         province,
-         site,
-         status: 'unassigned',
-         email,
-         id: p.id || p._id,
-       };
-     });
-
-     setParticipants(refreshedParticipants);
+    // Remove newly assigned participants from the visible available list
+    // instead of triggering another identical fetch with the same filters.
+    const assignedParticipantIds = new Set(participantIds);
+    setParticipants((prev) =>
+      prev.filter(
+        (participant: any) =>
+          !assignedParticipantIds.has(String(participant.id || participant.value || ''))
+      )
+    );
+    setParticipantsTotal((prev) => Math.max(0, prev - participantIds.length));
      setAssignedParticipants([]); // reset local assigned tracker; API is source of truth now
      
      // Return success indicator
@@ -377,6 +371,14 @@ const getAvailableParticipants = () => {
  // Fetch linkage champions when province, site, or search filters change
  useEffect(() => {
    const fetchLinkageChampions = async () => {
+     if (
+       activeTab !== 'LC_TO_SUPERVISOR' ||
+       !supervisorFilterValues.selectSupervisor
+     ) {
+       setLinkageChampions([]);
+       return;
+     }
+
      try {
        setIsLoadingLCs(true);
        // Get programId from environment variable
@@ -427,7 +429,12 @@ const getAvailableParticipants = () => {
    };
 
    fetchLinkageChampions();
-}, [supervisorFilterValues.filterByProvince, lcFilterValues.site, lcFilterValues.search]);
+}, [
+  activeTab,
+  supervisorFilterValues.selectSupervisor,
+  lcFilterValues.site,
+  lcFilterValues.search,
+]);
 
  // Fetch mapped LCs when supervisor is selected (or when logged-in user is supervisor)
  useEffect(() => {
@@ -441,7 +448,7 @@ const getAvailableParticipants = () => {
        }
      } else {
        // Admin - require supervisor selection
-     if (!selectedSupervisor || !supervisorFilterValues.selectSupervisor) {
+      if (!selectedSupervisorId || !supervisorFilterValues.selectSupervisor) {
        setMappedLCs([]);
        return;
        }
@@ -462,7 +469,7 @@ const getAvailableParticipants = () => {
        // Use logged-in user ID for supervisors, selected supervisor ID for admins
        const supervisorId = isSupervisor
          ? String(user?.id || user?._id || '')
-         : String((selectedSupervisor as any).id || (selectedSupervisor as any)._id || '');
+        : selectedSupervisorId;
        if (!supervisorId) {
          console.error('Supervisor ID not found');
          setMappedLCs([]);
@@ -518,13 +525,17 @@ const getAvailableParticipants = () => {
    };
 
   fetchMappedLCs();
-}, [selectedSupervisor, supervisorFilterValues.selectSupervisor, isSupervisor, user?.id, user?._id]);
+}, [selectedSupervisorId, supervisorFilterValues.selectSupervisor, isSupervisor, user?.id, user?._id]);
 
 // Fetch participants when participant filters change (do NOT refetch on Supervisor/LC dropdown changes)
 useEffect(() => {
   const fetchParticipants = async () => {
-    // Only fetch participants when in Participant to LC flow
-    if (activeTab !== 'PARTICIPANT_TO_LC') return;
+    // Only fetch participants when in Participant to LC flow and an LC is selected.
+    if (activeTab !== 'PARTICIPANT_TO_LC' || !selectedLcId) {
+      setParticipants([]);
+      setParticipantsTotal(0);
+      return;
+    }
 
     try {
       setIsLoadingParticipants(true);
@@ -545,11 +556,16 @@ useEffect(() => {
       
       const response = await getParticipants(programId, {
         excludeMapped: true,
-        limit: 100,
+        page: participantsPage,
+        limit: participantsPageSize,
         province: province && province !== 'all-provinces' && province !== 'all-Provinces' ? province : undefined,
         site: site && site !== 'all-sites' ? site : undefined,
         search: search && String(search).trim() ? String(search).trim() : undefined,
       });
+
+      const totalCount =
+        (response as any).total || response.result?.total || response.result?.count || 0;
+      setParticipantsTotal(totalCount);
       
       // Transform API response to match expected format
       const participantsData = (response.result?.data || []).map((participant: any) => {
@@ -558,21 +574,21 @@ useEffect(() => {
         const email = participant.email || participant.userDetails?.email || '';
         
         // Extract province and site from userDetails
-        const province = participant.province?.label || participant.userDetails?.province?.label || '';
-        const site = participant.site?.label || participant.userDetails?.site?.label || participant.userDetails?.district?.label || participant.userDetails?.local_municipality?.label || '';
+        const participantProvince = participant.province?.label || participant.userDetails?.province?.label || '';
+        const participantSite = participant.site?.label || participant.userDetails?.site?.label || participant.userDetails?.district?.label || participant.userDetails?.local_municipality?.label || '';
         
         // Build location string with province and site
         const locationParts = [];
-        if (province) locationParts.push(province);
-        if (site) locationParts.push(site);
+        if (participantProvince) locationParts.push(participantProvince);
+        if (participantSite) locationParts.push(participantSite);
         const location = locationParts.length > 0 ? locationParts.join(' • ') : '';
         
         return {
           labelKey: name,
           value: value,
           location: location,
-          province: province,
-          site: site,
+          province: participantProvince,
+          site: participantSite,
           status: 'unassigned',
           email: email,
           id: participant.id || participant._id,
@@ -583,6 +599,7 @@ useEffect(() => {
     } catch (error) {
       console.error('Error fetching participants:', error);
       setParticipants([]);
+      setParticipantsTotal(0);
     } finally {
       setIsLoadingParticipants(false);
     }
@@ -591,6 +608,9 @@ useEffect(() => {
   fetchParticipants();
 }, [
   activeTab,
+  selectedLcId,
+  participantsPage,
+  participantsPageSize,
   participantFilterValues.filterByProvince,
   participantFilterValues.site,
   participantFilterValues.search,
@@ -600,7 +620,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchMappedParticipants = async () => {
     // Only fetch when in Participant to LC flow and LC is selected
-    if (activeTab !== 'PARTICIPANT_TO_LC' || !selectedLc) {
+    if (activeTab !== 'PARTICIPANT_TO_LC' || !selectedLcId) {
       setMappedParticipants([]);
       return;
     }
@@ -617,14 +637,8 @@ useEffect(() => {
         return;
       }
       
-      const lcId = String(selectedLc.id || selectedLc.value || '');
-      if (!lcId) {
-        setMappedParticipants([]);
-        return;
-      }
-      
       const response = await getMappedParticipantsForLC({
-        userId: lcId,
+        userId: selectedLcId,
         programId: programId,
         type: 'user',
         page: mappedParticipantsPage,
@@ -666,7 +680,7 @@ useEffect(() => {
   fetchMappedParticipants();
 }, [
   activeTab,
-  selectedLc?.value, // stable dependency: only refetch when LC id changes
+  selectedLcId,
   mappedParticipantsPage,
   mappedParticipantsPageSize,
 ]);
@@ -880,6 +894,7 @@ return (
               }}
               showLcList={true}
               onAssign={handleAssignLCs}
+              isLoading={isLoadingLCs}
               lcList={getAvailableLCs()}
             />
 
@@ -991,6 +1006,16 @@ return (
                    status: p.status,
                  };
                })}
+              paginationConfig={{
+                page: participantsPage,
+                pageSize: participantsPageSize,
+                total: participantsTotal,
+                onPageChange: setParticipantsPage,
+                onPageSizeChange: (size: number) => {
+                  setParticipantsPage(1);
+                  setParticipantsPageSize(size);
+                },
+              }}
                onAssign={handleAssignParticipants}
              />
 
