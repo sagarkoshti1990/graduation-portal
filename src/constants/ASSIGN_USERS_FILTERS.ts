@@ -35,7 +35,10 @@ export const ParticipantSearchFilter: FilterConfig = {
  * @param filters - Current filter values to check if province is selected
  * @returns Object containing filter configurations and supervisors data
  */
-export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
+export const useSupervisorFilterOptions = (
+  filters: Record<string, any> = {},
+  enabled = true
+): {
   filters: ReadonlyArray<FilterConfig>;
   supervisors: AdminUserManagementData[];
 } => {
@@ -45,16 +48,26 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
 
   // Fetch provinces from API on component mount
   useEffect(() => {
+    if (!enabled) {
+      setProvinces([]);
+      return;
+    }
+
     const fetchProvinces = async () => {
       const provincesData = await getProvincesList();
       setProvinces(provincesData);
     };
 
     fetchProvinces();
-  }, []);
+  }, [enabled]);
 
   // Fetch supervisors - all supervisors initially, filtered by province when selected
   useEffect(() => {
+    if (!enabled) {
+      setSupervisors([]);
+      return;
+    }
+
     const fetchSupervisors = async () => {
       const selectedProvince = filters.filterByProvince;
       
@@ -76,7 +89,7 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
     };
 
     fetchSupervisors();
-  }, [filters.filterByProvince]); // Re-fetch when province filter changes
+  }, [enabled, filters.filterByProvince]); // Re-fetch when province filter changes
 
   // Build dynamic filter options with API data
   return useMemo(() => {
@@ -127,7 +140,10 @@ export const useSupervisorFilterOptions = (filters: Record<string, any> = {}): {
  * @param selectedProvinceId - Province ID selected in Step 1 (from supervisorFilterValues.filterByProvince)
  * @returns Object containing site filter configuration
  */
-export const useSiteFilterOptions = (selectedProvinceId?: string): {
+export const useSiteFilterOptions = (
+  selectedProvinceId?: string,
+  enabled = true
+): {
   filters: ReadonlyArray<FilterConfig>;
   sites: SiteEntity[];
 } => {
@@ -136,6 +152,11 @@ export const useSiteFilterOptions = (selectedProvinceId?: string): {
 
   // Fetch sites - all sites initially, filtered by province when selected
   useEffect(() => {
+    if (!enabled) {
+      setSites([]);
+      return;
+    }
+
     const fetchSites = async () => {
       try {
         // Fetch all sites if no province selected, or filtered by province if selected
@@ -155,7 +176,7 @@ export const useSiteFilterOptions = (selectedProvinceId?: string): {
     };
 
     fetchSites();
-  }, [selectedProvinceId]); // Re-fetch when province changes
+  }, [enabled, selectedProvinceId]); // Re-fetch when province changes
 
   // Build dynamic filter options with API data
   return useMemo(() => {
@@ -190,7 +211,10 @@ export const useSiteFilterOptions = (selectedProvinceId?: string): {
  * @param selectedProvinceId - Province ID selected in filter
  * @returns Object containing filter configuration
  */
-export const useParticipantFilterOptions = (selectedProvinceId?: string): {
+export const useParticipantFilterOptions = (
+  selectedProvinceId?: string,
+  enabled = true
+): {
   filters: ReadonlyArray<FilterConfig>;
   sites: SiteEntity[];
 } => {
@@ -200,15 +224,25 @@ export const useParticipantFilterOptions = (selectedProvinceId?: string): {
 
   // Fetch provinces from API on component mount
   useEffect(() => {
+    if (!enabled) {
+      setProvinces([]);
+      return;
+    }
+
     const fetchProvinces = async () => {
       const provincesData = await getProvincesList();
       setProvinces(provincesData);
     };
     fetchProvinces();
-  }, []);
+  }, [enabled]);
 
   // Fetch sites - all sites initially, filtered by province when selected
   useEffect(() => {
+    if (!enabled) {
+      setSites([]);
+      return;
+    }
+
     const fetchSites = async () => {
       try {
         // Fetch all sites if no province selected, or filtered by province if selected
@@ -228,7 +262,7 @@ export const useParticipantFilterOptions = (selectedProvinceId?: string): {
     };
 
     fetchSites();
-  }, [selectedProvinceId]); // Re-fetch when province changes
+  }, [enabled, selectedProvinceId]); // Re-fetch when province changes
 
   // Build dynamic filter options with API data
   return useMemo(() => {
