@@ -31,8 +31,6 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import DataTable from '@components/DataTable';
 import type { ColumnDef } from '@app-types/components';
 
-type SelectAllType = 'current' | 'all';
-
 interface UserAvatarCardProps {
  title: string;
  description: string;
@@ -47,7 +45,13 @@ interface UserAvatarCardProps {
  lcList?: any[]; // Optional filtered LC list (if not provided, uses default selectedLCList)
  isParticipantList?: boolean; // Flag to indicate if this is a participant list (different button text)
  isLoading?: boolean; // Loading state for the data table
-  selectAllType?: SelectAllType;
+  paginationConfig?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
+  };
 }
 
 
@@ -65,7 +69,7 @@ const UserAvatarCard = ({
   lcList,
   isParticipantList = false,
   isLoading = false,
-  selectAllType = 'all',
+  paginationConfig,
 }: UserAvatarCardProps) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -85,15 +89,23 @@ const UserAvatarCard = ({
   const [pageSize, setPageSize] = useState(5);
   
   // Use provided lcList or fall back to empty array
-  const displayLCList = lcList || [];
+  const displayLCList = useMemo(() => lcList || [], [lcList]);
+  const isServerSidePaginationEnabled = !!paginationConfig;
+  const effectiveCurrentPage = paginationConfig?.page ?? currentPage;
+  const effectivePageSize = paginationConfig?.pageSize ?? pageSize;
   const selectableItems = useMemo(() => {
-    if (selectAllType === 'all') {
+    if (isServerSidePaginationEnabled) {
       return displayLCList;
     }
 
-    const startIndex = (currentPage - 1) * pageSize;
-    return displayLCList.slice(startIndex, startIndex + pageSize);
-  }, [currentPage, displayLCList, pageSize, selectAllType]);
+    const startIndex = (effectiveCurrentPage - 1) * effectivePageSize;
+    return displayLCList.slice(startIndex, startIndex + effectivePageSize);
+  }, [
+    displayLCList,
+    effectiveCurrentPage,
+    effectivePageSize,
+    isServerSidePaginationEnabled,
+  ]);
   const selectableValues = useMemo(
     () => selectableItems.map((item: any) => item.value),
     [selectableItems]
@@ -105,14 +117,18 @@ const UserAvatarCard = ({
   const allSelectableSelected =
     selectableValues.length > 0 && selectedSelectableCount === selectableValues.length;
   const hasSelectableSelection = selectedSelectableCount > 0;
-  const selectAllLabel = selectAllType === 'current' ? 'Select current page' : 'Select all';
+  const selectAllLabel = 'Select current page';
 
   useEffect(() => {
+    if (isServerSidePaginationEnabled) {
+      return;
+    }
+
     const totalPages = Math.max(1, Math.ceil(displayLCList.length / pageSize));
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, displayLCList.length, pageSize]);
+  }, [currentPage, displayLCList.length, isServerSidePaginationEnabled, pageSize]);
 
   const participantColumns: ColumnDef<any>[] = useMemo(() => [
     {
@@ -130,7 +146,7 @@ const UserAvatarCard = ({
         >
           {/* Checkbox + Avatar managed inside name (no separate columns) */}
           <Pressable
-            onPress={(e: any) => {
+            onPress={(_e: any) => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
@@ -231,7 +247,7 @@ const UserAvatarCard = ({
         >
           {/* Checkbox managed inside lcInfo (no separate checkbox column) */}
           <Pressable
-            onPress={(e: any) => {
+            onPress={(_e: any) => {
               // Stop event propagation to prevent row click from firing
               // This prevents the checkbox click from triggering the row's onRowClick
             }}
@@ -479,15 +495,33 @@ const UserAvatarCard = ({
               }}
               pagination={{
                 enabled: true,
-                pageSize: pageSize,
+                pageSize: effectivePageSize,
                 maxPageNumbers: 5,
                 showPageSizeSelector: true,
                 pageSizeOptions: [5, 10, 25, 50],
+                ...(paginationConfig
+                  ? {
+                      serverSide: {
+                        total: paginationConfig.total,
+                        count: paginationConfig.page,
+                      },
+                    }
+                  : {}),
               }}
               onPageChange={(page: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageChange(page);
+                  return;
+                }
+
                 setCurrentPage(page);
               }}
               onPageSizeChange={(size: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageSizeChange(size);
+                  return;
+                }
+
                 setCurrentPage(1);
                 setPageSize(size);
               }}
@@ -514,15 +548,33 @@ const UserAvatarCard = ({
               }}
               pagination={{
                 enabled: true,
-                pageSize: pageSize,
+                pageSize: effectivePageSize,
                 maxPageNumbers: 5,
                 showPageSizeSelector: true,
                 pageSizeOptions: [5, 10, 25, 50],
+                ...(paginationConfig
+                  ? {
+                      serverSide: {
+                        total: paginationConfig.total,
+                        count: paginationConfig.page,
+                      },
+                    }
+                  : {}),
               }}
               onPageChange={(page: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageChange(page);
+                  return;
+                }
+
                 setCurrentPage(page);
               }}
               onPageSizeChange={(size: number) => {
+                if (paginationConfig) {
+                  paginationConfig.onPageSizeChange(size);
+                  return;
+                }
+
                 setCurrentPage(1);
                 setPageSize(size);
               }}
