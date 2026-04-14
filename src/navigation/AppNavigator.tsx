@@ -20,6 +20,7 @@ import AccessBaseNavigator from './navigators/AccessBaseNavigator';
 import HomeScreen from '../screens/Home';
 import UserManagementScreen from '../screens/UserManagement';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
 import LogoutScreen from '../screens/Auth/LogoutScreen';
 import SelectLanguageScreen from '../screens/Language/Index';
 import WelcomePage from '../screens/Welcome/index';
@@ -176,6 +177,7 @@ const getLinkingConfig = (
   // Define the base screens that are always available in linking
   const screens: Record<string, any> = {
     login: 'login',
+    'forgot-password': 'forgot-password',
     main: {
       path: '/',
       screens: {},
@@ -259,6 +261,7 @@ const AppNavigator: React.FC = () => {
         config: {
           screens: {
             login: 'login',
+            'forgot-password': 'forgot-password',
             logout: 'logout',
           },
         },
@@ -350,14 +353,22 @@ const AppNavigator: React.FC = () => {
           }}
         >
           {!isLoggedIn ? (
-            // Show login screen when not logged in
-            <Stack.Screen
-              name="login"
-              component={LoginScreen}
-              options={{
-                title: t('login.logIn'),
-              }}
-            />
+            <>
+              <Stack.Screen
+                name="login"
+                component={LoginScreen}
+                options={{
+                  title: t('login.logIn'),
+                }}
+              />
+              <Stack.Screen
+                name="forgot-password"
+                component={ForgotPasswordScreen}
+                options={{
+                  title: t('forgotPassword.heading'),
+                }}
+              />
+            </>
           ) : (
             // Show role-based navigator when logged in
             <Stack.Screen

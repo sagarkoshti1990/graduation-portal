@@ -24,6 +24,12 @@ export interface RefreshTokenResponse {
   };
 }
 
+export interface ResetOtpResponse {
+  responseCode?: string;
+  message: string;
+  result?: any;
+}
+
 /**
  * Refreshes the access token using the refresh token.
  *
@@ -184,6 +190,66 @@ export const login = async (
     return responseData;
   } catch (error: any) {
     // Error is already handled by axios interceptor
+    throw error;
+  }
+};
+
+/**
+ * Sends an OTP for self-service password reset.
+ */
+export const sendResetOtp = async (
+  identifier: string,
+  newPassword: string
+): Promise<ResetOtpResponse> => {
+  try {
+    const response = await api.post<ResetOtpResponse>(API_ENDPOINTS.GENERATE_RESET_OTP, {
+      identifier,
+      password: newPassword,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+/**
+ * Re-sends an OTP for self-service password reset.
+ */
+export const resendResetOtp = async (
+  identifier: string,
+  newPassword: string
+): Promise<ResetOtpResponse> => {
+  return sendResetOtp(identifier, newPassword);
+};
+
+/**
+ * Verifies OTP and completes the password reset.
+ */
+export const verifyResetOtp = async (
+  identifier: string,
+  otp: string,
+  newPassword: string
+): Promise<ResetOtpResponse> => {
+  try {
+    const formData = new URLSearchParams({
+      identifier,
+      password: newPassword,
+      otp,
+    });
+
+    const response = await api.post<ResetOtpResponse>(
+      API_ENDPOINTS.RESET_PASSWORD,
+      formData.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
     throw error;
   }
 };

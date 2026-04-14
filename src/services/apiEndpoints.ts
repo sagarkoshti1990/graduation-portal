@@ -2,6 +2,8 @@ const prefix = '/api';
 export const API_ENDPOINTS = {
   LOGIN: `${prefix}/user/v1/account/login`,
   ADMIN_LOGIN: `${prefix}/user/v1/admin/login`,
+  GENERATE_RESET_OTP: `${prefix}/user/v1/account/generateOtp`,
+  RESET_PASSWORD: `${prefix}/user/v1/account/resetPassword`,
   REFRESH_TOKEN: `${prefix}/user/v1/account/refresh`,
   USER_PROFILE: `${prefix}/user/v1/user/read`,
   TARGETED_SOLUTIONS: `${prefix}/survey/v1/solutions/targetedSolutions`,
