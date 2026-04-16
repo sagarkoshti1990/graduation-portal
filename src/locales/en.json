@@ -2037,7 +2037,7 @@
     "backButton": "Back",
     "IdpCreationSuccess": "Plan assigned successfully.",
     "categoryModal": {
-      "title": "Select Livelihood Category",
+      "title": "Indicative Livelihood Pathway",
       "forParticipant": "For participant: {{name}}",
       "description": "Please select the livelihood category and subcategory for this pathway. This helps track and support the specific business type.",
       "categoryLabel": "Category of Livelihoods *",
