@@ -234,20 +234,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
       if (isTaskDone) {
         // Render a simple green checkmark (non-interactive)
         return (
-          <Box
-            {...taskCardStyles.primaryFilledCircle}
-            bg="$primary500"
-            borderColor="$primary500"
-          >
-            {/* <LucideIcon name="Check" size={14} color="white" strokeWidth={3} /> */}
-            <LucideIcon name={"CheckCircle"} size={20} color={"$success500"} />
-          </Box>
+          <LucideIcon name={"CheckCircle"} size={20} color={"$success500"} />
         );
       } else {
         // Show empty circle for consistency (non-interactive) with Tooltip on hover
         const tooltipText = isObservationTask
-          ? (t('projectPlayer.completeFormToMarkDone') || 'Complete the form first to mark this task as done')
-          : (t('projectPlayer.uploadEvidenceToMarkDone') || 'Upload evidence first to mark this task as done');
+          ? t('projectPlayer.completeFormToMarkDone')
+          : t('projectPlayer.uploadEvidenceToMarkDone');
 
         return (
           <Tooltip

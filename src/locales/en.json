@@ -1146,13 +1146,15 @@
       "breakdown": {
         "title": "Detailed Reasons Breakdown",
         "reasons": {
-          "personalFamily": "Personal/Family Reasons",
-          "relocationMigration": "Relocation/Migration",
+          "personalFamily": "Personal / Family Reasons",
           "healthIssues": "Health Issues",
-          "foundOtherEmployment": "Found Other Employment",
           "financialConstraints": "Financial Constraints",
-          "lostInterestMotivation": "Lost Interest/Motivation",
-          "unknownNoContact": "Unknown/No Contact"
+          "relocation": "Relocation",
+          "foundOtherEmployment": "Found Other Employment",
+          "lostInterestMotivation": "Lost Interest / Motivation",
+          "refusedToParticipate": "Refused to Participate",
+          "unknownNoContact": "Unknown / No Contact",
+          "other": "Other"
         }
       },
       "graphs": {
@@ -1937,12 +1939,14 @@
     "customReasonPlaceholder": "Enter custom reason.",
     "enterCustomReason": "Please enter a custom reason",
     "dropoutReasons": {
-      "personal": "Personal reasons",
-      "health": "Health issues",
-      "work": "Work commitments",
-      "financial": "Financial constraints",
-      "relocated": "Relocated",
-      "notInterested": "Not interested anymore",
+      "personalFamilyReasons": "Personal / Family Reasons",
+      "healthIssues": "Health Issues",
+      "financialConstraints": "Financial Constraints",
+      "relocation": "Relocation",
+      "foundOtherEmployment": "Found Other Employment",
+      "lostInterestMotivation": "Lost Interest / Motivation",
+      "refusedToParticipate": "Refused to Participate",
+      "unknownNoContact": "Unknown / No Contact",
       "other": "Other"
     },
     "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
