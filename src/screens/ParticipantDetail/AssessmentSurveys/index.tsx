@@ -32,6 +32,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {
     const fetchSolutions = async () => {
+      setLoading(true);
       try {
         const data = await getTargetedSolutions({
           type: 'observation',

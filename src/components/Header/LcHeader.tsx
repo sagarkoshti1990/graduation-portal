@@ -11,6 +11,7 @@ import {
   useColorMode,
 } from '@gluestack-ui/themed';
 import { useAuth } from '@contexts/AuthContext';
+import { useLanguage } from '@contexts/LanguageContext';
 import { theme } from '@config/theme';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import type { MenuItemData } from '@components/ui/Menu';
@@ -39,6 +40,7 @@ const LcHeader: React.FC<LcHeaderProps> = ({
 }) => {
   const mode = useColorMode();
   const isDark = mode === 'dark';
+  const { t } = useLanguage();
   const { user, isLoggedIn } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const handleCloseProfile = useCallback(() => {
@@ -46,7 +48,12 @@ const LcHeader: React.FC<LcHeaderProps> = ({
   }, []);
   const renderMenuTrigger = useCallback(
     (triggerProps: any) => (
-      <Pressable {...triggerProps} px="$3">
+      <Pressable
+        {...triggerProps}
+        px="$3"
+        accessibilityRole="button"
+        accessibilityLabel={t('navigation.menu')}
+      >
         <LucideIcon
           name="Menu"
           size={16}
@@ -54,7 +61,7 @@ const LcHeader: React.FC<LcHeaderProps> = ({
         />
       </Pressable>
     ),
-    [isDark],
+    [isDark, t],
   );
 
   const handleHamburgerMenuSelect = (key: string | undefined) => {

@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, HStack, Pressable, Spinner, Text, VStack } from '@gluestack-ui/themed';
 import { useAuth, User } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { theme } from '@config/theme';
 import Modal from '@components/ui/Modal';
-import { useAlert } from '@components/ui/Alert';
 import LucideIcon from '@components/ui/LucideIcon';
 import { profileStyles, LCProfileStyles } from '@components/ui/Modal/Styles';
 import { getUserProfile } from '../../services/authenticationService';
@@ -17,10 +16,14 @@ interface LcProfileModalProps {
 
 const LcProfileModal: React.FC<LcProfileModalProps> = ({ isOpen, onClose }) => {
   const { t, currentLanguage, changeLanguage } = useLanguage();
-  const { showAlert } = useAlert();
   const { user } = useAuth();
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -36,10 +39,9 @@ const LcProfileModal: React.FC<LcProfileModalProps> = ({ isOpen, onClose }) => {
         if (isMounted) {
           setAuthUser(userProfile);
         }
-      } catch (error: any) {
+      } catch {
         if (isMounted) {
-          showAlert('error', error?.message || t('common.somethingWentWrong'));
-          onClose();
+          onCloseRef.current();
         }
       } finally {
         if (isMounted) {
@@ -53,7 +55,7 @@ const LcProfileModal: React.FC<LcProfileModalProps> = ({ isOpen, onClose }) => {
     return () => {
       isMounted = false;
     };
-  }, [isOpen, onClose, showAlert, t]);
+  }, [isOpen]);
 
   const languageCodes =
     Array.isArray(authUser?.languages) && authUser.languages.filter(Boolean).length > 0
@@ -148,7 +150,7 @@ const LcProfileModal: React.FC<LcProfileModalProps> = ({ isOpen, onClose }) => {
               <Box {...LCProfileStyles.lcValueField} width="$full" overflow="hidden">
                 <Text {...profileStyles.fieldLabel} flexShrink={1}>
                   {authUser?.created_at
-                    ? new Date(authUser.created_at).toLocaleDateString('en-GB')
+                    ? new Date(authUser.created_at).toLocaleDateString(currentLanguage)
                     : '-'}
                 </Text>
               </Box>

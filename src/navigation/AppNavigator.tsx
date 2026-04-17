@@ -343,54 +343,56 @@ const AppNavigator: React.FC = () => {
           }
         }}
       >
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            cardStyle: isWebClient
-              ? ({
-                width: '100%',
-                minHeight: '100vh',
-                height: 'auto',
-              } as any)
-              : ({ width: '100%' } as any),
-          }}
-        >
-          {!isLoggedIn ? (
-            <>
+        <Suspense fallback={<Spinner height={spinnerHeight} size="large" color="$primary500" />}>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              cardStyle: isWebClient
+                ? ({
+                  width: '100%',
+                  minHeight: '100vh',
+                  height: 'auto',
+                } as any)
+                : ({ width: '100%' } as any),
+            }}
+          >
+            {!isLoggedIn ? (
+              <>
+                <Stack.Screen
+                  name="login"
+                  component={LoginScreen}
+                  options={{
+                    title: t('login.logIn'),
+                  }}
+                />
+                <Stack.Screen
+                  name="forgot-password"
+                  component={ForgotPasswordScreen}
+                  options={{
+                    title: t('forgotPassword.heading'),
+                  }}
+                />
+              </>
+            ) : (
+              // Show role-based navigator when logged in
               <Stack.Screen
-                name="login"
-                component={LoginScreen}
+                name="main"
+                component={RoleBasedNavigator}
                 options={{
-                  title: t('login.logIn'),
+                  title: t('navigation.menu'),
                 }}
               />
-              <Stack.Screen
-                name="forgot-password"
-                component={ForgotPasswordScreen}
-                options={{
-                  title: t('forgotPassword.heading'),
-                }}
-              />
-            </>
-          ) : (
-            // Show role-based navigator when logged in
+            )}
+            {/* Logout screen - always available for navigation from API interceptor */}
             <Stack.Screen
-              name="main"
-              component={RoleBasedNavigator}
+              name="logout"
+              component={LogoutScreen}
               options={{
-                title: t('navigation.menu'),
+                title: t('logout.sessionExpired') || 'Session expired.',
               }}
             />
-          )}
-          {/* Logout screen - always available for navigation from API interceptor */}
-          <Stack.Screen
-            name="logout"
-            component={LogoutScreen}
-            options={{
-              title: t('logout.sessionExpired') || 'Session expired.',
-            }}
-          />
-        </Stack.Navigator>
+          </Stack.Navigator>
+        </Suspense>
       </NavigationContainer>
     </NavigationErrorBoundary>
   );

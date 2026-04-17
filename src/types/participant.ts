@@ -1,7 +1,6 @@
-import { CARD_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, USER_STATUS } from '@constants/app.constant';
 import { ValueOf } from 'react-native-gesture-handler/lib/typescript/typeUtils';
 import { User } from '@contexts/AuthContext';
-import { ProjectData } from 'src/project-player/types';
 
 /**
  * Participant Status Types
@@ -81,7 +80,7 @@ export interface AssessmentSurveyCardProps {
   participantId?: string;
   participantStatus?: string;
   certificate?: any;
-  participantAccountUserStatus?: string;
+  participantAccountUserStatus?: ValueOf<typeof USER_STATUS>;
 }
 
 /**

@@ -149,6 +149,7 @@ const server = http.createServer((req, res) => {
         if (indexErr || !indexStats.isFile()) {
           res.writeHead(404);
           res.end('File not found');
+          return;
         }
         sendFile(req, res, indexPath, 'text/html');
       });
