@@ -14,6 +14,7 @@ import { profileStyles } from '@components/ui/Modal/Styles';
 import { theme } from '@config/theme';
 import { updateParticipantAddress } from '../../services/participantService';
 import { User } from '@contexts/AuthContext';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 
 type ParticipantProfileModalProps = {
   isOpen: boolean;
@@ -44,6 +45,9 @@ function ParticipantProfileModalInner({
     email?: string;
     form?: string;
   }>({});
+  const canEditProfile =
+    participant?.accountUserStatus !== USER_STATUS.INACTIVE &&
+    participant?.status !== STATUS.DROPOUT;
 
   useEffect(() => {
     if (participant && isOpen) {
@@ -83,6 +87,10 @@ function ParticipantProfileModalInner({
   );
 
   const handleToggleEdit = useCallback(() => {
+    if (!canEditProfile) {
+      return;
+    }
+
     setIsEditingAddress(editing => {
       if (editing) {
         setEditedAddress({
@@ -95,9 +103,13 @@ function ParticipantProfileModalInner({
       }
       return !editing;
     });
-  }, [participant]);
+  }, [canEditProfile, participant]);
 
   const handleSaveAddress = useCallback(async () => {
+    if (!canEditProfile) {
+      return;
+    }
+
     const street = editedAddress.street?.trim() ?? '';
     const email = editedAddress.email?.trim() ?? '';
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -152,7 +164,7 @@ function ParticipantProfileModalInner({
         placement: 'bottom',
       });
     }
-  }, [editedAddress, participant?.id, onParticipantSaved, showAlert, t]);
+  }, [canEditProfile, editedAddress, participant?.id, onParticipantSaved, showAlert, t]);
 
   return (
     <Modal
@@ -164,7 +176,7 @@ function ParticipantProfileModalInner({
       })}
       showCloseButton={false}
       headerRightContent={
-        <Pressable onPress={handleToggleEdit}>
+        canEditProfile && <Pressable onPress={handleToggleEdit}>
           <LucideIcon
             name={isEditingAddress ? 'X' : 'Pencil'}
             size={16}
