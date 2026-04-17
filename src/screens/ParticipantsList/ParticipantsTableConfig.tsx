@@ -4,12 +4,12 @@ import { Participant, StatusType } from '@app-types/screens';
 import { ColumnDef } from '@app-types/components';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { STATUS, PARTICIPANT_COLUMN_KEYS } from '@constants/app.constant';
-import { LucideIcon } from '@ui/index';
+// import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
 import { usePlatform } from '@utils/platform';
 import { StatusBadge } from './StatusBadge';
 import { ActionColumn } from './ActionColumn';
-import { theme } from '@config/theme';
+// import { theme } from '@config/theme';
 /**
  * Progress Bar Component for Participants Table
  * Desktop: Horizontal layout with bar and percentage side by side
@@ -67,42 +67,42 @@ export const ProgressBar: React.FC<{ progress: number }> = ({ progress }) => {
  * Ready to Graduate Component
  * Shows "Ready to Graduate" text with warning icon
  */
-interface ReadyToGraduateProps {
-  certificateId?: string;
-}
+// interface ReadyToGraduateProps {
+//   certificateId?: string;
+// }
 
-const ReadyToGraduate: React.FC<ReadyToGraduateProps> = ({ certificateId }) => {
-  const { t } = useLanguage();
-  const { isMobile } = usePlatform();
-  return (
-    <HStack
-      space="sm"
-      alignItems="center"
-      justifyContent={isMobile ? "space-between" : 'center'}
-      marginTop="$3"
-      $md-marginTop="$0"
-      {...(!isMobile && { width: 100 })}
-    >
-      <Text
-        {...TYPOGRAPHY.bodySmall}
-        color="$textMutedForeground"
-        $md-display="none"
-      >
-        {t('participants.graduated')}
-      </Text>
+// const ReadyToGraduate: React.FC<ReadyToGraduateProps> = ({ certificateId }) => {
+//   const { t } = useLanguage();
+//   const { isMobile } = usePlatform();
+//   return (
+//     <HStack
+//       space="sm"
+//       alignItems="center"
+//       justifyContent={isMobile ? "space-between" : 'center'}
+//       marginTop="$3"
+//       $md-marginTop="$0"
+//       {...(!isMobile && { width: 100 })}
+//     >
+//       <Text
+//         {...TYPOGRAPHY.bodySmall}
+//         color="$textMutedForeground"
+//         $md-display="none"
+//       >
+//         {t('participants.graduated')}
+//       </Text>
 
-      <LucideIcon
-        name={certificateId ? "AlertCircle" : "CheckCircle"}
-        size={20}
-        color={
-          certificateId
-            ? theme.tokens.colors.warning500
-            : theme.tokens.colors.success500
-        }
-      />
-    </HStack>
-  );
-};
+//       <LucideIcon
+//         name={certificateId ? "AlertCircle" : "CheckCircle"}
+//         size={20}
+//         color={
+//           certificateId
+//             ? theme.tokens.colors.warning500
+//             : theme.tokens.colors.success500
+//         }
+//       />
+//     </HStack>
+//   );
+// };
 
 
 
@@ -167,18 +167,18 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
       showLabel: false, // Label is rendered inside ProgressBar component
     },
   },
-  {
-    key: 'graduated',
-    label: 'participants.graduated',
-    flex: 2,
-    render: participant => (
-        <ReadyToGraduate certificateId={participant.certificateId} />
-    ),
-    mobileConfig: {
-      fullWidthRank: 2, // Full width, appears after progress
-      showLabel: false, // Text is rendered inside the component
-    },
-  },
+  // {
+  //   key: 'graduated',
+  //   label: 'participants.graduated',
+  //   flex: 2,
+  //   render: participant => (
+  //       <ReadyToGraduate certificateId={participant.certificateId} />
+  //   ),
+  //   mobileConfig: {
+  //     fullWidthRank: 2, // Full width, appears after progress
+  //     showLabel: false, // Text is rendered inside the component
+  //   },
+  // },
   {
     key: 'phone',
     label: 'participants.contact',
