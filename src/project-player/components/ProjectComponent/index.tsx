@@ -72,7 +72,7 @@ const ProjectComponent: React.FC = () => {
   ): string[] => {
     return tasks.flatMap(task => {
       const nested = [
-        ...(task.name === 'Social Protection' && task.tasks
+        ...(task.tasks?.find((task:any) => task.isDeletable) as boolean
           ? getExcludedTaskIds(task.tasks, addedToPlanSet)
           : []),
       ];
@@ -86,7 +86,7 @@ const ProjectComponent: React.FC = () => {
   const getDeletableTaskIds = (tasks: any[] = []): string[] => {
     return tasks.flatMap(task => {
       const nested = [
-        ...(task.name === 'Social Protection' && task.tasks
+        ...(task.tasks?.find((task:any) => task.isDeletable) as boolean
           ? getDeletableTaskIds(task.tasks)
           : []),
       ];
@@ -137,7 +137,7 @@ const ProjectComponent: React.FC = () => {
 
           // Determine if this is a task or project based on type
           const isProject = pillar.type === 'project';
-          const isSocialProtectionPillar = pillar.name === 'Social Protection';
+          const isSocialProtectionPillar = pillar.tasks?.find((task:any) => task.isDeletable) as boolean;
 
           const templatePayload: any = {
             templateId: pillar.templateId,
@@ -269,11 +269,7 @@ const ProjectComponent: React.FC = () => {
                     ));
                   }
 
-                  const socialProtectionPillar = sortedPillars.find(
-                    pillar =>
-                      pillar.name.toLowerCase() === PILLAR_NAMES.SOCIAL_PROTECTION,
-                  );
-
+                  const socialProtectionPillar = sortedPillars.filter((pillar:any) => pillar.tasks.find((task:any) => task.isDeletable) as string).map((pillar:any) => pillar._id as string);
                   return (
                     <VStack {...projectComponentStyles.pillarContainer}>
                       <Accordion
@@ -282,7 +278,7 @@ const ProjectComponent: React.FC = () => {
                           : taskAccordionStyles.accordion)}
                         type="single"
                         isCollapsible={true}
-                        defaultValue={socialProtectionPillar ? [socialProtectionPillar._id] : undefined}
+                        defaultValue={socialProtectionPillar ? socialProtectionPillar : undefined}
                       >
                         <VStack {...projectComponentStyles.pillarContainer}>
                           {sortedPillars.map(task => (

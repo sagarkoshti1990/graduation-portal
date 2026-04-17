@@ -107,7 +107,7 @@ export const PILLAR_NAMES = {
   LIVELIHOOD: 'livelihood',
   FINANCIAL_INCLUSION: 'financial inclusion',
   FINANCIAL: 'financial',
-  SOCIAL_PROTECTION: 'social protection',
+  SOCIAL_PROTECTION: 'linkage to additional',
   PROTECTION: 'protection',
 } as const;
 

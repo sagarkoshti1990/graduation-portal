@@ -161,7 +161,7 @@
     "untitledFile": "Untitled File",
     "unknownSize": "Unknown size",
     "enrolledParticiapantSucess": "Participant enrolled successfully.",
-    "socialProtectionPreviewInfo": "Review all Social Protection tasks. Required tasks are pre-selected. You can change optional tasks.",
+    "socialProtectionPreviewInfo": "Review all Linkage To Additional Services tasks. Required tasks are pre-selected. You can change optional tasks.",
     "important": "Important",
     "failToLoad":"Failed to load or create project",
     "unableToLoadObservation":"Could not load observation details."
@@ -225,8 +225,8 @@
           "description": "Consent, profiling, SLA signing, and targeting metrics"
         },
         "socialProtectionReferrals": {
-          "title": "Social Protection Referrals",
-          "description": "Referrals to social protection programs and services"
+          "title": "Linkage To Additional Services",
+          "description": "Referrals to Linkage To Additional programs and services"
         },
         "socialEmpowerment": {
           "title": "Social Empowerment",
@@ -798,7 +798,7 @@
         }
       },
       "insights": {
-        "title": "Key Insights - Social Protection Referrals",
+        "title": "Key Insights - Linkage To Additional Services",
         "specialAttention": "526 participants (19%) requiring special attention - Substance Abuse, Mental Health, GBV",
         "immediateAttention": "1,248 participants (46%) requiring immediate attention - Food Security, Health, Municipal Indigent Programs",
         "referralRate": "100% referral rate achieved - All identified participants referred to appropriate support services",
@@ -1854,7 +1854,7 @@
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",
       "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
-      "socialProtectionWarning": "Complete all Social Protection tasks before assigning the plan.",
+      "socialProtectionWarning": "Complete all Linkage To Additional Services tasks before assigning the plan.",
       "actionRequired": "Action Required",
       "warningMsg":"Complete all Linkage to Additional Services tasks before assigning the plan."
     },

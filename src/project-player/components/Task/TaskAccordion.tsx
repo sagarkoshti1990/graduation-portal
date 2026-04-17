@@ -38,7 +38,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
   const isPreview = mode === 'preview';
   const isSocialProtection =
     task?.metaInformation?.category === PILLAR_CATEGORIES.PROTECTION ||
-    task.name.toLowerCase().includes(PILLAR_NAMES.SOCIAL_PROTECTION);
+    (task.tasks?.find((task:any) => task.isDeletable) as unknown as boolean);
 
   // Helper function to get pillar icon and color
   const getPillarIcon = (
@@ -71,7 +71,8 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
     }
     if (
       lowerName.includes(PILLAR_NAMES.SOCIAL_PROTECTION) ||
-      lowerName.includes(PILLAR_NAMES.PROTECTION)
+      lowerName.includes(PILLAR_NAMES.PROTECTION) ||
+      task.tasks?.find((task:any) => task.isDeletable) as unknown as boolean
     ) {
       return {
         icon: 'Shield',
@@ -291,7 +292,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
           <AccordionContent
             {...taskAccordionStyles.accordionContent}
           >
-            {/* Info Banner - Always show for Social Protection in Preview Mode */}
+            {/* Info Banner - Always show for Linkage To Additional in Preview Mode */}
             {isSocialProtection && (
               <Box {...taskAccordionStyles.infoBanner} display={'none'} $md-display={'flex'}>
                 <HStack {...taskAccordionStyles.infoBannerContent}>
