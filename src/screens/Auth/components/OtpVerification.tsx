@@ -2,6 +2,8 @@ import React from 'react';
 import {
   Button,
   ButtonText,
+  Heading,
+  HStack,
   Spinner,
   Text,
   VStack,
@@ -16,21 +18,21 @@ interface OtpVerificationProps {
   isVerifying?: boolean;
   isResending?: boolean;
   submitError?: string;
-  isVerifyDisabled?: boolean;
   canResend?: boolean;
   onOtpChange: (value: string[]) => void;
   onVerify: () => void;
   onResend: () => void;
   onBack: () => void;
   title: string;
-  description: string;
-  helperText: string;
+  description?: string;
+  helperText?: string;
   resendPrompt: string;
   resendText: string;
   resendAvailableText: string;
   resendCountdownText: string;
   verifyText: string;
   backText: string;
+  otpLength: number;
 }
 
 const OtpVerification: React.FC<OtpVerificationProps> = ({
@@ -39,7 +41,6 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
   isVerifying = false,
   isResending = false,
   submitError,
-  isVerifyDisabled = false,
   canResend = false,
   onOtpChange,
   onVerify,
@@ -54,40 +55,41 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
   resendCountdownText,
   verifyText,
   backText,
+  otpLength,
 }) => {
   return (
     <VStack {...loginStyles.vstack} width="$full">
       <VStack {...loginStyles.vstack2} width="$full">
-        <Button variant="link" onPress={onBack} isDisabled={isVerifying || isResending}>
-          <ButtonText {...loginStyles.adminLinkText}>{backText}</ButtonText>
-        </Button>
-        <Text {...loginStyles.text2}>{title}</Text>
-        <Text {...loginStyles.text3}>{description}</Text>
+        {title && <Heading {...loginStyles.heading}>{title}</Heading>}
+        {description && <Text {...loginStyles.text2}>{description}</Text>}
       </VStack>
 
       <OtpCodeInput
         value={otpValues}
         onChange={onOtpChange}
         isDisabled={isVerifying || isResending}
+        otpLength={otpLength}
       />
 
-      <Text {...loginStyles.text6}>{helperText}</Text>
+      {helperText && <Text {...loginStyles.text6}>{helperText}</Text>}
       <AuthErrorMessage message={submitError} boxed />
 
       <VStack {...loginStyles.vstack2} width="$full">
-        <Text {...loginStyles.text3}>{resendPrompt}</Text>
-        <Button
-          variant="link"
-          onPress={onResend}
-          isDisabled={!canResend || isVerifying || isResending}
-        >
-          {isResending ? (
-            <Spinner color="$primary500" />
-          ) : (
-            <ButtonText {...loginStyles.adminLinkText}>{resendText}</ButtonText>
-          )}
-        </Button>
-        <Text {...loginStyles.text6}>
+        <HStack {...loginStyles.hstack2}>
+          <Text {...loginStyles.text8}>{resendPrompt}</Text>
+          <Button
+            variant="link"
+            onPress={onResend}
+            isDisabled={!canResend || isVerifying || isResending}
+          >
+            {isResending ? (
+              <Spinner color="$primary500" />
+            ) : (
+              <ButtonText {...loginStyles.adminLinkText} color={canResend ? "$primary500" : "$textDark500"}>{resendText}</ButtonText>
+            )}
+          </Button>
+        </HStack>
+        <Text {...loginStyles.text6ForgotPassword}>
           {canResend
             ? resendAvailableText
             : resendCountdownText.replace('{{seconds}}', String(timer))}
@@ -97,13 +99,16 @@ const OtpVerification: React.FC<OtpVerificationProps> = ({
       <Button
         {...loginStyles.button}
         onPress={onVerify}
-        isDisabled={isVerifyDisabled}
+        isDisabled={otpValues.filter(value => value !== '').length !== otpLength || isVerifying || isResending}
       >
         {isVerifying ? (
           <Spinner color="$white" />
         ) : (
           <ButtonText {...loginStyles.buttonText}>{verifyText}</ButtonText>
         )}
+      </Button>
+      <Button variant="link" onPress={onBack} isDisabled={isVerifying || isResending}>
+        <ButtonText {...loginStyles.adminLinkText}>{backText}</ButtonText>
       </Button>
     </VStack>
   );

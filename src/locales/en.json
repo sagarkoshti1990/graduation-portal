@@ -1662,25 +1662,28 @@
         }
       },
       "section2": {
-        "title": "Password Requirements & Security Policy",
+        "title": "Forgot Password, OTP Verification & Password Policy",
         "strengthRequirements": {
           "title": "Strength Requirements:",
           "items": [
             "Minimum 8 characters",
-            "At least one uppercase letter",
-            "At least one lowercase letter",
-            "At least one number",
-            "At least one special character (@$!%*?&)"
+            "At least 1 uppercase letter (A-Z)",
+            "At least 1 lowercase letter (a-z)",
+            "At least 1 number (0-9)",
+            "At least 1 special character (e.g. @, $, !, %, *, ?, &)",
+            "No spaces allowed",
+            "Passwords must match (Confirm Password)"
           ]
         },
-        "resetProcess": {
-          "title": "Reset Process:",
+        "forgotPasswordProcess": {
+          "title": "Forgot Password, OTP Verification & Password Policy:",
           "items": [
-            "Temporary password sent via email",
-            "Must change on first login",
-            "Reset link expires in 24 hours",
-            "Cannot reuse last 3 passwords",
-            "Password expires every 90 days"
+            "Enter registered username / email",
+            "Set a new password as per policy",
+            "OTP will be sent to registered contact",
+            "Enter 6-digit OTP for verification",
+            "OTP expires in 60 seconds",
+            "Resend OTP available after timer ends"
           ]
         }
       },
@@ -1728,11 +1731,11 @@
   },
   "forgotPassword": {
     "heading": "Forgot Password",
-    "title": "Reset your password",
-    "description": "Enter your username, email, or mobile number and choose a new password to receive an OTP.",
-    "identifierLabel": "Email / Mobile / Username",
-    "identifierPlaceholder": "Email / Mobile / Username",
-    "identifierRequired": "Enter your email, mobile number, or username.",
+    "title": "Reset Password",
+    "description": "Enter your username or email and choose a new password to receive an OTP.",
+    "identifierLabel": "Username / Email",
+    "identifierPlaceholder": "Username / Email",
+    "identifierRequired": "Enter your username or email.",
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "passwordPlaceholder": "Enter new password",
@@ -1749,8 +1752,8 @@
     "invalidOtpLength": "Enter the 6-digit OTP.",
     "verifyOtp": "Verify OTP",
     "verifyOtpError": "Could not verify OTP. Try again.",
-    "resendPrompt": "Didn't receive the code?",
-    "resendOtp": "Resend OTP",
+    "resendPrompt": "Didn't receive the OTP?",
+    "resendOtp": "Resend",
     "resendOtpError": "Could not resend OTP. Try again.",
     "resendAvailable": "You can request a new OTP now.",
     "otpExpiresIn": "OTP will expire in {{seconds}} seconds.",
