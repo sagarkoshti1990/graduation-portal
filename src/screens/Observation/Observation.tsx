@@ -64,40 +64,48 @@ const Observation: React.FC = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if(user?.id == id) {
-        setParticipant({...user, userId: user?.id, name: user?.name, contact: user?.phone, address: user?.address, status: user?.status} as ParticipantData);
-        setNavbarData({
-          subtitle: user?.name,
-        });
-        setUserData({});
+      try {
+        if(user?.id == id) {
+          setParticipant({...user, userId: user?.id, name: user?.name, contact: user?.phone, address: user?.address, status: user?.status} as ParticipantData);
+          setNavbarData({
+            subtitle: user?.name,
+          });
+          setUserData({});
+          return;
+        } else {
+          const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
+          const newData = userDataResponse?.result?.data?.[0];
+          setParticipant(newData as ParticipantData);
+          setNavbarData({
+            subtitle: newData?.name,
+          });
+          const alternatePhoneCode =
+            newData?.userDetails?.alternate_phone_code ??
+            newData?.userDetails?.phone_code;
+          const preFillData = {
+            "Facilitator Name":user?.name,
+            "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
+            "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
+            "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
+            "What is your name?":{value:newData?.name, readonly: false},
+            "What is your ID number?":{value:newData?.userDetails?.national_id?.label || "", readonly: false},
+            // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
+            "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
+            "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
+            "Country Code":{value: formatCountryCode(newData?.userDetails?.phone_code), readonly: false},
+            "Country Code (For alternative number)":{value: formatCountryCode(alternatePhoneCode), readonly: false},
+          };
+          setUserData(preFillData);
+        }
+      } catch (error: any) {
+        showAlert(
+          'error',
+          error?.message || 'Failed to load observation details. Please try again.',
+          { duration: 10000 },
+        );
+      } finally {
         setIsLoading(false);
-        return;
-      } else {
-        const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
-        const newData = userDataResponse?.result?.data?.[0];
-        setParticipant(newData as ParticipantData);
-        setNavbarData({
-          subtitle: newData?.name,
-        });
-        const alternatePhoneCode =
-          newData?.userDetails?.alternate_phone_code ??
-          newData?.userDetails?.phone_code;
-        const preFillData = {
-          "Facilitator Name":user?.name,
-          "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
-          "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
-          "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
-          "What is your name?":{value:newData?.name, readonly: false},
-          "What is your ID number?":{value:newData?.userDetails?.national_id?.label || "", readonly: false},
-          // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
-          "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
-          "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
-          "Country Code":{value: formatCountryCode(newData?.userDetails?.phone_code), readonly: false},
-          "Country Code (For alternative number)":{value: formatCountryCode(alternatePhoneCode), readonly: false},
-        };
-        setUserData(preFillData);
       }
-      setIsLoading(false);
     };
     fetchUserData();
 

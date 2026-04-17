@@ -1,6 +1,6 @@
 import type { ParticipantSearchParams, ParticipantSearchResponse, Site } from '@app-types/participant';
 import { PARTICIPANTS_DATA, PROVINCES, SITES } from '@constants/PARTICIPANTS_LIST';
-import api from './api';
+import api, { OBSERVATION_RETRY_CONFIG, withRetry } from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 import { ROLE_NAMES } from '@constants/ROLES';
 import { getUserProfile } from './authenticationService';
@@ -59,7 +59,10 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
     // const subEntityListResponse = await api.get<any>(subEntityListEndpoint);
     // const subEntityList = subEntityListResponse.data?.result?.data || [];
 
-    const response = await api.get<ParticipantSearchResponse>(endpoint);
+    const response = await api.get<ParticipantSearchResponse>(
+      endpoint,
+      entityId ? withRetry(OBSERVATION_RETRY_CONFIG) : undefined,
+    );
     return response.data;
   } catch (error: any) {
     // Error is already handled by axios interceptor
@@ -405,7 +408,7 @@ export const verifyParticipantCompletionActions = async ({
           });
           await createOrUpdateProgramUserMapping({
             userId: participantId,
-            programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+            programId: process?.env.GLOBAL_LC_PROGRAM_ID as string,
             metaInformation: {
               graduatedAt: thisDate,
             },
