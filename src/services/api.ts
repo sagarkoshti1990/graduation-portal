@@ -1,6 +1,7 @@
 import axios, {
   AxiosInstance,
   InternalAxiosRequestConfig,
+  AxiosRequestConfig,
   AxiosResponse,
   AxiosError,
 } from 'axios';
@@ -24,6 +25,127 @@ declare const process:
 const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_TOKEN;
 const INTERNAL_ACCESS_TOKEN_KEY = STORAGE_KEYS.INTERNAL_ACCESS_TOKEN;
 
+export interface ApiRetryConfig {
+  enabled?: boolean;
+  retries?: number;
+  initialDelayMs?: number;
+  backoffMultiplier?: number;
+}
+
+export interface ApiRequestError extends Error {
+  statusCode?: number;
+  code?: string;
+  data?: unknown;
+  isNetworkError?: boolean;
+  isTimeoutError?: boolean;
+  isRetryable?: boolean;
+  retryAttempts?: number;
+}
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  _retryAttemptCount?: number;
+  retryConfig?: Partial<ApiRetryConfig>;
+}
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    retryConfig?: Partial<ApiRetryConfig>;
+  }
+
+  interface InternalAxiosRequestConfig {
+    retryConfig?: Partial<ApiRetryConfig>;
+    _retryAttemptCount?: number;
+  }
+}
+
+const DEFAULT_API_RETRY_CONFIG: Required<ApiRetryConfig> = {
+  enabled: false,
+  retries: 3,
+  initialDelayMs: 1000,
+  backoffMultiplier: 2,
+};
+
+export const OBSERVATION_RETRY_CONFIG: Readonly<Required<ApiRetryConfig>> =
+  Object.freeze({
+    ...DEFAULT_API_RETRY_CONFIG,
+    enabled: true,
+  });
+
+const resolveRetryConfig = (
+  retryConfig?: Partial<ApiRetryConfig>,
+): Required<ApiRetryConfig> => ({
+  ...DEFAULT_API_RETRY_CONFIG,
+  ...retryConfig,
+});
+
+const sleep = (delayMs: number) =>
+  new Promise(resolve => setTimeout(resolve, delayMs));
+
+const isTimeoutError = (error: AxiosError) =>
+  error.code === 'ECONNABORTED' ||
+  error.message?.toLowerCase().includes('timeout');
+
+const isNetworkError = (error: AxiosError) =>
+  !error.response && !!error.request;
+
+const isRetryableError = (error: AxiosError) => {
+  const status = error.response?.status;
+
+  if (status === 400 || status === 401 || status === 403) {
+    return false;
+  }
+
+  if (status !== undefined) {
+    return status >= 500;
+  }
+
+  return isTimeoutError(error) || isNetworkError(error);
+};
+
+const buildApiError = (
+  error: AxiosError,
+  retryAttempts = 0,
+): ApiRequestError => {
+  const statusCode = error.response?.status;
+  const responseData = error.response?.data as
+    | { message?: string }
+    | undefined;
+  const timeout = isTimeoutError(error);
+  const network = isNetworkError(error);
+  const apiError = new Error(
+    responseData?.message ||
+      (timeout
+        ? 'Request timed out. Please try again.'
+        : network
+          ? 'Network error. Please check your connection.'
+          : statusCode
+            ? `Request failed with status ${statusCode}`
+            : error.message || 'Something went wrong while calling the API.'),
+  ) as ApiRequestError;
+
+  apiError.name = 'ApiRequestError';
+  apiError.statusCode = statusCode;
+  apiError.code = error.code;
+  apiError.data = error.response?.data;
+  apiError.isNetworkError = network;
+  apiError.isTimeoutError = timeout;
+  apiError.isRetryable = isRetryableError(error);
+  apiError.retryAttempts = retryAttempts;
+
+  return apiError;
+};
+
+export const withRetry = (
+  retryConfig: Partial<ApiRetryConfig> = {},
+): AxiosRequestConfig => ({
+  retryConfig: {
+    ...DEFAULT_API_RETRY_CONFIG,
+    ...retryConfig,
+    enabled: retryConfig.enabled ?? true,
+  },
+});
+
 /**
  * Create axios instance with base configuration
  * baseURL is loaded from .env file via @config/env
@@ -36,6 +158,7 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json, text/plain, */*',
+    // @ts-ignore - process.env is injected by webpack DefinePlugin on web
     'internal-access-token': process.env.INTERNAL_ACCESS_TOKEN || '',
     // @ts-ignore - process.env is injected by webpack DefinePlugin on web
     ...(!isAndroid ? {} : { origin: process.env.ORIGIN || '' }),
@@ -119,10 +242,11 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-      _isRefreshTokenCall?: boolean;
-    };
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
+
+    if (!originalRequest) {
+      return Promise.reject(buildApiError(error));
+    }
 
     // Don't try to refresh if the failed request is already a refresh token request
     const isRefreshTokenRequest = originalRequest.url?.includes(
@@ -219,6 +343,31 @@ api.interceptors.response.use(
       }
     }
 
+    const retryConfig = resolveRetryConfig(originalRequest.retryConfig);
+    const retryAttemptCount = originalRequest._retryAttemptCount ?? 0;
+
+    if (retryConfig.enabled && retryAttemptCount < retryConfig.retries && isRetryableError(error)) {
+      const nextAttempt = retryAttemptCount + 1;
+      const delayMs =
+        retryConfig.initialDelayMs *
+        retryConfig.backoffMultiplier ** retryAttemptCount;
+
+      originalRequest._retryAttemptCount = nextAttempt;
+
+      logger.warn('Retrying API request after transient failure', {
+        url: originalRequest.url,
+        method: originalRequest.method?.toUpperCase(),
+        retryAttempt: nextAttempt,
+        maxRetries: retryConfig.retries,
+        delayMs,
+        status: error.response?.status,
+        code: error.code,
+      });
+
+      await sleep(delayMs);
+      return api(originalRequest);
+    }
+
     // Handle other error status codes
     if (error.response) {
       const status = error.response.status;
@@ -236,22 +385,18 @@ api.interceptors.response.use(
       );
 
       // Return a more user-friendly error message
-      const errorMessage =
-        data?.message || `Request failed with status ${status}`;
-      return Promise.reject(new Error(errorMessage));
+      return Promise.reject(buildApiError(error, retryAttemptCount));
     }
 
     // Handle network errors
     if (error.request) {
       logger.error('Network error - No response received:', error.message);
-      return Promise.reject(
-        new Error('Network error. Please check your connection.'),
-      );
+      return Promise.reject(buildApiError(error, retryAttemptCount));
     }
 
     // Handle other errors
     logger.error('Request setup error:', error.message);
-    return Promise.reject(error);
+    return Promise.reject(buildApiError(error, retryAttemptCount));
   },
 );
 

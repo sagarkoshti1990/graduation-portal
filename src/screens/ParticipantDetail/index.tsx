@@ -145,6 +145,7 @@ export default function ParticipantDetail() {
     useCallback(() => {
       fetchEntityDetails();
       return () => {
+        setProjectData(null);
         setNavbarData(null);
         setParticipant(undefined);
         setStatus("");

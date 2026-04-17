@@ -15,7 +15,7 @@ import { AssessmentSurveyCardProps } from '@app-types/participant';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { assessmentSurveyCardStyles } from './Styles';
-import { CARD_STATUS, ENTITY_STATUS, STATUS } from '@constants/app.constant';
+import { CARD_STATUS, STATUS, USER_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { CERTIFICATE_KEYWORD, ICONS } from '@constants/LOG_VISIT_CARDS';
 
@@ -35,18 +35,24 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   participantId,
   participantStatus,
   certificate,
+  participantAccountUserStatus,
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
   const { name, description, navigationUrl, entity } = card;
   const [iconMeta, setIconMeta] = useState<IconMeta | null>(null);
-  const isGraduatedParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT;
+  const isReadOnlyParticipant =
+    participantStatus === STATUS.GRADUATED ||
+    participantStatus === STATUS.DROPOUT ||
+    participantAccountUserStatus === USER_STATUS.INACTIVE;
   const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
   const shouldShowViewButton =
-    entity?.status && (isGraduatedParticipant || (hasSubmittedData && !entity?.allowMultipleAssessemts));
+    entity?.status &&
+    (isReadOnlyParticipant ||
+      (hasSubmittedData && !entity?.allowMultipleAssessemts));
   const shouldShowActionButton = !!entity?.status;
   const canOpenCardFromPressable =
-    !entity?.status && !!navigationUrl && !isGraduatedParticipant;
+    !entity?.status && !!navigationUrl && !isReadOnlyParticipant;
   const handleCardAction = () => {
     if (!navigationUrl || !userId) {
       logger.log('userId is required');
@@ -54,7 +60,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
     }
 
     if (
-      isGraduatedParticipant &&
+      isReadOnlyParticipant &&
       entity?.allowMultipleAssessemts
     ) {
       if(participantId) {
@@ -119,7 +125,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                 })}
               >
                 <LucideIcon
-                  name={iconMeta?.icon || 'info'}
+                  name={iconMeta?.icon || 'Info'}
                   size={!entity?.status ? 24 : 20}
                   color={iconMeta?.iconColor || '$white'}
                 />

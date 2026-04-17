@@ -1,5 +1,82 @@
 import React from 'react';
 import type { LucideProps } from 'lucide-react-native';
+import {
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Award,
+  BarChart,
+  BookOpen,
+  Briefcase,
+  Building2,
+  Calendar,
+  Camera,
+  ChartColumn,
+  Check,
+  CheckCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronsLeft,
+  ChevronsRight,
+  Circle,
+  CircleCheck,
+  ClipboardCheck,
+  ClipboardList,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Download,
+  Eye,
+  EyeOff,
+  FileCheck,
+  FileDown,
+  FilePenLine,
+  FileText,
+  FileUp,
+  FileX,
+  Filter,
+  Folder,
+  GraduationCap,
+  Heart,
+  History,
+  Home,
+  ImageOff,
+  Info,
+  Key,
+  LayoutDashboard,
+  LoaderCircle,
+  Link2,
+  Lock,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  MoreVertical,
+  Paperclip,
+  Pencil,
+  Phone,
+  Plus,
+  RefreshCw,
+  Search,
+  Shield,
+  ShieldCheck,
+  SquarePen,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Upload,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
+  UserX,
+  X,
+  XCircle,
+} from 'lucide-react-native';
 import { theme } from '@config/theme';
 
 /**
@@ -14,6 +91,85 @@ export interface LucideIconProps extends Omit<LucideProps, 'ref'> {
   color?: string;
   strokeWidth?: number;
 }
+
+const ICONS: Record<string, React.ComponentType<any>> = {
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Award,
+  BarChart,
+  BookOpen,
+  Briefcase,
+  Building2,
+  Calendar,
+  Camera,
+  Certificate: Award,
+  ChartColumn,
+  Check,
+  CheckCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronsLeft,
+  ChevronsRight,
+  Circle,
+  CircleCheck,
+  ClipboardCheck,
+  ClipboardList,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Download,
+  Eye,
+  EyeOff,
+  FileCheck,
+  FileDown,
+  FilePenLine,
+  FileText,
+  FileUp,
+  FileX,
+  Filter,
+  Folder,
+  GraduationCap,
+  Heart,
+  History,
+  Home,
+  ImageOff,
+  Info,
+  Key,
+  LayoutDashboard,
+  LoaderCircle,
+  Link2,
+  Lock,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  MoreVertical,
+  Paperclip,
+  Pencil,
+  Phone,
+  Plus,
+  RefreshCw,
+  Search,
+  Shield,
+  ShieldCheck,
+  SquarePen,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Upload,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
+  UserX,
+  X,
+  XCircle,
+};
 
 /**
  * LucideIcon Component
@@ -36,9 +192,7 @@ const LucideIcon: React.FC<LucideIconProps> = ({
   strokeWidth = 2,
   ...props
 }) => {
-  // Use lucide-react-native for native platforms
-  const LucideNative = require('lucide-react-native');
-  const IconComponent = LucideNative[name];
+  const IconComponent = ICONS[name];
   let iconColor: string = theme.tokens.colors.primary500 as string; // Default
 
   if (typeof color === 'string') {
@@ -59,14 +213,7 @@ const LucideIcon: React.FC<LucideIconProps> = ({
     return null;
   }
 
-  return (
-    <IconComponent
-      size={size}
-      strokeWidth={strokeWidth}
-      color={iconColor}
-      {...props}
-    />
-  );
+  return <IconComponent size={size} strokeWidth={strokeWidth} color={iconColor} {...props} />;
 };
 
 export default LucideIcon;

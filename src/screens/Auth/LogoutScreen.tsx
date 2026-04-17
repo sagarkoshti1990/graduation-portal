@@ -7,7 +7,7 @@ import {
   Heading,
   Spinner,
   Image,
-} from '@ui';
+} from '@gluestack-ui/themed';
 import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { loginStyles } from './Styles';

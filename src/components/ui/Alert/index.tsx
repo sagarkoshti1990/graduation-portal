@@ -9,7 +9,7 @@ import {
   Box,
   Pressable,
 } from '@gluestack-ui/themed';
-import { LucideIcon } from '@ui';
+import LucideIcon from '@components/ui/LucideIcon';
 import { theme } from '@config/theme';
 import type { AlertOptions } from '@app-types/components';
 import { useLanguage } from '@contexts/LanguageContext';
