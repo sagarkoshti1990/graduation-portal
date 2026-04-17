@@ -45,8 +45,9 @@ const AuditLogScreen = lazyScreen(() => import('../screens/AuditLog'));
 const AssignUsersScreen = lazyScreen(() => import('../screens/AssignUsers'));
 const AdminDashboard = lazyScreen(() => import('../screens/AdminDashboard'));
 const ProfilePermissions = lazyScreen(() => import('../screens/ProfilePermissions'));
-
+const ForgotPasswordScreen = lazyScreen(() => import('../screens/Auth/ForgotPasswordScreen'));
 const spinnerHeight = (isWebPlatform ? '$100vh' : '$full') as any;
+
 // Error Boundary for Navigation
 class NavigationErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode },
@@ -182,6 +183,7 @@ const getLinkingConfig = (
   // Define the base screens that are always available in linking
   const screens: Record<string, any> = {
     login: 'login',
+    'forgot-password': 'forgot-password',
     main: {
       path: '/',
       screens: {},
@@ -262,6 +264,7 @@ const AppNavigator: React.FC = () => {
         config: {
           screens: {
             login: 'login',
+            'forgot-password': 'forgot-password',
             logout: 'logout',
           },
         },
@@ -353,14 +356,22 @@ const AppNavigator: React.FC = () => {
           }}
         >
           {!isLoggedIn ? (
-            // Show login screen when not logged in
-            <Stack.Screen
-              name="login"
-              component={LoginScreen}
-              options={{
-                title: t('login.logIn'),
-              }}
-            />
+            <>
+              <Stack.Screen
+                name="login"
+                component={LoginScreen}
+                options={{
+                  title: t('login.logIn'),
+                }}
+              />
+              <Stack.Screen
+                name="forgot-password"
+                component={ForgotPasswordScreen}
+                options={{
+                  title: t('forgotPassword.heading'),
+                }}
+              />
+            </>
           ) : (
             // Show role-based navigator when logged in
             <Stack.Screen

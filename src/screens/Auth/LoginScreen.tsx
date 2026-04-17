@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ScrollView, Animated, Pressable } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import {
   Box,
   VStack,
@@ -30,6 +31,7 @@ import offlineStorage from '../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 
 const LoginScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { login } = useAuth();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
@@ -255,6 +257,16 @@ const LoginScreen: React.FC = () => {
                   </Pressable>
                 </Box>
               </VStack>
+
+              <Button
+                variant="link"
+                onPress={() => navigation.navigate('forgot-password' as never)}
+                isDisabled={loading}
+              >
+                <ButtonText {...loginStyles.adminLinkText}>
+                  {t('login.forgotPassword')}
+                </ButtonText>
+              </Button>
 
               {/* Remember Me Checkbox - UI hidden but functionality preserved */}
               {/* <HStack {...loginStyles.hstack}>
