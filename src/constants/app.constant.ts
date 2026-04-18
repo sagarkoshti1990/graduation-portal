@@ -141,3 +141,5 @@ export const PATHWAY_TAGS = {
   ENTREPRENEURSHIP: 'Entrepreneurship',
   EMPLOYMENT: 'Employment',
 } as const;
+
+export const solutionNamesOrder = ['Household Profile', 'Midline Survey', 'Intervention Completion Survey', 'Endline Survey'];

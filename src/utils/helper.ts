@@ -73,3 +73,31 @@ export function getInitials(name: string): string {
 
   return (firstInitial + lastInitial).toUpperCase();
 }
+
+/**
+ * Sort array of objects by nested key using custom order
+ * @param {Array} data - array to sort
+ * @param {String} path - nested key (e.g. "user.name")
+ * @param {Array} order - custom order array
+ * @param {String} direction - "asc" | "desc" (optional)
+ */
+export const sortByNestedOrder = (data: any[], path: string, order: string[], direction = "asc") => {
+  const getValue = (obj: any, path: string) =>
+    path.split(".").reduce((acc, key) => acc?.[key], obj);
+
+  const orderMap = Object.fromEntries(
+    order.map((val, index) => [val, index])
+  );
+
+  return data.sort((a, b) => {
+    const valA = getValue(a, path);
+    const valB = getValue(b, path);
+
+    const indexA = orderMap[valA] ?? Infinity;
+    const indexB = orderMap[valB] ?? Infinity;
+
+    return direction === "asc"
+      ? indexA - indexB
+      : indexB - indexA;
+  });
+};

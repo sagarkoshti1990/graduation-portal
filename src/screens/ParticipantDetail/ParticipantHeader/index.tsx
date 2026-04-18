@@ -35,6 +35,9 @@ import {
   getProjectDetails,
   updateTask
 } from '../../../project-player/services/projectPlayerService';
+import { CERTIFICATE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
+import { updateEntityDetails } from '../../../services/participantService';
+import { useAuth } from '@contexts/AuthContext';
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   participant: participantProp,
@@ -47,12 +50,13 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   updatedProgress,
   projectData,
   onParticipantRefresh,
+  solutions,
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { isWeb, isMobile } = usePlatform();
   const { showAlert } = useAlert();
-
+  const { user } = useAuth();
   const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
@@ -60,9 +64,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
   const showSuccess = (message: string) => {
-    showAlert('error',message,{
-      duration: 100000,
-    });
+    showAlert('success',message);
   };
 
   // Update status when participant prop changes
@@ -122,13 +124,22 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     if (!entityId) return;
 
     try {
-      const projResult = await updateTask((participantProp as any)?.onBoardedProjectId, {status: TASK_STATUS.COMPLETED});
+      const [projResult] = await Promise.all([
+        updateTask((participantProp as any)?.onBoardedProjectId, { status: TASK_STATUS.COMPLETED }),
+        updateEntityDetails({
+          userId: `${user?.id}`,
+          entityId: (participantProp as User)?.entityId,
+          entityUpdates: {
+            status: STATUS.ENROLLED,
+          },
+        }),
+      ]);
+ 
       if (!(projResult as any)?._id) {
         return showAlert('error', t('participantDetail.header.taskStatusUpdateFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-      // Reload page
-      window.location.reload();
+      
       // Notify parent component about status update
       if (onStatusUpdate) {
         onStatusUpdate(STATUS.ENROLLED);
@@ -144,16 +155,20 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     navigation.push('log-visit', { id: participantId });
   };
 
-  const handleCompleteProject = async () => {
+  const handleCompleteProject = async (solution:any) => {
     if (!participantProp?.idpProjectId || isCompletingProject) return;
+    const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
 
     try {
       setIsCompletingProject(true);
-      await completeProject(participantProp.idpProjectId);
+      if(participantProp.idpProgress.projectStatus !== PROJECT_STATUS.COMPLETED && participantProp.idpProgress.projectStatus !== PROJECT_STATUS.SUBMITTED) {
+        await completeProject(participantProp.idpProjectId);
+      }
       setStatus(STATUS.COMPLETED);
       onStatusUpdate?.(STATUS.COMPLETED);
-      await onParticipantRefresh?.();
-      showAlert('success',t('participantDetail.header.projectCompleteSuccess'));
+      // showAlert('success',t('participantDetail.header.projectCompleteSuccess'));
+      // @ts-ignore
+      navigation.push('observation', { id: participantId, solutionId: solution.solutionId,submissionNumber:1 });
     } catch (error) {
       showAlert('error', t('participantDetail.header.projectCompleteFailure'))
     } finally {
@@ -182,9 +197,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     setShouldShowCompletionButton(
       status === STATUS.IN_PROGRESS &&
         !!participantProp?.idpProjectId &&
-        effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD,
+        effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD &&
+        participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
     );
-  }, [effectiveProgress, participantProp?.idpProjectId, status]);
+  }, [effectiveProgress, participantProp?.idpProjectId, status, participantProp?.idpProgress?.projectStatus]);
 
   const renderStatusBadge = () => {
     if (status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
@@ -376,6 +392,27 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     // Otherwise, just render View Profile button
     return renderViewProfileButton();
   };
+  const renderCompleteProjectButton = () => {
+    const certificateSolution = solutions?.find((solution:any) => solution.keywords.includes(CERTIFICATE_KEYWORD));
+    return shouldShowCompletionButton ? (
+      <Button
+        mt="$3"
+        variant="solid"
+        size="sm"
+        onPress={() => handleCompleteProject(certificateSolution)}
+        isDisabled={isCompletingProject}
+      >
+        {isCompletingProject ? (
+          <Spinner size="small" color="$white" />
+        ) : (
+          <ButtonIcon as={LucideIcon} name="Check" />
+        )}
+        <ButtonText>
+        {certificateSolution?.name}
+        </ButtonText>
+      </Button>
+    ) : null;
+  };
 
   return (
     <>
@@ -454,24 +491,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
             updatedProgress={updatedProgress}
             graduationDate={graduationDate}
           />
-          {shouldShowCompletionButton && (
-            <Button
-              mt="$3"
-              variant="solid"
-              size="sm"
-              onPress={handleCompleteProject}
-              isDisabled={isCompletingProject}
-            >
-              {isCompletingProject ? (
-                <Spinner size="small" color="$white" />
-              ) : (
-                <ButtonIcon as={LucideIcon} name="Check" />
-              )}
-              <ButtonText>
-                {t('participantDetail.header.completeGraduationReadinessForm')}
-              </ButtonText>
-            </Button>
-          )}
+          {renderCompleteProjectButton()}
         </Container>
       </Box>
       {renderCertificateModal()}

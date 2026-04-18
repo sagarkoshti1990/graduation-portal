@@ -5,11 +5,10 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import { ROLE_NAMES } from '@constants/ROLES';
 import { getUserProfile } from './authenticationService';
 import { User } from '@contexts/AuthContext';
-import { getTargetedSolutions, getObservationEntities } from './solutionService';
-import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD, FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import { getObservationEntities } from './solutionService';
+import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
-import { STATUS,ENTITY_STATUS, PROJECT_STATUS } from '@constants/app.constant';
-
+import { STATUS,ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD } from '@constants/app.constant';
 
 /**
  * Get participants list for table view
@@ -278,6 +277,7 @@ const checkSolutionByKeyword = (solutionData: any, keyword: string): boolean => 
 export interface ParticipantCompletionActionResult {
   success: boolean;
   type: 'certificate' | 'endline' | '';
+  error?: any;
 }
 
 /**
@@ -301,31 +301,24 @@ export interface ParticipantCompletionActionResult {
  */
 export const verifyParticipantCompletionActions = async ({
   participantData,
-  userId
+  userId,
+  solutions
 }: {
   participantData: any;
   userId: string;
+  solutions: any[];
 }): Promise<ParticipantCompletionActionResult> => {
   try {
-    const participantStatus = participantData?.status;
+    const completionPercentage = participantData?.idpProgress?.completionPercentage;
     const participantId = participantData?.id;
     const entityId = participantData?.entityId;
     const idpProjectId = participantData?.idpProjectId;
     const projectStatus = participantData?.idpProgress.projectStatus;
-    
     // Check if conditions are met: status is COMPLETED or certificate already exists
-    if (participantStatus !== STATUS.COMPLETED) {
+    if (completionPercentage < GRADUATION_READINESS_PROGRESS_THRESHOLD) {
       logger.info('Participant completion actions skipped - conditions not met');
       return { success: false, type: '' };
     }
-
-    // 1. Fetch targeted solutions with certificate and ENDLINE keywords
-    const combinedKeywords = FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',');
-
-    const solutions = await getTargetedSolutions({
-      type: 'observation',
-      'filter[keywords]': combinedKeywords,
-    });
 
     if (!solutions || solutions.length === 0) {
       logger.warn('No targeted solutions found for certificate/ENDLINE keywords', {
@@ -367,7 +360,6 @@ export const verifyParticipantCompletionActions = async ({
     const certificateSolution = solutionsWithEntityStatus.find((solution) =>
       checkSolutionByKeyword(solution, CERTIFICATE_KEYWORD)
     );
-    
     if (certificateSolution) {
       const isCertificateCompleted = certificateSolution.entity?.status === ENTITY_STATUS.COMPLETED;
       if (isCertificateCompleted && projectStatus === PROJECT_STATUS.COMPLETED) {
@@ -402,17 +394,18 @@ export const verifyParticipantCompletionActions = async ({
             userId,
             entityId,
             entityUpdates: {
-              status: STATUS.GRADUATED,
-              graduatedAt: thisDate,
+              status: STATUS.COMPLETED,
+              completedAt: thisDate,
             },
           });
           await createOrUpdateProgramUserMapping({
             userId: participantId,
-            programId: process?.env.GLOBAL_LC_PROGRAM_ID as string,
+            // @ts-ignore
+            programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
             metaInformation: {
-              graduatedAt: thisDate,
+              completedAt: thisDate,
             },
-            status: STATUS.GRADUATED,
+            status: STATUS.COMPLETED,
           });
           logger.info('Participant status updated to GRADUATED successfully', {
             participantId,
@@ -423,6 +416,7 @@ export const verifyParticipantCompletionActions = async ({
             participantId,
             error,
           });
+          return { success: false, type: '', error: error as Error };
         }
       } else {
         logger.info('ENDLINE solution not yet completed', {

@@ -29,11 +29,13 @@ import {
   // DUMMY_PROJECT_DATA,
   PROJECT_PLAYER_CONFIGS,
 } from '@constants/PROJECTDATA';
-import { PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
+import { GRADUATION_READINESS_PROGRESS_THRESHOLD, PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
 import logger from '@utils/logger';
+import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import { getTargetedSolutions } from '../../services/solutionService';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -73,6 +75,7 @@ export default function ParticipantDetail() {
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [solutions, setSolutions] = useState<any[]>([]);
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -96,35 +99,6 @@ export default function ParticipantDetail() {
         const { userDetails, ...rest } = response?.result?.data?.[0]
         let participantData = { ...(userDetails || {}), ...rest, accountUserStatus: userDetails?.status }
 
-        if (participantData?.status === STATUS.COMPLETED) {
-          // Verify participant completion conditions and perform certificate/graduation actions
-          const completionActionResult = await verifyParticipantCompletionActions({
-            participantData,
-            userId: user?.id
-          });
-
-          if (completionActionResult.success) {
-            try {
-              const refreshedResponse = await getParticipantsList({
-                entityId: participantId,
-                userId: user?.id,
-              });
-              const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
-
-              if (refreshedRow) {
-                const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
-                participantData = {
-                  ...(refreshedUserDetails || {}),
-                  ...refreshedRest,
-                  accountUserStatus: refreshedUserDetails?.status,
-                };
-              }
-            } catch (refreshError) {
-              logger.log('Best-effort participant refresh failed:', refreshError);
-            }
-          }
-        }
-
         setParticipant(participantData);
         setNavbarData({
           subtitle: participantData?.name,
@@ -145,6 +119,8 @@ export default function ParticipantDetail() {
     useCallback(() => {
       fetchEntityDetails();
       return () => {
+        setActiveTab("intervention-plan")
+        setSolutions([]);
         setProjectData(null);
         setNavbarData(null);
         setParticipant(undefined);
@@ -216,8 +192,47 @@ export default function ParticipantDetail() {
     };
   }, [participant, status]);
 
+  useEffect(() => {
+    const fetchSolutions = async () => {
+      const solutionsData = await getTargetedSolutions({
+        type: 'observation',
+        'filter[keywords]': FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(','),
+      });    // Verify participant completion conditions and perform certificate/graduation actions
+      const completionActionResult = await verifyParticipantCompletionActions({
+        participantData: participant,
+        userId: user?.id as string,
+        solutions:solutionsData
+      });
+      setSolutions(solutionsData);
+      if (completionActionResult.success) {
+        setIsLoading(true);
+        try {
+          const refreshedResponse = await getParticipantsList({
+            entityId: participantId,
+            userId: user?.id as string,
+          });
+          const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
 
-  const handleProgressChange = (progress: number) => {
+          if (refreshedRow) {
+            const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
+            setParticipant({
+              ...(refreshedUserDetails || {}),
+              ...refreshedRest,
+              accountUserStatus: refreshedUserDetails?.status,
+            } as User);
+          }
+        } catch (refreshError) {
+          logger.log('Best-effort participant refresh failed:', refreshError);
+        }
+        setIsLoading(false);
+      }
+    }
+    if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && participant && participantId && user?.id && solutions.length === 0) {
+      fetchSolutions();
+    }
+  }, [updatedProgress]);
+
+  const handleProgressChange = async (progress: number) => {
     if (!hasProgressBaseline) {
       setHasProgressBaseline(true);
       return;
@@ -267,6 +282,7 @@ export default function ParticipantDetail() {
         projectData={projectData}
         // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
+        solutions={solutions}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
@@ -330,6 +346,7 @@ export default function ParticipantDetail() {
                       <Box mt="$6">
                         <AssessmentSurveys
                           participant={participant as ParticipantData}
+                          completionPercentage={updatedProgress || 0}
                         />
                       </Box>
                     )}
