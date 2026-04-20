@@ -118,7 +118,7 @@ export const theme = {
       'bgPrimary/10' : '#8B28421A',
       'bgPrimary/30' : '#f9fafb4d',
       previewBackground: '#E2E8F0',
-      // Preview mode - Social Protection accordion
+      // Preview mode - accordion
       socialProtectionAccordionBg: '#fff1f2',
       // Preview mode - optional task card states
       optionalTaskYellowBg: '#fffbeb',

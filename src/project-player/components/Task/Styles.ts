@@ -433,7 +433,7 @@ export const taskAccordionStyles = {
     flexWrap: 'wrap' as const,
     flex: 1,
   },
-  // Action required badge (Social Protection)
+  // Action required badge
   actionRequiredBadge: {
     space: 'xs' as const,
     alignItems: 'center' as const,

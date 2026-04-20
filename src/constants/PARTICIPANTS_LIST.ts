@@ -524,12 +524,16 @@ export const getParticipantsMenuItems: MenuItemData[] = [
 /**
  * Dropout reason options for participant dropout
  */
+export const OTHER_DROPOUT_REASON = 'Other';
+
 export const DROPOUT_REASON_OPTIONS = [
-  { label: 'Relocation', value: 'relocation' },
-  { label: 'Loss of Interest', value: 'loss_of_interest' },
-  { label: 'Did Not Meet Expectations', value: 'did_not_meet_expectations' },
-  { label: 'Education', value: 'education' },
-  { label: 'Employment', value: 'employment' },
-  { label: 'Pregnancy', value: 'pregnancy' },
-  { label: 'Other', value: 'other' },
+  { label: 'Personal / Family Reasons', value: 'Personal / Family Reasons' },
+  { label: 'Health Issues', value: 'Health Issues' },
+  { label: 'Financial Constraints', value: 'Financial Constraints' },
+  { label: 'Relocation', value: 'Relocation' },
+  { label: 'Found Other Employment', value: 'Found Other Employment' },
+  { label: 'Lost Interest / Motivation', value: 'Lost Interest / Motivation' },
+  { label: 'Refused to Participate', value: 'Refused to Participate' },
+  { label: 'Unknown / No Contact', value: 'Unknown / No Contact' },
+  { label: OTHER_DROPOUT_REASON, value: OTHER_DROPOUT_REASON },
 ];

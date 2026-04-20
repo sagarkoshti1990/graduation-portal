@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Button,
   ButtonText,
+  Heading,
   Input,
   InputField,
   Spinner,
@@ -11,13 +12,14 @@ import {
 import { loginStyles } from '../Styles';
 import AuthErrorMessage from './AuthErrorMessage';
 import PasswordInputField from './PasswordInputField';
+import PasswordValidationList from './PasswordValidationList';
+import { PasswordValidationLabels } from './passwordValidation';
 
 interface PasswordResetFormProps {
   identifier: string;
   newPassword: string;
   confirmPassword: string;
   identifierError?: string;
-  newPasswordError?: string;
   confirmPasswordError?: string;
   submitError?: string;
   isSubmitting?: boolean;
@@ -31,15 +33,15 @@ interface PasswordResetFormProps {
   onToggleConfirmPassword: () => void;
   onSubmit: () => void;
   onBackToLogin: () => void;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   identifierLabel: string;
   identifierPlaceholder: string;
   newPasswordLabel: string;
   confirmPasswordLabel: string;
   passwordPlaceholder: string;
   confirmPasswordPlaceholder: string;
-  passwordRulesText: string;
+  passwordRuleLabels: PasswordValidationLabels;
   sendOtpText: string;
   backToLoginText: string;
 }
@@ -49,7 +51,6 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
   newPassword,
   confirmPassword,
   identifierError,
-  newPasswordError,
   confirmPasswordError,
   submitError,
   isSubmitting = false,
@@ -71,15 +72,15 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
   confirmPasswordLabel,
   passwordPlaceholder,
   confirmPasswordPlaceholder,
-  passwordRulesText,
+  passwordRuleLabels,
   sendOtpText,
   backToLoginText,
 }) => {
   return (
     <VStack {...loginStyles.vstack} width="$full">
       <VStack {...loginStyles.vstack2} width="$full">
-        <Text {...loginStyles.text2}>{title}</Text>
-        <Text {...loginStyles.text3}>{description}</Text>
+        {title && <Heading {...loginStyles.heading}>{title}</Heading>}
+        {description && <Text {...loginStyles.text3}>{description}</Text>}
       </VStack>
 
       <VStack {...loginStyles.vstack3}>
@@ -101,12 +102,14 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         placeholder={passwordPlaceholder}
         value={newPassword}
         showPassword={showNewPassword}
-        error={newPasswordError}
         isDisabled={isSubmitting}
         returnKeyType="next"
         onChangeText={onNewPasswordChange}
         onToggleVisibility={onToggleNewPassword}
       />
+
+      <PasswordValidationList password={newPassword} labels={passwordRuleLabels} />
+
 
       <PasswordInputField
         label={confirmPasswordLabel}
@@ -120,8 +123,6 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         onToggleVisibility={onToggleConfirmPassword}
         onSubmitEditing={onSubmit}
       />
-
-      <Text {...loginStyles.text6}>{passwordRulesText}</Text>
 
       <AuthErrorMessage message={submitError} boxed />
 

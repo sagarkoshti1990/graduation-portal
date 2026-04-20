@@ -86,6 +86,7 @@ export interface ParticipantHeaderProps {
   onStatusUpdate?: (newStatus: string) => void;
   projectData?: ProjectData | null;
   onParticipantRefresh?: () => Promise<string | undefined> | string | undefined;
+  solutions?: any[];
 }
 
 export type SubCategory = {

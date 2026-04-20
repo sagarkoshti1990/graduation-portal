@@ -2928,7 +2928,7 @@ export const cardViewDataMap: Record<string, CardViewData> = {
           },
           {
             id: 'relocation',
-            label: 'admin.dropOuts.breakdown.reasons.relocationMigration',
+            label: 'admin.dropOuts.breakdown.reasons.relocation',
             color: '#F59E0B',
             count: 14,
             percentage: '21%',
@@ -3007,7 +3007,7 @@ export const cardViewDataMap: Record<string, CardViewData> = {
               },
               {
                 id: 'employment',
-                label: 'Found Employment',
+                label: 'Found Other Employment',
                 color: '#22C55E',
                 data: [
                   { x: 'Jan', y: 0 },
@@ -3026,7 +3026,7 @@ export const cardViewDataMap: Record<string, CardViewData> = {
               },
               {
                 id: 'health',
-                label: 'Health',
+                label: 'Health Issues',
                 color: '#8B5CF6',
                 data: [
                   { x: 'Jan', y: 0 },
@@ -3045,7 +3045,7 @@ export const cardViewDataMap: Record<string, CardViewData> = {
               },
               {
                 id: 'personal-family',
-                label: 'Personal/Family',
+                label: 'Personal / Family Reasons',
                 color: '#EF4444',
                 data: [
                   { x: 'Jan', y: 0 },
@@ -3090,13 +3090,13 @@ export const cardViewDataMap: Record<string, CardViewData> = {
             subtitle: 'Breakdown of why participants dropped out of the program',
           pie: {
             data: [
-                { label: 'Personal/Family Reasons', value: 26, color: '#EF4444' },
-                { label: 'Relocation/Migration', value: 14, color: '#F59E0B' },
+                { label: 'Personal / Family Reasons', value: 26, color: '#EF4444' },
+                { label: 'Relocation', value: 14, color: '#F59E0B' },
                 { label: 'Health Issues', value: 10, color: '#8B5CF6' },
                 { label: 'Found Other Employment', value: 8, color: '#22C55E' },
                 { label: 'Financial Constraints', value: 5, color: '#3B82F6' },
-                { label: 'Lost Interest/Motivation', value: 3, color: '#EC4899' },
-                { label: 'Unknown/No Contact', value: 2, color: '#94A3B8' },
+                { label: 'Lost Interest / Motivation', value: 3, color: '#EC4899' },
+                { label: 'Unknown / No Contact', value: 2, color: '#94A3B8' },
             ],
         },
       },

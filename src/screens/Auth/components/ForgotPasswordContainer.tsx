@@ -9,30 +9,21 @@ import {
 } from '../../../services/authenticationService';
 import PasswordResetForm from './PasswordResetForm';
 import OtpVerification from './OtpVerification';
+import {
+  isPasswordValid,
+  PasswordValidationLabels,
+} from './passwordValidation';
 
 type ForgotPasswordStep = 'FORM' | 'OTP';
 
 const OTP_TIMER_SECONDS = 60;
-
-const hasUppercase = /[A-Z]/;
-const hasLowercase = /[a-z]/;
-const hasNumber = /\d/;
-const hasSpecialCharacter = /[^A-Za-z0-9]/;
-const hasWhitespace = /\s/;
-
+const OTP_LENGTH = 6;
 const validatePassword = (password: string, message: string) => {
   if (!password.trim()) {
     return message;
   }
 
-  if (
-    password.length < 8 ||
-    !hasUppercase.test(password) ||
-    !hasLowercase.test(password) ||
-    !hasNumber.test(password) ||
-    !hasSpecialCharacter.test(password) ||
-    hasWhitespace.test(password)
-  ) {
+  if (!isPasswordValid(password)) {
     return message;
   }
 
@@ -46,7 +37,7 @@ const ForgotPasswordContainer: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(''));
+  const [otpValues, setOtpValues] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -119,6 +110,18 @@ const ForgotPasswordContainer: React.FC = () => {
 
   const otp = useMemo(() => otpValues.join(''), [otpValues]);
 
+  const passwordRuleLabels = useMemo<PasswordValidationLabels>(
+    () => ({
+      minLength: 'Minimum 8 characters',
+      uppercase: 'At least 1 uppercase letter (A-Z)',
+      lowercase: 'At least 1 lowercase letter (a-z)',
+      number: 'At least 1 number (0-9)',
+      specialCharacter: 'At least 1 special character (e.g. @, $, !, %, *, ?, &)',
+      noSpaces: 'No spaces allowed',
+    }),
+    []
+  );
+
   const handleBackToLogin = () => {
     resetToScreen('login');
   };
@@ -135,7 +138,7 @@ const ForgotPasswordContainer: React.FC = () => {
 
     try {
       await sendResetOtp(identifier.trim(), newPassword);
-      setOtpValues(Array(6).fill(''));
+      setOtpValues(Array(OTP_LENGTH).fill(''));
       setStep('OTP');
       setTimer(OTP_TIMER_SECONDS);
       setSubmitError('');
@@ -156,7 +159,7 @@ const ForgotPasswordContainer: React.FC = () => {
 
     try {
       await resendResetOtp(identifier.trim(), newPassword);
-      setOtpValues(Array(6).fill(''));
+      setOtpValues(Array(OTP_LENGTH).fill(''));
       setTimer(OTP_TIMER_SECONDS);
     } catch (error: any) {
       setSubmitError(error?.message || t('forgotPassword.resendOtpError'));
@@ -168,7 +171,7 @@ const ForgotPasswordContainer: React.FC = () => {
   const handleVerifyOtp = async () => {
     setSubmitError('');
 
-    if (otp.length !== 6) {
+    if (otp.length !== OTP_LENGTH) {
       setSubmitError(t('forgotPassword.invalidOtpLength'));
       return;
     }
@@ -189,7 +192,7 @@ const ForgotPasswordContainer: React.FC = () => {
   const handleOtpBack = () => {
     setStep('FORM');
     setSubmitError('');
-    setOtpValues(Array(6).fill(''));
+    setOtpValues(Array(OTP_LENGTH).fill(''));
   };
 
   return step === 'FORM' ? (
@@ -198,7 +201,6 @@ const ForgotPasswordContainer: React.FC = () => {
       newPassword={newPassword}
       confirmPassword={confirmPassword}
       identifierError={formErrors.identifier}
-      newPasswordError={formErrors.newPassword}
       confirmPasswordError={formErrors.confirmPassword}
       submitError={submitError}
       isSubmitting={isSendingOtp}
@@ -222,14 +224,14 @@ const ForgotPasswordContainer: React.FC = () => {
       onSubmit={handleSendOtp}
       onBackToLogin={handleBackToLogin}
       title={t('forgotPassword.title')}
-      description={t('forgotPassword.description')}
+      // description={t('forgotPassword.description')}
       identifierLabel={t('forgotPassword.identifierLabel')}
       identifierPlaceholder={t('forgotPassword.identifierPlaceholder')}
       newPasswordLabel={t('forgotPassword.newPassword')}
       confirmPasswordLabel={t('forgotPassword.confirmPassword')}
       passwordPlaceholder={t('forgotPassword.passwordPlaceholder')}
       confirmPasswordPlaceholder={t('forgotPassword.confirmPasswordPlaceholder')}
-      passwordRulesText={t('forgotPassword.passwordRules')}
+      passwordRuleLabels={passwordRuleLabels}
       sendOtpText={t('forgotPassword.sendOtp')}
       backToLoginText={t('forgotPassword.backToLogin')}
     />
@@ -240,7 +242,6 @@ const ForgotPasswordContainer: React.FC = () => {
       isVerifying={isVerifyingOtp}
       isResending={isResendingOtp}
       submitError={submitError}
-      isVerifyDisabled={otp.length !== 6 || isVerifyingOtp}
       canResend={timer === 0}
       onOtpChange={value => {
         setOtpValues(value.map(digit => digit.replace(/\D/g, '').slice(0, 1)));
@@ -250,16 +251,17 @@ const ForgotPasswordContainer: React.FC = () => {
       onResend={handleResendOtp}
       onBack={handleOtpBack}
       title={t('forgotPassword.otpTitle')}
-      description={t('forgotPassword.otpDescription', {
-        identifier: identifier.trim(),
-      })}
-      helperText={t('forgotPassword.otpHelperText')}
+      // description={t('forgotPassword.otpDescription', {
+      //   identifier: identifier.trim(),
+      // })}
+      // helperText={t('forgotPassword.otpHelperText')}
       resendPrompt={t('forgotPassword.resendPrompt')}
       resendText={t('forgotPassword.resendOtp')}
       resendAvailableText={t('forgotPassword.resendAvailable')}
       resendCountdownText={t('forgotPassword.otpExpiresIn')}
       verifyText={t('forgotPassword.verifyOtp')}
       backText={t('common.back')}
+      otpLength={OTP_LENGTH}
     />
   );
 };

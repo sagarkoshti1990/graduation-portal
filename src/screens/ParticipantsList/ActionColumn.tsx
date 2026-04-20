@@ -7,7 +7,11 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import { LucideIcon, Menu } from '@ui';
 import { styles as dataTableStyles } from '@components/DataTable/Styles';
-import { getParticipantsMenuItems, DROPOUT_REASON_OPTIONS } from '@constants/PARTICIPANTS_LIST';
+import {
+  getParticipantsMenuItems,
+  DROPOUT_REASON_OPTIONS,
+  OTHER_DROPOUT_REASON,
+} from '@constants/PARTICIPANTS_LIST';
 import logger from '@utils/logger';
 import { usePlatform } from '@utils/platform';
 import ObservationContent from '../Observation/ObservationContent';
@@ -146,7 +150,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     }
 
     // If "other" is selected, validate that custom reason is provided
-    if (selectedDropoutReason === 'other' && !customDropoutReason.trim()) {
+    if (selectedDropoutReason === OTHER_DROPOUT_REASON && !customDropoutReason.trim()) {
       const errorMessage =
         t('actions.enterCustomReason') || 'Please enter a custom reason';
       setDropoutValidationError(errorMessage);
@@ -164,7 +168,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     }
 
     // Determine the final reason to save
-    const finalReason = selectedDropoutReason === 'other'
+    const finalReason = selectedDropoutReason === OTHER_DROPOUT_REASON
       ? customDropoutReason
       : DROPOUT_REASON_OPTIONS.find(option => option.value === selectedDropoutReason)?.label || selectedDropoutReason;
 
@@ -313,7 +317,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
                 borderRadius="$md"
               />
 
-              {selectedDropoutReason === 'other' && (
+              {selectedDropoutReason === OTHER_DROPOUT_REASON && (
                 <Box mt="$3">
                   <Text
                     {...TYPOGRAPHY.label}

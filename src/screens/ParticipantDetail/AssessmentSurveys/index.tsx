@@ -12,10 +12,13 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { ENTITY_TYPE } from '@constants/ROLES';
-import { ENTITY_STATUS, STATUS, USER_STATUS } from '@constants/app.constant';
+import { ENTITY_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD, STATUS, USER_STATUS } from '@constants/app.constant';
+import { sortByNestedOrder } from '@utils/helper';
+import { solutionNamesOrder } from '@constants/app.constant';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
+  completionPercentage: number;
 }
 
 const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT];
@@ -25,7 +28,8 @@ const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPO
  * Displays assessment survey cards based on participant status
  */
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
-  participant
+  participant,
+  completionPercentage = 0
 }) => {
   const { t } = useLanguage();
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
@@ -37,7 +41,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore
-          'filter[keywords]': readOnlyAccessStatuses.includes(participant?.status) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
+          'filter[keywords]': (readOnlyAccessStatuses.includes(participant?.status) || (participant?.status === STATUS.IN_PROGRESS && completionPercentage >= GRADUATION_READINESS_PROGRESS_THRESHOLD)) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
           showReferenceFrom:true
         });
         const dataNew = await Promise.all(
@@ -61,8 +65,9 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
             }
           })
         );
+        const sortedData = sortByNestedOrder(dataNew, 'name', solutionNamesOrder);
         // Filter out failed items (nulls)
-        const filteredData = dataNew.filter(item => item !== null);
+        const filteredData = sortedData.filter(item => item !== null);
         setSolutions(filteredData);
       } catch (error) {
         logger.error('Error fetching solutions:', error);
@@ -73,7 +78,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     };
 
     fetchSolutions();
-  }, [participant?.id, participant?.onBoardedProjectId, participant?.status, participant?.accountUserStatus]);
+  }, [participant?.id, participant?.onBoardedProjectId, participant?.status, participant?.accountUserStatus, participant?.idpProgress?.completionPercentage]);
 
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({

@@ -289,7 +289,6 @@ const DevelopInterventionPlan: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        // const templatesData = await getProjectTemplates();
         const templatesData = await getProjectCategoryList();
 
         if (!isMounted) return;

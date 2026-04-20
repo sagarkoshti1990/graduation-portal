@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
-import { Box, Heading, Image, VStack } from '@ui';
+import { Box, Image, VStack } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { loginStyles } from './Styles';
 import logoImage from '../../assets/images/logo.png';
@@ -19,10 +19,8 @@ const ForgotPasswordScreen: React.FC = () => {
       >
         <Box {...loginStyles.box} $web-boxShadow={loginStyles.containerBoxShadow}>
           <VStack {...loginStyles.vstack}>
+            {/* @ts-ignore */}
             <Image {...loginStyles.imageLogo} source={logoImage} />
-            <Heading {...loginStyles.heading}>
-              {t('forgotPassword.heading')}
-            </Heading>
             <ForgotPasswordContainer />
           </VStack>
         </Box>
