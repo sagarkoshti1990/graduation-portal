@@ -6,14 +6,14 @@ import AuthErrorMessage from './AuthErrorMessage';
 
 interface PasswordInputFieldProps {
   label: string;
-  placeholder: string;
-  value: string;
-  showPassword: boolean;
+  placeholder?: string;
+  value?: string;
+  showPassword?: boolean;
   error?: string;
   isDisabled?: boolean;
   returnKeyType?: 'next' | 'done';
-  onChangeText: (value: string) => void;
-  onToggleVisibility: () => void;
+  onChangeText?: (value: string) => void;
+  onToggleVisibility? : () => void;
   onSubmitEditing?: () => void;
 }
 

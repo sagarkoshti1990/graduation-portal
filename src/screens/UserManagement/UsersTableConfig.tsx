@@ -223,7 +223,7 @@ const ActionsColumn: React.FC<{
     const directRole = (user as any)?.role?.toLowerCase();
     const hasDirectAdminRole = directRole === 'admin' || directRole === 'brac admin' || directRole?.includes('admin');
     
-    return hasAdminLabel || hasAdminTitle || hasDirectAdminRole;
+    return hasAdminLabel || hasAdminTitle || hasDirectAdminRole || user?.status?.toLowerCase() === 'inactive';
   })();
 
   const handleMenuSelect = (key: string) => {

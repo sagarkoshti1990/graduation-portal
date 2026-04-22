@@ -93,4 +93,5 @@ export const loginStyles = {
   text7: { fontSize: '$xs', color: '$textDark500' },
   text8: { fontSize: '$md', color: '$textDark800'},
   eyeIconButton: {position: 'absolute', right: 12, top: '50%', transform: [{ translateY: -12 }], padding: 4, zIndex: 1},
+  hiddenInput: { height: 0, width: 0, overflow: 'hidden' },
 } as const;

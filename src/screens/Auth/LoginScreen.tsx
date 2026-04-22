@@ -18,7 +18,7 @@ import {
   // CheckboxLabel, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   // CheckIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   Image,
-} from '@gluestack-ui/themed';
+} from '@ui';
 import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import LucideIcon from '@components/ui/LucideIcon';
@@ -216,7 +216,7 @@ const LoginScreen: React.FC = () => {
               {/* Email Input */}
               <VStack {...loginStyles.vstack3}>
                 <Text {...loginStyles.text4}>{t('login.username')}</Text>
-                <Input isDisabled={loading}>
+                <Input isDisabled={loading} isInvalid={!!error}>
                   <InputField
                     placeholder="your.email@brac.net"
                     value={email}
@@ -233,7 +233,7 @@ const LoginScreen: React.FC = () => {
               <VStack {...loginStyles.vstack4}>
                 <Text {...loginStyles.text5}>{t('login.password')}</Text>
                 <Box position="relative">
-                  <Input isDisabled={loading}>
+                  <Input isDisabled={loading} isInvalid={!!error}>
                     <InputField
                       placeholder="••••••••"
                       value={password}

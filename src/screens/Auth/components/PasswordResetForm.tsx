@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Box,
   Button,
   ButtonText,
   Heading,
@@ -82,7 +83,17 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         {title && <Heading {...loginStyles.heading}>{title}</Heading>}
         {description && <Text {...loginStyles.text3}>{description}</Text>}
       </VStack>
-
+      
+      <Box {...loginStyles.hiddenInput}>
+        <Input isDisabled={isSubmitting} isInvalid={!!identifierError}>
+          <InputField
+            placeholder={identifierPlaceholder}
+            autoCapitalize="none"
+            returnKeyType="next"
+          />
+        </Input>
+        <PasswordInputField label={newPasswordLabel}/>
+      </Box>
       <VStack {...loginStyles.vstack3}>
         <Text {...loginStyles.text4}>{identifierLabel}</Text>
         <Input isDisabled={isSubmitting} isInvalid={!!identifierError}>
@@ -118,7 +129,7 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         showPassword={showConfirmPassword}
         error={confirmPasswordError}
         isDisabled={isSubmitting}
-        returnKeyType="done"
+        // returnKeyType="done"
         onChangeText={onConfirmPasswordChange}
         onToggleVisibility={onToggleConfirmPassword}
         onSubmitEditing={onSubmit}

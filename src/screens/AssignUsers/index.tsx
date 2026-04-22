@@ -94,6 +94,7 @@ const selectedSupervisorId = String(
 const [participantsPage, setParticipantsPage] = useState(1);
 const [participantsPageSize, setParticipantsPageSize] = useState(5);
 const [participantsTotal, setParticipantsTotal] = useState(0);
+const [participantsRefreshKey, setParticipantsRefreshKey] = useState(0);
  // State for mapped participants from API
  const [mappedParticipants, setMappedParticipants] = useState<any[]>([]);
  const [isLoadingMappedParticipants, setIsLoadingMappedParticipants] = useState(false);
@@ -339,16 +340,8 @@ useEffect(() => {
 
      setMappedParticipants(mappedData);
 
-    // Remove newly assigned participants from the visible available list
-    // instead of triggering another identical fetch with the same filters.
-    const assignedParticipantIds = new Set(participantIds);
-    setParticipants((prev) =>
-      prev.filter(
-        (participant: any) =>
-          !assignedParticipantIds.has(String(participant.id || participant.value || ''))
-      )
-    );
-    setParticipantsTotal((prev) => Math.max(0, prev - participantIds.length));
+    // Refresh Step 2 available participants by triggering existing API fetch effect.
+    setParticipantsRefreshKey((prev) => prev + 1);
      setAssignedParticipants([]); // reset local assigned tracker; API is source of truth now
      
      // Return success indicator
@@ -614,6 +607,7 @@ useEffect(() => {
   participantFilterValues.filterByProvince,
   participantFilterValues.site,
   participantFilterValues.search,
+  participantsRefreshKey,
 ]);
 
 // Fetch mapped participants when LC is selected in Participant to LC flow
