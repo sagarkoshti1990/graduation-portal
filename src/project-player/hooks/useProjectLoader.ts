@@ -103,13 +103,13 @@ export const useProjectLoader = (
             ...pathwayData,
             children: pathwayData?.children?.map((child: any) => {
               let taskEntry = taskResult?.[child._id];
-
+              let newChildId = child._id;
               if (!taskEntry) {
                 const relation = data?.pillarCategoryRelation?.find(
                   (rel: any) => rel.pillarId === child._id,
                 );
 
-                const newChildId = relation?.selectedCategoryId;
+                newChildId = relation?.selectedCategoryId;
                 if (newChildId) {
                   taskEntry = taskResult?.[newChildId];
                 }
@@ -125,7 +125,8 @@ export const useProjectLoader = (
               return {
                 ...child,
                 tasks,
-                templateId
+                templateId,
+                categoryId: newChildId,
               };
             }),
           };

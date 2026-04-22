@@ -138,8 +138,8 @@ const ProjectComponent: React.FC = () => {
           // Determine if this is a task or project based on type
           const isProject = pillar.type === 'project';
           const isSocialProtectionPillar = pillar.tasks?.find((task:any) => task.isDeletable) as boolean;
-
           const templatePayload: any = {
+            categoryId: pillar.categoryId,
             templateId: pillar.templateId,
             ...(isProject
               ? { targetProjectName: pillar.name }
