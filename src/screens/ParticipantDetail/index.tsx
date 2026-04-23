@@ -278,6 +278,14 @@ export default function ParticipantDetail() {
         areAllTasksCompleted={areAllTasksCompleted}
         onStatusUpdate={newStatus => {
           setStatus(newStatus);
+          setParticipant((prev: User | undefined) =>
+            prev
+              ? ({
+                  ...prev,
+                  status: newStatus,
+                } as User)
+              : prev,
+          );
         }}
         projectData={projectData}
         // @ts-ignore

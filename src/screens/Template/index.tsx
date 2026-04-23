@@ -651,8 +651,7 @@ const DevelopInterventionPlan: React.FC = () => {
               <React.Fragment key={pillar._id}>
                 <VStack gap="$1" mb="$2">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
-                    {/* {t('template.categoryModal.categoryLabel')} */}
-                    Category of {pillar?.name}
+                    {t('template.categoryModal.categoryLabel', { pillarName: pillar?.name })}
                   </Text>
                   <Box {...(templateStyles.selectWrapper as any)}>
                     <Select
@@ -685,8 +684,7 @@ const DevelopInterventionPlan: React.FC = () => {
 
                 <VStack gap="$1" mb="$1">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
-                    {/* {t('template.categoryModal.subCategoryLabel')} */}
-                    Sub-Category of {pillar?.name}
+                    {t('template.categoryModal.subCategoryLabel', { pillarName: pillar?.name })}
                   </Text>
 
                   <Box

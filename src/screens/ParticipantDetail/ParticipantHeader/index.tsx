@@ -161,7 +161,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
     try {
       setIsCompletingProject(true);
-      if(participantProp.idpProgress.projectStatus !== PROJECT_STATUS.COMPLETED && participantProp.idpProgress.projectStatus !== PROJECT_STATUS.SUBMITTED) {
+      if(participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.COMPLETED && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED) {
         await completeProject(participantProp.idpProjectId);
       }
       setStatus(STATUS.COMPLETED);
@@ -171,6 +171,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       navigation.push('observation', { id: participantId, solutionId: solution.solutionId,submissionNumber:1 });
     } catch (error) {
       showAlert('error', t('participantDetail.header.projectCompleteFailure'))
+      console.log('error', error);
     } finally {
       setIsCompletingProject(false);
     }
