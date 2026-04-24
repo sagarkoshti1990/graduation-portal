@@ -529,7 +529,7 @@ export const OTHER_DROPOUT_REASON = 'Other';
 export const DROPOUT_REASON_OPTIONS = [
   { label: 'Personal / Family Reasons', value: 'Personal / Family Reasons' },
   { label: 'Health Issues', value: 'Health Issues' },
-  { label: 'Financial Constraints', value: 'Financial Constraints' },
+  // { label: 'Financial Constraints', value: 'Financial Constraints' },
   { label: 'Relocation', value: 'Relocation' },
   { label: 'Found Other Employment', value: 'Found Other Employment' },
   { label: 'Lost Interest / Motivation', value: 'Lost Interest / Motivation' },
