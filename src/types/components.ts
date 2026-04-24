@@ -65,6 +65,7 @@ export interface ColumnDef<T> {
   // Device-specific configuration
   mobileConfig?: MobileConfig; // Mobile-specific layout and visibility configuration
   desktopConfig?: DesktopConfig; // Desktop-specific visibility configuration
+  _th?:any;
 }
 
 export interface PaginationConfig {

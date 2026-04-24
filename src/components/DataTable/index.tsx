@@ -187,6 +187,7 @@ const TableHeader = <T,>({ columns, minWidth,_tableHeader,_th,_thText}: TableHea
         return (
           <Box
             {..._th}
+            {...column._th}
             key={column.key}
             flex={column.flex}
             width={column.width}
