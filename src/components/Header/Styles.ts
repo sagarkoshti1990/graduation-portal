@@ -10,6 +10,7 @@ export const stylesHeader = {
     borderBottomWidth: '$1' as const,
     borderBottomColor: '$borderDark200' as const,
     zIndex: 1,
+    minHeight:"$50"
   },
   title: {
     alignItems: 'center',

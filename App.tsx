@@ -11,16 +11,19 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { theme } from './src/config/theme';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function App() {
   const { colorMode } = useGlobal();
 
   return (
-    <GluestackUIProvider config={theme} colorMode={colorMode}>
-      <AuthProvider>
-        <AppNavigator />
-      </AuthProvider>
-    </GluestackUIProvider>
+    <SafeAreaProvider>
+      <GluestackUIProvider config={theme} colorMode={colorMode}>
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
+      </GluestackUIProvider>
+    </SafeAreaProvider>
   );
 }
 

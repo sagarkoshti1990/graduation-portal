@@ -57,7 +57,7 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla, mode }) => {
         link.download = decodeURIComponent(filename);
         
         // Set target to avoid navigation issues
-        link.target = '_self';
+        link.target = '_blank';
         
         // Append to body, click, and remove
         document.body.appendChild(link);

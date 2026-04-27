@@ -18,14 +18,17 @@ interface PlayerConfigProps {
   playerConfig: any;
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
+  afterSubmitCallback?: (event?: any) => void;
 }
 
-const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: PlayerConfigProps) => {
+const WebComponentPlayer = React.memo(({ playerConfig, getProgress, getToast, afterSubmitCallback }: PlayerConfigProps) => {
   const [loading, setLoading] = useState(true);
   const webViewRef = useRef<any>(null);
 
   // Native platform: Inject questionnaire-webcomponent into WebView
   useEffect(() => {
+    setLoading(true);
+
     if (!playerConfig) {
       logger.warn('No playerConfig provided');
       setLoading(false);
@@ -86,10 +89,12 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: P
               }));
             };
             
+            const ce = (typeof globalThis !== 'undefined' && globalThis.customElements) ? globalThis.customElements : null;
+
             // Check if custom element is available
-            if (typeof customElements === 'undefined' || !customElements.get('questionnaire-player-main')) {
-              if (customElements && customElements.whenDefined) {
-                customElements.whenDefined('questionnaire-player-main')
+            if (!ce || !ce.get('questionnaire-player-main')) {
+              if (ce && ce.whenDefined) {
+                ce.whenDefined('questionnaire-player-main')
                   .then(createPlayer)
                   .catch(function(err) {
                     window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -115,7 +120,7 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: P
         })();
         true;
       `;
-      console.log('injectedJS', injectedJS);
+      // console.log('injectedJS', injectedJS);
       webViewRef.current.injectJavaScript(injectedJS);
     };
 
@@ -136,10 +141,9 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: P
   const handleMessage = (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-      logger.info('Message from WebView:', message);
 
-      if (message.type === 'progress') {
-        getProgress(message.data);
+      if (message.type === 'PROGRESS') {
+        getProgress(message?.data?.percentage);
       } else if (message.type === 'TOAST') {
         getToast(message.data);
       } else if (message.type === 'domReady') {
@@ -149,6 +153,9 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: P
         setLoading(false);
       } else if (message.type === 'playerEvent') {
         logger.info('Player event received:', message.data);
+        if (message.data?.type === 'submissionSuccess' && afterSubmitCallback) {
+          afterSubmitCallback(message.data);
+        }
         if (message.data?.edata?.type === 'EXIT') {
           logger.info('Player exit event received');
         }
@@ -184,8 +191,7 @@ const WebComponentPlayer = React.memo(({ playerConfig, getProgress,getToast }: P
         style={styles.webView}
         onLoadEnd={() => {
           logger.info('WebView loaded');
-          setLoading(false);
-          // Don't set loading to false here - wait for player initialization
+          // Wait for player initialization message before hiding loader.
         }}
         onMessage={handleMessage}
         javaScriptEnabled={true}

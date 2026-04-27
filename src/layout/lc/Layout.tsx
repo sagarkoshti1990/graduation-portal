@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StatusBar } from 'react-native';
-import { SafeAreaView, ScrollView, useColorMode, VStack } from '@gluestack-ui/themed';
+import { ScrollView, useColorMode, VStack } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LcHeader from '@components/Header/LcHeader';
 import { stylesLayout } from './Styles';

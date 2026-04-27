@@ -3,11 +3,11 @@ import {
   Box,
   HStack,
   Pressable,
-  SafeAreaView,
   ScrollView,
   useColorMode,
   LucideIcon,
 } from '@ui';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AdminHeader from '@components/Header';
 import AdminSidebar from '@components/Sidebar/Sidebar';
@@ -16,6 +16,7 @@ import { usePlatform } from '@utils/platform';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import { theme } from '@config/theme';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
   const mode = useColorMode();
   const isDark = mode === 'dark';
+  const insets = useSafeAreaInsets();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // Determine if we're on mobile/tablet (< 768px)
   const { isMobile, isWeb } = usePlatform();
@@ -36,6 +38,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
     [pageName, t]
   );
   useDocumentTitle(pageTitle);
+  const safeAreaStyle = useMemo(
+    () => ({
+      flex: 1,
+      backgroundColor: isDark
+        ? theme.tokens.colors.backgroundDark950
+        : theme.tokens.colors.backgroundLight0,
+    }),
+    [isDark],
+  );
+  const scrollContentStyle = useMemo(
+    () => ({
+      ...layoutStyles.scrollContent,
+      paddingBottom: insets.bottom,
+    }),
+    [insets.bottom],
+  );
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
@@ -96,62 +114,67 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
 
   return (
     <SafeAreaView
-      {...layoutStyles.container}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      style={isWeb ? ({ height: '100vh' } as any) : undefined}
+      edges={['top', 'bottom']}
+      style={safeAreaStyle}
     >
-      {/* Sidebar */}
-      <AdminSidebar
-        isOpen={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        isMobile={isMobile}
-      />
-
-      {/* Desktop sidebar toggle (matches design: circular chevron at sidebar edge) */}
-      {isWeb && !isMobile && (
-        <Pressable
-          onPress={() => setDrawerOpen(!isDrawerOpen)}
-          style={layoutStyles.desktopSidebarToggleWrapper(isDrawerOpen)}
-        >
-          {(state: any) => {
-            const isHovered = state?.hovered || state?.pressed || false;
-            return (
-              <Box {...layoutStyles.desktopSidebarToggleButton(isHovered)}>
-                <LucideIcon
-                  name={isDrawerOpen ? 'ChevronLeft' : 'ChevronRight'}
-                  size={16}
-                  color={isHovered ? '$primary600' : '$textLight600'}
-                />
-              </Box>
-            );
-          }}
-        </Pressable>
-      )}
-
-      {/* Scrollable Content Area (Header + Main Content) */}
-      <ScrollView
-        flex={1}
-        contentContainerStyle={layoutStyles.scrollContent}
+      <Box
+        {...layoutStyles.container}
+        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+        style={isWeb ? ({ height: '100vh' } as any) : undefined}
       >
-        <HStack
+        {/* Sidebar */}
+        <AdminSidebar
+          isOpen={isDrawerOpen}
+          onClose={handleCloseDrawer}
+          isMobile={isMobile}
+        />
+
+        {/* Desktop sidebar toggle (matches design: circular chevron at sidebar edge) */}
+        {isWeb && !isMobile && (
+          <Pressable
+            onPress={() => setDrawerOpen(!isDrawerOpen)}
+            style={layoutStyles.desktopSidebarToggleWrapper(isDrawerOpen)}
+          >
+            {(state: any) => {
+              const isHovered = state?.hovered || state?.pressed || false;
+              return (
+                <Box {...layoutStyles.desktopSidebarToggleButton(isHovered)}>
+                  <LucideIcon
+                    name={isDrawerOpen ? 'ChevronLeft' : 'ChevronRight'}
+                    size={16}
+                    color={isHovered ? '$primary600' : '$textLight600'}
+                  />
+                </Box>
+              );
+            }}
+          </Pressable>
+        )}
+
+        {/* Scrollable Content Area (Header + Main Content) */}
+        <ScrollView
           flex={1}
-          width="$full"
-          flexDirection="column"
+          contentContainerStyle={scrollContentStyle}
         >
-          {/* @ts-ignore - Header */}
-          <Box {...layoutStyles.headerContent}>
-            <AdminHeader
-              showNotification={true}
-              // Hide hamburger menu on desktop; sidebar is controlled by the chevron toggler
-              onToggleSidebar={
-                isMobile ? () => setDrawerOpen(!isDrawerOpen) : undefined
-              }
-            />
-          </Box>
-          {/* @ts-ignore - Main Content */}
-          <Box {...layoutStyles.mainContent}>{children}</Box>
-        </HStack>
-      </ScrollView>
+          <HStack
+            flex={1}
+            width="$full"
+            flexDirection="column"
+          >
+            {/* @ts-ignore - Header */}
+            <Box {...layoutStyles.headerContent}>
+              <AdminHeader
+                showNotification={true}
+                // Hide hamburger menu on desktop; sidebar is controlled by the chevron toggler
+                onToggleSidebar={
+                  isMobile ? () => setDrawerOpen(!isDrawerOpen) : undefined
+                }
+              />
+            </Box>
+            {/* @ts-ignore - Main Content */}
+            <Box {...layoutStyles.mainContent}>{children}</Box>
+          </HStack>
+        </ScrollView>
+      </Box>
     </SafeAreaView>
   );
 };

@@ -274,13 +274,26 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       );
     };
   }, []);
-
   // Stable callback that uses ref - this won't change between renders
+  // Fix: Directly update progress state for native, do not rely on progressCallbackRef (which may not trigger UI updates in RN)
   const handleProgressUpdate = useCallback(
     (
       progressValue: number | { data: { percentage: number }; type: string },
     ) => {
-      progressCallbackRef.current?.(progressValue);
+      // Support both object (with percentage) and raw number input
+      let newProgress = 0;
+      if (
+        typeof progressValue === 'object' &&
+        progressValue &&
+        typeof (progressValue as any).data?.percentage === 'number'
+      ) {
+        newProgress = Math.round(
+          (progressValue as { data: { percentage: number } }).data.percentage
+        );
+      } else if (typeof progressValue === 'number') {
+        newProgress = Math.round(progressValue);
+      }
+      setProgress(newProgress);
     },
     [],
   );

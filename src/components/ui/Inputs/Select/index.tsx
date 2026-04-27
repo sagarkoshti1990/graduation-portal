@@ -429,7 +429,12 @@ function NativeSelect({
           value={displayValue}
           bg={bg}
           backgroundColor={bg}
-          editable={!disabled}
+          // Native: must behave like a dropdown trigger (not a text field).
+          editable={false}
+          // @ts-ignore - RN TextInput prop (forwarded by gluestack)
+          showSoftInputOnFocus={false}
+          // @ts-ignore - RN TextInput prop (forwarded by gluestack)
+          caretHidden={true}
           // @ts-ignore - writingDirection is a valid style prop but may not be in types
           style={{ writingDirection, backgroundColor: bg }}
           fontFamily="Inter"
