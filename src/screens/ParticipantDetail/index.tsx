@@ -36,6 +36,7 @@ import { ProjectData } from 'src/project-player/types/project.types';
 import logger from '@utils/logger';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { getTargetedSolutions } from '../../services/solutionService';
+import LogVisitModulePopup from './LogVisitModulePopup';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -196,41 +197,45 @@ export default function ParticipantDetail() {
     const fetchSolutions = async () => {
       const solutionsData = await getTargetedSolutions({
         type: 'observation',
-        'filter[keywords]': FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(','),
+        'filter[keywords]': `${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')},${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`,
       });    // Verify participant completion conditions and perform certificate/graduation actions
-      const completionActionResult = await verifyParticipantCompletionActions({
-        participantData: participant,
-        userId: user?.id as string,
-        solutions:solutionsData
-      });
-      setSolutions(solutionsData);
-      if (completionActionResult.success) {
-        setIsLoading(true);
-        try {
-          const refreshedResponse = await getParticipantsList({
-            entityId: participantId,
-            userId: user?.id as string,
-          });
-          const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
 
-          if (refreshedRow) {
-            const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
-            setParticipant({
-              ...(refreshedUserDetails || {}),
-              ...refreshedRest,
-              accountUserStatus: refreshedUserDetails?.status,
-            } as User);
+      setSolutions(solutionsData);
+      if (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
+        const completionActionResult = await verifyParticipantCompletionActions({
+          participantData: participant,
+          userId: user?.id as string,
+          solutions: solutionsData
+        });
+        if (completionActionResult.success) {
+          setIsLoading(true);
+          try {
+            const refreshedResponse = await getParticipantsList({
+              entityId: participantId,
+              userId: user?.id as string,
+            });
+            const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
+
+            if (refreshedRow) {
+              const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
+              setParticipant({
+                ...(refreshedUserDetails || {}),
+                ...refreshedRest,
+                accountUserStatus: refreshedUserDetails?.status,
+              } as User);
+            }
+          } catch (refreshError) {
+            logger.log('Best-effort participant refresh failed:', refreshError);
           }
-        } catch (refreshError) {
-          logger.log('Best-effort participant refresh failed:', refreshError);
+          setIsLoading(false);
         }
-        setIsLoading(false);
       }
     }
-    if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && participant && participantId && user?.id && solutions.length === 0) {
+
+    if (participant && participantId && user?.id && solutions.length === 0) {
       fetchSolutions();
     }
-  }, [updatedProgress]);
+  }, [updatedProgress, participant, participantId, solutions.length, user?.id]);
 
   const handleProgressChange = async (progress: number) => {
     if (!hasProgressBaseline) {
@@ -371,6 +376,12 @@ export default function ParticipantDetail() {
         participant={participant}
         isWeb={isWeb}
         onParticipantSaved={handleParticipantAddressSaved}
+      />
+      <LogVisitModulePopup
+        participant={participant as ParticipantData}
+        solutions={solutions}
+        observationLogsTitle={t('actions.observationLogs')}
+        noSolutionsMessage={t('logVisit.noSolutions')}
       />
     </Box>
   );

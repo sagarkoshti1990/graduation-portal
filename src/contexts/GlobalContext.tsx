@@ -17,6 +17,8 @@ interface GlobalContextType {
   setIsLoading: (loading: boolean) => void;
   colorMode: 'light' | 'dark';
   setColorMode: (mode: 'light' | 'dark') => void;
+  setGlobleComponent?:any,
+  globleComponent?:any
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
   const { isWeb } = usePlatform();
+  const [globleComponent,setGlobleComponent] = useState();
   useEffect(() => {
     // Load color mode preference
     const loadColorMode = async () => {
@@ -78,6 +81,8 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
     setIsLoading,
     colorMode,
     setColorMode: handleSetColorMode,
+    globleComponent,
+    setGlobleComponent
   };
 
   return (

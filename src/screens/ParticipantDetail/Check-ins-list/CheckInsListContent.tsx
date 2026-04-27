@@ -51,6 +51,7 @@ interface CheckInsListContentProps {
   }) => void;
   preSelectedSolution?: string;
   participant?: ParticipantData;
+  _container?:any
 }
 
 /**
@@ -63,7 +64,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   preSelectedSolution,
   onFormSelect,
   solutions: propSolutions,
-  participant: propParticipant
+  participant: propParticipant,
+  _container
 }) => {
   type IconMeta = {
     color?: string;
@@ -288,169 +290,167 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   }
 
   return (
-    <Box flex={1} bg="$accent100" width="100%">
-      <Container px="$3" py="$4" $md-px="$6" $md-py="$6">
-        {/* Submissions List */}
-        {selectedSolution ? (
-          <VStack {...logVisitStyles.cardsContainer}>
-            {submissionsLoading ? (
-              <Spinner size="large" color="$primary500" />
-            ) : submissions.length > 0 ? (
-              submissions.map((submission, index) => (
-                <Card
-                  key={submission._id || index}
-                  {...assessmentSurveyCardStyles.cardContainer}
-                  p="$4"
-                  $md-p="$5"
-                  width="100%"
-                  maxWidth="100%"
-                  $web-boxShadow="none"
-                >
-                  <VStack space="lg" width="100%">
-                    <HStack
-                      {...assessmentSurveyCardStyles.cardHeader}
-                      alignItems="flex-start"
-                      width="100%"
-                      space="md"
+    <Container px="$3" py="$4" $md-px="$6" $md-py="$6" {..._container}>
+      {/* Submissions List */}
+      {selectedSolution ? (
+        <VStack {...logVisitStyles.cardsContainer}>
+          {submissionsLoading ? (
+            <Spinner size="large" color="$primary500" />
+          ) : submissions.length > 0 ? (
+            submissions.map((submission, index) => (
+              <Card
+                key={submission._id || index}
+                {...assessmentSurveyCardStyles.cardContainer}
+                p="$4"
+                $md-p="$5"
+                width="100%"
+                maxWidth="100%"
+                $web-boxShadow="none"
+              >
+                <VStack space="lg" width="100%">
+                  <HStack
+                    {...assessmentSurveyCardStyles.cardHeader}
+                    alignItems="flex-start"
+                    width="100%"
+                    space="md"
+                  >
+                    <Box
+                      flexShrink={0}
+                      {...{
+                        ...assessmentSurveyCardStyles.iconContainer,
+                        bg: iconMeta?.color || '$primary500',
+                      }}
                     >
-                      <Box
-                        flexShrink={0}
-                        {...{
-                          ...assessmentSurveyCardStyles.iconContainer,
-                          bg: iconMeta?.color || '$primary500',
-                        }}
+                      <LucideIcon
+                        name={iconMeta?.icon || 'info'}
+                        size={24}
+                        color={iconMeta?.iconColor || '$white'}
+                      />
+                    </Box>
+                    <VStack flex={1} minWidth="$0" space="md" alignSelf="stretch">
+                      <HStack
+                        alignItems="flex-start"
+                        space="sm"
+                        flexWrap="wrap"
+                        width="100%"
                       >
-                        <LucideIcon
-                          name={iconMeta?.icon || 'info'}
-                          size={24}
-                          color={iconMeta?.iconColor || '$white'}
-                        />
-                      </Box>
-                      <VStack flex={1} minWidth="$0" space="md" alignSelf="stretch">
-                        <HStack
-                          alignItems="flex-start"
-                          space="sm"
-                          flexWrap="wrap"
-                          width="100%"
+                        <Text
+                          {...assessmentSurveyCardStyles.title}
+                          flexShrink={1}
                         >
-                          <Text
-                            {...assessmentSurveyCardStyles.title}
+                          {submission.observationName} #
+                          {submission.submissionNumber}
+                        </Text>
+                        {submission.status && (
+                          <Box flexShrink={0} mt="$0.5">
+                            <StatusBadge status={submission.status} />
+                          </Box>
+                        )}
+                      </HStack>
+                      <HStack
+                        alignItems="flex-start"
+                        space="xs"
+                        flexWrap="wrap"
+                        width="100%"
+                      >
+                        <Text
+                          {...assessmentSurveyCardStyles.description}
+                          flexShrink={0}
+                        >
+                          {t('logVisit.submissionDate')} :
+                        </Text>
+                        {submission.submissionDate && (
+                          <HStack
+                            alignItems="center"
+                            space="xs"
+                            flexWrap="wrap"
                             flexShrink={1}
+                            minWidth="$0"
                           >
-                            {submission.observationName} #
-                            {submission.submissionNumber}
-                          </Text>
-                          {submission.status && (
-                            <Box flexShrink={0} mt="$0.5">
-                              <StatusBadge status={submission.status} />
-                            </Box>
-                          )}
-                        </HStack>
-                        <HStack
-                          alignItems="flex-start"
-                          space="xs"
-                          flexWrap="wrap"
-                          width="100%"
-                        >
-                          <Text
-                            {...assessmentSurveyCardStyles.description}
-                            flexShrink={0}
-                          >
-                            {t('logVisit.submissionDate')} :
-                          </Text>
-                          {submission.submissionDate && (
-                            <HStack
-                              alignItems="center"
-                              space="xs"
-                              flexWrap="wrap"
+                            <LucideIcon
+                              name="Calendar"
+                              size={16}
+                              color="$textMutedForeground"
+                            />
+                            <Text
+                              {...assessmentSurveyCardStyles.description}
                               flexShrink={1}
-                              minWidth="$0"
                             >
-                              <LucideIcon
-                                name="Calendar"
-                                size={16}
-                                color="$textMutedForeground"
-                              />
-                              <Text
-                                {...assessmentSurveyCardStyles.description}
-                                flexShrink={1}
-                              >
-                                {new Date(
-                                  submission.submissionDate,
-                                ).toLocaleString(undefined, {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: true,
-                                })}
-                              </Text>
-                            </HStack>
-                          )}
-                        </HStack>
-                        <Button
-                          width="$full"
-                          $md-width="fit-content"
-                          alignSelf="stretch"
-                          $md-alignSelf="flex-start"
-                          // @ts-ignore
-                          variant={'outlineghost'}
-                          onPress={() =>
-                            onFormSelect
-                              ? onFormSelect(
-                                  submission,
-                                  solutionItem?.name || '',
-                                )
-                              : handleViewForm(submission.submissionNumber)
-                          }
-                        >
-                          <ButtonIcon as={LucideIcon} name="Eye" size={16} />
-                          <ButtonText {...assessmentSurveyCardStyles.buttonText}>
-                            {t('logVisit.viewForm')}
-                          </ButtonText>
-                        </Button>
-                      </VStack>
-                    </HStack>
-                  </VStack>
-                </Card>
-              ))
-            ) : (
-              !submissionsLoading && (
-                <Card
-                  {...assessmentSurveyCardStyles.emptyCard}
-                  width="100%"
-                  maxWidth="100%"
-                >
-                  <LucideIcon name={'Clock'} size={48} />
-                  <Text {...assessmentSurveyCardStyles.emptyCardTitale}>
-                    {t('logVisit.noCheckInsYet')}
-                  </Text>
-                  <Text {...assessmentSurveyCardStyles.emptyCardTitale} pt="$0">
-                    {t('logVisit.noCheckInsYetDescription')}
-                  </Text>
-                </Card>
-              )
-            )}
-          </VStack>
-        ) : (
-          <Box {...logVisitStyles.selectSolutionContainer} width="100%" px="$1">
-            <Card
-              {...assessmentSurveyCardStyles.cardContainer}
-              {...logVisitStyles.selectSolutionCard}
-              width="100%"
-              maxWidth="100%"
-              $web-boxShadow="none"
-            >
-              <LucideIcon name={'Info'} size={48} color="$textMutedForeground" />
-              <Text {...assessmentSurveyCardStyles.emptyCardTitale}>
-                {t('logVisit.selectFormTypeMessage')}
-              </Text>
-            </Card>
-          </Box>
-        )}
-      </Container>
-    </Box>
+                              {new Date(
+                                submission.submissionDate,
+                              ).toLocaleString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                              })}
+                            </Text>
+                          </HStack>
+                        )}
+                      </HStack>
+                      <Button
+                        width="$full"
+                        $md-width="fit-content"
+                        alignSelf="stretch"
+                        $md-alignSelf="flex-start"
+                        // @ts-ignore
+                        variant={'outlineghost'}
+                        onPress={() =>
+                          onFormSelect
+                            ? onFormSelect(
+                                submission,
+                                solutionItem?.name || '',
+                              )
+                            : handleViewForm(submission.submissionNumber)
+                        }
+                      >
+                        <ButtonIcon as={LucideIcon} name="Eye" size={16} />
+                        <ButtonText {...assessmentSurveyCardStyles.buttonText}>
+                          {t('logVisit.viewForm')}
+                        </ButtonText>
+                      </Button>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </Card>
+            ))
+          ) : (
+            !submissionsLoading && (
+              <Card
+                {...assessmentSurveyCardStyles.emptyCard}
+                width="100%"
+                maxWidth="100%"
+              >
+                <LucideIcon name={'Clock'} size={48} />
+                <Text {...assessmentSurveyCardStyles.emptyCardTitale}>
+                  {t('logVisit.noCheckInsYet')}
+                </Text>
+                <Text {...assessmentSurveyCardStyles.emptyCardTitale} pt="$0">
+                  {t('logVisit.noCheckInsYetDescription')}
+                </Text>
+              </Card>
+            )
+          )}
+        </VStack>
+      ) : (
+        <Box {...logVisitStyles.selectSolutionContainer} width="100%" px="$1">
+          <Card
+            {...assessmentSurveyCardStyles.cardContainer}
+            {...logVisitStyles.selectSolutionCard}
+            width="100%"
+            maxWidth="100%"
+            $web-boxShadow="none"
+          >
+            <LucideIcon name={'Info'} size={48} color="$textMutedForeground" />
+            <Text {...assessmentSurveyCardStyles.emptyCardTitale}>
+              {t('logVisit.selectFormTypeMessage')}
+            </Text>
+          </Card>
+        </Box>
+      )}
+    </Container>
   );
 };
 

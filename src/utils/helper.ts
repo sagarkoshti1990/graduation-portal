@@ -1,3 +1,4 @@
+import {Linking, Image, Platform} from "react-native"
 export function applyFilters(data: any[], filters: Record<string, any>): any[] {
   return data.filter(item => {
     return Object.keys(filters).every(key => {
@@ -100,4 +101,64 @@ export const sortByNestedOrder = (data: any[], path: string, order: string[], di
       ? indexA - indexB
       : indexB - indexA;
   });
+};
+
+
+export const openDownload = (assetSource: number | string,t?:any, showAlert?: any) => {
+  const uri =
+    typeof assetSource === 'string'
+      ? assetSource
+      : Image.resolveAssetSource(assetSource)?.uri;
+  
+  if (!uri) {
+    console.error('Download failed: URI is undefined');
+    showAlert?.('error', t('downloadForms.downloadUriError'));
+    return;
+  }
+  
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    try {
+      // For web, we need to handle the URL properly
+      // If the URI starts with /, it's a relative path on our server
+      const downloadUrl = uri.startsWith('/') 
+        ? uri 
+        : uri;
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Extract filename from URI and decode it
+      const pathParts = downloadUrl.split('/');
+      const filename = pathParts[pathParts.length - 1] || 'download';
+      link.download = decodeURIComponent(filename);
+      
+      // Set target to avoid navigation issues
+      link.target = '_self';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Download initiated successfully for:', filename);
+      showAlert('success', t('downloadForms.downloadSuccess'));
+    } catch (error) {
+      console.error('Download error:', error);
+      showAlert('error', t('downloadForms.downloadError'));
+      // Fallback: open in new tab
+      window.open(uri, '_blank');
+    }
+    return;
+  }
+  
+  // Native platforms
+  Linking.openURL(uri)
+    .then(() => {
+      showAlert('success', t?.('downloadForms.downloadSuccess'));
+    })
+    .catch(err => {
+      console.error('Failed to open URL:', err);
+      showAlert('error', t?.('downloadForms.downloadError'));
+    });
 };

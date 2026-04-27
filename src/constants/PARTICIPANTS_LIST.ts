@@ -503,6 +503,13 @@ export const PARTICIPANTS_DATA: ParticipantData[] = [
  */
 export const getParticipantsMenuItems: MenuItemData[] = [
   {
+    key: 'log-visit',
+    label: 'actions.logVisit',
+    textValue: 'Log visit',
+    iconName: 'ClipboardCheck',
+    iconColor: theme.tokens.colors.textForegroundColor,
+    iconSizeValue: 20,
+  },{
     key: 'view-log',
     label: 'actions.viewLog',
     textValue: 'View Log',

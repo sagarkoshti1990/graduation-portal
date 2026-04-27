@@ -8,6 +8,10 @@ import {
   Modal,
   LucideIcon,
   useAlert,
+  HStack,
+  Button,
+  ButtonIcon,
+  ButtonText,
 } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { profileStyles } from '@components/ui/Modal/Styles';
@@ -185,12 +189,13 @@ function ParticipantProfileModalInner({
         </Pressable>
       }
       size={isWeb ? 'sm' : 'lg'}
-      cancelButtonText={t('common.cancel')}
+      // cancelButtonText={t('common.cancel')}
       confirmButtonText={
         isEditingAddress ? t('participantDetail.profileModal.save') : undefined
       }
       onCancel={onClose}
       onConfirm={handleSaveAddress}
+      footerContent={<RenderFooterContent t={t}/>}
     >
       <VStack space="lg">
         <VStack space="xs" {...profileStyles.fieldSection}>
@@ -307,3 +312,17 @@ function ParticipantProfileModalInner({
 }
 
 export const ParticipantProfileModal = memo(ParticipantProfileModalInner);
+
+
+const RenderFooterContent = ({t}) => <HStack space='lg' flex="1">
+{/* @ts-ignore */}
+<Button variant='outlineghost' flex="1">
+  <ButtonIcon as={LucideIcon} name="FileText" />
+  <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
+</Button>
+{/* @ts-ignore */}
+<Button variant='outlineghost' flex="1">
+  <ButtonIcon as={LucideIcon} name="FileText" />
+  <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
+</Button>
+</HStack>;

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { HStack, Text, Box, VStack, Input, InputField, Modal, ButtonText, ButtonIcon, Button, Spinner, useAlert } from '@ui';
+import { HStack, Text, Box, VStack, Input, InputField, Modal, ButtonText, ButtonIcon, Button, Spinner, useAlert, Tooltip, TooltipContent, TooltipText } from '@ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -22,6 +22,7 @@ import { updateEntityDetails } from '../../services/participantService';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import Select from '@components/ui/Inputs/Select';
 import { AssessmentSurveyCardData, ParticipantData } from '@app-types/participant';
+import { openDownload } from '@utils/helper';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -214,6 +215,24 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
   const isReadOnlyStatus = participant?.status === STATUS.GRADUATED || participant?.status === STATUS.DROPOUT || participant?.userDetails?.status === USER_STATUS.INACTIVE;
   const isNotOnboarded = participant?.userDetails?.status === USER_STATUS.INACTIVE ? false : participant?.status === STATUS.NOT_ONBOARDED;
 
+  const renderButton = useCallback((triggerProps:any) =>
+    <Button
+      {...triggerProps}
+      // @ts-ignore
+      variant="ghost"
+      // @ts-ignore
+      onPress={(() => openDownload(process.env.LOG_VISIT_SCRIPT_S3_URL, t, showAlert))}
+    >
+      <ButtonIcon
+        as={LucideIcon}
+        name="Info"
+        size={16}
+        color={theme.tokens.colors.error.light}
+      />
+      {t('actions.downloadScript')}
+    </Button>
+    , [t, showAlert])
+
   return (
     <Box>
       <HStack {...dataTableStyles.cardActionsSection}>
@@ -242,7 +261,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         </Button>
         {!isReadOnlyStatus && (
           <Menu
-            items={getParticipantsMenuItems}
+            items={isNotOnboarded ? getParticipantsMenuItems.filter(e => !(isNotOnboarded && e.label === "actions.logVisit")) : getParticipantsMenuItems}
             placement="bottom right"
             offset={5}
             trigger={getCustomTrigger}
@@ -259,7 +278,16 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
           modalType === 'dropout'
             ? t('actions.confirmDropout') || 'Confirm Dropout'
             : modalType === 'log-visit'
-              ? t('actions.logVisit')
+              ? <HStack space='md' alignItems='center'>
+                {t('actions.logVisit')}
+                <Tooltip
+                  placement="bottom"
+                  trigger={renderButton}
+                >
+                  <TooltipContent backgroundColor='$textMutedForeground' rounded={"lg"}>
+                    <TooltipText>{t('actions.downloadParticipantEngagementScript')}</TooltipText>
+                  </TooltipContent>
+                </Tooltip></HStack>
               : modalType === 'view-log'
                 ? t('actions.observationLogs')
                 : ''
@@ -281,7 +309,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         onConfirm={modalType === 'dropout' ? (dropoutLoading ? undefined : handleDropoutConfirm) : undefined}
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
         bodyProps={modalType !== 'dropout' ? { padding: 0, paddingTop: 0, paddingBottom: 0 } : {}}
-        headerProps={modalType === 'log-visit' ? { paddingBottom: 0, paddingTop: "$2" } : {}}
+        headerProps={modalType === 'log-visit' ? { paddingBottom: 0, paddingTop: "$4" } : {}}
       >
         {modalType === 'dropout' && (
           <VStack space="lg">
@@ -381,7 +409,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
             ) : selectedSolutionId && modalType === 'log-visit' ? (
               <ObservationContent
                 participant={participant}
-                hideElements={{ header: ['title', 'backButton'] }}
+                hideElements={{ header: ['title', 'backButton', "progress-bar", "status-badge"] }}
                 _css={{ _header: { pageHeader: { _container: { "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" } } } }}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
