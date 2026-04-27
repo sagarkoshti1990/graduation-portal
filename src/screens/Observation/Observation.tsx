@@ -94,7 +94,8 @@ const Observation: React.FC = () => {
             "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
             "Country Code":{value: formatCountryCode(newData?.userDetails?.phone_code), readonly: false},
             "Country Code (For alternative number)":{value: formatCountryCode(alternatePhoneCode), readonly: false},
-          };
+            "Visit Date": { value: new Date().toISOString().split('T')[0], readonly: false },
+            };
           setUserData(preFillData);
         }
       } catch (error: any) {
