@@ -19,6 +19,7 @@ import { theme } from '@config/theme';
 import { updateParticipantAddress } from '../../services/participantService';
 import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { openDownload } from '@utils/helper';
 
 type ParticipantProfileModalProps = {
   isOpen: boolean;
@@ -195,7 +196,7 @@ function ParticipantProfileModalInner({
       }
       onCancel={onClose}
       onConfirm={handleSaveAddress}
-      footerContent={<RenderFooterContent t={t}/>}
+      footerContent={<RenderFooterContent participant={participant} />}
     >
       <VStack space="lg">
         <VStack space="xs" {...profileStyles.fieldSection}>
@@ -246,9 +247,9 @@ function ParticipantProfileModalInner({
                 </VStack>
               </VStack>
             ) : ( */}
-              <Text {...profileStyles.fieldValue}>
-                {editedAddress?.email || '-'}
-              </Text>
+            <Text {...profileStyles.fieldValue}>
+              {editedAddress?.email || '-'}
+            </Text>
             {/* )} */}
           </VStack>
         </VStack>
@@ -314,15 +315,28 @@ function ParticipantProfileModalInner({
 export const ParticipantProfileModal = memo(ParticipantProfileModalInner);
 
 
-const RenderFooterContent = ({t}) => <HStack space='lg' flex="1">
-{/* @ts-ignore */}
-<Button variant='outlineghost' flex="1">
-  <ButtonIcon as={LucideIcon} name="FileText" />
-  <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
-</Button>
-{/* @ts-ignore */}
-<Button variant='outlineghost' flex="1">
-  <ButtonIcon as={LucideIcon} name="FileText" />
-  <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
-</Button>
-</HStack>;
+const RenderFooterContent = ({ participant }: { participant: any }) => {
+  const { t } = useLanguage();
+  const { showAlert } = useAlert();
+  return <HStack space='lg' flex={1}>
+    {Array.isArray(participant?.consentFiles) && participant?.consentFiles.length > 0
+      // @ts-ignore
+      && <Button variant='outlineghost' flex="1"
+        onPress={() => openDownload(participant?.consentFiles?.[0]?.url,t,showAlert)}
+      >
+        <ButtonIcon as={LucideIcon} name="FileText" />
+        <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
+      </Button>
+    }
+    {/* @ts-ignore */}
+    {Array.isArray(participant?.slaFiles) && participant?.consentFiles.length > 0
+      // @ts-ignore
+      && <Button variant='outlineghost' flex="1"
+        onPress={() => openDownload(participant?.slaFiles?.[0]?.url,t,showAlert)}
+      >
+        <ButtonIcon as={LucideIcon} name="FileText" />
+        <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
+      </Button>
+    }
+  </HStack>
+};

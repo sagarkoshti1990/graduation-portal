@@ -377,12 +377,14 @@ export default function ParticipantDetail() {
         isWeb={isWeb}
         onParticipantSaved={handleParticipantAddressSaved}
       />
-      <LogVisitModulePopup
-        participant={participant as ParticipantData}
-        solutions={solutions}
-        observationLogsTitle={t('actions.observationLogs')}
-        noSolutionsMessage={t('logVisit.noSolutions')}
-      />
+      {solutions.length > 0 &&
+        <LogVisitModulePopup
+          participant={participant as ParticipantData}
+          solutions={solutions}
+          observationLogsTitle={t('actions.observationLogs')}
+          noSolutionsMessage={t('logVisit.noSolutions')}
+        />
+      }
     </Box>
   );
 }

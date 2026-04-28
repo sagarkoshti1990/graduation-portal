@@ -134,7 +134,7 @@ export const openDownload = (assetSource: number | string,t?:any, showAlert?: an
       link.download = decodeURIComponent(filename);
       
       // Set target to avoid navigation issues
-      link.target = '_self';
+      link.target = '_blank';
       
       // Append to body, click, and remove
       document.body.appendChild(link);
@@ -142,10 +142,10 @@ export const openDownload = (assetSource: number | string,t?:any, showAlert?: an
       document.body.removeChild(link);
       
       console.log('Download initiated successfully for:', filename);
-      showAlert('success', t('downloadForms.downloadSuccess'));
+      showAlert?.('success', t('downloadForms.downloadSuccess'));
     } catch (error) {
       console.error('Download error:', error);
-      showAlert('error', t('downloadForms.downloadError'));
+      showAlert?.('error', t('downloadForms.downloadError'));
       // Fallback: open in new tab
       window.open(uri, '_blank');
     }
@@ -155,10 +155,10 @@ export const openDownload = (assetSource: number | string,t?:any, showAlert?: an
   // Native platforms
   Linking.openURL(uri)
     .then(() => {
-      showAlert('success', t?.('downloadForms.downloadSuccess'));
+      showAlert?.('success', t?.('downloadForms.downloadSuccess'));
     })
     .catch(err => {
       console.error('Failed to open URL:', err);
-      showAlert('error', t?.('downloadForms.downloadError'));
+      showAlert?.('error', t?.('downloadForms.downloadError'));
     });
 };
