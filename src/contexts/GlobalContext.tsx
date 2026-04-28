@@ -35,7 +35,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
   const { isWeb } = usePlatform();
   const [globleComponent,setGlobleComponent] = useState();
-  const [refComponent,setrefComponent] = useState(null)
+  const [refComponent,setrefComponent] = useState<{bottom:ReactNode}>()
   useEffect(() => {
     // Load color mode preference
     const loadColorMode = async () => {
