@@ -9,6 +9,7 @@ import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import logger from '@utils/logger';
+import { useGlobal } from '@contexts/GlobalContext';
 
 /**
  * LC Layout Component - Enhanced Header Integration
@@ -31,9 +32,10 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   const { logout, navbarData } = useAuth();
   const { t } = useLanguage();
   const navigation = useNavigation();
+  const {refComponent} = useGlobal()
 
   // Set document title for web - memoize to avoid recalculation
-  const pageTitle = useMemo(() => 
+  const pageTitle = useMemo(() =>
     pageName ? t(`lc.pageTitle.${pageName}`) : title,
     [pageName, title, t]
   );
@@ -42,19 +44,19 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   // Handle menu item selection - uses route from menu config for navigation
   const handleMenuSelect = (key: string | undefined) => {
     logger.log('Menu selected:', key);
-    
+
     if (key === 'logout') {
       logout();
       return;
     }
-    
+
     // Find the menu item in LC_MENU_OPTIONS and use its route for navigation
     const menuItem = LC_MENU_OPTIONS.find(item => item.key === key);
     if (menuItem?.route) {
       navigation.navigate(menuItem.route as never);
     }
   };
-
+  
   return (
     <SafeAreaView
       style={stylesLayout.safeAreaView}
@@ -74,7 +76,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
         - showLanguage/showTheme: Disabled for LC layout
       */}
       <LcHeader
-        title={title} 
+        title={title}
         subTitle={navbarData?.subtitle}
         hamburgerMenuItems={LC_MENU_OPTIONS}
         onHamburgerMenuSelect={handleMenuSelect}
@@ -99,6 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
           </ScrollView>
         );
       })()}
+      {refComponent?.bottom || ""}
     </SafeAreaView>
   );
 };

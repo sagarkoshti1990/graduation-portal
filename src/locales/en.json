@@ -1837,7 +1837,9 @@
       "streetRequired": "Street address is required.",
       "emailRequired": "Email is required.",
       "emailInvalid": "Please enter a valid email address.",
-      "saveConfigurationError": "Unable to save. Program configuration is missing."
+      "saveConfigurationError": "Unable to save. Program configuration is missing.",
+      "viewConsent" : "View Consent",
+      "viewSLA":"View SLA"
     },
     "pathways": {
       "employment": "Employment Pathway",
@@ -1941,6 +1943,9 @@
     "customReasonLabel": "Please specify",
     "customReasonPlaceholder": "Enter custom reason.",
     "enterCustomReason": "Please enter a custom reason",
+    "downloadScript":"Download Script",
+    "downloadParticipantEngagementScript": "Download Participant Engagement Script",
+    "viewVisitLogs":"View Visit Logs",
     "dropoutReasons": {
       "personalFamilyReasons": "Personal / Family Reasons",
       "healthIssues": "Health Issues",
