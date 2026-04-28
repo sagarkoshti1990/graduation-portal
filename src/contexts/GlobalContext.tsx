@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useRef,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
@@ -19,6 +20,8 @@ interface GlobalContextType {
   setColorMode: (mode: 'light' | 'dark') => void;
   setGlobleComponent?:any,
   globleComponent?:any
+  refComponent?:any
+  setrefComponent?:any
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
@@ -32,6 +35,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
   const { isWeb } = usePlatform();
   const [globleComponent,setGlobleComponent] = useState();
+  const [refComponent,setrefComponent] = useState(null)
   useEffect(() => {
     // Load color mode preference
     const loadColorMode = async () => {
@@ -82,7 +86,8 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
     colorMode,
     setColorMode: handleSetColorMode,
     globleComponent,
-    setGlobleComponent
+    setGlobleComponent,
+    refComponent,setrefComponent
   };
 
   return (

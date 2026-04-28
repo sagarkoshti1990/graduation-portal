@@ -32,6 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   const { logout, navbarData } = useAuth();
   const { t } = useLanguage();
   const navigation = useNavigation();
+  const {refComponent} = useGlobal()
 
   // Set document title for web - memoize to avoid recalculation
   const pageTitle = useMemo(() =>
@@ -55,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
       navigation.navigate(menuItem.route as never);
     }
   };
-
+  
   return (
     <SafeAreaView
       style={stylesLayout.safeAreaView}
@@ -100,6 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
           </ScrollView>
         );
       })()}
+      {refComponent?.bottom || ""}
     </SafeAreaView>
   );
 };

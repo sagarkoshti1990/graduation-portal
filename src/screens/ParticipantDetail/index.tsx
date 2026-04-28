@@ -37,6 +37,7 @@ import logger from '@utils/logger';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { getTargetedSolutions } from '../../services/solutionService';
 import LogVisitModulePopup from './LogVisitModulePopup';
+import { useGlobal } from '@contexts/GlobalContext';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -59,6 +60,7 @@ export default function ParticipantDetail() {
   const { user, setNavbarData } = useAuth()
   const { t } = useLanguage();
   const { isWeb } = usePlatform();
+  const {setrefComponent} = useGlobal()
   // Extract the id parameter from the route
   const participantId = route.params?.id;
   const [isLoading, setIsLoading] = useState(true);
@@ -260,6 +262,20 @@ export default function ParticipantDetail() {
     [],
   );
 
+  useEffect(() => {
+    if (setrefComponent) {
+      setrefComponent({bottom :
+        solutions.length > 0 ? (
+          <LogVisitModulePopup
+            participant={participant as ParticipantData}
+            solutions={solutions}
+            observationLogsTitle={t('actions.observationLogs')}
+            noSolutionsMessage={t('logVisit.noSolutions')}
+          />
+        ) : null})
+    }
+  }, [setrefComponent, solutions.length, participant, t]);
+
   const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
 
   if (isLoading) {
@@ -377,14 +393,6 @@ export default function ParticipantDetail() {
         isWeb={isWeb}
         onParticipantSaved={handleParticipantAddressSaved}
       />
-      {solutions.length > 0 &&
-        <LogVisitModulePopup
-          participant={participant as ParticipantData}
-          solutions={solutions}
-          observationLogsTitle={t('actions.observationLogs')}
-          noSolutionsMessage={t('logVisit.noSolutions')}
-        />
-      }
     </Box>
   );
 }
