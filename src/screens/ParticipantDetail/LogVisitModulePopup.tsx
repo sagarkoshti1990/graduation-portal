@@ -38,7 +38,7 @@ function LogVisitModulePopupComponent({
           const solutionsData = await getTargetedSolutions({
             type: 'observation',
             'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
-          });    // Verify participant completion conditions and perform certificate/graduation actions
+          });
     
           setLogVisitSolution(solutionsData?.[0]);
         } catch (err) {
