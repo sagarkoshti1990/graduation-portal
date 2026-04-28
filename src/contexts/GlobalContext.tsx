@@ -20,8 +20,8 @@ interface GlobalContextType {
   setColorMode: (mode: 'light' | 'dark') => void;
   setGlobleComponent?:any,
   globleComponent?:any
-  refComponent?:any
-  setrefComponent?:any
+  refComponent?:{bottom:ReactNode}
+  setrefComponent?: (component: {bottom:ReactNode}) => void;
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
