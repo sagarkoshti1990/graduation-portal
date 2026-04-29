@@ -100,6 +100,7 @@ function LogVisitModulePopupComponent({
 
   const handleCloseModal = useCallback(() => {
     setSelectedSolutionId('');
+    setSelectedSubmissionNumber(null);
   }, []);
 
   const handleCloseObservation = useCallback(() => {
@@ -108,7 +109,7 @@ function LogVisitModulePopupComponent({
     } else {
       setSelectedSubmissionNumber(null);
     }
-  }, []);
+  }, [buttonText,handleCloseModal]);
 
   const handleSelectSubmission = useCallback((submission: { submissionNumber: number }) => {
     setSelectedSubmissionNumber(submission.submissionNumber);
@@ -132,7 +133,7 @@ function LogVisitModulePopupComponent({
       {buttonText && <ButtonText>{buttonText}</ButtonText>}
     </Button>
     , [handleOpenLogVisit, buttonText])
-
+console.log(selectedSubmissionNumber)
   return (
     <>
       <Tooltip
