@@ -318,25 +318,60 @@ export const ParticipantProfileModal = memo(ParticipantProfileModalInner);
 const RenderFooterContent = ({ participant }: { participant: any }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const consentFile = getFileUrl(participant?.consentFiles);
+  const slaFile = getFileUrl(participant?.slaFiles);
+
   return <HStack space='lg' flex={1}>
-    {Array.isArray(participant?.consentFiles) && participant?.consentFiles.length > 0
+    {consentFile !== ""
       // @ts-ignore
       && <Button variant='outlineghost' flex="1"
-        onPress={() => openDownload(participant?.consentFiles?.[0]?.url,t,showAlert)}
+        onPress={() => openDownload(consentFile,t,showAlert)}
       >
         <ButtonIcon as={LucideIcon} name="FileText" />
         <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
       </Button>
     }
     {/* @ts-ignore */}
-    {Array.isArray(participant?.slaFiles) && participant?.consentFiles.length > 0
+    {slaFile !== ""
       // @ts-ignore
       && <Button variant='outlineghost' flex="1"
-        onPress={() => openDownload(participant?.slaFiles?.[0]?.url,t,showAlert)}
+        onPress={() => openDownload(slaFile,t,showAlert)}
       >
         <ButtonIcon as={LucideIcon} name="FileText" />
         <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
       </Button>
     }
   </HStack>
+};
+
+const getFileUrl = (files:any) => {
+  if (!Array.isArray(files) || files.length === 0) {
+    return "";
+  }
+
+  const file = files.find((item) => {
+    // object format
+    if (typeof item === "object" && item?.url) {
+      return true;
+    }
+
+    // string format
+    if (typeof item === "string" && item.trim()) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (!file) {
+    return "";
+  }
+
+  // return url from object
+  if (typeof file === "object") {
+    return file.url || "";
+  }
+
+  // return string directly
+  return file;
 };

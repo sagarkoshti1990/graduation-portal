@@ -694,26 +694,38 @@ const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   // Render file upload modal (HEAD logic)
-  const renderUploadModal = () => (
-    <FileUploadModal
+  const renderUploadModal = () => {
+    let maxFiles, allowedFileTypes;
+    if (isOnboardingTask) {
+      const slaConsentTasks = [process.env.UPLOAD_CONSENT_TASK_ID, process.env.UPLOAD_SLA_TASK_ID];
+      if (slaConsentTasks.includes(task?.referenceId)) {
+        maxFiles = 1;
+        allowedFileTypes = ['pdf']
+      }
+    }
+    maxFiles = task?.metaInformation?.maxFiles || maxFiles
+    allowedFileTypes = task?.metaInformation?.allowedFileTypes as string[] | undefined || allowedFileTypes
+    
+    return <FileUploadModal
       isOpen={showUploadModal}
       onClose={() => setShowUploadModal(false)}
       taskName={task?.name}
       participantName={!isChildOfProject ? config.profileInfo?.name : undefined}
       existingAttachments={task?.attachments}
+      maxFileUploadCount={maxFiles}
+      allowedFileTypes={allowedFileTypes}
       onUpload={method => {
         logger.info('Upload method selected:', method);
       }}
       onConfirm={async (files) => {
         setIsStatusUpdating(true);
         try {
-          
-          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, files);
-
+          const newFiles = files?.filter(file => !task?.attachments?.find(file1 => file?.url === file1?.url));
+          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, newFiles,(maxFiles && maxFiles > 1) ? task?.attachments:[]);
           if (data?.success) {
             // Show success toast with task-specific message
             let updates;
-            const attachedFiles = data?.data?.attachments?.map((file: any) => file.url) ?? [];
+            const attachedFiles = data?.data?.attachments?.map((file: any) => file) ?? [];
             const thisDate = new Date().toISOString();
             if (isOnboardingTask && attachedFiles.length > 0) {
               const slaConsentTasks = [process.env.UPLOAD_CONSENT_TASK_ID, process.env.UPLOAD_SLA_TASK_ID];
@@ -724,15 +736,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 }
                 if (task?.referenceId === process.env.UPLOAD_CONSENT_TASK_ID) {
                   updates = {
-                          consentFiles: attachedFiles,
-                          consentUpdloadedAt: thisDate,
-                        }
-                } 
+                    consentFiles: attachedFiles,
+                    consentUpdloadedAt: thisDate,
+                  }
+                }
                 if (task?.referenceId === process.env.UPLOAD_SLA_TASK_ID) {
                   updates = {
-                          slaFiles: attachedFiles,
-                          slaUpdloadedAt: thisDate,
-                        }
+                    slaFiles: attachedFiles,
+                    slaUpdloadedAt: thisDate,
+                  }
                 }
                 try {
                   await updateEntityDetails({
@@ -742,15 +754,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   });
 
                   await createOrUpdateProgramUserMapping({
-                      userId: participantId,
-                      programId: process.env.GLOBAL_LC_PROGRAM_ID,
-                      metaInformation: updates,
-                      status: STATUS.NOT_ONBOARDED
-                    });
-                  }catch {
-                    showError(t('projectPlayer.evidenceUploadFailed'));
-                    return;
-                 }
+                    userId: participantId,
+                    programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                    metaInformation: updates,
+                    status: STATUS.NOT_ONBOARDED
+                  });
+                } catch {
+                  showError(t('projectPlayer.evidenceUploadFailed'));
+                  return;
+                }
               }
             }
             showSuccess(t('projectPlayer.evidenceUploaded'));
@@ -763,7 +775,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         }
       }}
     />
-  );
+  };
 
   // Render evidence preview modal (for viewing uploaded files in Edit mode)
   const renderPreviewModal = () => (
