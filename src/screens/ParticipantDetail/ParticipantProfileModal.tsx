@@ -8,6 +8,10 @@ import {
   Modal,
   LucideIcon,
   useAlert,
+  HStack,
+  Button,
+  ButtonIcon,
+  ButtonText,
 } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { profileStyles } from '@components/ui/Modal/Styles';
@@ -15,6 +19,7 @@ import { theme } from '@config/theme';
 import { updateParticipantAddress } from '../../services/participantService';
 import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { openDownload } from '@utils/helper';
 
 type ParticipantProfileModalProps = {
   isOpen: boolean;
@@ -185,12 +190,13 @@ function ParticipantProfileModalInner({
         </Pressable>
       }
       size={isWeb ? 'sm' : 'lg'}
-      cancelButtonText={t('common.cancel')}
+      // cancelButtonText={t('common.cancel')}
       confirmButtonText={
         isEditingAddress ? t('participantDetail.profileModal.save') : undefined
       }
       onCancel={onClose}
       onConfirm={handleSaveAddress}
+      footerContent={<RenderFooterContent participant={participant} />}
     >
       <VStack space="lg">
         <VStack space="xs" {...profileStyles.fieldSection}>
@@ -241,9 +247,9 @@ function ParticipantProfileModalInner({
                 </VStack>
               </VStack>
             ) : ( */}
-              <Text {...profileStyles.fieldValue}>
-                {editedAddress?.email || '-'}
-              </Text>
+            <Text {...profileStyles.fieldValue}>
+              {editedAddress?.email || '-'}
+            </Text>
             {/* )} */}
           </VStack>
         </VStack>
@@ -307,3 +313,65 @@ function ParticipantProfileModalInner({
 }
 
 export const ParticipantProfileModal = memo(ParticipantProfileModalInner);
+
+
+const RenderFooterContent = ({ participant }: { participant: any }) => {
+  const { t } = useLanguage();
+  const { showAlert } = useAlert();
+  const consentFile = getFileUrl(participant?.consentFiles);
+  const slaFile = getFileUrl(participant?.slaFiles);
+
+  return <HStack space='lg' flex={1}>
+    {consentFile !== ""
+      // @ts-ignore
+      && <Button variant='outlineghost' flex="1"
+        onPress={() => openDownload(consentFile,t,showAlert)}
+      >
+        <ButtonIcon as={LucideIcon} name="FileText" />
+        <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
+      </Button>
+    }
+    {/* @ts-ignore */}
+    {slaFile !== ""
+      // @ts-ignore
+      && <Button variant='outlineghost' flex="1"
+        onPress={() => openDownload(slaFile,t,showAlert)}
+      >
+        <ButtonIcon as={LucideIcon} name="FileText" />
+        <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
+      </Button>
+    }
+  </HStack>
+};
+
+const getFileUrl = (files:any) => {
+  if (!Array.isArray(files) || files.length === 0) {
+    return "";
+  }
+
+  const file = files.find((item) => {
+    // object format
+    if (typeof item === "object" && item?.url) {
+      return true;
+    }
+
+    // string format
+    if (typeof item === "string" && item.trim()) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (!file) {
+    return "";
+  }
+
+  // return url from object
+  if (typeof file === "object") {
+    return file.url || "";
+  }
+
+  // return string directly
+  return file;
+};

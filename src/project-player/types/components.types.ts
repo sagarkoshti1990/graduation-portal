@@ -201,6 +201,16 @@ export interface FileUploadModalProps {
   participantName?: string;
   existingAttachments?: any[];
   isConsent?: boolean;
+  /**
+   * Maximum total upload count allowed for this task.
+   * This limit is applied to "existing attachments + newly selected files".
+   */
+  maxFileUploadCount?: number;
+  /**
+   * Allowed file types for validation.
+   * Supports MIME patterns (e.g. "image/*", "application/pdf") and extensions (e.g. ".doc", ".docx").
+   */
+  allowedFileTypes?: string[];
 }
 
 export interface UploadMethodOptionProps {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { VStack, Box, ScrollView, Text, Spinner } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { assessmentSurveysStyles } from './Styles';
@@ -143,4 +143,4 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   );
 };
 
-export default AssessmentSurveys;
+export default memo(AssessmentSurveys);

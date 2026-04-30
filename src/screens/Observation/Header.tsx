@@ -30,29 +30,33 @@ const Header: React.FC<HeaderProps> = ({ title, progress, participantInfo, onBac
 
   return (
     <PageHeader
-    _content={{ "$md-px": '$0', px: '$0', py: '$0' }}
-    _container={{ "$md-px": '$6', px: '$4', py: '$4' }}
-    {..._css?.pageHeader}
-    {...(!hideElements?.includes('backButton') ? { onBackPress, backButtonText: t('common.back') } : {})}
+      _content={{ "$md-px": '$0', px: '$0', py: '$0' }}
+      _container={{ "$md-px": '$6', px: '$4', py: '$4' }}
+      {..._css?.pageHeader}
+      {...(!hideElements?.includes('backButton') ? { onBackPress, backButtonText: t('common.back') } : {})}
     >
       {/* Title and Progress Badge Row */}
-      <HStack
-        {...observationStyles.titleAndProgressContainer}
-      >
-        {!hideElements?.includes('title') ? (
-          <Text {...TYPOGRAPHY.h4}>
-            {title}
-          </Text>
-        ) : null}
-        <StatusBadge status={status} preFix={<Text {...TYPOGRAPHY.caption}> {progress}% </Text>} />
-      </HStack>
-
+      {!hideElements?.includes('status-badge') || !hideElements?.includes('title') ?
+        <HStack
+          {...observationStyles.titleAndProgressContainer}
+        >
+          {!hideElements?.includes('title') ? (
+            <Text {...TYPOGRAPHY.h4}>
+              {title}
+            </Text>
+          ) : null}
+          {!hideElements?.includes('status-badge') ? (
+            <StatusBadge status={status} preFix={<Text {...TYPOGRAPHY.caption}> {progress}% </Text>} />
+          ) : null}
+        </HStack>
+        : null}
       {/* Progress Bar */}
-      <Box {...observationStyles.progressBarContainer}>
-        <Progress value={progress} {...observationStyles.progressBar}>
-          <ProgressFilledTrack {...observationStyles.progressBarFill} />
-        </Progress>
-      </Box>
+      {!hideElements?.includes('progress-bar') ? (
+        <Box {...observationStyles.progressBarContainer}>
+          <Progress value={progress} {...observationStyles.progressBar}>
+            <ProgressFilledTrack {...observationStyles.progressBarFill} />
+          </Progress>
+        </Box>) : null}
 
       {/* Participant Name and Date */}
       {participantInfo && (

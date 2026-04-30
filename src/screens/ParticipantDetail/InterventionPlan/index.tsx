@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback,memo } from 'react';
 import { Box, VStack, Text, Button, ButtonText, LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { interventionPlanStyles } from './Styles';
@@ -203,4 +203,4 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   );
 };
 
-export default InterventionPlan;
+export default memo(InterventionPlan);

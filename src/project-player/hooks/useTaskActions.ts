@@ -10,13 +10,13 @@ export const useTaskActions = () => {
   const canEdit = mode === 'edit';
 
   const handleStatusChange = useCallback(
-    async (taskId: string, status: TaskStatus, files: File[] = []) => {
+    async (taskId: string, status: TaskStatus, files: File[] = [],excludedFiles:Attachment[]=[]) => {
       if (!canEdit) return;
-      let attachments: Attachment[] = [];
+      let attachments: Attachment[] = excludedFiles;
       if(files.length > 0) {
         const data = await uploadFiles(taskId, files);
         if(data.data.length > 0) {
-          attachments = data.data;
+          attachments = [...attachments,...data.data];
         }
       }
       const updateData: any = { status };

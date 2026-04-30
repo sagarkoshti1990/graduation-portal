@@ -36,7 +36,7 @@ import { useAuth } from '@contexts/AuthContext';
 import { STATUS, PATHWAY_TAGS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
 import { PageHeader } from '@components/PageHeader';
-
+import LogVisitModulePopup from '../ParticipantDetail/LogVisitModulePopup';
 
 const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
@@ -95,15 +95,15 @@ const DevelopInterventionPlan: React.FC = () => {
   const getCategoriesForPillar = (pillarId: string) =>
     pillarCategoryMap.find(p => p.pillarId === pillarId)?.categories || [];
 
-  const getSubCategoriesForPillar = (pillarId: string) => {
-    const pillarCategoryId = selectionByPillar[pillarId]?.categoryId;
-    if (!pillarCategoryId) {
-      return [];
-    }
-    const categories = getCategoriesForPillar(pillarId);
-    const selectedCategory = categories.find(c => c.id === pillarCategoryId);
-    return selectedCategory?.subcategories || [];
-  };
+  // const getSubCategoriesForPillar = (pillarId: string) => {
+  //   const pillarCategoryId = selectionByPillar[pillarId]?.categoryId;
+  //   if (!pillarCategoryId) {
+  //     return [];
+  //   }
+  //   const categories = getCategoriesForPillar(pillarId);
+  //   const selectedCategory = categories.find(c => c.id === pillarCategoryId);
+  //   return selectedCategory?.subcategories || [];
+  // };
 
   const handleIdpCreation = useCallback(async (newProjectId: any) => {
     // console.log('handleIdpCreation -  Project ID:', newProjectId);
@@ -189,13 +189,13 @@ const DevelopInterventionPlan: React.FC = () => {
           return null; // No selection made for this pillar
         }
 
-        // Check if subcategory is selected
-        if (selection.subCategoryId) {
+        // Check if category is selected
+        if (selection.categoryId) {
           return {
             pillarId: pillarId,
             pillarName: pillar.name,
-            selectedCategoryId: selection.subCategoryId,
-            type: 'subcategory' as const,
+            selectedCategoryId: selection.categoryId,
+            type: 'category' as const,
           };
         }
 
@@ -230,7 +230,6 @@ const DevelopInterventionPlan: React.FC = () => {
   const config = PROJECT_PLAYER_CONFIGS;
   const selectedMode = participant?.status === STATUS.IN_PROGRESS ? MODE.editMode : MODE.previewMode;
 
-    
   const configData = {
     ...config,
     ...selectedMode,
@@ -241,13 +240,10 @@ const DevelopInterventionPlan: React.FC = () => {
     onChangePathway: handleChangePathway,
   };
 
-
-
-
   // Combine pillarIdsToGetIdp with selected subcategory IDs
   const categoryIdsArray = useMemo(() => {
     const selectedSubCategoryIds = Object.values(selectionByPillar)
-      .map(selection => selection.subCategoryId)
+      .map(selection => selection.subCategoryId || selection.categoryId)
       .filter((id): id is string => Boolean(id)); // Filter out empty strings/undefined
 
     // Combine pillar IDs without categories + selected subcategory IDs
@@ -320,8 +316,8 @@ const DevelopInterventionPlan: React.FC = () => {
       .filter((pillar: any) => pillar?.hasChildCategories)
       .every(
         (pillar: any) =>
-          selectionByPillar[pillar._id]?.categoryId &&
-          selectionByPillar[pillar._id]?.subCategoryId,
+          selectionByPillar[pillar._id]?.categoryId
+        //  && selectionByPillar[pillar._id]?.subCategoryId,
       );
 
     if (allPillarsHaveSelections) {
@@ -372,16 +368,16 @@ const DevelopInterventionPlan: React.FC = () => {
             categoryList.data.map(async (category: any) => {
               let subcategories: SubCategory[] = [];
 
-              if (category?.hasChildCategories) {
-                const subCategoryList = await getCategoryList(category._id);
-                // const subCategoryList = subCategoryDetailsMockData.result;
-                subcategories = Array.isArray(subCategoryList?.data)
-                  ? subCategoryList.data.map((sc: any) => ({
-                    id: sc?._id ?? '',
-                    label: sc?.name ?? '',
-                  }))
-                  : [];
-              }
+              // if (category?.hasChildCategories) {
+              //   const subCategoryList = await getCategoryList(category._id);
+              //   // const subCategoryList = subCategoryDetailsMockData.result;
+              //   subcategories = Array.isArray(subCategoryList?.data)
+              //     ? subCategoryList.data.map((sc: any) => ({
+              //       id: sc?._id ?? '',
+              //       label: sc?.name ?? '',
+              //     }))
+              //     : [];
+              // }
 
               return {
                 id: category._id,
@@ -391,7 +387,7 @@ const DevelopInterventionPlan: React.FC = () => {
               };
             }),
           );
-
+          
           return {
             pillarId,
             categories,
@@ -409,19 +405,13 @@ const DevelopInterventionPlan: React.FC = () => {
   };
 
   const handleBackPress = () => {
-    navigation.navigate(
-      'participant-detail' as never,
-      { id: participantId } as never,
-    );
+    // @ts-ignore
+    navigation.navigate('participant-detail', { id: participantId });
     setShowProjectPlayerPreview(false);
   };
 
-  const handleViewCheckIns = () => {
-    navigation.navigate('log-visit' as never, { id: participantId } as never);
-  };
-
   /* -------------------- UI -------------------- */
-
+  
   return (
     <VStack flex={1} {...(templateStyles.container as any)}>
       <PageHeader
@@ -431,10 +421,14 @@ const DevelopInterventionPlan: React.FC = () => {
         _leftSection={templateStyles.leftSection}
         _rightSection={templateStyles.rightSection}
         _container={templateStyles.headerContainer}
-        rightSection={<Button variant="outlineghost" onPress={handleViewCheckIns}>
-          <ButtonIcon as={LucideIcon} name="History" size={16} />
-          <ButtonText {...TYPOGRAPHY.bodySmall} display={'none'} $md-display={'flex'}>{t('logVisit.viewCheckIns')}</ButtonText>
-        </Button>
+        rightSection={
+          participant &&
+          <LogVisitModulePopup
+            participant={participant}
+            observationLogsTitle={t('actions.observationLogs')}
+            noSolutionsMessage={t('logVisit.noSolutions')}
+            buttonText={t("actions.logVisit")}
+          />
         }
       >
         <VStack {...(templateStyles.headerContent as any)}>
@@ -626,8 +620,8 @@ const DevelopInterventionPlan: React.FC = () => {
                   .filter((pillar: any) => pillar?.hasChildCategories)
                   .every(
                     (pillar: any) =>
-                      selectionByPillar[pillar._id]?.categoryId &&
-                      selectionByPillar[pillar._id]?.subCategoryId,
+                      selectionByPillar[pillar._id]?.categoryId
+                      // && selectionByPillar[pillar._id]?.subCategoryId,
                   )
               }
             >
@@ -682,7 +676,7 @@ const DevelopInterventionPlan: React.FC = () => {
                   </Box>
                 </VStack>
 
-                <VStack gap="$1" mb="$1">
+                {/* <VStack gap="$1" mb="$1">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
                     {t('template.categoryModal.subCategoryLabel', { pillarName: pillar?.name })}
                   </Text>
@@ -728,7 +722,7 @@ const DevelopInterventionPlan: React.FC = () => {
                       />
                     </Box>
                   </Box>
-                </VStack>
+                </VStack> */}
               </React.Fragment>
             ) : null,
           )}

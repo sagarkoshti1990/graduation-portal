@@ -29,8 +29,8 @@ export const logVisitStyles = {
   },
   cardsContainer: {
     space: 'md' as const,
-    paddingVertical: '$4' as const,
-    '$md-padding': '$6' as const,
+    // paddingVertical: '$4' as const,
+    // '$md-padding': '$6' as const,
     gap: '$4' as const,
     alignItems: 'stretch' as const,
     '$md-alignItems': 'flex-start' as const,
