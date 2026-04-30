@@ -189,13 +189,13 @@ const DevelopInterventionPlan: React.FC = () => {
           return null; // No selection made for this pillar
         }
 
-        // Check if subcategory is selected
-        if (selection.subCategoryId) {
+        // Check if category is selected
+        if (selection.categoryId) {
           return {
             pillarId: pillarId,
             pillarName: pillar.name,
-            selectedCategoryId: selection.subCategoryId,
-            type: 'subcategory' as const,
+            selectedCategoryId: selection.categoryId,
+            type: 'category' as const,
           };
         }
 
@@ -243,7 +243,7 @@ const DevelopInterventionPlan: React.FC = () => {
   // Combine pillarIdsToGetIdp with selected subcategory IDs
   const categoryIdsArray = useMemo(() => {
     const selectedSubCategoryIds = Object.values(selectionByPillar)
-      .map(selection => selection.subCategoryId)
+      .map(selection => selection.subCategoryId || selection.categoryId)
       .filter((id): id is string => Boolean(id)); // Filter out empty strings/undefined
 
     // Combine pillar IDs without categories + selected subcategory IDs
@@ -411,7 +411,7 @@ const DevelopInterventionPlan: React.FC = () => {
   };
 
   /* -------------------- UI -------------------- */
-
+  
   return (
     <VStack flex={1} {...(templateStyles.container as any)}>
       <PageHeader

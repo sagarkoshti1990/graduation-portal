@@ -164,7 +164,10 @@
     "socialProtectionPreviewInfo": "Review all Linkage To Additional Services tasks. Required tasks are pre-selected. You can change optional tasks.",
     "important": "Important",
     "failToLoad":"Failed to load or create project",
-    "unableToLoadObservation":"Could not load observation details."
+    "unableToLoadObservation":"Could not load observation details.",
+    "SingleUploadMessage":"Selecting a new file replaces the existing one.",
+    "allowedFileTypes": "Allowed file types :",
+    "remainingUploads": "Remaining uploads :"
   },
   "navigation": {
     "menu": "Menu",

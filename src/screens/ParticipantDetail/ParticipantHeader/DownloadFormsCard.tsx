@@ -2,10 +2,12 @@ import React from 'react';
 import { useWindowDimensions, Platform } from 'react-native';
 import { Box, HStack, Text, Button, ButtonText, LucideIcon } from '@ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
-import { CONSENT_FORM_ASSET, SLA_FORM_ASSET } from './downloadAssets';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAlert } from '@components/ui/Alert';
 import { openDownload } from '@utils/helper';
+
+const CONSENT_FORM_ASSET = process.env.CONSENT_FORM_SAMPLE_URL || ""
+const SLA_FORM_ASSET = process.env.SLA_FORM_SAMPLE_URL || ""
 
 type FormItem = {
   label: string;

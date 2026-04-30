@@ -221,7 +221,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
       // @ts-ignore
       variant="ghost"
       // @ts-ignore
-      onPress={(() => openDownload(process.env.LOG_VISIT_SCRIPT_S3_URL, t, showAlert))}
+      onPress={(() => openDownload(process.env.ENGAGEMENT_SCRIPT_URL, t, showAlert))}
     >
       <ButtonIcon
         as={LucideIcon}

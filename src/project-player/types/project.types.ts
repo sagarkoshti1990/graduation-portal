@@ -49,6 +49,7 @@ export interface Task {
   isDeletable?:boolean;
   excludedTaskIds?:string[];
   noOfEvidenceRequired?: number;
+  referenceId?:string
 }
 
 export interface Attachment {
