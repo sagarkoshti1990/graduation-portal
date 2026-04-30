@@ -133,7 +133,7 @@ function LogVisitModulePopupComponent({
       {buttonText && <ButtonText>{buttonText}</ButtonText>}
     </Button>
     , [handleOpenLogVisit, buttonText])
-console.log(selectedSubmissionNumber)
+    
   return (
     <>
       <Tooltip
