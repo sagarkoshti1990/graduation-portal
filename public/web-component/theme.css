@@ -19,6 +19,9 @@
   --mdc-radio-state-layer-size: 16px !important;
   --mdc-radio-size: 16px !important;
 }
+.wrapper {
+  background-color: transparent !important;
+}
 .custom-font-grid {
   gap:1rem !important;
 }

@@ -63,9 +63,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               </Button>
             }
             <VStack {...pageHeaderStyles.textSection}>
-              <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground">
-                {title}
-              </Text>
+              {title && (
+                <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground">
+                  {title}
+                </Text>
+              )}
               {subtitle && (
                 <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
                   {subtitle}

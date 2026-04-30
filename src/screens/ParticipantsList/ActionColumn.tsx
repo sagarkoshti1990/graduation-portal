@@ -341,7 +341,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
               <Button
                 // @ts-ignore
                 variant="outlineghost"
-                mr="$6"
+                $md-mr="$6"
+                mr="$8"
                 // @ts-ignore
                 onPress={() =>
                   // @ts-ignore
@@ -403,7 +404,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
         bodyProps={
           modalType !== 'dropout'
-            ? { padding: 0, paddingTop: 0, paddingBottom: 0 }
+            ? { padding: 0, paddingTop: 0, paddingBottom: 0, paddingRight:0,paddingLeft:0 }
             : {}
         }
         headerProps={

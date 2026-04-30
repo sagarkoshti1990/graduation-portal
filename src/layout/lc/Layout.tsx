@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StatusBar } from 'react-native';
-import { ScrollView, useColorMode, VStack } from '@gluestack-ui/themed';
+import { ScrollView, useColorMode, useToken, VStack } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LcHeader from '@components/Header/LcHeader';
@@ -34,6 +34,8 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   const { t } = useLanguage();
   const navigation = useNavigation();
   const {refComponent} = useGlobal()
+  const backgroundDark = useToken("colors","backgroundDark950")
+  const backgroundLight = useToken("colors","primary500")
 
   // Set document title for web - memoize to avoid recalculation
   const pageTitle = useMemo(() =>
@@ -61,12 +63,11 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   return (
     <SafeAreaView
       style={stylesLayout.safeAreaView}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
     >
       {/* Status Bar */}
       <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+        barStyle={isDark ? 'dark-content' : 'light-content'}
+        backgroundColor={isDark ? backgroundDark : backgroundLight}
       />
 
       {/* 
