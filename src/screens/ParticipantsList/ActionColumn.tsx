@@ -1,6 +1,22 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { HStack, Text, Box, VStack, Input, InputField, Modal, ButtonText, ButtonIcon, Button, Spinner, useAlert, Tooltip, TooltipContent, TooltipText } from '@ui';
+import {
+  HStack,
+  Text,
+  Box,
+  VStack,
+  Input,
+  InputField,
+  Modal,
+  ButtonText,
+  ButtonIcon,
+  Button,
+  Spinner,
+  useAlert,
+  Tooltip,
+  TooltipContent,
+  TooltipText,
+} from '@ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -21,7 +37,10 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import Select from '@components/ui/Inputs/Select';
-import { AssessmentSurveyCardData, ParticipantData } from '@app-types/participant';
+import {
+  AssessmentSurveyCardData,
+  ParticipantData,
+} from '@app-types/participant';
 import { openDownload } from '@utils/helper';
 
 interface ActionColumnProps {
@@ -35,7 +54,12 @@ interface ActionColumnProps {
 const getCustomTrigger = (triggerProps: any) => (
   // @ts-ignore: Button variant
   <Button variant="ghost" {...triggerProps}>
-    <ButtonIcon as={LucideIcon} name="MoreVertical" size={16} color="$primary500" />
+    <ButtonIcon
+      as={LucideIcon}
+      name="MoreVertical"
+      size={16}
+      color="$primary500"
+    />
   </Button>
 );
 
@@ -43,14 +67,19 @@ const getCustomTrigger = (triggerProps: any) => (
  * ActionColumn Component
  * Manages all action column functionality: View Details button, Actions menu, and Dropout modal
  */
-export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropoutSuccess }) => {
+export const ActionColumn: React.FC<ActionColumnProps> = ({
+  participant,
+  onDropoutSuccess,
+}) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user } = useAuth();
   const { showAlert } = useAlert();
   // Single modal state - tracks which modal is open (null = closed)
-  const [modalType, setModalType] = useState<'dropout' | 'log-visit' | 'view-log' | null>(null);
+  const [modalType, setModalType] = useState<
+    'dropout' | 'log-visit' | 'view-log' | null
+  >(null);
 
   // Dropout modal specific state
   const [selectedDropoutReason, setSelectedDropoutReason] = useState('');
@@ -62,7 +91,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [logVisitLoading, setLogVisitLoading] = useState(false);
-  const [selectedSubmissionNumber, setSelectedSubmissionNumber] = useState<number | null>(null);
+  const [selectedSubmissionNumber, setSelectedSubmissionNumber] = useState<
+    number | null
+  >(null);
   const handleViewDetails = () => {
     // @ts-ignore - Navigation type inference
     navigation.navigate('participant-detail', { id: participant.userId });
@@ -107,13 +138,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
-          "filter[keywords]": FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')
+          'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
         });
         setSolutions(data);
         // Automatically select the first solution
         if (data && data.length > 0) {
           const firstSolution = data[0];
-          setSelectedSolutionId(firstSolution.solutionId || firstSolution.id || '');
+          setSelectedSolutionId(
+            firstSolution.solutionId || firstSolution.id || '',
+          );
         } else {
           setSelectedSolutionId('');
         }
@@ -145,13 +178,17 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     // Validate that a reason is selected
     if (!selectedDropoutReason) {
       const errorMessage =
-        t('actions.selectDropoutReason') || 'Please select a reason for dropout';
+        t('actions.selectDropoutReason') ||
+        'Please select a reason for dropout';
       setDropoutValidationError(errorMessage);
       return;
     }
 
     // If "other" is selected, validate that custom reason is provided
-    if (selectedDropoutReason === OTHER_DROPOUT_REASON && !customDropoutReason.trim()) {
+    if (
+      selectedDropoutReason === OTHER_DROPOUT_REASON &&
+      !customDropoutReason.trim()
+    ) {
       const errorMessage =
         t('actions.enterCustomReason') || 'Please enter a custom reason';
       setDropoutValidationError(errorMessage);
@@ -161,17 +198,26 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     setDropoutValidationError('');
 
     // Get entityId from participant - it might be in different fields
-    const userEntityId = (participant as any).entityId || (participant as any).entity_id || participant.userId;
+    const userEntityId =
+      (participant as any).entityId ||
+      (participant as any).entity_id ||
+      participant.userId;
 
     if (!userEntityId) {
-      showAlert('error', t('common.error') || 'Participant entity ID not found');
+      showAlert(
+        'error',
+        t('common.error') || 'Participant entity ID not found',
+      );
       return;
     }
 
     // Determine the final reason to save
-    const finalReason = selectedDropoutReason === OTHER_DROPOUT_REASON
-      ? customDropoutReason
-      : DROPOUT_REASON_OPTIONS.find(option => option.value === selectedDropoutReason)?.label || selectedDropoutReason;
+    const finalReason =
+      selectedDropoutReason === OTHER_DROPOUT_REASON
+        ? customDropoutReason
+        : DROPOUT_REASON_OPTIONS.find(
+            option => option.value === selectedDropoutReason,
+          )?.label || selectedDropoutReason;
 
     setDropoutLoading(true);
     try {
@@ -199,12 +245,23 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
       // You might want to add a callback prop or use navigation to refresh
     } catch (error: any) {
       logger.error('Error marking participant as dropout:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || t('actions.dropoutError');
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        t('actions.dropoutError');
       showAlert('error', errorMessage);
     } finally {
       setDropoutLoading(false);
     }
-  }, [participant, user?.id, showAlert, t, selectedDropoutReason, customDropoutReason, onDropoutSuccess]);
+  }, [
+    participant,
+    user?.id,
+    showAlert,
+    t,
+    selectedDropoutReason,
+    customDropoutReason,
+    onDropoutSuccess,
+  ]);
 
   const handleFormSelect = (submission: any) => {
     setModalType('log-visit');
@@ -212,26 +269,14 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     setSelectedSubmissionNumber(submission.submissionNumber);
   };
   // Check if participant is Graduated or Dropout - hide menu for these statuses
-  const isReadOnlyStatus = participant?.status === STATUS.GRADUATED || participant?.status === STATUS.DROPOUT || participant?.userDetails?.status === USER_STATUS.INACTIVE;
-  const isNotOnboarded = participant?.userDetails?.status === USER_STATUS.INACTIVE ? false : participant?.status === STATUS.NOT_ONBOARDED;
-
-  const renderButton = useCallback((triggerProps:any) =>
-    <Button
-      {...triggerProps}
-      // @ts-ignore
-      variant="ghost"
-      // @ts-ignore
-      onPress={(() => openDownload(process.env.ENGAGEMENT_SCRIPT_URL, t, showAlert))}
-    >
-      <ButtonIcon
-        as={LucideIcon}
-        name="Info"
-        size={16}
-        color={theme.tokens.colors.error.light}
-      />
-      {t('actions.downloadScript')}
-    </Button>
-    , [t, showAlert])
+  const isReadOnlyStatus =
+    participant?.status === STATUS.GRADUATED ||
+    participant?.status === STATUS.DROPOUT ||
+    participant?.userDetails?.status === USER_STATUS.INACTIVE;
+  const isNotOnboarded =
+    participant?.userDetails?.status === USER_STATUS.INACTIVE
+      ? false
+      : participant?.status === STATUS.NOT_ONBOARDED;
 
   return (
     <Box>
@@ -261,7 +306,13 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         </Button>
         {!isReadOnlyStatus && (
           <Menu
-            items={isNotOnboarded ? getParticipantsMenuItems.filter(e => !(isNotOnboarded && e.label === "actions.logVisit")) : getParticipantsMenuItems}
+            items={
+              isNotOnboarded
+                ? getParticipantsMenuItems.filter(
+                    e => !(isNotOnboarded && e.label === 'actions.logVisit'),
+                  )
+                : getParticipantsMenuItems
+            }
             placement="bottom right"
             offset={5}
             trigger={getCustomTrigger}
@@ -274,23 +325,45 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
       <Modal
         isOpen={modalType !== null}
         onClose={handleCloseModal}
-        headerTitle={
-          modalType === 'dropout'
-            ? t('actions.confirmDropout') || 'Confirm Dropout'
-            : modalType === 'log-visit'
-              ? <HStack space='md' alignItems='center'>
+        headerContent={
+          modalType === 'dropout' ? (
+            t('actions.confirmDropout') || 'Confirm Dropout'
+          ) : modalType === 'log-visit' ? (
+            <HStack
+              space="md"
+              alignItems="center"
+              justifyContent="space-between"
+              flex={1}
+            >
+              <Text fontSize={'$lg'} fontWeight={'$semibold'}>
                 {t('actions.logVisit')}
-                <Tooltip
-                  placement="bottom"
-                  trigger={renderButton}
-                >
-                  <TooltipContent backgroundColor='$textMutedForeground' rounded={"lg"}>
-                    <TooltipText>{t('actions.downloadParticipantEngagementScript')}</TooltipText>
-                  </TooltipContent>
-                </Tooltip></HStack>
-              : modalType === 'view-log'
-                ? t('actions.observationLogs')
-                : ''
+              </Text>
+              <Button
+                // @ts-ignore
+                variant="outlineghost"
+                mr="$6"
+                // @ts-ignore
+                onPress={() =>
+                  // @ts-ignore
+                  openDownload(process.env.ENGAGEMENT_SCRIPT_URL, t, showAlert)
+                }
+              >
+                <ButtonIcon
+                  as={LucideIcon}
+                  name="Download"
+                  size={16}
+                  color={'$error.light'}
+                />
+                <ButtonText fontSize={'$xs'} fontWeight={'$medium'}>
+                  {t('actions.downloadScript')}
+                </ButtonText>
+              </Button>
+            </HStack>
+          ) : modalType === 'view-log' ? (
+            t('actions.observationLogs')
+          ) : (
+            ''
+          )
         }
         headerIcon={
           modalType === 'dropout' ? (
@@ -303,13 +376,41 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
         }
         size="lg"
         showCloseButton={modalType !== 'dropout'}
-        cancelButtonText={modalType === 'dropout' ? t('common.cancel') || 'Cancel' : undefined}
-        confirmButtonText={modalType === 'dropout' ? (dropoutLoading ? (t('common.loading') || 'Loading...') : (t('actions.confirmDropout') || 'Confirm Dropout')) : undefined}
-        onCancel={modalType === 'dropout' ? (dropoutLoading ? undefined : handleCloseModal) : undefined}
-        onConfirm={modalType === 'dropout' ? (dropoutLoading ? undefined : handleDropoutConfirm) : undefined}
+        cancelButtonText={
+          modalType === 'dropout' ? t('common.cancel') || 'Cancel' : undefined
+        }
+        confirmButtonText={
+          modalType === 'dropout'
+            ? dropoutLoading
+              ? t('common.loading') || 'Loading...'
+              : t('actions.confirmDropout') || 'Confirm Dropout'
+            : undefined
+        }
+        onCancel={
+          modalType === 'dropout'
+            ? dropoutLoading
+              ? undefined
+              : handleCloseModal
+            : undefined
+        }
+        onConfirm={
+          modalType === 'dropout'
+            ? dropoutLoading
+              ? undefined
+              : handleDropoutConfirm
+            : undefined
+        }
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
-        bodyProps={modalType !== 'dropout' ? { padding: 0, paddingTop: 0, paddingBottom: 0 } : {}}
-        headerProps={modalType === 'log-visit' ? { paddingBottom: 0, paddingTop: "$4" } : {}}
+        bodyProps={
+          modalType !== 'dropout'
+            ? { padding: 0, paddingTop: 0, paddingBottom: 0 }
+            : {}
+        }
+        headerProps={
+          modalType === 'log-visit'
+            ? { paddingBottom: 0, paddingTop: '$4' }
+            : {}
+        }
       >
         {modalType === 'dropout' && (
           <VStack space="lg">
@@ -318,8 +419,12 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
               color="$textSecondary"
               lineHeight="$xl"
             >
-              {t('actions.dropoutMessage', { name: participant.name || participant.userId || 'participant' }) ||
-                `Mark ${participant.name || participant.userId || 'participant'} as dropout from the program`}
+              {t('actions.dropoutMessage', {
+                name: participant.name || participant.userId || 'participant',
+              }) ||
+                `Mark ${
+                  participant.name || participant.userId || 'participant'
+                } as dropout from the program`}
             </Text>
 
             <VStack space="sm">
@@ -334,11 +439,13 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
               <Select
                 options={DROPOUT_REASON_OPTIONS}
                 value={selectedDropoutReason}
-                onChange={(value) => {
+                onChange={value => {
                   setSelectedDropoutReason(value);
                   setDropoutValidationError('');
                 }}
-                placeholder={t('actions.selectDropoutReason') || 'Select a reason'}
+                placeholder={
+                  t('actions.selectDropoutReason') || 'Select a reason'
+                }
                 bg="$modalBackground"
                 borderColor="$inputBorder"
                 size="md"
@@ -364,10 +471,11 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
                   >
                     <InputField
                       placeholder={
-                        t('actions.customReasonPlaceholder') || 'Enter custom reason...'
+                        t('actions.customReasonPlaceholder') ||
+                        'Enter custom reason...'
                       }
                       value={customDropoutReason}
-                      onChangeText={(value) => {
+                      onChangeText={value => {
                         setCustomDropoutReason(value);
                         setDropoutValidationError('');
                       }}
@@ -409,15 +517,38 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
             ) : selectedSolutionId && modalType === 'log-visit' ? (
               <ObservationContent
                 participant={participant}
-                hideElements={{ header: ['title', 'backButton', "progress-bar", "status-badge"] }}
-                _css={{ _header: { pageHeader: { _container: { "$md-px": '$6', px: '$4', pb: '$4', backgroundColor: "$backgroundColor" } } } }}
+                hideElements={{
+                  header: [
+                    'title',
+                    'backButton',
+                    'progress-bar',
+                    'status-badge',
+                  ],
+                }}
+                _css={{
+                  _header: {
+                    pageHeader: {
+                      _container: {
+                        '$md-px': '$6',
+                        px: '$4',
+                        pb: '$4',
+                        backgroundColor: '$backgroundColor',
+                      },
+                    },
+                  },
+                }}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
                 // @ts-ignore - showAlert is a valid prop
                 showAlert={showAlert}
-                submissionNumber={selectedSubmissionNumber || undefined as any}
+                submissionNumber={
+                  selectedSubmissionNumber || (undefined as any)
+                }
                 userData={{
-                  "Visit Date": { value: new Date().toISOString().split('T')[0], readonly: false },
+                  'Visit Date': {
+                    value: new Date().toISOString().split('T')[0],
+                    readonly: false,
+                  },
                 }}
               />
             ) : selectedSolutionId && modalType === 'view-log' ? (
@@ -443,4 +574,3 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({ participant, onDropo
     </Box>
   );
 };
-

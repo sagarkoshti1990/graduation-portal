@@ -23,8 +23,6 @@ import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import LucideIcon from '@components/ui/LucideIcon';
 import { loginStyles } from './Styles';
-import logoImage from '../../assets/images/logo.png';
-import logo500Image from '../../assets/images/logo.svg';
 // import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import logger from '@utils/logger';
 import offlineStorage from '../../services/offlineStorage';
@@ -50,12 +48,12 @@ const LoginScreen: React.FC = () => {
     const loadRememberMePreference = async () => {
       try {
         const savedRememberMe = await offlineStorage.read<boolean>(
-          STORAGE_KEYS.AUTH_REMEMBER_ME
+          STORAGE_KEYS.AUTH_REMEMBER_ME,
         );
         if (savedRememberMe !== null && savedRememberMe !== undefined) {
           setRememberMe(savedRememberMe);
           logger.info(
-            `Loaded Remember Me preference from storage: ${savedRememberMe}`
+            `Loaded Remember Me preference from storage: ${savedRememberMe}`,
           );
         }
       } catch (err) {
@@ -72,7 +70,7 @@ const LoginScreen: React.FC = () => {
         toValue: 1,
         duration: 120000, // 120 seconds for slow rotation
         useNativeDriver: true,
-      })
+      }),
     );
     spinAnimation.start();
     return () => spinAnimation.stop();
@@ -108,7 +106,9 @@ const LoginScreen: React.FC = () => {
         ]);
 
         setError(
-          explicitMessages.has(result.message) ? result.message : fallbackMessage,
+          explicitMessages.has(result.message)
+            ? result.message
+            : fallbackMessage,
         );
       }
       // AuthContext already handles setting isLoggedIn and user state on success
@@ -177,28 +177,48 @@ const LoginScreen: React.FC = () => {
 
   return (
     <ScrollView {...loginStyles.scrollView}>
-      <Box {...loginStyles.container}
-       $web-backgroundImage={'linear-gradient(148.729deg, rgba(117, 0, 63, 0.05) 0%, rgba(117, 0, 63, 0.1) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)'}>
+      <Box
+        {...loginStyles.container}
+        $web-backgroundImage={
+          'linear-gradient(148.729deg, rgba(117, 0, 63, 0.05) 0%, rgba(117, 0, 63, 0.1) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)'
+        }
+      >
         {/* @ts-ignore - LanguageSelector accepts menuTriggerProps */}
         {/* <LanguageSelector menuTriggerProps={loginStyles.languageSelector} /> */}
         <Animated.View
-            style={{...loginStyles.imageSpinLogo, transform: [{ rotate: spin }] }}
+          style={{
+            ...loginStyles.imageSpinLogo,
+            transform: [{ rotate: spin }],
+          }}
         >
-          <Image source={logo500Image} {...loginStyles.imageLogo500} />
+          <Image
+            source={require('../../assets/images/logo.svg')}
+            {...loginStyles.imageLogo500}
+          />
         </Animated.View>
         <Animated.View
-            style={{...loginStyles.imageSpinLogoLeft, transform: [{ rotate: spin }] }}
+          style={{
+            ...loginStyles.imageSpinLogoLeft,
+            transform: [{ rotate: spin }],
+          }}
         >
-          <Image source={logo500Image} {...loginStyles.imageLogo500Left} />
+          <Image
+            source={require('../../assets/images/logo.svg')}
+            {...loginStyles.imageLogo500Left}
+          />
         </Animated.View>
-        <Box {...loginStyles.box}
+        <Box
+          {...loginStyles.box}
           $web-boxShadow={loginStyles.containerBoxShadow}
         >
           <Animated.View style={{ opacity: flashAnim }}>
             <VStack {...loginStyles.vstack}>
               {/* Logo/Brand */}
               {/* @ts-ignore - Image props are valid */}
-              <Image {...loginStyles.imageLogo} source={logoImage} />
+              <Image
+                {...loginStyles.imageLogo}
+                source={require('../../assets/images/logo.png')}
+              />
 
               {/* Tagline */}
               <Heading {...loginStyles.heading}>{t('login.title')}</Heading>

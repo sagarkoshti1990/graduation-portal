@@ -40,20 +40,18 @@ export const commonModalContentStyles = {
   shadowOpacity: 0.2,
   shadowRadius: 16,
   elevation: 24,
-  marginHorizontal: '$6' as const,  // Increased from $4 to $6 for better mobile spacing
+  marginHorizontal: '$6' as const, // Increased from $4 to $6 for better mobile spacing
   marginVertical: 'auto' as const,
   alignSelf: 'center' as const,
- // width: '90%' as const,  // Limit width to 90% of screen on mobile
+  // width: '90%' as const,  // Limit width to 90% of screen on mobile
   //maxWidth: '95%' as const,  // Prevent modal from stretching too wide
   ...commonModalWebStyles,
 } as const;
 
 export const commonModalCloseButtonStyles = {
-  style: {
-    top: '1rem' as const,
-    right: '1rem' as const,
-    position: 'absolute' as const,
-  },
+  top: '$4' as const,
+  right: '$4' as const,
+  position: 'absolute' as const,
 } as const;
 
 /**
@@ -85,7 +83,6 @@ export const profileStyles = {
     paddingHorizontal: '$6' as const,
     paddingTop: '$4' as const,
     paddingBottom: '$6' as const,
-
   },
   headerIconContainer: {
     width: 48,
@@ -176,7 +173,7 @@ export const LCProfileStyles = {
     // responsive layout for fields
     sx: {
       _web: {
-        maxWidth: '720px',      // popup width like reference UI
+        maxWidth: '720px', // popup width like reference UI
         width: '100%',
         margin: '0 auto',
       },
@@ -201,7 +198,7 @@ export const LCProfileStyles = {
     flex: 1,
     sx: {
       _web: {
-        flexBasis: '45%',    // maintains two columns without minWidth
+        flexBasis: '45%', // maintains two columns without minWidth
       },
     },
   },
@@ -236,4 +233,3 @@ export const LCProfileStyles = {
     opacity: 0.8,
   },
 };
-
