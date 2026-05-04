@@ -50,7 +50,7 @@ const overviewToStatusMap = {
   notonboarded: { key: STATUS.NOT_ONBOARDED, label: 'participants.notEnrolled' },
   onboarded: { key: STATUS.ONBOARDED, label: 'participants.enrolled' },
   inprogress: { key: STATUS.IN_PROGRESS, label: 'participants.inProgress' },
-  completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
+  // completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
   droppedout: { key: STATUS.DROPOUT, label: 'participants.droppedOut' },
   graduated: { key: STATUS.GRADUATED, label: 'participants.graduatedStatus' },
 } as const;

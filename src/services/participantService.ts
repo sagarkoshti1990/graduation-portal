@@ -328,34 +328,7 @@ export const verifyParticipantCompletionActions = async ({
     }
     
     // 2. Get entity details for each solution to check completion status
-    const solutionsWithEntityStatus = await Promise.all(
-      solutions.map(async (solution) => {
-        try {
-          const entityResponse = await getObservationEntities({
-            solutionId: solution.solutionId,
-            profileData: {},
-          });
-          // Find the participant entity from the response
-          const participantEntity = entityResponse.result?.entities?.find(
-            (entity: any) => `${entity.externalId}` === `${participantId}`
-          );
-
-          return {
-            ...solution,
-            entity: participantEntity || null,
-          };
-        } catch (error) {
-          logger.error('Failed to fetch entity for solution', {
-            solutionId: solution.solutionId,
-            error,
-          });
-          return {
-            ...solution,
-            entity: null,
-          };
-        }
-      })
-    );
+    const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutions, participantId);
     // 3. Process certificate solution
     const certificateSolution = solutionsWithEntityStatus.find((solution) =>
       checkSolutionByKeyword(solution, CERTIFICATE_KEYWORD)
@@ -443,3 +416,34 @@ export const verifyParticipantCompletionActions = async ({
     return { success: false, type: '' };
   }
 };
+
+export const getSolutionWithEntityStatus = async (solutions: any[], participantId: string) => {
+  return Promise.all(
+    solutions.map(async (solution) => {
+      try {
+        const entityResponse = await getObservationEntities({
+          solutionId: solution.solutionId,
+          profileData: {},
+        });
+        // Find the participant entity from the response
+        const participantEntity = entityResponse.result?.entities?.find(
+          (entity: any) => `${entity.externalId}` === `${participantId}`
+        );
+
+        return {
+          ...solution,
+          entity: participantEntity || null,
+        };
+      } catch (error) {
+        logger.error('Failed to fetch entity for solution', {
+          solutionId: solution.solutionId,
+          error,
+        });
+        return {
+          ...solution,
+          entity: null,
+        };
+      }
+    })
+  );
+}

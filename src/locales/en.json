@@ -163,9 +163,9 @@
     "enrolledParticiapantSucess": "Participant enrolled successfully.",
     "socialProtectionPreviewInfo": "Review all Linkage To Additional Services tasks. Required tasks are pre-selected. You can change optional tasks.",
     "important": "Important",
-    "failToLoad":"Failed to load or create project",
-    "unableToLoadObservation":"Could not load observation details.",
-    "SingleUploadMessage":"Selecting a new file replaces the existing one.",
+    "failToLoad": "Failed to load or create project",
+    "unableToLoadObservation": "Could not load observation details.",
+    "SingleUploadMessage": "Selecting a new file replaces the existing one.",
     "allowedFileTypes": "Allowed file types :",
     "remainingUploads": "Remaining uploads :"
   },
@@ -1825,7 +1825,8 @@
       "participantDroppedOut": "Participant Dropped Out",
       "dropoutWarning": "This participant has dropped out of the program. You are viewing their records in read-only mode. No changes can be made.",
       "viewLog": "View Log",
-      "previous":"Previous"
+      "previous": "Previous",
+      "complete": "Complete"
     },
     "profileModal": {
       "title": "Participant Profile",
@@ -1841,8 +1842,8 @@
       "emailRequired": "Email is required.",
       "emailInvalid": "Please enter a valid email address.",
       "saveConfigurationError": "Unable to save. Program configuration is missing.",
-      "viewConsent" : "View Consent",
-      "viewSLA":"View SLA"
+      "viewConsent": "View Consent",
+      "viewSLA": "View SLA"
     },
     "pathways": {
       "employment": "Employment Pathway",
@@ -1858,10 +1859,10 @@
       "developPlan": "Develop Intervention Plan",
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",
-      "changePathwayCofirmationMsg":"Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
+      "changePathwayCofirmationMsg": "Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
       "socialProtectionWarning": "Complete all Linkage To Additional Services tasks before assigning the plan.",
       "actionRequired": "Action Required",
-      "warningMsg":"Complete all Linkage to Additional Services tasks before assigning the plan."
+      "warningMsg": "Complete all Linkage to Additional Services tasks before assigning the plan."
     },
     "assessmentSurveys": {
       "title": "Assessment Surveys",
@@ -1925,7 +1926,7 @@
     "groupCheckIns": "Group Check-ins",
     "groupCheckInsNoSolutions": "No group check-in solutions found.",
     "fetchSolutionsError": "Could not fetch solutions. Try again.",
-    "selectStatus":"Select Status"
+    "selectStatus": "Select Status"
   },
   "table": {
     "showing": "Showing {{start}} to {{end}} of {{total}} entries",
@@ -1946,9 +1947,9 @@
     "customReasonLabel": "Please specify",
     "customReasonPlaceholder": "Enter custom reason.",
     "enterCustomReason": "Please enter a custom reason",
-    "downloadScript":"Download Script",
+    "downloadScript": "Engagement Script",
     "downloadParticipantEngagementScript": "Download Participant Engagement Script",
-    "viewVisitLogs":"View Visit Logs",
+    "viewVisitLogs": "View Visit Logs",
     "dropoutReasons": {
       "personalFamilyReasons": "Personal / Family Reasons",
       "healthIssues": "Health Issues",
@@ -2092,12 +2093,12 @@
     "previewFailed": "Preview failed. Try again.",
     "invalidProjectIdMessage": "Project ID missing. Pass a valid ID."
   },
-  "downloadForms":{
-    "downloadForms":"Download Forms",
-    "downloadNecessaryForms":"Download the necessary forms for the participant",
-    "Download":"Download",
-    "downloadSuccess":"Download started.",
-    "downloadError":"Download failed. Try again.",
-    "downloadUriError":"File not found. Contact support."
+  "downloadForms": {
+    "downloadForms": "Download Forms",
+    "downloadNecessaryForms": "Download the necessary forms for the participant",
+    "Download": "Download",
+    "downloadSuccess": "Download started.",
+    "downloadError": "Download failed. Try again.",
+    "downloadUriError": "File not found. Contact support."
   }
 }
