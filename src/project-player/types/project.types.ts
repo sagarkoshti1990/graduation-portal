@@ -20,6 +20,7 @@ export interface ProjectData {
   createdAt: string;
   updatedAt: string;
   children?: Task[];
+  categories?: any[];
 }
 
 export interface Task {
