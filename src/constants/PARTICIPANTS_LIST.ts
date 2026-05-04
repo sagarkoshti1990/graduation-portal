@@ -534,13 +534,12 @@ export const getParticipantsMenuItems: MenuItemData[] = [
 export const OTHER_DROPOUT_REASON = 'Other';
 
 export const DROPOUT_REASON_OPTIONS = [
-  { label: 'Personal / Family Reasons', value: 'Personal / Family Reasons' },
-  { label: 'Health Issues', value: 'Health Issues' },
-  // { label: 'Financial Constraints', value: 'Financial Constraints' },
-  { label: 'Relocation', value: 'Relocation' },
   { label: 'Found Other Employment', value: 'Found Other Employment' },
+  { label: 'Health Issues', value: 'Health Issues' },
   { label: 'Lost Interest / Motivation', value: 'Lost Interest / Motivation' },
+  { label: 'Personal / Family Reasons', value: 'Personal / Family Reasons' },
   { label: 'Refused to Participate', value: 'Refused to Participate' },
+  { label: 'Relocation', value: 'Relocation' },
   { label: 'Unknown / No Contact', value: 'Unknown / No Contact' },
   { label: OTHER_DROPOUT_REASON, value: OTHER_DROPOUT_REASON },
 ];

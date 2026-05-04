@@ -258,16 +258,6 @@ const LoginScreen: React.FC = () => {
                 </Box>
               </VStack>
 
-              <Button
-                variant="link"
-                onPress={() => navigation.navigate('forgot-password' as never)}
-                isDisabled={loading}
-              >
-                <ButtonText {...loginStyles.adminLinkText}>
-                  {t('login.forgotPassword')}
-                </ButtonText>
-              </Button>
-
               {/* Remember Me Checkbox - UI hidden but functionality preserved */}
               {/* <HStack {...loginStyles.hstack}>
                 <Checkbox
@@ -309,6 +299,16 @@ const LoginScreen: React.FC = () => {
                 )}
               </Button>
 
+              <Button
+                variant="link"
+                onPress={() => navigation.navigate('forgot-password' as never)}
+                isDisabled={loading}
+              >
+                <ButtonText {...loginStyles.adminLinkText}>
+                  {t('login.forgotPassword')}
+                </ButtonText>
+              </Button>
+              
               {/* Admin Login Link / Cancel Link */}
               {!isAdminMode ? (
                 <Button

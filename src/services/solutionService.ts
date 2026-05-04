@@ -273,15 +273,37 @@ export const getObservationSubmissions = async ({
   observationId,
   entityId,
   filterAnswerValue,
+  page,
+  limit,
+  getAnswers,
 }: {
   observationId: string;
   entityId: string;
   filterAnswerValue?: any;
+  page?: number | null;
+  limit?: number | null;
+  getAnswers?: boolean | null;
 }): Promise<any> => {
   try {
+    let url = `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}`;
+    if (filterAnswerValue !== undefined && filterAnswerValue !== null && filterAnswerValue !== '') {
+      url += `&filterAnswerValue=${encodeURIComponent(filterAnswerValue)}`;
+    }
+    // Only add getAnswers if not null/undefined
+    if (getAnswers !== null && getAnswers !== undefined) {
+      url += `&getAnswers=${getAnswers}`;
+    }
+    // Only add page if not null/undefined
+    if (page !== null && page !== undefined) {
+      url += `&page=${page}`;
+    }
+    // Only add limit if not null/undefined
+    if (limit !== null && limit !== undefined) {
+      url += `&limit=${limit}`;
+    }
+
     const response = await api.post(
-      `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}` +
-        (filterAnswerValue ? `&filterAnswerValue=${filterAnswerValue}` : ''),
+      url,
       undefined,
       withRetry(OBSERVATION_RETRY_CONFIG),
     );
