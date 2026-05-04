@@ -110,7 +110,7 @@ export interface PaginationControlsProps {
   endIndex: number;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
-  config: PaginationConfig;
+  config?: PaginationConfig;
 }
 
 /**

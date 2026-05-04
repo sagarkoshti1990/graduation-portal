@@ -1965,6 +1965,7 @@
     "dropoutSuccess": "Participant marked as dropout.",
     "dropoutError": "Could not mark participant as dropout. Try again.",
     "observationLogs": "Observation Logs",
+    "viewAllActivity": "View all activity and history for {{name}}",
     "viewAndDownloadCertificate": "View & Download Certificate"
   },
   "logVisit": {

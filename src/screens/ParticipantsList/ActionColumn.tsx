@@ -359,7 +359,14 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
               </Button>
             </HStack>
           ) : modalType === 'view-log' ? (
-            t('actions.observationLogs')
+            <VStack space='sm'>
+              <Text fontSize={"$lg"} color='$textForegroundColor' fontWeight={600}>
+                {t('actions.observationLogs')}
+              </Text>
+              <Text fontSize={"$sm"} color='$textMutedForeground'>
+                {t('actions.viewAllActivity',{name:participant.name})}
+              </Text>
+            </VStack>
           ) : (
             ''
           )
