@@ -309,7 +309,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
           {submissionsLoading ? (
             <Spinner size="large" color="$primary500" />
           ) : submissions.length > 0 ? (
-            <VStack {...logVisitStyles.cardsContainer}>
+            <VStack flex={1} space="md">
             {submissions.map((submission, index) => (
               <SubmitionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
                 onFormSelect={() =>
