@@ -27,11 +27,13 @@ import { loginStyles } from './Styles';
 import logger from '@utils/logger';
 import offlineStorage from '../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import { usePlatform } from '@utils/platform';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const { login } = useAuth();
   const { t } = useLanguage();
+  const { isMobile } = usePlatform()
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -188,23 +190,33 @@ const LoginScreen: React.FC = () => {
         <Animated.View
           style={{
             ...loginStyles.imageSpinLogo,
+            ...(isMobile ? loginStyles.imageSpinLogoSm : {}),
             transform: [{ rotate: spin }],
           }}
         >
           <Image
             source={require('../../assets/images/logo.svg')}
-            {...loginStyles.imageLogo500}
+            style={{
+              ...loginStyles.imageLogo500,
+              ...(isMobile ? loginStyles.imageLogo500Sm : {})
+            }}
+            alt='bgAnime1'
           />
         </Animated.View>
         <Animated.View
           style={{
             ...loginStyles.imageSpinLogoLeft,
+            ...(isMobile ? loginStyles.imageSpinLogoLeftSm : {}),
             transform: [{ rotate: spin }],
           }}
         >
           <Image
             source={require('../../assets/images/logo.svg')}
-            {...loginStyles.imageLogo500Left}
+            style={{
+              ...loginStyles.imageLogo500Left,
+              ...(isMobile ? loginStyles.imageLogo500LeftSm : {})
+            }}
+            alt='bgAnime2'
           />
         </Animated.View>
         <Box
@@ -216,8 +228,9 @@ const LoginScreen: React.FC = () => {
               {/* Logo/Brand */}
               {/* @ts-ignore - Image props are valid */}
               <Image
-                {...loginStyles.imageLogo}
+                // style={{...loginStyles.imageLogo}}
                 source={require('../../assets/images/logo.png')}
+                alt='logo'
               />
 
               {/* Tagline */}
@@ -282,6 +295,7 @@ const LoginScreen: React.FC = () => {
                 variant="link"
                 onPress={() => navigation.navigate('forgot-password' as never)}
                 isDisabled={loading}
+                height={isMobile ? "$6" : "$10"}
               >
                 <ButtonText {...loginStyles.adminLinkText}>
                   {t('login.forgotPassword')}

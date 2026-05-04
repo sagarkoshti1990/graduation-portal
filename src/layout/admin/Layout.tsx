@@ -7,7 +7,7 @@ import {
   useColorMode,
   LucideIcon,
 } from '@ui';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AdminHeader from '@components/Header';
 import AdminSidebar from '@components/Sidebar/Sidebar';
@@ -113,69 +113,64 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
   };
 
   return (
-    <SafeAreaView
-      edges={['top', 'bottom']}
-      style={safeAreaStyle}
+    <Box
+      {...layoutStyles.container}
+      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      style={isWeb ? ({ height: '100vh' } as any) : undefined}
     >
-      <Box
-        {...layoutStyles.container}
-        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-        style={isWeb ? ({ height: '100vh' } as any) : undefined}
-      >
-        {/* Sidebar */}
-        <AdminSidebar
-          isOpen={isDrawerOpen}
-          onClose={handleCloseDrawer}
-          isMobile={isMobile}
-        />
+      {/* Sidebar */}
+      <AdminSidebar
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        isMobile={isMobile}
+      />
 
-        {/* Desktop sidebar toggle (matches design: circular chevron at sidebar edge) */}
-        {isWeb && !isMobile && (
-          <Pressable
-            onPress={() => setDrawerOpen(!isDrawerOpen)}
-            style={layoutStyles.desktopSidebarToggleWrapper(isDrawerOpen)}
-          >
-            {(state: any) => {
-              const isHovered = state?.hovered || state?.pressed || false;
-              return (
-                <Box {...layoutStyles.desktopSidebarToggleButton(isHovered)}>
-                  <LucideIcon
-                    name={isDrawerOpen ? 'ChevronLeft' : 'ChevronRight'}
-                    size={16}
-                    color={isHovered ? '$primary600' : '$textLight600'}
-                  />
-                </Box>
-              );
-            }}
-          </Pressable>
-        )}
-
-        {/* Scrollable Content Area (Header + Main Content) */}
-        <ScrollView
-          flex={1}
-          contentContainerStyle={scrollContentStyle}
+      {/* Desktop sidebar toggle (matches design: circular chevron at sidebar edge) */}
+      {isWeb && !isMobile && (
+        <Pressable
+          onPress={() => setDrawerOpen(!isDrawerOpen)}
+          style={layoutStyles.desktopSidebarToggleWrapper(isDrawerOpen)}
         >
-          <HStack
-            flex={1}
-            width="$full"
-            flexDirection="column"
-          >
-            {/* @ts-ignore - Header */}
-            <Box {...layoutStyles.headerContent}>
-              <AdminHeader
-                showNotification={true}
-                // Hide hamburger menu on desktop; sidebar is controlled by the chevron toggler
-                onToggleSidebar={
-                  isMobile ? () => setDrawerOpen(!isDrawerOpen) : undefined
-                }
-              />
-            </Box>
-            {/* @ts-ignore - Main Content */}
-            <Box {...layoutStyles.mainContent}>{children}</Box>
-          </HStack>
-        </ScrollView>
-      </Box>
-    </SafeAreaView>
+          {(state: any) => {
+            const isHovered = state?.hovered || state?.pressed || false;
+            return (
+              <Box {...layoutStyles.desktopSidebarToggleButton(isHovered)}>
+                <LucideIcon
+                  name={isDrawerOpen ? 'ChevronLeft' : 'ChevronRight'}
+                  size={16}
+                  color={isHovered ? '$primary600' : '$textLight600'}
+                />
+              </Box>
+            );
+          }}
+        </Pressable>
+      )}
+
+      {/* Scrollable Content Area (Header + Main Content) */}
+      <ScrollView
+        flex={1}
+        contentContainerStyle={scrollContentStyle}
+      >
+        <HStack
+          flex={1}
+          width="$full"
+          flexDirection="column"
+        >
+          {/* @ts-ignore - Header */}
+          <Box {...layoutStyles.headerContent}>
+            <AdminHeader
+              showNotification={true}
+              // Hide hamburger menu on desktop; sidebar is controlled by the chevron toggler
+              onToggleSidebar={
+                isMobile ? () => setDrawerOpen(!isDrawerOpen) : undefined
+              }
+            />
+          </Box>
+          {/* @ts-ignore - Main Content */}
+          <Box {...layoutStyles.mainContent}>{children}</Box>
+        </HStack>
+      </ScrollView>
+    </Box>
   );
 };
 
