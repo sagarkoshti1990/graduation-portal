@@ -48,8 +48,10 @@ export const FILTER_KEYWORDS = {
   GROUP_CHECK_IN: [GROUP_CHECK_IN_KEYWORD],
   PARTICIPANT_LOG_VISIT: [PARTICIPANT_LOG_VISIT_KEYWORD],
   ASSESSMENT_SURVEYS: [ASSESSMENT_SURVEYS_KEYWORD],
-  PROGRAM_COMPLETED: [ASSESSMENT_SURVEYS_KEYWORD,PROGRAM_COMPLETED_KEYWORD],
-  PROGRAM_COMPLETED_ONLY: [PROGRAM_COMPLETED_KEYWORD],
+  PROGRAM_COMPLETED: [ASSESSMENT_SURVEYS_KEYWORD,
+    // PROGRAM_COMPLETED_KEYWORD,
+    ENDLINE_KEYWORD],
+  PROGRAM_COMPLETED_ONLY: [ENDLINE_KEYWORD],
   CERTIFICATE: [CERTIFICATE_KEYWORD],
   ENDLINE: [ENDLINE_KEYWORD]
 }
@@ -64,7 +66,7 @@ export const ICONS = {
   "group visit": {icon: "Users", color: "$blue500"},
   "group check-ins": {icon: "Users", color: "$blue500"},
   "group check-in": {icon: "Users", color: "$blue500"},
-  "log visit": {icon: "Users", color: "$blue500"},
+  "log visit": {icon: "FileText", color: "$primary300", iconColor:"$primary600"},
   "intervention completion survey": {icon: "FileText", color: "$white", iconColor: "$primary500"},
   "big push / asset transfer observation framework-1769076753343": {icon: "FileText", color: "$primary500"},
   "big push / asset transfer": {icon: "FileText", color: "$primary500"},

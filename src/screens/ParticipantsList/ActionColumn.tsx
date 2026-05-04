@@ -13,9 +13,6 @@ import {
   Button,
   Spinner,
   useAlert,
-  Tooltip,
-  TooltipContent,
-  TooltipText,
 } from '@ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
@@ -355,13 +352,21 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                   size={16}
                   color={'$error.light'}
                 />
+                {!isMobile &&
                 <ButtonText fontSize={'$xs'} fontWeight={'$medium'}>
                   {t('actions.downloadScript')}
-                </ButtonText>
+                </ButtonText>}
               </Button>
             </HStack>
           ) : modalType === 'view-log' ? (
-            t('actions.observationLogs')
+            <VStack space='sm'>
+              <Text fontSize={"$lg"} color='$textForegroundColor' fontWeight={600}>
+                {t('actions.observationLogs')}
+              </Text>
+              <Text fontSize={"$sm"} color='$textMutedForeground'>
+                {t('actions.viewAllActivity',{name:participant.name})}
+              </Text>
+            </VStack>
           ) : (
             ''
           )
@@ -409,7 +414,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         }
         headerProps={
           modalType === 'log-visit'
-            ? { paddingBottom: 0, paddingTop: '$4' }
+            ? { paddingBottom: "$1", paddingTop: '$4' }
             : {}
         }
       >

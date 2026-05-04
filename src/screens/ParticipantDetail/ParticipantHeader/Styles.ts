@@ -119,7 +119,7 @@ export const participantHeaderStyles = {
     marginBottom: '$1' as const,
   },
   participantIdRow: {
-    space: 'lg' as const,
+    space: 'xs' as const,
     alignItems: 'center' as const,
   },
   participantId: {

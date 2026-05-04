@@ -24,6 +24,7 @@ import {
   PROJECT_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
   USER_STATUS,
+  ENTITY_STATUS,
 } from '@constants/app.constant';
 import { User } from '@contexts/AuthContext';
 import { ParticipantHeaderProps } from '@app-types/screens';
@@ -31,13 +32,29 @@ import type { ParticipantStatus } from '@app-types/participant';
 import { PageHeader } from '@components/PageHeader';
 import { usePlatform } from '@utils/platform';
 import {
-  completeProject,
+  getCategoryList,
+  // completeProject,
   getProjectDetails,
   updateTask
 } from '../../../project-player/services/projectPlayerService';
-import { CERTIFICATE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
+import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
+import { getProjectCategoryList } from '../../../services/projectService';
+
+const getCategoryData = (categories:any[],data:any[]) => {
+  let categoryData = {};
+  categories?.forEach((category: any) => {
+    const template = data?.find((item: any) => {
+      return category._id === item._id
+    })
+    if(template && !Object.keys(categoryData).length) {
+      categoryData = template
+    }
+  });
+
+  return categoryData
+}
 
 const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   participant: participantProp,
@@ -61,6 +78,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const [isCompletingProject, setIsCompletingProject] = useState(false)
+  const [pathwayAndCategory,setPathwayAndCategory] = useState<string[]>([]);
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
   const showSuccess = (message: string) => {
@@ -73,6 +91,29 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       setStatus(participantProp.status);
     }
   }, [participantProp?.status, onStatusUpdate]);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const titleArr:string[] = []
+      const templatesData = await getProjectCategoryList();
+      let templateData:{children?:any[],_id?:string,name?:string} = getCategoryData(projectData?.categories || [],templatesData)
+      if(templateData._id) {
+        titleArr.push(templateData.name || "");
+        const pillar = templateData?.children?.find((category: any) => category.hasChildCategories);
+        if(pillar?._id){
+          const categoryData = await getCategoryList(pillar?._id)
+          const result:{_id?:string,name?:string} = getCategoryData(projectData?.categories || [],categoryData?.data || [])
+          if(result?._id) {
+            titleArr.push(result.name || "");
+          }
+        }
+      }
+      setPathwayAndCategory(titleArr);
+    }
+    if(projectData) {
+      fetchTemplates();
+    }
+  }, [projectData]);
 
   useEffect(() => {
     const fetchProjectProgress = async () => {
@@ -160,12 +201,12 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
 
     try {
-      setIsCompletingProject(true);
-      if(participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.COMPLETED && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED) {
-        await completeProject(participantProp.idpProjectId);
-      }
-      setStatus(STATUS.COMPLETED);
-      onStatusUpdate?.(STATUS.COMPLETED);
+      // setIsCompletingProject(true);
+      // if(participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.COMPLETED && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED) {
+      //   await completeProject(participantProp.idpProjectId);
+      // }
+      // setStatus(STATUS.COMPLETED);
+      // onStatusUpdate?.(STATUS.COMPLETED);
       // showAlert('success',t('participantDetail.header.projectCompleteSuccess'));
       // @ts-ignore
       navigation.push('observation', { id: participantId, solutionId: solution.solutionId,submissionNumber:1 });
@@ -195,13 +236,19 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     updatedProgress ?? graduationProgressProp ?? graduationProgress;
 
   useEffect(() => {
-    setShouldShowCompletionButton(
-      status === STATUS.IN_PROGRESS &&
-        !!participantProp?.idpProjectId &&
-        effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD &&
-        participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
-    );
-  }, [effectiveProgress, participantProp?.idpProjectId, status, participantProp?.idpProgress?.projectStatus]);
+    if(solutions?.length && solutions?.length > 0) {
+      const endlineSolution = solutions?.find((solution:any) => solution.keywords.includes(ENDLINE_KEYWORD));
+      setShouldShowCompletionButton(
+        status === STATUS.IN_PROGRESS &&
+          !!participantProp?.idpProjectId &&
+          effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
+          // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
+          && !((endlineSolution?.entity?.submissionsCount === 1 && endlineSolution?.entity?.status === ENTITY_STATUS.COMPLETED) || endlineSolution?.entity?.submissionsCount > 1)
+      );
+    }
+    // participantProp?.idpProgress?.projectStatus,
+    // @ts-ignore
+  }, [effectiveProgress, participantProp?.idpProjectId, status, solutions?.length]);
 
   const renderStatusBadge = () => {
     if (status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
@@ -394,7 +441,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     return renderViewProfileButton();
   };
   const renderCompleteProjectButton = () => {
-    const certificateSolution = solutions?.find((solution:any) => solution.keywords.includes(CERTIFICATE_KEYWORD));
+    const certificateSolution = solutions?.find((solution:any) => solution.keywords.includes(ENDLINE_KEYWORD));
     return shouldShowCompletionButton ? (
       <Button
         mt="$3"
@@ -409,7 +456,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           <ButtonIcon as={LucideIcon} name="Check" />
         )}
         <ButtonText>
-        {certificateSolution?.name}
+        {t('participantDetail.header.complete')} {certificateSolution?.name}
         </ButtonText>
       </Button>
     ) : null;
@@ -458,10 +505,14 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
               </Text>
               {status === STATUS.IN_PROGRESS && pathway && (
                 <>
-                  <Text {...participantHeaderStyles.pathwaySeparator}>•</Text>
-                  <Text {...participantHeaderStyles.pathway}>
-                    {t(`participantDetail.pathways.${pathway}`)}
-                  </Text>
+                  {pathwayAndCategory.map((item, index) =>
+                    <>
+                      <Text key={`${item}-${index}`} {...participantHeaderStyles.pathwaySeparator}>•</Text>
+                      <Text {...participantHeaderStyles.pathway}>
+                        {item}
+                      </Text>
+                    </>
+                  )}
                 </>
               )}
             </HStack>

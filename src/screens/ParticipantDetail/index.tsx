@@ -5,8 +5,9 @@ import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
   getParticipantsList,
+  getSolutionWithEntityStatus,
   // getSitesByProvince,
-  verifyParticipantCompletionActions
+  // verifyParticipantCompletionActions
 } from '../../services/participantService';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '../../hooks';
@@ -29,7 +30,9 @@ import {
   // DUMMY_PROJECT_DATA,
   PROJECT_PLAYER_CONFIGS,
 } from '@constants/PROJECTDATA';
-import { GRADUATION_READINESS_PROGRESS_THRESHOLD, PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
+import {
+  // GRADUATION_READINESS_PROGRESS_THRESHOLD,
+  PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
@@ -201,37 +204,37 @@ export default function ParticipantDetail() {
         type: 'observation',
         'filter[keywords]': `${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')},${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`,
       });    // Verify participant completion conditions and perform certificate/graduation actions
+      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string);
+      setSolutions(solutionsWithEntityStatus);
+      // if (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
+      //   const completionActionResult = await verifyParticipantCompletionActions({
+      //     participantData: participant,
+      //     userId: user?.id as string,
+      //     solutions: solutionsData
+      //   });
+      //   if (completionActionResult.success) {
+      //     setIsLoading(true);
+      //     try {
+      //       const refreshedResponse = await getParticipantsList({
+      //         entityId: participantId,
+      //         userId: user?.id as string,
+      //       });
+      //       const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
 
-      setSolutions(solutionsData);
-      if (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
-        const completionActionResult = await verifyParticipantCompletionActions({
-          participantData: participant,
-          userId: user?.id as string,
-          solutions: solutionsData
-        });
-        if (completionActionResult.success) {
-          setIsLoading(true);
-          try {
-            const refreshedResponse = await getParticipantsList({
-              entityId: participantId,
-              userId: user?.id as string,
-            });
-            const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
-
-            if (refreshedRow) {
-              const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
-              setParticipant({
-                ...(refreshedUserDetails || {}),
-                ...refreshedRest,
-                accountUserStatus: refreshedUserDetails?.status,
-              } as User);
-            }
-          } catch (refreshError) {
-            logger.log('Best-effort participant refresh failed:', refreshError);
-          }
-          setIsLoading(false);
-        }
-      }
+      //       if (refreshedRow) {
+      //         const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
+      //         setParticipant({
+      //           ...(refreshedUserDetails || {}),
+      //           ...refreshedRest,
+      //           accountUserStatus: refreshedUserDetails?.status,
+      //         } as User);
+      //       }
+      //     } catch (refreshError) {
+      //       logger.log('Best-effort participant refresh failed:', refreshError);
+      //     }
+      //     setIsLoading(false);
+      //   }
+      // }
     }
 
     if (participant && participantId && user?.id && solutions.length === 0) {

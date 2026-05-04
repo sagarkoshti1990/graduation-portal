@@ -1825,7 +1825,8 @@
       "participantDroppedOut": "Participant Dropped Out",
       "dropoutWarning": "This participant has dropped out of the program. You are viewing their records in read-only mode. No changes can be made.",
       "viewLog": "View Log",
-      "previous": "Previous"
+      "previous": "Previous",
+      "complete": "Complete"
     },
     "profileModal": {
       "title": "Participant Profile",
@@ -1964,6 +1965,7 @@
     "dropoutSuccess": "Participant marked as dropout.",
     "dropoutError": "Could not mark participant as dropout. Try again.",
     "observationLogs": "Observation Logs",
+    "viewAllActivity": "View all activity and history for {{name}}",
     "viewAndDownloadCertificate": "View & Download Certificate"
   },
   "logVisit": {

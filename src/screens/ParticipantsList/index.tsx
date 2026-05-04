@@ -50,7 +50,7 @@ const overviewToStatusMap = {
   notonboarded: { key: STATUS.NOT_ONBOARDED, label: 'participants.notEnrolled' },
   onboarded: { key: STATUS.ONBOARDED, label: 'participants.enrolled' },
   inprogress: { key: STATUS.IN_PROGRESS, label: 'participants.inProgress' },
-  completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
+  // completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
   droppedout: { key: STATUS.DROPOUT, label: 'participants.droppedOut' },
   graduated: { key: STATUS.GRADUATED, label: 'participants.graduatedStatus' },
 } as const;
@@ -125,13 +125,14 @@ const ParticipantsList: React.FC = () => {
         item.key === STATUS.NOT_ONBOARDED ||
         item.key === STATUS.ONBOARDED || 
         item.key === STATUS.IN_PROGRESS ||
-        item.key === STATUS.COMPLETED 
-      );
+        item.key === STATUS.COMPLETED ||
+        item.key === STATUS.GRADUATED
+    );
     } else {
       // inactive
       return allStatusItems.filter((item: StatusFilterItem) => 
-        item.key === STATUS.DROPOUT ||
-        item.key === STATUS.GRADUATED
+        item.key === STATUS.DROPOUT 
+      // || item.key === STATUS.GRADUATED
       );
     }
   }, [allStatusItems, activeFilter]);
@@ -143,14 +144,15 @@ const ParticipantsList: React.FC = () => {
         item.key === STATUS.NOT_ONBOARDED ||
         item.key === STATUS.ONBOARDED || 
         item.key === STATUS.IN_PROGRESS ||
-        item.key === STATUS.COMPLETED
-      )
+        item.key === STATUS.COMPLETED ||
+        item.key === STATUS.GRADUATED
+    )
       .reduce((sum: number, item: StatusFilterItem) => sum + item.count, 0);
     
     const inactiveCount = allStatusItems
       .filter((item: StatusFilterItem) => 
-        item.key === STATUS.DROPOUT ||
-        item.key === STATUS.GRADUATED
+        item.key === STATUS.DROPOUT
+      // || item.key === STATUS.GRADUATED
       )
       .reduce((sum: number, item: StatusFilterItem) => sum + item.count, 0);
     
@@ -202,7 +204,7 @@ const ParticipantsList: React.FC = () => {
   // When Active/Inactive filter changes, set default status
   useEffect(() => {
     if (activeFilter === 'inactive') {
-      setActiveStatus(STATUS.GRADUATED);
+      setActiveStatus(STATUS.DROPOUT);
     } else if (activeFilter === 'active') {
       // Set default to NOT_ONBOARDED when Active is selected
       setActiveStatus(STATUS.NOT_ONBOARDED);
