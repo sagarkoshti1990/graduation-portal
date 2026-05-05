@@ -9,8 +9,8 @@ import {
   ButtonSpinner,
   HStack,
   Text,
-  Pressable,
   Accordion,
+  ButtonIcon,
 } from '@gluestack-ui/themed';
 import { useProjectContext } from '../../context/ProjectContext';
 import ProjectInfoCard from './ProjectInfoCard';
@@ -204,46 +204,14 @@ const ProjectComponent: React.FC = () => {
         <ScrollView flex={1}
           {...projectComponentStyles.scrollView}
         >
-              {/* Pillar features only: +Add Custom Task button */}
-          {showPillarFeatures && (
-            <Box {...projectComponentStyles.addCustomTaskContainer}>
-              <Pressable onPress={() => setIsModalOpen(true)}>
-                {(state: any) => {
-                  const isHovered =
-                    state?.hovered || state?.pressed || false;
-                  return (
-                    <Box
-                      {...addCustomTaskStyles.buttonBox}
-                      bg={isHovered ? '$primary100' : '$accent100'}
-                      borderColor={
-                        isHovered ? '$primary500' : '$mutedBorder'
-                      }
-                    >
-                      <HStack {...addCustomTaskStyles.buttonContent}>
-                        <LucideIcon
-                          name="Plus"
-                          size={18}
-                          color={
-                            isHovered
-                              ? theme.tokens.colors.primary700
-                              : theme.tokens.colors.primary500
-                          }
-                          strokeWidth={2.5}
-                        />
-                        <Text
-                          {...TYPOGRAPHY.button}
-                          color={isHovered ? '$primary700' : '$primary500'}
-                          fontWeight="$semibold"
-                        >
-                          {t('projectPlayer.addCustomTask')}
-                        </Text>
-                      </HStack>
-                    </Box>
-                  );
-                }}
-              </Pressable>
-            </Box>
-          )}
+          {/* Pillar features only: +Add Custom Task button */}
+          {showPillarFeatures &&
+            //  @ts-ignore 
+            <Button variant="outlineghost" mb="$4" onPress={() => setIsModalOpen(true)}>
+              <ButtonIcon as={LucideIcon} name="Plus" />
+              <ButtonText>{t('projectPlayer.addCustomTask')}</ButtonText>
+            </Button>
+          }
           {/* Shared content logic - pillars or onboarding tasks */}
           {(() => {
             const pillarContent = hasChildren ? (
@@ -297,42 +265,12 @@ const ProjectComponent: React.FC = () => {
 
                 {/* Pillar features only: +Add Custom Task button */}
                 {showPillarFeatures && (
-                  <Box {...projectComponentStyles.addCustomTaskContainer}>
-                    <Pressable onPress={() => setIsModalOpen(true)}>
-                      {(state: any) => {
-                        const isHovered =
-                          state?.hovered || state?.pressed || false;
-                        return (
-                          <Box
-                            {...addCustomTaskStyles.buttonBox}
-                            bg={isHovered ? '$primary100' : '$accent100'}
-                            borderColor={
-                              isHovered ? '$primary500' : '$mutedBorder'
-                            }
-                          >
-                            <HStack {...addCustomTaskStyles.buttonContent}>
-                              <LucideIcon
-                                name="Plus"
-                                size={18}
-                                color={
-                                  isHovered
-                                    ? theme.tokens.colors.primary700
-                                    : theme.tokens.colors.primary500
-                                }
-                                strokeWidth={2.5}
-                              />
-                              <Text
-                                {...TYPOGRAPHY.button}
-                                color={isHovered ? '$primary700' : '$primary500'}
-                                fontWeight="$semibold"
-                              >
-                                {t('projectPlayer.addCustomTask')}
-                              </Text>
-                            </HStack>
-                          </Box>
-                        );
-                      }}
-                    </Pressable>
+                  <Box>
+                    {/* @ts-ignore  */}
+                    <Button variant="outlineghost" onPress={() => setIsModalOpen(true)}>
+                      <ButtonIcon as={LucideIcon} name="Plus" />
+                      <ButtonText>{t('projectPlayer.addCustomTask')}</ButtonText>
+                    </Button>
                     <AddCustomTaskModal
                       isOpen={isModalOpen}
                       onClose={() => setIsModalOpen(false)}
@@ -367,7 +305,7 @@ const ProjectComponent: React.FC = () => {
 
             const content = (
               <VStack
-                p={isSingleContainer ? "$0" : "$4"}
+                p={isSingleContainer ? "$0" : "$0"}
                 space="md"
               >
                 {header}

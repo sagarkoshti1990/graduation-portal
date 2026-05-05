@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { HStack, Box, Container } from '@ui';
+import { HStack, Box, Container, ReadMoreAlert } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
@@ -31,16 +31,18 @@ import {
   PROJECT_PLAYER_CONFIGS,
 } from '@constants/PROJECTDATA';
 import {
+  ENTITY_STATUS,
   // GRADUATION_READINESS_PROGRESS_THRESHOLD,
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
 import logger from '@utils/logger';
-import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
-import { getTargetedSolutions } from '../../services/solutionService';
+import { FILTER_KEYWORDS, LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
+import { getObservationSubmissions, getTargetedSolutions } from '../../services/solutionService';
 import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
+import { getAnsweData } from '@utils/helper';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -82,6 +84,7 @@ export default function ParticipantDetail() {
   const isFetchingRef = useRef(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
+  const [challenges,setChallenges] = useState<string>("");
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -138,6 +141,7 @@ export default function ParticipantDetail() {
         setConfigData(null);
         setProjectPlayerConfigData(null);
         setIsLoading(true);
+        setChallenges("")
       };
     }, [fetchEntityDetails, setNavbarData])
   );
@@ -200,11 +204,33 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     const fetchSolutions = async () => {
+      let keywordsString = `${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')},${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`;
+      if(participant?.status === STATUS.IN_PROGRESS) {
+        keywordsString += `,${FILTER_KEYWORDS.LOG_VISIT.join(',')}`;
+      }
+
       const solutionsData = await getTargetedSolutions({
         type: 'observation',
-        'filter[keywords]': `${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')},${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`,
+        'filter[keywords]': keywordsString,
       });    // Verify participant completion conditions and perform certificate/graduation actions
       const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string);
+
+      if(participant?.status === STATUS.IN_PROGRESS) {
+        const checkIns = solutionsWithEntityStatus.find(item => item?.keywords?.includes(LOG_VISIT_KEYWORD))
+        if(checkIns?.entity?.submissionsCount >= 1 && checkIns?.entity) {
+          const submissionsData = await getObservationSubmissions({
+            observationId:checkIns?._id,
+            entityId:checkIns?.entity?._id,
+            getAnswers:true,
+          });
+          const submition = submissionsData?.result.find((item:any) => item.status === ENTITY_STATUS.COMPLETED)
+          const data = getAnsweData(["Challenge Notes"],submition?.answers || {})
+          if(data?.challengeNotes) {
+            setChallenges(data?.challengeNotes)
+          }
+        }
+      }
+
       setSolutions(solutionsWithEntityStatus);
       // if (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
       //   const completionActionResult = await verifyParticipantCompletionActions({
@@ -359,31 +385,39 @@ export default function ParticipantDetail() {
             </Box>
 
             {/* Tab Content */}
-            <Box flex={1} mt="$2" mb="$4" bg="transparent">
-              <Box width="$full">
-                <Box width="$full">
-                  {activeTab ===
-                    PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
-                      <InterventionPlan
-                        participantStatus={status as ParticipantStatus}
-                        participantId={participant?.id}
-                        participantProfile={participant}
-                        onIdpCreation={handleIdpCreated}
-                        onProgressChange={handleProgressChange}
-                        getProjectData={setProjectData}
+            <Box flex={1} mt="$2" mb="$4" bg="transparent" width="$full">
+              {activeTab ===
+                PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
+                  <Box gap="$2">
+                    {challenges &&
+                      <ReadMoreAlert
+                        label={t("participantDetail.interventionPlan.challenges")}
+                        variant="warning"
+                        text={challenges}
+                        lineLimit={2}
+                        readMoreText={t("common.showMore")}
+                        readLessText={t("common.showLess")}
                       />
-                    )}
-                  {activeTab ===
-                    PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
-                      <Box mt="$6">
-                        <AssessmentSurveys
-                          participant={participant as ParticipantData}
-                          completionPercentage={updatedProgress || 0}
-                        />
-                      </Box>
-                    )}
-                </Box>
-              </Box>
+                      }
+                    <InterventionPlan
+                      participantStatus={status as ParticipantStatus}
+                      participantId={participant?.id}
+                      participantProfile={participant}
+                      onIdpCreation={handleIdpCreated}
+                      onProgressChange={handleProgressChange}
+                      getProjectData={setProjectData}
+                    />
+                  </Box>
+                )}
+              {activeTab ===
+                PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
+                  <Box mt="$6">
+                    <AssessmentSurveys
+                      participant={participant as ParticipantData}
+                      completionPercentage={updatedProgress || 0}
+                    />
+                  </Box>
+                )}
             </Box>
           </Box>
         )}

@@ -14,6 +14,8 @@
         "serviceArea": "Service Area"
       }
     },
+    "showMore": "Show More",
+    "showLess": "Show Less",
     "comingSoon": "Coming soon.",
     "settings": "Settings",
     "logout": "Logout",
@@ -1862,7 +1864,8 @@
       "changePathwayCofirmationMsg": "Are you sure you want to change the Pathway? Your current changes made to the IDP will be discarded.",
       "socialProtectionWarning": "Complete all Linkage To Additional Services tasks before assigning the plan.",
       "actionRequired": "Action Required",
-      "warningMsg": "Complete all Linkage to Additional Services tasks before assigning the plan."
+      "warningMsg": "Complete all Linkage to Additional Services tasks before assigning the plan.",
+      "challenges":"Challenges"
     },
     "assessmentSurveys": {
       "title": "Assessment Surveys",

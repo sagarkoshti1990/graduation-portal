@@ -162,3 +162,23 @@ export const openDownload = (assetSource: number | string,t?:any, showAlert?: an
       showAlert?.('error', t?.('downloadForms.downloadError'));
     });
 };
+
+export const toCamelCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[-_\s]+(.)?/g, (_, char) =>
+      char ? char.toUpperCase() : ''
+    );
+};
+
+
+export const getAnsweData = (label:string[],answers:any) => {
+  let value:any = {};
+  label.forEach((item:any) => {
+    const data = Object.values(answers).find((itemData : any) => itemData?.payload?.question?.includes(item))
+    const keyName = toCamelCase(item);
+    // @ts-ignore
+    value = {...value,[keyName]: data?.value || ""}
+  });
+  return value;
+}

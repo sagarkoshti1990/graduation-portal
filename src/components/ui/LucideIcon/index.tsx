@@ -90,6 +90,7 @@ export interface LucideIconProps extends Omit<LucideProps, 'ref'> {
   size?: number;
   color?: string;
   strokeWidth?: number;
+  style?:any;
 }
 
 const ICONS: Record<string, React.ComponentType<any>> = {

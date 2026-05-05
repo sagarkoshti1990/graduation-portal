@@ -36,6 +36,7 @@ import offlineStorage from '../../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import type { User } from '@contexts/AuthContext';
 import PaginationControls from '@components/DataTable/PaginationControls';
+import { getAnsweData } from '@utils/helper';
 
 /**
  * CheckInsListContent Component Props
@@ -309,7 +310,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
           {submissionsLoading ? (
             <Spinner size="large" color="$primary500" />
           ) : submissions.length > 0 ? (
-            <VStack flex={1} space="md">
+            <VStack flex={1} space="md" width={"$full"}>
             {submissions.map((submission, index) => (
               <SubmitionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
                 onFormSelect={() =>
@@ -377,36 +378,17 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
 
 export default CheckInsListContent;
 
-export const toCamelCase = (str: string): string => {
-  return str
-    .toLowerCase()
-    .replace(/[-_\s]+(.)?/g, (_, char) =>
-      char ? char.toUpperCase() : ''
-    );
-};
-
 const SubmitionCard = ({ submission, iconMeta, onFormSelect }: { submission: any, iconMeta: any, onFormSelect?: any }) => {
   const { t } = useLanguage()
   const [answers,setAnswers] = useState<any>();
 
-  const getAnsweData = useCallback((label:string[]) => {
-    let value = {};
-    label.forEach((item:any) => {
-      const data = Object.values(submission.answers).find((itemData : any) => itemData?.payload?.question?.includes(item))
-      const keyName = toCamelCase(item);
-      // @ts-ignore
-      value = {...value,[keyName]: data?.value || ""}
-    });
-    return value;
-  },[submission?.answers])
-
   useEffect(() => {
     if(submission?.answers) {
       // @ts-ignore
-      setAnswers(getAnsweData(["Visit Date","Notes","Tags"]));
+      setAnswers(getAnsweData(["Visit Date","Notes","Tags"],submission?.answers));
     }
-  },[submission?.answers,getAnsweData])
-
+  },[submission?.answers])
+  
   return <Card
     {...assessmentSurveyCardStyles.cardContainer}
     p="$4"
@@ -430,7 +412,7 @@ const SubmitionCard = ({ submission, iconMeta, onFormSelect }: { submission: any
           }}
         >
           <LucideIcon
-            name={iconMeta?.icon || 'info'}
+            name={iconMeta?.icon || 'Info'}
             size={24}
             color={iconMeta?.iconColor || '$white'}
           />
