@@ -36,7 +36,7 @@ import offlineStorage from '../../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import type { User } from '@contexts/AuthContext';
 import PaginationControls from '@components/DataTable/PaginationControls';
-import { getAnsweData } from '@utils/helper';
+import { getAnswerData } from '@utils/helper';
 
 /**
  * CheckInsListContent Component Props
@@ -312,7 +312,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
           ) : submissions.length > 0 ? (
             <VStack flex={1} space="md" width={"$full"}>
             {submissions.map((submission, index) => (
-              <SubmitionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
+              <SubmissionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
                 onFormSelect={() =>
                   onFormSelect
                     ? onFormSelect(
@@ -378,14 +378,14 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
 
 export default CheckInsListContent;
 
-const SubmitionCard = ({ submission, iconMeta, onFormSelect }: { submission: any, iconMeta: any, onFormSelect?: any }) => {
+const SubmissionCard = ({ submission, iconMeta, onFormSelect }: { submission: any, iconMeta: any, onFormSelect?: any }) => {
   const { t } = useLanguage()
   const [answers,setAnswers] = useState<any>();
 
   useEffect(() => {
     if(submission?.answers) {
       // @ts-ignore
-      setAnswers(getAnsweData(["Visit Date","Notes","Tags"],submission?.answers));
+      setAnswers(getAnswerData(["Visit Date","Notes","Tags"],submission?.answers));
     }
   },[submission?.answers])
   

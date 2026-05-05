@@ -42,7 +42,7 @@ import { FILTER_KEYWORDS, LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { getObservationSubmissions, getTargetedSolutions } from '../../services/solutionService';
 import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
-import { getAnsweData } from '@utils/helper';
+import { getAnswerData } from '@utils/helper';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -223,8 +223,8 @@ export default function ParticipantDetail() {
             entityId:checkIns?.entity?._id,
             getAnswers:true,
           });
-          const submition = submissionsData?.result.find((item:any) => item.status === ENTITY_STATUS.COMPLETED)
-          const data = getAnsweData(["Challenge Notes"],submition?.answers || {})
+          const submission = submissionsData?.result.find((item:any) => item.status === ENTITY_STATUS.COMPLETED)
+          const data = getAnswerData(["Challenge Notes"],submission?.answers || {})
           if(data?.challengeNotes) {
             setChallenges(data?.challengeNotes)
           }

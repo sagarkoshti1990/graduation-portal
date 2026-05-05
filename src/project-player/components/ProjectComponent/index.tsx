@@ -305,7 +305,7 @@ const ProjectComponent: React.FC = () => {
 
             const content = (
               <VStack
-                p={isSingleContainer ? "$0" : "$0"}
+                p={"$0"}
                 space="md"
               >
                 {header}

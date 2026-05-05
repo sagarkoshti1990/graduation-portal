@@ -181,8 +181,6 @@ const ReadMoreAlert = ({
             lineHeight="$md"
             flexWrap="wrap"
             onLayout={(e: any) => {
-              console.log(e.nativeEvent.layout
-                .height,"height")
               setContentHeight(
                 e.nativeEvent.layout
                   .height,

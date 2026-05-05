@@ -172,7 +172,7 @@ export const toCamelCase = (str: string): string => {
 };
 
 
-export const getAnsweData = (label:string[],answers:any) => {
+export const getAnswerData = (label:string[],answers:any) => {
   let value:any = {};
   label.forEach((item:any) => {
     const data = Object.values(answers).find((itemData : any) => itemData?.payload?.question?.includes(item))
