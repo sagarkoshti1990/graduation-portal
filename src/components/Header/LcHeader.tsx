@@ -84,6 +84,7 @@ const LcHeader: React.FC<LcHeaderProps> = ({
       borderBottomColor={isDark ? '$borderDark200' : '$borderLight200'}
       bg={isDark ? '$backgroundDark950' : '$white'}
       shadowColor={isDark ? '$backgroundDark950' : '$shadowColor'}
+      minHeight={subTitle ? 69 : 57}
     >
       <HStack {...stylesHeader.hStack} justifyContent="flex-start">
         {hamburgerMenuItems ? (
