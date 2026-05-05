@@ -11,7 +11,6 @@ import {
   Button,
   ButtonText,
   Pressable,
-  CheckIcon,
   useAlert,
   Tooltip,
   TooltipContent,

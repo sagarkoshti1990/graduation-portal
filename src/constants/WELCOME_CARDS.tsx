@@ -15,7 +15,7 @@ export const WELCOME_CARDS: FeatureCardData[] = [
   {
     id: 'connect-experts',
     color: theme.tokens.colors.info100,
-    icon: 'TrendingUp',
+    icon: 'ChartColumn',
     title: 'welcome.dashboard',
     description: 'welcome.dashboardDescription',
     navigationUrl: 'dashboard',
@@ -26,7 +26,7 @@ export const WELCOME_CARDS: FeatureCardData[] = [
   {
     id: 'learning-progress',
     color: theme.tokens.colors.accent400,
-    icon: 'ChartColumn',
+    icon: 'TrendingUp',
     title: 'welcome.myLearningProgress',
     description: 'welcome.myLearningProgressDescription',
     navigationUrl: 'learning-progress',
