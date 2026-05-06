@@ -312,7 +312,46 @@ module.exports = (env = {}, argv = {}) => {
           },
         },
         {
-          test: /\.(png|jpe?g|gif|svg|webp|ico)$/i,
+          // Exactly one SVG rule must apply: SVGR for code imports, otherwise file URL.
+          oneOf: [
+            {
+              test: /\.svg$/i,
+              issuer: /\.[jt]sx?$/,
+              use: [
+                {
+                  loader: '@svgr/webpack',
+                  options: {
+                    native: true,
+                    typescript: true,
+                    memo: true,
+                    svgo: true,
+                    svgoConfig: {
+                      plugins: [
+                        {
+                          name: 'preset-default',
+                          params: {
+                            overrides: {
+                              removeViewBox: false,
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              test: /\.svg$/i,
+              type: 'asset/resource',
+              generator: {
+                filename: 'assets/images/[name].[contenthash:8][ext]',
+              },
+            },
+          ],
+        },
+        {
+          test: /\.(png|jpe?g|gif|webp|ico)$/i,
           type: 'asset/resource',
           generator: {
             filename: 'assets/images/[name].[contenthash:8][ext]',
@@ -353,6 +392,7 @@ module.exports = (env = {}, argv = {}) => {
         '@constants': path.resolve(__dirname, 'src/constants'),
         '@layout': path.resolve(__dirname, 'src/layout'),
         '@hooks': path.resolve(__dirname, 'src/hooks'),
+        '@assets': path.resolve(__dirname, 'src/assets'),
       },
       extensions: [
         '.web.tsx',

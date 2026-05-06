@@ -27,7 +27,8 @@ import { loginStyles } from './Styles';
 import logger from '@utils/logger';
 import offlineStorage from '../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
-import { usePlatform } from '@utils/platform';
+import { isWeb, usePlatform } from '@utils/platform';
+import Logo from '@assets/images/logo.svg';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -194,13 +195,11 @@ const LoginScreen: React.FC = () => {
             transform: [{ rotate: spin }],
           }}
         >
-          <Image
-            source={require('../../assets/images/logo.svg')}
+          <Logo
             style={{
               ...loginStyles.imageLogo500,
-              ...(isMobile ? loginStyles.imageLogo500Sm : {})
+              ...(isMobile ? loginStyles.imageLogo500Sm : {}),
             }}
-            alt='bgAnime1'
           />
         </Animated.View>
         <Animated.View
@@ -210,13 +209,11 @@ const LoginScreen: React.FC = () => {
             transform: [{ rotate: spin }],
           }}
         >
-          <Image
-            source={require('../../assets/images/logo.svg')}
+          <Logo
             style={{
               ...loginStyles.imageLogo500Left,
-              ...(isMobile ? loginStyles.imageLogo500LeftSm : {})
+              ...(isMobile ? loginStyles.imageLogo500LeftSm : {}),
             }}
-            alt='bgAnime2'
           />
         </Animated.View>
         <Box
@@ -341,9 +338,10 @@ const LoginScreen: React.FC = () => {
                   {t('login.forgotPassword')}
                 </ButtonText>
               </Button>
-              
+
               {/* Admin Login Link / Cancel Link */}
-              {!isAdminMode ? (
+              {isWeb && 
+              (!isAdminMode ? (
                 <Button
                   variant="link"
                   onPress={handleAdminLoginClick}
@@ -363,7 +361,7 @@ const LoginScreen: React.FC = () => {
                     {t('login.backToLogin') || 'Back to LC / LF Login'}
                   </ButtonText>
                 </Button>
-              )}
+              ))}
 
               {/* Helper Text */}
               {/* <VStack {...loginStyles.vstack5}>

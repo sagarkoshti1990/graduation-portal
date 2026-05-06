@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { Linking, Platform, Image } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import {
   HStack,
   VStack,
