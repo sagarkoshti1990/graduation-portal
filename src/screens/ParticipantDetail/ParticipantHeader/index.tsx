@@ -482,6 +482,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           elevation: 0,
           borderBottomWidth: 0,
         }}
+        _backButton={{ml:"-$2"}}
       >
         {/* Participant Info and Actions Row */}
         <HStack

@@ -34,7 +34,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         variant="outline"
         size="sm"
         borderColor="$borderColor"
-        borderRadius="$10px"
+        borderRadius={10}
         bg="$white"
         alignItems="center"
       >

@@ -93,6 +93,13 @@ const WebComponentPlayer = React.memo(
                   --mdc-checkbox-state-layer-size: 16px !important;
                   --mdc-radio-state-layer-size: 16px !important;
                   --mdc-radio-size: 16px !important;
+                  --colors-primary100: #fef2f2;
+                  --colors-primary700: #6B1E31;
+                  --colors-textLight700: #525252;
+                  --colors-borderColor: #e2e8f0;
+                  --colors-backgroundColor: #fafbfc;
+                  --colors-backgroundLightSuccess: #EDFCF2;
+                  --colors-backgroundLightError: #FEF1F1;
                 }
               \`;
 
