@@ -509,24 +509,32 @@ const TaskCard: React.FC<TaskCardProps> = ({
         ) : (
           /* Edit mode: title on first line, badges on second line */
           <>
-          <ContentWrapper>
-            <Text
-              {...titleTypography}
-              color="$textPrimary"
-              {...textStyle}
-              fontSize={
-                (!isWeb && !uiConfig.showAsCard
-                  ? '$sm'
-                  : (titleTypography as any).fontSize) as any
-              }
-              fontWeight={
-                (titleTypography as any).fontWeight
-              }
-              style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
-            >
-              {task.name}
-            </Text>
-          </ContentWrapper>
+            <ContentWrapper>
+              <Pressable
+                onPress={() => {
+                  if (!isManualToggleDisabled) {
+                    handleCheckboxChange(!isCompleted);
+                  }
+                }}
+              >
+                <Text
+                  {...titleTypography}
+                  color="$textPrimary"
+                  {...textStyle}
+                  fontSize={
+                    (!isWeb && !uiConfig.showAsCard
+                      ? '$sm'
+                      : (titleTypography as any).fontSize) as any
+                  }
+                  fontWeight={
+                    (titleTypography as any).fontWeight
+                  }
+                  style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}
+                >
+                  {task.name}
+                </Text>
+              </Pressable>
+            </ContentWrapper>
             <HStack space="sm"  alignItems="center" flexWrap="wrap">
               {statusBadge}
               {taskBadge}
@@ -620,7 +628,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   <LucideIcon
                     name="Check"
                     size={16}
-                    color={isAddedToPlan ? theme.tokens.colors.white : theme.tokens.colors.success500}
+                    color={isAddedToPlan ? "$white" : "$success500"}
                     strokeWidth={3}
                   />
                 </Box>
@@ -637,7 +645,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               const isHovered = state?.hovered || state?.pressed || false;
               return (
                 <Box
-                  bg={isHovered ? '$error100' : 'transparent'}
+                  bg={isHovered || isRejected ? '$error100' : 'transparent'}
                   padding="$2"
                   borderRadius="$lg"
                   borderWidth={1}
@@ -647,7 +655,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   <LucideIcon
                     name="X"
                     size={16}
-                    color={theme.tokens.colors.error500}
+                    color={"$error500"}
                     strokeWidth={3}
                   />
                 </Box>
@@ -884,7 +892,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               ? isAddedToPlan
                 ? '$optionalTaskGreenBg'
                 : isRejected
-                  ? '$optionalTaskRedBg'
+                  ? '$socialProtectionAccordionBg'
                   : '$optionalTaskYellowBg'
               : isInterventionPlanEditMode
                 ? '$stylesCardBg'
@@ -912,7 +920,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <VStack space="sm" width="100%">
               <HStack
                 alignItems="flex-start"
-                space={isPreview ? "md" : "xs"}
+                space={isPreview ? "md" : "sm"}
                 width="100%"
               >
                 <Box flexShrink={0}>
