@@ -354,8 +354,12 @@ export const taskAccordionStyles = {
     alignItems: 'center' as const,
   },
   cardContent: {
-    paddingHorizontal: '$5',
-    paddingVertical: '$4',
+    px: '$3',
+    "$sm-px": '$4',
+    "$md-px": '$5',
+    "$lg-px": '$5',
+    "$xl-px": '$5',
+    py: '$4',
   },
   cardContentStack: {
     space: 'md' as const,

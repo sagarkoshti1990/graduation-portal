@@ -1856,8 +1856,8 @@
       "assessmentSurveys": "Assessment Surveys"
     },
     "interventionPlan": {
-      "noPlanAssigned": "No intervention plan has been assigned yet.",
-      "noPlanDescription": "Develop a personalized intervention plan to support this participant's goals.",
+      "noPlanAssigned": "No Intervention Plan Assigned",
+      "noPlanDescription": "Pillars and tasks will appear here once an intervention plan is assigned to this participant.",
       "developPlan": "Develop Intervention Plan",
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",

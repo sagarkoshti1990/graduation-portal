@@ -174,6 +174,7 @@ function LogVisitModulePopupComponent({
               participant={participant}
               onFormSelect={handleSelectSubmission}
               _container={checkInsContainer}
+              _dataNotFoundCard={{variant:"ghost"}}
             />
           )}
         </Box>

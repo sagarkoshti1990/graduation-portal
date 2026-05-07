@@ -56,6 +56,7 @@ interface CheckInsListContentProps {
   preSelectedSolution?: string;
   participant?: ParticipantData;
   _container?:any
+  _dataNotFoundCard?:any
 }
 
 /**
@@ -69,7 +70,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   onFormSelect,
   solutions: propSolutions,
   participant: propParticipant,
-  _container
+  _container,
+  _dataNotFoundCard
 }) => {
   type IconMeta = {
     color?: string;
@@ -301,7 +303,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-
+  
   return (
     <Container px="$3" py="$4" $md-px="$6" $md-py="$6" {..._container}>
       {/* Submissions List */}
@@ -344,6 +346,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
                 {...assessmentSurveyCardStyles.emptyCard}
                 width="100%"
                 maxWidth="100%"
+                {..._dataNotFoundCard}
               >
                 <LucideIcon name={'Clock'} size={48} />
                 <Text {...assessmentSurveyCardStyles.emptyCardTitale}>
