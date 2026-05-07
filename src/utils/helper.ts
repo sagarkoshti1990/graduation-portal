@@ -1,4 +1,5 @@
-import {Linking, Image, Platform} from "react-native"
+import {Image, Platform} from "react-native"
+import ReactNativeBlobUtil from 'react-native-blob-util';
 export function applyFilters(data: any[], filters: Record<string, any>): any[] {
   return data.filter(item => {
     return Object.keys(filters).every(key => {
@@ -104,63 +105,87 @@ export const sortByNestedOrder = (data: any[], path: string, order: string[], di
 };
 
 
-export const openDownload = (assetSource: number | string,t?:any, showAlert?: any) => {
+export const openDownload = async (
+  assetSource: number | string,
+  t?: any,
+  showAlert?: any
+) => {
   const uri =
     typeof assetSource === 'string'
       ? assetSource
       : Image.resolveAssetSource(assetSource)?.uri;
-  
+
   if (!uri) {
     console.error('Download failed: URI is undefined');
-    showAlert?.('error', t('downloadForms.downloadUriError'));
+    showAlert?.('error', t?.('downloadForms.downloadUriError'));
     return;
   }
-  
+
+  // =========================
+  // 🌐 WEB DOWNLOAD (BLOB)
+  // =========================
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     try {
-      // For web, we need to handle the URL properly
-      // If the URI starts with /, it's a relative path on our server
-      const downloadUrl = uri.startsWith('/') 
-        ? uri 
-        : uri;
-      
-      // Create a temporary anchor element to trigger download
+      const response = await fetch(uri);
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
       const link = document.createElement('a');
-      link.href = downloadUrl;
-      
-      // Extract filename from URI and decode it
-      const pathParts = downloadUrl.split('/');
-      const filename = pathParts[pathParts.length - 1] || 'download';
+      link.href = blobUrl;
+
+      const filename = uri.split('/').pop() || 'download';
       link.download = decodeURIComponent(filename);
-      
-      // Set target to avoid navigation issues
-      link.target = '_blank';
-      
-      // Append to body, click, and remove
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      console.log('Download initiated successfully for:', filename);
-      showAlert?.('success', t('downloadForms.downloadSuccess'));
+
+      window.URL.revokeObjectURL(blobUrl);
+
+      showAlert?.('success', t?.('downloadForms.downloadSuccess'));
     } catch (error) {
-      console.error('Download error:', error);
-      showAlert?.('error', t('downloadForms.downloadError'));
-      // Fallback: open in new tab
-      window.open(uri, '_blank');
+      console.error('Web download error:', error);
+      showAlert?.('error', t?.('downloadForms.downloadError'));
     }
+
     return;
   }
-  
-  // Native platforms
-  Linking.openURL(uri)
-    .then(() => {
-      showAlert?.('success', t?.('downloadForms.downloadSuccess'));
-    })
-    .catch(err => {
-      console.error('Failed to open URL:', err);
-      showAlert?.('error', t?.('downloadForms.downloadError'));
-    });
+
+  // =========================
+  // 📱 NATIVE DOWNLOAD
+  // =========================
+  try {
+    const { config, fs } = ReactNativeBlobUtil;
+
+    const downloads = fs.dirs.DownloadDir;
+    const filename =
+      decodeURIComponent(uri.split('/').pop() || `file_${Date.now()}`);
+
+    const path = `${downloads}/${filename}`;
+
+    await config({
+      fileCache: true,
+      path,
+      addAndroidDownloads: {
+        useDownloadManager: true,
+        notification: true,
+        path,
+        description: 'Downloading file...',
+        mime: 'application/octet-stream',
+        mediaScannable: true,
+      },
+    }).fetch('GET', uri);
+
+    showAlert?.('success', t?.('downloadForms.downloadSuccess'));
+  } catch (err) {
+    console.error('Native download error:', err);
+    showAlert?.('error', t?.('downloadForms.downloadError'));
+  }
 };
 
 export const toCamelCase = (str: string): string => {

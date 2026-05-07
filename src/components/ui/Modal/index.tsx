@@ -183,11 +183,12 @@ const Modal: React.FC<ModalProps> = ({
             {footerContent ? (
               footerContent
             ) : (
-              <HStack space="md" width="$full" justifyContent="flex-end" flexDirection={isMobile ? 'column' : 'row'}>
+              <HStack space="sm" width="$full" justifyContent="flex-end" flexDirection={isMobile ? 'column-reverse' : 'row'}>
                 {/* Cancel Button */}
                 {cancelButtonText && (
                   <Button
-                    {...profileStyles.cancelButton}
+                    // @ts-ignore
+                    variant="outlineghost"
                     onPress={handleCancel}
                     isDisabled={confirmLoading}
                   >
@@ -199,7 +200,6 @@ const Modal: React.FC<ModalProps> = ({
                 {/* Confirm Button */}
                 {confirmButtonText && onConfirm && (
                   <Button
-                    {...profileStyles.confirmButton}
                     variant={confirmButtonVariant}
                     bg={confirmButtonColor}
                     onPress={onConfirm}

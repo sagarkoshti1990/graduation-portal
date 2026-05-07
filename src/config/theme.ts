@@ -125,7 +125,7 @@ export const theme = {
       optionalTaskYellowBorder: '#fde68a',
       optionalTaskGreenBg: '#f0fdf4',
       optionalTaskGreenBorder: '#bbf7d0',
-      optionalTaskRedBg: '#fee2e2',
+      optionalTaskRedBg: '#ffe2e2',
       // Preview mode - tick button active state
       tickButtonActiveBg: '#16a34a',
       tableHeaderBg: '#f7f9fc',

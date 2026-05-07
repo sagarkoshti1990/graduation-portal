@@ -20,12 +20,12 @@ import { updateParticipantAddress } from '../../services/participantService';
 import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { openDownload } from '@utils/helper';
+import { usePlatform } from '@utils/platform';
 
 type ParticipantProfileModalProps = {
   isOpen: boolean;
   onClose: () => void;
   participant: User;
-  isWeb: boolean;
   onParticipantSaved: (patch: { location: string; email: string }) => void;
 };
 
@@ -33,11 +33,11 @@ function ParticipantProfileModalInner({
   isOpen,
   onClose,
   participant,
-  isWeb,
   onParticipantSaved,
 }: ParticipantProfileModalProps) {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const { isMobile } = usePlatform()
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [editedAddress, setEditedAddress] = useState({
     email: '',
@@ -179,24 +179,26 @@ function ParticipantProfileModalInner({
       headerDescription={t('participantDetail.profileModal.subtitle', {
         name: participant?.name,
       })}
-      showCloseButton={false}
-      headerRightContent={
-        canEditProfile && <Pressable onPress={handleToggleEdit}>
-          <LucideIcon
-            name={isEditingAddress ? 'X' : 'Pencil'}
-            size={16}
-            color={theme.tokens.colors.primary500}
-          />
-        </Pressable>
-      }
-      size={isWeb ? 'sm' : 'lg'}
-      // cancelButtonText={t('common.cancel')}
-      confirmButtonText={
-        isEditingAddress ? t('participantDetail.profileModal.save') : undefined
-      }
-      onCancel={onClose}
-      onConfirm={handleSaveAddress}
-      footerContent={<RenderFooterContent participant={participant} />}
+      bodyProps={{ pb: 0 }}
+      // showCloseButton={false}
+      // headerRightContent={
+      //   canEditProfile && <Pressable onPress={handleToggleEdit}>
+      //     <LucideIcon
+      //       name={isEditingAddress ? 'X' : 'Pencil'}
+      //       size={16}
+      //       color={theme.tokens.colors.primary500}
+      //     />
+      //   </Pressable>
+      // }
+      size={isMobile ? "lg" : "sm"}
+      {...(!isEditingAddress ? {
+        footerContent: <RenderFooterContent participant={participant} />
+      } : {
+        cancelButtonText: t('common.cancel'),
+        confirmButtonText: t('participantDetail.profileModal.save'),
+        onCancel: handleToggleEdit,
+        onConfirm: handleSaveAddress
+      })}
     >
       <VStack space="lg">
         <VStack space="xs" {...profileStyles.fieldSection}>
@@ -255,9 +257,18 @@ function ParticipantProfileModalInner({
         </VStack>
 
         <VStack space="xs" {...profileStyles.fieldSection}>
-          <Text {...profileStyles.fieldLabel}>
-            {t('common.profileFields.address')}
-          </Text>
+          <HStack justifyContent='space-between'>
+            <Text {...profileStyles.fieldLabel}>
+              {t('common.profileFields.address')}
+            </Text>
+            {canEditProfile && !isEditingAddress && <Pressable onPress={handleToggleEdit}>
+              <LucideIcon
+                name={isEditingAddress ? 'X' : 'Pencil'}
+                size={16}
+                color={theme.tokens.colors.primary500}
+              />
+            </Pressable>}
+          </HStack>
           {isEditingAddress ? (
             <VStack space="sm">
               <VStack space="xs">
@@ -318,14 +329,15 @@ export const ParticipantProfileModal = memo(ParticipantProfileModalInner);
 const RenderFooterContent = ({ participant }: { participant: any }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const {isMobile} = usePlatform()
   const consentFile = getFileUrl(participant?.consentFiles);
   const slaFile = getFileUrl(participant?.slaFiles);
 
-  return <HStack space='lg' flex={1}>
+  return <HStack space='sm' flex={1} flexDirection={isMobile ? "column" :"row"}>
     {consentFile !== ""
       // @ts-ignore
       && <Button variant='outlineghost' flex="1"
-        onPress={() => openDownload(consentFile,t,showAlert)}
+        onPress={() => openDownload(consentFile, t, showAlert)}
       >
         <ButtonIcon as={LucideIcon} name="FileText" />
         <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
@@ -335,7 +347,7 @@ const RenderFooterContent = ({ participant }: { participant: any }) => {
     {slaFile !== ""
       // @ts-ignore
       && <Button variant='outlineghost' flex="1"
-        onPress={() => openDownload(slaFile,t,showAlert)}
+        onPress={() => openDownload(slaFile, t, showAlert)}
       >
         <ButtonIcon as={LucideIcon} name="FileText" />
         <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
@@ -344,7 +356,7 @@ const RenderFooterContent = ({ participant }: { participant: any }) => {
   </HStack>
 };
 
-const getFileUrl = (files:any) => {
+const getFileUrl = (files: any) => {
   if (!Array.isArray(files) || files.length === 0) {
     return "";
   }

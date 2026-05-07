@@ -302,10 +302,10 @@ const ProjectComponent: React.FC = () => {
             ) : null;
 
             const isSingleContainer = !hasChildren;
-
+            
             const content = (
               <VStack
-                p={"$0"}
+                p={mode === PLAYER_MODE.PREVIEW ? "$4" : "$0"}
                 space="md"
               >
                 {header}

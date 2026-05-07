@@ -23,7 +23,6 @@ import type {
   // PathwayType,
 } from '@app-types/participant';
 import { Loader } from '@ui';
-import { usePlatform } from '@utils/platform';
 import ProjectPlayer, { ProjectPlayerData } from '../../project-player/index';
 import {
   MODE,
@@ -64,8 +63,7 @@ export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth()
   const { t } = useLanguage();
-  const { isWeb } = usePlatform();
-  const {setrefComponent} = useGlobal()
+  const { setrefComponent } = useGlobal()
   // Extract the id parameter from the route
   const participantId = route.params?.id;
   const [isLoading, setIsLoading] = useState(true);
@@ -427,7 +425,6 @@ export default function ParticipantDetail() {
         isOpen={isProfileModalOpen}
         onClose={closeProfileModal}
         participant={participant}
-        isWeb={isWeb}
         onParticipantSaved={handleParticipantAddressSaved}
       />
     </Box>

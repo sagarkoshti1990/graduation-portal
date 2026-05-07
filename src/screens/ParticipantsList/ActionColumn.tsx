@@ -565,6 +565,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                   preSelectedSolution={selectedSolutionId}
                   onFormSelect={handleFormSelect}
                   participant={participant}
+                  _dataNotFoundCard={{variant:"ghost"}}
                 />
               </Box>
             ) : (
