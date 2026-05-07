@@ -7,10 +7,10 @@ export const templateStyles = {
     },
   },
   leftSection: {
-    width: 'auto',
+    width: '50%',
   },
   rightSection: {
-    width: 'auto',
+    width: '50%',
   },
   headerContainer: {
     py: "$4",
