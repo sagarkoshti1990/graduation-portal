@@ -6,6 +6,7 @@ import CheckInsListContent from './Check-ins-list/CheckInsListContent';
 import ObservationContent from '../Observation/ObservationContent';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getTargetedSolutions } from '../../services/solutionService';
+import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -74,13 +75,6 @@ function LogVisitModulePopupComponent({
           _container: { '$md-px': '$6', px: '$4', pb: '$4', backgroundColor: '$backgroundColor' },
         },
       },
-    }),
-    [],
-  );
-
-  const userData = useMemo(
-    () => ({
-      'Visit Date': { value: new Date().toISOString().split('T')[0], readonly: false },
     }),
     [],
   );
@@ -164,11 +158,11 @@ function LogVisitModulePopupComponent({
               // @ts-ignore - showAlert is a valid prop
               showAlert={showAlert}
               submissionNumber={(selectedSubmissionNumber || undefined) as any}
-              userData={userData}
+              userData={LOG_VISIT_MODULE_POPUP}
             />
           ) : (
             <CheckInsListContent
-              id={participant.userId}
+              id={participant?.userId}
               solutions={solutions}
               preSelectedSolution={selectedSolutionId}
               participant={participant}

@@ -42,6 +42,7 @@ import { getObservationSubmissions, getTargetedSolutions } from '../../services/
 import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
 import { getAnswerData } from '@utils/helper';
+import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -222,7 +223,7 @@ export default function ParticipantDetail() {
             getAnswers:true,
           });
           const submission = submissionsData?.result.find((item:any) => item.status === ENTITY_STATUS.COMPLETED)
-          const data = getAnswerData(["Challenge Notes"],submission?.answers || {})
+          const data = getAnswerData(PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS,submission?.answers || {})
           if(data?.challengeNotes) {
             setChallenges(data?.challengeNotes)
           }

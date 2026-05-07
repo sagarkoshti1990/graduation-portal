@@ -39,6 +39,7 @@ import {
   ParticipantData,
 } from '@app-types/participant';
 import { openDownload } from '@utils/helper';
+import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -550,12 +551,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                 submissionNumber={
                   selectedSubmissionNumber || (undefined as any)
                 }
-                userData={{
-                  'Visit Date': {
-                    value: new Date().toISOString().split('T')[0],
-                    readonly: false,
-                  },
-                }}
+                userData={ACTION_COLUMN}
               />
             ) : selectedSolutionId && modalType === 'view-log' ? (
               <Box flex={1}>
