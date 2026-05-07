@@ -269,7 +269,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderViewProfileButton = () => (
     // @ts-ignore
-    <Button variant="outlineghost" onPress={onViewProfile}>
+    <Button variant="outlineghost" onPress={onViewProfile} size="sm">
       <ButtonIcon as={LucideIcon} name="User" size={16} />
       <ButtonText {...participantHeaderStyles.outlineButtonText}>
         {t('participantDetail.header.viewProfile')}
@@ -294,6 +294,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           isDisabled={!areAllTasksCompleted}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
+          size="sm"
         >
           <ButtonIcon as={LucideIcon} name="User" />
           <ButtonText {...participantHeaderStyles.solidButtonText}>

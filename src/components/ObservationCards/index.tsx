@@ -166,6 +166,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                     $md-width="fit-content"
                     // @ts-ignore
                     variant={shouldShowViewButton ? "outlineghost" : "solid"}
+                    size="sm"
                     onPress={handleCardAction}
                   >
                     <ButtonIcon

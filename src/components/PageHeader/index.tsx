@@ -60,7 +60,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <HStack {...pageHeaderStyles.leftSection} {..._leftSection}>
             {/* @ts-ignore: ghost variant is defined in theme */}
             {onBackPress &&
-              <Button variant={"ghost" as any} onPress={onBackPress} {..._backButton}>
+              <Button variant={"ghost" as any} onPress={onBackPress} size="xs" {..._backButton}>
                 <ButtonIcon as={LucideIcon} name="ArrowLeft" size={16} />
               {backButtonText && <ButtonText {...TYPOGRAPHY.bodySmall}>{backButtonText}</ButtonText>}
               </Button>

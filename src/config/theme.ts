@@ -170,9 +170,6 @@ export const theme = {
               ...gluestackConfig.components.Button.theme.variants.variant.outline,
               borderWidth: 0,
               borderRadius: "$xl",
-              px: "$3 !important",
-              py: "$2",
-              height: "inherit !important",
               gap: "$2",
               ":hover": {
                 bg: "$primary100",
@@ -195,9 +192,6 @@ export const theme = {
               borderWidth: 1,
               borderColor: "$borderColor",
               borderRadius: "$xl",
-              px: "$3 !important",
-              py: "$2",
-              height: "inherit !important",
               gap: "$2",
               bg: "$accent100",
               ":hover": {
