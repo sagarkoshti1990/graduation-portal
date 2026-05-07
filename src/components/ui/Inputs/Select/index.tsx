@@ -9,7 +9,9 @@ import React, {
 
 import {
   Animated,
+  Dimensions,
   I18nManager,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -72,6 +74,7 @@ const DROPDOWN_Z = 100000;
 const DROPDOWN_GAP = 4;
 const VIEWPORT_MARGIN = 12;
 const DEFAULT_DROPDOWN_MAX_HEIGHT = 280;
+const MIN_DROPDOWN_HEIGHT = 96;
 
 const SELECT_SIZE_HEIGHT: Record<
   NonNullable<SelectProps['size']>,
@@ -680,10 +683,12 @@ function NativeSelect({
 
   const [dropdownLayout, setDropdownLayout] =
     useState({
-      x: 0,
-      y: 0,
+      top: 0,
+      left: 0,
       width: 0,
-      height: 0,
+      maxHeight:
+        DEFAULT_DROPDOWN_MAX_HEIGHT,
+      openUp: false,
     });
 
   const triggerRef = useRef<any>(null);
@@ -692,6 +697,11 @@ function NativeSelect({
     new Animated.Value(0),
   ).current;
 
+  const [keyboardY, setKeyboardY] =
+    useState(
+      Dimensions.get('window').height,
+    );
+
   useEffect(() => {
     Animated.timing(animation, {
       toValue: open ? 1 : 0,
@@ -699,6 +709,151 @@ function NativeSelect({
       useNativeDriver: true,
     }).start();
   }, [open]);
+
+  useEffect(() => {
+    const showSub =
+      Keyboard.addListener(
+        'keyboardDidShow',
+        event => {
+          setKeyboardY(
+            event.endCoordinates.screenY,
+          );
+        },
+      );
+
+    const hideSub =
+      Keyboard.addListener(
+        'keyboardDidHide',
+        () => {
+          setKeyboardY(
+            Dimensions.get('window').height,
+          );
+        },
+      );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const updateDropdownLayout = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => {
+    const window =
+      Dimensions.get('window');
+
+    const viewportWidth = window.width;
+    const viewportHeight = window.height;
+    const viewportBottom = Math.min(
+      viewportHeight,
+      keyboardY,
+    );
+
+    const availableBelow = Math.max(
+      0,
+      viewportBottom -
+        y -
+        height -
+        VIEWPORT_MARGIN -
+        DROPDOWN_GAP,
+    );
+
+    const availableAbove = Math.max(
+      0,
+      y -
+        VIEWPORT_MARGIN -
+        DROPDOWN_GAP,
+    );
+
+    const shouldOpenUp =
+      availableBelow <
+        DEFAULT_DROPDOWN_MAX_HEIGHT &&
+      availableAbove > availableBelow;
+
+    const availableHeight =
+      shouldOpenUp
+        ? availableAbove
+        : availableBelow;
+
+    const adjustedWidth = Math.min(
+      width,
+      Math.max(
+        0,
+        viewportWidth -
+          VIEWPORT_MARGIN * 2,
+      ),
+    );
+
+    const adjustedLeft = Math.min(
+      Math.max(x, VIEWPORT_MARGIN),
+      Math.max(
+        VIEWPORT_MARGIN,
+        viewportWidth -
+          adjustedWidth -
+          VIEWPORT_MARGIN,
+      ),
+    );
+
+    const minimumHeight = Math.min(
+      MIN_DROPDOWN_HEIGHT,
+      availableHeight,
+    );
+
+    const menuHeight = Math.max(
+      minimumHeight,
+      Math.min(
+        DEFAULT_DROPDOWN_MAX_HEIGHT,
+        availableHeight,
+      ),
+    );
+
+    const adjustedTop = shouldOpenUp
+      ? Math.max(
+          VIEWPORT_MARGIN,
+          y - DROPDOWN_GAP - menuHeight,
+        )
+      : Math.min(
+          y + height + DROPDOWN_GAP,
+          Math.max(
+            VIEWPORT_MARGIN,
+            viewportBottom -
+              VIEWPORT_MARGIN -
+              menuHeight,
+          ),
+        );
+
+    setDropdownLayout({
+      top: adjustedTop,
+      left: adjustedLeft,
+      width: adjustedWidth,
+      maxHeight: menuHeight,
+      openUp: shouldOpenUp,
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    triggerRef.current?.measureInWindow(
+      (
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+      ) => {
+        updateDropdownLayout(
+          x,
+          y,
+          width,
+          height,
+        );
+      },
+    );
+  }, [open, keyboardY]);
 
   const openDropdown = () => {
     if (disabled) return;
@@ -710,12 +865,12 @@ function NativeSelect({
         width: number,
         height: number,
       ) => {
-        setDropdownLayout({
+        updateDropdownLayout(
           x,
           y,
           width,
           height,
-        });
+        );
 
         setOpen(true);
       },
@@ -759,7 +914,10 @@ function NativeSelect({
         translateY:
           animation.interpolate({
             inputRange: [0, 1],
-            outputRange: [-8, 0],
+            outputRange:
+              dropdownLayout.openUp
+                ? [8, 0]
+                : [-8, 0],
           }),
       },
     ],
@@ -836,17 +994,16 @@ function NativeSelect({
                       'absolute',
 
                     top:
-                      dropdownLayout.y +
-                      dropdownLayout.height +
-                      4,
+                      dropdownLayout.top,
 
                     left:
-                      dropdownLayout.x,
+                      dropdownLayout.left,
 
                     width:
                       dropdownLayout.width,
 
-                    maxHeight: 240,
+                    maxHeight:
+                      dropdownLayout.maxHeight,
 
                     backgroundColor:
                       '#FFFFFF',
