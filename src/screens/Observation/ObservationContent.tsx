@@ -402,7 +402,8 @@ const buildDefaultValuesFromObservation = (
           for (const pageQuestion of question.pageQuestions) {
             // pageQuestion.question is an array of strings, key is a string. Compare lowercase.
             const keyFound = userDataKeys.find(key => 
-              Array.isArray(pageQuestion?.question)
+              key === pageQuestion.createdFromQuestionId
+               || (Array.isArray(pageQuestion?.question)
                 ? pageQuestion.question
                     .map((q: string) => (typeof q === 'string' ? q?.toLowerCase() : ''))
                     .some(
@@ -413,7 +414,7 @@ const buildDefaultValuesFromObservation = (
                     )
                 : (() => { 
                     throw new Error("pageQuestion.question is not an array"); 
-                  })()
+                  })())
             );
             if (keyFound !== undefined) {
               let value = typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value;
@@ -427,13 +428,13 @@ const buildDefaultValuesFromObservation = (
                       option.label?.toString().toLowerCase().includes(value?.toString().toLowerCase()))
                 )?.value;
               }
-              defaultValues[pageQuestion._id] = { value: value, readonly: userData[keyFound]?.readonly === false ? false : true };
+              defaultValues[pageQuestion._id] = {label:pageQuestion.question,createdFromQuestionId:pageQuestion.createdFromQuestionId, value: value, readonly: userData[keyFound]?.readonly === false ? false : true };
             }
           }
         } else {
           const keyFound = userDataKeys.find(key => question.question.includes(key));
           if (keyFound !== undefined && question.externalId) {
-            defaultValues[question.externalId] = { value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
+            defaultValues[question.externalId] = { label:keyFound, value: typeof userData[keyFound] === "string" ? userData[keyFound] : userData[keyFound]?.value, readonly: userData[keyFound]?.readonly === false ? false : true };
           }
         }
       }

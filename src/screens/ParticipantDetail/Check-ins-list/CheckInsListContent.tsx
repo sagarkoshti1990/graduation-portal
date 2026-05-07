@@ -37,6 +37,7 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import type { User } from '@contexts/AuthContext';
 import PaginationControls from '@components/DataTable/PaginationControls';
 import { getAnswerData } from '@utils/helper';
+import { CHECK_INS_SUBMISSION_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
 
 /**
  * CheckInsListContent Component Props
@@ -388,7 +389,7 @@ const SubmissionCard = ({ submission, iconMeta, onFormSelect }: { submission: an
   useEffect(() => {
     if(submission?.answers) {
       // @ts-ignore
-      setAnswers(getAnswerData(["Visit Date","Notes","Tags"],submission?.answers));
+      setAnswers(getAnswerData(CHECK_INS_SUBMISSION_ANSWER_ITEMS,submission?.answers));
     }
   },[submission?.answers])
   
@@ -424,7 +425,7 @@ const SubmissionCard = ({ submission, iconMeta, onFormSelect }: { submission: an
           <VStack flex={1} minWidth="$0" space="md" alignSelf="stretch">
             <HStack justifyContent='space-between'>
               <Badge size="md" variant="solid" bg="$primary500" borderRadius="10px">
-                <BadgeText color="$white" fontWeight={500}>{answers?.tags || "visit"}</BadgeText>
+                <BadgeText color="$white" fontWeight={500} textTransform='capitalize'>{answers?.tags || "visit"}</BadgeText>
               </Badge>
               <HStack space='sm' alignItems='center'>
                 <LucideIcon name="Calendar" color="$badgeColor" size={14} />

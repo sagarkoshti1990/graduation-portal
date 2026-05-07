@@ -425,7 +425,7 @@ const DevelopInterventionPlan: React.FC = () => {
           participant &&
           <LogVisitModulePopup
             participant={participant}
-            observationLogsTitle={t('actions.observationLogs')}
+            observationLogsTitle={t('actions.logVisit')}
             noSolutionsMessage={t('logVisit.noSolutions')}
             buttonText={t("actions.logVisit")}
           />

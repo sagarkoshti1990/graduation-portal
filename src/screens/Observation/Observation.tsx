@@ -5,6 +5,7 @@ import { Loader, useAlert } from '@ui';
 import { getParticipantsList } from '../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
+import { buildObservationPrefillData } from '@constants/OBSERVATION_PREFILL';
 
 const DEFAULT_COUNTRY_CODE = 27;
 
@@ -82,20 +83,17 @@ const Observation: React.FC = () => {
           const alternatePhoneCode =
             newData?.userDetails?.alternate_phone_code ??
             newData?.userDetails?.phone_code;
-          const preFillData = {
-            "Facilitator Name":user?.name,
-            "Province":{value:user?.province?.label, readonly: user?.province?.label ? true : false},
-            "Pilot Site":{value:user?.site?.label, readonly: user?.site?.label ? true : false},
-            "Date of Collection":{value:new Date().toISOString().split('T')[0], readonly: false},
-            "What is your name?":{value:newData?.name, readonly: false},
-            "What is your ID number?":{value:newData?.userDetails?.national_id?.label || "", readonly: false},
-            // "Is the respondent a man or a woman? (record from observation)":newData?.userDetails?.gender,
-            "What is your cell phone number?":{value:newData?.userDetails?.phone, readonly: false},
-            "And what is your email address?":{value:newData?.userDetails?.email, readonly: false},
-            "Country Code":{value: formatCountryCode(newData?.userDetails?.phone_code), readonly: false},
-            "Country Code (For alternative number)":{value: formatCountryCode(alternatePhoneCode), readonly: false},
-            "Visit Date": { value: new Date().toISOString().split('T')[0], readonly: false },
-            };
+          const preFillData = buildObservationPrefillData({
+            facilitatorName: user?.name,
+            provinceLabel: user?.province?.label,
+            siteLabel: user?.site?.label,
+            participantName: newData?.name,
+            nationalIdLabel: newData?.userDetails?.national_id?.label || "",
+            phoneCode: newData?.userDetails?.phone_code,
+            phone: newData?.userDetails?.phone,
+            alternatePhoneCode,
+            email: newData?.userDetails?.email,
+          }, formatCountryCode);
           setUserData(preFillData);
         }
       } catch (error: any) {

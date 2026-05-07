@@ -188,7 +188,10 @@ export const openDownload = async (
   }
 };
 
-export const toCamelCase = (str: string): string => {
+export const toCamelCase = (str: string): any => {
+  if(typeof str !== "string") {
+    return str
+  }
   return str
     .toLowerCase()
     .replace(/[-_\s]+(.)?/g, (_, char) =>
@@ -196,14 +199,13 @@ export const toCamelCase = (str: string): string => {
     );
 };
 
-
-export const getAnswerData = (label:string[],answers:any) => {
+export const getAnswerData = (items:any[],answers:any) => {
   let value:any = {};
-  label.forEach((item:any) => {
-    const data = Object.values(answers).find((itemData : any) => itemData?.payload?.question?.includes(item))
-    const keyName = toCamelCase(item);
+  items.forEach((item:any) => {
+    const data = Object.values(answers).find((itemData : any) => itemData?.qid === item.qid || itemData?.payload?.question?.includes(item.label))
+    const keyName = item.keyName || toCamelCase(item.label);
     // @ts-ignore
-    value = {...value,[keyName]: data?.value || ""}
+    value = {...value,[keyName]: data?.payload?.labels || ""}
   });
   return value;
 }
