@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import {
   Menu,
   MenuItem,
@@ -94,7 +95,10 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
     (defaultTriggerProps: any) => {
       // If custom trigger provided, use it
       if (trigger) {
-        return trigger(defaultTriggerProps);
+        return trigger({
+          ...defaultTriggerProps,
+          ...triggerProps,
+        });
       }
       // Otherwise use default trigger
       return (
@@ -110,7 +114,17 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
   return (
     <Menu
       placement={placement}
-      offset={offset}
+      offset={
+        Platform.OS === 'web'
+          ? offset
+          : -12
+      }
+      crossOffset={
+        Platform.OS === 'web'
+          ? 0
+          : -4
+      }
+      shouldFlip={Platform.OS === 'web'}
       disabledKeys={disabledKeys}
       trigger={renderTrigger}
       {...menuProps}
@@ -131,7 +145,7 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
             disabled={isDisabled}
             opacity={item.isComingSoon ? 0.6 : 1}
           >
-            <Box flexDirection="row" alignItems="center" justifyContent="space-between" width="100%">
+            <Box flexDirection="row" alignItems="center" justifyContent="space-between" flex={1}>
               <Box flexDirection="row" alignItems="center" flex={1}>
                 {item.iconElement ? (
                   // Custom ReactNode icon (used in constants for React.createElement pattern)
