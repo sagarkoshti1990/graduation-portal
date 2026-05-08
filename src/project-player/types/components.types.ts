@@ -216,11 +216,8 @@ export interface FileUploadModalProps {
 export interface UploadMethodOptionProps {
   method: 'camera' | 'device';
   selectedMethod: 'camera' | 'device' | null;
-  hoveredOption: 'camera' | 'device' | null;
   title: string;
   subtitle: string;
   icon: string;
   onSelect: (method: 'camera' | 'device') => void;
-  onHoverIn: (method: 'camera' | 'device') => void;
-  onHoverOut: () => void;
 }
