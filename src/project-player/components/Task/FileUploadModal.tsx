@@ -40,7 +40,7 @@ const UploadMethodOption: React.FC<UploadMethodOptionProps> = memo(({
 
   return (
     <Pressable
-      onPress={() => onSelect(method)}
+      onPress={() => onSelect?.(method)}
       onHoverIn={() => setHoveredOption(method)}
       onHoverOut={() => setHoveredOption(null)}
       accessibilityLabel={title}
@@ -104,6 +104,7 @@ type NormalizedAllowedType =
 // Empty means "allow all types" (validation passes for any file type).
 const DEFAULT_ALLOWED_FILE_TYPES: string[] = [];
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'heic']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', '3gp', 'hevc']);
 
 const getFileName = (file: any): string =>
   file?.fileName || file?.name || '';
@@ -206,6 +207,37 @@ const getImageAcceptString = (allowedTypes: string[]): string => {
 const getDeviceAcceptString = (allowedTypes: string[]): string =>
   allowedTypes.length === 0 ? '*/*' : allowedTypes.map(normalizeAllowedTokenForAccept).join(',');
 
+const getAllowedMediaSupport = (allowedTypes: string[]) => {
+  if (!allowedTypes || allowedTypes.length === 0) {
+    return { supportsImage: true, supportsVideo: true };
+  }
+
+  let supportsImage = false;
+  let supportsVideo = false;
+
+  for (const token of allowedTypes) {
+    const t = token.trim().toLowerCase();
+    if (!t) continue;
+
+    if (t === '*/*') {
+      supportsImage = true;
+      supportsVideo = true;
+      break;
+    }
+
+    if (t.startsWith('image/')) supportsImage = true;
+    if (t.startsWith('video/')) supportsVideo = true;
+
+    if (!t.includes('/')) {
+      const ext = t.startsWith('.') ? t.slice(1) : t;
+      if (IMAGE_EXTENSIONS.has(ext)) supportsImage = true;
+      if (VIDEO_EXTENSIONS.has(ext)) supportsVideo = true;
+    }
+  }
+
+  return { supportsImage, supportsVideo };
+};
+
 const getComparableFileKey = (file: any): string | null => {
   const name = getFileName(file);
   const size = getFileSize(file);
@@ -267,6 +299,11 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     () => normalizeAllowedFileTypes(resolvedAllowedFileTypes),
     [resolvedAllowedFileTypes],
   );
+  const { supportsImage: supportsCameraImage, supportsVideo: supportsCameraVideo } = useMemo(
+    () => getAllowedMediaSupport(resolvedAllowedFileTypes),
+    [resolvedAllowedFileTypes],
+  );
+  const canShowCameraOption = supportsCameraImage || supportsCameraVideo;
 
   // Reset internal state when the modal opens.
   useEffect(() => {
@@ -500,8 +537,13 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         deviceInputRef.current?.click();
       }
     } else {
+      const cameraMediaType = supportsCameraImage && supportsCameraVideo
+        ? 'mixed'
+        : supportsCameraVideo
+          ? 'video'
+          : 'photo';
       const options: CameraOptions & ImageLibraryOptions = {
-        mediaType: 'photo',
+        mediaType: cameraMediaType as any,
         includeBase64: false,
         maxHeight: 2000,
         maxWidth: 2000,
@@ -515,10 +557,24 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             Alert.alert(t('common.error'), t('projectPlayer.cameraPermissionDenied'));
             return;
           }
-          const result = await launchCamera(options);
-          if (result.assets && result.assets.length > 0) {
-            addSelectedFiles(method, result.assets);
+          if (typeof launchCamera !== 'function') {
+            Alert.alert(t('common.error'), t('projectPlayer.unableToOpenFile'));
+            return;
           }
+          const result = await launchCamera(options);
+          if (result?.didCancel) return;
+          if (result?.errorCode) {
+            Alert.alert(t('common.error'), result.errorMessage || t('projectPlayer.unableToOpenFile'));
+            return;
+          }
+          if (result?.assets && result.assets.length > 0) {
+            const safeAssets = result.assets.filter(asset => Boolean(asset?.uri));
+            if (safeAssets.length > 0) {
+              addSelectedFiles(method, safeAssets);
+            }
+            return;
+          }
+          return;
         } else {
           const hasPermission = await requestStoragePermission(t);
           if (!hasPermission) {
@@ -537,12 +593,21 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             ...options,
             selectionLimit: typeof maxUploadCount === 'number' ? selectionLimit : 0,
           });
-          if (result.assets && result.assets.length > 0) {
-            addSelectedFiles(method, result.assets);
+          if (result?.didCancel) return;
+          if (result?.errorCode) {
+            Alert.alert(t('common.error'), result.errorMessage || t('projectPlayer.unableToOpenFile'));
+            return;
+          }
+          if (result?.assets && result.assets.length > 0) {
+            const safeAssets = result.assets.filter(asset => Boolean(asset?.uri));
+            if (safeAssets.length > 0) {
+              addSelectedFiles(method, safeAssets);
+            }
           }
         }
       } catch (error) {
         console.error('Image picker error:', error);
+        Alert.alert(t('common.error'), t('common.serverError500'));
       }
     }
   };
@@ -756,13 +821,14 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     >
       <VStack space="md">
         {/* Take a Photo */}
-        {isMobile && (
+        {isMobile && canShowCameraOption && (
           <UploadMethodOption
             method="camera"
             selectedMethod={selectedMethod}
             title={t('projectPlayer.takePhoto')}
             subtitle={t('projectPlayer.useDeviceCamera')}
             icon="Camera"
+            onSelect={handleSelect}
           />
         )}
 
