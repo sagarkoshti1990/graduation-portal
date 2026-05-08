@@ -219,5 +219,5 @@ export interface UploadMethodOptionProps {
   title: string;
   subtitle: string;
   icon: string;
-  onSelect?: (method: 'camera' | 'device') => void;
+  onSelect: (method: 'camera' | 'device') => void;
 }
