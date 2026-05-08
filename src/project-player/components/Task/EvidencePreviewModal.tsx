@@ -9,6 +9,7 @@ import {
   ScrollView,
   Button,
   ButtonText,
+  ButtonIcon,
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
 import { theme } from '../../../config/theme';
@@ -17,6 +18,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { evidencePreviewModalStyles as styles } from './Styles';
 import { EvidencePreviewModalProps, EvidenceAttachment } from '../../types/components.types';
 import logger from '@utils/logger';
+import { openDownload } from '@utils/helper';
 
 const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
   isOpen,
@@ -35,28 +37,6 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
       month: '2-digit',
       year: 'numeric',
     });
-  };
-
-  // Handle download - cross-platform support
-  const handleDownload = async (attachment: EvidenceAttachment) => {
-    if (!attachment.url) return;
-
-    try {
-      if (Platform.OS === 'web') {
-        window.open(attachment.url, '_blank');
-      } else {
-        // For React Native mobile (iOS/Android)
-        const canOpen = await Linking.canOpenURL(attachment.url);
-        if (canOpen) {
-          await Linking.openURL(attachment.url);
-        } else {
-          Alert.alert(t('projectPlayer.cannotOpenFile'), t('projectPlayer.unableToOpenFile'));
-          logger.warn('Cannot open URL:', attachment.url);
-        }
-      }
-    } catch (error) {
-      logger.error('Failed to open URL:', error);
-    }
   };
 
   return (
@@ -96,24 +76,18 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
                 </VStack>
 
                 {/* Download button */}
-                <Pressable onPress={() => handleDownload(attachment)}>
-                  {(state: any) => {
-                    const isHovered = state?.hovered || state?.pressed || false;
-                    return (
-                      <Box
-                        {...styles.downloadButton}
-                        bg={isHovered ? '$hoverPink' : 'transparent'}
-                        $web-cursor="pointer"
-                      >
-                        <LucideIcon
-                          name="Download"
-                          size={styles.downloadIconSize}
-                          color={isHovered ? theme.tokens.colors.primary500 : theme.tokens.colors.textSecondary}
-                        />
-                      </Box>
-                    );
-                  }}
-                </Pressable>
+                {attachment?.url &&
+                  <Button
+                  // @ts-ignore  
+                  variant="ghost"
+                    onPress={() => openDownload(attachment?.url || "")}
+                  >
+                    <ButtonIcon as={LucideIcon}
+                      name="Download"
+                      // size={styles.downloadIconSize}
+                    />
+                  </Button>
+                }
               </HStack>
 
               {/* Image preview placeholder */}

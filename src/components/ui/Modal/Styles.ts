@@ -49,8 +49,10 @@ export const commonModalContentStyles = {
 } as const;
 
 export const commonModalCloseButtonStyles = {
-  top: '$4' as const,
-  right: '$4' as const,
+  top: '$0' as const,
+  right: '$0' as const,
+  pt: '$4' as const,
+  pr: '$4' as const,
   position: 'absolute' as const,
 } as const;
 

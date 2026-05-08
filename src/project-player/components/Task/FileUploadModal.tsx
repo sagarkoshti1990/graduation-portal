@@ -451,7 +451,6 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
       if (!filesToAdd || filesToAdd.length === 0) return;
-console.log(filesToAdd,"filesToAdd")
       const incoming = filesToAdd.filter(Boolean);
       if (incoming.length === 0) return;
 

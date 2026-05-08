@@ -51,7 +51,7 @@ interface ActionColumnProps {
  */
 const getCustomTrigger = (triggerProps: any) => (
   // @ts-ignore: Button variant
-  <Button variant="ghost" {...triggerProps}>
+  <Button size="sm" variant="ghost" {...triggerProps}>
     <ButtonIcon
       as={LucideIcon}
       name="MoreVertical"
@@ -285,6 +285,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           variant={isMobile ? 'outlineghost' : 'ghost'}
           flex={1}
           onPress={isNotOnboarded ? handleLogVisit : handleViewDetails}
+          size="sm"
         >
           {isNotOnboarded && (
             <LucideIcon
