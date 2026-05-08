@@ -451,7 +451,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
       if (!filesToAdd || filesToAdd.length === 0) return;
-
+console.log(filesToAdd,"filesToAdd")
       const incoming = filesToAdd.filter(Boolean);
       if (incoming.length === 0) return;
 
@@ -567,11 +567,38 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             Alert.alert(t('common.error'), result.errorMessage || t('projectPlayer.unableToOpenFile'));
             return;
           }
+          
           if (result?.assets && result.assets.length > 0) {
-            const safeAssets = result.assets.filter(asset => Boolean(asset?.uri));
-            if (safeAssets.length > 0) {
-              addSelectedFiles(method, safeAssets);
+            const files = result.assets
+              .filter(asset => Boolean(asset?.uri))
+              .map(asset => {
+                // React Native file object
+                const rnFile = {
+                  uri: asset.uri as string,
+                  type: asset.type || 'application/octet-stream',
+                  name: asset.fileName || `file_${Date.now()}`,
+                  size: asset.fileSize,
+                };
+          
+                // Optional JS File object (web compatibility)
+                const jsFile =
+                  typeof File !== 'undefined'
+                    ? new File([], rnFile.name, {
+                        type: rnFile.type,
+                      })
+                    : null;
+          
+                return {
+                  ...rnFile,
+                  file: jsFile,
+                  originalAsset: asset,
+                };
+              });
+          
+            if (files.length > 0) {
+              addSelectedFiles(method, files);
             }
+          
             return;
           }
           return;

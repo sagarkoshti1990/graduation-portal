@@ -13,8 +13,10 @@ export const useTaskActions = () => {
     async (taskId: string, status: TaskStatus, files: File[] = [],excludedFiles:Attachment[]=[]) => {
       if (!canEdit) return;
       let attachments: Attachment[] = excludedFiles;
+      console.log("uplaod API",files)
       if(files.length > 0) {
         const data = await uploadFiles(taskId, files);
+        console.log("uplaoded data",data)
         if(data.data.length > 0) {
           attachments = [...attachments,...data.data];
         }
