@@ -651,8 +651,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
       );
     }
 
-    const iconName = task.metaInformation?.icon || 'Upload';
-
+    const iconName =
+      (task.metaInformation?.icon === "Edit2")
+        ? "Pencil"
+        : task.metaInformation?.icon
+        ? task.metaInformation?.icon
+        : task?.type === "observation"
+          ? "Pencil"
+          : "Upload";
+          
     return <Button
       onPress={handleTaskClick}
       isDisabled={isReadOnly || isStatusUpdating}

@@ -113,7 +113,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         {solutions.length > 0 ? (
           solutions?.map(card => (
             <AssessmentCard
-              key={card.id}
+              key={card._id}
               card={card}
               userId={participant?.userId || ''}
               participantId={participant?.id || ''}

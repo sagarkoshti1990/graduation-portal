@@ -291,7 +291,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             <LucideIcon
               name="ClipboardCheck"
               size={20}
-              color={theme.tokens.colors.primary500}
+              color={"$primary500"}
             />
           )}
 
