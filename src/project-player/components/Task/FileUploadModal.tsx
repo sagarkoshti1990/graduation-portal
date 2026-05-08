@@ -763,6 +763,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             title={t('projectPlayer.takePhoto')}
             subtitle={t('projectPlayer.useDeviceCamera')}
             icon="Camera"
+            onSelect={handleSelect}
           />
         )}
 
