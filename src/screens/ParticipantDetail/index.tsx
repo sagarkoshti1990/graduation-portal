@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { HStack, Box, Container, ReadMoreAlert } from '@ui';
+import { HStack, Box, Container, ReadMoreAlert, Text } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
@@ -43,6 +43,7 @@ import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
 import { getAnswerData } from '@utils/helper';
 import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
+import TargetingCriteriaCard from './ParticipantHeader/TargetingCriteriaCard';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -314,7 +315,7 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-  
+
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
@@ -343,7 +344,9 @@ export default function ParticipantDetail() {
       />
 
       <Container px="$4" py="$6" $md-px="$6">
-        {showOnboardingProject ? (
+        {!participant?.onBoardedProjectId ?
+          <TargetingCriteriaCard />
+        : showOnboardingProject ? (
           <>
             <DownloadFormsCard mode={showOnboardingProject === "not_enrolled" ? "edit" : "read-only"} />
             {configData && projectPlayerConfigData && (
