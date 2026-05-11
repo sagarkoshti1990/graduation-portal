@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect,memo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect, memo } from 'react';
 import { Platform, Alert } from 'react-native';
 import {
   VStack,
@@ -12,17 +12,18 @@ import {
   Icon as GluestackIcon,
   ScrollView,
 } from '@gluestack-ui/themed';
-import { launchCamera, launchImageLibrary, CameraOptions, ImageLibraryOptions } from 'react-native-image-picker';
+import { launchCamera, CameraOptions, ImageLibraryOptions } from 'react-native-image-picker';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { LucideIcon } from '@ui';
-import { theme } from '../../../config/theme';
 import { requestCameraPermission, requestStoragePermission } from '@utils/permissions';
 import { usePlatform } from '@utils/platform';
 import Modal from '@components/ui/Modal';
 import { fileUploadModalStyles } from './Styles';
 import { UploadMethodOptionProps, FileUploadModalProps } from '../../types/components.types';
 import { formatFileSize } from '../../utils/taskUtils';
+import { openFilePicker } from './file-picker';
+
 
 // --- Helper Component for Selection Options ---
 
@@ -60,7 +61,7 @@ const UploadMethodOption: React.FC<UploadMethodOptionProps> = memo(({
             <LucideIcon
               name={icon}
               size={fileUploadModalStyles.optionIconSize}
-              color={isActive ? theme.tokens.colors.primary500 : theme.tokens.colors.textSecondary}
+              color={isActive ? "$primary500" : "$textSecondary"}
             />
           </Box>
           <VStack {...fileUploadModalStyles.optionTextContainer}>
@@ -566,7 +567,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             Alert.alert(t('common.error'), result.errorMessage || t('projectPlayer.unableToOpenFile'));
             return;
           }
-          
+
           if (result?.assets && result.assets.length > 0) {
             const files = result.assets
               .filter(asset => Boolean(asset?.uri))
@@ -578,56 +579,75 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                   name: asset.fileName || `file_${Date.now()}`,
                   size: asset.fileSize,
                 };
-          
+
                 // Optional JS File object (web compatibility)
                 const jsFile =
                   typeof File !== 'undefined'
                     ? new File([], rnFile.name, {
-                        type: rnFile.type,
-                      })
+                      type: rnFile.type,
+                    })
                     : null;
-          
+
                 return {
                   ...rnFile,
                   file: jsFile,
                   originalAsset: asset,
                 };
               });
-          
+
             if (files.length > 0) {
               addSelectedFiles(method, files);
             }
-          
+
             return;
           }
           return;
         } else {
           const hasPermission = await requestStoragePermission(t);
+
           if (!hasPermission) {
-            Alert.alert(t('common.error'), t('projectPlayer.storagePermissionDenied'));
+            Alert.alert(
+              t('common.error'),
+              t('projectPlayer.storagePermissionDenied'),
+            );
             return;
           }
-          // Use selectionLimit to avoid picking more than allowed (when configured).
-          const remainingSlots = Number.isFinite(uploadSlots) ? uploadSlots - validSelectedFiles.length : Infinity;
+
+          const remainingSlots = Number.isFinite(uploadSlots)
+            ? uploadSlots - validSelectedFiles.length
+            : Infinity;
+
           const selectionLimit =
             typeof remainingSlots === 'number' && remainingSlots > 0
               ? remainingSlots
               : 1;
 
-          // For Android 13+ permissions we rely on requestStoragePermission update.
-          const result = await launchImageLibrary({
-            ...options,
-            selectionLimit: typeof maxUploadCount === 'number' ? selectionLimit : 0,
+          const result = await openFilePicker({
+            allowMultiSelection:
+              typeof maxUploadCount === 'number'
+                ? selectionLimit > 1
+                : true,
+
+            type: ['*/*'],
           });
-          if (result?.didCancel) return;
-          if (result?.errorCode) {
-            Alert.alert(t('common.error'), result.errorMessage || t('projectPlayer.unableToOpenFile'));
-            return;
-          }
-          if (result?.assets && result.assets.length > 0) {
-            const safeAssets = result.assets.filter(asset => Boolean(asset?.uri));
-            if (safeAssets.length > 0) {
-              addSelectedFiles(method, safeAssets);
+
+          const files = Array.isArray(result)
+            ? result
+            : [result];
+
+          if (files.length > 0) {
+            const formattedFiles = files
+              .filter(file => Boolean(file?.uri))
+              .slice(0, selectionLimit)
+              .map(file => ({
+                uri: file.uri,
+                type: file.type || '',
+                fileName: file.name || file.uri?.split('/').pop() || 'file',
+                fileSize: file.size || 0,
+              }));
+
+            if (formattedFiles.length > 0) {
+              addSelectedFiles(method, formattedFiles);
             }
           }
         }
@@ -697,7 +717,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                     <LucideIcon
                       name="FileText"
                       size={fileUploadModalStyles.fileIconSize}
-                      color={theme.tokens.colors.textMutedForeground}
+                      color={"$textMutedForeground"}
                     />
                   </Box>
 
@@ -763,7 +783,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                     <LucideIcon
                       name="FileText"
                       size={fileUploadModalStyles.fileIconSize}
-                      color={theme.tokens.colors.textMutedForeground}
+                      color={"$textMutedForeground"}
                     />
                   </Box>
 
@@ -804,7 +824,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         </ScrollView>
       </VStack>
     );
-  }, [existingAttachmentsArray,t]);
+  }, [existingAttachmentsArray, t]);
 
   const footerContent = (
     <HStack space="md" width="$full" justifyContent="flex-end">
