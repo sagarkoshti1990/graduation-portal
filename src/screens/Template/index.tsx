@@ -92,8 +92,10 @@ const DevelopInterventionPlan: React.FC = () => {
     fetchEntityDetails();
   }, [participantId, user?.id, idpCreated, setNavbarData]);
 
-  const getCategoriesForPillar = (pillarId: string) =>
-    pillarCategoryMap.find(p => p.pillarId === pillarId)?.categories || [];
+  const getCategoriesForPillar = (pillarId: string) => {
+    const categories = pillarCategoryMap.find(p => p.pillarId === pillarId)?.categories || [];
+    return categories.slice().sort((a, b) => a.label.localeCompare(b.label));
+  }
 
   // const getSubCategoriesForPillar = (pillarId: string) => {
   //   const pillarCategoryId = selectionByPillar[pillarId]?.categoryId;

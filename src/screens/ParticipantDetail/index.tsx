@@ -31,13 +31,14 @@ import {
 } from '@constants/PROJECTDATA';
 import {
   ENTITY_STATUS,
+  GRADUATION_READINESS_PROGRESS_THRESHOLD,
   // GRADUATION_READINESS_PROGRESS_THRESHOLD,
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
 import logger from '@utils/logger';
-import { FILTER_KEYWORDS, LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
+import { FILTER_KEYWORDS, INDIVIDUAL_CHECKIN_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { getObservationSubmissions, getTargetedSolutions } from '../../services/solutionService';
 import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
@@ -83,7 +84,7 @@ export default function ParticipantDetail() {
   const isFetchingRef = useRef(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
-  const [challenges,setChallenges] = useState<string>("");
+  const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -140,7 +141,7 @@ export default function ParticipantDetail() {
         setConfigData(null);
         setProjectPlayerConfigData(null);
         setIsLoading(true);
-        setChallenges("")
+        setChallenges(undefined)
       };
     }, [fetchEntityDetails, setNavbarData])
   );
@@ -200,10 +201,14 @@ export default function ParticipantDetail() {
       setProjectPlayerConfigData(null);
     };
   }, [participant, status]);
-
   useEffect(() => {
     const fetchSolutions = async () => {
-      let keywordsString = `${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')},${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`;
+      let keywordsString = `${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`;
+      
+      if(participant?.status === STATUS.IN_PROGRESS && updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
+        keywordsString += `,${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')}`;
+      }
+      
       if(participant?.status === STATUS.IN_PROGRESS) {
         keywordsString += `,${FILTER_KEYWORDS.LOG_VISIT.join(',')}`;
       }
@@ -215,7 +220,7 @@ export default function ParticipantDetail() {
       const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string);
 
       if(participant?.status === STATUS.IN_PROGRESS) {
-        const checkIns = solutionsWithEntityStatus.find(item => item?.keywords?.includes(LOG_VISIT_KEYWORD))
+        const checkIns = solutionsWithEntityStatus.find(item => item?.keywords?.includes(INDIVIDUAL_CHECKIN_KEYWORD))
         if(checkIns?.entity?.submissionsCount >= 1 && checkIns?.entity) {
           const submissionsData = await getObservationSubmissions({
             observationId:checkIns?._id,
@@ -223,9 +228,9 @@ export default function ParticipantDetail() {
             getAnswers:true,
           });
           const submission = submissionsData?.result.find((item:any) => item.status === ENTITY_STATUS.COMPLETED)
-          const data = getAnswerData(PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS,submission?.answers || {})
-          if(data?.challengeNotes) {
-            setChallenges(data?.challengeNotes)
+          const { challengeNotes, successNotes } = getAnswerData(PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS,submission?.answers || {})
+          if(challengeNotes || successNotes) {
+            setChallenges({challengeNotes,successNotes});
           }
         }
       }
@@ -262,7 +267,7 @@ export default function ParticipantDetail() {
       // }
     }
 
-    if (participant && participantId && user?.id && solutions.length === 0) {
+    if (participant && participantId && user?.id && solutions.length === 0 && updatedProgress !== undefined) {
       fetchSolutions();
     }
   }, [updatedProgress, participant, participantId, solutions.length, user?.id]);
@@ -388,11 +393,21 @@ export default function ParticipantDetail() {
               {activeTab ===
                 PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
                   <Box gap="$2">
-                    {challenges &&
+                    {challenges?.challengeNotes &&
                       <ReadMoreAlert
                         label={t("participantDetail.interventionPlan.challenges")}
                         variant="warning"
-                        text={challenges}
+                        text={challenges?.challengeNotes || ""}
+                        lineLimit={2}
+                        readMoreText={t("common.showMore")}
+                        readLessText={t("common.showLess")}
+                      />
+                    }
+                    {challenges?.successNotes &&
+                      <ReadMoreAlert
+                        label={t("participantDetail.interventionPlan.successNotes")}
+                        variant="success"
+                        text={challenges?.successNotes || ""}
                         lineLimit={2}
                         readMoreText={t("common.showMore")}
                         readLessText={t("common.showLess")}

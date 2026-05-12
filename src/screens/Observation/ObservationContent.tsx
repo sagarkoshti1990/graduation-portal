@@ -38,6 +38,7 @@ interface ObservationContentProps {
   userData?: any;
   hideElements?: any;
   _css?: any;
+  _webComponent?:any;
 }
 
 /**
@@ -53,6 +54,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   userData,
   hideElements,
   _css,
+  _webComponent
 }) => {
   const { t } = useLanguage();
   const [observation, setObservation] = useState<ObservationData | null>(null);
@@ -364,6 +366,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
                 // @ts-ignore - afterSubmitCallback exists in web version
                 afterSubmitCallback={handleAfterSubmit}
                 playerConfig={playerConfigMemoized}
+                {..._webComponent}
               />
             }
           </Box>

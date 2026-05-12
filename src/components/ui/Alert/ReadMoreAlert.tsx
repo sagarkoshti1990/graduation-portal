@@ -95,15 +95,12 @@ const ReadMoreAlert = ({
 }: ReadMoreAlertProps) => {
   const [expanded, setExpanded] =
     useState(false);
-
   const [contentHeight, setContentHeight] =
     useState(0);
-
   const config = variantConfig[variant];
-
   const collapsedHeight =
     lineLimit * LINE_HEIGHT;
-
+    
   const animatedHeight = useRef(
     new Animated.Value(
       collapsedHeight,
@@ -178,7 +175,7 @@ const ReadMoreAlert = ({
             left={0}
             right={0}
             width="$full"
-            lineHeight="$md"
+            lineHeight={LINE_HEIGHT}
             flexWrap="wrap"
             onLayout={(e: any) => {
               setContentHeight(
@@ -201,17 +198,13 @@ const ReadMoreAlert = ({
           >
             <AlertText
               flexShrink={1}
+              size="sm"
+              lineHeight={LINE_HEIGHT}
+              flexWrap="wrap"
+              width="$full"
             >
-              <Text
-                size="sm"
-                lineHeight="$md"
-                flexWrap="wrap"
-                flexShrink={1}
-                width="$full"
-              >
-                {label && <Text fontWeight={"bold"}>{label}: </Text>}
-                {text}
-              </Text>
+              {label && <Text fontWeight={"bold"}>{label}: </Text>}
+              {text}
             </AlertText>
           </Animated.View>
         </VStack>
