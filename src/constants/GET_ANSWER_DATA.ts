@@ -1,4 +1,5 @@
 export const PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS = [
+  { createdFromQuestionId: '69ef48e35b9067fa786cd496', keyName: 'successNotes', label: 'Success Notes' },
   { createdFromQuestionId: '69ef483a5b9067fa786cd2f6', keyName: 'challengeNotes', label: 'Challenge Notes' },
 ];
 

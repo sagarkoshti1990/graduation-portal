@@ -333,6 +333,11 @@ lib-radio-input, lib-checkbox-input {
   border-radius: 0.66rem !important;
 }
 
+lib-radio-input mat-error {
+  padding-top: 0.5rem !important;
+  padding-left: 0.5rem !important;
+}
+
 lib-checkbox-input > div {
   gap: .75rem;
   display: flex;

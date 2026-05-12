@@ -19,11 +19,28 @@ interface PlayerConfigProps {
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback: (event?: any) => void | undefined;
+  styleObject?:any
 }
 
-const WebComponentPlayer: React.FC<PlayerConfigProps> = ({ playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }) => {
+function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
+  return Object.entries(cssObj)
+    .map(([selector, props]) => {
+      const rules = Object.entries(props)
+        .map(([prop, value]) => {
+          // Convert camelCase to kebab-case for CSS properties
+          const cssProp = prop.replace(/([A-Z])/g, match => `-${match.toLowerCase()}`);
+          return `${cssProp}: ${value};`;
+        })
+        .join(' ');
+      return `${selector} { ${rules} }`;
+    })
+    .join(' ');
+}
+
+const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }) => {
   const playerRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
+  console.log(styleObject);
 
   useEffect(() => {
     // Set loading to true when initialization begins
@@ -129,6 +146,13 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({ playerConfig, getProg
     themeCss.onload = handleThemeCssLoad;
     themeCss.onerror = handleThemeCssError;
     document.head.appendChild(themeCss);
+
+    // Build CSS string from the object
+
+    const customCss = document.createElement('style');
+    customCss.type = 'text/css';
+    customCss.innerHTML = buildCssFromObject(styleObject);
+    document.head.appendChild(customCss);
 
     // Material Icons CSS
     materialIconsCss = document.createElement('link');

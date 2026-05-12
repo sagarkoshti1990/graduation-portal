@@ -34,7 +34,7 @@ import { usePlatform } from '@utils/platform';
 import {
   getCategoryList,
   // completeProject,
-  getProjectDetails,
+  // getProjectDetails,
   updateTask
 } from '../../../project-player/services/projectPlayerService';
 import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
@@ -120,8 +120,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       if (participantProp?.idpProjectId) {
         try {
           if (participantProp?.idpProjectId) {
-            const res = await getProjectDetails(participantProp?.idpProjectId);
-            const tasks = res.data?.tasks || [];
+            const tasks = projectData?.tasks || [];
             let totalChildTasks = 0;
             let completedChildTasks = 0;
 
@@ -152,8 +151,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         }
       }
     };
-    fetchProjectProgress();
-  }, [participantProp?.idpProjectId]);
+    if(projectData) {
+      fetchProjectProgress();
+    }
+  }, [participantProp?.idpProjectId,projectData]);
 
   const handleBackPress = () => {
     // @ts-ignore

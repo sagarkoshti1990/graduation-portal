@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { Box, Button, ButtonIcon, LucideIcon, Modal, useAlert, Tooltip, TooltipContent, TooltipText, ButtonText } from '@ui';
 import type { ParticipantData } from '@app-types/participant';
 import { FILTER_KEYWORDS, PARTICIPANT_LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
@@ -7,6 +7,7 @@ import ObservationContent from '../Observation/ObservationContent';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
+import { Animated, Easing } from 'react-native';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -25,8 +26,13 @@ function LogVisitModulePopupComponent({
 }: ModulePopupProps) {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
   const [selectedSubmissionNumber, setSelectedSubmissionNumber] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [openForm,setOpenForm] = useState(false);
+
   const { showAlert } = useAlert()
   const { t } = useLanguage();
+
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   const [logVisitSolution, setLogVisitSolution] = useState(() =>
     solutions?.find(e => e?.keywords?.includes(PARTICIPANT_LOG_VISIT_KEYWORD))
@@ -42,29 +48,35 @@ function LogVisitModulePopupComponent({
           });
     
           setLogVisitSolution(solutionsData?.[0]);
-        } catch (err) {
-          // Optionally handle error (maybe showAlert or similar, not shown here)
-        }
+        } catch (err) {}
       };
       fetchLogVisitSolution();
     }
-    // Only run when logVisitSolution or solutions changes
   }, [logVisitSolution, solutions]);
 
-  const isOpen = useMemo(() => selectedSolutionId !== '', [selectedSolutionId]);
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: expanded ? 1 : 0,
+      duration: 300,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [expanded]);
 
+  const isOpen = useMemo(() => selectedSolutionId !== '', [selectedSolutionId]);
+  
   const bodyProps = useMemo(
-    () => (selectedSubmissionNumber || buttonText ? { padding: 0, paddingTop: 0, paddingBottom: 0 } : {}),
-    [selectedSubmissionNumber,buttonText],
+    () => (selectedSubmissionNumber || openForm ? { padding: 0, paddingTop: 0, paddingBottom: 0 } : {}),
+    [selectedSubmissionNumber,openForm],
   );
 
   const headerProps = useMemo(
-    () => (selectedSubmissionNumber || buttonText ? { paddingBottom: 0, paddingTop: '$4' } : {}),
-    [selectedSubmissionNumber,buttonText],
+    () => (selectedSubmissionNumber || openForm ? { paddingBottom: 0, paddingTop: '$4' } : {}),
+    [selectedSubmissionNumber,openForm],
   );
 
   const hideElements = useMemo(
-    () => ({ header: ['title', 'progress-bar', 'status-badge',...(buttonText ? ["backButton"] : [])] }),
+    () => ({ header: ['title', 'progress-bar', 'status-badge',...(buttonText ? ["backButton"] : ["backButton"])] }),
     [buttonText],
   );
 
@@ -84,49 +96,99 @@ function LogVisitModulePopupComponent({
     [],
   );
 
-  const handleOpenLogVisit = useCallback(() => {
-    if (logVisitSolution?.solutionId) {
-      setSelectedSolutionId(logVisitSolution.solutionId);
-      return;
+  const handleOpenLogVisit = useCallback((isOpenf:"expand" | "openForm" | "openList" = "expand") => {
+    console.log(isOpenf);
+    if(isOpenf === "expand") {
+      setExpanded(prev => !prev)
+    } else if(["openForm","openList"].includes(isOpenf)) {
+      setOpenForm(isOpenf === "openForm" ? true : false);
+      if (logVisitSolution?.solutionId) {
+        setSelectedSolutionId(logVisitSolution.solutionId);
+        return;
+      }
+      showAlert('error', noSolutionsMessage);
+    } else if(!buttonText) {
     }
-    showAlert('error', noSolutionsMessage);
   }, [logVisitSolution, noSolutionsMessage, showAlert]);
 
   const handleCloseModal = useCallback(() => {
     setSelectedSolutionId('');
     setSelectedSubmissionNumber(null);
+    setOpenForm(false)
   }, []);
 
-  const handleCloseObservation = useCallback(() => {
-    if(buttonText) {
-      handleCloseModal()
-    } else {
-      setSelectedSubmissionNumber(null);
-    }
-  }, [buttonText,handleCloseModal]);
+  // const handleCloseObservation = useCallback(() => {
+  //   if(buttonText) {
+  //     handleCloseModal()
+  //   } else {
+  //     setSelectedSubmissionNumber(null);
+  //   }
+  // }, [buttonText,handleCloseModal]);
 
   const handleSelectSubmission = useCallback((submission: { submissionNumber: number }) => {
     setSelectedSubmissionNumber(submission.submissionNumber);
   }, []);
-
+  
   const renderButton = useCallback((triggerProps: any) =>
-    <Button
-      {...triggerProps}
-      {...(buttonText ? {size:"sm"} : {
-        position: "absolute",
-        bottom: "$4",
-        right: "$4",
-        zIndex: 999,
-        rounded: "$full",
-        w: "$16",
-        h: "$16",
-      })}
-      onPress={handleOpenLogVisit}
-    >
-      <ButtonIcon size={buttonText ? 16 : 20} as={LucideIcon} name={buttonText ? "ClipboardCheck" :"FileText"} />
-      {buttonText && <ButtonText>{buttonText}</ButtonText>}
-    </Button>
-    , [handleOpenLogVisit, buttonText])
+    <>
+      <Animated.View
+        style={{
+          position: "absolute",
+          bottom: 90,
+          right: 16,
+          zIndex: 999,
+          gap: 12,
+          opacity: animatedValue,
+          transform: [
+            {
+              translateY: animatedValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: [40, 0],
+              }),
+            },
+          ],
+        }}
+      >
+        <Button
+          {...triggerProps}
+          rounded="$full"
+          w="$16"
+          h="$16"
+          onPress={() => handleOpenLogVisit("openList")}
+        >
+          <ButtonIcon size={20} as={LucideIcon} name="ClipboardCheck" />
+        </Button>
+
+        <Button
+          {...triggerProps}
+          rounded="$full"
+          w="$16"
+          h="$16"
+          onPress={() => handleOpenLogVisit("openForm")}
+        >
+          <ButtonIcon size={20} as={LucideIcon} name="FileText" />
+        </Button>
+      </Animated.View>
+
+      <Button
+        {...triggerProps}
+        {...(buttonText ? {size:"sm"} : {
+          position: "absolute",
+          bottom: "$4",
+          right: "$4",
+          zIndex: 999,
+          rounded: "$full",
+          w: "$16",
+          h: "$16 !important",
+        })}
+        variant={expanded ? "outlineghost" :"solid"}
+        onPress={() => handleOpenLogVisit(buttonText ? "openForm" : "expand")}
+      >
+        <ButtonIcon size={buttonText ? 16 : 20} as={LucideIcon} name={expanded ? "X" : "Plus"} />
+        {buttonText && <ButtonText>{buttonText}</ButtonText>}
+      </Button>
+    </>
+    , [handleOpenLogVisit, buttonText, expanded])
     
   return (
     <>
@@ -148,17 +210,23 @@ function LogVisitModulePopupComponent({
         headerProps={headerProps}
       >
         <Box flex={1} minHeight="$64">
-          {selectedSubmissionNumber || buttonText ? (
+          {selectedSubmissionNumber || openForm ? (
             <ObservationContent
               participant={participant}
               hideElements={hideElements}
               _css={observationCss}
               solutionId={selectedSolutionId}
-              onClose={handleCloseObservation}
+              // onClose={handleCloseObservation}
+              onClose={handleCloseModal}
               // @ts-ignore - showAlert is a valid prop
               showAlert={showAlert}
               submissionNumber={(selectedSubmissionNumber || undefined) as any}
               userData={LOG_VISIT_MODULE_POPUP}
+              _webComponent={{styleObject:{
+                ".d-flex.pt-24.px-24.flex-ai-start.flex-gap-10:has(mat-icon)":{display: "none !important"},
+                ".page-group-container":{background: "transparent !important",border: "0 !important"},
+                ".questions-grid":{"padding":"0 !important"}
+              }}}
             />
           ) : (
             <CheckInsListContent
