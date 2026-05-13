@@ -1,7 +1,5 @@
 import logger from '@utils/logger';
-import api from './api';
 import offlineStorage, { addOfflineParticipantId } from './offlineStorage';
-import { API_ENDPOINTS } from './apiEndpoints';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type {
   DownloadConfig,
@@ -18,11 +16,14 @@ import {
   createObservationSubmission,
   getObservationSolution,
 } from './solutionService';
+import { getParticipantsList } from './participantService';
 
 export interface StartDownloadParams {
   participantId: string;
   projectId: string;
   downloadConfig: DownloadConfig;
+  /** LC's own userId — needed to call the programUsers/entities API correctly */
+  lcUserId: string;
   /** The participant's list-row data, saved as listSnapshot for offline list rendering */
   participantSnapshot?: any;
 }
@@ -105,9 +106,20 @@ async function markFailed(participantId: string, module: DownloadModuleKey): Pro
 // Pipeline steps
 // ---------------------------------------------------------------------------
 
-async function fetchAndStoreParticipant(participantId: string): Promise<any> {
-  const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(participantId));
-  const participant = response.data?.result ?? response.data;
+/**
+ * Fetches fresh participant details from the programUsers/entities API
+ * (same endpoint used by the participant list) and stores them offline.
+ * Requires the LC's own userId so the API can scope results to their program.
+ */
+async function fetchAndStoreParticipant(participantId: string, lcUserId: string): Promise<any> {
+  const response = await getParticipantsList({
+    userId: lcUserId,
+    entityId: participantId,
+    page: 1,
+    limit: 1,
+  });
+  const participant = response?.result?.data?.[0];
+  if (!participant) throw new Error(`Participant "${participantId}" not found via programUsers API`);
   await offlineStorage.create(PARTICIPANT_KEYS.details(participantId), participant);
   logger.info(`DownloadService: Stored participant "${participantId}"`);
   return participant;
@@ -135,34 +147,37 @@ async function processObservationTask(participantId: string, task: Task): Promis
     return;
   }
 
+  // Step 1: Resolve entity for this participant + observation
   let entityId: string | undefined;
   const entitiesResp = await withRetry(
     () => getObservationEntities({ solutionId: observationId, profileData: {} }),
     `entities:${observationId}`,
   );
-  const entities: any[] = entitiesResp?.result?.data ?? entitiesResp?.result ?? [];
+  const entities: any[] = entitiesResp?.result?.entities ?? entitiesResp?.result?.data ?? entitiesResp?.result ?? [];
   const matched = entities.find((e: any) => e.externalId === participantId || e._id === participantId);
   if (matched) entityId = matched._id;
 
+  // Step 2: If not found, add entity via updateEntities then re-fetch
   if (!entityId) {
     await withRetry(
       () => updateObservationEntities({ observationId, data: [participantId] }),
       `updateEntities:${observationId}`,
     );
     const refetchResp = await getObservationEntities({ solutionId: observationId, profileData: {} });
-    const refetchEntities: any[] = refetchResp?.result?.data ?? refetchResp?.result ?? [];
+    const refetchEntities: any[] = refetchResp?.result?.entities ?? refetchResp?.result?.data ?? refetchResp?.result ?? [];
     const refetchMatched = refetchEntities.find((e: any) => e.externalId === participantId || e._id === participantId);
     if (refetchMatched) entityId = refetchMatched._id;
   }
 
   if (!entityId) throw new Error(`Could not resolve entityId for observation "${observationId}"`);
 
+  // Step 3: Ensure submission exists
   let submissionId: string | undefined;
   const subsResp = await withRetry(
     () => getObservationSubmissions({ observationId, entityId: entityId! }),
     `submissions:${observationId}`,
   );
-  const submissions: any[] = subsResp?.result?.data ?? subsResp?.result ?? [];
+  const submissions: any[] = subsResp?.result ?? [];
   if (submissions.length > 0) submissionId = submissions[0]._id;
 
   if (!submissionId) {
@@ -175,17 +190,33 @@ async function processObservationTask(participantId: string, task: Task): Promis
 
   if (!submissionId) throw new Error(`Could not resolve submissionId for observation "${observationId}"`);
 
+  // Step 4: Fetch assessment schema + existing answers
   const assessmentResp = await withRetry(
-    () => getObservationSolution({ observationId, entityId: entityId!, submissionNumber: 1, evidenceCode: 'OB' }),
+    () => getObservationSolution({
+      observationId,
+      entityId: entityId!,
+      submissionNumber: 1,
+      evidenceCode: submissions[0]?.evidencesStatus?.[0]?.code ?? 'OB',
+    }),
     `assessment:${observationId}`,
   );
+
+  const schema = assessmentResp?.result ?? assessmentResp ?? null;
+
+  // Validate schema before storing — blocking per Section 5.14
+  if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) {
+    throw new Error(`Empty or invalid schema returned for observation "${observationId}"`);
+  }
+  if (!schema.assessment?.evidences?.length) {
+    throw new Error(`Schema missing evidences for observation "${observationId}" — cannot render form offline`);
+  }
 
   const formData: ObservationFormData = {
     entityId: entityId!,
     submissionId,
     submissionNumber: 1,
-    schema: assessmentResp?.result ?? assessmentResp ?? {},
-    data: assessmentResp?.result?.submission?.answers ?? {},
+    schema,
+    data: schema?.submission?.answers ?? assessmentResp?.result?.submission?.answers ?? {},
     status: 'started',
     updatedAt: new Date().toISOString(),
   };
@@ -235,17 +266,18 @@ export const startDownload = async ({
   participantId,
   projectId,
   downloadConfig,
+  lcUserId,
   participantSnapshot,
 }: StartDownloadParams): Promise<DownloadResult> => {
   await initStatus(participantId);
 
   try {
     if (downloadConfig.participant) {
-      await withRetry(() => fetchAndStoreParticipant(participantId), 'participant');
+      await withRetry(() => fetchAndStoreParticipant(participantId, lcUserId), 'participant');
       await markComplete(participantId, 'participant');
     }
 
-    // Always save the list-row snapshot so offline participant list can render (Section 6.5.2)
+    // Always save the list-row snapshot so offline participant list can render
     if (participantSnapshot) {
       await offlineStorage.create(PARTICIPANT_KEYS.listSnapshot(participantId), participantSnapshot);
     }

@@ -51,6 +51,8 @@ export const PARTICIPANT_KEYS = {
   formEdits: (participantId: string, formId: string) => `participant:${participantId}:form:${formId}:edits`,
   /** Pending file upload references */
   filesPending:   (id: string) => `participant:${id}:filesPending`,
+  /** Timestamp (ms) of the last successful sync for this participant */
+  lastSyncedAt:   (id: string) => `participant:${id}:lastSyncedAt`,
 };
 
 // ---------------------------------------------------------------------------

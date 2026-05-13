@@ -13,6 +13,9 @@ export const API_ENDPOINTS = {
   OBSERVATION_SOLUTION: `${prefix}/survey/v1/observations/assessment`,
   OBSERVATION_SUBMISSIONS: `${prefix}/survey/v1/observationSubmissions/list`,
   CREATE_OBSERVATION_SUBMISSION: `${prefix}/survey/v1/observationSubmissions/create`,
+  // Used by syncService to push offline form edits back to the server.
+  // Pattern: POST /api/survey/v1/observationSubmissions/update/{observationId}?entityId={entityId}
+  UPDATE_OBSERVATION_SUBMISSION: `${prefix}/survey/v1/observationSubmissions/update`,
   PARTICIPANTS_LIST: `${prefix}/project/v1/programUsers/entities`,
   PARTICIPANTS_SUB_ENTITY_LIST: `${prefix}/entity-management/v1/entities/subEntityList`,
   ENTITY_DETAILS: `${prefix}/entity-management/v1/entities/details`,

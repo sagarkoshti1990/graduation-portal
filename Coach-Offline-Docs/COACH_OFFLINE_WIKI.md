@@ -1202,3 +1202,82 @@ The wiki above is compiled from the following original planning documents. Read 
 ---
 
 *Wiki compiled from: Coach Offline Plan v2 — Sections 1A, 1B, 2, 3, 4, 5, 6, 7*
+
+---
+
+## 23. Implementation Corrections & Verified API Details
+
+> Added 2026-05-14 after full codebase + API audit. These details override any vague references in earlier sections.
+
+### 23.1 Participant Details API
+
+**Wrong (do not use):**
+```
+GET /api/entity-management/v1/entities/details/{participantId}
+```
+
+**Correct:**
+```
+GET /api/project/v1/programUsers/entities
+  ?userId={lcUserId}        ← the LC's own user ID (not participant)
+  &entityId={participantId} ← the specific participant
+  &type=user
+  &page=1&limit=1
+  &programId={GLOBAL_LC_PROGRAM_ID}
+```
+
+`lcUserId` is the logged-in LC's ID, not the participant's ID. The download engine requires this as `StartDownloadParams.lcUserId` so it can scope the API call correctly.
+
+### 23.2 Observation Submission Sync API
+
+**Wrong (do not use for syncing edits):**
+```
+POST /api/survey/v1/observationSubmissions/create/{observationId}
+```
+This endpoint **creates** a new submission. Using it for sync creates duplicate records.
+
+**Correct (for pushing offline edits back to server):**
+```
+POST /api/survey/v1/observationSubmissions/update/{observationId}?entityId={entityId}
+Body: { submissionId: string, answers: Record<string, any> }
+```
+
+The sync service must:
+1. Parse `observationId` (= formId) from the key `participant:{id}:form:{formId}:edits`
+2. Load `participant:{id}:form:{formId}` to get `entityId`
+3. POST to the update endpoint above
+
+### 23.3 Observation Schema Validation (Blocking Rule)
+
+After fetching the assessment in `processObservationTask` (download step 4), validate:
+```typescript
+if (!schema || Object.keys(schema).length === 0)
+  throw new Error('Empty schema');
+if (!schema.assessment?.evidences?.length)
+  throw new Error('Schema missing evidences');
+```
+If validation fails, throw and let the calling code mark the module as failed. Never store an empty/invalid schema — the form cannot render offline without it.
+
+### 23.4 Offline Badge Component
+
+A small `OfflineBadge` component renders per-row in the participant list (inside `ActionColumn`):
+
+| Download status | Visual |
+|-----------------|--------|
+| `completed` | Green wifi-off icon |
+| `partial` | Amber alert icon |
+| `in_progress` | Spinner |
+| `failed` | Red wifi-off icon |
+| `null` / not downloaded | Nothing (hidden) |
+
+- Reads `participant:{id}:downloadStatus` from offlineStorage on mount
+- Re-reads whenever `refreshKey` prop increments (e.g. after a download completes)
+- Does not block render — async, non-fatal
+
+### 23.5 Per-Participant `lastSyncedAt`
+
+After a fully successful sync for a participant (0 failed items), write:
+```
+participant:{id}:lastSyncedAt → Date.now()  (stored as number/ms)
+```
+This supplements the global `sync:lastSync` key. It allows the badge or detail screen to show "last synced X minutes ago" per participant rather than a single global timestamp.

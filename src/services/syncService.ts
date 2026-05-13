@@ -2,15 +2,27 @@
  * SyncService — uploads pending offline changes to the backend.
  *
  * Sync order (must not change — tasks depend on forms, forms depend on entities):
- *   1. File uploads (pending file references → upload to API)
- *   2. Form edits  (pending form answers → POST to observation submissions)
- *   3. Task edits  (pending task status → PATCH to project tasks)
+ *   1. File uploads  (pending file references → upload to API)
+ *   2. Form edits    (pending form answers  → POST to observationSubmissions/update)
+ *   3. Task edits    (pending task status   → PATCH to project tasks)
+ *
+ * File upload (Stage 1) is intentionally minimal for web PWA — the web component
+ * stores file blobs in its own IndexedDB and manages upload when online via the
+ * baseURL + userAuthToken it receives from playerConfig.  What we track in
+ * offlineStorage is a list of base64Keys / local URIs that still need attention.
+ * Until a dedicated upload bridge is built that reads those blobs and calls
+ * GET_SIGNED_URL, the stage marks them as processed so the sync can proceed.
+ *
+ * Form edits (Stage 2) push saved answers to the survey backend using:
+ *   POST /api/survey/v1/observationSubmissions/update/{observationId}?entityId={entityId}
+ * The observationId (= formId) and entityId are derived from the stored form key and
+ * the cached ObservationFormData record respectively.
  */
 
 import logger from '@utils/logger';
 import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
 import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
-import type { SyncResult, SyncProgress } from '@app-types/offline';
+import type { SyncResult, SyncProgress, ObservationFormData } from '@app-types/offline';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 
@@ -49,15 +61,18 @@ async function syncFiles(
   const pending = await offlineStorage.read<string[]>(PARTICIPANT_KEYS.filesPending(participantId));
   if (!pending?.length) return { synced: 0, failed: 0 };
 
+  // Web: files are stored as base64 in the web component's IndexedDB and uploaded
+  // automatically by the player when online.  Native: files live on the device FS.
+  // In both cases the player handles the actual upload; we just drain the pending
+  // list so the sync pipeline can proceed and the badge shows correct state.
+  // TODO: implement direct upload via GET_SIGNED_URL when a file-bridge is available.
   let synced = 0, failed = 0;
   for (let i = 0; i < pending.length; i++) {
     try {
-      // pending[i] is a local file URI — actual upload handled by project player
-      // For now, mark as synced (real upload happens in WebComponent bridge)
       synced++;
       onProgress?.(makeProgress('files', i + 1, pending.length));
     } catch (err) {
-      logger.error(`syncService: file upload failed for participant ${participantId}`, err);
+      logger.error(`syncService: file entry failed for participant ${participantId}`, err);
       failed++;
     }
   }
@@ -72,6 +87,20 @@ async function syncFiles(
 // ---------------------------------------------------------------------------
 // Stage 2 — Form edits
 // ---------------------------------------------------------------------------
+
+/**
+ * Parses the formId (= observationId) out of a form-edits storage key.
+ * Key pattern: participant:{participantId}:form:{formId}:edits
+ */
+function parseFormIdFromKey(key: string): string | null {
+  // Split on ':form:' and ':edits' to isolate the middle segment
+  const formMarker = ':form:';
+  const editsMarker = ':edits';
+  const formStart = key.indexOf(formMarker);
+  const editsEnd = key.lastIndexOf(editsMarker);
+  if (formStart === -1 || editsEnd === -1) return null;
+  return key.slice(formStart + formMarker.length, editsEnd) || null;
+}
 
 async function syncFormEdits(
   participantId: string,
@@ -89,10 +118,31 @@ async function syncFormEdits(
       const edits = await offlineStorage.read<any>(key);
       if (!edits) { synced++; continue; }
 
-      await api.post(API_ENDPOINTS.CREATE_OBSERVATION_SUBMISSION, {
-        submissionId: edits.submissionId,
-        answers: edits.data,
-      });
+      const formId = parseFormIdFromKey(key);
+      if (!formId) {
+        logger.warn(`syncService: cannot parse formId from key "${key}" — skipping`);
+        failed++;
+        continue;
+      }
+
+      // Load the cached form data to get entityId (required for the API call)
+      const formData = await offlineStorage.read<ObservationFormData>(
+        PARTICIPANT_KEYS.form(participantId, formId),
+      );
+      if (!formData?.entityId) {
+        logger.warn(`syncService: no entityId found for form "${formId}" — skipping`);
+        failed++;
+        continue;
+      }
+
+      // POST /api/survey/v1/observationSubmissions/update/{observationId}?entityId={entityId}
+      await api.post(
+        `${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formId}?entityId=${formData.entityId}`,
+        {
+          submissionId: edits.submissionId,
+          answers: edits.data,
+        },
+      );
 
       await offlineStorage.remove(key);
       synced++;
@@ -167,7 +217,7 @@ export const startSync = async (
   syncedCount += tasksResult.synced;
   failedCount += tasksResult.failed;
 
-  // Record failures for retry
+  // Record failures for retry; update per-participant lastSyncedAt on success
   if (failedCount > 0) {
     const existing = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED) ?? [];
     if (!existing.includes(participantId)) {
@@ -179,6 +229,11 @@ export const startSync = async (
       OFFLINE_KEYS.SYNC_FAILED,
       existing.filter((id: string) => id !== participantId),
     );
+    // Record per-participant sync timestamp so the UI badge can show "last synced"
+    await offlineStorage.create(
+      PARTICIPANT_KEYS.lastSyncedAt(participantId),
+      Date.now(),
+    ).catch(() => {});
   }
 
   await offlineStorage.create(OFFLINE_KEYS.SYNC_LAST, Date.now()).catch(() => {});

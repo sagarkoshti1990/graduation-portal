@@ -41,6 +41,7 @@ import {
 import { openDownload } from '@utils/helper';
 import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
 import DownloadConfigModal from '@components/DownloadConfigModal';
+import OfflineBadge from '@components/OfflineBadge';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -79,6 +80,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const [modalType, setModalType] = useState<
     'dropout' | 'log-visit' | 'view-log' | 'download' | null
   >(null);
+
+  // Incremented after download completes so OfflineBadge re-reads storage
+  const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
 
   // Dropout modal specific state
   const [selectedDropoutReason, setSelectedDropoutReason] = useState('');
@@ -295,7 +299,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
   return (
     <Box>
-      <HStack {...dataTableStyles.cardActionsSection}>
+      <HStack {...dataTableStyles.cardActionsSection} alignItems="center">
+        {/* Offline availability badge — reads download status from local storage */}
+        <OfflineBadge participantId={participant.userId} refreshKey={badgeRefreshKey} />
+
         {/* @ts-ignore: Back Button */}
         <Button
           // @ts-ignore: variant outlineghost
@@ -602,7 +609,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         participantStatus={participant.status}
         participantData={participant}
         onBoardedProjectId={(participant as any).onBoardedProjectId}
-        onSuccess={handleCloseModal}
+        onSuccess={() => {
+          setBadgeRefreshKey(k => k + 1);
+          handleCloseModal();
+        }}
       />
     </Box>
   );

@@ -13,6 +13,7 @@ import {
 } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAuth } from '@contexts/AuthContext';
 import {
   getDownloadOptions,
   getDefaultSelection,
@@ -44,6 +45,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { refreshPending } = useOfflineSync();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
@@ -96,6 +98,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
         participantId,
         projectId: resolvedProjectId,
         downloadConfig: config,
+        lcUserId: user?.id ?? '',
         participantSnapshot: participantData,
       });
 
