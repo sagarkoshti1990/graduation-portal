@@ -40,6 +40,7 @@ import {
 } from '@app-types/participant';
 import { openDownload } from '@utils/helper';
 import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
+import DownloadConfigModal from '@components/DownloadConfigModal';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -76,7 +77,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const { showAlert } = useAlert();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<
-    'dropout' | 'log-visit' | 'view-log' | null
+    'dropout' | 'log-visit' | 'view-log' | 'download' | null
   >(null);
 
   // Dropout modal specific state
@@ -120,6 +121,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       case 'dropout':
         setModalType('dropout');
         setDropoutValidationError('');
+        break;
+      case 'download':
+        setModalType('download');
         break;
       default:
         logger.log('Action:', key, 'for participant:');
@@ -276,6 +280,19 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       ? false
       : participant?.status === STATUS.NOT_ONBOARDED;
 
+  // Build menu items — always include Download Offline (Section 8.5)
+  const menuItemsWithDownload = [
+    ...getParticipantsMenuItems,
+    {
+      key: 'download',
+      label: 'actions.downloadOffline',
+      textValue: 'Download Offline',
+      iconName: 'Download',
+      iconColor: theme.tokens.colors.textForegroundColor,
+      iconSizeValue: 20,
+    },
+  ] as typeof getParticipantsMenuItems;
+
   return (
     <Box>
       <HStack {...dataTableStyles.cardActionsSection}>
@@ -307,10 +324,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           <Menu
             items={
               isNotOnboarded
-                ? getParticipantsMenuItems.filter(
+                ? menuItemsWithDownload.filter(
                     e => !(isNotOnboarded && e.label === 'actions.logVisit'),
                   )
-                : getParticipantsMenuItems
+                : menuItemsWithDownload
             }
             placement="bottom right"
             offset={5}
@@ -575,6 +592,18 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           </Box>
         )}
       </Modal>
+
+      {/* Download Offline modal — outside the main Modal to avoid nesting */}
+      <DownloadConfigModal
+        isOpen={modalType === 'download'}
+        onClose={handleCloseModal}
+        participantId={participant.userId}
+        projectId={(participant as any).onBoardedProjectId ?? (participant as any).idpProjectId}
+        participantStatus={participant.status}
+        participantData={participant}
+        onBoardedProjectId={(participant as any).onBoardedProjectId}
+        onSuccess={handleCloseModal}
+      />
     </Box>
   );
 };

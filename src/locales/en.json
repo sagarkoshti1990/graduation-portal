@@ -1903,7 +1903,8 @@
         "additionalInfo": "Must be 100% complete before graduation",
         "actionButton": "Fill Endline Survey"
       }
-    }
+    },
+    "notAvailableOffline": "This participant's data is not available offline."
   },
   "participants": {
     "myParticipants": "My Participants",
@@ -1970,7 +1971,27 @@
     "dropoutError": "Could not mark participant as dropout. Try again.",
     "observationLogs": "Observation Logs",
     "viewAllActivity": "View all activity and history for {{name}}",
-    "viewAndDownloadCertificate": "View & Download Certificate"
+    "viewAndDownloadCertificate": "View & Download Certificate",
+    "downloadOffline": "Download Offline",
+    "download": "Download",
+    "downloadHint": "Download this participant for offline use",
+    "downloadParticipant": "Participant Details",
+    "downloadProject": "Project & Tasks",
+    "downloadLogVisit": "Log Visit Form",
+    "downloadHouseholdProfile": "Household Profile Form",
+    "downloadIndividualVisit": "Individual Visit Form",
+    "downloadMidline": "Midline Form",
+    "downloadInterventionPlan": "Intervention Plan Form",
+    "downloadEndline": "Endline Form",
+    "downloadSuccess": "Participant downloaded for offline use.",
+    "downloadPartial": "Download completed with some errors.",
+    "downloadError": "Download failed. Please try again.",
+    "downloadNoProject": "No project found for this participant.",
+    "downloadNeedsOnboardingProject": "Participant is IN PROGRESS but has no onboarding project. Cannot download.",
+    "syncOffline": "Sync Changes",
+    "syncSuccess": "Participant data synced successfully.",
+    "syncPartial": "Sync completed with some errors.",
+    "syncError": "Sync failed. Please try again."
   },
   "logVisit": {
     "noSolutions": "No solutions found",
@@ -2105,5 +2126,35 @@
     "downloadSuccess": "Download started.",
     "downloadError": "Download failed. Try again.",
     "downloadUriError": "File not found. Contact support."
+  },
+  "offlineSync": {
+    "banner": "You are offline. Some data may not be available.",
+    "dataUnavailable": "You are offline and this data is not available offline.",
+    "backOnline": "You're back online. {{count}} item(s) pending sync.",
+    "pendingChanges": "{{count}} item(s) pending sync.",
+    "syncNow": "Sync Now",
+    "syncButton": "Sync",
+    "syncButtonPending": "Sync ({{count}})",
+    "syncAll": "Sync All",
+    "syncing": "Syncing...",
+    "syncProgress": "{{percentage}}%",
+    "syncSuccess": "All data synced successfully.",
+    "syncPartial": "Sync completed with some errors.",
+    "syncFailed": "Sync failed. Please try again.",
+    "noData": "No data available offline.",
+    "modalTitle": "Sync Pending Changes",
+    "pendingItems": "{{count}} item(s) pending upload",
+    "pendingFiles": "{{count}} file(s)",
+    "pendingForms": "{{count}} form(s)",
+    "pendingTasks": "{{count}} task(s)",
+    "failedItems": "{{count}} item(s) failed last sync",
+    "allSynced": "All changes synced!",
+    "startSync": "Start Sync",
+    "skipForNow": "Skip for Now",
+    "stageFiles": "Uploading files...",
+    "stageForms": "Syncing forms...",
+    "stageTasks": "Syncing tasks...",
+    "offlineListNote": "Showing downloaded participants only.",
+    "cannotSyncOffline": "You must be online to sync."
   }
 }

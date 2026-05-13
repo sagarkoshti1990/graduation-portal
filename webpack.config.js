@@ -104,6 +104,7 @@ module.exports = (env = {}, argv = {}) => {
         const singleFiles = [
           ['public/manifest.webmanifest', 'dist/manifest.webmanifest'],
           ['public/storage-keys.js', 'dist/storage-keys.js'],
+          ['public/service-worker.js', 'dist/service-worker.js'],
         ];
 
         try {

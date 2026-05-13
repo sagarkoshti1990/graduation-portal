@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '@contexts/LanguageContext';
 import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
+import dataService, { isOfflineFallback } from '../../services/dataService';
 import { observationStyles } from './Styles';
 import { CARD_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
@@ -174,6 +175,28 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     const fetchObservation = async () => {
       const tokenData = await getToken();
       setToken(tokenData);
+
+      // Offline-first: check for cached form data before hitting the API
+      if (participant?.userId && solutionId) {
+        const cachedForm = await dataService.getObservationForm(participant.userId, solutionId);
+        if (isOfflineFallback(cachedForm)) {
+          // Offline and no cached data — fail gracefully
+          showAlert('error', t('offlineSync.dataUnavailable'));
+          setLoadingOff();
+          return;
+        }
+        if (cachedForm !== null) {
+          // Have cached form — use it directly
+          setObservation({ entityId: cachedForm.entityId, observationId: solutionId });
+          setMockData(cachedForm.schema);
+          setSubmission({ _id: cachedForm.submissionId, submissionNumber: cachedForm.submissionNumber });
+          setDefaultValuesLocal(cachedForm.data ?? {});
+          setLoadingOff();
+          return;
+        }
+        // null means online + no pending edits → fall through to API
+      }
+
       try {
         const observationData = await getObservationEntities({
           solutionId,
@@ -326,10 +349,12 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       progressCalculationLevel: 'input' as const,
       mockData: mockData,
       defaultValues: defaultValuesLocal,
+      // Section 5.8: signal web component to use offline form when schema is pre-loaded
+      offlineMode: mockData != null,
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
       showToast: false,
-      saveProgressStorageType: "server",
+      saveProgressStorageType: mockData != null ? "local" : "server",
       showNextTabButton: true,
       dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
@@ -340,10 +365,27 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
   );
 
-  const handleAfterSubmit = (event?: any) => {
-    logger.info('event', event);
+  // Section 5.9 Step 3 — bridge: save form edits into offlineStorage when web component reports a save/submit
+  const handleAfterSubmit = useCallback(async (event?: any) => {
+    logger.info('ObservationContent: afterSubmit event', event);
+
+    // Persist the latest answers into form:edits so sync can pick them up
+    if (participant?.userId && observation?.observationId && submission?._id) {
+      try {
+        const answers = event?.data ?? event?.answers ?? event?.result?.answers ?? {};
+        await dataService.saveFormEdits(participant.userId, observation.observationId, {
+          submissionId: submission._id,
+          data: answers,
+          updatedAt: new Date().toISOString(),
+        });
+        logger.info('ObservationContent: form edits saved for sync');
+      } catch (err) {
+        logger.warn('ObservationContent: failed to save form edits', err);
+      }
+    }
+
     handleBackPress();
-  };
+  }, [participant?.userId, observation?.observationId, submission?._id, handleBackPress]);
 
   return (
     <>

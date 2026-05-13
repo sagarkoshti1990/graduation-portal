@@ -285,6 +285,56 @@ export const getSize = async (): Promise<number> => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Offline participant ID registry
+// Tracks which participants have been downloaded for offline use.
+// Key: OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS  Value: string[] (participant IDs)
+// ---------------------------------------------------------------------------
+
+import { OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
+
+/** Register a participant as offline-capable. Idempotent. */
+export const addOfflineParticipantId = async (id: string): Promise<void> => {
+  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+  const ids = existing ?? [];
+  if (!ids.includes(id)) {
+    await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS, [...ids, id]);
+  }
+};
+
+/** Remove a participant from the offline registry (e.g. on clear). */
+export const removeOfflineParticipantId = async (id: string): Promise<void> => {
+  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+  const ids = (existing ?? []).filter((x: string) => x !== id);
+  await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS, ids);
+};
+
+/** Returns all participant IDs that have been downloaded for offline use. */
+export const getOfflineParticipantIds = async (): Promise<string[]> => {
+  const ids = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+  return ids ?? [];
+};
+
+/** Returns true if this participant has been downloaded for offline use. */
+export const isParticipantOffline = async (id: string): Promise<boolean> => {
+  const ids = await getOfflineParticipantIds();
+  return ids.includes(id);
+};
+
+/**
+ * Returns all storage keys that belong to a specific participant.
+ * Used by dataService to check whether any pending edits exist.
+ */
+export const getParticipantKeys = async (participantId: string): Promise<string[]> => {
+  try {
+    const prefix = `participant:${participantId}:`;
+    const allKeys = await AsyncStorage.getAllKeys();
+    return allKeys.filter((k: string) => k.startsWith(prefix));
+  } catch {
+    return [];
+  }
+};
+
 // Export default object with all CRUD functions
 const offlineStorage = {
   create,
@@ -298,6 +348,7 @@ const offlineStorage = {
   clearAll,
   exists,
   getSize,
+  getParticipantKeys,
 };
 
 export default offlineStorage;

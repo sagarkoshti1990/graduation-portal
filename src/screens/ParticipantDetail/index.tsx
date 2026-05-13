@@ -4,11 +4,11 @@ import { HStack, Box, Container, ReadMoreAlert } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
-  getParticipantsList,
   getSolutionWithEntityStatus,
   // getSitesByProvince,
   // verifyParticipantCompletionActions
 } from '../../services/participantService';
+import dataService, { isOfflineFallback } from '../../services/dataService';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '../../hooks';
 import NotFound from '@components/NotFound';
@@ -82,6 +82,7 @@ export default function ParticipantDetail() {
   const [configData, setConfigData] = useState<any>(null);
   const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
+  const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
@@ -104,15 +105,19 @@ export default function ParticipantDetail() {
     if (participantId && user?.id && !isFetchingRef.current) {
       try {
         isFetchingRef.current = true;
-        const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
-        const { userDetails, ...rest } = response?.result?.data?.[0]
-        let participantData = { ...(userDetails || {}), ...rest, accountUserStatus: userDetails?.status }
+        const result = await dataService.getParticipantDetails(participantId, user.id);
 
-        setParticipant(participantData);
-        setNavbarData({
-          subtitle: participantData?.name,
-        });
-        setStatus(participantData?.status);
+        if (isOfflineFallback(result)) {
+          setIsOfflineUnavailable(true);
+          setParticipant(undefined);
+          setStatus('');
+        } else {
+          setIsOfflineUnavailable(false);
+          const participantData = result as any;
+          setParticipant(participantData);
+          setNavbarData({ subtitle: participantData?.name });
+          setStatus(participantData?.status);
+        }
       } catch (error) {
         logger.log(error);
       } finally {
@@ -141,7 +146,8 @@ export default function ParticipantDetail() {
         setConfigData(null);
         setProjectPlayerConfigData(null);
         setIsLoading(true);
-        setChallenges(undefined)
+        setChallenges(undefined);
+        setIsOfflineUnavailable(false);
       };
     }, [fetchEntityDetails, setNavbarData])
   );
@@ -313,6 +319,11 @@ export default function ParticipantDetail() {
 
   if (isLoading) {
     return <Loader fullScreen message="Loading participant details..." />;
+  }
+
+  // Error State: Offline and no cached data
+  if (isOfflineUnavailable) {
+    return <NotFound message="offlineSync.dataUnavailable" />;
   }
 
   // Error State: Participant Not Found
