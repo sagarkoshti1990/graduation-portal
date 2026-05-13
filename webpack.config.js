@@ -38,6 +38,76 @@ class EmitWebAppVersionPlugin {
   }
 }
 
+/**
+ * Reads public/service-worker.js (template), replaces the two sentinel comments
+ * with the real build ID and the full list of compiled asset URLs, then emits
+ * the result as service-worker.js in the output.  Only runs in production so
+ * HMR / dev-server behaviour is never affected.
+ *
+ * Sentinel lines in the template:
+ *   const CACHE_NAME = 'gbl-shell-dev';   // __INJECT_CACHE_NAME__
+ *   const PRECACHE_URLS = ['/', '/index.html'];  // __INJECT_PRECACHE_URLS__
+ */
+class InjectPrecachePlugin {
+  constructor(buildId, templatePath) {
+    this.buildId = buildId;
+    this.templatePath = templatePath;
+  }
+
+  apply(compiler) {
+    const { RawSource } = webpack.sources;
+    const pluginName = 'InjectPrecachePlugin';
+
+    compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
+      compilation.hooks.processAssets.tap(
+        {
+          name: pluginName,
+          // SUMMARIZE runs after all chunks/assets have been emitted so the
+          // full asset list is available.
+          stage: webpack.Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE,
+        },
+        (assets) => {
+          // Collect every JS/CSS chunk that the browser needs to run the app.
+          // Exclude hot-update files (dev-only, never present in production).
+          const precacheUrls = ['/', '/index.html'];
+          for (const filename of Object.keys(assets)) {
+            if (
+              (filename.endsWith('.js') && !filename.includes('.hot-update.')) ||
+              filename.endsWith('.css')
+            ) {
+              precacheUrls.push('/' + filename);
+            }
+          }
+
+          let template;
+          try {
+            template = fs.readFileSync(this.templatePath, 'utf8');
+          } catch (e) {
+            compilation.errors.push(
+              new Error(`InjectPrecachePlugin: cannot read template ${this.templatePath}: ${e.message}`),
+            );
+            return;
+          }
+
+          const swContent = template
+            // Replace cache name sentinel line
+            .replace(
+              /const CACHE_NAME\s*=\s*'[^']*';\s*\/\/ __INJECT_CACHE_NAME__/,
+              `const CACHE_NAME = 'gbl-shell-${this.buildId}'; // injected`,
+            )
+            // Replace precache URL array sentinel line
+            .replace(
+              /const PRECACHE_URLS\s*=\s*\[.*?\];\s*\/\/ __INJECT_PRECACHE_URLS__/,
+              `const PRECACHE_URLS = ${JSON.stringify(precacheUrls)}; // injected`,
+            );
+
+          compilation.emitAsset('service-worker.js', new RawSource(swContent));
+        },
+      );
+    });
+  }
+}
+
 module.exports = (env = {}, argv = {}) => {
   const mode = argv.mode || env.mode || process.env.NODE_ENV || 'development';
   const isProduction = mode === 'production';
@@ -104,7 +174,8 @@ module.exports = (env = {}, argv = {}) => {
         const singleFiles = [
           ['public/manifest.webmanifest', 'dist/manifest.webmanifest'],
           ['public/storage-keys.js', 'dist/storage-keys.js'],
-          ['public/service-worker.js', 'dist/service-worker.js'],
+          // service-worker.js is NOT copied here — InjectPrecachePlugin emits
+          // it with the full precache manifest injected at build time.
         ];
 
         try {
@@ -452,6 +523,12 @@ module.exports = (env = {}, argv = {}) => {
       }),
       new EmitWebAppVersionPlugin(webAppBuildId),
       new CopyPublicToDistPlugin(),
+      // Production only: emit service-worker.js with full precache manifest injected.
+      // In development the SW is never registered (localhost unregisters it) so this
+      // plugin is a no-op there — InjectPrecachePlugin guards itself with isProduction.
+      ...(isProduction
+        ? [new InjectPrecachePlugin(webAppBuildId, path.resolve(__dirname, 'public/service-worker.js'))]
+        : []),
     ],
     performance: {
       hints: isProduction ? 'warning' : false,
