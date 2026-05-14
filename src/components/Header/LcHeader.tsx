@@ -18,6 +18,7 @@ import type { MenuItemData } from '@components/ui/Menu';
 import Menu from '@components/ui/Menu';
 import LucideIcon from '@components/ui/LucideIcon';
 import { stylesHeader } from './Styles';
+import openExternalLink from '@utils/openExternalLink';
 
 const LcProfileModal = lazy(() => import('./LcProfileModal'));
 const lcAvatarWebStyle = {
@@ -64,9 +65,14 @@ const LcHeader: React.FC<LcHeaderProps> = ({
     [isDark, t],
   );
 
-  const handleHamburgerMenuSelect = (key: string | undefined) => {
+  const handleHamburgerMenuSelect = async (key: string | undefined) => {
     const selectedItem = hamburgerMenuItems?.find(item => item.key === key);
     if (selectedItem?.isComingSoon) {
+      return;
+    }
+
+    if (selectedItem?.href) {
+      await openExternalLink(selectedItem.href);
       return;
     }
 
