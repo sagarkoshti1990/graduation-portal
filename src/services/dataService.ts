@@ -1,52 +1,39 @@
 /**
  * DataService — Centralized offline-aware data access layer.
  *
- * 3-tier decision tree applied to every read:
- *   1. Device offline  → read from storage; return OFFLINE_UNAVAILABLE if nothing cached
- *   2. Device online + participant has pending unsynced changes
- *                      → serve local data to protect those edits
- *   3. Device online + no pending changes
- *                      → call API, cache result, return live data
+ * All read functions return OfflineServiceResponse<T>.
+ * Components check response flags (isOffline, offlineSupported, offlineDataAvailable)
+ * to decide what UI to render — no offline logic belongs in components.
  *
- * Screens and hooks NEVER call navigator.onLine, isParticipantOffline, or
- * touch offlineStorage directly. They call dataService and check
- * isOfflineFallback(result) to render the standard offline message.
+ * Write operations (saveTaskEdit, saveFormEdits) do NOT use withOfflineFirst.
+ * When offline → persist locally for sync later; when online → call API.
  */
 
 import { Platform } from 'react-native';
-import offlineStorage, {
-  getOfflineParticipantIds,
-} from './offlineStorage';
-import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
-import { getParticipantsList } from './participantService';
+import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
+import { PARTICIPANT_KEYS, OFFLINE_KEYS, OFFLINE_API_CONFIG } from '@constants/STORAGE_KEYS';
+import {
+  getParticipantsList,
+  getEntityDetails as getEntityDetailsAPI,
+} from './participantService';
 import { getProjectDetails } from '../project-player/services/projectPlayerService';
+import { getTargetedSolutions } from './solutionService';
+import { getProjectCategoryList } from './projectService';
+import { withOfflineFirst } from './offlineFirst';
+import {
+  buildOfflineNoData,
+  buildFromCache,
+  buildOnlineSuccess,
+} from './offlineTypes';
+import type { OfflineServiceResponse } from './offlineTypes';
+import type { TargetedSolutionsParams } from './solutionService';
 import logger from '@utils/logger';
 import type { Participant } from '@app-types/screens';
-import type { ParticipantOverview } from '@app-types/participant';
+import type { ParticipantOverview, AssessmentSurveyCardData } from '@app-types/participant';
 import type { ObservationFormData, ObservationFormEdits } from '@app-types/offline';
 
 // ---------------------------------------------------------------------------
-// OfflineFallback sentinel
-// ---------------------------------------------------------------------------
-
-export interface OfflineFallback {
-  __isOfflineFallback: true;
-  message: string; // i18n key — translate at the call site
-}
-
-/** Single consistent offline-unavailable response. */
-export const OFFLINE_UNAVAILABLE: OfflineFallback = {
-  __isOfflineFallback: true,
-  message: 'offlineSync.dataUnavailable',
-};
-
-/** Type-guard: true when v is the offline-unavailable sentinel. */
-export function isOfflineFallback(v: any): v is OfflineFallback {
-  return v != null && (v as OfflineFallback).__isOfflineFallback === true;
-}
-
-// ---------------------------------------------------------------------------
-// Network detection
+// Network detection (exported — used by useProjectLoader, useTaskActions)
 // ---------------------------------------------------------------------------
 
 export function isNetworkOffline(): boolean {
@@ -54,6 +41,24 @@ export function isNetworkOffline(): boolean {
     return !window.navigator.onLine;
   }
   return false; // native: API-error is the offline signal
+}
+
+// ---------------------------------------------------------------------------
+// Backward-compat sentinel (deprecated — use OfflineServiceResponse flags)
+// ---------------------------------------------------------------------------
+
+export interface OfflineFallback {
+  __isOfflineFallback: true;
+  message: string;
+}
+
+export const OFFLINE_UNAVAILABLE: OfflineFallback = {
+  __isOfflineFallback: true,
+  message: 'offlineSync.dataUnavailable',
+};
+
+export function isOfflineFallback(v: any): v is OfflineFallback {
+  return v != null && (v as OfflineFallback).__isOfflineFallback === true;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,26 +93,21 @@ export interface ParticipantListResult {
   total: number;
   overview: ParticipantOverview | null;
   fromCache: boolean;
-  isOfflineFallback?: boolean;
 }
 
 async function loadOfflineParticipantList(
   search?: string,
   status?: string,
-): Promise<ParticipantListResult> {
+): Promise<ParticipantListResult | null> {
   try {
     const ids = await getOfflineParticipantIds();
-    if (ids.length === 0) {
-      return { participants: [], total: 0, overview: null, fromCache: true, isOfflineFallback: true };
-    }
+    if (ids.length === 0) return null; // no participants downloaded
 
-    // Read listSnapshot for each participant (minimal display data)
     const snapshots = await Promise.all(
       ids.map((id: string) => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(id))),
     );
     let participants = snapshots.filter((p): p is Participant => p !== null);
 
-    // Client-side search on name/externalId fields
     if (search?.trim()) {
       const q = search.trim().toLowerCase();
       participants = participants.filter((p: any) => {
@@ -117,20 +117,21 @@ async function loadOfflineParticipantList(
       });
     }
 
-    // Client-side status filter
     if (status && status !== 'all') {
       participants = participants.filter(
         (p: any) => (p.status ?? p.accountUserStatus ?? '').toLowerCase() === status.toLowerCase(),
       );
     }
 
-    // Compute overview counts from the full (unfiltered) snapshot set
     const allParticipants = snapshots.filter((p): p is Participant => p !== null);
-    const overview = computeOfflineOverview(allParticipants);
-
-    return { participants, total: participants.length, overview, fromCache: true };
+    return {
+      participants,
+      total: participants.length,
+      overview: computeOfflineOverview(allParticipants),
+      fromCache: true,
+    };
   } catch {
-    return { participants: [], total: 0, overview: null, fromCache: true, isOfflineFallback: true };
+    return null;
   }
 }
 
@@ -145,40 +146,43 @@ function computeOfflineOverview(participants: any[]): ParticipantOverview {
     active: counts['active'] ?? 0,
     inactive: counts['inactive'] ?? 0,
     notOnboarded: counts['not_onboarded'] ?? counts['notOnboarded'] ?? 0,
-    ...(Object.keys(counts).reduce((acc, k) => ({ ...acc, [k]: counts[k] }), {})),
+    ...Object.keys(counts).reduce((acc, k) => ({ ...acc, [k]: counts[k] }), {}),
   } as unknown as ParticipantOverview;
 }
 
-/**
- * Participant list — offline: all downloaded snapshots (no status filter).
- * Online: live API call, caches first-page no-search results.
- */
 export async function getParticipantList(
   params: ParticipantListParams,
-): Promise<ParticipantListResult> {
+): Promise<OfflineServiceResponse<ParticipantListResult>> {
+  const emptyValue: ParticipantListResult = { participants: [], total: 0, overview: null, fromCache: false };
+
   if (isNetworkOffline()) {
-    logger.info('dataService.getParticipantList: offline — loading from listSnapshot');
-    return loadOfflineParticipantList(params.search, params.status);
+    const cached = await loadOfflineParticipantList(params.search, params.status);
+    if (cached !== null) return buildFromCache(cached, true);
+    return buildOfflineNoData(emptyValue);
   }
+
   try {
     const response = await getParticipantsList(params);
     const participants = response.result?.data ?? [];
     const overview = response.result?.overview ?? null;
     const total = response.total ?? 0;
+    const result: ParticipantListResult = { participants, total, overview, fromCache: false };
 
     if (!params.search && (!params.page || params.page === 1)) {
-      const cacheKey = `${OFFLINE_KEYS.PARTICIPANTS_LIST}:${params.status || 'all'}`;
-      await offlineStorage.create(cacheKey, { data: participants, total }).catch(() => {});
+      const cacheKey = OFFLINE_API_CONFIG.PARTICIPANTS_LIST.cacheKey(params.status || 'all');
+      offlineStorage.create(cacheKey, { data: participants, total }).catch(() => {});
       if (overview) {
-        await offlineStorage
+        offlineStorage
           .create(`${OFFLINE_KEYS.PARTICIPANTS_LIST}:overview`, overview)
           .catch(() => {});
       }
     }
-    return { participants, total, overview, fromCache: false };
+    return buildOnlineSuccess(result, OFFLINE_API_CONFIG.PARTICIPANTS_LIST.supported);
   } catch (err) {
     logger.warn('dataService.getParticipantList: API failed — falling back to offline', err);
-    return loadOfflineParticipantList(params.search, params.status);
+    const cached = await loadOfflineParticipantList(params.search, params.status);
+    if (cached !== null) return buildFromCache(cached, false);
+    throw err;
   }
 }
 
@@ -186,142 +190,104 @@ export async function getParticipantList(
 // Participant Details
 // ---------------------------------------------------------------------------
 
-/**
- * Loads full participant details.
- * Online: calls API, caches result.
- * Offline / API error: reads from stored details or listSnapshot.
- * Returns OFFLINE_UNAVAILABLE if offline and no cached data exists.
- */
 export async function getParticipantDetails(
   participantId: string,
   userId: string,
-): Promise<any | OfflineFallback> {
-  const offline = isNetworkOffline();
-
-  if (offline) {
-    const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(participantId));
-    const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(participantId));
-    return (details ?? snapshot) ?? OFFLINE_UNAVAILABLE;
-  }
-
-  try {
-    const response = await getParticipantsList({ entityId: participantId, userId });
-    const row = response?.result?.data?.[0];
-    if (!row) return OFFLINE_UNAVAILABLE;
-    const { userDetails, ...rest } = row;
-    const participantData = {
-      ...(userDetails || {}),
-      ...rest,
-      accountUserStatus: userDetails?.status,
-    };
-    await offlineStorage
-      .create(PARTICIPANT_KEYS.listSnapshot(participantId), participantData)
-      .catch(() => {});
-    return participantData;
-  } catch (err) {
-    logger.warn('dataService.getParticipantDetails: API failed — falling back to cached data', err);
-    const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(participantId));
-    const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(participantId));
-    return (details ?? snapshot) ?? OFFLINE_UNAVAILABLE;
-  }
+): Promise<OfflineServiceResponse<any>> {
+  return withOfflineFirst(
+    async () => {
+      const response = await getParticipantsList({ entityId: participantId, userId });
+      const row = response?.result?.data?.[0];
+      if (!row) throw new Error('no participant row returned');
+      const { userDetails, ...rest } = row;
+      const participantData = {
+        ...(userDetails || {}),
+        ...rest,
+        accountUserStatus: userDetails?.status,
+      };
+      await offlineStorage
+        .create(PARTICIPANT_KEYS.listSnapshot(participantId), participantData)
+        .catch(() => {});
+      return participantData;
+    },
+    {
+      offlineSupported: OFFLINE_API_CONFIG.PARTICIPANT_DETAILS.supported,
+      cacheReader: async () => {
+        const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(participantId));
+        const snapshot = await offlineStorage.read<any>(
+          PARTICIPANT_KEYS.listSnapshot(participantId),
+        );
+        return details ?? snapshot ?? null;
+      },
+      emptyValue: null,
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Project + Tasks
 // ---------------------------------------------------------------------------
 
-/**
- * Loads the participant's project.
- *
- * Returns:
- *   T               — project data (from cache or API)
- *   null            — no projectId; caller should create the project
- *   OfflineFallback — offline and no cached data
- *
- * When pending task edits exist the cached project is served to protect edits.
- * When online and no pending edits the API is called and the result is cached.
- */
 export async function getProject<T = any>(
   participantId: string,
   projectId?: string,
-): Promise<T | null | OfflineFallback> {
+): Promise<OfflineServiceResponse<T | null>> {
   const offline = isNetworkOffline();
-  const hasPending = !offline && projectId
-    ? await hasPendingForParticipant(participantId)
-    : false;
+  const hasPending =
+    !offline && projectId ? await hasPendingForParticipant(participantId) : false;
 
   if (offline || hasPending) {
     const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId));
-    if (cached) return cached;
-    if (offline) return OFFLINE_UNAVAILABLE;
-    // hasPending but no local project — fall through to API
+    if (cached) return buildFromCache(cached, offline);
+    if (offline) return buildOfflineNoData<T | null>(null);
+    // hasPending but no local project yet — fall through to API
   }
 
-  if (!projectId) return null; // no project yet — caller handles creation
+  if (!projectId) {
+    return buildOnlineSuccess<T | null>(null, OFFLINE_API_CONFIG.PROJECT.supported);
+  }
 
   try {
     const res = await getProjectDetails(projectId);
     const project = res.data as T;
-    if (!project) return null;
-    // Tasks are embedded in the project — no separate tasks key needed
-    await offlineStorage.create(PARTICIPANT_KEYS.project(participantId), project).catch(() => {});
-    return project;
+    if (!project) return buildOnlineSuccess<T | null>(null, OFFLINE_API_CONFIG.PROJECT.supported);
+    offlineStorage.create(PARTICIPANT_KEYS.project(participantId), project).catch(() => {});
+    return buildOnlineSuccess(project, OFFLINE_API_CONFIG.PROJECT.supported);
   } catch (err) {
     logger.warn('dataService.getProject: API failed — falling back to cached project', err);
     const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId));
-    if (cached) return cached;
+    if (cached) return buildFromCache(cached, false);
     throw err;
   }
 }
 
 export async function getTasks<T = any>(
   participantId: string,
-): Promise<T[] | null | OfflineFallback> {
+): Promise<OfflineServiceResponse<T[]>> {
   const offline = isNetworkOffline();
   const hasPending = !offline ? await hasPendingForParticipant(participantId) : false;
 
   if (offline || hasPending) {
-    // Tasks are stored inside the project object — extract rather than read a separate key
     const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participantId));
     if (project) {
       const tasks: T[] = project.tasks ?? project.children ?? [];
-      return tasks;
+      return buildFromCache(tasks, offline);
     }
-    if (offline) return OFFLINE_UNAVAILABLE;
+    if (offline) return buildOfflineNoData<T[]>([]);
   }
 
-  return null; // online + no pending: tasks are embedded in the project returned by getProject
-}
-
-export async function saveTaskEdit(
-  participantId: string,
-  taskEdit: { _id: string; [key: string]: any },
-): Promise<void> {
-  const existing =
-    (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(participantId))) ??
-    { tasks: [] };
-  const deduped = existing.tasks.filter((t: any) => t._id !== taskEdit._id);
-  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId), {
-    tasks: [...deduped, taskEdit],
-  });
+  // Online + no pending: tasks are embedded in the project returned by getProject
+  return buildOnlineSuccess<T[]>([], OFFLINE_API_CONFIG.PROJECT.supported);
 }
 
 // ---------------------------------------------------------------------------
 // Observation Forms
 // ---------------------------------------------------------------------------
 
-/**
- * Returns the cached observation form.
- *
- * Returns:
- *   ObservationFormData  — cached (offline or pending form edits)
- *   null                 — online, no pending; web component handles the fetch
- *   OfflineFallback      — offline and no cached form data
- */
 export async function getObservationForm(
   participantId: string,
   formId: string,
-): Promise<ObservationFormData | null | OfflineFallback> {
+): Promise<OfflineServiceResponse<ObservationFormData | null>> {
   const offline = isNetworkOffline();
 
   let hasPendingEdits = false;
@@ -338,11 +304,87 @@ export async function getObservationForm(
     const cached = await offlineStorage.read<ObservationFormData>(
       PARTICIPANT_KEYS.form(participantId, formId),
     );
-    if (cached) return cached;
-    if (offline) return OFFLINE_UNAVAILABLE;
+    if (cached) return buildFromCache(cached, offline);
+    if (offline) return buildOfflineNoData<ObservationFormData | null>(null);
   }
 
-  return null; // online + no pending: web component handles the API fetch
+  // Online + no pending: web form component handles the API fetch
+  return buildOnlineSuccess<ObservationFormData | null>(
+    null,
+    OFFLINE_API_CONFIG.OBSERVATION_FORM.supported,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Solutions (targeted solutions list)
+// ---------------------------------------------------------------------------
+
+export async function getSolutions(
+  params: TargetedSolutionsParams,
+): Promise<OfflineServiceResponse<AssessmentSurveyCardData[]>> {
+  return withOfflineFirst(() => getTargetedSolutions(params), {
+    offlineSupported: OFFLINE_API_CONFIG.TARGETED_SOLUTIONS.supported,
+    cacheKey: OFFLINE_API_CONFIG.TARGETED_SOLUTIONS.cacheKey(params.type),
+    emptyValue: [],
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Project Categories
+// ---------------------------------------------------------------------------
+
+export async function getProjectCategories(): Promise<OfflineServiceResponse<any[]>> {
+  return withOfflineFirst(() => getProjectCategoryList(), {
+    offlineSupported: OFFLINE_API_CONFIG.PROJECT_CATEGORIES.supported,
+    cacheKey: OFFLINE_API_CONFIG.PROJECT_CATEGORIES.cacheKey(),
+    emptyValue: [],
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Entity Details
+// ---------------------------------------------------------------------------
+
+export async function getEntityDetails(
+  participantId: string,
+): Promise<OfflineServiceResponse<any>> {
+  return withOfflineFirst(
+    async () => {
+      const res = await getEntityDetailsAPI(participantId);
+      return res.data ?? null;
+    },
+    {
+      offlineSupported: OFFLINE_API_CONFIG.ENTITY_DETAILS.supported,
+      cacheReader: async () => {
+        const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(participantId));
+        const snapshot = await offlineStorage.read<any>(
+          PARTICIPANT_KEYS.listSnapshot(participantId),
+        );
+        return details ?? snapshot ?? null;
+      },
+      cacheWriter: async (data: any) => {
+        await offlineStorage.create(PARTICIPANT_KEYS.details(participantId), data);
+      },
+      emptyValue: null,
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Write Operations
+// ---------------------------------------------------------------------------
+
+export async function saveTaskEdit(
+  participantId: string,
+  taskEdit: { _id: string; [key: string]: any },
+): Promise<void> {
+  const existing =
+    (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(participantId))) ??
+    { tasks: [] };
+  const deduped = existing.tasks.filter((t: any) => t._id !== taskEdit._id);
+  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId), {
+    tasks: [...deduped, taskEdit],
+  });
 }
 
 export async function saveFormEdits(
@@ -365,13 +407,14 @@ export interface PendingBreakdown {
   total: number;
 }
 
-export async function getPendingBreakdown(
-  participantIds?: string[],
-): Promise<PendingBreakdown> {
+export async function getPendingBreakdown(participantIds?: string[]): Promise<PendingBreakdown> {
   const ids = participantIds ?? (await getOfflineParticipantIds());
   if (ids.length === 0) return { files: 0, forms: 0, tasks: 0, failed: 0, total: 0 };
 
-  let files = 0, forms = 0, tasks = 0, failed = 0;
+  let files = 0,
+    forms = 0,
+    tasks = 0,
+    failed = 0;
 
   for (const id of ids) {
     try {
@@ -406,6 +449,9 @@ const dataService = {
   saveTaskEdit,
   getObservationForm,
   saveFormEdits,
+  getSolutions,
+  getProjectCategories,
+  getEntityDetails,
   getPendingBreakdown,
   isOfflineFallback,
   isNetworkOffline,

@@ -2161,6 +2161,9 @@
     "downloading": "Downloading…",
     "available": "Offline",
     "partial": "Partial",
-    "downloadFailed": "Failed"
+    "downloadFailed": "Failed",
+    "pageUnavailableOffline": "This page is not available offline.",
+    "dataNotDownloaded": "Offline data has not been downloaded for this participant.",
+    "goBack": "Go Back"
   }
 }

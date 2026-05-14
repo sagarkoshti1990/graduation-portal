@@ -57,15 +57,93 @@ export const PARTICIPANT_KEYS = {
 
 // ---------------------------------------------------------------------------
 // Global offline keys (participants list, sync state)
+// All keys under participants:* and sync:* are routed to IndexedDB on web.
 // ---------------------------------------------------------------------------
 
 export const OFFLINE_KEYS = {
   /** Array of participant IDs that have been downloaded for offline use */
   OFFLINE_PARTICIPANT_IDS: 'participants:offline:ids',
-  /** Cached participants list data */
+  /** Cached participants list data (prefix; status appended: participants:list:all) */
   PARTICIPANTS_LIST: 'participants:list',
+  /** Cached targeted solutions per type — participants:solutions:{type} */
+  SOLUTIONS: (type: string) => `participants:solutions:${type}`,
+  /** Cached project categories/pathways */
+  PROJECT_CATEGORIES: 'participants:projectCategories',
   /** Sync failure log */
   SYNC_FAILED: 'sync:failed',
   /** Last sync timestamp */
   SYNC_LAST: 'sync:lastSync',
+};
+
+// ---------------------------------------------------------------------------
+// Offline API configuration
+//
+// Declares which service functions support offline and what cache key they use.
+// `dataService.ts` reads this config when calling `withOfflineFirst()`.
+//
+// To add offline support to a new API:
+//   1. Add an entry here with supported: true and a cacheKey function.
+//   2. Call withOfflineFirst(apiCall, { offlineSupported: config.supported,
+//        cacheKey: config.cacheKey(...), emptyValue: ... }) in dataService.
+// ---------------------------------------------------------------------------
+
+export const OFFLINE_API_CONFIG = {
+  // ── Offline-supported (data cached in IndexedDB) ─────────────────────────
+
+  PARTICIPANTS_LIST: {
+    supported: true as const,
+    /** cacheKey(status) → 'participants:list:{status}' */
+    cacheKey: (status = 'all') => `${OFFLINE_KEYS.PARTICIPANTS_LIST}:${status}`,
+  },
+
+  PARTICIPANT_DETAILS: {
+    supported: true as const,
+    /** cacheKey(participantId) → 'participant:{id}:details' */
+    cacheKey: (id: string) => PARTICIPANT_KEYS.details(id),
+    /** Fallback key when details key has no data */
+    fallbackCacheKey: (id: string) => PARTICIPANT_KEYS.listSnapshot(id),
+  },
+
+  PROJECT: {
+    supported: true as const,
+    /** cacheKey(participantId) → 'participant:{id}:project' */
+    cacheKey: (id: string) => PARTICIPANT_KEYS.project(id),
+  },
+
+  OBSERVATION_FORM: {
+    supported: true as const,
+    /** cacheKey(participantId, formId) → 'participant:{id}:form:{formId}' */
+    cacheKey: (participantId: string, formId: string) =>
+      PARTICIPANT_KEYS.form(participantId, formId),
+  },
+
+  TARGETED_SOLUTIONS: {
+    supported: true as const,
+    /** cacheKey(type) → 'participants:solutions:{type}' */
+    cacheKey: (type: string) => OFFLINE_KEYS.SOLUTIONS(type),
+  },
+
+  PROJECT_CATEGORIES: {
+    supported: true as const,
+    cacheKey: () => OFFLINE_KEYS.PROJECT_CATEGORIES,
+  },
+
+  ENTITY_DETAILS: {
+    supported: true as const,
+    cacheKey: (id: string) => PARTICIPANT_KEYS.details(id),
+    fallbackCacheKey: (id: string) => PARTICIPANT_KEYS.listSnapshot(id),
+  },
+
+  // ── NOT offline-supported (online-only) ───────────────────────────────────
+
+  /** Admin user-management APIs — online only */
+  USER_MANAGEMENT: { supported: false as const },
+  /** Observation entities — only resolved during download (online-only step) */
+  OBSERVATION_ENTITIES: { supported: false as const },
+  /** Entity types for admin filters — online only */
+  ENTITY_TYPES: { supported: false as const },
+  /** Certificate generation — write operation, online only */
+  CERTIFICATE: { supported: false as const },
+  /** Participant address update — write operation, online only */
+  UPDATE_PARTICIPANT: { supported: false as const },
 };
