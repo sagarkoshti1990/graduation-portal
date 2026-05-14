@@ -12,6 +12,7 @@ import { getProjectDetails } from '../project-player/services/projectPlayerServi
 import {
   getObservationEntities,
   updateObservationEntities,
+  searchObservationEntities,
   getObservationSubmissions,
   createObservationSubmission,
   getObservationSolution,
@@ -130,43 +131,54 @@ async function fetchAndStoreProject(participantId: string, projectId: string): P
   if (!response.data) throw new Error(`Project "${projectId}" returned no data`);
   const project = response.data;
   const tasks: Task[] = project.tasks ?? project.children ?? [];
+  // Store the full project only — tasks are extracted from it when needed (no separate key)
   await offlineStorage.create(PARTICIPANT_KEYS.project(participantId), project);
-  await offlineStorage.create(PARTICIPANT_KEYS.tasks(participantId), tasks);
   logger.info(`DownloadService: Stored project "${projectId}" with ${tasks.length} tasks`);
   return tasks;
 }
 
 async function processObservationTask(participantId: string, task: Task): Promise<void> {
-  const observationId: string | undefined =
+  const solutionId: string | undefined =
     task.solutionDetails?._id ??
     task.solutionDetails?.observationId ??
     task.solutionDetails?.id;
 
-  if (!observationId) {
-    logger.warn(`DownloadService: No observationId on task "${task._id}" — skipping`);
+  if (!solutionId) {
+    logger.warn(`DownloadService: No solutionId on task "${task._id}" — skipping`);
     return;
   }
 
-  // Step 1: Resolve entity for this participant + observation
+  // Step 1: Resolve entity for this participant + observation.
+  // The entities response also carries result._id = the real observationId (≠ solutionId).
   let entityId: string | undefined;
   const entitiesResp = await withRetry(
-    () => getObservationEntities({ solutionId: observationId, profileData: {} }),
-    `entities:${observationId}`,
+    () => getObservationEntities({ solutionId, profileData: {} }),
+    `entities:${solutionId}`,
   );
+  // The real observationId returned by the entities endpoint (may differ from solutionId)
+  const observationId: string = entitiesResp?.result?._id ?? solutionId;
+
   const entities: any[] = entitiesResp?.result?.entities ?? entitiesResp?.result?.data ?? entitiesResp?.result ?? [];
   const matched = entities.find((e: any) => e.externalId === participantId || e._id === participantId);
   if (matched) entityId = matched._id;
 
-  // Step 2: If not found, add entity via updateEntities then re-fetch
+  // Step 2: If not found, add entity via updateEntities, then search by externalId
   if (!entityId) {
     await withRetry(
       () => updateObservationEntities({ observationId, data: [participantId] }),
       `updateEntities:${observationId}`,
     );
-    const refetchResp = await getObservationEntities({ solutionId: observationId, profileData: {} });
-    const refetchEntities: any[] = refetchResp?.result?.entities ?? refetchResp?.result?.data ?? refetchResp?.result ?? [];
-    const refetchMatched = refetchEntities.find((e: any) => e.externalId === participantId || e._id === participantId);
-    if (refetchMatched) entityId = refetchMatched._id;
+    // Use searchEntities to find the newly-mapped entity record
+    const searchResp = await withRetry(
+      () => searchObservationEntities({ observationId, search: participantId }),
+      `searchEntities:${observationId}`,
+    );
+    const searchEntities: any[] =
+      searchResp?.result?.entities ?? searchResp?.result?.data ?? searchResp?.result ?? [];
+    const searchMatched = searchEntities.find(
+      (e: any) => e.externalId === participantId || e._id === participantId,
+    );
+    if (searchMatched) entityId = searchMatched._id;
   }
 
   if (!entityId) throw new Error(`Could not resolve entityId for observation "${observationId}"`);

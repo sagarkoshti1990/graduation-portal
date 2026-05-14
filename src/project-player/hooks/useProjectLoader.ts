@@ -12,7 +12,7 @@ import {
 } from '../services/projectPlayerService';
 import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
-import dataService, { isOfflineFallback } from '../../../src/services/dataService';
+import dataService, { isOfflineFallback, isNetworkOffline } from '../../../src/services/dataService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -39,6 +39,11 @@ export const useProjectLoader = (
 
           try {
             let projectData;
+            // When caller provides pre-loaded project data (e.g. offline download), use it directly
+            if (data.data) {
+              setProjectData(data.data);
+              return;
+            }
             if (projectId) {
               if (entityId) {
                 // Offline-first: check dataService (returns cached if offline/pending, or live API)
@@ -53,6 +58,9 @@ export const useProjectLoader = (
               }
             } else {
               try {
+                if (isNetworkOffline()) {
+                  throw new Error(t('offlineSync.dataUnavailable'));
+                }
                 projectData = await createProjectForEntity(entityId, province);
                 const thisDate = new Date().toISOString();
                 if (projectData?._id) {

@@ -91,23 +91,62 @@ export interface ParticipantListResult {
   isOfflineFallback?: boolean;
 }
 
-async function loadOfflineParticipantList(): Promise<ParticipantListResult> {
+async function loadOfflineParticipantList(
+  search?: string,
+  status?: string,
+): Promise<ParticipantListResult> {
   try {
     const ids = await getOfflineParticipantIds();
     if (ids.length === 0) {
       return { participants: [], total: 0, overview: null, fromCache: true, isOfflineFallback: true };
     }
+
+    // Read listSnapshot for each participant (minimal display data)
     const snapshots = await Promise.all(
-      ids.map((id: string) => offlineStorage.read<Participant>(PARTICIPANT_KEYS.listSnapshot(id))),
+      ids.map((id: string) => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(id))),
     );
-    const participants = snapshots.filter((p): p is Participant => p !== null);
-    const overview = await offlineStorage
-      .read<ParticipantOverview>(`${OFFLINE_KEYS.PARTICIPANTS_LIST}:overview`)
-      .catch(() => null);
+    let participants = snapshots.filter((p): p is Participant => p !== null);
+
+    // Client-side search on name/externalId fields
+    if (search?.trim()) {
+      const q = search.trim().toLowerCase();
+      participants = participants.filter((p: any) => {
+        const name = ((p.firstName ?? '') + ' ' + (p.lastName ?? '')).toLowerCase();
+        const externalId = (p.externalId ?? p.userId ?? '').toLowerCase();
+        return name.includes(q) || externalId.includes(q);
+      });
+    }
+
+    // Client-side status filter
+    if (status && status !== 'all') {
+      participants = participants.filter(
+        (p: any) => (p.status ?? p.accountUserStatus ?? '').toLowerCase() === status.toLowerCase(),
+      );
+    }
+
+    // Compute overview counts from the full (unfiltered) snapshot set
+    const allParticipants = snapshots.filter((p): p is Participant => p !== null);
+    const overview = computeOfflineOverview(allParticipants);
+
     return { participants, total: participants.length, overview, fromCache: true };
   } catch {
     return { participants: [], total: 0, overview: null, fromCache: true, isOfflineFallback: true };
   }
+}
+
+function computeOfflineOverview(participants: any[]): ParticipantOverview {
+  const counts: Record<string, number> = {};
+  for (const p of participants) {
+    const s = (p.status ?? p.accountUserStatus ?? 'unknown').toLowerCase();
+    counts[s] = (counts[s] ?? 0) + 1;
+  }
+  return {
+    total: participants.length,
+    active: counts['active'] ?? 0,
+    inactive: counts['inactive'] ?? 0,
+    notOnboarded: counts['not_onboarded'] ?? counts['notOnboarded'] ?? 0,
+    ...(Object.keys(counts).reduce((acc, k) => ({ ...acc, [k]: counts[k] }), {})),
+  } as unknown as ParticipantOverview;
 }
 
 /**
@@ -119,7 +158,7 @@ export async function getParticipantList(
 ): Promise<ParticipantListResult> {
   if (isNetworkOffline()) {
     logger.info('dataService.getParticipantList: offline — loading from listSnapshot');
-    return loadOfflineParticipantList();
+    return loadOfflineParticipantList(params.search, params.status);
   }
   try {
     const response = await getParticipantsList(params);
@@ -139,7 +178,7 @@ export async function getParticipantList(
     return { participants, total, overview, fromCache: false };
   } catch (err) {
     logger.warn('dataService.getParticipantList: API failed — falling back to offline', err);
-    return loadOfflineParticipantList();
+    return loadOfflineParticipantList(params.search, params.status);
   }
 }
 
@@ -224,9 +263,8 @@ export async function getProject<T = any>(
     const res = await getProjectDetails(projectId);
     const project = res.data as T;
     if (!project) return null;
-    const tasks = (project as any).tasks ?? (project as any).children ?? [];
+    // Tasks are embedded in the project — no separate tasks key needed
     await offlineStorage.create(PARTICIPANT_KEYS.project(participantId), project).catch(() => {});
-    await offlineStorage.create(PARTICIPANT_KEYS.tasks(participantId), tasks).catch(() => {});
     return project;
   } catch (err) {
     logger.warn('dataService.getProject: API failed — falling back to cached project', err);
@@ -243,12 +281,16 @@ export async function getTasks<T = any>(
   const hasPending = !offline ? await hasPendingForParticipant(participantId) : false;
 
   if (offline || hasPending) {
-    const tasks = await offlineStorage.read<T[]>(PARTICIPANT_KEYS.tasks(participantId));
-    if (tasks) return tasks;
+    // Tasks are stored inside the project object — extract rather than read a separate key
+    const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participantId));
+    if (project) {
+      const tasks: T[] = project.tasks ?? project.children ?? [];
+      return tasks;
+    }
     if (offline) return OFFLINE_UNAVAILABLE;
   }
 
-  return null; // online + no pending: tasks are embedded in project
+  return null; // online + no pending: tasks are embedded in the project returned by getProject
 }
 
 export async function saveTaskEdit(

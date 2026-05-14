@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { HStack, Text, Box, Spinner } from '@ui';
+import { HStack, Text, Spinner } from '@ui';
 import { LucideIcon } from '@ui';
+import { useLanguage } from '@contexts/LanguageContext';
 import { getDownloadStatus } from '../../services/downloadService';
 import type { DownloadStatus } from '@app-types/offline';
 
@@ -16,11 +17,11 @@ type BadgeState = 'none' | 'downloading' | 'available' | 'partial' | 'failed';
 function resolveBadgeState(status: DownloadStatus | null): BadgeState {
   if (!status) return 'none';
   switch (status.status) {
-    case 'completed': return 'available';
-    case 'partial':   return 'partial';
+    case 'completed':   return 'available';
+    case 'partial':     return 'partial';
     case 'in_progress': return 'downloading';
-    case 'failed':    return 'failed';
-    default:          return 'none';
+    case 'failed':      return 'failed';
+    default:            return 'none';
   }
 }
 
@@ -53,10 +54,11 @@ const BADGE_CONFIG: Record<
 
 /**
  * Small badge showing whether a participant's data has been downloaded for
- * offline use. Reads the download status from offlineStorage on mount (and
- * whenever `refreshKey` changes) without blocking the parent render.
+ * offline use. Shows an icon + translated text label.
+ * Reads download status asynchronously on mount and whenever `refreshKey` changes.
  */
 const OfflineBadge: React.FC<OfflineBadgeProps> = ({ participantId, refreshKey, size = 'xs' }) => {
+  const { t } = useLanguage();
   const [badgeState, setBadgeState] = useState<BadgeState>('none');
   const iconSize = size === 'xs' ? 10 : 12;
   const fontSize = size === 'xs' ? '$2xs' : '$xs';
@@ -87,7 +89,7 @@ const OfflineBadge: React.FC<OfflineBadgeProps> = ({ participantId, refreshKey, 
       >
         <Spinner size="small" color="$info600" />
         <Text fontSize={fontSize} color="$info700">
-          {'↓'}
+          {t('offlineSync.downloading')}
         </Text>
       </HStack>
     );
@@ -104,9 +106,10 @@ const OfflineBadge: React.FC<OfflineBadgeProps> = ({ participantId, refreshKey, 
       py="$0.5"
       borderRadius="$sm"
     >
-      <Box>
-        <LucideIcon name={cfg.icon as any} size={iconSize} color={cfg.iconColor} />
-      </Box>
+      <LucideIcon name={cfg.icon as any} size={iconSize} color={cfg.iconColor} />
+      <Text fontSize={fontSize} color={cfg.textColor}>
+        {t(cfg.labelKey)}
+      </Text>
     </HStack>
   );
 };

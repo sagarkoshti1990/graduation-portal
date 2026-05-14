@@ -1281,3 +1281,109 @@ After a fully successful sync for a participant (0 failed items), write:
 participant:{id}:lastSyncedAt → Date.now()  (stored as number/ms)
 ```
 This supplements the global `sync:lastSync` key. It allows the badge or detail screen to show "last synced X minutes ago" per participant rather than a single global timestamp.
+
+---
+
+## Section 24 — Revised Storage Architecture (2026-05-14)
+
+### 24.1 Storage Routing (IndexedDB vs AsyncStorage)
+
+On **web**, all keys with the following prefixes are routed to a dedicated IndexedDB store (`gbl-offline-db` / `offline-data`):
+
+| Key prefix | Reason |
+|------------|--------|
+| `participant:*` | Large observation schemas, project data, form edits |
+| `participants:*` | Offline participant ID registry, list cache |
+| `sync:*` | Sync failure log, last-sync timestamps |
+
+All other keys (auth tokens, settings, preferences) continue to use AsyncStorage (→ localStorage on web).
+
+On **native** (iOS/Android) all keys use AsyncStorage as before.
+
+The routing is transparent — callers use the same `offlineStorage.create/read/remove` API. No caller-side changes needed.
+
+### 24.2 Participant Storage Deduplication
+
+Two keys exist per participant — each has a distinct purpose:
+
+| Key | Content | Written by |
+|-----|---------|------------|
+| `participant:{id}:details` | Full entity record from `programUsers/entities` API | `downloadService.fetchAndStoreParticipant` |
+| `participant:{id}:listSnapshot` | Minimal display row (passed as `participantSnapshot` at download time) | `downloadService.startDownload` |
+
+`listSnapshot` is the only data read when rendering the offline participant list. `details` is read for the participant detail screen. There is no third copy.
+
+### 24.3 Project / Tasks Normalization
+
+Tasks are **not stored in a separate key**. They live inside the project object:
+
+```
+participant:{id}:project  →  { _id, title, tasks: [...], ... }
+```
+
+`dataService.getTasks` extracts `project.tasks ?? project.children` from the stored project. `downloadService.fetchAndStoreProject` writes only the project key (removed the old `participant:{id}:tasks` write).
+
+### 24.4 Observation Download Flow (Corrected)
+
+```
+solutionId  =  task.solutionDetails._id | .observationId | .id
+
+1. GET  observations/entities?solutionId={solutionId}
+         → entitiesResp.result._id  = realObservationId  ← USE THIS for all subsequent calls
+         → entitiesResp.result.entities[]  = mapped entity list
+
+2. Match entity by externalId or _id === participantId
+   If not found:
+     a. POST observations/updateEntities/{realObservationId}  { data: [participantId] }
+     b. POST observations/searchEntities?observationId={realObservationId}&search={participantId}
+        → find entity in result; get entityId = entity._id
+
+3. GET/POST observationSubmissions/list  → submissionId
+   If none: POST observationSubmissions/create  → submissionId
+
+4. GET observations/assessment?observationId={realObservationId}&entityId={entityId}&submissionNumber=1&evidenceCode=OB
+   → schema; validate schema.assessment.evidences.length > 0
+
+5. Store: participant:{id}:form:{realObservationId}  →  ObservationFormData
+```
+
+### 24.5 ProjectPlayer mockData Support
+
+`useProjectLoader` now short-circuits when `data.data` is already provided:
+
+```typescript
+// In useProjectLoader — edit/read-only mode
+if (data.data) {
+  setProjectData(data.data);
+  return; // skip all API calls
+}
+```
+
+Callers (e.g. offline participant detail screen) can pass the cached project directly via `data={{ data: cachedProject }}` to avoid redundant API calls when the project is already loaded from IndexedDB.
+
+Project creation is also guarded against offline state: if `!projectId` and `isNetworkOffline()`, an error is thrown immediately instead of attempting API calls that would fail.
+
+### 24.6 Offline Participant List Search & Overview
+
+When offline, `dataService.getParticipantList` applies:
+
+1. **Client-side search** — filters snapshots by `firstName + lastName` and `externalId`
+2. **Client-side status filter** — filters by `status` / `accountUserStatus` field
+3. **Computed overview counts** — counts snapshots by status field; no separate overview API call
+
+```typescript
+const overview = computeOfflineOverview(allParticipants);
+// → { total: N, active: X, inactive: Y, notOnboarded: Z, ... }
+```
+
+### 24.7 OfflineBadge UX
+
+The badge now shows both an icon **and** a translated text label:
+
+| State | Icon | Label (i18n key) |
+|-------|------|-----------------|
+| `completed` | WifiOff (green) | `offlineSync.available` → "Offline" |
+| `partial` | AlertCircle (amber) | `offlineSync.partial` → "Partial" |
+| `in_progress` | Spinner (blue) | `offlineSync.downloading` → "Downloading…" |
+| `failed` | WifiOff (red) | `offlineSync.downloadFailed` → "Failed" |
+| not downloaded | — | hidden |

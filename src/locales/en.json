@@ -2157,6 +2157,10 @@
     "stageForms": "Syncing forms...",
     "stageTasks": "Syncing tasks...",
     "offlineListNote": "Showing downloaded participants only.",
-    "cannotSyncOffline": "You must be online to sync."
+    "cannotSyncOffline": "You must be online to sync.",
+    "downloading": "Downloading…",
+    "available": "Offline",
+    "partial": "Partial",
+    "downloadFailed": "Failed"
   }
 }
