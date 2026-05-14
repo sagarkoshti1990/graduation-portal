@@ -171,11 +171,11 @@ const ParticipantsList: React.FC = () => {
           page: currentPage,
           limit: pageSize ?? undefined,
         });
-        setParticipants(result.participants || []);
-        if (result.overview) {
-          setOverview(result.overview);
+        setParticipants(result.data.participants || []);
+        if (result.data.overview) {
+          setOverview(result.data.overview);
         }
-        setTotalItems(result.total ?? 0);
+        setTotalItems(result.data.total ?? 0);
       } catch (err: any) {
         const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch participants';
         logger.error('Error fetching participants:', errorMessage, err);

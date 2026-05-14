@@ -8,7 +8,7 @@ import {
   // getSitesByProvince,
   // verifyParticipantCompletionActions
 } from '../../services/participantService';
-import dataService, { isOfflineFallback } from '../../services/dataService';
+import dataService from '../../services/dataService';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '../../hooks';
 import NotFound from '@components/NotFound';
@@ -107,13 +107,13 @@ export default function ParticipantDetail() {
         isFetchingRef.current = true;
         const result = await dataService.getParticipantDetails(participantId, user.id);
 
-        if (isOfflineFallback(result)) {
+        if (result.isOffline && !result.offlineDataAvailable) {
           setIsOfflineUnavailable(true);
           setParticipant(undefined);
           setStatus('');
         } else {
           setIsOfflineUnavailable(false);
-          const participantData = result as any;
+          const participantData = result.data as any;
           setParticipant(participantData);
           setNavbarData({ subtitle: participantData?.name });
           setStatus(participantData?.status);

@@ -13,7 +13,7 @@ import {
 import { useLanguage } from '@contexts/LanguageContext';
 import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
-import dataService, { isOfflineFallback } from '../../services/dataService';
+import dataService from '../../services/dataService';
 import { observationStyles } from './Styles';
 import { CARD_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
@@ -178,15 +178,16 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
 
       // Offline-first: check for cached form data before hitting the API
       if (participant?.userId && solutionId) {
-        const cachedForm = await dataService.getObservationForm(participant.userId, solutionId);
-        if (isOfflineFallback(cachedForm)) {
+        const cachedFormResponse = await dataService.getObservationForm(participant.userId, solutionId);
+        if (cachedFormResponse.isOffline && !cachedFormResponse.offlineDataAvailable) {
           // Offline and no cached data — fail gracefully
           showAlert('error', t('offlineSync.dataUnavailable'));
           setLoadingOff();
           return;
         }
-        if (cachedForm !== null) {
+        if (cachedFormResponse.data !== null) {
           // Have cached form — use it directly
+          const cachedForm = cachedFormResponse.data!;
           setObservation({ entityId: cachedForm.entityId, observationId: solutionId });
           setMockData(cachedForm.schema);
           setSubmission({ _id: cachedForm.submissionId, submissionNumber: cachedForm.submissionNumber });

@@ -12,7 +12,7 @@ import {
 } from '../services/projectPlayerService';
 import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
-import dataService, { isOfflineFallback, isNetworkOffline } from '../../../src/services/dataService';
+import dataService, { isNetworkOffline } from '../../../src/services/dataService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -48,10 +48,10 @@ export const useProjectLoader = (
               if (entityId) {
                 // Offline-first: check dataService (returns cached if offline/pending, or live API)
                 const result = await dataService.getProject<ProjectData>(entityId, projectId);
-                if (isOfflineFallback(result)) {
+                if (result.isOffline && !result.offlineDataAvailable) {
                   throw new Error(t('offlineSync.dataUnavailable'));
                 }
-                projectData = result as ProjectData;
+                projectData = result.data as ProjectData;
               } else {
                 const res = await getProjectDetails(projectId);
                 projectData = res.data;
