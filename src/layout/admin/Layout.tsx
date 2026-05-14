@@ -3,11 +3,11 @@ import {
   Box,
   HStack,
   Pressable,
-  SafeAreaView,
   ScrollView,
   useColorMode,
   LucideIcon,
 } from '@ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AdminHeader from '@components/Header';
 import AdminSidebar from '@components/Sidebar/Sidebar';
@@ -16,6 +16,7 @@ import { usePlatform } from '@utils/platform';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import { theme } from '@config/theme';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
   const mode = useColorMode();
   const isDark = mode === 'dark';
+  const insets = useSafeAreaInsets();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // Determine if we're on mobile/tablet (< 768px)
   const { isMobile, isWeb } = usePlatform();
@@ -36,6 +38,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
     [pageName, t]
   );
   useDocumentTitle(pageTitle);
+  const safeAreaStyle = useMemo(
+    () => ({
+      flex: 1,
+      backgroundColor: isDark
+        ? theme.tokens.colors.backgroundDark950
+        : theme.tokens.colors.backgroundLight0,
+    }),
+    [isDark],
+  );
+  const scrollContentStyle = useMemo(
+    () => ({
+      ...layoutStyles.scrollContent,
+      paddingBottom: insets.bottom,
+    }),
+    [insets.bottom],
+  );
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
@@ -95,7 +113,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
   };
 
   return (
-    <SafeAreaView
+    <Box
       {...layoutStyles.container}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       style={isWeb ? ({ height: '100vh' } as any) : undefined}
@@ -131,7 +149,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
       {/* Scrollable Content Area (Header + Main Content) */}
       <ScrollView
         flex={1}
-        contentContainerStyle={layoutStyles.scrollContent}
+        contentContainerStyle={scrollContentStyle}
       >
         <HStack
           flex={1}
@@ -152,7 +170,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageName }) => {
           <Box {...layoutStyles.mainContent}>{children}</Box>
         </HStack>
       </ScrollView>
-    </SafeAreaView>
+    </Box>
   );
 };
 

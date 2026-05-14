@@ -23,17 +23,18 @@ import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import LucideIcon from '@components/ui/LucideIcon';
 import { loginStyles } from './Styles';
-import logoImage from '../../assets/images/logo.png';
-import logo500Image from '../../assets/images/logo.svg';
 // import LanguageSelector from '@components/LanguageSelector/LanguageSelector';
 import logger from '@utils/logger';
 import offlineStorage from '../../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import { isWeb, usePlatform } from '@utils/platform';
+import Logo from '@assets/images/logo.svg';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const { login } = useAuth();
   const { t } = useLanguage();
+  const { isMobile } = usePlatform()
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -50,12 +51,12 @@ const LoginScreen: React.FC = () => {
     const loadRememberMePreference = async () => {
       try {
         const savedRememberMe = await offlineStorage.read<boolean>(
-          STORAGE_KEYS.AUTH_REMEMBER_ME
+          STORAGE_KEYS.AUTH_REMEMBER_ME,
         );
         if (savedRememberMe !== null && savedRememberMe !== undefined) {
           setRememberMe(savedRememberMe);
           logger.info(
-            `Loaded Remember Me preference from storage: ${savedRememberMe}`
+            `Loaded Remember Me preference from storage: ${savedRememberMe}`,
           );
         }
       } catch (err) {
@@ -72,7 +73,7 @@ const LoginScreen: React.FC = () => {
         toValue: 1,
         duration: 120000, // 120 seconds for slow rotation
         useNativeDriver: true,
-      })
+      }),
     );
     spinAnimation.start();
     return () => spinAnimation.stop();
@@ -108,7 +109,9 @@ const LoginScreen: React.FC = () => {
         ]);
 
         setError(
-          explicitMessages.has(result.message) ? result.message : fallbackMessage,
+          explicitMessages.has(result.message)
+            ? result.message
+            : fallbackMessage,
         );
       }
       // AuthContext already handles setting isLoggedIn and user state on success
@@ -177,28 +180,55 @@ const LoginScreen: React.FC = () => {
 
   return (
     <ScrollView {...loginStyles.scrollView}>
-      <Box {...loginStyles.container}
-       $web-backgroundImage={'linear-gradient(148.729deg, rgba(117, 0, 63, 0.05) 0%, rgba(117, 0, 63, 0.1) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)'}>
+      <Box
+        {...loginStyles.container}
+        $web-backgroundImage={
+          'linear-gradient(148.729deg, rgba(117, 0, 63, 0.05) 0%, rgba(117, 0, 63, 0.1) 100%), linear-gradient(90deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)'
+        }
+      >
         {/* @ts-ignore - LanguageSelector accepts menuTriggerProps */}
         {/* <LanguageSelector menuTriggerProps={loginStyles.languageSelector} /> */}
         <Animated.View
-            style={{...loginStyles.imageSpinLogo, transform: [{ rotate: spin }] }}
+          style={{
+            ...loginStyles.imageSpinLogo,
+            ...(isMobile ? loginStyles.imageSpinLogoSm : {}),
+            transform: [{ rotate: spin }],
+          }}
         >
-          <Image source={logo500Image} {...loginStyles.imageLogo500} />
+          <Logo
+            style={{
+              ...loginStyles.imageLogo500,
+              ...(isMobile ? loginStyles.imageLogo500Sm : {}),
+            }}
+          />
         </Animated.View>
         <Animated.View
-            style={{...loginStyles.imageSpinLogoLeft, transform: [{ rotate: spin }] }}
+          style={{
+            ...loginStyles.imageSpinLogoLeft,
+            ...(isMobile ? loginStyles.imageSpinLogoLeftSm : {}),
+            transform: [{ rotate: spin }],
+          }}
         >
-          <Image source={logo500Image} {...loginStyles.imageLogo500Left} />
+          <Logo
+            style={{
+              ...loginStyles.imageLogo500Left,
+              ...(isMobile ? loginStyles.imageLogo500LeftSm : {}),
+            }}
+          />
         </Animated.View>
-        <Box {...loginStyles.box}
+        <Box
+          {...loginStyles.box}
           $web-boxShadow={loginStyles.containerBoxShadow}
         >
           <Animated.View style={{ opacity: flashAnim }}>
             <VStack {...loginStyles.vstack}>
               {/* Logo/Brand */}
               {/* @ts-ignore - Image props are valid */}
-              <Image {...loginStyles.imageLogo} source={logoImage} />
+              <Image
+                // style={{...loginStyles.imageLogo}}
+                source={require('../../assets/images/logo.png')}
+                alt='logo'
+              />
 
               {/* Tagline */}
               <Heading {...loginStyles.heading}>{t('login.title')}</Heading>
@@ -308,9 +338,10 @@ const LoginScreen: React.FC = () => {
                   {t('login.forgotPassword')}
                 </ButtonText>
               </Button>
-              
+
               {/* Admin Login Link / Cancel Link */}
-              {!isAdminMode ? (
+              {isWeb && 
+              (!isAdminMode ? (
                 <Button
                   variant="link"
                   onPress={handleAdminLoginClick}
@@ -330,7 +361,7 @@ const LoginScreen: React.FC = () => {
                     {t('login.backToLogin') || 'Back to LC / LF Login'}
                   </ButtonText>
                 </Button>
-              )}
+              ))}
 
               {/* Helper Text */}
               {/* <VStack {...loginStyles.vstack5}>

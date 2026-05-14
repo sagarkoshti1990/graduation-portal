@@ -1,14 +1,22 @@
 import { SHADOW_STYLES } from "@constants/STYLE_CONSTANTS";
 
 export const loginStyles = {
+  imageSpinLogoSm: {
+    right: 0,
+    top: 0,
+  },
   imageSpinLogo: {
     marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute',
-    left: 900,
+    right: 50,
     top: -130,
     opacity: 0.2,
+  },
+  imageSpinLogoLeftSm: {
+    left: -16,
+    bottom: 10,
   },
   imageSpinLogoLeft: {
     marginBottom: 16,
@@ -19,9 +27,17 @@ export const loginStyles = {
     bottom: 86,
     opacity: 0.2,
   },
+  imageLogo500Sm: {
+    width: 350,
+    height: 350,
+  },
   imageLogo500: {
     width: 500,
     height: 500,
+  },
+  imageLogo500LeftSm: {
+    width: 400,
+    height: 400,
   },
   imageLogo500Left: {
     width: 675,
@@ -47,9 +63,9 @@ export const loginStyles = {
   },
   box: {
     bg: '$white',
-    px:"$6",
-    pb:"$8",
-    pt:"$6",
+    px: "$6",
+    pb: "$8",
+    pt: "$6",
     borderRadius: '$2xl',
     shadowColor: '$gray400',
     shadowOffset: { width: 0, height: 2 },
@@ -61,7 +77,7 @@ export const loginStyles = {
   },
   containerBoxShadow: SHADOW_STYLES.loginContainerBoxShadow,
   vstack: { space: 'lg', alignItems: 'center' },
-  imageLogo: { w: '80px', h: '90px', mb: '$2', resizeMode: 'contain' },
+  imageLogo: { width: '80px', height: '90px', marginBottom: '8px' },
   box2: {
     w: '$full',
     h: '$full',
@@ -91,7 +107,7 @@ export const loginStyles = {
   text6: { fontSize: '$xs', color: '$textDark500', textAlign: 'center' },
   text6ForgotPassword: { fontSize: '$sm', color: '$textDark600', textAlign: 'left' },
   text7: { fontSize: '$xs', color: '$textDark500' },
-  text8: { fontSize: '$md', color: '$textDark800'},
-  eyeIconButton: {position: 'absolute', right: 12, top: '50%', transform: [{ translateY: -12 }], padding: 4, zIndex: 1},
+  text8: { fontSize: '$md', color: '$textDark800' },
+  eyeIconButton: { position: 'absolute', right: 12, top: '50%', transform: [{ translateY: -12 }], padding: 4, zIndex: 1 },
   hiddenInput: { height: 0, width: 0, overflow: 'hidden' },
 } as const;

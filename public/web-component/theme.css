@@ -19,6 +19,9 @@
   --mdc-radio-state-layer-size: 16px !important;
   --mdc-radio-size: 16px !important;
 }
+.wrapper {
+  background-color: transparent !important;
+}
 .question-tip {
   margin: 0px !important;
   font-size: 14px !important;
@@ -428,6 +431,10 @@ lib-checkbox-input .mat-mdc-checkbox-checked .mdc-checkbox__background {
 
 .mat-mdc-dialog-title > div.flex-gap-3 {
   gap: 1rem !important;
+}
+
+.mat-mdc-dialog-surface.mdc-dialog__surface {
+  border-radius: 1rem !important;
 }
 
 .btn-draft,.btn-next-tab, .btn-draft + .btn-primary,.btn-next-tab + .btn-primary, .btn-outline-primary, lib-matrix-questions .btn-primary {

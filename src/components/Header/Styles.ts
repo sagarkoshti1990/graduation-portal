@@ -1,7 +1,7 @@
 export const stylesHeader = {
   container: {
     px: '$4' as const,
-    py: '$2' as const,
+    py: '$3' as const,
     justifyContent: 'center' as const,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
@@ -9,7 +9,7 @@ export const stylesHeader = {
     elevation: 3,
     borderBottomWidth: '$1' as const,
     borderBottomColor: '$borderDark200' as const,
-    zIndex: 1,
+    zIndex: 1
   },
   title: {
     alignItems: 'center',
@@ -90,13 +90,14 @@ export const stylesHeader = {
     size: 'sm' as const,
   },
   userInfoContainer: {
-    space: 'xs' as const,
+    // space: 'xs' as const,
   },
   // Updated typography for LC header: fontSize $sm → $md, fontWeight $semibold → $normal, color $textLight900 → $textForegroundColor
   userNameText: {
     fontSize: '$md' as const,
     fontWeight: '$normal' as const,
     color: '$textForegroundColor' as const,
+    lineHeight:"$lg"
   },
   userRoleContainer: {
     alignItems: 'center' as const,
@@ -105,6 +106,7 @@ export const stylesHeader = {
   userRoleText: {
     fontSize: '$sm' as const,
     color: '$textLight500' as const,
+    lineHeight:"$sm"
   },
   chevronIcon: {
     color: '$textLight500' as const,

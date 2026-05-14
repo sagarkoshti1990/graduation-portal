@@ -11,7 +11,6 @@ import {
   Button,
   ButtonText,
   Pressable,
-  CheckIcon,
   useAlert,
   Tooltip,
   TooltipContent,
@@ -543,42 +542,28 @@ const TaskCard: React.FC<TaskCardProps> = ({
               {isEditModeOnly &&
                 task.attachments &&
                 task.attachments.length > 0 && (
-                  <Pressable onPress={() => setShowPreviewModal(true)}>
-                    {(state: any) => {
-                      const isHovered =
-                        state?.hovered || state?.pressed || false;
-                      return (
-                        <Box
-                          {...taskCardStyles.fileCountTag}
-                          {...(isHovered ? taskCardStyles.fileCountTagHover : {})}
-                        >
-                          <HStack space="xs" alignItems="center">
-                            <LucideIcon
-                              name="Paperclip"
-                              size={taskCardStyles.fileCountIcon.size}
-                              color={
-                                isHovered
-                                  ? "$primary500"
-                                  : "$textPrimary"
-                              }
-                            />
-                            <Text
-                              {...taskCardStyles.fileCountText}
-                              color={
-                                isHovered ? '$primary500' : '$textPrimary'
-                              }
-                              style={isHovered ? (taskCardStyles.fileCountTextHover as any) : undefined}
-                            >
-                              {task.attachments?.length}{' '}
-                              {task.attachments?.length === 1
-                                ? t('projectPlayer.file')
-                                : t('projectPlayer.files')}
-                            </Text>
-                          </HStack>
-                        </Box>
-                      );
-                    }}
-                  </Pressable>
+                  <Button
+                    // @ts-ignore
+                    variant="outlineghost"
+                    px="$2"
+                    height="$6"
+                    onPress={() => setShowPreviewModal(true)}
+                  >
+                    <ButtonIcon
+                      as={LucideIcon}
+                      name="Paperclip"
+                      size={taskCardStyles.fileCountIcon.size}
+                      
+                    />
+                    <ButtonText
+                      {...taskCardStyles.fileCountText}
+                    >
+                      {task.attachments?.length}{' '}
+                      {task.attachments?.length === 1
+                        ? t('projectPlayer.file')
+                        : t('projectPlayer.files')}
+                    </ButtonText>
+                  </Button>
                 )}
             </HStack>
           </>
@@ -666,8 +651,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
       );
     }
 
-    const iconName = task.metaInformation?.icon || 'Upload';
-
+    const iconName =
+      (task.metaInformation?.icon === "Edit2")
+        ? "Pencil"
+        : task.metaInformation?.icon
+        ? task.metaInformation?.icon
+        : task?.type === "observation"
+          ? "Pencil"
+          : "Upload";
+          
     return <Button
       onPress={handleTaskClick}
       isDisabled={isReadOnly || isStatusUpdating}

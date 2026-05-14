@@ -113,7 +113,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         {solutions.length > 0 ? (
           solutions?.map(card => (
             <AssessmentCard
-              key={card.id}
+              key={card._id}
               card={card}
               userId={participant?.userId || ''}
               participantId={participant?.id || ''}
@@ -124,9 +124,9 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         ) : (
           <Box {...assessmentSurveysStyles.container}>
             <VStack {...assessmentSurveysStyles.content}>
-              <Box {...assessmentSurveysStyles.emptyIconContainer}>
-                {/* You can add an icon here if needed */}
-              </Box>
+              {/* <Box {...assessmentSurveysStyles.emptyIconContainer}>
+                You can add an icon here if needed
+              </Box> */}
                 <Text {...assessmentSurveysStyles.emptyTitle}>
                   {t('participantDetail.assessmentSurveys.noSurveysTitle')}
                 </Text>

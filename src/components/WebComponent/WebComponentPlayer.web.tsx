@@ -157,7 +157,7 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
     // Material Icons CSS
     materialIconsCss = document.createElement('link');
     materialIconsCss.rel = 'stylesheet';
-    materialIconsCss.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
+    materialIconsCss.href = '/web-component/material-icons.css';
     materialIconsCss.onload = handleMaterialIconsCssLoad;
     materialIconsCss.onerror = handleMaterialIconsCssError;
     document.head.appendChild(materialIconsCss);

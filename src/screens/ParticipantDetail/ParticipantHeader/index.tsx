@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { Linking, Platform, Image } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import {
   HStack,
   VStack,
@@ -42,13 +42,13 @@ import { updateEntityDetails } from '../../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
 
-const getCategoryData = (categories:any[],data:any[]) => {
+const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};
   categories?.forEach((category: any) => {
     const template = data?.find((item: any) => {
       return category._id === item._id
     })
-    if(template && !Object.keys(categoryData).length) {
+    if (template && !Object.keys(categoryData).length) {
       categoryData = template
     }
   });
@@ -78,11 +78,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const [isCompletingProject, setIsCompletingProject] = useState(false)
-  const [pathwayAndCategory,setPathwayAndCategory] = useState<string[]>([]);
+  const [pathwayAndCategory, setPathwayAndCategory] = useState<string[]>([]);
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
   const showSuccess = (message: string) => {
-    showAlert('success',message);
+    showAlert('success', message);
   };
 
   // Update status when participant prop changes
@@ -94,23 +94,23 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
   useEffect(() => {
     const fetchTemplates = async () => {
-      const titleArr:string[] = []
+      const titleArr: string[] = []
       const templatesData = await getProjectCategoryList();
-      let templateData:{children?:any[],_id?:string,name?:string} = getCategoryData(projectData?.categories || [],templatesData)
-      if(templateData._id) {
+      let templateData: { children?: any[], _id?: string, name?: string } = getCategoryData(projectData?.categories || [], templatesData)
+      if (templateData._id) {
         titleArr.push(templateData.name || "");
         const pillar = templateData?.children?.find((category: any) => category.hasChildCategories);
-        if(pillar?._id){
+        if (pillar?._id) {
           const categoryData = await getCategoryList(pillar?._id)
-          const result:{_id?:string,name?:string} = getCategoryData(projectData?.categories || [],categoryData?.data || [])
-          if(result?._id) {
+          const result: { _id?: string, name?: string } = getCategoryData(projectData?.categories || [], categoryData?.data || [])
+          if (result?._id) {
             titleArr.push(result.name || "");
           }
         }
       }
       setPathwayAndCategory(titleArr);
     }
-    if(projectData) {
+    if (projectData) {
       fetchTemplates();
     }
   }, [projectData]);
@@ -176,12 +176,12 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           },
         }),
       ]);
- 
+
       if (!(projResult as any)?._id) {
         return showAlert('error', t('participantDetail.header.taskStatusUpdateFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-      
+
       // Notify parent component about status update
       if (onStatusUpdate) {
         onStatusUpdate(STATUS.ENROLLED);
@@ -197,7 +197,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     navigation.push('log-visit', { id: participantId });
   };
 
-  const handleCompleteProject = async (solution:any) => {
+  const handleCompleteProject = async (solution: any) => {
     if (!participantProp?.idpProjectId || isCompletingProject) return;
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
 
@@ -210,7 +210,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       // onStatusUpdate?.(STATUS.COMPLETED);
       // showAlert('success',t('participantDetail.header.projectCompleteSuccess'));
       // @ts-ignore
-      navigation.push('observation', { id: participantId, solutionId: solution.solutionId,submissionNumber:1 });
+      navigation.push('observation', { id: participantId, solutionId: solution.solutionId, submissionNumber: 1 });
     } catch (error) {
       showAlert('error', t('participantDetail.header.projectCompleteFailure'))
       console.log('error', error);
@@ -237,14 +237,14 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     updatedProgress ?? graduationProgressProp ?? graduationProgress;
 
   useEffect(() => {
-    if(solutions?.length && solutions?.length > 0) {
-      const endlineSolution = solutions?.find((solution:any) => solution.keywords.includes(ENDLINE_KEYWORD));
+    if (solutions?.length && solutions?.length > 0) {
+      const endlineSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
       setShouldShowCompletionButton(
         status === STATUS.IN_PROGRESS &&
-          !!participantProp?.idpProjectId &&
-          effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
-          // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
-          && !((endlineSolution?.entity?.submissionsCount === 1 && endlineSolution?.entity?.status === ENTITY_STATUS.COMPLETED) || endlineSolution?.entity?.submissionsCount > 1)
+        !!participantProp?.idpProjectId &&
+        effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
+        // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
+        && !((endlineSolution?.entity?.submissionsCount === 1 && endlineSolution?.entity?.status === ENTITY_STATUS.COMPLETED) || endlineSolution?.entity?.submissionsCount > 1)
       );
     }
     // participantProp?.idpProgress?.projectStatus,
@@ -256,7 +256,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return (
         <Box {...participantHeaderStyles.statusBadge}>
           <Text {...participantHeaderStyles.statusBadgeText}>
-          {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : t('participantDetail.header.droppedOut')}
+            {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : t('participantDetail.header.droppedOut')}
           </Text>
         </Box>
       );
@@ -270,7 +270,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderViewProfileButton = () => (
     // @ts-ignore
-    <Button variant="outlineghost" onPress={onViewProfile}>
+    <Button variant="outlineghost" onPress={onViewProfile} size="sm">
       <ButtonIcon as={LucideIcon} name="User" size={16} />
       <ButtonText {...participantHeaderStyles.outlineButtonText}>
         {t('participantDetail.header.viewProfile')}
@@ -295,6 +295,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           isDisabled={!areAllTasksCompleted}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
+          size="sm"
         >
           <ButtonIcon as={LucideIcon} name="User" />
           <ButtonText {...participantHeaderStyles.solidButtonText}>
@@ -364,7 +365,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       >
         <VStack space="md" width="$full" >
           {pdfUrl ? (
-            <Box width="$full"  alignItems="center" justifyContent="center">
+            <Box width="$full" alignItems="center" justifyContent="center">
               {Platform.OS === 'web' ? (
                 // Use <object> for PDF preview in web, fallback to download link if not supported
                 <iframe
@@ -442,7 +443,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     return renderViewProfileButton();
   };
   const renderCompleteProjectButton = () => {
-    const certificateSolution = solutions?.find((solution:any) => solution.keywords.includes(ENDLINE_KEYWORD));
+    const certificateSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
     return shouldShowCompletionButton ? (
       <Button
         mt="$3"
@@ -457,7 +458,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           <ButtonIcon as={LucideIcon} name="Check" />
         )}
         <ButtonText>
-        {t('participantDetail.header.complete')} {certificateSolution?.name}
+          {t('participantDetail.header.complete')} {certificateSolution?.name}
         </ButtonText>
       </Button>
     ) : null;
@@ -472,8 +473,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         _container={
           {
             pb: 0,
-            px:"$4",
-            pt:"$6",
+            px: "$4",
+            pt: "$6",
           }
         }
         // Remove shadow + bottom border for this screen
@@ -483,6 +484,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
           elevation: 0,
           borderBottomWidth: 0,
         }}
+        _backButton={{ ml: "-$2" }}
       >
         {/* Participant Info and Actions Row */}
         <HStack
@@ -505,16 +507,14 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
                 {(participantProp as User)?.id || (participantProp as any)?.id}
               </Text>
               {status === STATUS.IN_PROGRESS && pathway && (
-                <>
-                  {pathwayAndCategory.map((item, index) =>
-                    <>
-                      <Text key={`${item}-${index}`} {...participantHeaderStyles.pathwaySeparator}>•</Text>
-                      <Text {...participantHeaderStyles.pathway}>
-                        {item}
-                      </Text>
-                    </>
-                  )}
-                </>
+                pathwayAndCategory.map((item, index) =>
+                  <Box key={`${item}-${index}`}>
+                    <Text {...participantHeaderStyles.pathwaySeparator}>•</Text>
+                    <Text {...participantHeaderStyles.pathway}>
+                      {item}
+                    </Text>
+                  </Box>
+                )
               )}
             </HStack>
           </VStack>

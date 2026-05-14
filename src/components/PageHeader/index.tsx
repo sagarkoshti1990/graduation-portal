@@ -31,6 +31,8 @@ export interface PageHeaderProps {
   _leftSection?: any;
   /** Right section styles */
   _rightSection?: any;
+
+  _backButton?: any;
 }
 
 /**
@@ -49,6 +51,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   _css,
   _leftSection,
   _rightSection,
+  _backButton
 }) => {
   return (
     <VStack {...pageHeaderStyles.container} {..._css}>
@@ -57,15 +60,17 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <HStack {...pageHeaderStyles.leftSection} {..._leftSection}>
             {/* @ts-ignore: ghost variant is defined in theme */}
             {onBackPress &&
-              <Button variant={"ghost" as any} onPress={onBackPress}>
+              <Button variant={"ghost" as any} onPress={onBackPress} size="xs" {..._backButton}>
                 <ButtonIcon as={LucideIcon} name="ArrowLeft" size={16} />
               {backButtonText && <ButtonText {...TYPOGRAPHY.bodySmall}>{backButtonText}</ButtonText>}
               </Button>
             }
             <VStack {...pageHeaderStyles.textSection}>
-              <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground">
-                {title}
-              </Text>
+              {title && (
+                <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground">
+                  {title}
+                </Text>
+              )}
               {subtitle && (
                 <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
                   {subtitle}

@@ -1,4 +1,4 @@
-package com.myapp
+package com.gblprogram
 
 import android.app.Application
 import com.facebook.react.PackageList

@@ -204,7 +204,7 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
   {
     key: 'actions',
     label: 'participants.actions',
-    width:160,
+    width:175,
     _th:{pl:"$3"},
     render: (participant) => <ActionColumn participant={participant} />,
     desktopConfig: {

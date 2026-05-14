@@ -7,7 +7,6 @@ import { theme } from '@config/theme';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { useLanguage } from '@contexts/LanguageContext';
 import { WELCOME_CARDS } from '@constants/WELCOME_CARDS';
-import { usePlatform } from '@utils/platform';
 
 const WelcomePage: React.FC = () => {
   const { user } = useAuth();

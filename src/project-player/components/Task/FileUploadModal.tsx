@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect,memo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect, memo } from 'react';
 import { Platform, Alert } from 'react-native';
 import {
   VStack,
@@ -12,17 +12,18 @@ import {
   Icon as GluestackIcon,
   ScrollView,
 } from '@gluestack-ui/themed';
-import { launchCamera, launchImageLibrary, CameraOptions, ImageLibraryOptions } from 'react-native-image-picker';
+import { launchCamera, CameraOptions, ImageLibraryOptions } from 'react-native-image-picker';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { LucideIcon } from '@ui';
-import { theme } from '../../../config/theme';
 import { requestCameraPermission, requestStoragePermission } from '@utils/permissions';
 import { usePlatform } from '@utils/platform';
 import Modal from '@components/ui/Modal';
 import { fileUploadModalStyles } from './Styles';
 import { UploadMethodOptionProps, FileUploadModalProps } from '../../types/components.types';
 import { formatFileSize } from '../../utils/taskUtils';
+import { openFilePicker } from './file-picker';
+
 
 // --- Helper Component for Selection Options ---
 
@@ -40,7 +41,7 @@ const UploadMethodOption: React.FC<UploadMethodOptionProps> = memo(({
 
   return (
     <Pressable
-      onPress={() => onSelect(method)}
+      onPress={() => onSelect?.(method)}
       onHoverIn={() => setHoveredOption(method)}
       onHoverOut={() => setHoveredOption(null)}
       accessibilityLabel={title}
@@ -60,7 +61,7 @@ const UploadMethodOption: React.FC<UploadMethodOptionProps> = memo(({
             <LucideIcon
               name={icon}
               size={fileUploadModalStyles.optionIconSize}
-              color={isActive ? theme.tokens.colors.primary500 : theme.tokens.colors.textSecondary}
+              color={isActive ? "$primary500" : "$textSecondary"}
             />
           </Box>
           <VStack {...fileUploadModalStyles.optionTextContainer}>
@@ -104,6 +105,7 @@ type NormalizedAllowedType =
 // Empty means "allow all types" (validation passes for any file type).
 const DEFAULT_ALLOWED_FILE_TYPES: string[] = [];
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'heic']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', '3gp', 'hevc']);
 
 const getFileName = (file: any): string =>
   file?.fileName || file?.name || '';
@@ -206,6 +208,37 @@ const getImageAcceptString = (allowedTypes: string[]): string => {
 const getDeviceAcceptString = (allowedTypes: string[]): string =>
   allowedTypes.length === 0 ? '*/*' : allowedTypes.map(normalizeAllowedTokenForAccept).join(',');
 
+const getAllowedMediaSupport = (allowedTypes: string[]) => {
+  if (!allowedTypes || allowedTypes.length === 0) {
+    return { supportsImage: true, supportsVideo: true };
+  }
+
+  let supportsImage = false;
+  let supportsVideo = false;
+
+  for (const token of allowedTypes) {
+    const t = token.trim().toLowerCase();
+    if (!t) continue;
+
+    if (t === '*/*') {
+      supportsImage = true;
+      supportsVideo = true;
+      break;
+    }
+
+    if (t.startsWith('image/')) supportsImage = true;
+    if (t.startsWith('video/')) supportsVideo = true;
+
+    if (!t.includes('/')) {
+      const ext = t.startsWith('.') ? t.slice(1) : t;
+      if (IMAGE_EXTENSIONS.has(ext)) supportsImage = true;
+      if (VIDEO_EXTENSIONS.has(ext)) supportsVideo = true;
+    }
+  }
+
+  return { supportsImage, supportsVideo };
+};
+
 const getComparableFileKey = (file: any): string | null => {
   const name = getFileName(file);
   const size = getFileSize(file);
@@ -267,6 +300,11 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     () => normalizeAllowedFileTypes(resolvedAllowedFileTypes),
     [resolvedAllowedFileTypes],
   );
+  const { supportsImage: supportsCameraImage, supportsVideo: supportsCameraVideo } = useMemo(
+    () => getAllowedMediaSupport(resolvedAllowedFileTypes),
+    [resolvedAllowedFileTypes],
+  );
+  const canShowCameraOption = supportsCameraImage || supportsCameraVideo;
 
   // Reset internal state when the modal opens.
   useEffect(() => {
@@ -414,7 +452,6 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
       if (!filesToAdd || filesToAdd.length === 0) return;
-
       const incoming = filesToAdd.filter(Boolean);
       if (incoming.length === 0) return;
 
@@ -500,8 +537,13 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         deviceInputRef.current?.click();
       }
     } else {
+      const cameraMediaType = supportsCameraImage && supportsCameraVideo
+        ? 'mixed'
+        : supportsCameraVideo
+          ? 'video'
+          : 'photo';
       const options: CameraOptions & ImageLibraryOptions = {
-        mediaType: 'photo',
+        mediaType: cameraMediaType as any,
         includeBase64: false,
         maxHeight: 2000,
         maxWidth: 2000,
@@ -515,34 +557,103 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             Alert.alert(t('common.error'), t('projectPlayer.cameraPermissionDenied'));
             return;
           }
-          const result = await launchCamera(options);
-          if (result.assets && result.assets.length > 0) {
-            addSelectedFiles(method, result.assets);
-          }
-        } else {
-          const hasPermission = await requestStoragePermission(t);
-          if (!hasPermission) {
-            Alert.alert(t('common.error'), t('projectPlayer.storagePermissionDenied'));
+          if (typeof launchCamera !== 'function') {
+            Alert.alert(t('common.error'), t('projectPlayer.unableToOpenFile'));
             return;
           }
-          // Use selectionLimit to avoid picking more than allowed (when configured).
-          const remainingSlots = Number.isFinite(uploadSlots) ? uploadSlots - validSelectedFiles.length : Infinity;
+          const result = await launchCamera(options);
+          if (result?.didCancel) return;
+          if (result?.errorCode) {
+            Alert.alert(t('common.error'), result.errorMessage || t('projectPlayer.unableToOpenFile'));
+            return;
+          }
+
+          if (result?.assets && result.assets.length > 0) {
+            const files = result.assets
+              .filter(asset => Boolean(asset?.uri))
+              .map(asset => {
+                // React Native file object
+                const rnFile = {
+                  uri: asset.uri as string,
+                  type: asset.type || 'application/octet-stream',
+                  name: asset.fileName || `file_${Date.now()}`,
+                  size: asset.fileSize,
+                };
+
+                // Optional JS File object (web compatibility)
+                const jsFile =
+                  typeof File !== 'undefined'
+                    ? new File([], rnFile.name, {
+                      type: rnFile.type,
+                    })
+                    : null;
+
+                return {
+                  ...rnFile,
+                  file: jsFile,
+                  originalAsset: asset,
+                };
+              });
+
+            if (files.length > 0) {
+              addSelectedFiles(method, files);
+            }
+
+            return;
+          }
+          return;
+        } else {
+          const hasPermission = await requestStoragePermission(t);
+
+          if (!hasPermission) {
+            Alert.alert(
+              t('common.error'),
+              t('projectPlayer.storagePermissionDenied'),
+            );
+            return;
+          }
+
+          const remainingSlots = Number.isFinite(uploadSlots)
+            ? uploadSlots - validSelectedFiles.length
+            : Infinity;
+
           const selectionLimit =
             typeof remainingSlots === 'number' && remainingSlots > 0
               ? remainingSlots
               : 1;
 
-          // For Android 13+ permissions we rely on requestStoragePermission update.
-          const result = await launchImageLibrary({
-            ...options,
-            selectionLimit: typeof maxUploadCount === 'number' ? selectionLimit : 0,
+          const result = await openFilePicker({
+            allowMultiSelection:
+              typeof maxUploadCount === 'number'
+                ? selectionLimit > 1
+                : true,
+
+            type: ['*/*'],
           });
-          if (result.assets && result.assets.length > 0) {
-            addSelectedFiles(method, result.assets);
+
+          const files = Array.isArray(result)
+            ? result
+            : [result];
+
+          if (files.length > 0) {
+            const formattedFiles = files
+              .filter(file => Boolean(file?.uri))
+              .slice(0, selectionLimit)
+              .map(file => ({
+                uri: file.uri,
+                type: file.type || '',
+                fileName: file.name || file.uri?.split('/').pop() || 'file',
+                fileSize: file.size || 0,
+              }));
+
+            if (formattedFiles.length > 0) {
+              addSelectedFiles(method, formattedFiles);
+            }
           }
         }
       } catch (error) {
         console.error('Image picker error:', error);
+        Alert.alert(t('common.error'), t('common.serverError500'));
       }
     }
   };
@@ -606,7 +717,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                     <LucideIcon
                       name="FileText"
                       size={fileUploadModalStyles.fileIconSize}
-                      color={theme.tokens.colors.textMutedForeground}
+                      color={"$textMutedForeground"}
                     />
                   </Box>
 
@@ -672,7 +783,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                     <LucideIcon
                       name="FileText"
                       size={fileUploadModalStyles.fileIconSize}
-                      color={theme.tokens.colors.textMutedForeground}
+                      color={"$textMutedForeground"}
                     />
                   </Box>
 
@@ -713,7 +824,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         </ScrollView>
       </VStack>
     );
-  }, [existingAttachmentsArray,t]);
+  }, [existingAttachmentsArray, t]);
 
   const footerContent = (
     <HStack space="md" width="$full" justifyContent="flex-end">
@@ -756,7 +867,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     >
       <VStack space="md">
         {/* Take a Photo */}
-        {isMobile && (
+        {isMobile && canShowCameraOption && (
           <UploadMethodOption
             method="camera"
             selectedMethod={selectedMethod}

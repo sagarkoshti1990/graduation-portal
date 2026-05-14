@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { StatusBar } from 'react-native';
-import { SafeAreaView, ScrollView, useColorMode, VStack } from '@gluestack-ui/themed';
+import { ScrollView, useColorMode,  VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import LcHeader from '@components/Header/LcHeader';
 import { stylesLayout } from './Styles';
@@ -57,16 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
     }
   };
   
-  return (
-    <SafeAreaView
-      style={stylesLayout.safeAreaView}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-    >
-      {/* Status Bar */}
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      />
+  return (<>
 
       {/* 
         Header with LC-specific configuration
@@ -102,7 +92,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
         );
       })()}
       {refComponent?.bottom || ""}
-    </SafeAreaView>
+    </>
   );
 };
 
