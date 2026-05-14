@@ -154,7 +154,7 @@ function LogVisitModulePopupComponent({
           rounded="$full"
           w="$16"
           h="$16"
-          onPress={() => handleOpenLogVisit("openList")}
+          onPress={() => handleOpenLogVisit("openForm")}
         >
           <ButtonIcon size={20} as={LucideIcon} name="ClipboardCheck" />
         </Button>
@@ -164,7 +164,7 @@ function LogVisitModulePopupComponent({
           rounded="$full"
           w="$16"
           h="$16"
-          onPress={() => handleOpenLogVisit("openForm")}
+          onPress={() => handleOpenLogVisit("openList")}
         >
           <ButtonIcon size={20} as={LucideIcon} name="FileText" />
         </Button>
