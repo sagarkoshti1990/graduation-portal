@@ -71,14 +71,14 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   participant,
   onDropoutSuccess,
 }) => {
-  const navigation = useNavigation();
+  const navigation:any = useNavigation();
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user } = useAuth();
   const { showAlert } = useAlert();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<
-    'dropout' | 'log-visit' | 'view-log' | 'download' | null
+    'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | 'download' | null
   >(null);
 
   // Incremented after download completes so OfflineBadge re-reads storage
@@ -129,6 +129,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       case 'download':
         setModalType('download');
         break;
+      case 'view-check-ins-Logs' :
+        setModalType("view-check-ins-Logs")
+        break;
       default:
         logger.log('Action:', key, 'for participant:');
     }
@@ -137,7 +140,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   // Fetch solutions for log visit modal and auto-select first solution
   useEffect(() => {
     const fetchLogVisitSolutions = async () => {
-      if (modalType !== 'log-visit' && modalType !== 'view-log') return;
+      if (modalType !== 'log-visit' && modalType !== 'view-log' && modalType !== "view-check-ins-Logs") return;
 
       setLogVisitLoading(true);
       try {
@@ -150,9 +153,16 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         // Automatically select the first solution
         if (data && data.length > 0) {
           const firstSolution = data[0];
-          setSelectedSolutionId(
-            firstSolution.solutionId || firstSolution.id || '',
-          );
+          if (modalType === 'view-check-ins-Logs') {
+            navigation.navigate('check-ins-list', {
+              id: participant.userId as string,
+              solutionId: firstSolution.solutionId,
+            });
+          } else {
+            setSelectedSolutionId(
+              firstSolution.solutionId || firstSolution.id || '',
+            );
+          }
         } else {
           setSelectedSolutionId('');
         }
@@ -331,10 +341,12 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           <Menu
             items={
               isNotOnboarded
-                ? menuItemsWithDownload.filter(
-                    e => !(isNotOnboarded && e.label === 'actions.logVisit'),
+                ? getParticipantsMenuItems.filter(
+                    e => !(isNotOnboarded && ["actions.logVisit","actions.viewCheckInsLogs"].includes(e?.label || "")),
                   )
-                : menuItemsWithDownload
+                :  getParticipantsMenuItems.filter(
+                    e => !(["actions.viewLog"].includes(e?.label || "")),
+                  )
             }
             placement="bottom right"
             offset={5}
@@ -346,7 +358,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
       {/* Single Modal - renders different content based on modalType */}
       <Modal
-        isOpen={modalType !== null}
+        isOpen={modalType !== null && modalType !== 'view-check-ins-Logs'}
         onClose={handleCloseModal}
         headerContent={
           modalType === 'dropout' ? (

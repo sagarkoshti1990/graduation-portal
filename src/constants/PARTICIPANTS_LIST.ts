@@ -516,6 +516,13 @@ export const getParticipantsMenuItems: MenuItemData[] = [
     iconName: 'FileText',
     iconColor: theme.tokens.colors.textForegroundColor,
     iconSizeValue: 20,
+  },{
+    key: 'view-check-ins-Logs',
+    label: 'actions.viewCheckInsLogs',
+    textValue: 'View Log',
+    iconName: 'FileText',
+    iconColor: theme.tokens.colors.textForegroundColor,
+    iconSizeValue: 20,
   },
   {
     key: 'dropout',

@@ -65,7 +65,7 @@ export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth()
   const { t } = useLanguage();
-  const { setrefComponent } = useGlobal()
+  const { setRefComponent } = useGlobal()
   // Extract the id parameter from the route
   const participantId = route.params?.id;
   const [isLoading, setIsLoading] = useState(true);
@@ -148,6 +148,7 @@ export default function ParticipantDetail() {
         setIsLoading(true);
         setChallenges(undefined);
         setIsOfflineUnavailable(false);
+        setRefComponent?.(undefined)
       };
     }, [fetchEntityDetails, setNavbarData])
   );
@@ -302,8 +303,8 @@ export default function ParticipantDetail() {
   );
 
   useEffect(() => {
-    if (setrefComponent) {
-      setrefComponent({bottom :
+    if (setRefComponent) {
+      setRefComponent({bottom :
         solutions.length > 0 ? (
           <LogVisitModulePopup
             participant={participant as ParticipantData}
@@ -313,7 +314,7 @@ export default function ParticipantDetail() {
           />
         ) : null})
     }
-  }, [setrefComponent, solutions.length, participant, t]);
+  }, [setRefComponent, solutions.length, participant, t]);
 
   const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
 
