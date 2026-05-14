@@ -42,7 +42,7 @@ export function getDownloadOptions(participantStatus: string): DownloadModuleOpt
     },
     {
       key: 'observation',
-      labelKey: 'observation.forms',
+      labelKey: 'actions.observation.forms',
       enabled: isNotOnboarded || isInProgress || isCompleted,
       recommended: isNotOnboarded || isInProgress,
       nested: [

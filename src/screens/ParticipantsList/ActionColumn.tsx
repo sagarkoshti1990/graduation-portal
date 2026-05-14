@@ -341,10 +341,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           <Menu
             items={
               isNotOnboarded
-                ? getParticipantsMenuItems.filter(
+                ? menuItemsWithDownload.filter(
                     e => !(isNotOnboarded && ["actions.logVisit","actions.viewCheckInsLogs"].includes(e?.label || "")),
                   )
-                :  getParticipantsMenuItems.filter(
+                :  menuItemsWithDownload.filter(
                     e => !(["actions.viewLog"].includes(e?.label || "")),
                   )
             }
@@ -358,7 +358,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
       {/* Single Modal - renders different content based on modalType */}
       <Modal
-        isOpen={modalType !== null && modalType !== 'view-check-ins-Logs'}
+        isOpen={modalType !== null && modalType !== 'view-check-ins-Logs' && modalType !== 'download'}
         onClose={handleCloseModal}
         headerContent={
           modalType === 'dropout' ? (

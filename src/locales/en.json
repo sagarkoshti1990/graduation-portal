@@ -1973,6 +1973,7 @@
     "observationLogs": "Observation Logs",
     "viewAllActivity": "View all activity and history for {{name}}",
     "viewAndDownloadCertificate": "View & Download Certificate",
+    "observation":{"forms":"Observation From"},
     "downloadOffline": "Download Offline",
     "download": "Download",
     "downloadHint": "Download this participant for offline use",
