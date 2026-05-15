@@ -129,9 +129,11 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   const projectPlayerData: ProjectPlayerData = useMemo(
     () => ({
       projectId: projectId || participantProfile?.idpProjectId,
+      entityId: participantProfile?.entityId,
+      userStatus: participantProfile?.status,
       pillarCategoryRelation: undefined,
     }),
-    [projectId, participantProfile?.idpProjectId],
+    [projectId, participantProfile?.idpProjectId, participantProfile?.entityId, participantProfile?.status],
   );
   
   if(!config?.mode){

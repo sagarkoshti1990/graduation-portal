@@ -22,10 +22,13 @@
 import logger from '@utils/logger';
 import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
 import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
-import type { SyncResult, SyncProgress, ObservationFormData } from '@app-types/offline';
+import type { SyncResult, SyncProgress, ObservationFormData, PendingFile } from '@app-types/offline';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
-import { updateTask as updateTaskAPI } from '../project-player/services/projectPlayerService';
+import {
+  updateTask as updateTaskAPI,
+  uploadFiles,
+} from '../project-player/services/projectPlayerService';
 
 type ProgressCallback = (progress: SyncProgress) => void;
 
@@ -55,31 +58,113 @@ function makeProgress(
 // Stage 1 — File uploads
 // ---------------------------------------------------------------------------
 
+/** Reconstructs a browser File from a base64 data-URL produced by FileReader.readAsDataURL. */
+function base64ToFile(base64: string, fileName: string, mimeType: string): File {
+  const [header, data] = base64.split(',');
+  const mime = header.match(/:(.*?);/)?.[1] ?? mimeType;
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], fileName, { type: mime });
+}
+
+/**
+ * After a file is uploaded and we have a server URL, patch the corresponding
+ * attachment stub (url: '') in the stored projectEdits so the next task sync
+ * sends the real URL to the server.
+ */
+async function patchTaskAttachmentUrl(
+  participantId: string,
+  taskId: string,
+  fileName: string,
+  serverUrl: string,
+  sourcePath?: string,
+): Promise<void> {
+  const projectEdits = await offlineStorage.read<{ tasks: any[] }>(
+    PARTICIPANT_KEYS.projectEdits(participantId),
+  );
+  if (!projectEdits) return;
+
+  const updatedTasks = projectEdits.tasks.map((task: any) => {
+    if (task._id !== taskId) return task;
+    return {
+      ...task,
+      attachments: (task.attachments ?? []).map((att: any) =>
+        att.name === fileName
+          ? { ...att, url: serverUrl, sourcePath: sourcePath ?? att.sourcePath }
+          : att,
+      ),
+    };
+  });
+
+  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId), {
+    ...projectEdits,
+    tasks: updatedTasks,
+  });
+}
+
 async function syncFiles(
   participantId: string,
   onProgress?: ProgressCallback,
 ): Promise<{ synced: number; failed: number }> {
-  const pending = await offlineStorage.read<string[]>(PARTICIPANT_KEYS.filesPending(participantId));
+  const pending = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(participantId));
   if (!pending?.length) return { synced: 0, failed: 0 };
 
-  // Web: files are stored as base64 in the web component's IndexedDB and uploaded
-  // automatically by the player when online.  Native: files live on the device FS.
-  // In both cases the player handles the actual upload; we just drain the pending
-  // list so the sync pipeline can proceed and the badge shows correct state.
-  // TODO: implement direct upload via GET_SIGNED_URL when a file-bridge is available.
   let synced = 0, failed = 0;
+  const syncedNames: string[] = [];
+
   for (let i = 0; i < pending.length; i++) {
+    const { taskId, fileName, fileType } = pending[i];
     try {
+      // Read the stored base64 content
+      const base64 = await offlineStorage.read<string>(
+        PARTICIPANT_KEYS.fileBlob(participantId, fileName),
+      );
+
+      if (!base64) {
+        // No content stored (e.g. blob was cleaned up already) — treat as done
+        logger.warn(`syncService: no stored blob for "${fileName}" — skipping`);
+        syncedNames.push(fileName);
+        synced++;
+        continue;
+      }
+
+      // Reconstruct File object and upload via pre-signed URL
+      const file = base64ToFile(base64, fileName, fileType);
+      const result = await uploadFiles(taskId, [file]);
+      const uploaded = result.data?.[0];
+
+      if (uploaded?.url) {
+        // Patch the attachment stub in stored task edits so the task sync step
+        // sends the real server URL instead of the empty placeholder.
+        await patchTaskAttachmentUrl(
+          participantId,
+          taskId,
+          fileName,
+          uploaded.url,
+          uploaded.sourcePath,
+        );
+        // Remove the persisted blob — no longer needed
+        await offlineStorage.remove(PARTICIPANT_KEYS.fileBlob(participantId, fileName)).catch(() => {});
+      }
+
+      syncedNames.push(fileName);
       synced++;
       onProgress?.(makeProgress('files', i + 1, pending.length));
     } catch (err) {
-      logger.error(`syncService: file entry failed for participant ${participantId}`, err);
+      logger.error(`syncService: file upload failed for "${fileName}" (task: ${taskId})`, err);
       failed++;
     }
   }
 
-  if (failed === 0) {
-    await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
+  // Remove synced entries from the pending queue
+  if (syncedNames.length > 0) {
+    const remaining = pending.filter(p => !syncedNames.includes(p.fileName));
+    if (remaining.length === 0) {
+      await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
+    } else {
+      await offlineStorage.create(PARTICIPANT_KEYS.filesPending(participantId), remaining);
+    }
   }
 
   return { synced, failed };

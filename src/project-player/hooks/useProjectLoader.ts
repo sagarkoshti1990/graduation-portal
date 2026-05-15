@@ -31,7 +31,7 @@ export const useProjectLoader = (
   useEffect(() => {
     const loadData = async () => {
       try {
-        // setIsLoading(true);
+        setIsLoading(true);
 
         // config.mode = "edit" and data contains  projectId.
         if (config.mode === 'edit' || config.mode === 'read-only') {
@@ -46,14 +46,32 @@ export const useProjectLoader = (
             }
             if (projectId) {
               if (entityId) {
-                // Offline-first: check dataService (returns cached if offline/pending, or live API)
+                // Offline-first: always check dataService — it reads cache when offline or
+                // when there are pending unsynced edits (Rules 1, 2, 3).
                 const result = await dataService.getProject<ProjectData>(entityId, projectId);
+
                 if (result.isOffline && !result.offlineDataAvailable) {
+                  // Offline AND no cached project — user needs to download first
                   throw new Error(t('offlineSync.dataUnavailable'));
                 }
+
                 projectData = result.data as ProjectData;
+
+                // If we served from cache while online (pending sync edits exist), kick off
+                // a background refresh so the UI eventually shows the server's latest state —
+                // but only after we have rendered with the local edits.
+                if (projectData && result.fromCache && !result.isOffline) {
+                  dataService.getProject<ProjectData>(entityId, projectId).then(fresh => {
+                    if (fresh.data && !fresh.fromCache) setProjectData(fresh.data);
+                  }).catch(() => {});
+                }
               } else {
+                // No entityId available — fall back to scanning offline participant storage
+                // (getProjectDetails already does this when isNetworkOffline() is true)
                 const res = await getProjectDetails(projectId);
+                if (!res.data && isNetworkOffline()) {
+                  throw new Error(t('offlineSync.dataUnavailable'));
+                }
                 projectData = res.data;
               }
             } else {

@@ -49,8 +49,17 @@ export const PARTICIPANT_KEYS = {
   form:      (participantId: string, formId: string) => `participant:${participantId}:form:${formId}`,
   /** Pending form edits saved before sync */
   formEdits: (participantId: string, formId: string) => `participant:${participantId}:form:${formId}:edits`,
-  /** Pending file upload references */
+  /**
+   * Pending file upload queue.
+   * Stores PendingFile[] — structured entries that carry taskId so syncService
+   * knows which task each file belongs to.
+   */
   filesPending:   (id: string) => `participant:${id}:filesPending`,
+  /**
+   * Stored file content (base64 data-URL) for a single pending file.
+   * Keyed by participantId + fileName; removed after successful upload.
+   */
+  fileBlob: (participantId: string, fileName: string) => `participant:${participantId}:file:${encodeURIComponent(fileName)}`,
   /** Timestamp (ms) of the last successful sync for this participant */
   lastSyncedAt:   (id: string) => `participant:${id}:lastSyncedAt`,
 };

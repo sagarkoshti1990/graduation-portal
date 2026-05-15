@@ -5,6 +5,17 @@ import { uploadFiles } from '../services/projectPlayerService';
 import dataService from '../../../src/services/dataService';
 import offlineStorage from '../../../src/services/offlineStorage';
 import { PARTICIPANT_KEYS } from '../../../src/constants/STORAGE_KEYS';
+import type { PendingFile } from '../../../src/types/offline';
+
+/** Converts a browser File to a base64 data-URL for persistent offline storage. */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export const useTaskActions = () => {
   const { updateTask, mode, setTaskAddedToPlan, setTaskPlanActionPerformed, projectData } =
@@ -23,18 +34,35 @@ export const useTaskActions = () => {
 
       if (files.length > 0) {
         if (isOffline) {
-          // Queue file names for later upload; build local attachment stubs so the
-          // task card can display the pending files without a real URL yet.
+          // Store file content as base64 and queue a structured PendingFile entry so
+          // syncService can upload the real bytes and patch the server URL after sync.
           if (participantId) {
             try {
-              const existing = await offlineStorage.read<string[]>(
+              const existing = await offlineStorage.read<PendingFile[]>(
                 PARTICIPANT_KEYS.filesPending(participantId),
               ) ?? [];
-              const toAdd = files.map(f => f.name).filter(n => !existing.includes(n));
-              if (toAdd.length > 0) {
+              const existingNames = new Set(existing.map(p => p.fileName));
+
+              for (const file of files) {
+                if (existingNames.has(file.name)) continue;
+                // Persist content for deferred upload
+                try {
+                  const base64 = await fileToBase64(file);
+                  await offlineStorage.create(
+                    PARTICIPANT_KEYS.fileBlob(participantId, file.name),
+                    base64,
+                  );
+                } catch { /* non-fatal: sync will skip if blob is missing */ }
+              }
+
+              const newEntries: PendingFile[] = files
+                .filter(f => !existingNames.has(f.name))
+                .map(f => ({ taskId, fileName: f.name, fileType: f.type ?? '' }));
+
+              if (newEntries.length > 0) {
                 await offlineStorage.create(
                   PARTICIPANT_KEYS.filesPending(participantId),
-                  [...existing, ...toAdd],
+                  [...existing, ...newEntries],
                 );
               }
             } catch { /* non-fatal */ }

@@ -67,6 +67,20 @@ export interface ObservationFormEdits {
 }
 
 // ---------------------------------------------------------------------------
+// Pending file upload types
+// ---------------------------------------------------------------------------
+
+/** One entry in PARTICIPANT_KEYS.filesPending — enough context to upload and patch the task. */
+export interface PendingFile {
+  /** Task ID that owns this attachment (used as the upload entity). */
+  taskId: string;
+  /** Original file name (must match the fileBlob storage key). */
+  fileName: string;
+  /** MIME type needed to reconstruct the File object from the stored base64. */
+  fileType: string;
+}
+
+// ---------------------------------------------------------------------------
 // Sync types
 // ---------------------------------------------------------------------------
 
