@@ -21,7 +21,7 @@
  */
 
 import offlineStorage from './offlineStorage';
-import { isNetworkOffline } from './dataService';
+import { isNetworkOffline } from '@utils/networkStatus';
 import type { OfflineServiceResponse } from './offlineTypes';
 import {
   buildOfflineUnsupported,
@@ -45,6 +45,12 @@ export interface OfflineFirstConfig<T> {
   cacheWriter?: (data: T) => Promise<void>;
   /** Value to return in `data` when nothing is available ([] for lists, null for objects). */
   emptyValue: T;
+  /**
+   * Optional async check — when online, if this returns true the cache is
+   * served instead of the live API (pending-sync priority: Rule 2).
+   * Errors are swallowed and treated as false.
+   */
+  hasPendingSyncFn?: () => Promise<boolean>;
 }
 
 async function readCache<T>(
@@ -73,7 +79,7 @@ export async function withOfflineFirst<T>(
   apiCall: () => Promise<T>,
   config: OfflineFirstConfig<T>,
 ): Promise<OfflineServiceResponse<T>> {
-  const { offlineSupported, cacheKey, cacheReader, cacheWriter, emptyValue } = config;
+  const { offlineSupported, cacheKey, cacheReader, cacheWriter, emptyValue, hasPendingSyncFn } = config;
 
   // ── OFFLINE PATH ────────────────────────────────────────────────────────
   if (isNetworkOffline()) {
@@ -85,6 +91,17 @@ export async function withOfflineFirst<T>(
       return buildFromCache(cached, true);
     }
     return buildOfflineNoData(emptyValue);
+  }
+
+  // ── ONLINE + PENDING SYNC — serve cache to avoid overwriting local edits ─
+  if (offlineSupported && hasPendingSyncFn) {
+    const hasPending = await hasPendingSyncFn().catch(() => false);
+    if (hasPending) {
+      const cached = await readCache<T>(cacheKey, cacheReader);
+      if (cached !== null) {
+        return buildFromCache(cached, false); // online but local edits take priority
+      }
+    }
   }
 
   // ── ONLINE PATH ─────────────────────────────────────────────────────────

@@ -22,6 +22,7 @@ import {
 import { startDownload } from '../../services/downloadService';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import { STATUS } from '@constants/app.constant';
+import type { DownloadStatus, DownloadModuleKey } from '@app-types/offline';
 
 interface DownloadConfigModalProps {
   isOpen: boolean;
@@ -29,10 +30,23 @@ interface DownloadConfigModalProps {
   participantId: string;
   projectId?: string;
   participantStatus: string;
-  participantData?: any; // for listSnapshot save
+  participantData?: any;
   onBoardedProjectId?: string;
   onSuccess?: () => void;
 }
+
+// Maps every DownloadModuleKey to its i18n label key
+const MODULE_LABEL: Record<DownloadModuleKey, string> = {
+  participant:                  'actions.downloadParticipant',
+  project:                      'actions.downloadProject',
+  tasks:                        'actions.downloadProject',
+  'observation:logVisit':       'actions.downloadLogVisit',
+  'observation:householdProfile':'actions.downloadHouseholdProfile',
+  'observation:individualVisit':'actions.downloadIndividualVisit',
+  'observation:midline':        'actions.downloadMidline',
+  'observation:interventionPlan':'actions.downloadInterventionPlan',
+  'observation:endline':        'actions.downloadEndline',
+};
 
 const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   isOpen,
@@ -50,21 +64,22 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [downloadDone, setDownloadDone] = useState(false);
-  const [downloadPartial, setDownloadPartial] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null);
 
   const options = getDownloadOptions(participantStatus);
-
-  // Onboarding project validation (Section 8.5)
   const isInProgress = participantStatus === STATUS.IN_PROGRESS;
   const needsOnboardingProject = isInProgress && !onBoardedProjectId && !projectId;
+
+  // downloadDone = any terminal state (success, partial, or full failure after attempt)
+  const downloadDone = downloadStatus !== null;
+  const downloadPartial = downloadDone && (downloadStatus!.failedModules ?? []).length > 0;
+  const downloadFailed  = downloadDone && downloadStatus!.status === 'failed';
 
   useEffect(() => {
     if (isOpen) {
       setSelected(getDefaultSelection(participantStatus));
       setDownloadError(null);
-      setDownloadDone(false);
-      setDownloadPartial(false);
+      setDownloadStatus(null);
     }
   }, [isOpen, participantStatus]);
 
@@ -102,21 +117,33 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
         participantSnapshot: participantData,
       });
 
-      if (result.success) {
-        const hasFailed = (result.status?.failedModules ?? []).length > 0;
-        setDownloadDone(true);
-        setDownloadPartial(hasFailed);
-        await refreshPending();
-        onSuccess?.();
-      } else {
-        setDownloadError(result.error ?? t('actions.downloadError'));
-      }
+      setDownloadStatus(result.status);
+      await refreshPending();
+      onSuccess?.();
     } catch (err: any) {
       setDownloadError(err?.message ?? t('actions.downloadError'));
     } finally {
       setIsDownloading(false);
     }
   }, [needsOnboardingProject, projectId, onBoardedProjectId, selected, participantId, participantData, t, refreshPending, onSuccess]);
+
+  // Build the result rows — deduplicate 'tasks' (bundled under project)
+  const resultRows: Array<{ key: string; label: string; state: 'success' | 'failed' }> = [];
+  if (downloadStatus) {
+    const seen = new Set<string>();
+    for (const key of [...downloadStatus.completedModules, ...downloadStatus.failedModules]) {
+      if (key === 'tasks') continue; // bundled with project, don't show separately
+      if (seen.has(key)) continue;
+      seen.add(key);
+      // Static keys resolve via MODULE_LABEL; dynamic "observation:task:<id>" keys fall back to the key itself
+      const label = MODULE_LABEL[key as DownloadModuleKey] ?? key;
+      resultRows.push({
+        key,
+        label,
+        state: downloadStatus.completedModules.includes(key) ? 'success' : 'failed',
+      });
+    }
+  }
 
   return (
     <Modal
@@ -138,21 +165,55 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
           </HStack>
         )}
 
-        {/* Success state */}
+        {/* ── RESULT STATE (success / partial / failed) ── */}
         {downloadDone ? (
-          <VStack space="sm" alignItems="center" py="$4">
-            <LucideIcon
-              name={downloadPartial ? 'AlertCircle' : 'CheckCircle2'}
-              size={40}
-              color={downloadPartial ? '$warning500' : '$success600'}
-            />
-            <Text
-              fontSize="$md"
-              fontWeight="$semibold"
-              color={downloadPartial ? '$warning600' : '$success600'}
-            >
-              {downloadPartial ? t('actions.downloadPartial') : t('actions.downloadSuccess')}
-            </Text>
+          <VStack space="md">
+            {/* Overall status header */}
+            <HStack space="sm" alignItems="center">
+              <LucideIcon
+                name={downloadFailed ? 'XCircle' : downloadPartial ? 'AlertCircle' : 'CheckCircle2'}
+                size={28}
+                color={downloadFailed ? '$error500' : downloadPartial ? '$warning500' : '$success600'}
+              />
+              <Text
+                fontSize="$md"
+                fontWeight="$semibold"
+                color={downloadFailed ? '$error600' : downloadPartial ? '$warning600' : '$success600'}
+              >
+                {downloadFailed
+                  ? t('actions.downloadError')
+                  : downloadPartial
+                  ? t('actions.downloadPartial')
+                  : t('actions.downloadSuccess')}
+              </Text>
+            </HStack>
+
+            {/* Module result list */}
+            {resultRows.length > 0 && (
+              <VStack space="xs" pl="$1">
+                {resultRows.map(({ key, label, state }) => (
+                  <HStack key={key} space="sm" alignItems="center">
+                    <LucideIcon
+                      name={state === 'success' ? 'CheckCircle2' : 'XCircle'}
+                      size={14}
+                      color={state === 'success' ? '$success600' : '$error500'}
+                    />
+                    <Text
+                      fontSize="$sm"
+                      color={state === 'success' ? '$textPrimary' : '$error600'}
+                    >
+                      {t(label)}
+                    </Text>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
+
+            <HStack justifyContent="flex-end">
+              <Button variant="solid" size="sm" onPress={onClose}>
+                <ButtonText>{t('common.close')}</ButtonText>
+              </Button>
+            </HStack>
           </VStack>
         ) : (
           <>
@@ -200,11 +261,11 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               })}
             </VStack>
 
-            {/* Error message */}
+            {/* Error message (config-level or thrown exception) */}
             {downloadError && (
-              <HStack space="sm" alignItems="center">
+              <HStack space="sm" alignItems="flex-start" bg="$error50" p="$3" borderRadius="$md">
                 <LucideIcon name="AlertCircle" size={14} color="$error500" />
-                <Text fontSize="$sm" color="$error500" flex={1}>{downloadError}</Text>
+                <Text fontSize="$sm" color="$error600" flex={1}>{downloadError}</Text>
               </HStack>
             )}
 
@@ -230,15 +291,6 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               </Button>
             </HStack>
           </>
-        )}
-
-        {/* Close after success */}
-        {downloadDone && (
-          <HStack justifyContent="flex-end">
-            <Button variant="solid" size="sm" onPress={onClose}>
-              <ButtonText>{t('common.close') || 'Close'}</ButtonText>
-            </Button>
-          </HStack>
         )}
       </VStack>
     </Modal>

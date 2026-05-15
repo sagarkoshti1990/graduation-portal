@@ -36,8 +36,9 @@ export interface DownloadConfig {
 
 export interface DownloadStatus {
   status: 'in_progress' | 'completed' | 'partial' | 'failed';
-  completedModules: DownloadModuleKey[];
-  failedModules: DownloadModuleKey[];
+  /** Known static keys plus dynamic `observation:task:<taskId>` entries */
+  completedModules: string[];
+  failedModules: string[];
   lastStep: string;
   startedAt: number;
   completedAt?: number;
@@ -51,6 +52,8 @@ export interface ObservationFormData {
   entityId: string;
   submissionId: string;
   submissionNumber: number;
+  /** True observationId from the entities API — may differ from the storage key (solutionId). Used by syncService for the POST path. */
+  observationId: string;
   schema: any;
   data: Record<string, any>;
   status: string;

@@ -210,12 +210,19 @@ export default function ParticipantDetail() {
   }, [participant, status]);
   useEffect(() => {
     const fetchSolutions = async () => {
+      // When offline, use cached solutions and skip entity-status / submissions API calls
+      if (dataService.isNetworkOffline()) {
+        const cachedResult = await dataService.getSolutions({ type: 'observation' });
+        setSolutions(cachedResult.data ?? []);
+        return;
+      }
+
       let keywordsString = `${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`;
-      
+
       if(participant?.status === STATUS.IN_PROGRESS && updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
         keywordsString += `,${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')}`;
       }
-      
+
       if(participant?.status === STATUS.IN_PROGRESS) {
         keywordsString += `,${FILTER_KEYWORDS.LOG_VISIT.join(',')}`;
       }

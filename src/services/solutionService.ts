@@ -1,6 +1,9 @@
 import api, { OBSERVATION_RETRY_CONFIG, withRetry } from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 import logger from '@utils/logger';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage from './offlineStorage';
+import { OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 
 /**
@@ -42,6 +45,14 @@ export interface TargetedSolutionsResponse {
 export const getTargetedSolutions = async (
   params: TargetedSolutionsParams,
 ): Promise<AssessmentSurveyCardData[]> => {
+  // Prevent API call when offline — return cached solutions or empty array.
+  if (isNetworkOffline()) {
+    const cached = await offlineStorage.read<AssessmentSurveyCardData[]>(
+      OFFLINE_KEYS.SOLUTIONS(params.type),
+    ).catch(() => null);
+    return cached ?? [];
+  }
+
   try {
     const { type, page, limit, search = '', ...rest } = params;
 

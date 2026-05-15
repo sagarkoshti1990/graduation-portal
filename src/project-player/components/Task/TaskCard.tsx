@@ -40,6 +40,7 @@ import { renderCustomTaskActions, renderModals } from './renderHelpers';
 import { useNavigation } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { getSolutionDetails } from '../../services/projectPlayerService';
+import { isNetworkOffline } from '../../../services/dataService';
 import logger from '@utils/logger';
 import { useAuth, User } from '@contexts/AuthContext';
 import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../services/participantService';
@@ -181,6 +182,29 @@ const TaskCard: React.FC<TaskCardProps> = ({
         console.error('Missing userId or projectTemplateId');
         return;
       }
+
+      // When offline, resolve solutionId directly from the task's cached solutionDetails
+      // instead of calling the getSolutionDetails API which would fail without network.
+      if (isNetworkOffline()) {
+        const offlineSolutionId: string =
+          task.solutionDetails?._id ??
+          (task.solutionDetails as any)?.observationId ??
+          (task.solutionDetails as any)?.id ?? '';
+
+        if (offlineSolutionId) {
+          // @ts-ignore Navigate to observation screen
+          navigation.navigate('observation', {
+            id: participantId,
+            solutionId: offlineSolutionId,
+            submissionNumber: 1,
+            taskId: task._id,
+          });
+        } else {
+          showAlert('error', t('projectPlayer.unableToLoadObservation'));
+        }
+        return;
+      }
+
       try {
         const solutionDetails = await getSolutionDetails(
           projectTemplateId,
@@ -193,12 +217,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
             id: participantId,
             solutionId: solutionDetails.data._id,
             submissionNumber: 1,
+            taskId: task._id,
           });
         } else {
           showAlert('error', t('projectPlayer.unableToLoadObservation'));
         }
       } catch (error) {
         console.error('getSolutionDetails API failed:', error);
+        showAlert('error', t('projectPlayer.unableToLoadObservation'));
       }
     } else {
       setShowUploadModal(true); // Open modal instead of file picker

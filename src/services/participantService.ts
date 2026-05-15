@@ -8,7 +8,10 @@ import { User } from '@contexts/AuthContext';
 import { getObservationEntities } from './solutionService';
 import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
-import { STATUS,ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD } from '@constants/app.constant';
+import { STATUS, ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD } from '@constants/app.constant';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 
 /**
  * Get participants list for table view
@@ -18,12 +21,30 @@ import { STATUS,ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THR
  * @returns A promise resolving to the search response from the API
  */
 export const getParticipantsList = async (params: ParticipantSearchParams): Promise<ParticipantSearchResponse> => {
+  // Prevent API call when offline — serve from cached storage instead.
+  if (isNetworkOffline()) {
+    if (params.entityId) {
+      // Single-participant lookup: return details or list-snapshot from cache
+      const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(params.entityId)).catch(() => null);
+      const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(params.entityId)).catch(() => null);
+      const row = details ?? snapshot ?? null;
+      return { result: { data: row ? [row] : [], count: row ? 1 : 0 } } as unknown as ParticipantSearchResponse;
+    }
+    // Full list: read all downloaded snapshots
+    const ids = await getOfflineParticipantIds().catch(() => [] as string[]);
+    const snapshots = await Promise.all(
+      ids.map(id => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(id)).catch(() => null)),
+    );
+    const participants = snapshots.filter(Boolean);
+    return { result: { data: participants, count: participants.length } } as unknown as ParticipantSearchResponse;
+  }
+
   try {
     const {
       userId,
       type = ROLE_NAMES.USER,
       page = 1,
-      limit = 20, 
+      limit = 20,
       search,
       status,
       entityId,
@@ -172,9 +193,15 @@ export const getSitesByProvince = (provinceValue: string): Site[] => {
 };
 
 export const getEntityDetails = async (userId: string): Promise<any> => {
+  // Prevent API call when offline — return cached entity details.
+  if (isNetworkOffline()) {
+    const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(userId)).catch(() => null);
+    const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(userId)).catch(() => null);
+    return { data: details ?? snapshot ?? null };
+  }
+
   try {
     const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(userId));
-
     return { data: response.data.result };
   } catch (error) {
     throw error;

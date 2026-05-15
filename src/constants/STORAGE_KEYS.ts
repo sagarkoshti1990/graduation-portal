@@ -63,8 +63,6 @@ export const PARTICIPANT_KEYS = {
 export const OFFLINE_KEYS = {
   /** Array of participant IDs that have been downloaded for offline use */
   OFFLINE_PARTICIPANT_IDS: 'participants:offline:ids',
-  /** Cached participants list data (prefix; status appended: participants:list:all) */
-  PARTICIPANTS_LIST: 'participants:list',
   /** Cached targeted solutions per type — participants:solutions:{type} */
   SOLUTIONS: (type: string) => `participants:solutions:${type}`,
   /** Cached project categories/pathways */
@@ -92,8 +90,6 @@ export const OFFLINE_API_CONFIG = {
 
   PARTICIPANTS_LIST: {
     supported: true as const,
-    /** cacheKey(status) → 'participants:list:{status}' */
-    cacheKey: (status = 'all') => `${OFFLINE_KEYS.PARTICIPANTS_LIST}:${status}`,
   },
 
   PARTICIPANT_DETAILS: {

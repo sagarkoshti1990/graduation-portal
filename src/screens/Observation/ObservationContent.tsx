@@ -15,7 +15,7 @@ import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
@@ -33,6 +33,8 @@ interface ObservationContentProps {
   participant?: ParticipantData;
   solutionId: string;
   submissionNumber?: number;
+  /** Task ID passed from TaskCard navigation — used to auto-mark task complete offline when form is submitted. */
+  taskId?: string;
   onClose?: () => void;
   showAlert: (type: string, message: string, options?: any) => void;
   defaultValues?: any;
@@ -50,6 +52,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   participant,
   solutionId,
   submissionNumber,
+  taskId,
   onClose,
   showAlert,
   userData,
@@ -366,11 +369,12 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
   );
 
-  // Section 5.9 Step 3 — bridge: save form edits into offlineStorage when web component reports a save/submit
+  // Bridge: save form edits into offlineStorage when web component reports a save/submit.
+  // When offline and a taskId is provided, also mark that task as completed so the
+  // task card reflects the done state without a sync round-trip.
   const handleAfterSubmit = useCallback(async (event?: any) => {
     logger.info('ObservationContent: afterSubmit event', event);
 
-    // Persist the latest answers into form:edits so sync can pick them up
     if (participant?.userId && observation?.observationId && submission?._id) {
       try {
         const answers = event?.data ?? event?.answers ?? event?.result?.answers ?? {};
@@ -383,10 +387,23 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       } catch (err) {
         logger.warn('ObservationContent: failed to save form edits', err);
       }
+
+      // Auto-mark the linked task as completed when offline
+      if (dataService.isNetworkOffline() && taskId) {
+        try {
+          await dataService.saveTaskEdit(participant.userId, {
+            _id: taskId,
+            status: TASK_STATUS.COMPLETED,
+          });
+          logger.info('ObservationContent: task auto-marked completed offline', taskId);
+        } catch (err) {
+          logger.warn('ObservationContent: failed to auto-mark task complete', err);
+        }
+      }
     }
 
     handleBackPress();
-  }, [participant?.userId, observation?.observationId, submission?._id, handleBackPress]);
+  }, [participant?.userId, observation?.observationId, submission?._id, taskId, handleBackPress]);
 
   return (
     <>

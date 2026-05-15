@@ -5,6 +5,9 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import { isWeb } from '@utils/platform';
 import { createProjectPlanPayload } from '../types';
 import { PROJECT_STATUS } from '@constants/app.constant';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage, { getOfflineParticipantIds } from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '../../constants/STORAGE_KEYS';
 
 export const apiClient = axios.create({
   // Use baseUrl from PROJECT_PLAYER_CONFIGS (which gets from env, with fallback)
@@ -97,6 +100,21 @@ export const createProjectForEntity = async (
 export const getProjectDetails = async (
   projectID: string,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) {
+    // Project cache is keyed by participantId; scan all downloaded participants
+    // to find the project matching this projectID.
+    const ids = await getOfflineParticipantIds().catch(() => [] as string[]);
+    for (const participantId of ids) {
+      const project = await offlineStorage
+        .read<any>(PARTICIPANT_KEYS.project(participantId))
+        .catch(() => null);
+      if (project && (project._id === projectID || project.id === projectID)) {
+        return { data: project };
+      }
+    }
+    return { data: null, error: 'offline' };
+  }
+
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.PROJECT_DETAILS(projectID),

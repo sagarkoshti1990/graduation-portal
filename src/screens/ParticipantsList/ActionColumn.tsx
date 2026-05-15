@@ -42,6 +42,9 @@ import { openDownload } from '@utils/helper';
 import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
 import DownloadConfigModal from '@components/DownloadConfigModal';
 import OfflineBadge from '@components/OfflineBadge';
+import dataService from '../../services/dataService';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -137,20 +140,58 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     }
   };
 
-  // Fetch solutions for log visit modal and auto-select first solution
+  // Fetch solutions for log visit modal and auto-select first solution.
+  // When offline, resolve the log-visit solutionId from the participant's cached project tasks
+  // instead of hitting the API (which would fail without network).
   useEffect(() => {
     const fetchLogVisitSolutions = async () => {
       if (modalType !== 'log-visit' && modalType !== 'view-log' && modalType !== "view-check-ins-Logs") return;
 
       setLogVisitLoading(true);
       try {
+        const isOffline = dataService.isNetworkOffline();
+
+        if (isOffline) {
+          // Read the participant's cached project and find the log-visit observation task
+          const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participant.userId));
+          const tasks: any[] = project?.tasks
+            ?? (project?.children ?? []).flatMap((c: any) => c.tasks ?? []);
+
+          const logVisitTask = tasks.find((t: any) => {
+            if (t.type !== 'observation') return false;
+            const name = (t.name ?? '').toLowerCase();
+            return name.includes('log visit') || name.includes('logvisit') || name.includes('log_visit');
+          });
+
+          const solutionId: string =
+            logVisitTask?.solutionDetails?._id ??
+            logVisitTask?.solutionDetails?.observationId ??
+            logVisitTask?.solutionDetails?.id ?? '';
+
+          if (solutionId) {
+            const fakeSolution = { solutionId, id: solutionId };
+            setSolutions([fakeSolution] as any);
+            if (modalType === 'view-check-ins-Logs') {
+              navigation.navigate('check-ins-list', {
+                id: participant.userId as string,
+                solutionId,
+              });
+            } else {
+              setSelectedSolutionId(solutionId);
+            }
+          } else {
+            setSolutions([]);
+            setSelectedSolutionId('');
+          }
+          return;
+        }
+
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
           'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
         });
         setSolutions(data);
-        // Automatically select the first solution
         if (data && data.length > 0) {
           const firstSolution = data[0];
           if (modalType === 'view-check-ins-Logs') {
@@ -623,7 +664,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         onBoardedProjectId={(participant as any).onBoardedProjectId}
         onSuccess={() => {
           setBadgeRefreshKey(k => k + 1);
-          handleCloseModal();
+          // handleCloseModal();
         }}
       />
     </Box>

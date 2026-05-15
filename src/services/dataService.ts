@@ -9,8 +9,8 @@
  * When offline → persist locally for sync later; when online → call API.
  */
 
-import { Platform } from 'react-native';
 import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
+import { isNetworkOffline } from '@utils/networkStatus';
 import { PARTICIPANT_KEYS, OFFLINE_KEYS, OFFLINE_API_CONFIG } from '@constants/STORAGE_KEYS';
 import {
   getParticipantsList,
@@ -33,15 +33,11 @@ import type { ParticipantOverview, AssessmentSurveyCardData } from '@app-types/p
 import type { ObservationFormData, ObservationFormEdits } from '@app-types/offline';
 
 // ---------------------------------------------------------------------------
-// Network detection (exported — used by useProjectLoader, useTaskActions)
+// Network detection — re-exported so existing callers (useProjectLoader,
+// useTaskActions, TaskCard, OfflineSyncContext) need no import changes.
 // ---------------------------------------------------------------------------
 
-export function isNetworkOffline(): boolean {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return !window.navigator.onLine;
-  }
-  return false; // native: API-error is the offline signal
-}
+export { isNetworkOffline };
 
 // ---------------------------------------------------------------------------
 // Backward-compat sentinel (deprecated — use OfflineServiceResponse flags)
@@ -135,18 +131,31 @@ async function loadOfflineParticipantList(
   }
 }
 
+// Maps raw status values (lowercased) to the API overview key shape read by ParticipantsList
+const STATUS_TO_OVERVIEW_KEY: Record<string, string> = {
+  'not_onboarded': 'notonboarded',
+  'onboarded':     'onboarded',
+  'in_progress':   'inprogress',
+  'dropped_out':   'droppedout',
+  'graduated':     'graduated',
+  'completed':     'completed',
+};
+
 function computeOfflineOverview(participants: any[]): ParticipantOverview {
   const counts: Record<string, number> = {};
   for (const p of participants) {
-    const s = (p.status ?? p.accountUserStatus ?? 'unknown').toLowerCase();
-    counts[s] = (counts[s] ?? 0) + 1;
+    const raw = (p.status ?? p.accountUserStatus ?? 'unknown').toLowerCase();
+    const key = STATUS_TO_OVERVIEW_KEY[raw] ?? raw;
+    counts[key] = (counts[key] ?? 0) + 1;
   }
   return {
-    total: participants.length,
-    active: counts['active'] ?? 0,
-    inactive: counts['inactive'] ?? 0,
-    notOnboarded: counts['not_onboarded'] ?? counts['notOnboarded'] ?? 0,
-    ...Object.keys(counts).reduce((acc, k) => ({ ...acc, [k]: counts[k] }), {}),
+    total:         participants.length,
+    notonboarded:  counts['notonboarded']  ?? 0,
+    onboarded:     counts['onboarded']     ?? 0,
+    inprogress:    counts['inprogress']    ?? 0,
+    droppedout:    counts['droppedout']    ?? 0,
+    graduated:     counts['graduated']     ?? 0,
+    completed:     counts['completed']     ?? 0,
   } as unknown as ParticipantOverview;
 }
 
@@ -168,15 +177,6 @@ export async function getParticipantList(
     const total = response.total ?? 0;
     const result: ParticipantListResult = { participants, total, overview, fromCache: false };
 
-    if (!params.search && (!params.page || params.page === 1)) {
-      const cacheKey = OFFLINE_API_CONFIG.PARTICIPANTS_LIST.cacheKey(params.status || 'all');
-      offlineStorage.create(cacheKey, { data: participants, total }).catch(() => {});
-      if (overview) {
-        offlineStorage
-          .create(`${OFFLINE_KEYS.PARTICIPANTS_LIST}:overview`, overview)
-          .catch(() => {});
-      }
-    }
     return buildOnlineSuccess(result, OFFLINE_API_CONFIG.PARTICIPANTS_LIST.supported);
   } catch (err) {
     logger.warn('dataService.getParticipantList: API failed — falling back to offline', err);
@@ -219,6 +219,7 @@ export async function getParticipantDetails(
         );
         return details ?? snapshot ?? null;
       },
+      hasPendingSyncFn: () => hasPendingForParticipant(participantId),
       emptyValue: null,
     },
   );
@@ -365,6 +366,7 @@ export async function getEntityDetails(
       cacheWriter: async (data: any) => {
         await offlineStorage.create(PARTICIPANT_KEYS.details(participantId), data);
       },
+      hasPendingSyncFn: () => hasPendingForParticipant(participantId),
       emptyValue: null,
     },
   );

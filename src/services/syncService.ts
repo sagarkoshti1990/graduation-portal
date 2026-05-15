@@ -4,7 +4,7 @@
  * Sync order (must not change — tasks depend on forms, forms depend on entities):
  *   1. File uploads  (pending file references → upload to API)
  *   2. Form edits    (pending form answers  → POST to observationSubmissions/update)
- *   3. Task edits    (pending task status   → PATCH to project tasks)
+ *   3. Task edits    (pending task status   → POST to /api/project/v1/userProjects/update/{id})
  *
  * File upload (Stage 1) is intentionally minimal for web PWA — the web component
  * stores file blobs in its own IndexedDB and manages upload when online via the
@@ -25,6 +25,7 @@ import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
 import type { SyncResult, SyncProgress, ObservationFormData } from '@app-types/offline';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
+import { updateTask as updateTaskAPI } from '../project-player/services/projectPlayerService';
 
 type ProgressCallback = (progress: SyncProgress) => void;
 
@@ -135,9 +136,10 @@ async function syncFormEdits(
         continue;
       }
 
-      // POST /api/survey/v1/observationSubmissions/update/{observationId}?entityId={entityId}
+      // Use stored observationId (may differ from solutionId used as storage key)
+      const apiObservationId = formData.observationId ?? formId;
       await api.post(
-        `${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formId}?entityId=${formData.entityId}`,
+        `${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${apiObservationId}?entityId=${formData.entityId}`,
         {
           submissionId: edits.submissionId,
           answers: edits.data,
@@ -174,7 +176,7 @@ async function syncTaskEdits(
   for (let i = 0; i < tasks.length; i++) {
     const taskEdit = tasks[i];
     try {
-      await api.patch(`/project/v1/tasks/${taskEdit._id}`, taskEdit);
+      await updateTaskAPI(taskEdit._id, taskEdit);
       synced++;
       onProgress?.(makeProgress('tasks', i + 1, tasks.length));
     } catch (err) {
