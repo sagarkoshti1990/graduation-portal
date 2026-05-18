@@ -143,8 +143,6 @@ export default function ParticipantDetail() {
         setAreAllTasksCompleted(false);
         setUpdatedProgress(undefined);
         setHasProgressBaseline(false);
-        setConfigData(null);
-        setProjectPlayerConfigData(null);
         setIsLoading(true);
         setChallenges(undefined);
         setIsOfflineUnavailable(false);
@@ -169,45 +167,6 @@ export default function ParticipantDetail() {
     setHasProgressBaseline(false);
   }, [participantId]);
 
-  // Update configData and ProjectPlayerConfigData when participant or status changes
-  useEffect(() => {
-    if (!participant) {
-      setConfigData(null);
-      setProjectPlayerConfigData(null);
-      return;
-    }
-
-    // Determine ProjectPlayer config and data based on participant status
-    const config = PROJECT_PLAYER_CONFIGS;
-    const selectedMode = MODE.editMode;
-
-    const newConfigData = {
-      ...config,
-      ...selectedMode,
-      showAddCustomTaskButton: false,
-      profileInfo: participant,
-    };
-
-    const newProjectPlayerConfigData: ProjectPlayerData = {
-      projectId: status === STATUS.IN_PROGRESS
-        ? participant?.idpProjectId
-        : status === STATUS.NOT_ENROLLED
-          ? participant?.onBoardedProjectId
-          : participant?.onBoardedProjectId,
-      entityId: participant?.entityId,
-      userStatus: participant?.status,
-      province: participant?.province?.value
-    };
-
-    setConfigData(newConfigData);
-    setProjectPlayerConfigData(newProjectPlayerConfigData);
-
-    // Cleanup function: clear state when component unmounts or dependencies change
-    return () => {
-      setConfigData(null);
-      setProjectPlayerConfigData(null);
-    };
-  }, [participant, status]);
   useEffect(() => {
     const fetchSolutions = async () => {
       // When offline, use cached solutions and skip entity-status / submissions API calls
@@ -370,15 +329,14 @@ export default function ParticipantDetail() {
         {showOnboardingProject ? (
           <>
             <DownloadFormsCard mode={showOnboardingProject === "not_enrolled" ? "edit" : "read-only"} />
-            {configData && projectPlayerConfigData && (
-              <ProjectPlayer
-                key={`project-player-${participantId}`}
-                config={{...configData, mode: showOnboardingProject === "not_enrolled" ? "edit" : "read-only"}}
-                data={projectPlayerConfigData}
-                onTaskCompletionChange={setAreAllTasksCompleted}
-                onProgressChange={handleProgressChange}
-              />
-            )}
+            <InterventionPlan
+              key={`project-player-${participantId}`}
+              participantStatus={status as ParticipantStatus}
+              participantId={participant?.id}
+              participantProfile={participant}
+              onTaskCompletionChange={setAreAllTasksCompleted}
+              getProjectData={setProjectData}
+            />
           </>
         ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan

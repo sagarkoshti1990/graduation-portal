@@ -97,7 +97,6 @@ function LogVisitModulePopupComponent({
   );
 
   const handleOpenLogVisit = useCallback((isOpenf:"expand" | "openForm" | "openList" = "expand") => {
-    console.log(isOpenf);
     if(isOpenf === "expand") {
       setExpanded(prev => !prev)
     } else if(["openForm","openList"].includes(isOpenf)) {

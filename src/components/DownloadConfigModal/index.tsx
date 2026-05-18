@@ -149,7 +149,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      headerContent={t('actions.downloadOffline')}
+      headerTitle={t('actions.downloadOffline')}
       headerIcon={<LucideIcon name="Download" size={20} color="$primary500" />}
       size="md"
       showCloseButton={!isDownloading}
@@ -171,7 +171,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
             {/* Overall status header */}
             <HStack space="sm" alignItems="center">
               <LucideIcon
-                name={downloadFailed ? 'XCircle' : downloadPartial ? 'AlertCircle' : 'CheckCircle2'}
+                name={downloadFailed ? 'XCircle' : downloadPartial ? 'AlertCircle' : 'CircleCheck'}
                 size={28}
                 color={downloadFailed ? '$error500' : downloadPartial ? '$warning500' : '$success600'}
               />
@@ -194,7 +194,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
                 {resultRows.map(({ key, label, state }) => (
                   <HStack key={key} space="sm" alignItems="center">
                     <LucideIcon
-                      name={state === 'success' ? 'CheckCircle2' : 'XCircle'}
+                      name={state === 'success' ? 'CircleCheck' : 'XCircle'}
                       size={14}
                       color={state === 'success' ? '$success600' : '$error500'}
                     />

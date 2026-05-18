@@ -22,9 +22,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Container from '@ui/Container';
 import { LucideIcon, Modal, useAlert } from '@ui';
-import { theme } from '@config/theme';
 import { submitInterventionPlan } from '../../services/projectPlayerService';
-import { addCustomTaskStyles } from '../Task/Styles';
 import { PLAYER_MODE } from '@constants/app.constant';
 import { PILLAR_NAMES } from '@constants/app.constant';
 

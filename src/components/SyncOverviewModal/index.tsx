@@ -52,7 +52,7 @@ const SyncOverviewModal: React.FC = () => {
       <VStack space="lg">
         {allSynced && !isSyncing ? (
           <VStack space="sm" alignItems="center" py="$4">
-            <LucideIcon name="CheckCircle2" size={40} color="$success600" />
+            <LucideIcon name="CircleCheck" size={40} color="$success600" />
             <Text fontSize="$md" fontWeight="$semibold" color="$success600">
               {t('offlineSync.allSynced')}
             </Text>

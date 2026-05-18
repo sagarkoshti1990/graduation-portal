@@ -75,45 +75,41 @@ export const useProjectLoader = (
                 projectData = res.data;
               }
             } else {
-              try {
-                if (isNetworkOffline()) {
-                  throw new Error(t('offlineSync.dataUnavailable'));
+              if (isNetworkOffline()) {
+                throw new Error(t('offlineSync.dataUnavailable'));
+              }
+              projectData = await createProjectForEntity(entityId, province);
+              const thisDate = new Date().toISOString();
+              if (projectData?._id) {
+                await updateEntityDetails({
+                  userId: `${user?.id}`,
+                  entityId: entityId,
+                  entityUpdates: {
+                    onBoardedProjectId: projectData._id,
+                    onBoardingProjectCreatedAt: thisDate
+                  },
+                });
+                
+                const participantId = projectData.entityInformation?.externalId;
+                if (!participantId) {
+                    throw new Error('Created project is missing entityInformation.externalId');
                 }
-                projectData = await createProjectForEntity(entityId, province);
-                const thisDate = new Date().toISOString();
-                if (projectData?._id) {
-                  await updateEntityDetails({
-                    userId: `${user?.id}`,
-                    entityId: entityId,
-                    entityUpdates: {
-                      onBoardedProjectId: projectData._id,
-                      onBoardingProjectCreatedAt: thisDate
-                    },
-                  });
-                  
-                  const participantId = projectData.entityInformation?.externalId;
-                  if (!participantId) {
-                     throw new Error('Created project is missing entityInformation.externalId');
-                  }
-                 // create user program Mapping for the participant
-                  await createOrUpdateProgramUserMapping({
-                    userId: participantId,
-                    programId: process.env.GLOBAL_LC_PROGRAM_ID,
-                    metaInformation: {
-                      onBoardedProjectId: projectData?._id,
-                      onBoardingProjectCreatedAt: thisDate
-                    },
-                    status: STATUS.NOT_ONBOARDED
-                  });
-                  
+                // create user program Mapping for the participant
+                await createOrUpdateProgramUserMapping({
+                  userId: participantId,
+                  programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                  metaInformation: {
+                    onBoardedProjectId: projectData?._id,
+                    onBoardingProjectCreatedAt: thisDate
+                  },
+                  status: STATUS.NOT_ONBOARDED
+                });
+                
 
-                  const ref = await AsyncStorage.getItem('my_program_user_ref');
-                  if (ref) {
-                    await updateProjectInfo(projectData._id, ref);
-                  }
+                const ref = await AsyncStorage.getItem('my_program_user_ref');
+                if (ref) {
+                  await updateProjectInfo(projectData._id, ref);
                 }
-              } catch (error) {
-                console.log(error as Error)
               }             
             }
             if (!projectData) {

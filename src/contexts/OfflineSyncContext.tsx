@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { Platform } from 'react-native';
+import { addNetworkListener } from '@utils/networkStatus';
 import { getPendingBreakdown, isNetworkOffline, type PendingBreakdown } from '../services/dataService';
 import { startSync, startSyncAll } from '../services/syncService';
 import type { SyncProgress } from '@app-types/offline';
@@ -66,7 +67,37 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   }, []);
 
-  // Network event listeners (web only — native uses API error detection)
+  // Native: subscribe to network state changes so isOffline state stays current.
+  // Uses the addNetworkListener abstraction — no direct NetInfo import needed here.
+  useEffect(() => {
+    if (Platform.OS === 'web' || typeof window === 'undefined') return;
+
+    const unsubscribe = addNetworkListener((offline) => {
+      setIsOffline(prev => {
+        if (prev === offline) return prev;
+        if (!offline) {
+          getPendingBreakdown()
+            .then(breakdown => {
+              setPendingBreakdown(breakdown);
+              if (breakdown.total > 0) {
+                setJustCameOnline(true);
+                if (justCameOnlineTimer.current) clearTimeout(justCameOnlineTimer.current);
+                justCameOnlineTimer.current = setTimeout(
+                  () => setJustCameOnline(false),
+                  10000,
+                );
+              }
+            })
+            .catch(() => {});
+        }
+        return offline;
+      });
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Web: window online/offline events
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 

@@ -1,16 +1,18 @@
-import React, { useState, useMemo, useEffect, useCallback,memo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { Box, VStack, Text, Button, ButtonText, LucideIcon } from '@ui';
+import { Spinner } from '@gluestack-ui/themed';
 import { useLanguage } from '@contexts/LanguageContext';
 import { interventionPlanStyles } from './Styles';
 import ProjectPlayer, {
   ProjectPlayerData,
   ProjectPlayerConfig,
 } from '../../../project-player/index';
-import { Task } from '../../../project-player/types/project.types';
-import { MODE } from '@constants/PROJECTDATA';
+import { Task, ProjectData } from '../../../project-player/types/project.types';
+import { MODE, PROJECT_PLAYER_CONFIGS } from '@constants/PROJECTDATA';
 import { STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
+import dataService from '../../../services/dataService';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   participantStatus,
@@ -19,6 +21,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   onIdpCreation,
   onProgressChange,
   getProjectData,
+  onTaskCompletionChange
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
@@ -30,6 +33,9 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   );
   // State to store the projectId from IDP creation
   const [projectId, setProjectId] = useState<string | undefined>(undefined);
+  // Project details fetched inside InterventionPlan (online: API; offline: IndexedDB cache)
+  const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | null>(null);
+  const [isProjectLoading, setIsProjectLoading] = useState(true);
 
   // Update local status when prop changes
   useEffect(() => {
@@ -44,6 +50,35 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   const areAllOptionalTasksAdded = REQUIRED_OPTIONAL_TASKS.every(id =>
     addedTasks.has(id),
   );
+
+  const resolvedProjectId = (currentStatus === STATUS.NOT_ONBOARDED && participantProfile.onBoardedProjectId) ? participantProfile.onBoardedProjectId : projectId || participantProfile?.idpProjectId;
+  const entityId = participantProfile?.entityId;
+
+  // Handle project details fetch — supports online and offline.
+  // Online: fetches latest from API via dataService.
+  // Offline: reads from IndexedDB cache; no failing network call is triggered.
+  useEffect(() => {    
+    let cancelled = false;
+    const fun = async () => {
+      if (!resolvedProjectId) {
+        setFetchedProjectData(null);
+        setIsProjectLoading(false);
+        return;
+      }
+
+      setIsProjectLoading(true);
+      const response = await dataService.getProject<ProjectData>(entityId, resolvedProjectId)
+      if (response?.data) {
+        setFetchedProjectData(response.data);
+        getProjectData?.(response.data);
+        setIsProjectLoading(false)
+      } else if (!cancelled) {setIsProjectLoading(false)}
+    }
+    fun();
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedProjectId, entityId, getProjectData]);
 
   // Handle task update callback from ProjectPlayer
   const handleTaskUpdate = (task: Task) => {
@@ -77,6 +112,18 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
     const status = currentStatus;
 
+    if (status === STATUS.NOT_ONBOARDED) {
+      // Determine ProjectPlayer config and data based on participant status
+      const configData = PROJECT_PLAYER_CONFIGS;
+      const selectedMode = MODE.editMode;
+  
+      return {
+        ...configData,
+        ...selectedMode,
+        showAddCustomTaskButton: false,
+        profileInfo: participantProfile,
+      };
+    }
     if (status === STATUS.ENROLLED) {
       const baseConfig = isEditMode ? MODE.editMode : MODE.previewMode;
       const showAddCustomTaskButton =
@@ -103,16 +150,14 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     else if(status === STATUS.IN_PROGRESS){
        const baseConfig =  MODE.editMode;
       const showAddCustomTaskButton = status === STATUS.IN_PROGRESS;
-      
-        return {
-          ...baseConfig,
-          profileInfo: participantProfile,
-          showSubmitButton: true,
-          onSubmitInterventionPlan: handleIdpCreationSuccess,
-          isSubmitDisabled: !areAllOptionalTasksAdded,
-          showAddCustomTaskButton
-        };
-    
+      return {
+        ...baseConfig,
+        profileInfo: participantProfile,
+        showSubmitButton: true,
+        onSubmitInterventionPlan: handleIdpCreationSuccess,
+        isSubmitDisabled: !areAllOptionalTasksAdded,
+        showAddCustomTaskButton
+      };
     }
 
     // Map other statuses to their respective configs
@@ -125,15 +170,18 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
     return statusConfigMap[status];
   }, [currentStatus, isEditMode, areAllOptionalTasksAdded, t, participantProfile, handleIdpCreationSuccess]);
-
+  
+  // Inject fetched project details into data.data so ProjectPlayer uses them directly,
   const projectPlayerData: ProjectPlayerData = useMemo(
     () => ({
-      projectId: projectId || participantProfile?.idpProjectId,
-      entityId: participantProfile?.entityId,
+      projectId: resolvedProjectId,
+      entityId,
       userStatus: participantProfile?.status,
       pillarCategoryRelation: undefined,
+      data: fetchedProjectData ?? undefined,
+      province: participantProfile?.province?.value
     }),
-    [projectId, participantProfile?.idpProjectId, participantProfile?.entityId, participantProfile?.status],
+    [resolvedProjectId, entityId, participantProfile?.status,participantProfile?.province?.value, fetchedProjectData],
   );
   
   if(!config?.mode){
@@ -173,8 +221,17 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     );
   }
 
+// Show loading spinner while fetching project details
+  if (isProjectLoading) {
+    return (
+      <Box flex={1} alignItems="center" justifyContent="center">
+        <Spinner size="large" />
+      </Box>
+    );
+  }
   // Show ProjectPlayer for IN_PROGRESS, COMPLETED, and other statuses
   if (
+    currentStatus === STATUS.NOT_ONBOARDED ||
     currentStatus === STATUS.IN_PROGRESS ||
     currentStatus === STATUS.COMPLETED ||
     currentStatus === STATUS.DROPOUT
@@ -186,23 +243,13 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
           data={projectPlayerData}
           onTaskUpdate={handleTaskUpdate}
           onProgressChange={onProgressChange}
-          getProjectData={getProjectData}
+          onTaskCompletionChange={onTaskCompletionChange}
         />
       </Box>
     );
   }
   // Fallback: render ProjectPlayer for any other status
-  return (
-    <Box flex={1} mt="$1">
-      <ProjectPlayer
-        config={config}
-        data={projectPlayerData}
-        onTaskUpdate={handleTaskUpdate}
-        onProgressChange={onProgressChange}
-        getProjectData={getProjectData}
-      />
-    </Box>
-  );
+  return <Text>{t("projectPlayer.failToLoad")}</Text>;
 };
 
 export default memo(InterventionPlan);

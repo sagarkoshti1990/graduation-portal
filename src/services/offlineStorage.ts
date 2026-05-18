@@ -184,6 +184,19 @@ export const create = async <T>(key: string, data: T): Promise<void> => {
   }
 };
 
+
+export const checkStorage = async () => {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    console.log('All Keys:', keys);
+
+    const result = await AsyncStorage.multiGet(keys);
+    console.log('All Data:', result);
+  } catch (error) {
+    console.log('Storage Error:', error);
+  }
+};
+
 /**
  * Read — retrieve data.
  * Routes to IndexedDB for participant/sync keys on web; AsyncStorage otherwise.
