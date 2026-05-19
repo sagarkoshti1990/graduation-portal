@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, BadgeText } from '@ui';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { STATUS as PARTICIPANT_STATUS } from '@constants/PARTICIPANTS_LIST';
 import { styles } from './Styles';
 
@@ -65,11 +65,25 @@ export const getStatusColors = (statusValue: string): StatusBadgeColors => {
  * Status Badge Component for Participants Table
  * Color-coded badge that changes based on status
  */
-export const StatusBadge: React.FC<{ status?: string }> = ({ status }) => {
+export const StatusBadge: React.FC<{ status?: string,user?:any }> = ({ status, user }) => {
   if (!status) return null;
 
   const colors = getStatusColors(status);
-  
+  if(user?.userDetails?.status === USER_STATUS.INACTIVE) {
+    return <Badge
+      {...styles.statusBadgeBox}
+      bg={"$error100"}
+      borderColor={"$error300"}
+    >
+      <BadgeText
+        {...styles.statusBadgeText}
+        color={"$error600"}
+      >
+        {USER_STATUS[user?.userDetails?.status as keyof typeof USER_STATUS]}
+      </BadgeText>
+    </Badge>
+  }
+
   return (
     <Badge
       {...styles.statusBadgeBox}

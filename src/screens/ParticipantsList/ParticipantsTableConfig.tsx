@@ -128,7 +128,7 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
     key: 'status',
     label: 'participants.status',
     flex: 1.5,
-    render: participant => <StatusBadge status={participant.status} />,
+    render: participant => <StatusBadge status={participant.status} user={participant} />,
     desktopConfig: {
       showColumn: false, // Hide status column on desktop
     },

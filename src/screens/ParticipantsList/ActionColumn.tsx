@@ -40,6 +40,7 @@ import {
 } from '@app-types/participant';
 import { openDownload } from '@utils/helper';
 import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
+import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -545,18 +546,12 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                     'status-badge',
                   ],
                 }}
-                _css={{
-                  _header: {
-                    pageHeader: {
-                      _container: {
-                        '$md-px': '$6',
-                        px: '$4',
-                        pb: '$4',
-                        backgroundColor: '$backgroundColor',
-                      },
-                    },
-                  },
-                }}
+                _css={observationCss}
+                _webComponent={{styleObject:{
+                  ".d-flex.pt-24.px-24.flex-ai-start.flex-gap-10:has(mat-icon)":{display: "none !important"},
+                  ".page-group-container":{background: "transparent !important",border: "0 !important"},
+                  ".questions-grid":{"padding":"0 !important"}
+                }}}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
                 // @ts-ignore - showAlert is a valid prop

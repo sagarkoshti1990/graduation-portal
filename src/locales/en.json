@@ -2057,7 +2057,7 @@
     "categoryModal": {
       "title": "Indicative Livelihood Pathway",
       "forParticipant": "For participant: {{name}}",
-      "description": "Please select the livelihood category and subcategory for this pathway.",
+      "description": "Please select the livelihood category for this pathway.",
       "categoryLabel": "Category of {{pillarName}} *",
       "categoryPlaceholder": "Select a category",
       "subCategoryLabel": "Sub-Category of {{pillarName}} *",

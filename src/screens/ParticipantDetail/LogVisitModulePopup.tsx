@@ -16,7 +16,13 @@ type ModulePopupProps = {
   noSolutionsMessage: string;
   buttonText?:string;
 };
-
+export const observationCss = {
+  _header: {
+    pageHeader: {
+      _container: { '$md-px': '$6', px: '$4', pb: '$4', backgroundColor: '$backgroundColor' },
+    },
+  },
+}
 function LogVisitModulePopupComponent({
   participant,
   solutions,
@@ -78,17 +84,6 @@ function LogVisitModulePopupComponent({
   const hideElements = useMemo(
     () => ({ header: ['title', 'progress-bar', 'status-badge',...(buttonText ? ["backButton"] : ["backButton"])] }),
     [buttonText],
-  );
-
-  const observationCss = useMemo(
-    () => ({
-      _header: {
-        pageHeader: {
-          _container: { '$md-px': '$6', px: '$4', pb: '$4', backgroundColor: '$backgroundColor' },
-        },
-      },
-    }),
-    [],
   );
 
   const checkInsContainer = useMemo(

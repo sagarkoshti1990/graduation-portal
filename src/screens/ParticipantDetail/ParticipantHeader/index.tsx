@@ -508,12 +508,12 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
               </Text>
               {status === STATUS.IN_PROGRESS && pathway && (
                 pathwayAndCategory.map((item, index) =>
-                  <Box key={`${item}-${index}`}>
+                  <React.Fragment key={`${item}-${index}`}>
                     <Text {...participantHeaderStyles.pathwaySeparator}>•</Text>
                     <Text {...participantHeaderStyles.pathway}>
                       {item}
                     </Text>
-                  </Box>
+                  </React.Fragment>
                 )
               )}
             </HStack>

@@ -26,7 +26,7 @@ type ParticipantProfileModalProps = {
   isOpen: boolean;
   onClose: () => void;
   participant: User;
-  onParticipantSaved: (patch: { location: string; email: string }) => void;
+  onParticipantSaved: (patch: { location: string; email?: string }) => void;
 };
 
 function ParticipantProfileModalInner({
@@ -37,7 +37,7 @@ function ParticipantProfileModalInner({
 }: ParticipantProfileModalProps) {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  const { isMobile } = usePlatform()
+  const { isMobile } = usePlatform();
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [editedAddress, setEditedAddress] = useState({
     email: '',
@@ -82,9 +82,7 @@ function ParticipantProfileModalInner({
       );
       setAddressFieldErrors(prev => ({
         ...prev,
-        ...(field === 'email'
-          ? { email: undefined }
-          : { street: undefined }),
+        ...(field === 'email' ? { email: undefined } : { street: undefined }),
         form: undefined,
       }));
     },
@@ -116,22 +114,22 @@ function ParticipantProfileModalInner({
     }
 
     const street = editedAddress.street?.trim() ?? '';
-    const email = editedAddress.email?.trim() ?? '';
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    // const email = editedAddress.email?.trim() ?? '';
+    // const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     const nextErrors: {
       street?: string;
-      email?: string;
+      // email?: string;
       form?: string;
     } = {};
     if (!street) {
       nextErrors.street = t('participantDetail.profileModal.streetRequired');
     }
-    if (!email) {
-      nextErrors.email = t('participantDetail.profileModal.emailRequired');
-    } else if (!isValidEmail) {
-      nextErrors.email = t('participantDetail.profileModal.emailInvalid');
-    }
+    // if (!email) {
+    //   nextErrors.email = t('participantDetail.profileModal.emailRequired');
+    // } else if (!isValidEmail) {
+    //   nextErrors.email = t('participantDetail.profileModal.emailInvalid');
+    // }
     if (Object.keys(nextErrors).length > 0) {
       setAddressFieldErrors(nextErrors);
       return;
@@ -152,24 +150,38 @@ function ParticipantProfileModalInner({
         programId,
         updateData: {
           location: street,
-          email,
+          // email,
         },
       };
       const res = await updateParticipantAddress(reqBody);
       if (res) {
-        onParticipantSaved({ location: street, email });
+        onParticipantSaved({
+          location: street,
+          //  email
+        });
         setIsEditingAddress(false);
         setAddressFieldErrors({});
-        showAlert('success', t('participantDetail.profileModal.addressUpdated'), {
-          placement: 'bottom',
-        });
+        showAlert(
+          'success',
+          t('participantDetail.profileModal.addressUpdated'),
+          {
+            placement: 'bottom',
+          },
+        );
       }
     } catch {
       showAlert('error', t('common.error'), {
         placement: 'bottom',
       });
     }
-  }, [canEditProfile, editedAddress, participant?.id, onParticipantSaved, showAlert, t]);
+  }, [
+    canEditProfile,
+    editedAddress,
+    participant?.id,
+    onParticipantSaved,
+    showAlert,
+    t,
+  ]);
 
   return (
     <Modal
@@ -190,15 +202,17 @@ function ParticipantProfileModalInner({
       //     />
       //   </Pressable>
       // }
-      size={isMobile ? "lg" : "sm"}
-      {...(!isEditingAddress ? {
-        footerContent: <RenderFooterContent participant={participant} />
-      } : {
-        cancelButtonText: t('common.cancel'),
-        confirmButtonText: t('participantDetail.profileModal.save'),
-        onCancel: handleToggleEdit,
-        onConfirm: handleSaveAddress
-      })}
+      size={isMobile ? 'lg' : 'sm'}
+      {...(!isEditingAddress
+        ? {
+            footerContent: <RenderFooterContent participant={participant} />,
+          }
+        : {
+            cancelButtonText: t('common.cancel'),
+            confirmButtonText: t('participantDetail.profileModal.save'),
+            onCancel: handleToggleEdit,
+            onConfirm: handleSaveAddress,
+          })}
     >
       <VStack space="lg">
         <VStack space="xs" {...profileStyles.fieldSection}>
@@ -257,17 +271,19 @@ function ParticipantProfileModalInner({
         </VStack>
 
         <VStack space="xs" {...profileStyles.fieldSection}>
-          <HStack justifyContent='space-between'>
+          <HStack justifyContent="space-between">
             <Text {...profileStyles.fieldLabel}>
               {t('common.profileFields.address')}
             </Text>
-            {canEditProfile && !isEditingAddress && <Pressable onPress={handleToggleEdit}>
-              <LucideIcon
-                name={isEditingAddress ? 'X' : 'Pencil'}
-                size={16}
-                color={theme.tokens.colors.primary500}
-              />
-            </Pressable>}
+            {canEditProfile && !isEditingAddress && (
+              <Pressable onPress={handleToggleEdit}>
+                <LucideIcon
+                  name={isEditingAddress ? 'X' : 'Pencil'}
+                  size={16}
+                  color={theme.tokens.colors.primary500}
+                />
+              </Pressable>
+            )}
           </HStack>
           {isEditingAddress ? (
             <VStack space="sm">
@@ -277,9 +293,7 @@ function ParticipantProfileModalInner({
                   $focus-borderColor={theme.tokens.colors.inputFocusBorder}
                 >
                   <InputField
-                    placeholder={t(
-                      'common.profileFields.addressFields.street',
-                    )}
+                    placeholder={t('common.profileFields.addressFields.street')}
                     value={editedAddress?.street || ''}
                     onChangeText={value =>
                       handleAddressFieldChange('street', value)
@@ -325,50 +339,59 @@ function ParticipantProfileModalInner({
 
 export const ParticipantProfileModal = memo(ParticipantProfileModalInner);
 
-
 const RenderFooterContent = ({ participant }: { participant: any }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  const {isMobile} = usePlatform()
+  const { isMobile } = usePlatform();
   const consentFile = getFileUrl(participant?.consentFiles);
   const slaFile = getFileUrl(participant?.slaFiles);
-
-  return <HStack space='sm' flex={1} flexDirection={isMobile ? "column" :"row"}>
-    {consentFile !== ""
-      // @ts-ignore
-      && <Button variant='outlineghost' flex="1"
-        onPress={() => openDownload(consentFile, t, showAlert)}
-      >
-        <ButtonIcon as={LucideIcon} name="FileText" />
-        <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewConsent')}</ButtonText>
-      </Button>
-    }
-    {/* @ts-ignore */}
-    {slaFile !== ""
-      // @ts-ignore
-      && <Button variant='outlineghost' flex="1"
-        onPress={() => openDownload(slaFile, t, showAlert)}
-      >
-        <ButtonIcon as={LucideIcon} name="FileText" />
-        <ButtonText fontSize='$sm' fontWeight='$medium'>{t('participantDetail.profileModal.viewSLA')}</ButtonText>
-      </Button>
-    }
-  </HStack>
+  
+  return (
+    <HStack space="sm" flex={1} flexDirection={isMobile ? 'column' : 'row'}>
+      {consentFile !== '' && (
+        <Button
+          // @ts-ignore
+          variant="outlineghost"
+          {...(isMobile ? {flex:"none"} : {flex: 1})}
+          onPress={() => openDownload(consentFile, t, showAlert)}
+        >
+          <ButtonIcon as={LucideIcon} name="FileText" />
+          <ButtonText fontSize="$sm" fontWeight="$medium">
+            {t('participantDetail.profileModal.viewConsent')}
+          </ButtonText>
+        </Button>
+      )}
+      {/* @ts-ignore */}
+      {slaFile !== '' && (
+        <Button
+          // @ts-ignore
+          variant="outlineghost"
+          {...(isMobile ? {flex:"none"} : {flex: 1})}
+          onPress={() => openDownload(slaFile, t, showAlert)}
+        >
+          <ButtonIcon as={LucideIcon} name="FileText" />
+          <ButtonText fontSize="$sm" fontWeight="$medium">
+            {t('participantDetail.profileModal.viewSLA')}
+          </ButtonText>
+        </Button>
+      )}
+    </HStack>
+  );
 };
 
 const getFileUrl = (files: any) => {
   if (!Array.isArray(files) || files.length === 0) {
-    return "";
+    return '';
   }
 
-  const file = files.find((item) => {
+  const file = files.find(item => {
     // object format
-    if (typeof item === "object" && item?.url) {
+    if (typeof item === 'object' && item?.url) {
       return true;
     }
 
     // string format
-    if (typeof item === "string" && item.trim()) {
+    if (typeof item === 'string' && item.trim()) {
       return true;
     }
 
@@ -376,12 +399,12 @@ const getFileUrl = (files: any) => {
   });
 
   if (!file) {
-    return "";
+    return '';
   }
 
   // return url from object
-  if (typeof file === "object") {
-    return file.url || "";
+  if (typeof file === 'object') {
+    return file.url || '';
   }
 
   // return string directly
