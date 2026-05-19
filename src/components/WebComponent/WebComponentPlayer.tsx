@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import logger from '@utils/logger';
+import { buildCssFromObject } from './WebComponentPlayer.web';
 
 interface PlayerConfigProps {
   /**
@@ -27,13 +28,13 @@ interface PlayerConfigProps {
   ) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback?: (event?: any) => void;
+  styleObject?:any
 }
 
 const WebComponentPlayer = React.memo(
-  ({ playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }: PlayerConfigProps) => {
+  ({styleObject={}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }: PlayerConfigProps) => {
     const [loading, setLoading] = useState(true);
     const webViewRef = useRef<any>(null);
-
     // Native platform: Inject questionnaire-webcomponent into WebView
     useEffect(() => {
       setLoading(true);
@@ -71,7 +72,6 @@ const WebComponentPlayer = React.memo(
             // Inject theme variables
             const createThemeVariables = () => {
               const style = document.createElement('style');
-
               style.innerHTML = \`
                 :root {
                   --primary-color: #A53E54;
@@ -101,8 +101,8 @@ const WebComponentPlayer = React.memo(
                   --colors-backgroundLightSuccess: #EDFCF2;
                   --colors-backgroundLightError: #FEF1F1;
                 }
+                ${buildCssFromObject(styleObject)}
               \`;
-
               document.head.appendChild(style);
             };
 

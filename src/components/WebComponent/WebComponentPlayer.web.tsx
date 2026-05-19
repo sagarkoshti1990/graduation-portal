@@ -22,7 +22,7 @@ interface PlayerConfigProps {
   styleObject?:any
 }
 
-function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
+export function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
   return Object.entries(cssObj)
     .map(([selector, props]) => {
       const rules = Object.entries(props)
