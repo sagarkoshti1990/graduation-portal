@@ -102,6 +102,10 @@ const [participantsRefreshKey, setParticipantsRefreshKey] = useState(0);
  const [mappedParticipantsPage, setMappedParticipantsPage] = useState(1);
  const [mappedParticipantsPageSize, setMappedParticipantsPageSize] = useState(5);
  const [mappedParticipantsTotal, setMappedParticipantsTotal] = useState(0);
+ // Pagination state for mapped LCs table
+ const [mappedLCsPage, setMappedLCsPage] = useState(1);
+ const [mappedLCsPageSize, setMappedLCsPageSize] = useState(5);
+ const [mappedLCsTotal, setMappedLCsTotal] = useState(0);
 const shouldLoadParticipantFilters =
   activeTab === 'PARTICIPANT_TO_LC' && !!selectedLcId;
 
@@ -120,6 +124,10 @@ useEffect(() => {
   participantFilterValues.site,
   participantFilterValues.search,
 ]);
+
+useEffect(() => {
+  setMappedLCsPage(1);
+}, [selectedSupervisorId, supervisorFilterValues.selectSupervisor]);
 
  // Handler for supervisor and LC filter changes (combined in Step 1)
  const handleSupervisorFilterChange = (values: Record<string, any>) => {
@@ -223,6 +231,9 @@ useEffect(() => {
       search: '',
     });
 
+    const assignTotalCount = mappedResponse.total || mappedResponse.result?.total || mappedResponse.result?.count || 0;
+    setMappedLCsTotal(assignTotalCount);
+
     // Transform API response to match expected format
     const lcs = (mappedResponse.result?.data || []).map((lc: any) => {
       const name = lc.name || '';
@@ -239,7 +250,7 @@ useEffect(() => {
         lc.site?.label ||
         '';
       const lcId = `LC-${String(userId).padStart(3, '0')}`;
-      
+
       return {
         labelKey: name,
         value: String(userId),
@@ -251,7 +262,7 @@ useEffect(() => {
         id: userId,
       };
     });
-    
+
     setMappedLCs(lcs);
     
     // Return success indicator
@@ -473,10 +484,13 @@ const getAvailableParticipants = () => {
          userId: supervisorId,
          programId: programId,
          type: 'org_admin',
-         page: 1,
-         limit: 100,
+         page: mappedLCsPage,
+         limit: mappedLCsPageSize,
          search: '',
        });
+
+       const totalCount = response.total || response.result?.total || response.result?.count || 0;
+       setMappedLCsTotal(totalCount);
 
        // Transform API response to match expected format
        const lcs = (response.result?.data || []).map((lc: any) => {
@@ -518,7 +532,7 @@ const getAvailableParticipants = () => {
    };
 
   fetchMappedLCs();
-}, [selectedSupervisorId, supervisorFilterValues.selectSupervisor, isSupervisor, user?.id, user?._id]);
+}, [selectedSupervisorId, supervisorFilterValues.selectSupervisor, isSupervisor, user?.id, user?._id, mappedLCsPage, mappedLCsPageSize]);
 
 // Fetch participants when participant filters change (do NOT refetch on Supervisor/LC dropdown changes)
 useEffect(() => {
@@ -917,10 +931,19 @@ return (
                     responsive={true}
                     pagination={{
                       enabled: true,
-                      pageSize: 5,
+                      pageSize: mappedLCsPageSize,
                       maxPageNumbers: 5,
                       showPageSizeSelector: true,
                       pageSizeOptions: [5, 10, 25, 50],
+                      serverSide: {
+                        total: mappedLCsTotal,
+                        count: mappedLCsPage,
+                      },
+                    }}
+                    onPageChange={setMappedLCsPage}
+                    onPageSizeChange={(size: number) => {
+                      setMappedLCsPageSize(size);
+                      setMappedLCsPage(1);
                     }}
                   />
                 </Box>
