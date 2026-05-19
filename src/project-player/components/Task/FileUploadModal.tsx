@@ -277,7 +277,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
 
 }) => {
   const { t } = useLanguage();
-  const { isMobile } = usePlatform();
+  const { isMobile } = usePlatform(1024);
   const [selectedMethod, setSelectedMethod] = useState<UploadMethod | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
   const [existingAttachmentsState, setExistingAttachmentsState] = useState<any[]>(existingAttachments ?? []);

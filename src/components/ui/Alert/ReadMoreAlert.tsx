@@ -132,7 +132,7 @@ const ReadMoreAlert = ({
     contentHeight,
     collapsedHeight,
   ]);
-
+  
   return (
     <Alert
       borderWidth={1}
@@ -190,8 +190,7 @@ const ReadMoreAlert = ({
 
           <Animated.View
             style={{
-              height:
-                animatedHeight,
+              height:  contentHeight >= (LINE_HEIGHT * lineLimit) ? animatedHeight :"auto",
               overflow: 'hidden',
               width: '100%',
             }}
