@@ -427,9 +427,13 @@ const SubmissionCard = ({ submission, iconMeta, onFormSelect }: { submission: an
         {submission.answers ?
           <VStack flex={1} minWidth="$0" space="md" alignSelf="stretch">
             <HStack justifyContent='space-between'>
+            {answers?.tags ? (
               <Badge size="md" variant="solid" bg="$primary500" borderRadius="10px">
-                <BadgeText color="$white" fontWeight={500} textTransform='capitalize'>{answers?.tags || "visit"}</BadgeText>
+                <BadgeText color="$white" fontWeight={500} textTransform='capitalize'>{answers?.tags || ""}</BadgeText>
               </Badge>
+             ) : (
+              <Box />
+            )}
               <HStack space='sm' alignItems='center'>
                 <LucideIcon name="Calendar" color="$badgeColor" size={14} />
                 <Text color="$badgeColor" fontSize={"$sm"}>
