@@ -82,8 +82,6 @@ export default function ParticipantDetail() {
     undefined,
   );
   const [hasProgressBaseline, setHasProgressBaseline] = useState(false);
-  const [configData, setConfigData] = useState<any>(null);
-  const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);

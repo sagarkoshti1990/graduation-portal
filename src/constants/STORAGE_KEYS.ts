@@ -44,7 +44,7 @@ export const PARTICIPANT_KEYS = {
   /** Task list */
   tasks:          (id: string) => `participant:${id}:tasks`,
   /** Pending task-status edits */
-  projectEdits:   (id: string) => `participant:${id}:projectEdits`,
+  projectEdits:   (id: string,projectId:string) => `participant:${id}:projectEdits:${projectId}`,
   /** Observation form schema + submission snapshot */
   form:      (participantId: string, formId: string) => `participant:${participantId}:form:${formId}`,
   /** Pending form edits saved before sync */

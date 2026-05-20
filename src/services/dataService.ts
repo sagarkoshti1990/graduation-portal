@@ -371,22 +371,59 @@ export async function getEntityDetails(
     },
   );
 }
+export const mergeTasks = (oldData: any, newData: any) => {
+  const taskMap = new Map();
 
+  [...(oldData?.tasks || []), ...(newData?.tasks || [])].forEach(
+    (task: any) => {
+      if (!taskMap.has(task._id)) {
+        taskMap.set(task._id, {
+          ...task,
+          children: [],
+        });
+      }
+
+      const existingTask = taskMap.get(task._id);
+
+      const childMap = new Map(
+        existingTask.children.map((child: any) => [child._id, child])
+      );
+
+      task?.children?.forEach((child: any) => {
+        if (!childMap.has(child._id)) {
+          childMap.set(child._id, child);
+        } else {
+          childMap.set(child._id, {
+            ...childMap.get(child._id),
+            ...child,
+          });
+        }
+      });
+
+      existingTask.children = Array.from(childMap.values());
+    }
+  );
+
+  return {
+    ...oldData,
+    ...newData,
+    tasks: Array.from(taskMap.values()),
+  };
+};
 // ---------------------------------------------------------------------------
 // Write Operations
 // ---------------------------------------------------------------------------
 
 export async function saveTaskEdit(
   participantId: string,
+  projectId:string,
   taskEdit: { _id: string; [key: string]: any },
 ): Promise<void> {
   const existing =
-    (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(participantId))) ??
+    (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(participantId,projectId))) ??
     { tasks: [] };
-  const deduped = existing.tasks.filter((t: any) => t._id !== taskEdit._id);
-  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId), {
-    tasks: [...deduped, taskEdit],
-  });
+  const newDaya = mergeTasks(existing,taskEdit);
+  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId,projectId), newDaya);
 }
 
 export async function saveFormEdits(

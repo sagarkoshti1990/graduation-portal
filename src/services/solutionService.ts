@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import logger from '@utils/logger';
 import { isNetworkOffline } from '@utils/networkStatus';
 import offlineStorage from './offlineStorage';
-import { OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
+import { OFFLINE_KEYS, PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 
 /**
@@ -47,9 +47,14 @@ export const getTargetedSolutions = async (
 ): Promise<AssessmentSurveyCardData[]> => {
   // Prevent API call when offline — return cached solutions or empty array.
   if (isNetworkOffline()) {
-    const cached = await offlineStorage.read<AssessmentSurveyCardData[]>(
-      OFFLINE_KEYS.SOLUTIONS(params.type),
+    const keyword = params?.["filter[keywords]"];
+    let cached = await offlineStorage.read<AssessmentSurveyCardData[]>(
+      PARTICIPANT_KEYS.solutions(params.participantId),
     ).catch(() => null);
+    if(keyword) {
+      const keywords = keyword.split(",");
+      cached = cached?.filter((item:any) => keywords.includes(item?.keywords))
+    }
     return cached ?? [];
   }
 

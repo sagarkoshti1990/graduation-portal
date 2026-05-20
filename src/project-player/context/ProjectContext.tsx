@@ -14,6 +14,7 @@ import {
 import { setApiConfig } from '../utils/api';
 import { updateTask as updateTaskAPI } from '../services/projectPlayerService';
 import { MODE } from '@constants/PROJECTDATA';
+import dataService from '../../services/dataService';
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(
   undefined,
@@ -224,12 +225,13 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   }, [projectData, addedToPlanTaskIds.length, taskPlanActionPerformedIds.length]);
 
   const updateTask = useCallback(
-    async (taskId: string, updates: Partial<Task>): Promise<void> => {
-      const mergedRef: { task: Task | null; projectId: string | null } = {
+    async (taskId: string,participantId:string, updates: Partial<Task>): Promise<void> => {
+      const mergedRef: { task: Task | null; projectId: string | null, participantId:string|null } = {
         task: null,
         projectId: null,
+        participantId: null
       };
-
+      const isOffline = dataService.isNetworkOffline();
       setProjectData(prev => {
         if (!prev) return null;
 
@@ -297,7 +299,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         (updatedTaskObj.isCustomTask || updatedTaskObj.parentId) &&
         isEditMode
       ) {
-        result = await updateTaskAPI(currentProjectId, {
+        const payloadTask = {
           tasks: [
             {
               _id: updatedTaskObj.parentId,
@@ -307,9 +309,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
               ],
             },
           ],
-        });
+        }
+        
+        if(isOffline) {
+          await dataService.saveTaskEdit(participantId,currentProjectId, payloadTask);
+        } else {
+          result = await updateTaskAPI(currentProjectId, payloadTask);
+        }
       } else {
-        result = await updateTaskAPI(currentProjectId, {
+        const payloadTask = {
           tasks: [
             {
               _id: taskId,
@@ -317,7 +325,12 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
               ...updates,
             },
           ],
-        });
+        }
+        if(isOffline) {
+          await dataService.saveTaskEdit(participantId,currentProjectId, payloadTask);
+        } else {
+          result = await updateTaskAPI(currentProjectId, payloadTask);
+        }
       }
 
       if (isApiErrorResult(result)) {

@@ -152,7 +152,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       try {
         const isOffline = dataService.isNetworkOffline();
 
-        if (isOffline) {
+        if (isOffline && false) {
           // Read the participant's cached project and find the log-visit observation task
           const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participant.userId,"123"));
           const tasks: any[] = project?.tasks
@@ -164,12 +164,12 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             return name.includes('log visit') || name.includes('logvisit') || name.includes('log_visit');
           });
 
-          const solutionId: string =
+          let solutionId: string =
             logVisitTask?.solutionDetails?._id ??
             logVisitTask?.solutionDetails?.observationId ??
             logVisitTask?.solutionDetails?.id ?? '';
 
-          if (solutionId) {
+          if(solutionId) {
             const fakeSolution = { solutionId, id: solutionId };
             setSolutions([fakeSolution] as any);
             if (modalType === 'view-check-ins-Logs') {
@@ -191,6 +191,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
           'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
+          participantId:participant.userId 
         });
         setSolutions(data);
         if (data && data.length > 0) {

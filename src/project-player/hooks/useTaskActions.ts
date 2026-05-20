@@ -89,20 +89,11 @@ export const useTaskActions = () => {
         updateData.attachments = attachments;
       }
 
-      if (isOffline && participantId) {
-        // Save locally; sync later
-        await dataService.saveTaskEdit(participantId, { _id: taskId, ...updateData });
-        return { success: true, data: updateData };
-      }
-
       try {
-        await updateTask(taskId, updateData);
+        await updateTask(taskId,participantId, updateData);
         return { success: true, data: updateData };
       } catch (err) {
         // API failed — persist locally so the change isn't lost
-        if (participantId) {
-          await dataService.saveTaskEdit(participantId, { _id: taskId, ...updateData }).catch(() => {});
-        }
         return { success: false, data: undefined };
       }
     },

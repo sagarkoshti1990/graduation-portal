@@ -42,7 +42,7 @@ import { useRoute } from '@react-navigation/native';
 import { getSolutionDetails } from '../../services/projectPlayerService';
 import { isNetworkOffline } from '../../../services/dataService';
 import logger from '@utils/logger';
-import { useAuth, User } from '@contexts/AuthContext';
+import { useAuth } from '@contexts/AuthContext';
 import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../services/participantService';
 import { STATUS } from '@constants/app.constant';
 
