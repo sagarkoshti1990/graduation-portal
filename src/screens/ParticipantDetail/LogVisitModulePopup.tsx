@@ -8,6 +8,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 import { Animated, Easing } from 'react-native';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -92,7 +93,6 @@ function LogVisitModulePopupComponent({
   );
 
   const handleOpenLogVisit = useCallback((isOpenf:"expand" | "openForm" | "openList" = "expand") => {
-    console.log(isOpenf);
     if(isOpenf === "expand") {
       setExpanded(prev => !prev)
     } else if(["openForm","openList"].includes(isOpenf)) {
@@ -144,6 +144,7 @@ function LogVisitModulePopupComponent({
           ],
         }}
       >
+        {participant.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE  &&
         <Button
           {...triggerProps}
           rounded="$full"
@@ -152,7 +153,7 @@ function LogVisitModulePopupComponent({
           onPress={() => handleOpenLogVisit("openForm")}
         >
           <ButtonIcon size={20} as={LucideIcon} name="ClipboardCheck" />
-        </Button>
+        </Button>}
 
         <Button
           {...triggerProps}

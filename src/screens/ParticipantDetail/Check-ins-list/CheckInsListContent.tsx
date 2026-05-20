@@ -334,7 +334,10 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
               startIndex={limit*(page-1)}
               endIndex={page*limit}
               onPageChange={(num) => setPage(num)}
-              onPageSizeChange={(num) => setLimit(num)}
+              onPageSizeChange={(num) => {
+                setPage(1);
+                setLimit(num)
+              }}
               config={{
                 pageSizeOptions:[5,10,20,30],
                 showPageSizeSelector:true

@@ -282,7 +282,7 @@ export default function ParticipantDetail() {
   };
 
   const handleParticipantAddressSaved = useCallback(
-    (patch: { location: string; email: string }) => {
+    (patch: { location: string; email?: string }) => {
       setParticipant((prev: User | undefined) =>
         prev
           ? ({
@@ -441,7 +441,8 @@ export default function ParticipantDetail() {
       <ParticipantProfileModal
         isOpen={isProfileModalOpen}
         onClose={closeProfileModal}
-        participant={participant}
+        participantId={participant.userId || ""}
+        userId={user?.id || ""}
         onParticipantSaved={handleParticipantAddressSaved}
       />
     </Box>
