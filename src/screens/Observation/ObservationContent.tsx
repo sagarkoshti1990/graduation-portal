@@ -19,6 +19,8 @@ import { CARD_STATUS, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import type { ObservationFormData } from '@app-types/offline';
 
 interface ObservationData {
   entityId: string;
@@ -68,6 +70,22 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   const [token, setToken] = useState<string | null>(null);
   const [mockData, setMockData] = useState<any>();
   const [submission, setSubmission] = useState<any>(null);
+  const taskAutoCompletedRef = useRef(false);
+
+  useEffect(() => {
+    taskAutoCompletedRef.current = false;
+  }, [taskId, participant]);
+
+  useEffect(() => {
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+    if (progress === 100 && !taskAutoCompletedRef.current && dataService.isNetworkOffline() && taskId && participantKey) {
+      taskAutoCompletedRef.current = true;
+      dataService.saveTaskEdit(participantKey, { _id: taskId, status: TASK_STATUS.COMPLETED })
+        .then(() => logger.info('ObservationContent: task auto-completed at 100% offline', taskId))
+        .catch(err => logger.warn('ObservationContent: failed to auto-complete task at 100%', err));
+    }
+  }, [progress, taskId, participant]);
+
   // Use ref to store progress callback to avoid prop changes causing rerenders
   const progressCallbackRef =
     useRef<
@@ -175,32 +193,39 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   };
 
   useEffect(() => {
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+
     const fetchObservation = async () => {
       const tokenData = await getToken();
       setToken(tokenData);
 
-      // Offline-first: check for cached form data before hitting the API
-      if (participant?.userId && solutionId) {
-        const cachedFormResponse = await dataService.getObservationForm(participant.userId, solutionId);
-        if (cachedFormResponse.isOffline && !cachedFormResponse.offlineDataAvailable) {
-          // Offline and no cached data — fail gracefully
+      // ── OFFLINE PATH: read only from local storage, no API calls ──────────
+      if (dataService.isNetworkOffline()) {
+        if (!participantKey || !solutionId) {
           showAlert('error', t('offlineSync.dataUnavailable'));
           setLoadingOff();
           return;
         }
-        if (cachedFormResponse.data !== null) {
-          // Have cached form — use it directly
-          const cachedForm = cachedFormResponse.data!;
-          setObservation({ entityId: cachedForm.entityId, observationId: solutionId });
-          setMockData(cachedForm.schema);
-          setSubmission({ _id: cachedForm.submissionId, submissionNumber: cachedForm.submissionNumber });
-          setDefaultValuesLocal(cachedForm.data ?? {});
+        const formData = await offlineStorage.read<ObservationFormData>(
+          PARTICIPANT_KEYS.form(participantKey, solutionId),
+        );
+        if (formData) {
+          const defaultValues = userData
+            ? buildDefaultValuesFromObservation(formData.schema, userData)
+            : (formData.data ?? {});
+          setDefaultValuesLocal(defaultValues);
+          setMockData(formData.schema);
+          setObservation({ entityId: formData.entityId, observationId: solutionId });
+          setSubmission({ _id: formData.submissionId, submissionNumber: formData.submissionNumber });
           setLoadingOff();
           return;
         }
-        // null means online + no pending edits → fall through to API
+        showAlert('error', t('offlineSync.dataUnavailable'));
+        setLoadingOff();
+        return;
       }
 
+      // ── ONLINE PATH: existing API flow ─────────────────────────────────────
       try {
         const observationData = await getObservationEntities({
           solutionId,
@@ -266,7 +291,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         setLoadingOff();
       }
     };
-    if (solutionId && participant?.userId) {
+    if (solutionId && participantKey) {
       fetchObservation();
     }
 
@@ -280,7 +305,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       setToken(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solutionId, participant?.userId, submissionNumber]);
+  }, [solutionId, participant, submissionNumber]);
 
   const handleBackPress = useCallback(() => {
     if (onClose) {
@@ -375,10 +400,12 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   const handleAfterSubmit = useCallback(async (event?: any) => {
     logger.info('ObservationContent: afterSubmit event', event);
 
-    if (participant?.userId && observation?.observationId && submission?._id) {
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+
+    if (participantKey && observation?.observationId && submission?._id) {
       try {
         const answers = event?.data ?? event?.answers ?? event?.result?.answers ?? {};
-        await dataService.saveFormEdits(participant.userId, observation.observationId, {
+        await dataService.saveFormEdits(participantKey, observation.observationId, {
           submissionId: submission._id,
           data: answers,
           updatedAt: new Date().toISOString(),
@@ -391,7 +418,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       // Auto-mark the linked task as completed when offline
       if (dataService.isNetworkOffline() && taskId) {
         try {
-          await dataService.saveTaskEdit(participant.userId, {
+          await dataService.saveTaskEdit(participantKey, {
             _id: taskId,
             status: TASK_STATUS.COMPLETED,
           });
@@ -403,7 +430,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     }
 
     handleBackPress();
-  }, [participant?.userId, observation?.observationId, submission?._id, taskId, handleBackPress]);
+  }, [participant, observation?.observationId, submission?._id, taskId, handleBackPress]);
 
   return (
     <>

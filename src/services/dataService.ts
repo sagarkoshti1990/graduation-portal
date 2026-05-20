@@ -231,14 +231,14 @@ export async function getParticipantDetails(
 
 export async function getProject<T = any>(
   participantId: string,
-  projectId?: string,
+  projectId: string,
 ): Promise<OfflineServiceResponse<T | null>> {
   const offline = isNetworkOffline();
   const hasPending =
     !offline && projectId ? await hasPendingForParticipant(participantId) : false;
 
   if (offline || hasPending) {
-    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId));
+    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId,projectId));
     if (cached) return buildFromCache(cached, offline);
     if (offline) return buildOfflineNoData<T | null>(null);
     // hasPending but no local project yet — fall through to API
@@ -252,11 +252,11 @@ export async function getProject<T = any>(
     const res = await getProjectDetails(projectId);
     const project = res.data as T;
     if (!project) return buildOnlineSuccess<T | null>(null, OFFLINE_API_CONFIG.PROJECT.supported);
-    offlineStorage.create(PARTICIPANT_KEYS.project(participantId), project).catch(() => {});
+    offlineStorage.create(PARTICIPANT_KEYS.project(participantId,projectId), project).catch(() => {});
     return buildOnlineSuccess(project, OFFLINE_API_CONFIG.PROJECT.supported);
   } catch (err) {
     logger.warn('dataService.getProject: API failed — falling back to cached project', err);
-    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId));
+    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId,projectId));
     if (cached) return buildFromCache(cached, false);
     throw err;
   }
@@ -269,7 +269,7 @@ export async function getTasks<T = any>(
   const hasPending = !offline ? await hasPendingForParticipant(participantId) : false;
 
   if (offline || hasPending) {
-    const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participantId));
+    const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participantId,"123"));
     if (project) {
       const tasks: T[] = project.tasks ?? project.children ?? [];
       return buildFromCache(tasks, offline);

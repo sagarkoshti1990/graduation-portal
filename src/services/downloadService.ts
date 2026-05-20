@@ -6,6 +6,7 @@ import type {
   DownloadStatus,
   DownloadModuleKey,
   ObservationFormData,
+  OfflineSolutionEntry,
 } from '@app-types/offline';
 import type { Task } from '../project-player/types';
 import { getProjectDetails } from '../project-player/services/projectPlayerService';
@@ -21,6 +22,12 @@ import { getParticipantsList } from './participantService';
 import { getTargetedSolutions } from './solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 
+/** Called by the download pipeline as each module starts and finishes. */
+export type DownloadProgressCallback = (
+  key: string,
+  state: 'loading' | 'completed' | 'failed',
+) => void;
+
 export interface StartDownloadParams {
   participantId: string;
   projectId: string;
@@ -29,6 +36,8 @@ export interface StartDownloadParams {
   lcUserId: string;
   /** The participant's list-row data, saved as listSnapshot for offline list rendering */
   participantSnapshot?: any;
+  /** Optional callback for real-time per-step progress reporting to the UI. */
+  onProgress?: DownloadProgressCallback;
 }
 
 export interface DownloadResult {
@@ -109,6 +118,13 @@ async function markFailed(participantId: string, module: string): Promise<void> 
 // Pipeline steps
 // ---------------------------------------------------------------------------
 
+interface ResolvedFormIds {
+  entityId: string;
+  submissionId: string;
+  submissionNumber: number;
+  observationId: string;
+}
+
 /**
  * Fetches fresh participant details from the programUsers/entities API
  * (same endpoint used by the participant list) and stores them offline.
@@ -146,7 +162,7 @@ async function fetchAndStoreProject(participantId: string, projectId: string): P
   const tasks: Task[] = project.tasks
     ?? (project.children ?? []).flatMap((c: any) => c.tasks ?? []);
   // Store the full project only — tasks are extracted from it when needed (no separate key)
-  await offlineStorage.create(PARTICIPANT_KEYS.project(participantId), project);
+  await offlineStorage.create(PARTICIPANT_KEYS.project(participantId,projectId), project);
   logger.info(`DownloadService: Stored project "${projectId}" with ${tasks.length} tasks`);
   return tasks;
 }
@@ -160,7 +176,7 @@ async function processObservationForm(
   participantId: string,
   participantName: string,
   solutionId: string,
-): Promise<void> {
+): Promise<ResolvedFormIds> {
   // Step 1: Resolve entity. result._id = real observationId (may differ from solutionId).
   let entityId: string | undefined;
   const entitiesResp = await withRetry(
@@ -246,50 +262,60 @@ async function processObservationForm(
   // Keyed by solutionId — matches what ObservationContent passes to getObservationForm()
   await offlineStorage.create(PARTICIPANT_KEYS.form(participantId, solutionId), formData);
   logger.info(`DownloadService: Stored form for solution "${solutionId}" (obs: "${observationId}")`);
+  return { entityId: entityId!, submissionId, submissionNumber: 1, observationId };
 }
 
 /** Thin wrapper used by the project-task (HH) path to extract solutionId from a task. */
-async function processObservationTask(participantId: string, participantName: string, task: Task): Promise<void> {
+async function processObservationTask(
+  participantId: string,
+  participantName: string,
+  task: Task,
+): Promise<(ResolvedFormIds & { solutionId: string }) | null> {
   const solutionId: string | undefined =
     task.solutionDetails?._id ??
     task.solutionDetails?.observationId ??
     task.solutionDetails?.id;
   if (!solutionId) {
     logger.warn(`DownloadService: No solutionId on task "${task._id}" — skipping`);
-    return;
+    return null;
   }
-  return processObservationForm(participantId, participantName, solutionId);
+  const resolved = await processObservationForm(participantId, participantName, solutionId);
+  return { ...resolved, solutionId };
 }
 
 /**
- * Calls the targeted solutions API with the given keywords and stores each matching
- * solution's form data offline. Per-solution failures are logged and skipped so one
- * bad form doesn't fail the whole module.
+ * Calls the targeted solutions API with the given keywords, stores each matching
+ * solution's form data offline, and returns the resolved IDs for the solutions mapping.
+ * Per-solution failures are logged and skipped so one bad form doesn't fail the whole module.
  */
 async function fetchAndStoreSolutionForms(
   participantId: string,
   participantName: string,
   keywords: string[],
-): Promise<void> {
+  moduleKey: string,
+): Promise<Array<ResolvedFormIds & { solutionId: string; keyword: string }>> {
+  const results: Array<ResolvedFormIds & { solutionId: string; keyword: string }> = [];
   const solutions = await getTargetedSolutions({
     type: 'observation',
     'filter[keywords]': keywords.join(','),
   });
   if (!solutions.length) {
     logger.warn(`DownloadService: No solutions found for keywords [${keywords.join(', ')}]`);
-    return;
+    return results;
   }
   for (const solution of solutions) {
     if (!solution.solutionId) continue;
     try {
-      await withRetry(
+      const resolved = await withRetry(
         () => processObservationForm(participantId, participantName, solution.solutionId),
         `solutionForm:${solution.solutionId}`,
       );
+      results.push({ ...resolved, solutionId: solution.solutionId, keyword: moduleKey });
     } catch (err) {
       logger.error(`DownloadService: Failed to store form for solution "${solution.solutionId}"`, err);
     }
   }
+  return results;
 }
 
 // ---------------------------------------------------------------------------
@@ -337,13 +363,21 @@ export const startDownload = async ({
   downloadConfig,
   lcUserId,
   participantSnapshot,
+  onProgress,
 }: StartDownloadParams): Promise<DownloadResult> => {
   await initStatus(participantId);
 
   try {
     if (downloadConfig.participant) {
-      await withRetry(() => fetchAndStoreParticipant(participantId, lcUserId), 'participant');
-      await markComplete(participantId, 'participant');
+      onProgress?.('participant', 'loading');
+      try {
+        await withRetry(() => fetchAndStoreParticipant(participantId, lcUserId), 'participant');
+        await markComplete(participantId, 'participant');
+        onProgress?.('participant', 'completed');
+      } catch (err) {
+        onProgress?.('participant', 'failed');
+        throw err; // participant is critical — abort entire download
+      }
     }
 
     // Always save the list-row snapshot so offline participant list can render
@@ -358,9 +392,18 @@ export const startDownload = async ({
       downloadConfig.project || downloadConfig.tasks || downloadConfig.observation.householdProfile;
     let tasks: Task[] = [];
     if (needsProject) {
-      tasks = await withRetry(() => fetchAndStoreProject(participantId, projectId), 'project');
-      if (downloadConfig.project) await markComplete(participantId, 'project');
-      if (downloadConfig.tasks) await markComplete(participantId, 'tasks');
+      if (downloadConfig.project) onProgress?.('project', 'loading');
+      try {
+        tasks = await withRetry(() => fetchAndStoreProject(participantId, projectId), 'project');
+        if (downloadConfig.project) {
+          await markComplete(participantId, 'project');
+          onProgress?.('project', 'completed');
+        }
+        if (downloadConfig.tasks) await markComplete(participantId, 'tasks');
+      } catch (err) {
+        if (downloadConfig.project) onProgress?.('project', 'failed');
+        throw err; // project is required for HH and task progress
+      }
     }
 
     const participantName: string =
@@ -371,24 +414,62 @@ export const startDownload = async ({
     // Process each selected observation module via the unified module map.
     // HH (householdProfile): matched from the project task list.
     // All others: fetched via the targeted solutions API using their FILTER_KEYWORDS constants.
+    // Collect resolved IDs for each form so we can save the solutions mapping at the end.
+    const solutionEntries: OfflineSolutionEntry[] = [];
+
     for (const module of OBSERVATION_SOLUTION_DOWNLOAD_MAP) {
       if (!downloadConfig.observation[module.configKey]) continue;
+      onProgress?.(module.moduleKey, 'loading');
       try {
         if (module.useProjectTasks) {
           const hhTasks = tasks.filter(
-            (t: Task) => t.type === 'observation' && resolveObservationModuleKey(t) === module.moduleKey,
+            (t: Task) => t.type?.toLowerCase() === 'observation' && resolveObservationModuleKey(t) === module.moduleKey,
           );
           for (const task of hhTasks) {
-            await processObservationTask(participantId, participantName, task);
+            const resolved = await processObservationTask(participantId, participantName, task);
+            if (resolved) {
+              solutionEntries.push({
+                keyword: module.moduleKey,
+                solutionId: resolved.solutionId,
+                submissionId: resolved.submissionId,
+                submissionNumber: resolved.submissionNumber,
+                observationId: resolved.observationId,
+                entityId: resolved.entityId,
+              });
+            }
           }
         } else {
-          await fetchAndStoreSolutionForms(participantId, participantName, module.keywords);
+          const resolved = await fetchAndStoreSolutionForms(
+            participantId,
+            participantName,
+            module.keywords,
+            module.moduleKey,
+          );
+          for (const r of resolved) {
+            solutionEntries.push({
+              keyword: r.keyword,
+              solutionId: r.solutionId,
+              submissionId: r.submissionId,
+              submissionNumber: r.submissionNumber,
+              observationId: r.observationId,
+              entityId: r.entityId,
+            });
+          }
         }
         await markComplete(participantId, module.moduleKey);
+        onProgress?.(module.moduleKey, 'completed');
       } catch (err) {
         logger.error(`DownloadService: Failed module "${module.moduleKey}"`, err);
         await markFailed(participantId, module.moduleKey);
+        onProgress?.(module.moduleKey, 'failed');
       }
+    }
+
+    // Save solutions mapping — must happen AFTER all schemas are downloaded so the
+    // mapping and the form data are always in sync.
+    if (solutionEntries.length > 0) {
+      await offlineStorage.create(PARTICIPANT_KEYS.solutions(participantId), solutionEntries);
+      logger.info(`DownloadService: Saved ${solutionEntries.length} solution entries for "${participantId}"`);
     }
 
     await addOfflineParticipantId(participantId);

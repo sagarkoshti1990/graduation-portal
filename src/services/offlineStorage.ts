@@ -188,12 +188,11 @@ export const create = async <T>(key: string, data: T): Promise<void> => {
 export const checkStorage = async () => {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    console.log('All Keys:', keys);
-
     const result = await AsyncStorage.multiGet(keys);
-    console.log('All Data:', result);
+    return {keys,result}
   } catch (error) {
     console.log('Storage Error:', error);
+    return {message:'Storage Error:', error}
   }
 };
 
@@ -418,6 +417,7 @@ const offlineStorage = {
   exists,
   getSize,
   getParticipantKeys,
+  checkStorage
 };
 
 export default offlineStorage;

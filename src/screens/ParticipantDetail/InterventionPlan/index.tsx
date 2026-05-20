@@ -42,17 +42,15 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     setLocalStatus(participantStatus);
   }, [participantStatus]);
 
-  // Use local status for rendering logic
-  const currentStatus = localStatus || participantStatus;
-
   // Define required optional tasks IDs needed for submission
   const REQUIRED_OPTIONAL_TASKS = ['subtask-sp-003', 'subtask-sp-004'];
   const areAllOptionalTasksAdded = REQUIRED_OPTIONAL_TASKS.every(id =>
     addedTasks.has(id),
   );
 
-  const resolvedProjectId = (currentStatus === STATUS.NOT_ONBOARDED && participantProfile.onBoardedProjectId) ? participantProfile.onBoardedProjectId : projectId || participantProfile?.idpProjectId;
+  const resolvedProjectId = (localStatus === STATUS.NOT_ONBOARDED && participantProfile.onBoardedProjectId) ? participantProfile.onBoardedProjectId : projectId || participantProfile?.idpProjectId;
   const entityId = participantProfile?.entityId;
+  const userId = participantProfile.userId;
 
   // Handle project details fetch — supports online and offline.
   // Online: fetches latest from API via dataService.
@@ -65,9 +63,8 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         setIsProjectLoading(false);
         return;
       }
-
       setIsProjectLoading(true);
-      const response = await dataService.getProject<ProjectData>(entityId, resolvedProjectId)
+      const response = await dataService.getProject<ProjectData>(userId, resolvedProjectId)
       if (response?.data) {
         setFetchedProjectData(response.data);
         getProjectData?.(response.data);
@@ -78,7 +75,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [resolvedProjectId, entityId, getProjectData]);
+  }, [resolvedProjectId, userId, getProjectData]);
 
   // Handle task update callback from ProjectPlayer
   const handleTaskUpdate = (task: Task) => {
@@ -106,11 +103,11 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
   // Memoize ProjectPlayer config based on status and edit mode
   const config: ProjectPlayerConfig = useMemo(() => {
-    if (!currentStatus) {
+    if (!localStatus) {
       return MODE.previewMode;
     }
 
-    const status = currentStatus;
+    const status = localStatus;
 
     if (status === STATUS.NOT_ONBOARDED) {
       // Determine ProjectPlayer config and data based on participant status
@@ -169,7 +166,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     };
 
     return statusConfigMap[status];
-  }, [currentStatus, isEditMode, areAllOptionalTasksAdded, t, participantProfile, handleIdpCreationSuccess]);
+  }, [localStatus, isEditMode, areAllOptionalTasksAdded, t, participantProfile, handleIdpCreationSuccess]);
   
   // Inject fetched project details into data.data so ProjectPlayer uses them directly,
   const projectPlayerData: ProjectPlayerData = useMemo(
@@ -189,7 +186,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     return;
   }
   // Show empty state for ENROLLED status when player is not shown yet
-  if (currentStatus === STATUS.ENROLLED) {
+  if (localStatus === STATUS.ENROLLED) {
     return (
       <Box {...interventionPlanStyles.container} mt="$7">
         <VStack {...interventionPlanStyles.content}>
@@ -231,10 +228,10 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   }
   // Show ProjectPlayer for IN_PROGRESS, COMPLETED, and other statuses
   if (
-    currentStatus === STATUS.NOT_ONBOARDED ||
-    currentStatus === STATUS.IN_PROGRESS ||
-    currentStatus === STATUS.COMPLETED ||
-    currentStatus === STATUS.DROPOUT
+    localStatus === STATUS.NOT_ONBOARDED ||
+    localStatus === STATUS.IN_PROGRESS ||
+    localStatus === STATUS.COMPLETED ||
+    localStatus === STATUS.DROPOUT
   ) {
     return (
       <Box flex={1} mt="$1">

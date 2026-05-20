@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Modal,
   VStack,
@@ -48,6 +48,32 @@ const MODULE_LABEL: Record<DownloadModuleKey, string> = {
   'observation:endline':        'actions.downloadEndline',
 };
 
+// Download order matches the pipeline in downloadService
+const DOWNLOAD_ORDER: DownloadModuleKey[] = [
+  'participant',
+  'project',
+  'observation:logVisit',
+  'observation:householdProfile',
+  'observation:individualVisit',
+  'observation:midline',
+  'observation:interventionPlan',
+  'observation:endline',
+];
+
+type StepState = 'pending' | 'loading' | 'completed' | 'failed';
+
+/** Build the ordered step keys that will actually be downloaded from the selection. */
+function buildStepKeys(selected: Set<string>): DownloadModuleKey[] {
+  return DOWNLOAD_ORDER.filter(key => {
+    if (key === 'tasks') return false; // always bundled with project, never shown separately
+    if (key === 'participant') return selected.has('participant');
+    if (key === 'project') return selected.has('project');
+    // Observation keys: selected set uses short keys like 'logVisit'
+    const short = key.replace('observation:', '');
+    return selected.has(short);
+  });
+}
+
 const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   isOpen,
   onClose,
@@ -66,20 +92,33 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null);
 
+  // Per-step progress state
+  const [stepStates, setStepStates] = useState<Map<string, StepState>>(new Map());
+  const [activeSteps, setActiveSteps] = useState<DownloadModuleKey[]>([]);
+  // Use a ref for the callback so it doesn't cause re-render loops
+  const stepStatesRef = useRef<Map<string, StepState>>(new Map());
+
   const options = getDownloadOptions(participantStatus);
   const isInProgress = participantStatus === STATUS.IN_PROGRESS;
   const needsOnboardingProject = isInProgress && !onBoardedProjectId && !projectId;
 
-  // downloadDone = any terminal state (success, partial, or full failure after attempt)
   const downloadDone = downloadStatus !== null;
   const downloadPartial = downloadDone && (downloadStatus!.failedModules ?? []).length > 0;
   const downloadFailed  = downloadDone && downloadStatus!.status === 'failed';
+
+  // Derived progress from step states
+  const completedCount = [...stepStatesRef.current.values()].filter(s => s === 'completed').length;
+  const totalSteps = activeSteps.length;
+  const progressPct = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
 
   useEffect(() => {
     if (isOpen) {
       setSelected(getDefaultSelection(participantStatus));
       setDownloadError(null);
       setDownloadStatus(null);
+      setStepStates(new Map());
+      stepStatesRef.current = new Map();
+      setActiveSteps([]);
     }
   }, [isOpen, participantStatus]);
 
@@ -98,14 +137,25 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       return;
     }
 
-    const resolvedProjectId = projectId ?? onBoardedProjectId;
+    const resolvedProjectId = participantStatus === STATUS.IN_PROGRESS ? projectId : participantStatus === STATUS.NOT_ONBOARDED ? onBoardedProjectId : null;
     if (!resolvedProjectId) {
       setDownloadError(t('actions.downloadNoProject'));
       return;
     }
 
+    // Build ordered step list and initialise all as pending
+    const steps = buildStepKeys(selected);
+    const initialMap = new Map<string, StepState>(steps.map(k => [k, 'pending']));
+    stepStatesRef.current = initialMap;
+    setActiveSteps(steps);
+    setStepStates(new Map(initialMap));
     setIsDownloading(true);
     setDownloadError(null);
+
+    const onProgress = (key: string, state: 'loading' | 'completed' | 'failed') => {
+      stepStatesRef.current = new Map(stepStatesRef.current).set(key, state);
+      setStepStates(new Map(stepStatesRef.current));
+    };
 
     try {
       const config = buildDownloadConfig(selected);
@@ -115,6 +165,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
         downloadConfig: config,
         lcUserId: user?.id ?? '',
         participantSnapshot: participantData,
+        onProgress,
       });
 
       setDownloadStatus(result.status);
@@ -125,17 +176,16 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
     } finally {
       setIsDownloading(false);
     }
-  }, [needsOnboardingProject, projectId, onBoardedProjectId, selected, participantId, participantData, t, refreshPending, onSuccess]);
+  }, [needsOnboardingProject, projectId, onBoardedProjectId, selected, participantId, participantData, t, refreshPending, onSuccess, user?.id]);
 
-  // Build the result rows — deduplicate 'tasks' (bundled under project)
+  // Build the result rows for the completed state — dedup 'tasks' (bundled under project)
   const resultRows: Array<{ key: string; label: string; state: 'success' | 'failed' }> = [];
   if (downloadStatus) {
     const seen = new Set<string>();
     for (const key of [...downloadStatus.completedModules, ...downloadStatus.failedModules]) {
-      if (key === 'tasks') continue; // bundled with project, don't show separately
+      if (key === 'tasks') continue;
       if (seen.has(key)) continue;
       seen.add(key);
-      // Static keys resolve via MODULE_LABEL; dynamic "observation:task:<id>" keys fall back to the key itself
       const label = MODULE_LABEL[key as DownloadModuleKey] ?? key;
       resultRows.push({
         key,
@@ -165,10 +215,38 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
           </HStack>
         )}
 
-        {/* ── RESULT STATE (success / partial / failed) ── */}
-        {downloadDone ? (
+        {/* ── DOWNLOADING STATE: per-step progress ── */}
+        {isDownloading && activeSteps.length > 0 ? (
           <VStack space="md">
-            {/* Overall status header */}
+            <Text fontSize="$sm" color="$textMutedForeground">
+              {t('actions.downloadInProgress') || 'Downloading…'}
+            </Text>
+
+            {/* Progress bar */}
+            <Box bg="$backgroundLight200" borderRadius="$full" height={6} overflow="hidden">
+              <Box
+                bg="$primary500"
+                height={6}
+                borderRadius="$full"
+                // @ts-ignore - width percentage
+                width={`${progressPct}%`}
+              />
+            </Box>
+            <Text fontSize="$xs" color="$textMutedForeground" textAlign="right">
+              {progressPct}%
+            </Text>
+
+            {/* Per-step list */}
+            <VStack space="xs">
+              {activeSteps.map(key => {
+                const state = stepStates.get(key) ?? 'pending';
+                return <StepRow key={key} labelKey={MODULE_LABEL[key] ?? key} state={state} />;
+              })}
+            </VStack>
+          </VStack>
+        ) : downloadDone ? (
+          /* ── RESULT STATE (success / partial / failed) ── */
+          <VStack space="md">
             <HStack space="sm" alignItems="center">
               <LucideIcon
                 name={downloadFailed ? 'XCircle' : downloadPartial ? 'AlertCircle' : 'CircleCheck'}
@@ -188,7 +266,6 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               </Text>
             </HStack>
 
-            {/* Module result list */}
             {resultRows.length > 0 && (
               <VStack space="xs" pl="$1">
                 {resultRows.map(({ key, label, state }) => (
@@ -216,12 +293,12 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
             </HStack>
           </VStack>
         ) : (
+          /* ── SELECTION STATE ── */
           <>
             <Text fontSize="$sm" color="$textMutedForeground">
               {t('actions.downloadHint')}
             </Text>
 
-            {/* Module checkboxes */}
             <VStack space="sm">
               {options.map(opt => {
                 if (!opt.enabled) return null;
@@ -261,7 +338,6 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               })}
             </VStack>
 
-            {/* Error message (config-level or thrown exception) */}
             {downloadError && (
               <HStack space="sm" alignItems="flex-start" bg="$error50" p="$3" borderRadius="$md">
                 <LucideIcon name="AlertCircle" size={14} color="$error500" />
@@ -269,7 +345,6 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               </HStack>
             )}
 
-            {/* Action buttons */}
             <HStack space="md" justifyContent="flex-end">
               <Button variant="outline" size="sm" onPress={onClose} isDisabled={isDownloading}>
                 <ButtonText>{t('common.cancel')}</ButtonText>
@@ -294,6 +369,44 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
         )}
       </VStack>
     </Modal>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Step row — shows PENDING / LOADING / COMPLETED / FAILED state per module
+// ---------------------------------------------------------------------------
+
+interface StepRowProps {
+  labelKey: string;
+  state: StepState;
+}
+
+const StepRow: React.FC<StepRowProps> = ({ labelKey, state }) => {
+  const { t } = useLanguage();
+
+  const icon = state === 'completed'
+    ? <LucideIcon name="CircleCheck" size={16} color="$success600" />
+    : state === 'failed'
+    ? <LucideIcon name="XCircle" size={16} color="$error500" />
+    : state === 'loading'
+    ? <Spinner size="small" color="$primary500" />
+    : <Box width={16} height={16} borderRadius="$full" borderWidth={1} borderColor="$borderLight300" />;
+
+  const textColor = state === 'completed'
+    ? '$textPrimary'
+    : state === 'failed'
+    ? '$error600'
+    : state === 'loading'
+    ? '$primary600'
+    : '$textMutedForeground';
+
+  return (
+    <HStack space="sm" alignItems="center" py="$0.5">
+      {icon}
+      <Text fontSize="$sm" color={textColor} flex={1}>
+        {t(labelKey)}
+      </Text>
+    </HStack>
   );
 };
 

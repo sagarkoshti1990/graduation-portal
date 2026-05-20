@@ -9,6 +9,9 @@ import {
   // verifyParticipantCompletionActions
 } from '../../services/participantService';
 import dataService from '../../services/dataService';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import type { OfflineSolutionEntry } from '@app-types/offline';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '../../hooks';
 import NotFound from '@components/NotFound';
@@ -169,10 +172,27 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     const fetchSolutions = async () => {
-      // When offline, use cached solutions and skip entity-status / submissions API calls
+      // When offline, load solutions from the per-participant downloaded mapping.
+      // The global targeted-solutions cache may be empty; the participant mapping
+      // is always populated during download and has the correct solutionId/keyword data.
       if (dataService.isNetworkOffline()) {
-        const cachedResult = await dataService.getSolutions({ type: 'observation' });
-        setSolutions(cachedResult.data ?? []);
+        if (participantId) {
+          const stored = await offlineStorage.read<OfflineSolutionEntry[]>(
+            PARTICIPANT_KEYS.solutions(participantId),
+          );
+          if (stored?.length) {
+            setSolutions(
+              stored.map(e => ({
+                _id: e.observationId,
+                id: e.observationId,
+                solutionId: e.solutionId,
+                keywords: [e.keyword],
+                name: e.keyword,
+                description: '',
+              })),
+            );
+          }
+        }
         return;
       }
 
@@ -254,13 +274,13 @@ export default function ParticipantDetail() {
   };
 
   const handleParticipantAddressSaved = useCallback(
-    (patch: { location: string; email: string }) => {
+    (patch: { location: string; email?: string }) => {
       setParticipant((prev: User | undefined) =>
         prev
           ? ({
               ...prev,
               location: patch.location,
-              email: patch.email,
+              ...(patch.email !== undefined && { email: patch.email }),
             } as User)
           : prev,
       );

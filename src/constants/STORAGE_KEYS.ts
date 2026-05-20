@@ -40,7 +40,7 @@ export const PARTICIPANT_KEYS = {
   /** List-row snapshot saved at download time (shape = ParticipantData) */
   listSnapshot:   (id: string) => `participant:${id}:listSnapshot`,
   /** Project data */
-  project:        (id: string) => `participant:${id}:project`,
+  project:        (id: string,projectId:string) => `participant:${id}:project:${projectId}`,
   /** Task list */
   tasks:          (id: string) => `participant:${id}:tasks`,
   /** Pending task-status edits */
@@ -62,6 +62,8 @@ export const PARTICIPANT_KEYS = {
   fileBlob: (participantId: string, fileName: string) => `participant:${participantId}:file:${encodeURIComponent(fileName)}`,
   /** Timestamp (ms) of the last successful sync for this participant */
   lastSyncedAt:   (id: string) => `participant:${id}:lastSyncedAt`,
+  /** Keyword→solution mapping built during download — used by offline observation resolver */
+  solutions:      (id: string) => `participant:${id}:solutions`,
 };
 
 // ---------------------------------------------------------------------------

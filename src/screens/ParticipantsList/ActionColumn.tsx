@@ -154,7 +154,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
         if (isOffline) {
           // Read the participant's cached project and find the log-visit observation task
-          const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participant.userId));
+          const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participant.userId,"123"));
           const tasks: any[] = project?.tasks
             ?? (project?.children ?? []).flatMap((c: any) => c.tasks ?? []);
 
@@ -653,7 +653,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         isOpen={modalType === 'download'}
         onClose={handleCloseModal}
         participantId={participant.userId}
-        projectId={(participant as any).onBoardedProjectId ?? (participant as any).idpProjectId}
+        projectId={(participant as any).idpProjectId}
         participantStatus={participant.status}
         participantData={participant}
         onBoardedProjectId={(participant as any).onBoardedProjectId}

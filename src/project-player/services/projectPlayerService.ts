@@ -106,7 +106,7 @@ export const getProjectDetails = async (
     const ids = await getOfflineParticipantIds().catch(() => [] as string[]);
     for (const participantId of ids) {
       const project = await offlineStorage
-        .read<any>(PARTICIPANT_KEYS.project(participantId))
+        .read<any>(PARTICIPANT_KEYS.project(participantId,projectID))
         .catch(() => null);
       if (project && (project._id === projectID || project.id === projectID)) {
         return { data: project };

@@ -66,6 +66,15 @@ export interface ObservationFormEdits {
   updatedAt: string;
 }
 
+export interface OfflineSolutionEntry {
+  keyword: string;
+  solutionId: string;
+  submissionId: string;
+  submissionNumber: number;
+  observationId: string;
+  entityId: string;
+}
+
 // ---------------------------------------------------------------------------
 // Pending file upload types
 // ---------------------------------------------------------------------------

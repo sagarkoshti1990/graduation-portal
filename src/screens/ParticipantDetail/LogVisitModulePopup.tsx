@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { Box, Button, ButtonIcon, LucideIcon, Modal, useAlert, Tooltip, TooltipContent, TooltipText, ButtonText } from '@ui';
 import type { ParticipantData } from '@app-types/participant';
+import type { OfflineSolutionEntry } from '@app-types/offline';
 import { FILTER_KEYWORDS, PARTICIPANT_LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import CheckInsListContent from './Check-ins-list/CheckInsListContent';
 import ObservationContent from '../Observation/ObservationContent';
@@ -8,6 +9,9 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 import { Animated, Easing } from 'react-native';
+import dataService from '../../services/dataService';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -48,17 +52,36 @@ function LogVisitModulePopupComponent({
     if (!logVisitSolution) {
       const fetchLogVisitSolution = async () => {
         try {
+          // When offline, resolve the log-visit solution from the participant's
+          // downloaded solutions mapping — no API call.
+          if (dataService.isNetworkOffline()) {
+            const participantUserId = participant?.userId || '';
+            if (participantUserId) {
+              const stored = await offlineStorage.read<OfflineSolutionEntry[]>(
+                PARTICIPANT_KEYS.solutions(participantUserId),
+              );
+              const entry = stored?.find(e => e.keyword === 'observation:logVisit');
+              if (entry) {
+                setLogVisitSolution({
+                  solutionId: entry.solutionId,
+                  _id: entry.observationId,
+                  keywords: [PARTICIPANT_LOG_VISIT_KEYWORD],
+                });
+              }
+            }
+            return;
+          }
+
           const solutionsData = await getTargetedSolutions({
             type: 'observation',
             'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
           });
-    
           setLogVisitSolution(solutionsData?.[0]);
         } catch (err) {}
       };
       fetchLogVisitSolution();
     }
-  }, [logVisitSolution, solutions]);
+  }, [logVisitSolution, solutions, participant?.userId]);
 
   useEffect(() => {
     Animated.timing(animatedValue, {
