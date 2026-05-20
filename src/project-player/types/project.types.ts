@@ -51,6 +51,7 @@ export interface Task {
   excludedTaskIds?:string[];
   noOfEvidenceRequired?: number;
   referenceId?:string
+  taskSequence?:string[]
 }
 
 export interface Attachment {

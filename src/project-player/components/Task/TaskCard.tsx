@@ -721,7 +721,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         setIsStatusUpdating(true);
         try {
           const newFiles = files?.filter(file => !task?.attachments?.find(file1 => file?.url && file1?.url && file?.url === file1?.url));
-          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, newFiles,(maxFiles && maxFiles > 1) ? task?.attachments:[]);
+          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, newFiles,(!maxFiles || maxFiles > 1) ? task?.attachments:[]);
           if (data?.success) {
             // Show success toast with task-specific message
             let updates;
