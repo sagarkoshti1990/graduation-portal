@@ -12,6 +12,7 @@ import dataService from '../../services/dataService';
 import offlineStorage from '../../services/offlineStorage';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import ExpandableFab from '@components/FlotingButton';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -147,17 +148,24 @@ function LogVisitModulePopupComponent({
     
   return (
     <>
-      <ExpandableFab {...(buttonText ? {buttonText,onPress:() => handleOpenLogVisit("openForm")} : {})} actions={[
-        {
-          label: "actions.logVisit",
-          icon: "ClipboardCheck",
-          onPress:() => handleOpenLogVisit("openForm")
-        },{
-          label:"actions.viewLog",
-          icon: "FileText",
-          onPress:() => handleOpenLogVisit("openList")
-        }
-      ]} />
+      <ExpandableFab {...(buttonText ? {buttonText,onPress:() => handleOpenLogVisit("openForm")} : {})}
+        actions={[
+          ...(participant.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE
+            ? [
+                {
+                  label: 'actions.logVisit',
+                  icon: 'ClipboardCheck',
+                  onPress: () => handleOpenLogVisit('openForm'),
+                },
+              ]
+            : []),
+          {
+            label: 'actions.viewLog',
+            icon: 'FileText',
+            onPress: () => handleOpenLogVisit('openList'),
+          },
+        ]}
+      />
       <Modal
         isOpen={isOpen}
         onClose={handleCloseModal}
