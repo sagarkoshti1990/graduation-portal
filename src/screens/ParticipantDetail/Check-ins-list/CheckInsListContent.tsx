@@ -162,6 +162,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   useEffect(() => {
     if (preSelectedSolution) {
       setSelectedSolution(preSelectedSolution);
+      setPage(1)
     }
   }, [preSelectedSolution]);
 
