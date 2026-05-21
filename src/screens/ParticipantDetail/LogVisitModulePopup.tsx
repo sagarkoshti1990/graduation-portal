@@ -127,7 +127,7 @@ function LogVisitModulePopupComponent({
     <>
       <ExpandableFab {...(buttonText ? {buttonText,onPress:() => handleOpenLogVisit("openForm")} : {})}
         actions={[
-          ...(participant.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE
+          ...(participant?.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE
             ? [
                 {
                   label: 'actions.logVisit',
