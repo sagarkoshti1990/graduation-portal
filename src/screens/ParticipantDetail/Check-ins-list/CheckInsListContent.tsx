@@ -163,6 +163,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     if (preSelectedSolution) {
       setSelectedSolution(preSelectedSolution);
       setPage(1)
+      setLimit(5)
     }
   }, [preSelectedSolution]);
 
