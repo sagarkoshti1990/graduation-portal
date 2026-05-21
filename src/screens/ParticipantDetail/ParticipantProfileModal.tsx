@@ -169,6 +169,15 @@ function ParticipantProfileModalInner({
           location: street,
           //  email
         });
+        setParticipant((prev: User | undefined) =>
+          prev
+            ? ({
+                ...prev,
+                location: street,
+                // email: email || "",
+              } as User)
+            : prev,
+        );
         setIsEditingAddress(false);
         setAddressFieldErrors({});
         showAlert(

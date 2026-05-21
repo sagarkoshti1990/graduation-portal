@@ -444,7 +444,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   };
   const renderCompleteProjectButton = () => {
     const certificateSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
-    return shouldShowCompletionButton ? (
+    return shouldShowCompletionButton && certificateSolution ? (
       <Button
         mt="$3"
         variant="solid"

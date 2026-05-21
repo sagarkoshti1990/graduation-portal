@@ -82,14 +82,14 @@ const Observation: React.FC = () => {
           });
           const alternatePhoneCode =
             newData?.userDetails?.alternate_phone_code ??
-            newData?.userDetails?.phone_code;
+            newData?.userDetails?.phone_code ?? "27";
           const preFillData = buildObservationPrefillData({
             facilitatorName: user?.name,
             provinceLabel: user?.province?.label,
             siteLabel: user?.site?.label,
             participantName: newData?.name,
             nationalIdLabel: newData?.userDetails?.national_id?.label || "",
-            phoneCode: newData?.userDetails?.phone_code,
+            phoneCode: newData?.userDetails?.phone_code || 27,
             phone: newData?.userDetails?.phone,
             alternatePhoneCode,
             email: newData?.userDetails?.email,
