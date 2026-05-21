@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState,useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -26,6 +26,23 @@ import {
 import { theme } from '../../../config/theme';
 import { taskAccordionStyles } from './Styles';
 import { usePlatform } from '@utils/platform';
+import { Task } from '../../types/project.types';
+
+const sortByExternalIdOrder = (
+  data: any[],
+  order: string[]
+) => {
+  const orderMap = new Map(
+    order.map((item, index) => [item, index])
+  );
+
+  return [...data].sort((a, b) => {
+    return (
+      (orderMap.get(a.externalId) ?? Infinity) -
+      (orderMap.get(b.externalId) ?? Infinity)
+    );
+  });
+};
 
 const TaskAccordion: React.FC<TaskAccordionProps> = ({
   task,
@@ -34,6 +51,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
   const { t } = useLanguage();
   const { mode } = useProjectContext();
   const { isWeb, isMobile } = usePlatform();
+  const [sortedTasks,setSortedTasks] = useState<Task[]>([]);
 
   const isPreview = mode === 'preview';
   const isSocialProtection =
@@ -82,6 +100,19 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
     return { icon: 'Folder', color: theme.tokens.colors.textSecondary }; // Default
   };
 
+
+  useEffect(() => {
+    if (task?.children?.length) {
+      const result = sortByExternalIdOrder(
+        task?.children || [],
+        task.taskSequence || [],
+      );
+      setSortedTasks(result);
+    } else {
+      setSortedTasks(task?.tasks || []);
+    }
+  }, [task]);
+
   const pillarIconData = getPillarIcon(task.name);
 
   // For Edit/Read-Only modes: Show as Card (always expanded)
@@ -98,7 +129,6 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
 
     const progressPercent =
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
     return (
       <Box {...taskAccordionStyles.container} marginBottom="$4">
        <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
@@ -182,7 +212,7 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
             {...taskAccordionStyles.cardContent}
           >
             <VStack {...taskAccordionStyles.cardContentStack}>
-              {(task?.children?.length ? task.children : task.tasks)?.map(
+              {sortedTasks?.map(
                 (childTask, index, arr) => (
                   <TaskComponent
                     key={childTask?._id}

@@ -40,7 +40,6 @@ export function buildCssFromObject(cssObj: Record<string, Record<string, string>
 const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }) => {
   const playerRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
-  console.log(styleObject);
 
   useEffect(() => {
     // Set loading to true when initialization begins

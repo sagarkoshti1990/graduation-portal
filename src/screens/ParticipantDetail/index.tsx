@@ -261,6 +261,14 @@ export default function ParticipantDetail() {
     if (participant && participantId && user?.id && solutions.length === 0 && updatedProgress !== undefined) {
       fetchSolutions();
     }
+    if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
+      const bool = solutions.find((item:any) =>
+        item.keywords.some((key:any) => FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.includes(key))
+      )
+      if(!bool?._id) {
+        fetchSolutions();
+      }
+    }
   }, [updatedProgress, participant, participantId, solutions.length, user?.id]);
 
   const handleProgressChange = async (progress: number) => {
@@ -278,7 +286,7 @@ export default function ParticipantDetail() {
           ? ({
               ...prev,
               location: patch.location,
-              ...(patch.email !== undefined && { email: patch.email }),
+              email: patch?.email || "",
             } as User)
           : prev,
       );
@@ -435,7 +443,8 @@ export default function ParticipantDetail() {
       <ParticipantProfileModal
         isOpen={isProfileModalOpen}
         onClose={closeProfileModal}
-        participant={participant}
+        participantId={participant.userId || ""}
+        userId={user?.id || ""}
         onParticipantSaved={handleParticipantAddressSaved}
       />
     </Box>

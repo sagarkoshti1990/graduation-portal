@@ -16,7 +16,7 @@ import {
 import { useLanguage } from '@contexts/LanguageContext';
 import { profileStyles } from '@components/ui/Modal/Styles';
 import { theme } from '@config/theme';
-import { updateParticipantAddress } from '../../services/participantService';
+import { getParticipantsList, updateParticipantAddress } from '../../services/participantService';
 import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { openDownload } from '@utils/helper';
@@ -25,20 +25,23 @@ import { usePlatform } from '@utils/platform';
 type ParticipantProfileModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  participant: User;
+  participantId:string,
+  userId:string,
   onParticipantSaved: (patch: { location: string; email?: string }) => void;
 };
 
 function ParticipantProfileModalInner({
   isOpen,
   onClose,
-  participant,
+  participantId,
+  userId,
   onParticipantSaved,
 }: ParticipantProfileModalProps) {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const { isMobile } = usePlatform();
   const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [participant, setParticipant] = useState<User | undefined>();
   const [editedAddress, setEditedAddress] = useState({
     email: '',
     street: '',
@@ -55,15 +58,22 @@ function ParticipantProfileModalInner({
     participant?.status !== STATUS.DROPOUT;
 
   useEffect(() => {
-    if (participant && isOpen) {
-      setEditedAddress({
-        email: participant?.email || '',
-        street: participant?.location || '',
-        province: participant?.province?.label || '',
-        site: participant?.site?.label || participant?.site || '',
+    const init = async () => {
+      const response = await getParticipantsList({ entityId: participantId, userId })
+      const { userDetails, ...rest } = response?.result?.data?.[0]
+      let participantData = { ...(userDetails || {}), ...rest, accountUserStatus: userDetails?.status }
+      setParticipant(participantData);
+       setEditedAddress({
+        email: participantData?.email || '',
+        street: participantData?.location || '',
+        province: participantData?.province?.label || '',
+        site: participantData?.site?.label || participantData?.site || '',
       });
     }
-  }, [participant, isOpen]);
+    if(participantId && isOpen) {
+      init()
+    }
+  }, [participantId, userId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -159,6 +169,15 @@ function ParticipantProfileModalInner({
           location: street,
           //  email
         });
+        setParticipant((prev: User | undefined) =>
+          prev
+            ? ({
+                ...prev,
+                location: street,
+                // email: email || "",
+              } as User)
+            : prev,
+        );
         setIsEditingAddress(false);
         setAddressFieldErrors({});
         showAlert(
@@ -219,26 +238,26 @@ function ParticipantProfileModalInner({
           <Text {...profileStyles.fieldLabel}>
             {t('common.profileFields.name')}
           </Text>
-          <Text {...profileStyles.fieldValue}>{participant!.name}</Text>
+          <Text {...profileStyles.fieldValue}>{participant?.name}</Text>
         </VStack>
 
         <VStack space="xs" {...profileStyles.fieldSection}>
           <Text {...profileStyles.fieldLabel}>
             {t('common.profileFields.id')}
           </Text>
-          <Text {...profileStyles.fieldValue}>{participant!.id}</Text>
+          <Text {...profileStyles.fieldValue}>{participant?.id}</Text>
         </VStack>
 
         <VStack
           space="xs"
-          {...(participant!.location ? profileStyles.fieldSection : {})}
+          {...(participant?.location ? profileStyles.fieldSection : {})}
         >
           <Text {...profileStyles.fieldLabel}>
             {t('common.profileFields.contact')}
           </Text>
           <VStack space="sm">
             <Text {...profileStyles.fieldValue}>
-              {participant!.phone_code || ''} {participant!.phone || ''}
+              {participant?.phone_code || ''} {participant?.phone || ''}
             </Text>
             {/* {isEditingAddress ? (
               <VStack space="sm">
