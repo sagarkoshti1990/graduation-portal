@@ -68,6 +68,7 @@ export interface ObservationFormEdits {
 
 export interface OfflineSolutionEntry {
   keyword: string;
+  keywords: string[];
   solutionId: string;
   submissionId: string;
   submissionNumber: number;

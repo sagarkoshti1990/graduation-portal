@@ -293,8 +293,8 @@ async function fetchAndStoreSolutionForms(
   participantName: string,
   keywords: string[],
   moduleKey: string,
-): Promise<Array<ResolvedFormIds & { solutionId: string; keyword: string }>> {
-  const results: Array<ResolvedFormIds & { solutionId: string; keyword: string }> = [];
+): Promise<Array<ResolvedFormIds & { solutionId: string; keyword: string; keywords:string[] }>> {
+  const results: Array<ResolvedFormIds & { solutionId: string; keyword: string, keywords:string[] }> = [];
   const solutions = await getTargetedSolutions({
     type: 'observation',
     'filter[keywords]': keywords.join(','),
@@ -310,7 +310,7 @@ async function fetchAndStoreSolutionForms(
         () => processObservationForm(participantId, participantName, solution.solutionId),
         `solutionForm:${solution.solutionId}`,
       );
-      results.push({ ...resolved, solutionId: solution.solutionId, keyword: moduleKey });
+      results.push({ ...resolved, solutionId: solution.solutionId, keyword: moduleKey,keywords });
     } catch (err) {
       logger.error(`DownloadService: Failed to store form for solution "${solution.solutionId}"`, err);
     }
@@ -430,6 +430,7 @@ export const startDownload = async ({
             if (resolved) {
               solutionEntries.push({
                 keyword: module.moduleKey,
+                keywords: module.keywords,
                 solutionId: resolved.solutionId,
                 submissionId: resolved.submissionId,
                 submissionNumber: resolved.submissionNumber,
@@ -445,9 +446,11 @@ export const startDownload = async ({
             module.keywords,
             module.moduleKey,
           );
+          console.log(resolved,module,"sagar");
           for (const r of resolved) {
             solutionEntries.push({
               keyword: r.keyword,
+              keywords: r.keywords,
               solutionId: r.solutionId,
               submissionId: r.submissionId,
               submissionNumber: r.submissionNumber,

@@ -48,12 +48,14 @@ export const getTargetedSolutions = async (
   // Prevent API call when offline — return cached solutions or empty array.
   if (isNetworkOffline()) {
     const keyword = params?.["filter[keywords]"];
-    let cached = await offlineStorage.read<AssessmentSurveyCardData[]>(
+    let cached:any = await offlineStorage.read<AssessmentSurveyCardData[]>(
       PARTICIPANT_KEYS.solutions(params.participantId),
     ).catch(() => null);
     if(keyword) {
       const keywords = keyword.split(",");
-      cached = cached?.filter((item:any) => keywords.includes(item?.keywords))
+      cached = cached?.filter((item:AssessmentSurveyCardData) =>{
+        return item?.keywords?.some(key => keywords.includes(key))
+      })
     }
     return cached ?? [];
   }
