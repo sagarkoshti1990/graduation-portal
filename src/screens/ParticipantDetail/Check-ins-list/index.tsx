@@ -10,6 +10,7 @@ import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 import logger from '@utils/logger';
+import { isWeb } from '@utils/platform';
 
 /**
  * Route parameters type definition for LogVisit screen
@@ -113,7 +114,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
   };
 
   if (isLoading) {
-    return <Loader message='Loading check-ins list...' />;
+    return <Loader message='Loading check-ins list...' containerProps={{height: isWeb ? ('$calc(100vh - 69px)' as any) : '$full' }} />;
   }
 
   if (!id) {

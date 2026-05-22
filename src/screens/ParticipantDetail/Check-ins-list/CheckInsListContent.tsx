@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
   VStack,
   HStack,
   Text,
-  Spinner,
   Card,
   Button,
   ButtonText,
@@ -13,6 +12,7 @@ import {
   useAlert,
   Badge,
   BadgeText,
+  Loader,
 } from '@ui';
 import { LucideIcon } from '@ui';
 import { getParticipantsList } from '../../../services/participantService';
@@ -254,6 +254,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         const submissionsData = await getObservationSubmissions({
           observationId,
           entityId,
+          status: "completed",
           filterAnswerValue,
           getAnswers,
           page,
@@ -294,10 +295,11 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
 
   if (loading) {
     return (
-      <Spinner
-        height={isWeb ? ('$calc(100vh - 285px)' as any) : '$full'}
+      <Loader
+        containerProps={{width:"$full", height: isWeb ? ('$calc(100vh - 146px)' as any) : '$full' }}
         size="large"
         color="$primary500"
+        message='Loading check-ins list...'
       />
     );
   }
@@ -311,9 +313,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     <Container px="$3" py="$4" $md-px="$6" $md-py="$6" {..._container}>
       {/* Submissions List */}
       {selectedSolution ? (
-        <VStack {...logVisitStyles.cardsContainer}>
+        <VStack {...logVisitStyles.cardsContainer} {...(submissionsLoading ? {justifyContent:'center', alignItems:'center'}:{})} >
           {submissionsLoading ? (
-            <Spinner size="large" color="$primary500" />
+              <Loader message='Loading check-ins list...' containerProps={{width:"$full",height: isWeb ? ('$calc(100vh - 194px)' as any) : '$full' }} />
           ) : submissions.length > 0 ? (
             <VStack flex={1} space="md" width={"$full"}>
             {submissions.map((submission, index) => (
