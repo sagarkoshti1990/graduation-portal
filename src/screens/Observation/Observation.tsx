@@ -112,7 +112,7 @@ const Observation: React.FC = () => {
           setParticipant(newData as ParticipantData);
           setNavbarData({ subtitle: newData?.name });
 
-          // Cached data is already flattened (userDetails merged); fields may also
+          // Cached data is already flattened (userDetails merged); fields may also,
           // live under userDetails when reading raw API response as fallback.
           const ud = newData?.userDetails;
           const alternatePhoneCode =
