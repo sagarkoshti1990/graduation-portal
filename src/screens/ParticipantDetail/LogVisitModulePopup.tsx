@@ -202,6 +202,7 @@ function LogVisitModulePopupComponent({
               onFormSelect={handleSelectSubmission}
               _container={checkInsContainer}
               _dataNotFoundCard={{variant:"ghost"}}
+              loderHeight={"400px"}
             />
           )}
         </Box>

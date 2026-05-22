@@ -636,6 +636,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                   onFormSelect={handleFormSelect}
                   participant={participant}
                   _dataNotFoundCard={{variant:"ghost"}}
+                  loderHeight="400px"
                 />
               </Box>
             ) : (

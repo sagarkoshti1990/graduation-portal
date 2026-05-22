@@ -84,16 +84,22 @@ export const useTaskActions = () => {
         }
       }
 
-      const updateData: any = { status };
-      if (attachments.length > 0) {
-        updateData.attachments = attachments;
-      }
-
       try {
-        await updateTask(taskId,participantId, updateData);
-        return { success: true, data: updateData };
-      } catch (err) {
-        // API failed — persist locally so the change isn't lost
+        const updateData: any = { status };
+        if(files.length > 0) {
+          const data = await uploadFiles(taskId, files);
+          if(data.data.length > 0) {
+            updateData.attachments = [...attachments,...data.data];
+            await updateTask(taskId, updateData);
+            return { success: true, data: updateData };
+          } else {
+            return { success: false, data: undefined };
+          }
+        } else {
+          await updateTask(taskId, updateData);
+          return { success: true, data: updateData };
+        }
+      } catch {
         return { success: false, data: undefined };
       }
     },

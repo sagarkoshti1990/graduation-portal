@@ -466,7 +466,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
                 // @ts-ignore - afterSubmitCallback exists in web version
                 afterSubmitCallback={handleAfterSubmit}
                 playerConfig={playerConfigMemoized}
-                {..._webComponent}
+                // {..._webComponent}
               />
             }
           </Box>
