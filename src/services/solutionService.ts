@@ -276,6 +276,7 @@ export const getObservationSubmissions = async ({
   page,
   limit,
   getAnswers,
+  status
 }: {
   observationId: string;
   entityId: string;
@@ -283,11 +284,16 @@ export const getObservationSubmissions = async ({
   page?: number | null;
   limit?: number | null;
   getAnswers?: boolean | null;
+  status?:string | null
 }): Promise<any> => {
   try {
-    let url = `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}`;
+    let url = `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}${entityId ? "?entityId=" + entityId : ""}`;
     if (filterAnswerValue !== undefined && filterAnswerValue !== null && filterAnswerValue !== '') {
       url += `&filterAnswerValue=${encodeURIComponent(filterAnswerValue)}`;
+    }
+    // Only add limit if not null/undefined
+    if (status !== null && status !== undefined) {
+      url += `&status=${status}`;
     }
     // Only add getAnswers if not null/undefined
     if (getAnswers !== null && getAnswers !== undefined) {

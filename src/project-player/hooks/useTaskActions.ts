@@ -12,21 +12,22 @@ export const useTaskActions = () => {
   const handleStatusChange = useCallback(
     async (taskId: string, status: TaskStatus, files: File[] = [],excludedFiles:Attachment[]=[]) => {
       if (!canEdit) return;
-      let attachments: Attachment[] = excludedFiles;
-      if(files.length > 0) {
-        const data = await uploadFiles(taskId, files);
-        if(data.data.length > 0) {
-          attachments = [...attachments,...data.data];
-        }
-      }
-      const updateData: any = { status };
-      if (attachments.length > 0) {
-        updateData.attachments = attachments;
-      }
-
       try {
-        await updateTask(taskId, updateData);
-        return { success: true, data: updateData };
+        const updateData: any = { status };
+        let attachments: Attachment[] = excludedFiles;
+        if(files.length > 0) {
+          const data = await uploadFiles(taskId, files);
+          if(data.data.length > 0) {
+            updateData.attachments = [...attachments,...data.data];
+            await updateTask(taskId, updateData);
+            return { success: true, data: updateData };
+          } else {
+            return { success: false, data: undefined };
+          }
+        } else {
+          await updateTask(taskId, updateData);
+          return { success: true, data: updateData };
+        }
       } catch {
         return { success: false, data: undefined };
       }

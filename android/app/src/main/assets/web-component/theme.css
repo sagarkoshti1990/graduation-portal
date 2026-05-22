@@ -336,6 +336,10 @@ lib-radio-input, lib-checkbox-input {
   border-radius: 0.66rem !important;
 }
 
+.submitted lib-radio-input, .submitted lib-checkbox-input {
+  max-height:fit-content;
+}
+
 lib-radio-input mat-error {
   padding-top: 0.5rem !important;
   padding-left: 0.5rem !important;

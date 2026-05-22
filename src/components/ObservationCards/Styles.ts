@@ -10,6 +10,7 @@ const statusBadgeBaseStyles = {
   py: '$0.5' as const,
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
+  textTransform:'capitalize' as const,
 };
 
 // Status badge with icon (for graduated, completed, and not-started)
