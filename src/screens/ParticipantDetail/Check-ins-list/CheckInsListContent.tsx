@@ -58,6 +58,7 @@ interface CheckInsListContentProps {
   participant?: ParticipantData;
   _container?:any
   _dataNotFoundCard?:any
+  loderHeight?:string
 }
 
 /**
@@ -72,7 +73,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   solutions: propSolutions,
   participant: propParticipant,
   _container,
-  _dataNotFoundCard
+  _dataNotFoundCard,
+  loderHeight
 }) => {
   type IconMeta = {
     color?: string;
@@ -296,7 +298,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   if (loading) {
     return (
       <Loader
-        containerProps={{width:"$full", height: isWeb ? ('$calc(100vh - 146px)' as any) : '$full' }}
+        containerProps={{width:"$full", height: loderHeight ? loderHeight : isWeb ? ('$calc(100vh - 146px)' as any) : '$full' }}
         size="large"
         color="$primary500"
         message='Loading check-ins list...'
@@ -315,38 +317,38 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
       {selectedSolution ? (
         <VStack {...logVisitStyles.cardsContainer} {...(submissionsLoading ? {justifyContent:'center', alignItems:'center'}:{})} >
           {submissionsLoading ? (
-              <Loader message='Loading check-ins list...' containerProps={{width:"$full",height: isWeb ? ('$calc(100vh - 194px)' as any) : '$full' }} />
+            <Loader message='Loading check-ins list...' containerProps={{width:"$full",height: loderHeight ? loderHeight : isWeb ? ('$calc(100vh - 194px)' as any) : '$full' }} />
           ) : submissions.length > 0 ? (
             <VStack flex={1} space="md" width={"$full"}>
-            {submissions.map((submission, index) => (
-              <SubmissionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
-                onFormSelect={() =>
-                  onFormSelect
-                    ? onFormSelect(
-                        submission,
-                        solutionItem?.name || '',
-                      )
-                    : handleViewForm(submission.submissionNumber)
-                }
+              {submissions.map((submission, index) => (
+                <SubmissionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
+                  onFormSelect={() =>
+                    onFormSelect
+                      ? onFormSelect(
+                          submission,
+                          solutionItem?.name || '',
+                        )
+                      : handleViewForm(submission.submissionNumber)
+                  }
+                />
+              ))}
+              <PaginationControls
+                currentPage={page}
+                totalPages={Math.ceil(total/limit)}
+                pageSize={limit}
+                totalItems={total}
+                startIndex={limit*(page-1)}
+                endIndex={page*limit}
+                onPageChange={(num) => setPage(num)}
+                onPageSizeChange={(num) => {
+                  setPage(1);
+                  setLimit(num)
+                }}
+                config={{
+                  pageSizeOptions:[5,10,20,30],
+                  showPageSizeSelector:true
+                }}
               />
-            ))}
-            <PaginationControls
-              currentPage={page}
-              totalPages={Math.ceil(total/limit)}
-              pageSize={limit}
-              totalItems={total}
-              startIndex={limit*(page-1)}
-              endIndex={page*limit}
-              onPageChange={(num) => setPage(num)}
-              onPageSizeChange={(num) => {
-                setPage(1);
-                setLimit(num)
-              }}
-              config={{
-                pageSizeOptions:[5,10,20,30],
-                showPageSizeSelector:true
-              }}
-            />
             </VStack>
           ) : (
             !submissionsLoading && (
