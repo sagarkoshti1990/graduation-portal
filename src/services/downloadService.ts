@@ -446,7 +446,7 @@ export const startDownload = async ({
             module.keywords,
             module.moduleKey,
           );
-          console.log(resolved,module,"sagar");
+          
           for (const r of resolved) {
             solutionEntries.push({
               keyword: r.keyword,

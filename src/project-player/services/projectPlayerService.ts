@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { PROJECT_PLAYER_CONFIGS } from '../../constants/PROJECTDATA';
-import { ApiResponse } from '../types/components.types';
+import { ApiResponse, NormalizedFile } from '../types/components.types';
 import { API_ENDPOINTS } from './apiEndpoints';
 import { isWeb } from '@utils/platform';
 import { createProjectPlanPayload } from '../types';
@@ -267,7 +267,7 @@ export const preSignedUrls = async (
 
 export const uploadFiles = async (
   id: string,
-  files: File[]
+  files: NormalizedFile[]
 ): Promise<ApiResponse<any>> => {
   try {
     const response = await preSignedUrls({
@@ -281,7 +281,7 @@ export const uploadFiles = async (
         if (presignedUrl?.url) {
          await fetch(presignedUrl.url, { 
           method: 'PUT',
-          body: file,
+          body: file as File,
         });
       }
         return {

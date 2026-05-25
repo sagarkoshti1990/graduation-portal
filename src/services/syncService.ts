@@ -108,18 +108,21 @@ async function syncFiles(
   onProgress?: ProgressCallback,
 ): Promise<{ synced: number; failed: number }> {
   const pending = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(participantId));
+  console.log(pending,"file");
   if (!pending?.length) return { synced: 0, failed: 0 };
 
   let synced = 0, failed = 0;
   const syncedNames: string[] = [];
+  console.log(pending,"file");
 
   for (let i = 0; i < pending.length; i++) {
-    const { taskId, fileName, fileType } = pending[i];
+    const { taskId, fileName, fileType, storageKey } = pending[i];
+    // storageKey is the timestamped blob key; fall back to legacy key for old entries
+    const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(participantId, fileName);
     try {
       // Read the stored base64 content
-      const base64 = await offlineStorage.read<string>(
-        PARTICIPANT_KEYS.fileBlob(participantId, fileName),
-      );
+      const base64 = await offlineStorage.read<string>(blobKey);
+  console.log(base64,blobKey,"base64");
 
       if (!base64) {
         // No content stored (e.g. blob was cleaned up already) — treat as done
@@ -131,7 +134,9 @@ async function syncFiles(
 
       // Reconstruct File object and upload via pre-signed URL
       const file = base64ToFile(base64, fileName, fileType);
+  console.log(file,"file 1");
       const result = await uploadFiles(taskId, [file]);
+  console.log(result,"result");
       const uploaded = result.data?.[0];
 
       if (uploaded?.url) {
@@ -145,7 +150,7 @@ async function syncFiles(
           uploaded.sourcePath,
         );
         // Remove the persisted blob — no longer needed
-        await offlineStorage.remove(PARTICIPANT_KEYS.fileBlob(participantId, fileName)).catch(() => {});
+        await offlineStorage.remove(blobKey).catch(() => {});
       }
 
       syncedNames.push(fileName);
@@ -161,7 +166,7 @@ async function syncFiles(
   if (syncedNames.length > 0) {
     const remaining = pending.filter(p => !syncedNames.includes(p.fileName));
     if (remaining.length === 0) {
-      await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
+      // await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
     } else {
       await offlineStorage.create(PARTICIPANT_KEYS.filesPending(participantId), remaining);
     }

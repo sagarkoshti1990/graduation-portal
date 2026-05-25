@@ -719,6 +719,58 @@ const TaskCard: React.FC<TaskCardProps> = ({
     );
   };
 
+  const updateEntityFile = async (data:any) => {
+    if (data?.success) {
+      // Show success toast with task-specific message
+      let updates;
+      const attachedFiles = data?.data?.attachments?.map((file: any) => file) ?? [];
+      const thisDate = new Date().toISOString();
+      if (isOnboardingTask && attachedFiles.length > 0) {
+        const slaConsentTasks = [process.env.UPLOAD_CONSENT_TASK_ID, process.env.UPLOAD_SLA_TASK_ID];
+        if (slaConsentTasks.includes(task?.referenceId)) {
+          if (!user?.id || !participantId) {
+            showError(t('projectPlayer.evidenceUploadFailed'));
+            return;
+          }
+          if (task?.referenceId === process.env.UPLOAD_CONSENT_TASK_ID) {
+            updates = {
+              consentFiles: attachedFiles,
+              consentUpdloadedAt: thisDate,
+            }
+          }
+          if (task?.referenceId === process.env.UPLOAD_SLA_TASK_ID) {
+            updates = {
+              slaFiles: attachedFiles,
+              slaUpdloadedAt: thisDate,
+            }
+          }
+
+          try {
+            await updateEntityDetails({
+              userId: `${user?.id}`,
+              entityId: participantId,
+              entityUpdates: updates
+            });
+
+            await createOrUpdateProgramUserMapping({
+              userId: participantId,
+              programId: process.env.GLOBAL_LC_PROGRAM_ID,
+              metaInformation: updates,
+              status: STATUS.NOT_ONBOARDED
+            });
+          } catch {
+            showError(t('projectPlayer.evidenceUploadFailed'));
+            return;
+          }
+        }
+      }
+      showSuccess(t('projectPlayer.evidenceUploaded'));
+      setShowUploadModal(false);
+    } else {
+      showError(t('projectPlayer.evidenceUploadFailed'));
+    }
+  } 
+
   // Render file upload modal (HEAD logic)
   const renderUploadModal = () => {
     let maxFiles, allowedFileTypes;
@@ -747,54 +799,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
         setIsStatusUpdating(true);
         try {
           const newFiles = files?.filter(file => !task?.attachments?.find(file1 => file?.url && file1?.url && file?.url === file1?.url));
-          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, newFiles,(!maxFiles || maxFiles > 1) ? task?.attachments:[]);
-          if (data?.success) {
-            // Show success toast with task-specific message
-            let updates;
-            const attachedFiles = data?.data?.attachments?.map((file: any) => file) ?? [];
-            const thisDate = new Date().toISOString();
-            if (isOnboardingTask && attachedFiles.length > 0) {
-              const slaConsentTasks = [process.env.UPLOAD_CONSENT_TASK_ID, process.env.UPLOAD_SLA_TASK_ID];
-              if (slaConsentTasks.includes(task?.referenceId)) {
-                if (!user?.id || !participantId) {
-                  showError(t('projectPlayer.evidenceUploadFailed'));
-                  return;
-                }
-                if (task?.referenceId === process.env.UPLOAD_CONSENT_TASK_ID) {
-                  updates = {
-                    consentFiles: attachedFiles,
-                    consentUpdloadedAt: thisDate,
-                  }
-                }
-                if (task?.referenceId === process.env.UPLOAD_SLA_TASK_ID) {
-                  updates = {
-                    slaFiles: attachedFiles,
-                    slaUpdloadedAt: thisDate,
-                  }
-                }
-                try {
-                  await updateEntityDetails({
-                    userId: `${user?.id}`,
-                    entityId: participantId,
-                    entityUpdates: updates
-                  });
-
-                  await createOrUpdateProgramUserMapping({
-                    userId: participantId,
-                    programId: process.env.GLOBAL_LC_PROGRAM_ID,
-                    metaInformation: updates,
-                    status: STATUS.NOT_ONBOARDED
-                  });
-                } catch {
-                  showError(t('projectPlayer.evidenceUploadFailed'));
-                  return;
-                }
-              }
-            }
-            showSuccess(t('projectPlayer.evidenceUploaded'));
-            setShowUploadModal(false);
-          } else {
-            showError(t('projectPlayer.evidenceUploadFailed'));
+          const data = await handleStatusChange(task._id, TASK_STATUS.COMPLETED, newFiles,(maxFiles && maxFiles > 1) ? task?.attachments:[]);
+          if(!isNetworkOffline()) {
+            await updateEntityFile(data);
           }
         } finally {
           setIsStatusUpdating(false);

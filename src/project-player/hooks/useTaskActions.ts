@@ -6,16 +6,53 @@ import dataService from '../../../src/services/dataService';
 import offlineStorage from '../../../src/services/offlineStorage';
 import { PARTICIPANT_KEYS } from '../../../src/constants/STORAGE_KEYS';
 import type { PendingFile } from '../../../src/types/offline';
+import { NormalizedFile } from '../types';
 
 /** Converts a browser File to a base64 data-URL for persistent offline storage. */
-function fileToBase64(file: File): Promise<string> {
+export async function fileToBase64(file: NormalizedFile): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    try {
+      // WEB FILE
+      if (typeof File !== "undefined" && file instanceof File) {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          resolve(reader.result as string);
+        };
+
+        reader.onerror = (error) => {
+          reject(error);
+        };
+
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // ALREADY BASE64
+      if (file?.base64) {
+        resolve(file.base64);
+        return;
+      }
+
+      reject(new Error("Unsupported file type"));
+    } catch (error) {
+      reject(error);
+    }
   });
 }
+
+export const normalizeFiles = (
+  files: any[] = []
+): NormalizedFile[] => {
+  return files.map((file) => ({
+    name: file?.name || file?.fileName || "",
+    size: file?.size || file?.fileSize || 0,
+    type: file?.type || "",
+    uri: file?.uri || file?.path || "",
+    file: file instanceof File ? file : undefined,
+    originalFile: file,
+  }));
+};
 
 export const useTaskActions = () => {
   const { updateTask, mode, setTaskAddedToPlan, setTaskPlanActionPerformed, projectData } =
@@ -26,9 +63,10 @@ export const useTaskActions = () => {
   const participantId = (projectData as any)?.entityInformation?.externalId as string | undefined;
 
   const handleStatusChange = useCallback(
-    async (taskId: string, status: TaskStatus, files: File[] = [], excludedFiles: Attachment[] = []) => {
-      if (!canEdit) return;
+    async (taskId: string, status: TaskStatus, files1: NormalizedFile[] = [], excludedFiles: Attachment[] = []) => {
+      if (!canEdit || !participantId) return;
 
+      const files = normalizeFiles(files1);
       const isOffline = dataService.isNetworkOffline();
       let attachments: Attachment[] = [...excludedFiles];
 
@@ -43,21 +81,28 @@ export const useTaskActions = () => {
               ) ?? [];
               const existingNames = new Set(existing.map(p => p.fileName));
 
+              const newEntries: PendingFile[] = [];
+
               for (const file of files) {
                 if (existingNames.has(file.name)) continue;
+                // Unique key: timestamp + original name avoids collisions on re-upload
+                const storageKey = PARTICIPANT_KEYS.fileBlob(
+                  participantId,
+                  `${Date.now()}_${file.name}`,
+                );
                 // Persist content for deferred upload
                 try {
                   const base64 = await fileToBase64(file);
-                  await offlineStorage.create(
-                    PARTICIPANT_KEYS.fileBlob(participantId, file.name),
-                    base64,
-                  );
+                  await offlineStorage.create(storageKey, base64);
                 } catch { /* non-fatal: sync will skip if blob is missing */ }
-              }
 
-              const newEntries: PendingFile[] = files
-                .filter(f => !existingNames.has(f.name))
-                .map(f => ({ taskId, fileName: f.name, fileType: f.type ?? '' }));
+                newEntries.push({
+                  taskId,
+                  fileName: file.name,       // original name preserved
+                  fileType: file.type ?? '',
+                  storageKey,                // timestamped blob key
+                });
+              }
 
               if (newEntries.length > 0) {
                 await offlineStorage.create(
@@ -86,17 +131,18 @@ export const useTaskActions = () => {
 
       try {
         const updateData: any = { status };
-        if(files.length > 0) {
+        if(!isOffline && files.length > 0) {
           const data = await uploadFiles(taskId, files);
           if(data.data.length > 0) {
             updateData.attachments = [...attachments,...data.data];
-            await updateTask(taskId, updateData);
+            await updateTask(taskId,participantId, updateData);
             return { success: true, data: updateData };
           } else {
             return { success: false, data: undefined };
           }
         } else {
-          await updateTask(taskId, updateData);
+          updateData.attachments = attachments;
+          await updateTask(taskId,participantId, updateData);
           return { success: true, data: updateData };
         }
       } catch {

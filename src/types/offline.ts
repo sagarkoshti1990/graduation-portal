@@ -84,10 +84,17 @@ export interface OfflineSolutionEntry {
 export interface PendingFile {
   /** Task ID that owns this attachment (used as the upload entity). */
   taskId: string;
-  /** Original file name (must match the fileBlob storage key). */
+  /** Original file name as selected by the user. */
   fileName: string;
   /** MIME type needed to reconstruct the File object from the stored base64. */
   fileType: string;
+  /**
+   * Actual offlineStorage key where the base64 blob is stored.
+   * Includes a timestamp suffix to avoid collisions when the same file name is
+   * uploaded more than once.  Falls back to the legacy key derived from fileName
+   * when absent (entries written before this field was added).
+   */
+  storageKey?: string;
 }
 
 // ---------------------------------------------------------------------------
