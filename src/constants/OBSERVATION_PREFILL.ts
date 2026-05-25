@@ -10,6 +10,8 @@ const OBSERVATION_PREFILL_FIELD_IDS = {
   ALTERNATE_COUNTRY_CODE: '6995e689a97625e23241c7a9',
   EMAIL_ADDRESS: '6984d256a97625e23240f7e5',
   VISIT_DATE: '69ef483a5b9067fa786cd2de',
+  GENDER:"6a0eeab34682fdc70cef203f",
+  DOB:"6a0eeab34682fdc70cef2045"
 } as const;
 
 type ObservationPrefillParams = {
@@ -22,6 +24,8 @@ type ObservationPrefillParams = {
   phone?: string;
   alternatePhoneCode?: string;
   email?: string;
+  gender?:string;
+  dob?:string;
 };
 
 export const buildObservationPrefillData = ({
@@ -34,6 +38,8 @@ export const buildObservationPrefillData = ({
   phone,
   alternatePhoneCode,
   email,
+  gender,
+  dob
 }: ObservationPrefillParams, formatCountryCode: (phoneCode?: string | number | null) => string) => ({
   [OBSERVATION_PREFILL_FIELD_IDS.FACILITATOR_NAME]: facilitatorName, // "Facilitator Name"
   [OBSERVATION_PREFILL_FIELD_IDS.PROVINCE]: { value: provinceLabel, readonly: provinceLabel ? true : false }, // "Province"
@@ -46,4 +52,6 @@ export const buildObservationPrefillData = ({
   [OBSERVATION_PREFILL_FIELD_IDS.ALTERNATE_COUNTRY_CODE]: { value: formatCountryCode(alternatePhoneCode), readonly: false }, // "Country Code (For alternative number)"
   [OBSERVATION_PREFILL_FIELD_IDS.EMAIL_ADDRESS]: { value: email, readonly: false }, // "And what is your email address?"
   [OBSERVATION_PREFILL_FIELD_IDS.VISIT_DATE]: { value: new Date().toISOString().split('T')[0], readonly: false }, // "Visit Date"
+  [OBSERVATION_PREFILL_FIELD_IDS.GENDER]: { value: gender, readonly: false }, // "What is your gender?"
+  [OBSERVATION_PREFILL_FIELD_IDS.DOB]: { value: dob, readonly: false } // "What is your date of birth?"
 });
