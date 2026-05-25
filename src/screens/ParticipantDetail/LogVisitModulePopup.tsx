@@ -1,13 +1,13 @@
 import React, { memo, useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Box, Button, ButtonIcon, LucideIcon, Modal, useAlert, Tooltip, TooltipContent, TooltipText, ButtonText } from '@ui';
+import { Box,  Modal, useAlert } from '@ui';
 import type { ParticipantData } from '@app-types/participant';
 import { FILTER_KEYWORDS, PARTICIPANT_LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import CheckInsListContent from './Check-ins-list/CheckInsListContent';
 import ObservationContent from '../Observation/ObservationContent';
-import { useLanguage } from '@contexts/LanguageContext';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 import { Animated, Easing } from 'react-native';
+import ExpandableFab from '@components/FlotingButton';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 
 type ModulePopupProps = {
@@ -37,7 +37,6 @@ function LogVisitModulePopupComponent({
   const [openForm,setOpenForm] = useState(false);
 
   const { showAlert } = useAlert()
-  const { t } = useLanguage();
 
   const animatedValue = useRef(new Animated.Value(0)).current;
 
@@ -123,80 +122,27 @@ function LogVisitModulePopupComponent({
   const handleSelectSubmission = useCallback((submission: { submissionNumber: number }) => {
     setSelectedSubmissionNumber(submission.submissionNumber);
   }, []);
-  
-  const renderButton = useCallback((triggerProps: any) =>
-    <>
-      <Animated.View
-        style={{
-          position: "absolute",
-          bottom: 90,
-          right: 16,
-          zIndex: 999,
-          gap: 12,
-          opacity: animatedValue,
-          transform: [
-            {
-              translateY: animatedValue.interpolate({
-                inputRange: [0, 1],
-                outputRange: [40, 0],
-              }),
-            },
-          ],
-        }}
-      >
-        {participant.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE  &&
-        <Button
-          {...triggerProps}
-          rounded="$full"
-          w="$16"
-          h="$16"
-          onPress={() => handleOpenLogVisit("openForm")}
-        >
-          <ButtonIcon size={20} as={LucideIcon} name="ClipboardCheck" />
-        </Button>}
-
-        <Button
-          {...triggerProps}
-          rounded="$full"
-          w="$16"
-          h="$16"
-          onPress={() => handleOpenLogVisit("openList")}
-        >
-          <ButtonIcon size={20} as={LucideIcon} name="FileText" />
-        </Button>
-      </Animated.View>
-
-      <Button
-        {...triggerProps}
-        {...(buttonText ? {size:"sm"} : {
-          position: "absolute",
-          bottom: "$4",
-          right: "$4",
-          zIndex: 999,
-          rounded: "$full",
-          w: "$16",
-          h: "$16 !important",
-        })}
-        variant={expanded ? "outlineghost" :"solid"}
-        onPress={() => handleOpenLogVisit(buttonText ? "openForm" : "expand")}
-      >
-        <ButtonIcon size={buttonText ? 16 : 20} as={LucideIcon} name={expanded ? "X" : "Plus"} />
-        {buttonText && <ButtonText>{buttonText}</ButtonText>}
-      </Button>
-    </>
-    , [handleOpenLogVisit, buttonText, expanded])
     
   return (
     <>
-      <Tooltip
-        placement="right"
-        trigger={renderButton}
-      >
-        <TooltipContent backgroundColor='$textMutedForeground' rounded={"lg"}>
-          <TooltipText>{buttonText || t('actions.viewVisitLogs')}</TooltipText>
-        </TooltipContent>
-      </Tooltip>
-      
+      <ExpandableFab {...(buttonText ? {buttonText,onPress:() => handleOpenLogVisit("openForm")} : {})}
+        actions={[
+          ...(participant?.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE
+            ? [
+                {
+                  label: 'actions.logVisit',
+                  icon: 'ClipboardCheck',
+                  onPress: () => handleOpenLogVisit('openForm'),
+                },
+              ]
+            : []),
+          {
+            label: 'actions.viewLog',
+            icon: 'FileText',
+            onPress: () => handleOpenLogVisit('openList'),
+          },
+        ]}
+      />
       <Modal
         isOpen={isOpen}
         onClose={handleCloseModal}
@@ -233,6 +179,7 @@ function LogVisitModulePopupComponent({
               onFormSelect={handleSelectSubmission}
               _container={checkInsContainer}
               _dataNotFoundCard={{variant:"ghost"}}
+              loderHeight={"400px"}
             />
           )}
         </Box>
