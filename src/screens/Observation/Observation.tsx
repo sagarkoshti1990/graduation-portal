@@ -93,7 +93,9 @@ const Observation: React.FC = () => {
             phone: newData?.userDetails?.phone,
             alternatePhoneCode,
             email: newData?.userDetails?.email,
-          }, formatCountryCode);
+            gender: newData?.userDetails?.gender?.label || "",
+            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-")
+  : ""          }, formatCountryCode);
           setUserData(preFillData);
         }
       } catch (error: any) {
