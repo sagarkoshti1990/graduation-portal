@@ -23,15 +23,16 @@ declare const process: {
  * @returns A promise resolving to the supervisors response from the API
  */
 export const getSupervisorsByProvince = async (
-  params?: { provinceId?: string; page?: number; limit?: number }
+  params?: { provinceId?: string; page?: number; limit?: number, search?:string }
 ): Promise<UserSearchResponse> => {
   try {
-    const { provinceId, page = 1, limit = 100 } = params || {};
+    const { provinceId, page = 1, limit = 100, search = "" } = params || {};
     
     // Build query string
     const queryParams = new URLSearchParams({
       tenant_code: 'brac', // Hardcoded tenant code for browser compatibility
       type: 'tenant_admin',
+      search,
       page: page.toString(),
       limit: limit.toString(),
     });

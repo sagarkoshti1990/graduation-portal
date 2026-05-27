@@ -13,18 +13,37 @@ import {
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
 import { useIsSupervisor } from '../contexts/AuthContext';
 
+export type PaginatedSelectFetchParams = {
+  page: number;
+  limit: number;
+  search?: string;
+};
+
+export type PaginatedSelectFetchResult = {
+  data: any[];
+  total: number;
+};
+
 // Type definition for filter configuration
 export type FilterConfig = {
   name?: string; // Fallback if nameKey is not provided
   nameKey?: string; // Translation key for the filter name
   attr: string;
-  type: 'search' | 'select';
-  data: Array<
+  type: 'search' | 'select' | 'paginated-select';
+  data?: Array<
     string | { label?: string; labelKey?: string; value: string | null }
   >;
   placeholder?: string; // Fallback if placeholderKey is not provided
   placeholderKey?: string; // Translation key for the placeholder
   disabled?: boolean; // Disable the filter (e.g., district when no province selected)
+  // paginated-select specific props
+  fetchFn?: (params: PaginatedSelectFetchParams) => Promise<PaginatedSelectFetchResult>;
+  dependencyAttr?: string; // Attr of another filter this depends on (auto-cleared when dependency changes)
+  dependencyKey?: string | number | null; // Value that resets the list when changed
+  pageSize?: number;
+  showSearch?: boolean;
+  labelKey?: string; // Field to use as label in fetched items
+  valueKey?: string; // Field to use as value in fetched items
 };
 
 // Status filter configuration - Static filter
