@@ -128,6 +128,8 @@ const Observation: React.FC = () => {
             phone: ud?.phone ?? newData?.phone,
             alternatePhoneCode,
             email: ud?.email ?? newData?.email,
+            gender: newData?.userDetails?.gender?.label || "",
+            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-") : ""
           }, formatCountryCode);
           setUserData(preFillData);
         }
