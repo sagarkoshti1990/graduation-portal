@@ -4,10 +4,10 @@
  * All filter logic for assigning LCs to Supervisors and Participants to LCs
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getProvincesList, getSitesByProvince } from '../services/usersService';
 import { getSupervisorsByProvince } from '../services/assignUsersService';
-import type { FilterConfig } from './USER_MANAGEMENT';
+import type { FilterConfig, PaginatedSelectFetchParams, PaginatedSelectFetchResult } from './USER_MANAGEMENT';
 import type { ProvinceEntity, AdminUserManagementData, SiteEntity } from '@app-types/Users';
 
 // Search filter for LC assignment
@@ -29,88 +29,73 @@ export const ParticipantSearchFilter: FilterConfig = {
 };
 
 /**
- * Hook to get supervisor filter options
- * Fetches provinces from API and supervisors based on selected province
- * 
- * @param filters - Current filter values to check if province is selected
- * @returns Object containing filter configurations and supervisors data
+ * Hook to get supervisor filter options.
+ * Returns a province (regular select) + supervisor (paginated-select that queries the API
+ * on demand, filtered by the currently selected province).
+ *
+ * The supervisor list is no longer pre-fetched; PaginatedSelect handles lazy loading.
  */
 export const useSupervisorFilterOptions = (
   filters: Record<string, any> = {},
   enabled = true
 ): {
   filters: ReadonlyArray<FilterConfig>;
-  supervisors: AdminUserManagementData[];
 } => {
-  // State for API data
   const [provinces, setProvinces] = useState<ProvinceEntity[]>([]);
-  const [supervisors, setSupervisors] = useState<AdminUserManagementData[]>([]);
 
-  // Fetch provinces from API on component mount
   useEffect(() => {
     if (!enabled) {
       setProvinces([]);
       return;
     }
-
     const fetchProvinces = async () => {
       const provincesData = await getProvincesList();
       setProvinces(provincesData);
     };
-
     fetchProvinces();
   }, [enabled]);
 
-  // Fetch supervisors - all supervisors initially, filtered by province when selected
-  useEffect(() => {
-    if (!enabled) {
-      setSupervisors([]);
-      return;
-    }
-
-    const fetchSupervisors = async () => {
+  // Fetch function for the supervisor PaginatedSelect — closes over current province
+  const supervisorFetchFn = useCallback(
+    async ({ page, limit, search }: PaginatedSelectFetchParams): Promise<PaginatedSelectFetchResult> => {
       const selectedProvince = filters.filterByProvince;
-      
-      try {
-        // Fetch all supervisors if no province selected, or filtered by province if selected
-        const supervisorsResponse = await getSupervisorsByProvince({
-          provinceId: selectedProvince && selectedProvince !== 'all-provinces' && selectedProvince !== 'all-Provinces' 
-            ? selectedProvince 
+      const response = await getSupervisorsByProvince({
+        provinceId:
+          selectedProvince &&
+          selectedProvince !== 'all-provinces' &&
+          selectedProvince !== 'all-Provinces'
+            ? selectedProvince
             : undefined,
-          page: 1,
-          limit: 100,
-        });
-        const supervisorsData = supervisorsResponse.result?.data || [];
-        setSupervisors(supervisorsData);
-      } catch (error) {
-        console.error('Error fetching supervisors:', error);
-        setSupervisors([]);
-      }
-    };
+        page,
+        limit,
+        search
+      });
+      const data = response.result?.data || [];
+      return {
+        data: data.map((s: any) => ({
+          label: s.name || s.full_name || s.email || 'Unknown',
+          value: String(s.id || s._id || s.email || ''),
+          // Spread raw fields so the screen can access province/site info on selection
+          ...s,
+        })),
+        total:
+          response.result?.total ??
+          response.result?.count ??
+          data.length,
+      };
+    },
+    // Regenerate when province changes so the new fetch closes over the new province value
+    [filters.filterByProvince],
+  );
 
-    fetchSupervisors();
-  }, [enabled, filters.filterByProvince]); // Re-fetch when province filter changes
-
-  // Build dynamic filter options with API data
   return useMemo(() => {
-    // Build province filter from API provinces
     const provinceFilterOptions = [
       { labelKey: 'admin.filters.allProvinces', value: 'all-provinces' },
       ...provinces.map((province: ProvinceEntity) => ({
         label: province.name,
-        value: province._id, // Use _id as value for filtering
+        value: province._id,
       })),
     ];
-
-    // Build supervisor filter from API supervisors
-    const supervisorFilterOptions = supervisors.map((supervisor: any) => {
-      const name = supervisor.name || supervisor.full_name || supervisor.email || 'Unknown';
-      const value = supervisor.id || supervisor._id || supervisor.email || name;
-      return {
-        label: name,
-        value: value,
-      };
-    });
 
     return {
       filters: [
@@ -123,14 +108,18 @@ export const useSupervisorFilterOptions = (
         {
           nameKey: 'admin.filters.selectSupervisor',
           attr: 'selectSupervisor',
-          type: 'select' as const,
+          type: 'paginated-select' as const,
           placeholderKey: 'admin.filters.chooseSupervisor',
-          data: supervisorFilterOptions,
+          fetchFn: supervisorFetchFn,
+          // Clear supervisor list when province changes
+          dependencyAttr: 'filterByProvince',
+          dependencyKey: filters.filterByProvince ?? null,
+          pageSize: 20,
+          showSearch: true,
         },
       ],
-      supervisors, // Return supervisors data for accessing location and other details
     };
-  }, [provinces, supervisors, filters.filterByProvince]);
+  }, [provinces, supervisorFetchFn, filters.filterByProvince]);
 };
 
 /**
