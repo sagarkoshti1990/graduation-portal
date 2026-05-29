@@ -34,6 +34,7 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 // Status value type (values of STATUS object) - used for API filter + comparisons
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -81,6 +82,7 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
+  const offline = isNetworkOffline();
 
   // Load pageSize from offline storage on mount
   useEffect(() => {
@@ -272,9 +274,11 @@ const ParticipantsList: React.FC = () => {
                   onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
                 />
               </Box>
-              <Box {...styles.buttonContainer}>
-                <GroupCheckInsButton />
-              </Box>
+              {!offline && (
+                <Box {...styles.buttonContainer}>
+                  <GroupCheckInsButton />
+                </Box>
+              )}
             </HStack>
 
             {/* Status Filter Bar - Desktop: Filter buttons, Mobile: Dropdown */}

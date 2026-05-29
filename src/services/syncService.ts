@@ -212,10 +212,9 @@ async function syncFormEdits(
   for (let i = 0; i < editKeys.length; i++) {
     const key = editKeys[i];
     try {
-      const edits = await offlineStorage.read<any>(key);
+      const {solutionId,...edits} = await offlineStorage.read<any>(key);
       if (!edits) { synced++; continue; }
-
-      const formId = parseFormIdFromKey(key);
+      const formId = solutionId || parseFormIdFromKey(key);
       if (!formId) {
         logger.warn(`syncService: cannot parse formId from key "${key}" — skipping`);
         failed++;
@@ -226,21 +225,15 @@ async function syncFormEdits(
       const formData = await offlineStorage.read<ObservationFormData>(
         PARTICIPANT_KEYS.form(participantId, formId),
       );
-      if (!formData?.entityId) {
+
+      if (!formData?.submissionId) {
         logger.warn(`syncService: no entityId found for form "${formId}" — skipping`);
         failed++;
         continue;
       }
 
       // Use stored observationId (may differ from solutionId used as storage key)
-      const apiObservationId = formData.observationId ?? formId;
-      await api.post(
-        `${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${apiObservationId}?entityId=${formData.entityId}`,
-        {
-          submissionId: edits.submissionId,
-          answers: edits.data,
-        },
-      );
+      await api.post(`${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formData.submissionId}`,{evidence:edits});
 
       await offlineStorage.remove(key);
       synced++;

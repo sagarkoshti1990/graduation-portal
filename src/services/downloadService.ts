@@ -327,7 +327,7 @@ async function processObservationForm(
   participantId: string,
   participantName: string,
   solutionId: string,
-): Promise<ResolvedFormIds> {
+): Promise<any> {
   // Step 1: Resolve entity. result._id = real observationId (may differ from solutionId).
   let entityId: string | undefined;
   const entitiesResp = await withRetry(
@@ -397,6 +397,7 @@ async function processObservationForm(
     `assessment:${observationId}`,
   );
   const schema = assessmentResp?.result ?? assessmentResp ?? null;
+  submissionId = schema?.assessment?.submissionId
 
   if (!schema || typeof schema !== 'object' || Object.keys(schema).length === 0) {
     throw new Error(`Empty or invalid schema returned for observation "${observationId}"`);
@@ -407,7 +408,7 @@ async function processObservationForm(
 
   const formData: ObservationFormData = {
     entityId: entityId!,
-    submissionId,
+    submissionId: submissionId || "",
     submissionNumber,
     observationId,
     schema,
@@ -419,7 +420,7 @@ async function processObservationForm(
   // Keyed by solutionId — matches what ObservationContent passes to getObservationForm()
   await offlineStorage.create(PARTICIPANT_KEYS.form(participantId, solutionId), formData);
   logger.info(`DownloadService: Stored form for solution "${solutionId}" (obs: "${observationId}")`);
-  return { entityId: entityId!, submissionId, submissionNumber: 1, observationId };
+  return { entityId: entityId!, submissionId: submissionId || "", submissionNumber: submissionNumber, observationId, solutionId };
 }
 
 /** Thin wrapper used by the project-task (HH) path to extract solutionId from a task. */

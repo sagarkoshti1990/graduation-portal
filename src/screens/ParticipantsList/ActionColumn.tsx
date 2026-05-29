@@ -77,7 +77,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 }) => {
   const navigation:any = useNavigation();
   const { t } = useLanguage();
-  const { isMobile } = usePlatform();
+  const { isMobile, isWeb } = usePlatform();
   const { user } = useAuth();
   const { showAlert } = useAlert();
   // Single modal state - tracks which modal is open (null = closed)
@@ -306,7 +306,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   // Build menu items — always include Download Offline (Section 8.5)
   const menuItemsWithDownload = [
     ...getParticipantsMenuItems,
-    ...(!isOffline ?
+    ...(!isOffline && !isWeb ?
     [{
       key: 'download',
       label: 'actions.downloadOffline',

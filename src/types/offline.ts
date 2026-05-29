@@ -62,9 +62,13 @@ export interface ObservationFormData {
 }
 
 export interface ObservationFormEdits {
-  submissionId: string;
-  data: Record<string, any>;
-  updatedAt: string;
+  answers:any;
+  endTime:number;
+  externalId:string;
+  isSubmitted:boolean;
+  startTime:number;
+  status:string;
+  solutionId:string;
 }
 
 export interface OfflineSolutionEntry {

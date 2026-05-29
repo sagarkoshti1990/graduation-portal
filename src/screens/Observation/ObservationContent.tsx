@@ -361,38 +361,33 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   );
 
   const handleOfflineData = useCallback(async (data:any)=>{
-    // const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
-console.log(data)
-    // if (participantKey && observation?.observationId && submission?._id) {
-    //   try {
-    //     const answers = event?.data ?? event?.answers ?? event?.result?.answers ?? {};
-    //     await dataService.saveFormEdits(participantKey, observation.observationId, {
-    //       submissionId: submission._id,
-    //       data: answers,
-    //       updatedAt: new Date().toISOString(),
-    //     });
-    //     logger.info('ObservationContent: form edits saved for sync');
-    //   } catch (err) {
-    //     logger.warn('ObservationContent: failed to save form edits', err);
-    //   }
+    const {answers,endTime,evidenceCode,isSubmitted,startTime,status,submissionId} = data || {}
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+    if(answers && submissionId && participantKey) {
+      try {
+        await dataService.saveFormEdits(participantKey, submissionId, {
+          answers,endTime,externalId:evidenceCode,isSubmitted,startTime,status,solutionId
+        });
+        logger.info('ObservationContent: form edits saved for sync');
+      } catch (err) {
+        logger.warn('ObservationContent: failed to save form edits', err);
+      }
 
-    //   // Auto-mark the linked task as completed when offline
-    //   if (dataService.isNetworkOffline() && taskId) {
-    //     try {
-    //       await dataService.saveTaskEdit(participantKey, {
-    //         _id: taskId,
-    //         status: TASK_STATUS.COMPLETED,
-    //       });
-    //       logger.info('ObservationContent: task auto-marked completed offline', taskId);
-    //     } catch (err) {
-    //       logger.warn('ObservationContent: failed to auto-mark task complete', err);
-    //     }
-    //   }
-    // }
+      // Auto-mark the linked task as completed when offline
+      if (taskId) {
+        try {
+          await dataService.saveTaskEdit(participantKey,submissionId, {
+            _id: taskId,
+            status: TASK_STATUS.COMPLETED,
+          });
+          logger.info('ObservationContent: task auto-marked completed offline', taskId);
+        } catch (err) {
+          logger.warn('ObservationContent: failed to auto-mark task complete', err);
+        }
+      }
+    }
     handleBackPress();
-  },[
-    // participant, observation?.observationId, submission?._id, taskId
-  ])
+  },[handleBackPress,participant,solutionId,taskId])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(

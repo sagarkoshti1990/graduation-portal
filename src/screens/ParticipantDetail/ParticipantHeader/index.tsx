@@ -41,6 +41,7 @@ import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
+import { isNetworkOffline } from '@utils/networkStatus.native';
 
 const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};
@@ -84,6 +85,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const showSuccess = (message: string) => {
     showAlert('success', message);
   };
+  const offline = isNetworkOffline();
 
   // Update status when participant prop changes
   useEffect(() => {
@@ -288,7 +290,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return null;
     }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
-    if (status === STATUS.NOT_ENROLLED) {
+    if (status === STATUS.NOT_ENROLLED && !offline) {
       return (
         <Button
           onPress={handleEnrollParticipant}

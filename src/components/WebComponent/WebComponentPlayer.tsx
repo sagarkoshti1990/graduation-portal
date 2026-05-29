@@ -240,10 +240,8 @@ const WebComponentPlayer = React.memo(
             }
           }
         }
-      } else if (message.type === 'QUESTIONNAIRE_SAVE') {
-        // _getOfflineData(message)
-        console.log(message)
-        // _getToast(message.data);
+      } else if (message.type === 'QUESTIONNAIRE_SAVE' || message.type === "QUESTIONNAIRE_SUBMIT") {
+        _getOfflineData(message.data)
       } else if (message.type === 'TOAST') {
         _getToast(message.data);
       }
