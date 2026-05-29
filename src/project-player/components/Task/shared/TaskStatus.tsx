@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Text, Pressable } from '@gluestack-ui/themed';
-import { TaskStatus as TaskStatusType } from '../../types/project.types';
-import { getStatusColor } from '../ProjectComponent/helpers';
-import { TaskStatusProps } from '../../types/components.types';
-import { TASK_STATUS } from '../../../constants/app.constant';
+import { TaskStatus as TaskStatusType } from '../../../types/project.types';
+import { getStatusColor } from '../../ProjectComponent/helpers';
+import { TaskStatusProps } from '../../../types/components.types';
+import { TASK_STATUS } from '../../../../constants/app.constant';
 
 const TaskStatus: React.FC<TaskStatusProps> = ({
   status,

@@ -41,8 +41,6 @@ export const PARTICIPANT_KEYS = {
   listSnapshot:   (id: string) => `participant:${id}:listSnapshot`,
   /** Project data */
   project:        (id: string,projectId:string) => `participant:${id}:project:${projectId}`,
-  /** Task list */
-  tasks:          (id: string) => `participant:${id}:tasks`,
   /** Pending task-status edits */
   projectEdits:   (id: string,projectId:string) => `participant:${id}:projectEdits:${projectId}`,
   /** Observation form schema + submission snapshot */
@@ -113,8 +111,6 @@ export const OFFLINE_API_CONFIG = {
 
   PROJECT: {
     supported: true as const,
-    /** cacheKey(participantId) → 'participant:{id}:project' */
-    cacheKey: (id: string) => PARTICIPANT_KEYS.project(id),
   },
 
   OBSERVATION_FORM: {

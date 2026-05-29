@@ -229,5 +229,5 @@ export interface NormalizedFile {
   uri?: string;
   file?: File;
   originalFile?: any;
-  base64?: any;
+  base64?: string;
 };

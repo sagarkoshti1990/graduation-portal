@@ -9,7 +9,10 @@ import type {
   OfflineSolutionEntry,
 } from '@app-types/offline';
 import type { Task } from '../project-player/types';
-import { getProjectDetails } from '../project-player/services/projectPlayerService';
+import {
+  getProjectDetails,
+  createProjectForEntity,
+} from '../project-player/services/projectPlayerService';
 import {
   getObservationEntities,
   updateObservationEntities,
@@ -18,9 +21,14 @@ import {
   createObservationSubmission,
   getObservationSolution,
 } from './solutionService';
-import { getParticipantsList } from './participantService';
+import {
+  getParticipantsList,
+  updateEntityDetails,
+  createOrUpdateProgramUserMapping,
+} from './participantService';
 import { getTargetedSolutions } from './solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import { STATUS } from '@constants/app.constant';
 
 /** Called by the download pipeline as each module starts and finishes. */
 export type DownloadProgressCallback = (
@@ -30,7 +38,8 @@ export type DownloadProgressCallback = (
 
 export interface StartDownloadParams {
   participantId: string;
-  projectId: string;
+  /** IDP / onboarding project ID. Optional — resolved automatically when missing for NOT_ONBOARDED participants. */
+  projectId?: string;
   downloadConfig: DownloadConfig;
   /** LC's own userId — needed to call the programUsers/entities API correctly */
   lcUserId: string;
@@ -38,12 +47,29 @@ export interface StartDownloadParams {
   participantSnapshot?: any;
   /** Optional callback for real-time per-step progress reporting to the UI. */
   onProgress?: DownloadProgressCallback;
+  /**
+   * Already-set onboarding project ID (participant.onBoardedProjectId).
+   * When provided the project-creation step is skipped entirely.
+   */
+  onBoardedProjectId?: string;
+  /**
+   * Province value (e.g. participantSnapshot?.province?.value).
+   * Required when onboarding project creation is needed.
+   */
+  province?: string;
+  /**
+   * Participant entity ID for programUsers API calls during project creation
+   * (e.g. participantSnapshot?.entityId).
+   */
+  participantEntityId?: string;
 }
 
 export interface DownloadResult {
   success: boolean;
   status: DownloadStatus;
   error?: string;
+  /** Set to the newly created project ID when an onboarding project was created during this run. */
+  createdOnboardingProjectId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +138,107 @@ async function markFailed(participantId: string, module: string): Promise<void> 
       : [...current.failedModules, module],
     lastStep: module,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding project creation
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates the onboarding project for a participant who does not yet have one,
+ * then persists the new project ID on both the entity and the program-user mapping.
+ *
+ * Mirrors the flow in useProjectLoader so both paths stay consistent:
+ *   1. createProjectForEntity  → API creates the project
+ *   2. updateEntityDetails     → stamps onBoardedProjectId on the entity record
+ *   3. createOrUpdateProgramUserMapping → stamps onBoardedProjectId on the program-user record
+ *
+ * Returns the newly created project ID.
+ */
+async function ensureOnboardingProject({
+  participantId,
+  entityId,
+  province,
+  lcUserId,
+  currentStatus,
+}: {
+  participantId: string;
+  entityId: string;
+  province: string;
+  lcUserId: string;
+  currentStatus?: string;
+}): Promise<string> {
+  // Guard: re-read from cache in case a previous download already created the project
+  const cachedDetails = await offlineStorage
+    .read<any>(PARTICIPANT_KEYS.details(participantId))
+    .catch(() => null);
+  if (cachedDetails?.onBoardedProjectId) {
+    logger.info(`DownloadService: Onboarding project already in cache for "${participantId}" — skipping creation`);
+    return cachedDetails.onBoardedProjectId as string;
+  }
+
+  logger.info(`DownloadService: Creating onboarding project for entity "${entityId}", province "${province}"`);
+
+  // createProjectForEntity returns response.data.result on success or
+  // handleApiError({ data: null, error: '...' }) on failure — it never throws.
+  const projectData = await createProjectForEntity(entityId, province) as any;
+
+  if (!projectData?._id) {
+    // Prefer the API-level error message over a generic fallback
+    const apiMsg: string = projectData?.error ?? 'No project ID returned from onboarding creation API';
+    throw new Error(apiMsg);
+  }
+
+  const createdProjectId: string = projectData._id;
+  logger.info(`DownloadService: Onboarding project "${createdProjectId}" created for participant "${participantId}"`);
+
+  const createdDate = new Date().toISOString();
+
+  // Re-check cache (concurrent creation guard — e.g. two simultaneous download attempts)
+  const recheckDetails = await offlineStorage
+    .read<any>(PARTICIPANT_KEYS.details(participantId))
+    .catch(() => null);
+  if (recheckDetails?.onBoardedProjectId) {
+    logger.info(`DownloadService: Concurrent creation detected for "${participantId}" — using existing project`);
+    return recheckDetails.onBoardedProjectId as string;
+  }
+
+  // Stamp the new project ID on the entity profile — non-fatal: project is already created
+  try {
+    await updateEntityDetails({
+      userId: lcUserId,
+      entityId,
+      entityUpdates: {
+        onBoardedProjectId: createdProjectId,
+        onBoardingProjectCreatedAt: createdDate,
+      },
+    });
+    logger.info(`DownloadService: Updated entity "${entityId}" with onBoardedProjectId`);
+  } catch (err) {
+    logger.warn(`DownloadService: updateEntityDetails failed for "${entityId}" — continuing with download`, err);
+  }
+
+  // Stamp the new project ID on the participant program-user mapping — non-fatal
+  try {
+    // Prefer the participant ID from the created project (mirrors useProjectLoader pattern)
+    const mappingUserId: string =
+      (projectData.entityInformation?.externalId as string | undefined) ?? participantId;
+    await createOrUpdateProgramUserMapping({
+      userId: mappingUserId,
+      // @ts-ignore
+      programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+      metaInformation: {
+        onBoardedProjectId: createdProjectId,
+        onBoardingProjectCreatedAt: createdDate,
+      },
+      status: currentStatus ?? STATUS.NOT_ONBOARDED,
+    });
+    logger.info(`DownloadService: Updated program-user mapping for "${mappingUserId}"`);
+  } catch (err) {
+    logger.warn(`DownloadService: createOrUpdateProgramUserMapping failed for "${participantId}" — continuing with download`, err);
+  }
+
+  return createdProjectId;
 }
 
 // ---------------------------------------------------------------------------
@@ -364,10 +491,92 @@ export const startDownload = async ({
   lcUserId,
   participantSnapshot,
   onProgress,
+  onBoardedProjectId,
+  province,
+  participantEntityId,
 }: StartDownloadParams): Promise<DownloadResult> => {
-  await initStatus(participantId);
+  let createdOnboardingProjectId: string | undefined;
 
   try {
+    // initStatus is inside the try block so any storage failure is caught and returned
+    // as a DownloadResult rather than propagating out of startDownload.
+    await initStatus(participantId);
+
+    // ── Step 0: Resolve project ID — create onboarding project when not yet set ──
+    //
+    // A participant whose onBoardedProjectId is missing has not had their onboarding
+    // project created yet.  We create it here (before saving any offline data) so the
+    // rest of the pipeline can use a valid project ID.  Dependent offline storage
+    // (project data, solutions mapping, etc.) will reference this newly created ID.
+    let resolvedProjectId = projectId ?? onBoardedProjectId;
+
+    if (!resolvedProjectId) {
+      // entityId: try top-level fields, then userDetails, then fall back to participantId
+      // (the list API is filtered with entityId=participantId, so they are the same value)
+      const entityId =
+        participantEntityId ??
+        participantSnapshot?.entityId ??
+        (participantSnapshot as any)?.entity_id ??
+        participantSnapshot?.userDetails?.entityId ??
+        participantId;
+
+      // province: raw list rows store it in userDetails.province as { value, label };
+      // detail/flattened data has it at the top level (string or object)
+      const rawProvince =
+        province ??
+        participantSnapshot?.province ??
+        participantSnapshot?.userDetails?.province;
+      const resolvedProvince: string | undefined =
+        typeof rawProvince === 'string'
+          ? rawProvince
+          : rawProvince?.value ?? rawProvince?.label;
+
+      if (!entityId || !resolvedProvince) {
+        logger.error(
+          `DownloadService: Cannot create onboarding project for "${participantId}" — missing entityId or province`,
+        );
+        await patchStatus(participantId, { status: 'failed' });
+        return {
+          success: false,
+          status: (await offlineStorage.read<DownloadStatus>(
+            PARTICIPANT_KEYS.downloadStatus(participantId),
+          ))!,
+          error: 'Province and entity ID are required to create the onboarding project',
+        };
+      }
+
+      onProgress?.('onboarding', 'loading');
+      try {
+        resolvedProjectId = await withRetry(
+          () =>
+            ensureOnboardingProject({
+              participantId,
+              entityId,
+              province: resolvedProvince,
+              lcUserId,
+              currentStatus:
+                participantSnapshot?.status ?? participantSnapshot?.accountUserStatus,
+            }),
+          'onboardingProject',
+        );
+        createdOnboardingProjectId = resolvedProjectId;
+        await markComplete(participantId, 'onboarding');
+        onProgress?.('onboarding', 'completed');
+      } catch (err: any) {
+        logger.error(`DownloadService: Failed to create onboarding project for "${participantId}"`, err);
+        await markFailed(participantId, 'onboarding');
+        onProgress?.('onboarding', 'failed');
+        await patchStatus(participantId, { status: 'failed' });
+        return {
+          success: false,
+          status: (await offlineStorage.read<DownloadStatus>(
+            PARTICIPANT_KEYS.downloadStatus(participantId),
+          ))!,
+          error: err?.message ?? 'Failed to create onboarding project',
+        };
+      }
+    }
+
     if (downloadConfig.participant) {
       onProgress?.('participant', 'loading');
       try {
@@ -394,7 +603,10 @@ export const startDownload = async ({
     if (needsProject) {
       if (downloadConfig.project) onProgress?.('project', 'loading');
       try {
-        tasks = await withRetry(() => fetchAndStoreProject(participantId, projectId), 'project');
+        tasks = await withRetry(
+          () => fetchAndStoreProject(participantId, resolvedProjectId!),
+          'project',
+        );
         if (downloadConfig.project) {
           await markComplete(participantId, 'project');
           onProgress?.('project', 'completed');
@@ -485,6 +697,7 @@ export const startDownload = async ({
     return {
       success: true,
       status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId)))!,
+      createdOnboardingProjectId,
     };
   } catch (err: any) {
     logger.error(`DownloadService: Fatal error for participant "${participantId}"`, err);
@@ -493,6 +706,7 @@ export const startDownload = async ({
       success: false,
       status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId)))!,
       error: err?.message ?? 'Unknown error',
+      createdOnboardingProjectId,
     };
   }
 };

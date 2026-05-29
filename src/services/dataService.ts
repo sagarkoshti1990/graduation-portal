@@ -63,10 +63,12 @@ export function isOfflineFallback(v: any): v is OfflineFallback {
 
 async function hasPendingForParticipant(participantId: string): Promise<boolean> {
   try {
-    const edits = await offlineStorage.read<any>(PARTICIPANT_KEYS.projectEdits(participantId));
-    if (edits?.tasks?.length > 0) return true;
     const allKeys = await offlineStorage.getParticipantKeys(participantId);
-    return allKeys.some((k: string) => k.endsWith(':edits'));
+    // Check for any pending task edits across all projects
+    const hasTaskEdits = allKeys.some((k: string) => k.includes(':projectEdits:'));
+    if (hasTaskEdits) return true;
+    // Check for any pending form edits
+    return allKeys.some((k: string) => k.endsWith(':edits') && k.includes(':form:'));
   } catch {
     return false;
   }
@@ -229,6 +231,70 @@ export async function getParticipantDetails(
 // Project + Tasks
 // ---------------------------------------------------------------------------
 
+/**
+ * Builds a flat lookup map of all edited tasks (including children) from the
+ * projectEdits task array so they can be applied to the cached project tree.
+ */
+function buildEditMap(editedTasks: any[]): Map<string, any> {
+  const map = new Map<string, any>();
+  for (const task of editedTasks) {
+    map.set(task._id, task);
+    if (task.children?.length) {
+      for (const child of task.children) {
+        map.set(child._id, child);
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Applies completion state from projectEdits onto the project's task tree.
+ *
+ * Rules:
+ *  - ONLY `status` and `attachments` are taken from the edit record.
+ *    Structural fields (name, type, description, dependencies, etc.) always
+ *    come from the cached project — never from projectEdits.
+ *  - Default status for every task comes from PARTICIPANT_KEYS.project.
+ *    projectEdits overrides status only when an edit record exists for that task.
+ */
+function applyEditMapToTasks(tasks: any[], editMap: Map<string, any>): any[] {
+  return tasks.map(task => {
+    const edit = editMap.get(task._id);
+    // Edit wins; otherwise keep the status already in the cached project.
+    const status: string = edit?.status ?? task.status;
+    // Attachments: use edit value when present, otherwise preserve project value.
+    const attachments = edit?.attachments !== undefined ? edit.attachments : task.attachments;
+    const merged = { ...task, status, attachments };
+    if (merged.tasks?.length) merged.tasks = applyEditMapToTasks(merged.tasks, editMap);
+    if (merged.children?.length) merged.children = applyEditMapToTasks(merged.children, editMap);
+    return merged;
+  });
+}
+
+async function applyPendingEditsToProject<T>(
+  participantId: string,
+  projectId: string,
+  project: T,
+): Promise<T> {
+  try {
+    const edits = await offlineStorage.read<{ tasks: any[] }>(
+      PARTICIPANT_KEYS.projectEdits(participantId, projectId),
+    );
+    // No pending edits — project cache is already the correct source of truth.
+    if (!edits?.tasks?.length) return project;
+    const editMap = buildEditMap(edits.tasks);
+    const proj = project as any;
+    return {
+      ...proj,
+      ...(proj.tasks    ? { tasks:    applyEditMapToTasks(proj.tasks,    editMap) } : {}),
+      ...(proj.children ? { children: applyEditMapToTasks(proj.children, editMap) } : {}),
+    } as T;
+  } catch {
+    return project;
+  }
+}
+
 export async function getProject<T = any>(
   participantId: string,
   projectId: string,
@@ -239,7 +305,11 @@ export async function getProject<T = any>(
 
   if (offline || hasPending) {
     const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId,projectId));
-    if (cached) return buildFromCache(cached, offline);
+    if (cached) {
+      // Merge any pending offline task edits so the UI reflects the correct state
+      const withEdits = await applyPendingEditsToProject(participantId, projectId, cached);
+      return buildFromCache(withEdits, offline);
+    }
     if (offline) return buildOfflineNoData<T | null>(null);
     // hasPending but no local project yet — fall through to API
   }
@@ -257,28 +327,12 @@ export async function getProject<T = any>(
   } catch (err) {
     logger.warn('dataService.getProject: API failed — falling back to cached project', err);
     const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId,projectId));
-    if (cached) return buildFromCache(cached, false);
+    if (cached) {
+      const withEdits = await applyPendingEditsToProject(participantId, projectId, cached);
+      return buildFromCache(withEdits, false);
+    }
     throw err;
   }
-}
-
-export async function getTasks<T = any>(
-  participantId: string,
-): Promise<OfflineServiceResponse<T[]>> {
-  const offline = isNetworkOffline();
-  const hasPending = !offline ? await hasPendingForParticipant(participantId) : false;
-
-  if (offline || hasPending) {
-    const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participantId,"123"));
-    if (project) {
-      const tasks: T[] = project.tasks ?? project.children ?? [];
-      return buildFromCache(tasks, offline);
-    }
-    if (offline) return buildOfflineNoData<T[]>([]);
-  }
-
-  // Online + no pending: tasks are embedded in the project returned by getProject
-  return buildOnlineSuccess<T[]>([], OFFLINE_API_CONFIG.PROJECT.supported);
 }
 
 // ---------------------------------------------------------------------------
@@ -394,7 +448,7 @@ export const mergeTasks = (oldData: any, newData: any) => {
           childMap.set(child._id, child);
         } else {
           childMap.set(child._id, {
-            ...childMap.get(child._id),
+            ...(childMap.get(child._id) ?? {}),
             ...child,
           });
         }
@@ -417,7 +471,7 @@ export const mergeTasks = (oldData: any, newData: any) => {
 export async function saveTaskEdit(
   participantId: string,
   projectId:string,
-  taskEdit: { _id: string; [key: string]: any },
+  taskEdit: { tasks: any[] },
 ): Promise<void> {
   const existing =
     (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(participantId,projectId))) ??
@@ -463,8 +517,11 @@ export async function getPendingBreakdown(participantIds?: string[]): Promise<Pe
       const allKeys = await offlineStorage.getParticipantKeys(id);
       forms += allKeys.filter((k: string) => k.endsWith(':edits') && k.includes(':form:')).length;
 
-      const projectEdits = await offlineStorage.read<any>(PARTICIPANT_KEYS.projectEdits(id));
-      if (projectEdits?.tasks?.length) tasks += projectEdits.tasks.length;
+      const projectEditKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
+      for (const key of projectEditKeys) {
+        const edits = await offlineStorage.read<any>(key);
+        if (edits?.tasks?.length) tasks += edits.tasks.length;
+      }
     } catch { /* non-fatal */ }
   }
 
@@ -484,7 +541,6 @@ const dataService = {
   getParticipantList,
   getParticipantDetails,
   getProject,
-  getTasks,
   saveTaskEdit,
   getObservationForm,
   saveFormEdits,

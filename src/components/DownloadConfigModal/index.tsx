@@ -37,6 +37,7 @@ interface DownloadConfigModalProps {
 
 // Maps every DownloadModuleKey to its i18n label key
 const MODULE_LABEL: Record<DownloadModuleKey, string> = {
+  onboarding:                   'actions.downloadOnboarding',
   participant:                  'actions.downloadParticipant',
   project:                      'actions.downloadProject',
   tasks:                        'actions.downloadProject',
@@ -48,8 +49,10 @@ const MODULE_LABEL: Record<DownloadModuleKey, string> = {
   'observation:endline':        'actions.downloadEndline',
 };
 
-// Download order matches the pipeline in downloadService
+// Download order matches the pipeline in downloadService.
+// 'onboarding' is always first when present (automatic, not user-selected).
 const DOWNLOAD_ORDER: DownloadModuleKey[] = [
+  'onboarding',
   'participant',
   'project',
   'observation:logVisit',
@@ -62,9 +65,13 @@ const DOWNLOAD_ORDER: DownloadModuleKey[] = [
 
 type StepState = 'pending' | 'loading' | 'completed' | 'failed';
 
-/** Build the ordered step keys that will actually be downloaded from the selection. */
-function buildStepKeys(selected: Set<string>): DownloadModuleKey[] {
+/**
+ * Build the ordered step keys that will actually appear in the progress UI.
+ * `needsOnboarding` includes the automatic 'onboarding' step (not user-selected).
+ */
+function buildStepKeys(selected: Set<string>, needsOnboarding: boolean): DownloadModuleKey[] {
   return DOWNLOAD_ORDER.filter(key => {
+    if (key === 'onboarding') return needsOnboarding;
     if (key === 'tasks') return false; // always bundled with project, never shown separately
     if (key === 'participant') return selected.has('participant');
     if (key === 'project') return selected.has('project');
@@ -99,8 +106,9 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   const stepStatesRef = useRef<Map<string, StepState>>(new Map());
 
   const options = getDownloadOptions(participantStatus);
-  const isInProgress = participantStatus === STATUS.IN_PROGRESS;
-  const needsOnboardingProject = isInProgress && !onBoardedProjectId && !projectId;
+  // Onboarding project is missing when participant is NOT_ONBOARDED and no project ID was set yet.
+  // The download service will create it automatically — we only need to show the extra step in the UI.
+  const needsOnboarding = participantStatus === STATUS.NOT_ONBOARDED && !onBoardedProjectId;
 
   const downloadDone = downloadStatus !== null;
   const downloadPartial = downloadDone && (downloadStatus!.failedModules ?? []).length > 0;
@@ -132,19 +140,24 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   }, []);
 
   const handleDownload = useCallback(async () => {
-    if (needsOnboardingProject) {
-      setDownloadError(t('actions.downloadNeedsOnboardingProject'));
-      return;
-    }
-
-    const resolvedProjectId = participantStatus === STATUS.IN_PROGRESS ? projectId : participantStatus === STATUS.NOT_ONBOARDED ? onBoardedProjectId : null;
-    if (!resolvedProjectId) {
+    // For IN_PROGRESS, an IDP project ID is always required.
+    if (participantStatus === STATUS.IN_PROGRESS && !projectId) {
       setDownloadError(t('actions.downloadNoProject'));
       return;
     }
 
-    // Build ordered step list and initialise all as pending
-    const steps = buildStepKeys(selected);
+    // Resolve the project ID passed to the service.
+    // For NOT_ONBOARDED without an onBoardedProjectId, pass undefined — the service
+    // will create the onboarding project automatically in Step 0.
+    const resolvedProjectId =
+      participantStatus === STATUS.IN_PROGRESS
+        ? projectId
+        : participantStatus === STATUS.NOT_ONBOARDED
+        ? (onBoardedProjectId || undefined)
+        : undefined;
+
+    // Build ordered step list (includes 'onboarding' when project creation is needed)
+    const steps = buildStepKeys(selected, needsOnboarding);
     const initialMap = new Map<string, StepState>(steps.map(k => [k, 'pending']));
     stepStatesRef.current = initialMap;
     setActiveSteps(steps);
@@ -159,6 +172,25 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
 
     try {
       const config = buildDownloadConfig(selected);
+
+      // province lives in userDetails in raw list rows (e.g. userDetails.province.value),
+      // but may be at the top level after flattening or as a plain string.
+      const rawProvince =
+        participantData?.province ??
+        participantData?.userDetails?.province;
+      const resolvedProvince: string | undefined =
+        typeof rawProvince === 'string'
+          ? rawProvince
+          : rawProvince?.value ?? rawProvince?.label;
+
+      // entityId may be at the top level, entity_id, inside userDetails, or equal to userId
+      // (fetchAndStoreParticipant filters the list API with entityId = participantId, confirming they are the same)
+      const resolvedEntityId: string | undefined =
+        participantData?.entityId ??
+        (participantData as any)?.entity_id ??
+        participantData?.userDetails?.entityId ??
+        participantData?.userId;
+
       const result = await startDownload({
         participantId,
         projectId: resolvedProjectId,
@@ -166,17 +198,25 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
         lcUserId: user?.id ?? '',
         participantSnapshot: participantData,
         onProgress,
+        onBoardedProjectId: onBoardedProjectId,
+        province: resolvedProvince,
+        participantEntityId: resolvedEntityId,
       });
 
       setDownloadStatus(result.status);
-      await refreshPending();
-      onSuccess?.();
+      if (result.success) {
+        await refreshPending();
+        onSuccess?.();
+      } else if (result.error) {
+        // Surface the specific failure reason in the result UI
+        setDownloadError(result.error);
+      }
     } catch (err: any) {
       setDownloadError(err?.message ?? t('actions.downloadError'));
     } finally {
       setIsDownloading(false);
     }
-  }, [needsOnboardingProject, projectId, onBoardedProjectId, selected, participantId, participantData, t, refreshPending, onSuccess, user?.id]);
+  }, [needsOnboarding, projectId, onBoardedProjectId, selected, participantId, participantData, participantStatus, t, refreshPending, onSuccess, user?.id]);
 
   // Build the result rows for the completed state — dedup 'tasks' (bundled under project)
   const resultRows: Array<{ key: string; label: string; state: 'success' | 'failed' }> = [];
@@ -205,12 +245,12 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       showCloseButton={!isDownloading}
     >
       <VStack space="lg">
-        {/* Onboarding validation warning */}
-        {needsOnboardingProject && (
-          <HStack space="sm" alignItems="flex-start" bg="$warning100" p="$3" borderRadius="$md">
-            <LucideIcon name="AlertTriangle" size={16} color="$warning600" />
-            <Text fontSize="$sm" color="$warning800" flex={1}>
-              {t('actions.downloadNeedsOnboardingProject')}
+        {/* Informational banner when the onboarding project will be created automatically */}
+        {needsOnboarding && !isDownloading && !downloadDone && (
+          <HStack space="sm" alignItems="flex-start" bg="$info100" p="$3" borderRadius="$md">
+            <LucideIcon name="Info" size={16} color="$info600" />
+            <Text fontSize="$sm" color="$info800" flex={1}>
+              {t('actions.downloadWillCreateOnboarding')}
             </Text>
           </HStack>
         )}
@@ -259,7 +299,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
                 color={downloadFailed ? '$error600' : downloadPartial ? '$warning600' : '$success600'}
               >
                 {downloadFailed
-                  ? t('actions.downloadError')
+                  ? (downloadError || t('actions.downloadError'))
                   : downloadPartial
                   ? t('actions.downloadPartial')
                   : t('actions.downloadSuccess')}
@@ -353,7 +393,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
                 variant="solid"
                 size="sm"
                 onPress={handleDownload}
-                isDisabled={isDownloading || needsOnboardingProject || selected.size === 0}
+                isDisabled={isDownloading || selected.size === 0}
               >
                 {isDownloading ? (
                   <Spinner size="small" color="white" mr="$2" />

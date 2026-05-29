@@ -72,6 +72,8 @@ function base64ToFile(base64: string, fileName: string, mimeType: string): File 
  * After a file is uploaded and we have a server URL, patch the corresponding
  * attachment stub (url: '') in the stored projectEdits so the next task sync
  * sends the real URL to the server.
+ * Scans all projectEdits keys for the participant to find the one containing
+ * the target task (a participant may have edits across multiple projects).
  */
 async function patchTaskAttachmentUrl(
   participantId: string,
@@ -80,27 +82,31 @@ async function patchTaskAttachmentUrl(
   serverUrl: string,
   sourcePath?: string,
 ): Promise<void> {
-  const projectEdits = await offlineStorage.read<{ tasks: any[] }>(
-    PARTICIPANT_KEYS.projectEdits(participantId),
-  );
-  if (!projectEdits) return;
+  const allKeys = await offlineStorage.getParticipantKeys(participantId);
+  const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
 
-  const updatedTasks = projectEdits.tasks.map((task: any) => {
-    if (task._id !== taskId) return task;
-    return {
-      ...task,
-      attachments: (task.attachments ?? []).map((att: any) =>
-        att.name === fileName
-          ? { ...att, url: serverUrl, sourcePath: sourcePath ?? att.sourcePath }
-          : att,
-      ),
-    };
-  });
+  for (const key of editKeys) {
+    const projectEdits = await offlineStorage.read<{ tasks: any[] }>(key);
+    if (!projectEdits?.tasks) continue;
 
-  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId), {
-    ...projectEdits,
-    tasks: updatedTasks,
-  });
+    const hasTask = projectEdits.tasks.some((t: any) => t._id === taskId);
+    if (!hasTask) continue;
+
+    const updatedTasks = projectEdits.tasks.map((task: any) => {
+      if (task._id !== taskId) return task;
+      return {
+        ...task,
+        attachments: (task.attachments ?? []).map((att: any) =>
+          att.name === fileName
+            ? { ...att, url: serverUrl, sourcePath: sourcePath ?? att.sourcePath }
+            : att,
+        ),
+      };
+    });
+
+    await offlineStorage.create(key, { ...projectEdits, tasks: updatedTasks });
+    break; // task found and patched — stop scanning
+  }
 }
 
 async function syncFiles(
@@ -166,7 +172,7 @@ async function syncFiles(
   if (syncedNames.length > 0) {
     const remaining = pending.filter(p => !syncedNames.includes(p.fileName));
     if (remaining.length === 0) {
-      // await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
+      await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
     } else {
       await offlineStorage.create(PARTICIPANT_KEYS.filesPending(participantId), remaining);
     }
@@ -256,27 +262,35 @@ async function syncTaskEdits(
   participantId: string,
   onProgress?: ProgressCallback,
 ): Promise<{ synced: number; failed: number }> {
-  const projectEdits = await offlineStorage.read<{ tasks: any[] }>(
-    PARTICIPANT_KEYS.projectEdits(participantId),
-  );
-  const tasks = projectEdits?.tasks ?? [];
-  if (!tasks.length) return { synced: 0, failed: 0 };
+  const allKeys = await offlineStorage.getParticipantKeys(participantId);
+  const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
+
+  if (!editKeys.length) return { synced: 0, failed: 0 };
 
   let synced = 0, failed = 0;
-  for (let i = 0; i < tasks.length; i++) {
-    const taskEdit = tasks[i];
+
+  for (const editKey of editKeys) {
+    const projectEdits = await offlineStorage.read<{ tasks: any[] }>(editKey);
+    if (!projectEdits?.tasks?.length) continue;
+
+    // Extract projectId from key: participant:${participantId}:projectEdits:${projectId}
+    const projectId = editKey.split(':projectEdits:')[1];
+    if (!projectId) {
+      logger.warn(`syncService: cannot parse projectId from key "${editKey}" — skipping`);
+      failed++;
+      continue;
+    }
+
     try {
-      await updateTaskAPI(taskEdit._id, taskEdit);
-      synced++;
-      onProgress?.(makeProgress('tasks', i + 1, tasks.length));
+      // Send all pending task edits for this project in a single API call
+      await updateTaskAPI(projectId, projectEdits);
+      synced += projectEdits.tasks.length;
+      onProgress?.(makeProgress('tasks', synced, synced));
+      await offlineStorage.remove(editKey).catch(() => {});
     } catch (err) {
-      logger.error(`syncService: task edit sync failed for task ${taskEdit._id}`, err);
+      logger.error(`syncService: task edit sync failed for project ${projectId}`, err);
       failed++;
     }
-  }
-
-  if (failed === 0) {
-    await offlineStorage.remove(PARTICIPANT_KEYS.projectEdits(participantId)).catch(() => {});
   }
 
   return { synced, failed };

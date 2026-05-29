@@ -238,42 +238,107 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         mergedRef.projectId = prev._id;
 
         const updateTaskRecursive = (tasks: Task[]): Task[] => {
-          return tasks.map(task => {
+          for (let index = 0; index < tasks.length; index++) {
+            const task = tasks[index];
+
+            /* Direct match */
             if (task._id === taskId) {
-              const newTask = { ...task, ...updates };
-              mergedRef.task = newTask;
-              return newTask;
+              const updatedTask = {
+                ...task,
+                ...updates,
+              };
+
+              mergedRef.task = updatedTask;
+
+              // clone only affected level
+              const updatedTasks = [...tasks];
+              updatedTasks[index] = updatedTask;
+
+              return updatedTasks;
             }
-            if (task.tasks && task.tasks.length > 0) {
+
+            /* Search nested tasks[] */
+            if (task.tasks?.length) {
+              const updatedNestedTasks = updateTaskRecursive(task.tasks);
+
+              // child updated
+              if (updatedNestedTasks !== task.tasks) {
+                const updatedTasks = [...tasks];
+                updatedTasks[index] = {
+                  ...task,
+                  tasks: updatedNestedTasks,
+                };
+                return updatedTasks;
+              }
+            }
+
+            /* Search nested children[] */
+            if (task.children?.length) {
+              const updatedChildren = updateTaskRecursive(task.children);
+              // child updated
+              if (updatedChildren !== task.children) {
+                const updatedTasks = [...tasks];
+                updatedTasks[index] = {
+                  ...task,
+                  children: updatedChildren,
+                };
+                return updatedTasks;
+              }
+            }
+          }
+
+          // no update found
+          return tasks;
+        };
+
+        /* Structure: prev.children[] */
+        if (prev.children?.length) {
+          const updatedChildren = updateTaskRecursive(prev.children);
+          if (updatedChildren === prev.children) {
+            return prev;
+          }
+          return {
+            ...prev,
+            children: updatedChildren,
+          };
+        }
+
+        if (prev?.tasks?.some(task => task.children?.length)) {
+          let hasUpdated = false;
+          const updatedTasks = prev.tasks.map(task => {
+            if (!task.children?.length) {
+              return task;
+            }
+            const updatedChildren = updateTaskRecursive(task.children);
+            if (updatedChildren !== task.children) {
+              hasUpdated = true;
               return {
                 ...task,
-                tasks: updateTaskRecursive(task.tasks),
+                children: updatedChildren,
               };
             }
             return task;
           });
-        };
 
-        if (prev.children?.length) {
+          if (!hasUpdated) {
+            return prev;
+          }
+
           return {
             ...prev,
-            children: updateTaskRecursive(prev.children),
+            tasks: updatedTasks,
           };
-        } else if (prev?.tasks?.some(task => task.children?.length)) {
-          return {
-            ...prev,
-            tasks: prev.tasks.map(task => ({
-              ...task,
-              children: task.children
-                ? updateTaskRecursive(task.children)
-                : task.children,
-            })),
-          };
+        }
+
+        /* Structure:  prev.tasks[] */
+        const updatedTasks = updateTaskRecursive(prev.tasks || []);
+        if (updatedTasks === prev.tasks) {
+          return prev;
         }
 
         return {
           ...prev,
-          tasks: updateTaskRecursive(prev.tasks || []),
+          tasks: updatedTasks,
         };
       });
 
@@ -285,8 +350,9 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         setTimeout(() => onTaskUpdate(taskForCallback), 0);
       }
 
-      if (!currentProjectId) return;
-      if (!updatedTaskObj) return;
+      if (!currentProjectId || !updatedTaskObj) {
+        return;
+      }
 
       if (updatedTaskObj.isCustomTask && !isEditMode) {
         return;
@@ -294,43 +360,45 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
       const pillarName = (updates as { pillarName?: string }).pillarName;
 
+      const isCustomOrChild =
+        (updatedTaskObj.isCustomTask || updatedTaskObj.parentId) && isEditMode;
+
+      const payloadTask = isCustomOrChild
+        ? {
+            tasks: [
+              {
+                _id: updatedTaskObj.parentId,
+                name: pillarName,
+                children: [
+                  {
+                    _id: taskId,
+                    name: updatedTaskObj.name,
+                    ...updates,
+                  },
+                ],
+              },
+            ],
+          }
+        : {
+            tasks: [
+              {
+                _id: taskId,
+                name: updatedTaskObj.name,
+                ...updates,
+              },
+            ],
+          };
+
       let result: unknown;
-      if (
-        (updatedTaskObj.isCustomTask || updatedTaskObj.parentId) &&
-        isEditMode
-      ) {
-        const payloadTask = {
-          tasks: [
-            {
-              _id: updatedTaskObj.parentId,
-              name: pillarName,
-              children: [
-                { _id: taskId, name: updatedTaskObj.name, ...updates },
-              ],
-            },
-          ],
-        }
-        
-        if(isOffline) {
-          await dataService.saveTaskEdit(participantId,currentProjectId, payloadTask);
-        } else {
-          result = await updateTaskAPI(currentProjectId, payloadTask);
-        }
+
+      if (isOffline) {
+        await dataService.saveTaskEdit(
+          participantId,
+          currentProjectId,
+          payloadTask,
+        );
       } else {
-        const payloadTask = {
-          tasks: [
-            {
-              _id: taskId,
-              name: updatedTaskObj.name,
-              ...updates,
-            },
-          ],
-        }
-        if(isOffline) {
-          await dataService.saveTaskEdit(participantId,currentProjectId, payloadTask);
-        } else {
-          result = await updateTaskAPI(currentProjectId, payloadTask);
-        }
+        result = await updateTaskAPI(currentProjectId, payloadTask);
       }
 
       if (isApiErrorResult(result)) {

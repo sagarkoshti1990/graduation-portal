@@ -13,20 +13,20 @@ import {
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useProjectContext } from '../../context/ProjectContext';
-import TaskComponent from '../ProjectComponent/TaskComponent';
-import AddCustomTask from './AddCustomTask';
-import { TaskAccordionProps } from '../../types/components.types';
+import { useProjectContext } from '../../../context/ProjectContext';
+import TaskComponent from '../../ProjectComponent/TaskComponent';
+import AddCustomTask from '../CustomTask/AddCustomTask';
+import { TaskAccordionProps } from '../../../types/components.types';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import {
   PILLAR_NAMES,
   PILLAR_CATEGORIES,
   TASK_STATUS,
 } from '@constants/app.constant';
-import { theme } from '../../../config/theme';
-import { taskAccordionStyles } from './Styles';
+import { theme } from '@config/theme';
+import { taskAccordionStyles } from './styles';
 import { usePlatform } from '@utils/platform';
-import { Task } from '../../types/project.types';
+import { Task } from '../../../types/project.types';
 
 const sortByExternalIdOrder = (
   data: any[],
@@ -62,7 +62,8 @@ const TaskAccordion: React.FC<TaskAccordionProps> = ({
   const getPillarIcon = (
     pillarName: string,
   ): { icon: string; color: string } => {
-    const lowerName = pillarName.toLowerCase();
+    if(!pillarName) return {icon:"",color:""};
+    const lowerName = pillarName?.toLowerCase();
     if (
       lowerName.includes(PILLAR_NAMES.SOCIAL_EMPOWERMENT) ||
       lowerName.includes(PILLAR_NAMES.EMPOWERMENT)

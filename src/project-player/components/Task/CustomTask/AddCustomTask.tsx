@@ -4,9 +4,9 @@ import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
-import { useProjectContext } from '../../context/ProjectContext';
+import { useProjectContext } from '../../../context/ProjectContext';
 import AddCustomTaskModal from './AddCustomTaskModal';
-import { addCustomTaskStyles } from './Styles';
+import { addCustomTaskStyles } from './styles';
 import { AddCustomTaskProps } from 'src/project-player/types';
 
 const AddCustomTask: React.FC<AddCustomTaskProps> = ({
@@ -37,7 +37,7 @@ const AddCustomTask: React.FC<AddCustomTaskProps> = ({
     <>
       {/* Add Task Button */}
       <Button
-      // @ts-ignore 
+      // @ts-ignore
         variant="outlineghost"
         mb="$4" onPress={handleOpenModal}
       >

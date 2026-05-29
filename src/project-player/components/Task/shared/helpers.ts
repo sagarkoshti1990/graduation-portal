@@ -1,4 +1,4 @@
-import { TASK_STATUS } from '../../../constants/app.constant';
+import { TASK_STATUS } from '../../../../constants/app.constant';
 
 /**
  * Calculate UI configuration for task card rendering

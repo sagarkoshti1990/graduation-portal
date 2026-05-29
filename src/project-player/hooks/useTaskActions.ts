@@ -8,12 +8,24 @@ import { PARTICIPANT_KEYS } from '../../../src/constants/STORAGE_KEYS';
 import type { PendingFile } from '../../../src/types/offline';
 import { NormalizedFile } from '../types';
 
-/** Converts a browser File to a base64 data-URL for persistent offline storage. */
-export async function fileToBase64(file: NormalizedFile): Promise<string> {
+export async function fileToBase64(
+  file: NormalizedFile
+): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
-      // WEB FILE
-      if (typeof File !== "undefined" && file instanceof File) {
+      // ✅ Already base64 available
+      if (file?.base64) {
+        resolve(file.base64);
+        return;
+      }
+
+      // ✅ WEB FILE SUPPORT
+      const webFile = file?.file || file;
+
+      if (
+        typeof File !== "undefined" &&
+        webFile instanceof File
+      ) {
         const reader = new FileReader();
 
         reader.onload = () => {
@@ -24,17 +36,31 @@ export async function fileToBase64(file: NormalizedFile): Promise<string> {
           reject(error);
         };
 
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(webFile);
         return;
       }
 
-      // ALREADY BASE64
-      if (file?.base64) {
-        resolve(file.base64);
+      // ✅ REACT NATIVE SUPPORT
+      // if originalFile contains base64
+      if (file?.originalFile?.base64) {
+        resolve(file.originalFile.base64);
         return;
       }
 
-      reject(new Error("Unsupported file type"));
+      // if uri itself is base64
+      if (
+        file?.uri &&
+        file.uri.startsWith("data:")
+      ) {
+        resolve(file.uri);
+        return;
+      }
+
+      reject(
+        new Error(
+          "Unsupported file type or base64 not available"
+        )
+      );
     } catch (error) {
       reject(error);
     }
@@ -82,7 +108,6 @@ export const useTaskActions = () => {
               const existingNames = new Set(existing.map(p => p.fileName));
 
               const newEntries: PendingFile[] = [];
-
               for (const file of files) {
                 if (existingNames.has(file.name)) continue;
                 // Unique key: timestamp + original name avoids collisions on re-upload
@@ -90,11 +115,13 @@ export const useTaskActions = () => {
                   participantId,
                   `${Date.now()}_${file.name}`,
                 );
+
                 // Persist content for deferred upload
                 try {
                   const base64 = await fileToBase64(file);
                   await offlineStorage.create(storageKey, base64);
-                } catch { /* non-fatal: sync will skip if blob is missing */ }
+                  console.log(storageKey,"sagar 3")
+                } catch (e:any) { console.log("error",e.message) /* non-fatal: sync will skip if blob is missing */ }
 
                 newEntries.push({
                   taskId,
@@ -125,26 +152,16 @@ export const useTaskActions = () => {
           const uploaded = await uploadFiles(taskId, files);
           if (uploaded.data?.length > 0) {
             attachments = [...attachments, ...uploaded.data];
+          } else {
+            return { success: false, data: undefined };
           }
         }
       }
 
       try {
-        const updateData: any = { status };
-        if(!isOffline && files.length > 0) {
-          const data = await uploadFiles(taskId, files);
-          if(data.data.length > 0) {
-            updateData.attachments = [...attachments,...data.data];
-            await updateTask(taskId,participantId, updateData);
-            return { success: true, data: updateData };
-          } else {
-            return { success: false, data: undefined };
-          }
-        } else {
-          updateData.attachments = attachments;
-          await updateTask(taskId,participantId, updateData);
-          return { success: true, data: updateData };
-        }
+        const updateData: any = { status, attachments };
+        await updateTask(taskId, participantId, updateData);
+        return { success: true, data: updateData };
       } catch {
         return { success: false, data: undefined };
       }
