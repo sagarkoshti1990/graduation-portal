@@ -120,7 +120,6 @@ export const useTaskActions = () => {
                 try {
                   const base64 = await fileToBase64(file);
                   await offlineStorage.create(storageKey, base64);
-                  console.log(storageKey,"sagar 3")
                 } catch (e:any) { console.log("error",e.message) /* non-fatal: sync will skip if blob is missing */ }
 
                 newEntries.push({

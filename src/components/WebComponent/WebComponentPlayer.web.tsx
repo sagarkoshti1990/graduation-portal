@@ -37,7 +37,7 @@ export function buildCssFromObject(cssObj: Record<string, Record<string, string>
     .join(' ');
 }
 
-const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }) => {
+const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast,_getOfflineData }) => {
   const playerRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -274,6 +274,8 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
             }
           }
         }
+      } else if (event.detail.type === 'QUESTIONNAIRE_SAVE') {
+        _getOfflineData(event.detail.data)
       } else if (event.detail.type === 'TOAST') {
         _getToast(event.detail.data);
       }
@@ -288,7 +290,7 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
         playerElement.removeEventListener('postMessage', handleCustomEvent as EventListener);
       }
     };
-  }, [loading, _getProgress, afterSubmitCallback, _getToast]);
+  }, [loading, _getProgress, afterSubmitCallback, _getToast,_getOfflineData]);
 
   if(loading) {
     return <ActivityIndicator size="large" color="#007AFF" />;

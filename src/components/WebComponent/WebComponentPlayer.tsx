@@ -32,7 +32,7 @@ interface PlayerConfigProps {
 }
 
 const WebComponentPlayer = React.memo(
-  ({styleObject={}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }: PlayerConfigProps) => {
+  ({styleObject={}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast,_getOfflineData }: PlayerConfigProps) => {
     const [loading, setLoading] = useState(true);
     const webViewRef = useRef<any>(null);
     // Native platform: Inject questionnaire-webcomponent into WebView
@@ -240,6 +240,10 @@ const WebComponentPlayer = React.memo(
             }
           }
         }
+      } else if (message.type === 'QUESTIONNAIRE_SAVE') {
+        // _getOfflineData(message)
+        console.log(message)
+        // _getToast(message.data);
       } else if (message.type === 'TOAST') {
         _getToast(message.data);
       }

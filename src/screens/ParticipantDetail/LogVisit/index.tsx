@@ -51,7 +51,8 @@ const LogVisit: React.FC = () => {
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
-          "filter[keywords]": FILTER_KEYWORDS.LOG_VISIT.join(',')
+          "filter[keywords]": FILTER_KEYWORDS.LOG_VISIT.join(','),
+          participantId:route.params?.id
         });
         setSolutions(data);
         if (route.params?.id) {

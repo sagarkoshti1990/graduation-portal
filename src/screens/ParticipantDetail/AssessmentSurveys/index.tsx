@@ -49,9 +49,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         // Load from the per-participant solutions mapping written during download.
         // No API calls are made offline.
         if (isOffline) {
-          const storedEntries = await offlineStorage.read<OfflineSolutionEntry[]>(
-            PARTICIPANT_KEYS.solutions(participantUserId),
-          );
+          const storedEntries = await getTargetedSolutions({
+            type: 'observation',
+            // @ts-ignore
+            'filter[keywords]': (readOnlyAccessStatuses.includes(participant?.status) || (participant?.status === STATUS.IN_PROGRESS && completionPercentage >= GRADUATION_READINESS_PROGRESS_THRESHOLD)) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
+            participantId:participantUserId
+          });
           if (!storedEntries?.length) {
             setSolutions([]);
             return;

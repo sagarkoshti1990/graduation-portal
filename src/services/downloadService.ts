@@ -28,7 +28,7 @@ import {
 } from './participantService';
 import { getTargetedSolutions } from './solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
-import { STATUS } from '@constants/app.constant';
+import { CARD_STATUS, STATUS } from '@constants/app.constant';
 
 /** Called by the download pipeline as each module starts and finishes. */
 export type DownloadProgressCallback = (
@@ -250,6 +250,10 @@ interface ResolvedFormIds {
   submissionId: string;
   submissionNumber: number;
   observationId: string;
+  name:string;
+  keywords:string[];
+  solutionId: string;
+  keyword: string;
 }
 
 /**
@@ -294,6 +298,26 @@ async function fetchAndStoreProject(participantId: string, projectId: string): P
   return tasks;
 }
 
+const getSubmissionNumber = (
+  submissions: {
+    submissionNumber?: number;
+    status?: string;
+  }[] = []
+): number => {
+  if (!submissions.length) return 1;
+
+  const highestSubmission = submissions.reduce((prev, current) =>
+    (current.submissionNumber || 0) >
+    (prev.submissionNumber || 0)
+      ? current
+      : prev
+  );
+
+  return highestSubmission?.status === CARD_STATUS.COMPLETED
+    ? (highestSubmission.submissionNumber || 0) + 1
+    : highestSubmission.submissionNumber || 1;
+};
+
 /**
  * Core form download: resolves the entity, ensures a submission exists, fetches the
  * assessment schema, and persists everything under PARTICIPANT_KEYS.form(participantId, solutionId).
@@ -310,6 +334,8 @@ async function processObservationForm(
     () => getObservationEntities({ solutionId, profileData: {} }),
     `entities:${solutionId}`,
   );
+  const allowMultipleAssessemts: boolean = entitiesResp?.result?.allowMultipleAssessemts || false
+  let submissionNumber:number = 1;
   const observationId: string = entitiesResp?.result?._id ?? solutionId;
   const entities: any[] = entitiesResp?.result?.entities ?? entitiesResp?.result?.data ?? entitiesResp?.result ?? [];
   const matched = entities.find((e: any) => e.externalId === participantId || e._id === participantId);
@@ -358,12 +384,16 @@ async function processObservationForm(
   }
 
   if (!submissionId) throw new Error(`Could not resolve submissionId for observation "${observationId}"`);
-
+  
+  if(allowMultipleAssessemts) {
+    submissionNumber = getSubmissionNumber(submissions)
+  }
+  
   const evidenceCode: string = submissions[0]?.evidencesStatus?.[0]?.code ?? 'OB';
 
   // Step 4: Fetch assessment schema + existing answers
   const assessmentResp = await withRetry(
-    () => getObservationSolution({ observationId, entityId: entityId!, submissionNumber: 1, evidenceCode }),
+    () => getObservationSolution({ observationId, entityId: entityId!, submissionNumber, evidenceCode }),
     `assessment:${observationId}`,
   );
   const schema = assessmentResp?.result ?? assessmentResp ?? null;
@@ -378,7 +408,7 @@ async function processObservationForm(
   const formData: ObservationFormData = {
     entityId: entityId!,
     submissionId,
-    submissionNumber: 1,
+    submissionNumber,
     observationId,
     schema,
     data: schema?.submission?.answers ?? assessmentResp?.result?.submission?.answers ?? {},
@@ -420,8 +450,8 @@ async function fetchAndStoreSolutionForms(
   participantName: string,
   keywords: string[],
   moduleKey: string,
-): Promise<Array<ResolvedFormIds & { solutionId: string; keyword: string; keywords:string[] }>> {
-  const results: Array<ResolvedFormIds & { solutionId: string; keyword: string, keywords:string[] }> = [];
+): Promise<Array<ResolvedFormIds>> {
+  const results: Array<ResolvedFormIds> = [];
   const solutions = await getTargetedSolutions({
     type: 'observation',
     'filter[keywords]': keywords.join(','),
@@ -437,7 +467,7 @@ async function fetchAndStoreSolutionForms(
         () => processObservationForm(participantId, participantName, solution.solutionId),
         `solutionForm:${solution.solutionId}`,
       );
-      results.push({ ...resolved, solutionId: solution.solutionId, keyword: moduleKey,keywords });
+      results.push({ ...solution,...resolved, keyword: moduleKey });
     } catch (err) {
       logger.error(`DownloadService: Failed to store form for solution "${solution.solutionId}"`, err);
     }
@@ -627,7 +657,7 @@ export const startDownload = async ({
     // HH (householdProfile): matched from the project task list.
     // All others: fetched via the targeted solutions API using their FILTER_KEYWORDS constants.
     // Collect resolved IDs for each form so we can save the solutions mapping at the end.
-    const solutionEntries: OfflineSolutionEntry[] = [];
+    let solutionEntries: OfflineSolutionEntry[] = [];
 
     for (const module of OBSERVATION_SOLUTION_DOWNLOAD_MAP) {
       if (!downloadConfig.observation[module.configKey]) continue;
@@ -641,8 +671,9 @@ export const startDownload = async ({
             const resolved = await processObservationTask(participantId, participantName, task);
             if (resolved) {
               solutionEntries.push({
+                name:resolved.name,
                 keyword: module.moduleKey,
-                keywords: module.keywords,
+                keywords: resolved.keywords,
                 solutionId: resolved.solutionId,
                 submissionId: resolved.submissionId,
                 submissionNumber: resolved.submissionNumber,
@@ -658,18 +689,7 @@ export const startDownload = async ({
             module.keywords,
             module.moduleKey,
           );
-          
-          for (const r of resolved) {
-            solutionEntries.push({
-              keyword: r.keyword,
-              keywords: r.keywords,
-              solutionId: r.solutionId,
-              submissionId: r.submissionId,
-              submissionNumber: r.submissionNumber,
-              observationId: r.observationId,
-              entityId: r.entityId,
-            });
-          }
+          solutionEntries = [...solutionEntries,...resolved];
         }
         await markComplete(participantId, module.moduleKey);
         onProgress?.(module.moduleKey, 'completed');

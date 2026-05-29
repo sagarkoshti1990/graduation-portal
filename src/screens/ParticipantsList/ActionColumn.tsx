@@ -93,6 +93,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const [customDropoutReason, setCustomDropoutReason] = useState('');
   const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
+  const [isOffline,setIsOffline] = useState(false);
 
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
@@ -150,43 +151,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
       setLogVisitLoading(true);
       try {
-        const isOffline = dataService.isNetworkOffline();
-
-        if (isOffline && false) {
-          // Read the participant's cached project and find the log-visit observation task
-          const project = await offlineStorage.read<any>(PARTICIPANT_KEYS.project(participant.userId,"123"));
-          const tasks: any[] = project?.tasks
-            ?? (project?.children ?? []).flatMap((c: any) => c.tasks ?? []);
-
-          const logVisitTask = tasks.find((t: any) => {
-            if (t.type !== 'observation') return false;
-            const name = (t.name ?? '').toLowerCase();
-            return name.includes('log visit') || name.includes('logvisit') || name.includes('log_visit');
-          });
-
-          let solutionId: string =
-            logVisitTask?.solutionDetails?._id ??
-            logVisitTask?.solutionDetails?.observationId ??
-            logVisitTask?.solutionDetails?.id ?? '';
-
-          if(solutionId) {
-            const fakeSolution = { solutionId, id: solutionId };
-            setSolutions([fakeSolution] as any);
-            if (modalType === 'view-check-ins-Logs') {
-              navigation.navigate('check-ins-list', {
-                id: participant.userId as string,
-                solutionId,
-              });
-            } else {
-              setSelectedSolutionId(solutionId);
-            }
-          } else {
-            setSolutions([]);
-            setSelectedSolutionId('');
-          }
-          return;
-        }
-
+        const isOfflineData = dataService.isNetworkOffline();
+        setIsOffline(isOfflineData)
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
@@ -340,14 +306,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   // Build menu items — always include Download Offline (Section 8.5)
   const menuItemsWithDownload = [
     ...getParticipantsMenuItems,
-    {
+    ...(!isOffline ?
+    [{
       key: 'download',
       label: 'actions.downloadOffline',
       textValue: 'Download Offline',
       iconName: 'Download',
       iconColor: theme.tokens.colors.textForegroundColor,
       iconSizeValue: 20,
-    },
+    }]:[]),
   ] as typeof getParticipantsMenuItems;
 
   return (
@@ -594,7 +561,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             </VStack>
           </VStack>
         )}
-
+        
         {(modalType === 'log-visit' || modalType === 'view-log') && (
           <Box flex={1} minHeight={400}>
             {logVisitLoading ? (

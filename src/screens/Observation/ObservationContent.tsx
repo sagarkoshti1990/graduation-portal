@@ -21,6 +21,7 @@ import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type { ObservationFormData } from '@app-types/offline';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 interface ObservationData {
   entityId: string;
@@ -71,7 +72,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   const [mockData, setMockData] = useState<any>();
   const [submission, setSubmission] = useState<any>(null);
   const taskAutoCompletedRef = useRef(false);
-
+  
   useEffect(() => {
     taskAutoCompletedRef.current = false;
   }, [taskId, participant]);
@@ -359,11 +360,46 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [showAlert],
   );
 
+  const handleOfflineData = useCallback(async (data:any)=>{
+    // const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+console.log(data)
+    // if (participantKey && observation?.observationId && submission?._id) {
+    //   try {
+    //     const answers = event?.data ?? event?.answers ?? event?.result?.answers ?? {};
+    //     await dataService.saveFormEdits(participantKey, observation.observationId, {
+    //       submissionId: submission._id,
+    //       data: answers,
+    //       updatedAt: new Date().toISOString(),
+    //     });
+    //     logger.info('ObservationContent: form edits saved for sync');
+    //   } catch (err) {
+    //     logger.warn('ObservationContent: failed to save form edits', err);
+    //   }
+
+    //   // Auto-mark the linked task as completed when offline
+    //   if (dataService.isNetworkOffline() && taskId) {
+    //     try {
+    //       await dataService.saveTaskEdit(participantKey, {
+    //         _id: taskId,
+    //         status: TASK_STATUS.COMPLETED,
+    //       });
+    //       logger.info('ObservationContent: task auto-marked completed offline', taskId);
+    //     } catch (err) {
+    //       logger.warn('ObservationContent: failed to auto-mark task complete', err);
+    //     }
+    //   }
+    // }
+    handleBackPress();
+  },[
+    // participant, observation?.observationId, submission?._id, taskId
+  ])
+
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
     () => ({
       // @ts-ignore - process.env is injected by webpack DefinePlugin on web
       baseURL: `${process.env.API_BASE_URL}/api`,
+      offline: isNetworkOffline(),
       fileSizeLimit: 50,
       userAuthToken: token,
       solutionType: 'observation' as const,
@@ -398,39 +434,9 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   // When offline and a taskId is provided, also mark that task as completed so the
   // task card reflects the done state without a sync round-trip.
   const handleAfterSubmit = useCallback(async (event?: any) => {
-    logger.info('ObservationContent: afterSubmit event', event);
-
-    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
-
-    if (participantKey && observation?.observationId && submission?._id) {
-      try {
-        const answers = event?.data ?? event?.answers ?? event?.result?.answers ?? {};
-        await dataService.saveFormEdits(participantKey, observation.observationId, {
-          submissionId: submission._id,
-          data: answers,
-          updatedAt: new Date().toISOString(),
-        });
-        logger.info('ObservationContent: form edits saved for sync');
-      } catch (err) {
-        logger.warn('ObservationContent: failed to save form edits', err);
-      }
-
-      // Auto-mark the linked task as completed when offline
-      if (dataService.isNetworkOffline() && taskId) {
-        try {
-          await dataService.saveTaskEdit(participantKey, {
-            _id: taskId,
-            status: TASK_STATUS.COMPLETED,
-          });
-          logger.info('ObservationContent: task auto-marked completed offline', taskId);
-        } catch (err) {
-          logger.warn('ObservationContent: failed to auto-mark task complete', err);
-        }
-      }
-    }
-
+    logger.info('event', event);
     handleBackPress();
-  }, [participant, observation?.observationId, submission?._id, taskId, handleBackPress]);
+  }, [handleBackPress]);
 
   return (
     <>
@@ -463,6 +469,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
               <WebComponentPlayer
                 getProgress={handleProgressUpdate}
                 getToast={handleToast}
+                _getOfflineData={handleOfflineData}
                 // @ts-ignore - afterSubmitCallback exists in web version
                 afterSubmitCallback={handleAfterSubmit}
                 playerConfig={playerConfigMemoized}
