@@ -12,11 +12,11 @@ import {
   ButtonIcon,
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
-import { theme } from '../../../config/theme';
+import { theme } from '@config/theme';
 import Modal from '@ui/Modal';
 import { useLanguage } from '@contexts/LanguageContext';
-import { evidencePreviewModalStyles as styles } from './Styles';
-import { EvidencePreviewModalProps, EvidenceAttachment } from '../../types/components.types';
+import { evidencePreviewModalStyles as styles } from './styles';
+import { EvidencePreviewModalProps, EvidenceAttachment } from '../../../types/components.types';
 import logger from '@utils/logger';
 import { openDownload } from '@utils/helper';
 
@@ -78,7 +78,7 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
                 {/* Download button */}
                 {attachment?.url &&
                   <Button
-                  // @ts-ignore  
+                  // @ts-ignore
                   variant="ghost"
                     onPress={() => openDownload(attachment?.url || "")}
                   >

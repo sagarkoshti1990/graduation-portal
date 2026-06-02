@@ -13,11 +13,15 @@ import {
 import { useLanguage } from '@contexts/LanguageContext';
 import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
+import dataService from '../../services/dataService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import type { ObservationFormData } from '@app-types/offline';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 interface ObservationData {
   entityId: string;
@@ -32,6 +36,8 @@ interface ObservationContentProps {
   participant?: ParticipantData;
   solutionId: string;
   submissionNumber?: number;
+  /** Task ID passed from TaskCard navigation — used to auto-mark task complete offline when form is submitted. */
+  taskId?: string;
   onClose?: () => void;
   showAlert: (type: string, message: string, options?: any) => void;
   defaultValues?: any;
@@ -49,6 +55,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   participant,
   solutionId,
   submissionNumber,
+  taskId,
   onClose,
   showAlert,
   userData,
@@ -64,6 +71,22 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   const [token, setToken] = useState<string | null>(null);
   const [mockData, setMockData] = useState<any>();
   const [submission, setSubmission] = useState<any>(null);
+  const taskAutoCompletedRef = useRef(false);
+  
+  useEffect(() => {
+    taskAutoCompletedRef.current = false;
+  }, [taskId, participant]);
+
+  useEffect(() => {
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+    if (progress === 100 && !taskAutoCompletedRef.current && dataService.isNetworkOffline() && taskId && participantKey) {
+      taskAutoCompletedRef.current = true;
+      dataService.saveTaskEdit(participantKey, { _id: taskId, status: TASK_STATUS.COMPLETED })
+        .then(() => logger.info('ObservationContent: task auto-completed at 100% offline', taskId))
+        .catch(err => logger.warn('ObservationContent: failed to auto-complete task at 100%', err));
+    }
+  }, [progress, taskId, participant]);
+
   // Use ref to store progress callback to avoid prop changes causing rerenders
   const progressCallbackRef =
     useRef<
@@ -171,9 +194,39 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   };
 
   useEffect(() => {
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+
     const fetchObservation = async () => {
       const tokenData = await getToken();
       setToken(tokenData);
+
+      // ── OFFLINE PATH: read only from local storage, no API calls ──────────
+      if (dataService.isNetworkOffline()) {
+        if (!participantKey || !solutionId) {
+          showAlert('error', t('offlineSync.dataUnavailable'));
+          setLoadingOff();
+          return;
+        }
+        const formData = await offlineStorage.read<ObservationFormData>(
+          PARTICIPANT_KEYS.form(participantKey, solutionId),
+        );
+        if (formData) {
+          const defaultValues = userData
+            ? buildDefaultValuesFromObservation(formData.schema, userData)
+            : (formData.data ?? {});
+          setDefaultValuesLocal(defaultValues);
+          setMockData(formData.schema);
+          setObservation({ entityId: formData.entityId, observationId: solutionId });
+          setSubmission({ _id: formData.submissionId, submissionNumber: formData.submissionNumber });
+          setLoadingOff();
+          return;
+        }
+        showAlert('error', t('offlineSync.dataUnavailable'));
+        setLoadingOff();
+        return;
+      }
+
+      // ── ONLINE PATH: existing API flow ─────────────────────────────────────
       try {
         const observationData = await getObservationEntities({
           solutionId,
@@ -239,7 +292,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         setLoadingOff();
       }
     };
-    if (solutionId && participant?.userId) {
+    if (solutionId && participantKey) {
       fetchObservation();
     }
 
@@ -253,7 +306,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       setToken(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solutionId, participant?.userId, submissionNumber]);
+  }, [solutionId, participant, submissionNumber]);
 
   const handleBackPress = useCallback(() => {
     if (onClose) {
@@ -307,11 +360,41 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [showAlert],
   );
 
+  const handleOfflineData = useCallback(async (data:any)=>{
+    const {answers,endTime,evidenceCode,isSubmitted,startTime,status,submissionId} = data || {}
+    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
+    if(answers && submissionId && participantKey) {
+      try {
+        await dataService.saveFormEdits(participantKey, submissionId, {
+          answers,endTime,externalId:evidenceCode,isSubmitted,startTime,status,solutionId
+        });
+        logger.info('ObservationContent: form edits saved for sync');
+      } catch (err) {
+        logger.warn('ObservationContent: failed to save form edits', err);
+      }
+
+      // Auto-mark the linked task as completed when offline
+      if (taskId) {
+        try {
+          await dataService.saveTaskEdit(participantKey,submissionId, {
+            _id: taskId,
+            status: TASK_STATUS.COMPLETED,
+          });
+          logger.info('ObservationContent: task auto-marked completed offline', taskId);
+        } catch (err) {
+          logger.warn('ObservationContent: failed to auto-mark task complete', err);
+        }
+      }
+    }
+    handleBackPress();
+  },[handleBackPress,participant,solutionId,taskId])
+
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
     () => ({
       // @ts-ignore - process.env is injected by webpack DefinePlugin on web
       baseURL: `${process.env.API_BASE_URL}/api`,
+      offline: isNetworkOffline(),
       fileSizeLimit: 50,
       userAuthToken: token,
       solutionType: 'observation' as const,
@@ -326,10 +409,12 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       progressCalculationLevel: 'input' as const,
       mockData: mockData,
       defaultValues: defaultValuesLocal,
+      // Section 5.8: signal web component to use offline form when schema is pre-loaded
+      offlineMode: mockData != null,
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
       showToast: false,
-      saveProgressStorageType: "server",
+      saveProgressStorageType: mockData != null ? "local" : "server",
       showNextTabButton: true,
       dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
@@ -340,10 +425,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
   );
 
-  const handleAfterSubmit = (event?: any) => {
+  // Bridge: save form edits into offlineStorage when web component reports a save/submit.
+  // When offline and a taskId is provided, also mark that task as completed so the
+  // task card reflects the done state without a sync round-trip.
+  const handleAfterSubmit = useCallback(async (event?: any) => {
     logger.info('event', event);
     handleBackPress();
-  };
+  }, [handleBackPress]);
 
   return (
     <>
@@ -376,6 +464,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
               <WebComponentPlayer
                 getProgress={handleProgressUpdate}
                 getToast={handleToast}
+                _getOfflineData={handleOfflineData}
                 // @ts-ignore - afterSubmitCallback exists in web version
                 afterSubmitCallback={handleAfterSubmit}
                 playerConfig={playerConfigMemoized}

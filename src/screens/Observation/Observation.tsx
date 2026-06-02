@@ -3,6 +3,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import ObservationContent from './ObservationContent';
 import { Loader, useAlert } from '@ui';
 import { getParticipantsList } from '../../services/participantService';
+import dataService from '../../services/dataService';
 import { useAuth } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
 import { buildObservationPrefillData } from '@constants/OBSERVATION_PREFILL';
@@ -19,6 +20,7 @@ type ObservationRouteParams = {
   id?: string;
   solutionId?: string;
   submissionNumber?: number;
+  taskId?: string;
 };
 
 /**
@@ -42,6 +44,7 @@ const Observation: React.FC = () => {
   const id = routeParams?.id || '';
   const solutionId = routeParams?.solutionId || '';
   const submissionNumber = routeParams?.submissionNumber;
+  const taskId = routeParams?.taskId;
   const [userData, setUserData] = useState<any>(null);
   const [participant, setParticipant] = useState<ParticipantData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,28 +77,60 @@ const Observation: React.FC = () => {
           setUserData({});
           return;
         } else {
-          const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
-          const newData = userDataResponse?.result?.data?.[0];
+          // Use offline-aware fetch so participant data loads from cache when offline
+          const result = await dataService.getParticipantDetails(id, user?.id as string);
+          const newData = result.data as any;
+
+          if (!newData) {
+            // Online fallback in case the offline cache has no data and
+            // dataService.getParticipantDetails returned null
+            try {
+              const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
+              const fallbackData = userDataResponse?.result?.data?.[0];
+              if (fallbackData) {
+                const { userDetails: ud, ...rest } = fallbackData;
+                const mapped = { ...(ud || {}), ...rest, accountUserStatus: ud?.status };
+                setParticipant(mapped as ParticipantData);
+                setNavbarData({ subtitle: mapped?.name });
+                const alternatePhoneCode = ud?.alternate_phone_code ?? ud?.phone_code;
+                setUserData(buildObservationPrefillData({
+                  facilitatorName: user?.name,
+                  provinceLabel: user?.province?.label,
+                  siteLabel: user?.site?.label,
+                  participantName: mapped?.name,
+                  nationalIdLabel: ud?.national_id?.label || '',
+                  phoneCode: ud?.phone_code,
+                  phone: ud?.phone,
+                  alternatePhoneCode,
+                  email: ud?.email,
+                }, formatCountryCode));
+              }
+            } catch { /* ignore — participant stays undefined */ }
+            return;
+          }
+
           setParticipant(newData as ParticipantData);
-          setNavbarData({
-            subtitle: newData?.name,
-          });
+          setNavbarData({ subtitle: newData?.name });
+
+          // Cached data is already flattened (userDetails merged); fields may also,
+          // live under userDetails when reading raw API response as fallback.
+          const ud = newData?.userDetails;
           const alternatePhoneCode =
-            newData?.userDetails?.alternate_phone_code ??
-            newData?.userDetails?.phone_code ?? "27";
+            ud?.alternate_phone_code ?? ud?.phone_code ??
+            newData?.alternate_phone_code ?? newData?.phone_code;
           const preFillData = buildObservationPrefillData({
             facilitatorName: user?.name,
             provinceLabel: user?.province?.label,
             siteLabel: user?.site?.label,
             participantName: newData?.name,
-            nationalIdLabel: newData?.userDetails?.national_id?.label || "",
-            phoneCode: newData?.userDetails?.phone_code || 27,
-            phone: newData?.userDetails?.phone,
+            nationalIdLabel: (ud?.national_id?.label || newData?.national_id?.label) || '',
+            phoneCode: ud?.phone_code ?? newData?.phone_code,
+            phone: ud?.phone ?? newData?.phone,
             alternatePhoneCode,
-            email: newData?.userDetails?.email,
+            email: ud?.email ?? newData?.email,
             gender: newData?.userDetails?.gender?.label || "",
-            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-")
-  : ""          }, formatCountryCode);
+            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-") : ""
+          }, formatCountryCode);
           setUserData(preFillData);
         }
       } catch (error: any) {
@@ -130,6 +165,7 @@ const Observation: React.FC = () => {
       participant={participant}
       solutionId={solutionId}
       submissionNumber={submissionNumber}
+      taskId={taskId}
       onClose={handleBackPress}
       showAlert={(type, message, options) => showAlert(type as any, message, options)}
       userData={userData}

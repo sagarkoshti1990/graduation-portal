@@ -74,6 +74,9 @@ import {
   UserPlus,
   Users,
   UserX,
+  WifiOff,
+  Wifi,
+  CloudUpload,
   X,
   XCircle,
 } from 'lucide-react-native';
@@ -168,6 +171,9 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   UserPlus,
   Users,
   UserX,
+  WifiOff,
+  Wifi,
+  CloudUpload,
   X,
   XCircle,
 };

@@ -4,11 +4,14 @@ import { HStack, Box, Container, ReadMoreAlert } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
-  getParticipantsList,
   getSolutionWithEntityStatus,
   // getSitesByProvince,
   // verifyParticipantCompletionActions
 } from '../../services/participantService';
+import dataService from '../../services/dataService';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import type { OfflineSolutionEntry } from '@app-types/offline';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '../../hooks';
 import NotFound from '@components/NotFound';
@@ -79,9 +82,8 @@ export default function ParticipantDetail() {
     undefined,
   );
   const [hasProgressBaseline, setHasProgressBaseline] = useState(false);
-  const [configData, setConfigData] = useState<any>(null);
-  const [projectPlayerConfigData, setProjectPlayerConfigData] = useState<ProjectPlayerData | null>(null);
   const isFetchingRef = useRef(false);
+  const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
@@ -104,15 +106,19 @@ export default function ParticipantDetail() {
     if (participantId && user?.id && !isFetchingRef.current) {
       try {
         isFetchingRef.current = true;
-        const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
-        const { userDetails, ...rest } = response?.result?.data?.[0]
-        let participantData = { ...(userDetails || {}), ...rest, accountUserStatus: userDetails?.status }
+        const result = await dataService.getParticipantDetails(participantId, user.id);
 
-        setParticipant(participantData);
-        setNavbarData({
-          subtitle: participantData?.name,
-        });
-        setStatus(participantData?.status);
+        if (result.isOffline && !result.offlineDataAvailable) {
+          setIsOfflineUnavailable(true);
+          setParticipant(undefined);
+          setStatus('');
+        } else {
+          setIsOfflineUnavailable(false);
+          const participantData = result.data as any;
+          setParticipant(participantData);
+          setNavbarData({ subtitle: participantData?.name });
+          setStatus(participantData?.status);
+        }
       } catch (error) {
         logger.log(error);
       } finally {
@@ -138,10 +144,9 @@ export default function ParticipantDetail() {
         setAreAllTasksCompleted(false);
         setUpdatedProgress(undefined);
         setHasProgressBaseline(false);
-        setConfigData(null);
-        setProjectPlayerConfigData(null);
         setIsLoading(true);
-        setChallenges(undefined)
+        setChallenges(undefined);
+        setIsOfflineUnavailable(false);
         setRefComponent?.(undefined)
       };
     }, [fetchEntityDetails, setNavbarData])
@@ -163,53 +168,38 @@ export default function ParticipantDetail() {
     setHasProgressBaseline(false);
   }, [participantId]);
 
-  // Update configData and ProjectPlayerConfigData when participant or status changes
-  useEffect(() => {
-    if (!participant) {
-      setConfigData(null);
-      setProjectPlayerConfigData(null);
-      return;
-    }
-
-    // Determine ProjectPlayer config and data based on participant status
-    const config = PROJECT_PLAYER_CONFIGS;
-    const selectedMode = MODE.editMode;
-
-    const newConfigData = {
-      ...config,
-      ...selectedMode,
-      showAddCustomTaskButton: false,
-      profileInfo: participant,
-    };
-
-    const newProjectPlayerConfigData: ProjectPlayerData = {
-      projectId: status === STATUS.IN_PROGRESS
-        ? participant?.idpProjectId
-        : status === STATUS.NOT_ENROLLED
-          ? participant?.onBoardedProjectId
-          : participant?.onBoardedProjectId,
-      entityId: participant?.entityId,
-      userStatus: participant?.status,
-      province: participant?.province?.value
-    };
-
-    setConfigData(newConfigData);
-    setProjectPlayerConfigData(newProjectPlayerConfigData);
-
-    // Cleanup function: clear state when component unmounts or dependencies change
-    return () => {
-      setConfigData(null);
-      setProjectPlayerConfigData(null);
-    };
-  }, [participant, status]);
   useEffect(() => {
     const fetchSolutions = async () => {
+      // When offline, load solutions from the per-participant downloaded mapping.
+      // The global targeted-solutions cache may be empty; the participant mapping
+      // is always populated during download and has the correct solutionId/keyword data.
+      if (dataService.isNetworkOffline()) {
+        if (participantId) {
+          const stored = await offlineStorage.read<OfflineSolutionEntry[]>(
+            PARTICIPANT_KEYS.solutions(participantId),
+          );
+          if (stored?.length) {
+            setSolutions(
+              stored.map(e => ({
+                _id: e.observationId,
+                id: e.observationId,
+                solutionId: e.solutionId,
+                keywords: [e.keyword],
+                name: e.keyword,
+                description: '',
+              })),
+            );
+          }
+        }
+        return;
+      }
+
       let keywordsString = `${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`;
-      
+
       if(participant?.status === STATUS.IN_PROGRESS && updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
         keywordsString += `,${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')}`;
       }
-      
+
       if(participant?.status === STATUS.IN_PROGRESS) {
         keywordsString += `,${FILTER_KEYWORDS.LOG_VISIT.join(',')}`;
       }
@@ -324,6 +314,11 @@ export default function ParticipantDetail() {
     return <Loader fullScreen message="Loading participant details..." />;
   }
 
+  // Error State: Offline and no cached data
+  if (isOfflineUnavailable) {
+    return <NotFound message="offlineSync.dataUnavailable" />;
+  }
+
   // Error State: Participant Not Found
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
@@ -360,15 +355,14 @@ export default function ParticipantDetail() {
         {showOnboardingProject ? (
           <>
             <DownloadFormsCard mode={showOnboardingProject === "not_enrolled" ? "edit" : "read-only"} />
-            {configData && projectPlayerConfigData && (
-              <ProjectPlayer
-                key={`project-player-${participantId}`}
-                config={{...configData, mode: showOnboardingProject === "not_enrolled" ? "edit" : "read-only"}}
-                data={projectPlayerConfigData}
-                onTaskCompletionChange={setAreAllTasksCompleted}
-                onProgressChange={handleProgressChange}
-              />
-            )}
+            <InterventionPlan
+              key={`project-player-${participantId}`}
+              participantStatus={status as ParticipantStatus}
+              participantId={participant?.id}
+              participantProfile={participant}
+              onTaskCompletionChange={setAreAllTasksCompleted}
+              getProjectData={setProjectData}
+            />
           </>
         ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan

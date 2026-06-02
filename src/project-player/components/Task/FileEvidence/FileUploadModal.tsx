@@ -19,9 +19,9 @@ import { LucideIcon } from '@ui';
 import { requestCameraPermission, requestStoragePermission } from '@utils/permissions';
 import { usePlatform } from '@utils/platform';
 import Modal from '@components/ui/Modal';
-import { fileUploadModalStyles } from './Styles';
-import { UploadMethodOptionProps, FileUploadModalProps } from '../../types/components.types';
-import { formatFileSize } from '../../utils/taskUtils';
+import { fileUploadModalStyles } from './styles';
+import { UploadMethodOptionProps, FileUploadModalProps } from '../../../types/components.types';
+import { formatFileSize } from '../../../utils/taskUtils';
 import { openFilePicker } from './file-picker';
 
 

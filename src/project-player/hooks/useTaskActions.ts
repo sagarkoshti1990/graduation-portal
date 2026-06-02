@@ -2,43 +2,175 @@ import { useCallback } from 'react';
 import { useProjectContext } from '../context/ProjectContext';
 import { Attachment, TaskStatus } from '../types/project.types';
 import { uploadFiles } from '../services/projectPlayerService';
+import dataService from '../../../src/services/dataService';
+import offlineStorage from '../../../src/services/offlineStorage';
+import { PARTICIPANT_KEYS } from '../../../src/constants/STORAGE_KEYS';
+import type { PendingFile } from '../../../src/types/offline';
+import { NormalizedFile } from '../types';
+
+export async function fileToBase64(
+  file: NormalizedFile
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
+      // ✅ Already base64 available
+      if (file?.base64) {
+        resolve(file.base64);
+        return;
+      }
+
+      // ✅ WEB FILE SUPPORT
+      const webFile = file?.file || file;
+
+      if (
+        typeof File !== "undefined" &&
+        webFile instanceof File
+      ) {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          resolve(reader.result as string);
+        };
+
+        reader.onerror = (error) => {
+          reject(error);
+        };
+
+        reader.readAsDataURL(webFile);
+        return;
+      }
+
+      // ✅ REACT NATIVE SUPPORT
+      // if originalFile contains base64
+      if (file?.originalFile?.base64) {
+        resolve(file.originalFile.base64);
+        return;
+      }
+
+      // if uri itself is base64
+      if (
+        file?.uri &&
+        file.uri.startsWith("data:")
+      ) {
+        resolve(file.uri);
+        return;
+      }
+
+      reject(
+        new Error(
+          "Unsupported file type or base64 not available"
+        )
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export const normalizeFiles = (
+  files: any[] = []
+): NormalizedFile[] => {
+  return files.map((file) => ({
+    name: file?.name || file?.fileName || "",
+    size: file?.size || file?.fileSize || 0,
+    type: file?.type || "",
+    uri: file?.uri || file?.path || "",
+    file: file instanceof File ? file : undefined,
+    originalFile: file,
+  }));
+};
 
 export const useTaskActions = () => {
-  const { updateTask, mode, setTaskAddedToPlan, setTaskPlanActionPerformed } =
+  const { updateTask, mode, setTaskAddedToPlan, setTaskPlanActionPerformed, projectData } =
     useProjectContext();
 
   const canEdit = mode === 'edit';
+  // externalId is the participant ID stored in the project
+  const participantId = (projectData as any)?.entityInformation?.externalId as string | undefined;
 
   const handleStatusChange = useCallback(
-    async (taskId: string, status: TaskStatus, files: File[] = [],excludedFiles:Attachment[]=[]) => {
-      if (!canEdit) return;
-      try {
-        const updateData: any = { status };
-        let attachments: Attachment[] = excludedFiles;
-        if(files.length > 0) {
-          const data = await uploadFiles(taskId, files);
-          if(data.data.length > 0) {
-            updateData.attachments = [...attachments,...data.data];
-            await updateTask(taskId, updateData);
-            return { success: true, data: updateData };
+    async (taskId: string, status: TaskStatus, files1: NormalizedFile[] = [], excludedFiles: Attachment[] = []) => {
+      if (!canEdit || !participantId) return;
+
+      const files = normalizeFiles(files1);
+      const isOffline = dataService.isNetworkOffline();
+      let attachments: Attachment[] = [...excludedFiles];
+
+      if (files.length > 0) {
+        if (isOffline) {
+          // Store file content as base64 and queue a structured PendingFile entry so
+          // syncService can upload the real bytes and patch the server URL after sync.
+          if (participantId) {
+            try {
+              const existing = await offlineStorage.read<PendingFile[]>(
+                PARTICIPANT_KEYS.filesPending(participantId),
+              ) ?? [];
+              const existingNames = new Set(existing.map(p => p.fileName));
+
+              const newEntries: PendingFile[] = [];
+              for (const file of files) {
+                if (existingNames.has(file.name)) continue;
+                // Unique key: timestamp + original name avoids collisions on re-upload
+                const storageKey = PARTICIPANT_KEYS.fileBlob(
+                  participantId,
+                  `${Date.now()}_${file.name}`,
+                );
+
+                // Persist content for deferred upload
+                try {
+                  const base64 = await fileToBase64(file);
+                  await offlineStorage.create(storageKey, base64);
+                } catch (e:any) { console.log("error",e.message) /* non-fatal: sync will skip if blob is missing */ }
+
+                newEntries.push({
+                  taskId,
+                  fileName: file.name,       // original name preserved
+                  fileType: file.type ?? '',
+                  storageKey,                // timestamped blob key
+                });
+              }
+
+              if (newEntries.length > 0) {
+                await offlineStorage.create(
+                  PARTICIPANT_KEYS.filesPending(participantId),
+                  [...existing, ...newEntries],
+                );
+              }
+            } catch { /* non-fatal */ }
+          }
+          // Local stubs — url is empty until sync uploads the real file
+          const localStubs: Attachment[] = files.map(f => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            url: '',
+            sourcePath: '',
+          } as unknown as Attachment));
+          attachments = [...attachments, ...localStubs];
+        } else {
+          const uploaded = await uploadFiles(taskId, files);
+          if (uploaded.data?.length > 0) {
+            attachments = [...attachments, ...uploaded.data];
           } else {
             return { success: false, data: undefined };
           }
-        } else {
-          await updateTask(taskId, updateData);
-          return { success: true, data: updateData };
         }
+      }
+
+      try {
+        const updateData: any = { status, attachments };
+        await updateTask(taskId, participantId, updateData);
+        return { success: true, data: updateData };
       } catch {
         return { success: false, data: undefined };
       }
     },
-    [canEdit, updateTask],
+    [canEdit, updateTask, participantId],
   );
 
   const handleFileUpload = useCallback(
     (taskId: string, files: File[]) => {
       if (!canEdit) return;
-      // TODO: Implement file upload logic
       console.log('Upload files:', taskId, files);
     },
     [canEdit],
@@ -47,7 +179,6 @@ export const useTaskActions = () => {
   const handleOpenForm = useCallback(
     (taskId: string) => {
       if (!canEdit) return;
-      // TODO: Implement form opening logic
       console.log('Open form:', taskId);
     },
     [canEdit],
@@ -66,6 +197,6 @@ export const useTaskActions = () => {
     handleStatusChange,
     handleFileUpload,
     handleOpenForm,
-    handleAddToPlan
+    handleAddToPlan,
   };
 };

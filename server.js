@@ -37,7 +37,7 @@ const getCacheControl = filePath => {
   const fileName = path.basename(filePath);
   const extname = String(path.extname(filePath)).toLowerCase();
 
-  if (fileName === 'index.html' || fileName === 'web-app-version.json') {
+  if (fileName === 'index.html' || fileName === 'web-app-version.json' || fileName === 'service-worker.js') {
     return 'no-cache, no-store, must-revalidate';
   }
 

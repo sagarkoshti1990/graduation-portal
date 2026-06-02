@@ -50,13 +50,14 @@ export interface TemplateData {
 }
 
 export interface InterventionPlanProps {
-    participantStatus?: StatusType;
-    participantId?: string;
-    participantName?: string;
-    participantProfile?:any;
-    onIdpCreation?: (projectId?: string) => void;
-    onProgressChange?: (progress: number) => void;
-    getProjectData?: (projectData: ProjectData) => void;
+  participantStatus?: StatusType;
+  participantId?: string;
+  participantName?: string;
+  participantProfile?:any;
+  onIdpCreation?: (projectId?: string) => void;
+  onProgressChange?: (progress: number) => void;
+  getProjectData?: (projectData: ProjectData) => void;
+  onTaskCompletionChange?: (areAllCompleted: boolean) => void;
 }
 
 export interface TemplateData {

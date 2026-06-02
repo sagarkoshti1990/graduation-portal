@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
-import { useTaskActions } from '../../hooks/useTaskActions';
-import { useProjectContext } from '../../context/ProjectContext';
+import { useTaskActions } from '../../../hooks/useTaskActions';
+import { useProjectContext } from '../../../context/ProjectContext';
 import { useLanguage } from '@contexts/LanguageContext';
-import { UploadComponentProps } from '../../types/components.types';
+import { UploadComponentProps } from '../../../types/components.types';
 
 const UploadComponent: React.FC<UploadComponentProps> = ({
   taskId,

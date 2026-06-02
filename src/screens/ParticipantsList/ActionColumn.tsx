@@ -40,6 +40,11 @@ import {
 } from '@app-types/participant';
 import { openDownload } from '@utils/helper';
 import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
+import DownloadConfigModal from '@components/DownloadConfigModal';
+import OfflineBadge from '@components/OfflineBadge';
+import dataService from '../../services/dataService';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
 
 interface ActionColumnProps {
@@ -72,19 +77,23 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 }) => {
   const navigation:any = useNavigation();
   const { t } = useLanguage();
-  const { isMobile } = usePlatform();
+  const { isMobile, isWeb } = usePlatform();
   const { user } = useAuth();
   const { showAlert } = useAlert();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<
-    'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | null
+    'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | 'download' | null
   >(null);
+
+  // Incremented after download completes so OfflineBadge re-reads storage
+  const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
 
   // Dropout modal specific state
   const [selectedDropoutReason, setSelectedDropoutReason] = useState('');
   const [customDropoutReason, setCustomDropoutReason] = useState('');
   const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
+  const [isOffline,setIsOffline] = useState(false);
 
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
@@ -122,6 +131,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         setModalType('dropout');
         setDropoutValidationError('');
         break;
+      case 'download':
+        setModalType('download');
+        break;
       case 'view-check-ins-Logs' :
         setModalType("view-check-ins-Logs")
         break;
@@ -130,20 +142,24 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     }
   };
 
-  // Fetch solutions for log visit modal and auto-select first solution
+  // Fetch solutions for log visit modal and auto-select first solution.
+  // When offline, resolve the log-visit solutionId from the participant's cached project tasks
+  // instead of hitting the API (which would fail without network).
   useEffect(() => {
     const fetchLogVisitSolutions = async () => {
       if (modalType !== 'log-visit' && modalType !== 'view-log' && modalType !== "view-check-ins-Logs") return;
 
       setLogVisitLoading(true);
       try {
+        const isOfflineData = dataService.isNetworkOffline();
+        setIsOffline(isOfflineData)
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
           'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
+          participantId:participant.userId 
         });
         setSolutions(data);
-        // Automatically select the first solution
         if (data && data.length > 0) {
           const firstSolution = data[0];
           if (modalType === 'view-check-ins-Logs') {
@@ -287,9 +303,26 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       ? false
       : participant?.status === STATUS.NOT_ONBOARDED;
 
+  // Build menu items — always include Download Offline (Section 8.5)
+  const menuItemsWithDownload = [
+    ...getParticipantsMenuItems,
+    ...(!isOffline && !isWeb ?
+    [{
+      key: 'download',
+      label: 'actions.downloadOffline',
+      textValue: 'Download Offline',
+      iconName: 'Download',
+      iconColor: theme.tokens.colors.textForegroundColor,
+      iconSizeValue: 20,
+    }]:[]),
+  ] as typeof getParticipantsMenuItems;
+
   return (
     <Box>
-      <HStack {...dataTableStyles.cardActionsSection}>
+      <HStack {...dataTableStyles.cardActionsSection} alignItems="center">
+        {/* Offline availability badge — reads download status from local storage */}
+        <OfflineBadge participantId={participant.userId} refreshKey={badgeRefreshKey} />
+
         {/* @ts-ignore: Back Button */}
         <Button
           // @ts-ignore: variant outlineghost
@@ -318,10 +351,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           <Menu
             items={
               isNotOnboarded
-                ? getParticipantsMenuItems.filter(
+                ? menuItemsWithDownload.filter(
                     e => !(isNotOnboarded && ["actions.logVisit","actions.viewCheckInsLogs"].includes(e?.label || "")),
                   )
-                :  getParticipantsMenuItems.filter(
+                :  menuItemsWithDownload.filter(
                     e => !(["actions.viewLog"].includes(e?.label || "")),
                   )
             }
@@ -335,7 +368,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
       {/* Single Modal - renders different content based on modalType */}
       <Modal
-        isOpen={modalType !== null && modalType !== 'view-check-ins-Logs'}
+        isOpen={modalType !== null && modalType !== 'view-check-ins-Logs' && modalType !== 'download'}
         onClose={handleCloseModal}
         headerContent={
           modalType === 'dropout' ? (
@@ -528,7 +561,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             </VStack>
           </VStack>
         )}
-
+        
         {(modalType === 'log-visit' || modalType === 'view-log') && (
           <Box flex={1} minHeight={400}>
             {logVisitLoading ? (
@@ -583,6 +616,21 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           </Box>
         )}
       </Modal>
+
+      {/* Download Offline modal — outside the main Modal to avoid nesting */}
+      <DownloadConfigModal
+        isOpen={modalType === 'download'}
+        onClose={handleCloseModal}
+        participantId={participant.userId}
+        projectId={(participant as any).idpProjectId}
+        participantStatus={participant.status}
+        participantData={participant}
+        onBoardedProjectId={(participant as any).onBoardedProjectId}
+        onSuccess={() => {
+          setBadgeRefreshKey(k => k + 1);
+          // handleCloseModal();
+        }}
+      />
     </Box>
   );
 };

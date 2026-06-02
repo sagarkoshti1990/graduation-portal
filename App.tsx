@@ -11,6 +11,10 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { GluestackUIProvider, useColorMode, useToken } from '@gluestack-ui/themed';
 import { theme } from './src/config/theme';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { OfflineSyncProvider } from './src/contexts/OfflineSyncContext';
+import OfflineBanner from './src/components/OfflineBanner';
+import OnlineSyncBanner from './src/components/OnlineSyncBanner';
+import SyncOverviewModal from './src/components/SyncOverviewModal';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
 
@@ -35,7 +39,10 @@ function App() {
         barStyle={isDark ? 'dark-content' : 'light-content'}
         backgroundColor={isDark ? backgroundDark : backgroundLight}
       />
+      <OfflineBanner />
+      <OnlineSyncBanner />
       <AppNavigator />
+      <SyncOverviewModal />
     </SafeAreaView>
   );
 }
@@ -56,7 +63,9 @@ const RootApp = () => {
   return (
     <GlobalProvider>
       <LanguageProvider>
-        <AppWrap />
+        <OfflineSyncProvider>
+          <AppWrap />
+        </OfflineSyncProvider>
       </LanguageProvider>
     </GlobalProvider>
   );

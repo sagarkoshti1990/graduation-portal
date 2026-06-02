@@ -1,34 +1,137 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '@utils/logger';
 import { Platform } from 'react-native';
+import { OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
 
 /**
  * Offline Storage Service
- * Provides CRUD operations for offline data storage
- * Works for both React Native (Android/iOS) and Web platforms
+ *
+ * Routing strategy:
+ *   - Web + keys starting with 'participant:', 'participants:', 'sync:' → IndexedDB
+ *     (avoids the 5 MB localStorage cap that AsyncStorage hits on web)
+ *   - Everything else (auth tokens, settings, …)                         → AsyncStorage
+ *     (maps to localStorage on web, which is fine for small values)
+ *
+ * Native (iOS/Android): AsyncStorage is used for all keys.
  */
 
-/**
- * IndexedDB configuration for web platform
- */
+// ---------------------------------------------------------------------------
+// IndexedDB config
+// ---------------------------------------------------------------------------
+
 export interface IndexedDBConfig {
   dbName: string;
   storeName: string;
 }
 
-/**
- * Initialize IndexedDB database
- */
+const OFFLINE_DB_NAME  = 'gbl-offline-db';
+const OFFLINE_DB_STORE = 'offline-data';
+
+// Keys that must go to IndexedDB on web (large blobs, offline participant data)
+const IDB_KEY_PREFIXES: string[] = ['participant:', 'participants:', 'sync:'];
+
+function isIndexedDBKey(key: string): boolean {
+  return Platform.OS === 'web' && IDB_KEY_PREFIXES.some(p => key.startsWith(p));
+}
+
+// ---------------------------------------------------------------------------
+// IndexedDB helpers — single cached connection
+// ---------------------------------------------------------------------------
+
+let _idb: IDBDatabase | null = null;
+
+function openOfflineDB(): Promise<IDBDatabase> {
+  if (_idb) return Promise.resolve(_idb);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { _idb = req.result; resolve(_idb!); };
+    req.onupgradeneeded = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(OFFLINE_DB_STORE)) {
+        db.createObjectStore(OFFLINE_DB_STORE, { keyPath: 'key' });
+      }
+    };
+  });
+}
+
+async function idbWrite(key: string, data: any): Promise<void> {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_DB_STORE], 'readwrite');
+    const store = tx.objectStore(OFFLINE_DB_STORE);
+    const req = store.put({ key, data, updatedAt: Date.now() });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbRead<T>(key: string): Promise<T | null> {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_DB_STORE], 'readonly');
+    const store = tx.objectStore(OFFLINE_DB_STORE);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result?.data ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbRemove(key: string): Promise<void> {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_DB_STORE], 'readwrite');
+    const store = tx.objectStore(OFFLINE_DB_STORE);
+    const req = store.delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGetAllKeys(prefix?: string): Promise<string[]> {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_DB_STORE], 'readonly');
+    const store = tx.objectStore(OFFLINE_DB_STORE);
+    const req = store.openCursor();
+    const keys: string[] = [];
+    req.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (cursor) {
+        const k: string = cursor.value.key;
+        if (!prefix || k.startsWith(prefix)) keys.push(k);
+        cursor.continue();
+      } else {
+        resolve(keys);
+      }
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbClearAll(): Promise<void> {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_DB_STORE], 'readwrite');
+    const store = tx.objectStore(OFFLINE_DB_STORE);
+    const req = store.clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Legacy external-IndexedDB helper (kept for backwards compat)
+// ---------------------------------------------------------------------------
+
 const initIndexedDB = (dbName: string, storeName: string): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     if (Platform.OS !== 'web') {
       return reject(new Error('IndexedDB not available in this environment'));
     }
     const request = indexedDB.open(dbName, 1);
-
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-
     request.onupgradeneeded = event => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(storeName)) {
@@ -38,9 +141,6 @@ const initIndexedDB = (dbName: string, storeName: string): Promise<IDBDatabase> 
   });
 };
 
-/**
- * Read from IndexedDB
- */
 const readFromIndexedDB = async <T>(
   key: string,
   dbName: string,
@@ -52,14 +152,7 @@ const readFromIndexedDB = async <T>(
     const store = transaction.objectStore(storeName);
     const request = store.get(key);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        const result = request.result;
-        if (result && result.data) {
-          resolve(result.data);
-        } else {
-          resolve(null);
-        }
-      };
+      request.onsuccess = () => resolve(request.result?.data ?? null);
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
@@ -68,21 +161,22 @@ const readFromIndexedDB = async <T>(
   }
 };
 
+// ---------------------------------------------------------------------------
+// Public CRUD API
+// ---------------------------------------------------------------------------
+
 /**
- * Create/Update - Save data to storage
- * @param key - Storage key
- * @param data - Data to save (objects/arrays will be JSON stringified, strings saved raw)
- * @returns Promise<void>
+ * Create/Update — save data.
+ * Routes to IndexedDB for participant/sync keys on web; AsyncStorage otherwise.
  */
 export const create = async <T>(key: string, data: T): Promise<void> => {
   try {
-    // Save strings as raw values to avoid extra quotes (for tokens)
-    // Save other types (objects, arrays, etc.) as JSON
-    const valueToStore = typeof data === 'string' 
-      ? data 
-      : JSON.stringify(data);
-    
-    await AsyncStorage.setItem(key, valueToStore);
+    if (isIndexedDBKey(key)) {
+      await idbWrite(key, data);
+    } else {
+      const valueToStore = typeof data === 'string' ? data : JSON.stringify(data);
+      await AsyncStorage.setItem(key, valueToStore);
+    }
     logger.info(`OfflineStorage: Created/Updated key "${key}"`);
   } catch (error) {
     logger.error(`OfflineStorage: Error creating/updating key "${key}"`, error);
@@ -90,49 +184,52 @@ export const create = async <T>(key: string, data: T): Promise<void> => {
   }
 };
 
+
+export const checkStorage = async () => {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const result = await AsyncStorage.multiGet(keys);
+    return {keys,result}
+  } catch (error) {
+    console.log('Storage Error:', error);
+    return {message:'Storage Error:', error}
+  }
+};
+
 /**
- * Read - Get data from storage
- * @param key - Storage key
- * @param indexedDBConfig - Optional IndexedDB configuration for web platform (dbName, storeName)
- * @returns Promise<T | null> - Parsed data or null if not found
+ * Read — retrieve data.
+ * Routes to IndexedDB for participant/sync keys on web; AsyncStorage otherwise.
+ * Legacy `indexedDBConfig` param is still supported for callers that pass it directly.
  */
 export const read = async <T>(
   key: string,
   indexedDBConfig?: IndexedDBConfig
 ): Promise<T | null> => {
   try {
-    // Use IndexedDB for web if config is provided
+    // Legacy: explicit external IndexedDB config
     if (Platform.OS === 'web' && indexedDBConfig) {
-      const data = await readFromIndexedDB<T>(
-        key,
-        indexedDBConfig.dbName,
-        indexedDBConfig.storeName
-      );
-      
-      if (!data) {
-        logger.info(`OfflineStorage: Key "${key}" not found in IndexedDB`);
-        return null;
-      }
-      logger.info(`OfflineStorage: Read key "${key}" from IndexedDB`);
+      const data = await readFromIndexedDB<T>(key, indexedDBConfig.dbName, indexedDBConfig.storeName);
+      if (!data) logger.info(`OfflineStorage: Key "${key}" not found in IndexedDB`);
       return data;
     }
 
-    // Default to AsyncStorage
+    // Automatic routing: large offline keys → IndexedDB
+    if (isIndexedDBKey(key)) {
+      const data = await idbRead<T>(key);
+      if (!data) logger.info(`OfflineStorage: Key "${key}" not found in IDB`);
+      return data;
+    }
+
+    // Default: AsyncStorage (localStorage on web)
     const value = await AsyncStorage.getItem(key);
     if (!value) {
       logger.info(`OfflineStorage: Key "${key}" not found`);
       return null;
     }
-    
-    // Try to parse as JSON, if it fails, return as raw string
     try {
-      const data = JSON.parse(value) as T;
-      logger.info(`OfflineStorage: Read key "${key}"`);
-      return data;
+      return JSON.parse(value) as T;
     } catch {
-      // If JSON.parse fails, it's a raw string (like a token)
-      logger.info(`OfflineStorage: Read raw key "${key}"`);
-      return value as T;
+      return value as unknown as T;
     }
   } catch (error) {
     logger.error(`OfflineStorage: Error reading key "${key}"`, error);
@@ -140,24 +237,20 @@ export const read = async <T>(
   }
 };
 
-/**
- * Update - Update existing data in storage (alias for create)
- * @param key - Storage key
- * @param data - Data to update (will be JSON stringified)
- * @returns Promise<void>
- */
-export const update = async <T>(key: string, data: T): Promise<void> => {
-  return create(key, data);
-};
+/** Update — alias for create. */
+export const update = async <T>(key: string, data: T): Promise<void> => create(key, data);
 
 /**
- * Delete - Remove data from storage
- * @param key - Storage key to remove
- * @returns Promise<void>
+ * Remove — delete a single key.
+ * Routes to IndexedDB for participant/sync keys on web.
  */
 export const remove = async (key: string): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(key);
+    if (isIndexedDBKey(key)) {
+      await idbRemove(key);
+    } else {
+      await AsyncStorage.removeItem(key);
+    }
     logger.info(`OfflineStorage: Deleted key "${key}"`);
   } catch (error) {
     logger.error(`OfflineStorage: Error deleting key "${key}"`, error);
@@ -165,72 +258,51 @@ export const remove = async (key: string): Promise<void> => {
   }
 };
 
-/**
- * Delete Multiple - Remove multiple keys from storage
- * @param keys - Array of storage keys to remove
- * @returns Promise<void>
- */
+/** Remove multiple keys (each routed individually). */
 export const removeMultiple = async (keys: string[]): Promise<void> => {
   try {
-    await AsyncStorage.multiRemove(keys);
+    await Promise.all(keys.map(k => remove(k)));
     logger.info(`OfflineStorage: Deleted ${keys.length} keys`);
   } catch (error) {
-    logger.error(`OfflineStorage: Error deleting multiple keys`, error);
+    logger.error('OfflineStorage: Error deleting multiple keys', error);
     throw error;
   }
 };
 
-/**
- * Read All Keys - Get all storage keys
- * @returns Promise<string[]> - Array of all storage keys
- */
+/** Get all storage keys (AsyncStorage only — IDB keys accessible via getParticipantKeys). */
 export const readAllKeys = async (): Promise<string[]> => {
   try {
     const keys = await AsyncStorage.getAllKeys();
     logger.info(`OfflineStorage: Retrieved ${keys.length} keys`);
-    return keys;
+    return [...keys];
   } catch (error) {
     logger.error('OfflineStorage: Error reading all keys', error);
     throw error;
   }
 };
 
-/**
- * Read Multiple - Get multiple values from storage
- * @param keys - Array of storage keys
- * @returns Promise<Array<{key: string, value: T | null}>> - Array of key-value pairs
- */
+/** Read multiple AsyncStorage keys. */
 export const readMultiple = async <T>(
   keys: string[]
 ): Promise<Array<{ key: string; value: T | null }>> => {
   try {
     const values = await AsyncStorage.multiGet(keys);
-    const result = values.map(([key, value]) => ({
+    return values.map(([key, value]) => ({
       key,
       value: value ? (JSON.parse(value) as T) : null,
     }));
-    logger.info(`OfflineStorage: Read ${keys.length} keys`);
-    return result;
   } catch (error) {
     logger.error('OfflineStorage: Error reading multiple keys', error);
     throw error;
   }
 };
 
-/**
- * Create Multiple - Save multiple key-value pairs
- * @param items - Array of key-value pairs
- * @returns Promise<void>
- */
+/** Save multiple key-value pairs (each routed individually). */
 export const createMultiple = async <T>(
   items: Array<{ key: string; value: T }>
 ): Promise<void> => {
   try {
-    const pairs = items.map(({ key, value }) => [
-      key,
-      JSON.stringify(value),
-    ]);
-    await AsyncStorage.multiSet(pairs);
+    await Promise.all(items.map(({ key, value }) => create(key, value)));
     logger.info(`OfflineStorage: Created/Updated ${items.length} keys`);
   } catch (error) {
     logger.error('OfflineStorage: Error creating multiple keys', error);
@@ -238,13 +310,13 @@ export const createMultiple = async <T>(
   }
 };
 
-/**
- * Clear All - Remove all data from storage
- * @returns Promise<void>
- */
+/** Clear all storage — both AsyncStorage and the IDB offline store. */
 export const clearAll = async (): Promise<void> => {
   try {
     await AsyncStorage.clear();
+    if (Platform.OS === 'web') {
+      await idbClearAll().catch(() => {});
+    }
     logger.info('OfflineStorage: Cleared all storage');
   } catch (error) {
     logger.error('OfflineStorage: Error clearing all storage', error);
@@ -252,40 +324,86 @@ export const clearAll = async (): Promise<void> => {
   }
 };
 
-/**
- * Check if key exists
- * @param key - Storage key to check
- * @returns Promise<boolean> - True if key exists, false otherwise
- */
+/** Check if a key exists. */
 export const exists = async (key: string): Promise<boolean> => {
   try {
+    if (isIndexedDBKey(key)) {
+      return (await idbRead(key)) !== null;
+    }
     const value = await AsyncStorage.getItem(key);
     return value !== null;
-  } catch (error) {
-    logger.error(`OfflineStorage: Error checking existence of key "${key}"`, error);
+  } catch {
     return false;
   }
 };
 
-/**
- * Get storage size (approximate)
- * @returns Promise<number> - Approximate size in bytes
- */
+/** Approximate total AsyncStorage size in bytes. */
 export const getSize = async (): Promise<number> => {
   try {
     const keys = await AsyncStorage.getAllKeys();
     const values = await AsyncStorage.multiGet(keys);
-    const size = values.reduce((total, [, value]) => {
-      return total + (value ? value.length : 0);
-    }, 0);
-    return size;
-  } catch (error) {
-    logger.error('OfflineStorage: Error getting storage size', error);
+    return values.reduce((total, [, value]) => total + (value ? value.length : 0), 0);
+  } catch {
     return 0;
   }
 };
 
-// Export default object with all CRUD functions
+/**
+ * Returns all storage keys that belong to a specific participant.
+ * On web, reads from IndexedDB (where participant:* keys live).
+ * On native, reads from AsyncStorage.
+ */
+export const getParticipantKeys = async (participantId: string): Promise<string[]> => {
+  try {
+    const prefix = `participant:${participantId}:`;
+    if (Platform.OS === 'web') {
+      return idbGetAllKeys(prefix);
+    }
+    const allKeys = await AsyncStorage.getAllKeys();
+    return allKeys.filter((k: string) => k.startsWith(prefix));
+  } catch {
+    return [];
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Offline participant ID registry
+// Tracks which participants have been downloaded for offline use.
+// Key: OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS  Value: string[]
+// ---------------------------------------------------------------------------
+
+/** Register a participant as offline-capable. Idempotent. */
+export const addOfflineParticipantId = async (id: string): Promise<void> => {
+  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+  const ids = existing ?? [];
+  if (!ids.includes(id)) {
+    await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS, [...ids, id]);
+  }
+};
+
+/** Remove a participant from the offline registry (e.g. on clear). */
+export const removeOfflineParticipantId = async (id: string): Promise<void> => {
+  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+  const ids = (existing ?? []).filter((x: string) => x !== id);
+  await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS, ids);
+};
+
+/** Returns all participant IDs that have been downloaded for offline use. */
+export const getOfflineParticipantIds = async (): Promise<string[]> => {
+  const ids = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+  return ids ?? [];
+};
+
+/** Returns true if this participant has been downloaded for offline use. */
+export const isParticipantOffline = async (id: string): Promise<boolean> => {
+  const ids = await getOfflineParticipantIds();
+  return ids.includes(id);
+};
+
+// ---------------------------------------------------------------------------
+// Default export
+// ---------------------------------------------------------------------------
+
 const offlineStorage = {
   create,
   read,
@@ -298,7 +416,8 @@ const offlineStorage = {
   clearAll,
   exists,
   getSize,
+  getParticipantKeys,
+  checkStorage
 };
 
 export default offlineStorage;
-

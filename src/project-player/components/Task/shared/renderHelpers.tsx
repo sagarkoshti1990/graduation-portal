@@ -20,13 +20,13 @@ import {
   RenderModalsProps,
   RenderStatusIndicatorProps,
   RenderTaskInfoProps,
-} from '../../types/project.types';
+} from '../../../types/project.types';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { theme } from '@config/theme';
-import { taskCardStyles } from './Styles';
+import { taskCardStyles } from '../TaskCard/styles';
 import { getStatusCircleColor, getCompletedTaskTextStyle } from './helpers';
 import Modal from '@ui/Modal';
-import AddCustomTaskModal from './AddCustomTaskModal';
+import AddCustomTaskModal from '../CustomTask/AddCustomTaskModal';
 
 export const renderFileInput = ({
   fileInputRef,

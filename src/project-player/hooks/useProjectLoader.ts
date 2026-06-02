@@ -12,6 +12,7 @@ import {
 } from '../services/projectPlayerService';
 import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
+import dataService, { isNetworkOffline } from '../../../src/services/dataService';
 import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -30,7 +31,7 @@ export const useProjectLoader = (
   useEffect(() => {
     const loadData = async () => {
       try {
-        // setIsLoading(true);
+        setIsLoading(true);
 
         // config.mode = "edit" and data contains  projectId.
         if (config.mode === 'edit' || config.mode === 'read-only') {
@@ -38,46 +39,77 @@ export const useProjectLoader = (
 
           try {
             let projectData;
+            // When caller provides pre-loaded project data (e.g. offline download), use it directly
+            if (data.data) {
+              setProjectData(data.data);
+              return;
+            }
             if (projectId) {
-              const res = await getProjectDetails(projectId);
-              projectData = res.data;
-            } else {
-              try {
-                projectData = await createProjectForEntity(entityId, province);
-                const thisDate = new Date().toISOString();
-                if (projectData?._id) {
-                  await updateEntityDetails({
-                    userId: `${user?.id}`,
-                    entityId: entityId,
-                    entityUpdates: {
-                      onBoardedProjectId: projectData._id,
-                      onBoardingProjectCreatedAt: thisDate
-                    },
-                  });
-                  
-                  const participantId = projectData.entityInformation?.externalId;
-                  if (!participantId) {
-                     throw new Error('Created project is missing entityInformation.externalId');
-                  }
-                 // create user program Mapping for the participant
-                  await createOrUpdateProgramUserMapping({
-                    userId: participantId,
-                    programId: process.env.GLOBAL_LC_PROGRAM_ID,
-                    metaInformation: {
-                      onBoardedProjectId: projectData?._id,
-                      onBoardingProjectCreatedAt: thisDate
-                    },
-                    status: STATUS.NOT_ONBOARDED
-                  });
-                  
+              if (entityId) {
+                // Offline-first: always check dataService — it reads cache when offline or
+                // when there are pending unsynced edits (Rules 1, 2, 3).
+                const result = await dataService.getProject<ProjectData>(entityId, projectId);
 
-                  const ref = await AsyncStorage.getItem('my_program_user_ref');
-                  if (ref) {
-                    await updateProjectInfo(projectData._id, ref);
-                  }
+                if (result.isOffline && !result.offlineDataAvailable) {
+                  // Offline AND no cached project — user needs to download first
+                  throw new Error(t('offlineSync.dataUnavailable'));
                 }
-              } catch (error) {
-                console.log(error as Error)
+
+                projectData = result.data as ProjectData;
+
+                // If we served from cache while online (pending sync edits exist), kick off
+                // a background refresh so the UI eventually shows the server's latest state —
+                // but only after we have rendered with the local edits.
+                if (projectData && result.fromCache && !result.isOffline) {
+                  dataService.getProject<ProjectData>(entityId, projectId).then(fresh => {
+                    if (fresh.data && !fresh.fromCache) setProjectData(fresh.data);
+                  }).catch(() => {});
+                }
+              } else {
+                // No entityId available — fall back to scanning offline participant storage
+                // (getProjectDetails already does this when isNetworkOffline() is true)
+                const res = await getProjectDetails(projectId);
+                if (!res.data && isNetworkOffline()) {
+                  throw new Error(t('offlineSync.dataUnavailable'));
+                }
+                projectData = res.data;
+              }
+            } else {
+              if (isNetworkOffline()) {
+                throw new Error(t('offlineSync.dataUnavailable'));
+              }
+              projectData = await createProjectForEntity(entityId, province);
+              const thisDate = new Date().toISOString();
+              if (projectData?._id) {
+                await updateEntityDetails({
+                  userId: `${user?.id}`,
+                  entityId: entityId,
+                  entityUpdates: {
+                    onBoardedProjectId: projectData._id,
+                    onBoardingProjectCreatedAt: thisDate
+                  },
+                });
+                
+                const participantId = projectData.entityInformation?.externalId;
+                if (!participantId) {
+                    throw new Error('Created project is missing entityInformation.externalId');
+                }
+                // create user program Mapping for the participant
+                await createOrUpdateProgramUserMapping({
+                  userId: participantId,
+                  programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                  metaInformation: {
+                    onBoardedProjectId: projectData?._id,
+                    onBoardingProjectCreatedAt: thisDate
+                  },
+                  status: STATUS.NOT_ONBOARDED
+                });
+                
+
+                const ref = await AsyncStorage.getItem('my_program_user_ref');
+                if (ref) {
+                  await updateProjectInfo(projectData._id, ref);
+                }
               }             
             }
             if (!projectData) {

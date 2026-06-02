@@ -7,10 +7,14 @@ import type {
   AssessmentSurveyCardData,
   ParticipantData,
 } from '@app-types/participant';
+import type { OfflineSolutionEntry, ObservationFormData } from '@app-types/offline';
 import { getObservationEntities, getTargetedSolutions } from '../../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
+import dataService from '../../../services/dataService';
+import offlineStorage from '../../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { ENTITY_TYPE } from '@constants/ROLES';
 import { ENTITY_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD, STATUS, USER_STATUS } from '@constants/app.constant';
 import { sortByNestedOrder } from '@utils/helper';
@@ -38,12 +42,57 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     const fetchSolutions = async () => {
       setLoading(true);
       try {
+        const isOffline = dataService.isNetworkOffline();
+        const participantUserId = participant?.userId || '';
+
+        // ── OFFLINE PATH ──────────────────────────────────────────────────────
+        // Load from the per-participant solutions mapping written during download.
+        // No API calls are made offline.
+        if (isOffline) {
+          const storedEntries = await getTargetedSolutions({
+            type: 'observation',
+            // @ts-ignore
+            'filter[keywords]': (readOnlyAccessStatuses.includes(participant?.status) || (participant?.status === STATUS.IN_PROGRESS && completionPercentage >= GRADUATION_READINESS_PROGRESS_THRESHOLD)) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
+            participantId:participantUserId
+          });
+          if (!storedEntries?.length) {
+            setSolutions([]);
+            return;
+          }
+          const cards = await Promise.all(
+            storedEntries.map(async (entry) => {
+              const formData = await offlineStorage.read<ObservationFormData>(
+                PARTICIPANT_KEYS.form(participantUserId, entry.solutionId),
+              );
+              if (!formData) return null;
+              return {
+                id: entry.observationId,
+                solutionId: entry.solutionId,
+                name: formData.schema?.solution?.name || entry.keyword,
+                description: formData.schema?.solution?.description || '',
+                navigationUrl: 'observation',
+                keywords: [entry.keyword],
+                entity: {
+                  _id: formData.entityId,
+                  status: formData.status || ENTITY_STATUS.STARTED,
+                  submissionsCount: 1,
+                  allowMultipleAssessemts: false,
+                },
+              } as AssessmentSurveyCardData;
+            }),
+          );
+          setSolutions(cards.filter((c): c is AssessmentSurveyCardData => c !== null));
+          return;
+        }
+
+        // ── ONLINE PATH ───────────────────────────────────────────────────────
         const data = await getTargetedSolutions({
           type: 'observation',
           // @ts-ignore
           'filter[keywords]': (readOnlyAccessStatuses.includes(participant?.status) || (participant?.status === STATUS.IN_PROGRESS && completionPercentage >= GRADUATION_READINESS_PROGRESS_THRESHOLD)) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
           showReferenceFrom:true
         });
+
         const dataNew = await Promise.all(
           data.filter(item => !item.project || item.project._id === participant?.onBoardedProjectId).map(async (item) => {
             try {
@@ -51,7 +100,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 solutionId: item.solutionId,
                 id: participant?.id,
               });
-              
+
               if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT) {
                 if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
                     return null;
@@ -60,15 +109,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED, submissionsCount: entity?.submissionsCount || 1 } };
             } catch (error) {
               logger.error('Failed to fetch entity for solutionId:', item.solutionId, error);
-              // Skip this item by returning null
               return null;
             }
           })
         );
         const sortedData = sortByNestedOrder(dataNew, 'name', solutionNamesOrder);
-        // Filter out failed items (nulls)
-        const filteredData = sortedData.filter(item => item !== null);
-        setSolutions(filteredData);
+        setSolutions(sortedData.filter((item): item is AssessmentSurveyCardData => item !== null));
       } catch (error) {
         logger.error('Error fetching solutions:', error);
         setSolutions([]);
@@ -113,7 +159,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         {solutions.length > 0 ? (
           solutions?.map(card => (
             <AssessmentCard
-              key={card._id}
+              key={card.solutionId || card.id}
               card={card}
               userId={participant?.userId || ''}
               participantId={participant?.id || ''}

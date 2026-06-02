@@ -2,29 +2,22 @@ import React, { useState } from 'react';
 import {
   Box,
   VStack,
-  Card,
   ScrollView,
   Button,
   ButtonText,
   ButtonSpinner,
   HStack,
   Text,
-  Accordion,
   ButtonIcon,
 } from '@gluestack-ui/themed';
 import { useProjectContext } from '../../context/ProjectContext';
-import ProjectInfoCard from './ProjectInfoCard';
-import TaskComponent from './TaskComponent';
-import AddCustomTaskModal from '../Task/AddCustomTaskModal';
+import ProjectContent from './ProjectContent';
 import { projectComponentStyles } from './Styles';
-import { taskAccordionStyles } from '../Task/Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Container from '@ui/Container';
 import { LucideIcon, Modal, useAlert } from '@ui';
-import { theme } from '@config/theme';
 import { submitInterventionPlan } from '../../services/projectPlayerService';
-import { addCustomTaskStyles } from '../Task/Styles';
 import { PLAYER_MODE } from '@constants/app.constant';
 import { PILLAR_NAMES } from '@constants/app.constant';
 
@@ -72,7 +65,7 @@ const ProjectComponent: React.FC = () => {
   ): string[] => {
     return tasks.flatMap(task => {
       const nested = [
-        ...(task.tasks?.find((task:any) => task.isDeletable) as boolean
+        ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
           ? getExcludedTaskIds(task.tasks, addedToPlanSet)
           : []),
       ];
@@ -86,7 +79,7 @@ const ProjectComponent: React.FC = () => {
   const getDeletableTaskIds = (tasks: any[] = []): string[] => {
     return tasks.flatMap(task => {
       const nested = [
-        ...(task.tasks?.find((task:any) => task.isDeletable) as boolean
+        ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
           ? getDeletableTaskIds(task.tasks)
           : []),
       ];
@@ -213,112 +206,13 @@ const ProjectComponent: React.FC = () => {
             </Button>
           }
           {/* Shared content logic - pillars or onboarding tasks */}
-          {(() => {
-            const pillarContent = hasChildren ? (
-              // Render pillars
-              <>
-                {(() => {
-                  const sortedPillars = (projectData?.children?.length
-                  ? [...projectData.children]
-                  : projectData?.tasks?.filter(task => task.children?.length) || []
-                  ).sort(
-                        (a, b) =>
-                          getPillarOrderIndex(a?.name) -
-                          getPillarOrderIndex(b?.name),
-                      );
-
-                  if (mode !== PLAYER_MODE.PREVIEW) {
-                    return sortedPillars.map(task => (
-                      <TaskComponent
-                        key={task?._id}
-                        task={task}
-                        isChildOfProject={true}
-                      />
-                    ));
-                  }
-
-                  const socialProtectionPillar = sortedPillars.filter((pillar:any) => pillar.tasks.find((task:any) => task.isDeletable) as string).map((pillar:any) => pillar._id as string);
-                  return (
-                    <VStack {...projectComponentStyles.pillarContainer}>
-                      <Accordion
-                        {...(mode === PLAYER_MODE.PREVIEW
-                          ? taskAccordionStyles.accordionPreview
-                          : taskAccordionStyles.accordion)}
-                        type="single"
-                        isCollapsible={true}
-                        defaultValue={socialProtectionPillar ? socialProtectionPillar : undefined}
-                      >
-                        <VStack {...projectComponentStyles.pillarContainer}>
-                          {sortedPillars.map(task => (
-                            <TaskComponent
-                              key={task?._id}
-                              task={task}
-                              isChildOfProject={true}
-                              showAccordionWrapper={false}
-                            />
-                          ))}
-                        </VStack>
-                      </Accordion>
-                    </VStack>
-                  );
-                })()}
-
-                {/* Pillar features only: +Add Custom Task button */}
-                {showPillarFeatures && (
-                  <Box>
-                    {/* @ts-ignore  */}
-                    <Button variant="outlineghost" onPress={() => setIsModalOpen(true)}>
-                      <ButtonIcon as={LucideIcon} name="Plus" />
-                      <ButtonText>{t('projectPlayer.addCustomTask')}</ButtonText>
-                    </Button>
-                    <AddCustomTaskModal
-                      isOpen={isModalOpen}
-                      onClose={() => setIsModalOpen(false)}
-                      mode="add"
-                    />
-                  </Box>
-                )}
-              </>
-            ) : (
-              // Render onboarding tasks
-              <Box paddingHorizontal="$5" paddingTop="$2" paddingBottom="$4">
-                {projectData?.tasks?.map((task, index) => (
-                  <TaskComponent
-                    key={task._id}
-                    task={task}
-                    isLastTask={
-                      index === (projectData.tasks?.length || 0) - 1
-                    }
-                    isOnboardingTask={true}
-                  />
-                ))}
-              </Box>
-            );
-
-            // Render ProjectInfoCard (only for onboarding or preview top-level)
-            // Remove from edit mode as per user request (Image 2 feedback)
-            const header = !hasChildren || mode === PLAYER_MODE.PREVIEW ? (
-              <ProjectInfoCard project={projectData} />
-            ) : null;
-
-            const isSingleContainer = !hasChildren;
-            
-            const content = (
-              <VStack
-                p={mode === PLAYER_MODE.PREVIEW ? "$4" : "$0"}
-                space="md"
-              >
-                {header}
-                {pillarContent}
-              </VStack>
-            );
-
-            return isSingleContainer ? (
-              <Card {...projectComponentStyles.card} {...projectComponentStyles.onboardingCard}>
-                {content}
-              </Card>
-            ) : content;
-          })()}
+          <ProjectContent
+            hasChildren={hasChildren}
+            showPillarFeatures={showPillarFeatures}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            getPillarOrderIndex={getPillarOrderIndex}
+          />
         </ScrollView>
 
         {/* Footer with Change Pathway and Submit Intervention Plan Buttons */}

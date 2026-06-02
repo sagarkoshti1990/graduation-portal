@@ -24,6 +24,17 @@ const config = {
     ),
 
     sourceExts: [...sourceExts, 'svg'],
+
+    // @react-native-community/netinfo ships TypeScript source as its "react-native"
+    // entry point, which Metro cannot resolve (it looks for .js files inside the
+    // package's internal imports). Redirect to the pre-compiled CommonJS output.
+    extraNodeModules: {
+      '@react-native-community/netinfo': path.resolve(
+        __dirname,
+        'node_modules/@react-native-community/netinfo/lib/commonjs',
+      ),
+    },
+
     alias: {
       '@assets': path.resolve(__dirname,'./src/assets'),
       '@ui': path.resolve(__dirname, 'src/components/ui'),

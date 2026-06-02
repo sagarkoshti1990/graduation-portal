@@ -21,7 +21,7 @@ import { getParticipantsColumns } from './ParticipantsTableConfig';
 import { Participant } from '@app-types/screens';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
-import { getParticipantsList } from '../../services/participantService';
+import dataService from '../../services/dataService';
 import type { ParticipantOverview } from '@app-types/participant';
 import { STATUS } from '@constants/app.constant';
 import { usePlatform } from '@utils/platform';
@@ -34,6 +34,7 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 // Status value type (values of STATUS object) - used for API filter + comparisons
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -81,6 +82,7 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
+  const offline = isNetworkOffline();
 
   // Load pageSize from offline storage on mount
   useEffect(() => {
@@ -164,31 +166,21 @@ const ParticipantsList: React.FC = () => {
       // Early return if entity ID is not available
       try {
         setIsLoading(true);
-        const response = await getParticipantsList({
+        const result = await dataService.getParticipantList({
           userId: user?.id as string,
           search: searchKey,
           status: activeStatus,
           page: currentPage,
-          limit: pageSize,
+          limit: pageSize ?? undefined,
         });
-        setParticipants(response.result.data || []);
-        // Set overview from API response
-        if (response.result.overview) {
-          setOverview(response.result.overview);
+        setParticipants(result.data.participants || []);
+        if (result.data.overview) {
+          setOverview(result.data.overview);
         }
-        // Set pagination metadata from API response
-        if (response.total !== undefined) {
-          setTotalItems(response.total);
-        }
-
-        // if (response.result.data && response.result.data.length > 0) {
-        //   await AsyncStorage.setItem('my_program_user_ref', response.result?.details._id);
-        // }
-        
+        setTotalItems(result.data.total ?? 0);
       } catch (err: any) {
         const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch participants';
         logger.error('Error fetching participants:', errorMessage, err);
-        // Optionally set empty array on error to prevent stale data
         setParticipants([]);
         setOverview(null);
         setTotalItems(0);
@@ -282,9 +274,11 @@ const ParticipantsList: React.FC = () => {
                   onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
                 />
               </Box>
-              <Box {...styles.buttonContainer}>
-                <GroupCheckInsButton />
-              </Box>
+              {!offline && (
+                <Box {...styles.buttonContainer}>
+                  <GroupCheckInsButton />
+                </Box>
+              )}
             </HStack>
 
             {/* Status Filter Bar - Desktop: Filter buttons, Mobile: Dropdown */}
