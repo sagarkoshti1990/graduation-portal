@@ -58,17 +58,18 @@ export function getActionIconName(task: Task): string {
   return 'Upload';
 }
 
+const SLA_CONSENT_TASK_IDS = new Set<string | undefined>([
+  process.env.UPLOAD_CONSENT_TASK_ID,
+  process.env.UPLOAD_SLA_TASK_ID,
+]);
+
 /** Derives the file-upload constraints from task metadata + onboarding context. */
 export function getUploadConfig(task: Task, isOnboardingTask: boolean) {
   let maxFiles: number | undefined;
   let allowedFileTypes: string[] | undefined;
 
   if (isOnboardingTask) {
-    const slaConsentTasks = [
-      process.env.UPLOAD_CONSENT_TASK_ID,
-      process.env.UPLOAD_SLA_TASK_ID,
-    ];
-    if (slaConsentTasks.includes(task?.referenceId)) {
+    if (SLA_CONSENT_TASK_IDS.has(task?.referenceId)) {
       maxFiles = 1;
       allowedFileTypes = ['pdf'];
     }

@@ -1,7 +1,5 @@
 import React, {
   memo,
-  useState,
-  useEffect,
   useCallback,
   useMemo,
 } from 'react';
@@ -29,7 +27,6 @@ interface ProjectContentProps {
   showPillarFeatures: boolean;
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
-  getPillarOrderIndex: (name?: string) => number;
 }
 
 const ProjectContent = memo<ProjectContentProps>(({
@@ -37,47 +34,36 @@ const ProjectContent = memo<ProjectContentProps>(({
   showPillarFeatures,
   isModalOpen,
   setIsModalOpen,
-  getPillarOrderIndex,
 }) => {
-  const { projectData, mode } = useProjectContext();
+  const { projectData, mode, config } = useProjectContext();
   const { t } = useLanguage();
 
-  const [sortedPillars, setSortedPillars] = useState<any[]>([]);
-  const [socialProtectionPillarIds, setSocialProtectionPillarIds] = useState<string[]>([]);
-  const [onboardingTasks, setOnboardingTasks] = useState<any[]>([]);
+  const projectContext = useMemo(
+    () => ({ mode, config, projectDataRef:projectData }),
+    [mode, config, projectData],
+  );
 
-  // Derive and sort pillars whenever the project or ordering function changes.
-  useEffect(() => {
-    if (!projectData || !hasChildren) {
-      setSortedPillars([]);
-      setSocialProtectionPillarIds([]);
-      return;
-    }
-
-    const pillars = (
+  const pillars = useMemo(() => {
+    if (!projectData || !hasChildren) return [];
+    return (
       projectData.children?.length
         ? [...projectData.children]
-        : projectData.tasks?.filter((task: any) => task.children?.length) || []
-    ).sort(
-      (a: any, b: any) => getPillarOrderIndex(a?.name) - getPillarOrderIndex(b?.name),
+        : projectData.tasks?.filter((task: any) => task.children?.length) ?? []
     );
-
-    const spIds = pillars
-      .filter((pillar: any) => pillar.tasks?.find((task: any) => task.isDeletable))
-      .map((pillar: any) => pillar._id as string);
-
-    setSortedPillars(pillars);
-    setSocialProtectionPillarIds(spIds);
-  }, [projectData, hasChildren, getPillarOrderIndex]);
-
-  // Flatten onboarding tasks when there are no pillar-children.
-  useEffect(() => {
-    if (!projectData || hasChildren) {
-      setOnboardingTasks([]);
-      return;
-    }
-    setOnboardingTasks(projectData.tasks || []);
   }, [projectData, hasChildren]);
+
+  const socialProtectionPillarIds = useMemo(
+    () =>
+      pillars
+        .filter((pillar: any) => pillar.tasks?.find((task: any) => task.isDeletable))
+        .map((pillar: any) => pillar._id as string),
+    [pillars],
+  );
+
+  const onboardingTasks = useMemo(
+    () => (!projectData || hasChildren ? [] : projectData.tasks ?? []),
+    [projectData, hasChildren],
+  );
 
   const isPreviewMode = useMemo(() => mode === PLAYER_MODE.PREVIEW, [mode]);
 
@@ -105,6 +91,7 @@ const ProjectContent = memo<ProjectContentProps>(({
                 task={task}
                 isLastTask={index === onboardingTasks.length - 1}
                 isOnboardingTask={true}
+                projectContext={projectContext}
               />
             ))}
           </Box>
@@ -127,20 +114,21 @@ const ProjectContent = memo<ProjectContentProps>(({
             defaultValue={defaultAccordionValue}
           >
             <VStack {...projectComponentStyles.pillarContainer}>
-              {sortedPillars.map(task => (
+              {pillars.map(task => (
                 <TaskComponent
                   key={task._id}
                   task={task}
                   isChildOfProject={true}
                   showAccordionWrapper={false}
+                  projectContext={projectContext}
                 />
               ))}
             </VStack>
           </Accordion>
         </VStack>
       ) : (
-        sortedPillars.map(task => (
-          <TaskComponent key={task._id} task={task} isChildOfProject={true} />
+        pillars.map((task,index) => (
+          <TaskComponent key={task._id} task={task} parentIndex={index} isChildOfProject={true} projectContext={projectContext}/>
         ))
       )}
 

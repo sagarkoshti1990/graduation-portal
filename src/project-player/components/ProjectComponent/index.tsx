@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -19,9 +19,37 @@ import Container from '@ui/Container';
 import { LucideIcon, Modal, useAlert } from '@ui';
 import { submitInterventionPlan } from '../../services/projectPlayerService';
 import { PLAYER_MODE } from '@constants/app.constant';
-import { PILLAR_NAMES } from '@constants/app.constant';
 
-const ProjectComponent: React.FC = () => {
+function getExcludedTaskIds(
+  tasks: any[] = [],
+  addedToPlanSet: Set<string>,
+): string[] {
+  return tasks.flatMap(task => {
+    const nested = [
+      ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
+        ? getExcludedTaskIds(task.tasks, addedToPlanSet)
+        : []),
+    ];
+    const isOptional = task?.isDeletable === true;
+    const isAddedToPlan = addedToPlanSet.has(task._id);
+    const excluded = isOptional && !isAddedToPlan ? [task._id] : [];
+    return [...excluded, ...nested];
+  });
+}
+
+function getDeletableTaskIds(tasks: any[] = []): string[] {
+  return tasks.flatMap(task => {
+    const nested = [
+      ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
+        ? getDeletableTaskIds(task.tasks)
+        : []),
+    ];
+    const isDeletable = task?.isDeletable === true;
+    return [...(isDeletable ? [task._id] : []), ...nested];
+  });
+}
+
+const ProjectComponent = React.memo(() => {
   const {
     projectData,
     mode,
@@ -37,58 +65,27 @@ const ProjectComponent: React.FC = () => {
     useState(false);
   const { showAlert } = useAlert();
 
+  const deletableTaskIds = useMemo(
+    () => getDeletableTaskIds(projectData?.children ?? []),
+    [projectData?.children],
+  );
+  const taskPlanActionPerformedIdsSet = useMemo(
+    () => new Set(taskPlanActionPerformedIds),
+    [taskPlanActionPerformedIds],
+  );
+  const allActionsCompleted = useMemo(
+    () => deletableTaskIds.every(id => taskPlanActionPerformedIdsSet.has(id)),
+    [deletableTaskIds, taskPlanActionPerformedIdsSet],
+  );
+  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted;
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
-
   const isEditMode =
     mode === 'edit' && config.showAddCustomTaskButton !== false;
-
   // Only show progress bar and +Add Custom Task for projects with pillars (Intervention Plan), not flat tasks (Onboarding)
   const showPillarFeatures = isEditMode && hasChildren;
-
   const shouldShowSubmitButton = config.showSubmitButton && mode === 'preview';
 
-  const getPillarOrderIndex = (name = ''): number => {
-    const normalized = name.toLowerCase();
-    const order = [
-      PILLAR_NAMES.SOCIAL_EMPOWERMENT,
-      PILLAR_NAMES.LIVELIHOOD,
-      PILLAR_NAMES.FINANCIAL_INCLUSION,
-      PILLAR_NAMES.SOCIAL_PROTECTION,
-    ];
-    const index = order.findIndex(pillar => normalized.includes(pillar));
-    return index === -1 ? order.length : index;
-  };
-
-  const getExcludedTaskIds = (
-    tasks: any[] = [],
-    addedToPlanSet: Set<string>,
-  ): string[] => {
-    return tasks.flatMap(task => {
-      const nested = [
-        ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
-          ? getExcludedTaskIds(task.tasks, addedToPlanSet)
-          : []),
-      ];
-      const isOptional = task?.isDeletable === true;
-      const isAddedToPlan = addedToPlanSet.has(task._id);
-      const excluded = isOptional && !isAddedToPlan ? [task._id] : [];
-      return [...excluded, ...nested];
-    });
-  };
-
-  const getDeletableTaskIds = (tasks: any[] = []): string[] => {
-    return tasks.flatMap(task => {
-      const nested = [
-        ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
-          ? getDeletableTaskIds(task.tasks)
-          : []),
-      ];
-      const isDeletable = task?.isDeletable === true;
-      return [...(isDeletable ? [task._id] : []), ...nested];
-    });
-  };
-
-  const onSubmitInterventionPlan = async () => {
+  const onSubmitInterventionPlan = useCallback(async () => {
     if (!projectData) return;
 
     setIsSubmittingInterventionPlan(true);
@@ -185,7 +182,7 @@ const ProjectComponent: React.FC = () => {
     } finally {
       setIsSubmittingInterventionPlan(false);
     }
-  };
+  }, [projectData, config, addedToPlanTaskIds, showAlert, t]);
 
   if (!projectData) {
     return null;
@@ -207,11 +204,10 @@ const ProjectComponent: React.FC = () => {
           }
           {/* Shared content logic - pillars or onboarding tasks */}
           <ProjectContent
-            hasChildren={hasChildren}
-            showPillarFeatures={showPillarFeatures}
+            hasChildren={!!hasChildren}
+            showPillarFeatures={!!showPillarFeatures}
             isModalOpen={isModalOpen}
             setIsModalOpen={setIsModalOpen}
-            getPillarOrderIndex={getPillarOrderIndex}
           />
         </ScrollView>
 
@@ -224,112 +220,100 @@ const ProjectComponent: React.FC = () => {
             borderTopWidth={1}
             borderTopColor="$borderLight300"
           >
-            {(() => {
-              const deletableTaskIds = getDeletableTaskIds(
-                projectData.children || [],
-              );
-              const allActionsCompleted = deletableTaskIds.every(id =>
-                taskPlanActionPerformedIds.includes(id),
-              );
-              const isSubmitDisabled =
-                config.isSubmitDisabled || !allActionsCompleted;
+            <>
+              {/* Warning Banner - Show when Submit is disabled */}
+              <Box
+                bg="$warning50"
+                borderWidth={1}
+                borderColor="$warning300"
+                borderRadius="$md"
+                padding="$3"
+                display={'none'}
+                $md-display={'flex'}
+              >
+                <HStack space="sm" alignItems="center">
+                  <LucideIcon
+                    name="AlertCircle"
+                    size={18}
+                    color="#ca8a04"
+                  />
+                  <Text fontSize="$sm" color="$warning700">
+                    {t('participantDetail.interventionPlan.warningMsg')}
+                  </Text>
+                </HStack>
+              </Box>
 
-              return (
-                <>
-                  {/* Warning Banner - Show when Submit is disabled */}
-                  <Box
-                    bg="$warning50"
-                    borderWidth={1}
-                    borderColor="$warning300"
-                    borderRadius="$md"
-                    padding="$3"
-                    display={'none'}
-                    $md-display={'flex'}
+              {/* Responsive Button Container - stacks on mobile, row on web */}
+              <Box {...projectComponentStyles.footerButtonContainer}>
+                {/* Change Pathway Button */}
+                <Button
+                  variant="outlineghost"
+                  onPress={() => {
+                    setIsChangePathwayOpen(true);
+                  }}
+                >
+                  <ButtonText
+                    color="$textPrimary"
+                    {...TYPOGRAPHY.button}
+                    fontWeight="$medium"
                   >
-                    <HStack space="sm" alignItems="center">
-                      <LucideIcon
-                        name="AlertCircle"
-                        size={18}
-                        color="#ca8a04"
-                      />
-                      <Text fontSize="$sm" color="$warning700">
-                        {t('participantDetail.interventionPlan.warningMsg')}
-                      </Text>
-                    </HStack>
-                  </Box>
+                    {t('participantDetail.interventionPlan.changePathway')}
+                  </ButtonText>
+                </Button>
 
-                  {/* Responsive Button Container - stacks on mobile, row on web */}
-                  <Box {...projectComponentStyles.footerButtonContainer}>
-                    {/* Change Pathway Button */}
-                    <Button
-                      variant="outlineghost"
-                      onPress={() => {
-                        setIsChangePathwayOpen(true);
-                      }}
-                    >
-                      <ButtonText
-                        color="$textPrimary"
-                        {...TYPOGRAPHY.button}
-                        fontWeight="$medium"
-                      >
-                        {t('participantDetail.interventionPlan.changePathway')}
-                      </ButtonText>
-                    </Button>
-
-                    {/* Submit Intervention Plan Button */}
-                    <Button
-                      variant="solid"
-                      onPress={onSubmitInterventionPlan}
-                      isDisabled={
-                        isSubmitDisabled || isSubmittingInterventionPlan
-                      }
-                      opacity={
-                        isSubmitDisabled || isSubmittingInterventionPlan
-                          ? 0.6
-                          : 1
-                      }
-                      $web-cursor="pointer"
-                    >
-                      {isSubmittingInterventionPlan && (
-                        <ButtonSpinner />
-                      )}
-                      <ButtonText
-                        color="$backgroundPrimary.light"
-                        {...TYPOGRAPHY.button}
-                        fontWeight="$semibold"
-                      >
-                        {t(
-                          'participantDetail.interventionPlan.submitInterventionPlan',
-                        )}
-                      </ButtonText>
-                    </Button>
-                  </Box>
-                  <Modal
-                    isOpen={isChangePathwayOpen}
-                    onClose={() => setIsChangePathwayOpen(false)}
-                    headerTitle={t('participantDetail.interventionPlan.changePathway')}
-                    confirmButtonText="common.confirm"
-                    cancelButtonText="common.cancel"
-                    onConfirm={() => {
-                      setIsChangePathwayOpen(false);
-                      if (config.onChangePathway) {
-                        config.onChangePathway();
-                      }
-                    }}
+                {/* Submit Intervention Plan Button */}
+                <Button
+                  variant="solid"
+                  onPress={onSubmitInterventionPlan}
+                  isDisabled={
+                    isSubmitDisabled || isSubmittingInterventionPlan
+                  }
+                  opacity={
+                    isSubmitDisabled || isSubmittingInterventionPlan
+                      ? 0.6
+                      : 1
+                  }
+                  $web-cursor="pointer"
+                >
+                  {isSubmittingInterventionPlan && (
+                    <ButtonSpinner />
+                  )}
+                  <ButtonText
+                    color="$backgroundPrimary.light"
+                    {...TYPOGRAPHY.button}
+                    fontWeight="$semibold"
                   >
-                    <Text {...TYPOGRAPHY.paragraph} color="$textSecondary">
-                      {t(
-                        'participantDetail.interventionPlan.changePathwayCofirmationMsg',
-                      )}
-                    </Text>
-                  </Modal>
-                </>
-              );
-            })()}
+                    {t(
+                      'participantDetail.interventionPlan.submitInterventionPlan',
+                    )}
+                  </ButtonText>
+                </Button>
+              </Box>
+              <Modal
+                isOpen={isChangePathwayOpen}
+                onClose={() => setIsChangePathwayOpen(false)}
+                headerTitle={t('participantDetail.interventionPlan.changePathway')}
+                confirmButtonText="common.confirm"
+                cancelButtonText="common.cancel"
+                onConfirm={() => {
+                  setIsChangePathwayOpen(false);
+                  if (config.onChangePathway) {
+                    config.onChangePathway();
+                  }
+                }}
+              >
+                <Text {...TYPOGRAPHY.paragraph} color="$textSecondary">
+                  {t(
+                    'participantDetail.interventionPlan.changePathwayCofirmationMsg',
+                  )}
+                </Text>
+              </Modal>
+            </>
           </VStack>
         )}
       </VStack>
     </Container>
   );
-};
+});
+ProjectComponent.displayName = 'ProjectComponent';
 export default ProjectComponent;

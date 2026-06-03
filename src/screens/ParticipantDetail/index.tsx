@@ -22,16 +22,9 @@ import InterventionPlan from './InterventionPlan';
 import AssessmentSurveys from './AssessmentSurveys';
 import type {
   ParticipantData,
-  ParticipantStatus,
   // PathwayType,
 } from '@app-types/participant';
 import { Loader } from '@ui';
-import ProjectPlayer, { ProjectPlayerData } from '../../project-player/index';
-import {
-  MODE,
-  // DUMMY_PROJECT_DATA,
-  PROJECT_PLAYER_CONFIGS,
-} from '@constants/PROJECTDATA';
 import {
   ENTITY_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
@@ -81,12 +74,13 @@ export default function ParticipantDetail() {
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
     undefined,
   );
-  const [hasProgressBaseline, setHasProgressBaseline] = useState(false);
   const isFetchingRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
+  const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | null>(null);
+  
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -107,6 +101,9 @@ export default function ParticipantDetail() {
       try {
         isFetchingRef.current = true;
         const result = await dataService.getParticipantDetails(participantId, user.id);
+        const participantData = result.data as any;
+        const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
+        const response = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId)   
 
         if (result.isOffline && !result.offlineDataAvailable) {
           setIsOfflineUnavailable(true);
@@ -114,7 +111,7 @@ export default function ParticipantDetail() {
           setStatus('');
         } else {
           setIsOfflineUnavailable(false);
-          const participantData = result.data as any;
+          setFetchedProjectData(response.data);
           setParticipant(participantData);
           setNavbarData({ subtitle: participantData?.name });
           setStatus(participantData?.status);
@@ -143,7 +140,6 @@ export default function ParticipantDetail() {
         setIdpCreated(false);
         setAreAllTasksCompleted(false);
         setUpdatedProgress(undefined);
-        setHasProgressBaseline(false);
         setIsLoading(true);
         setChallenges(undefined);
         setIsOfflineUnavailable(false);
@@ -165,7 +161,6 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     setUpdatedProgress(undefined);
-    setHasProgressBaseline(false);
   }, [participantId]);
 
   useEffect(() => {
@@ -227,40 +222,22 @@ export default function ParticipantDetail() {
       }
 
       setSolutions(solutionsWithEntityStatus);
-      // if (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
-      //   const completionActionResult = await verifyParticipantCompletionActions({
-      //     participantData: participant,
-      //     userId: user?.id as string,
-      //     solutions: solutionsData
-      //   });
-      //   if (completionActionResult.success) {
-      //     setIsLoading(true);
-      //     try {
-      //       const refreshedResponse = await getParticipantsList({
-      //         entityId: participantId,
-      //         userId: user?.id as string,
-      //       });
-      //       const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
 
-      //       if (refreshedRow) {
-      //         const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
-      //         setParticipant({
-      //           ...(refreshedUserDetails || {}),
-      //           ...refreshedRest,
-      //           accountUserStatus: refreshedUserDetails?.status,
-      //         } as User);
-      //       }
-      //     } catch (refreshError) {
-      //       logger.log('Best-effort participant refresh failed:', refreshError);
-      //     }
-      //     setIsLoading(false);
-      //   }
-      // }
+      if (setRefComponent) {
+      setRefComponent({bottom :
+        solutionsWithEntityStatus.length > 0 ? (
+          <LogVisitModulePopup
+            participant={participant as ParticipantData}
+            solutions={solutionsWithEntityStatus}
+            observationLogsTitle={'actions.observationLogs'}
+            noSolutionsMessage={'logVisit.noSolutions'}
+          />
+        ) : null})
+      }
     }
-
-    if (participant && participantId && user?.id && solutions.length === 0 && updatedProgress !== undefined) {
+    if (setRefComponent && participant && participantId && user?.id && solutions.length === 0 && updatedProgress !== undefined) {
       fetchSolutions();
-    }
+    } else
     if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
       const bool = solutions.find((item:any) =>
         item.keywords.some((key:any) => FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.includes(key))
@@ -269,13 +246,9 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [updatedProgress, participant, participantId, solutions.length, user?.id]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, user?.id]);
 
   const handleProgressChange = async (progress: number) => {
-    if (!hasProgressBaseline) {
-      setHasProgressBaseline(true);
-      return;
-    }
     setUpdatedProgress(progress);
   };
 
@@ -293,20 +266,6 @@ export default function ParticipantDetail() {
     },
     [],
   );
-
-  useEffect(() => {
-    if (setRefComponent) {
-      setRefComponent({bottom :
-        solutions.length > 0 ? (
-          <LogVisitModulePopup
-            participant={participant as ParticipantData}
-            solutions={solutions}
-            observationLogsTitle={t('actions.observationLogs')}
-            noSolutionsMessage={t('logVisit.noSolutions')}
-          />
-        ) : null})
-    }
-  }, [setRefComponent, solutions.length, participant, t]);
 
   const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
 
@@ -354,15 +313,19 @@ export default function ParticipantDetail() {
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject ? (
           <>
-            <DownloadFormsCard mode={showOnboardingProject === "not_enrolled" ? "edit" : "read-only"} />
-            <InterventionPlan
-              key={`project-player-${participantId}`}
-              participantStatus={status as ParticipantStatus}
-              participantId={participant?.id}
-              participantProfile={participant}
-              onTaskCompletionChange={setAreAllTasksCompleted}
-              getProjectData={setProjectData}
+            <DownloadFormsCard
+              mode={
+                showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
+              }
             />
+            {fetchedProjectData && (
+              <InterventionPlan
+                key={`project-player-${participantId}`}
+                participantProfile={participant}
+                onTaskCompletionChange={setAreAllTasksCompleted}
+                projectData={fetchedProjectData}
+              />
+            )}
           </>
         ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
@@ -393,48 +356,48 @@ export default function ParticipantDetail() {
 
             {/* Tab Content */}
             <Box flex={1} mt="$2" mb="$4" bg="transparent" width="$full">
-              {activeTab ===
-                PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
-                  <Box gap="$2">
-                    {challenges?.challengeNotes &&
-                      <ReadMoreAlert
-                        label={t("participantDetail.interventionPlan.challenges")}
-                        variant="warning"
-                        text={challenges?.challengeNotes || ""}
-                        lineLimit={2}
-                        readMoreText={t("common.showMore")}
-                        readLessText={t("common.showLess")}
-                      />
-                    }
-                    {challenges?.successNotes &&
-                      <ReadMoreAlert
-                        label={t("participantDetail.interventionPlan.successNotes")}
-                        variant="success"
-                        text={challenges?.successNotes || ""}
-                        lineLimit={2}
-                        readMoreText={t("common.showMore")}
-                        readLessText={t("common.showLess")}
-                      />
-                      }
+              {activeTab === PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
+                <Box gap="$2">
+                  {challenges?.challengeNotes && (
+                    <ReadMoreAlert
+                      label={t('participantDetail.interventionPlan.challenges')}
+                      variant="warning"
+                      text={challenges?.challengeNotes || ''}
+                      lineLimit={2}
+                      readMoreText={t('common.showMore')}
+                      readLessText={t('common.showLess')}
+                    />
+                  )}
+                  {challenges?.successNotes && (
+                    <ReadMoreAlert
+                      label={t(
+                        'participantDetail.interventionPlan.successNotes',
+                      )}
+                      variant="success"
+                      text={challenges?.successNotes || ''}
+                      lineLimit={2}
+                      readMoreText={t('common.showMore')}
+                      readLessText={t('common.showLess')}
+                    />
+                  )}
+                  {fetchedProjectData && (
                     <InterventionPlan
-                      participantStatus={status as ParticipantStatus}
-                      participantId={participant?.id}
                       participantProfile={participant}
                       onIdpCreation={handleIdpCreated}
                       onProgressChange={handleProgressChange}
-                      getProjectData={setProjectData}
+                      projectData={fetchedProjectData}
                     />
-                  </Box>
-                )}
-              {activeTab ===
-                PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
-                  <Box mt="$6">
-                    <AssessmentSurveys
-                      participant={participant as ParticipantData}
-                      completionPercentage={updatedProgress || 0}
-                    />
-                  </Box>
-                )}
+                  )}
+                </Box>
+              )}
+              {activeTab === PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
+                <Box mt="$6">
+                  <AssessmentSurveys
+                    participant={participant as ParticipantData}
+                    completionPercentage={updatedProgress || 0}
+                  />
+                </Box>
+              )}
             </Box>
           </Box>
         )}
@@ -443,8 +406,8 @@ export default function ParticipantDetail() {
       <ParticipantProfileModal
         isOpen={isProfileModalOpen}
         onClose={closeProfileModal}
-        participantId={participant.userId || ""}
-        userId={user?.id || ""}
+        participantId={participant.userId || ''}
+        userId={user?.id || ''}
         onParticipantSaved={handleParticipantAddressSaved}
       />
     </Box>

@@ -41,7 +41,7 @@ import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
-import { isNetworkOffline } from '@utils/networkStatus.native';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};

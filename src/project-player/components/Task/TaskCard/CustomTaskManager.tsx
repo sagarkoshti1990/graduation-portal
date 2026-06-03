@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { HStack, Pressable, Box } from '@ui';
 import { Text } from '@ui';
 import Modal from '@ui/Modal';
@@ -56,11 +56,15 @@ const CustomTaskManager = memo<CustomTaskManagerProps>(
       confirmDeleteLoading,
     } = useCustomTaskActions(task);
 
-    const customActions = renderCustomTaskActions({
-      isCustomTask: true,
-      onEdit: openEditModal,
-      onDelete: openDeleteModal,
-    });
+    const customActions = useMemo(
+      () =>
+        renderCustomTaskActions({
+          isCustomTask: true,
+          onEdit: openEditModal,
+          onDelete: openDeleteModal,
+        }),
+      [openEditModal, openDeleteModal],
+    );
 
     return (
       <>

@@ -21,6 +21,7 @@ export interface ProjectData {
   updatedAt: string;
   children?: Task[];
   categories?: any[];
+  userProfile?: any;
 }
 
 export interface Task {

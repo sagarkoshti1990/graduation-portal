@@ -22,6 +22,7 @@ export interface TaskAccordionProps {
   task: Task;
   level?: number;
   showAccordionWrapper?: boolean;
+  parentIndex?:number
 }
 
 export interface TaskComponentProps {
@@ -31,6 +32,9 @@ export interface TaskComponentProps {
   isChildOfProject?: boolean;
   isOnboardingTask?: boolean;
   showAccordionWrapper?: boolean;
+  index?:number
+  parentIndex?:number,
+  projectContext?:any
 }
 
 export interface UploadComponentProps {
@@ -57,6 +61,7 @@ export interface ProjectAsTaskComponentProps {
   task: Task;
   level?: number;
   showAccordionWrapper?: boolean;
+  parentIndex?:number
 }
 
 export interface ProjectContextValue {
@@ -67,7 +72,7 @@ export interface ProjectContextValue {
   config: ProjectPlayerConfig; // Full config object
 
   // Actions
-  updateTask: (taskId: string,participantId:string ,updates: Partial<Task>) => Promise<void>;
+  updateTask: ({taskId,parentIndex,index}:{taskId:string, parentIndex?:number, index?:number }, participantId:string ,updates: Partial<Task>) => Promise<void>;
   updateProjectInfo: (updates: Partial<ProjectData>) => void;
   addTask: (pillarId: string, task: Task) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;

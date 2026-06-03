@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { TASK_TYPE } from '../../../../../constants/app.constant';
-import { useProjectContext } from '../../../../context/ProjectContext';
+import { useProjectStable, useProjectData } from '../../../../context/ProjectContext';
 import { isTaskCompleted } from '../../shared/helpers';
 import type { Task } from '../../../../types/project.types';
 
@@ -18,15 +18,26 @@ export interface TaskStatusResult {
   setIsRejected: (v: boolean) => void;
 }
 
+/**
+ * Subscribes to stable context for callbacks and data context for plan state.
+ * Does NOT re-render when projectData changes (task status updates) — only
+ * re-renders when addedToPlanTaskIds changes (plan actions, which are rare).
+ */
 export function useTaskStatus(task: Task, isOnboardingTask: boolean): TaskStatusResult {
-  const { addedToPlanTaskIds } = useProjectContext();
+  // Stable: setTaskAddedToPlan never changes reference.
+  const { setTaskAddedToPlan } = useProjectStable();
+  // Data: only re-renders when plan state changes, not on task status changes.
+  const { addedToPlanTaskIds } = useProjectData();
 
-  const [isAddedToPlan, setIsAddedToPlan] = useState(Boolean(!task?.isDeletable));
+  const isAddedToPlan = useMemo(
+    () => addedToPlanTaskIds.includes(task?._id ?? ''),
+    [addedToPlanTaskIds, task?._id],
+  );
+  const setIsAddedToPlan = useCallback(
+    (v: boolean) => setTaskAddedToPlan(task._id, v),
+    [setTaskAddedToPlan, task._id],
+  );
   const [isRejected, setIsRejected] = useState(false);
-
-  useEffect(() => {
-    setIsAddedToPlan(addedToPlanTaskIds.includes(task?._id));
-  }, [addedToPlanTaskIds, task?._id]);
 
   const isCompleted = useMemo(() => isTaskCompleted(task?.status), [task?.status]);
 

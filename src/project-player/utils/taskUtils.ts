@@ -111,3 +111,47 @@ export const formatFileSize = (bytes: number) => {
   const gb = mb / 1024;
   return `${gb.toFixed(1)} GB`;
 };
+type UpdateTaskParams = {
+  data: any;
+  taskIndex: number;
+  childIndex?: number;
+  updatedData: Partial<any>;
+};
+
+export const updateTaskStatus = ({
+  data,
+  taskIndex,
+  childIndex,
+  updatedData,
+}: UpdateTaskParams) => {
+  // create NEW array reference
+  const updatedTasks = [...data.tasks];
+
+  // Parent task update
+  if (childIndex === undefined) {
+    updatedTasks[taskIndex] = {
+      ...updatedTasks[taskIndex],
+      ...updatedData,
+    };
+  } else {
+    // keep children reference immutable
+    const updatedChildren = [
+      ...updatedTasks[taskIndex].children,
+    ];
+
+    updatedChildren[childIndex] = {
+      ...updatedChildren[childIndex],
+      ...updatedData,
+    };
+
+    updatedTasks[taskIndex] = {
+      ...updatedTasks[taskIndex],
+      children: updatedChildren,
+    };
+  }
+
+  return {
+    ...data,
+    tasks: updatedTasks,
+  };
+};

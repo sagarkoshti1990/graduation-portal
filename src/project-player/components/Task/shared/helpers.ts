@@ -54,13 +54,17 @@ export const getStatusCircleColor = (
 /**
  * Get text style for completed tasks
  */
-export const getCompletedTaskTextStyle = (isCompleted: boolean) => ({
+const COMPLETED_TEXT_STYLE = Object.freeze({
   textDecorationLine: 'none' as const,
-  // (isCompleted ? 'line-through' : 'none') as
-  //   | 'line-through'
-  //   | 'none',
-  opacity: isCompleted ? 0.6 : 1,
+  opacity: 0.6,
 });
+const ACTIVE_TEXT_STYLE = Object.freeze({
+  textDecorationLine: 'none' as const,
+  opacity: 1,
+});
+
+export const getCompletedTaskTextStyle = (isCompleted: boolean) =>
+  isCompleted ? COMPLETED_TEXT_STYLE : ACTIVE_TEXT_STYLE;
 
 /**
  * Check if task is completed

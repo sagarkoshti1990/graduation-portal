@@ -79,6 +79,7 @@ import {
   CloudUpload,
   X,
   XCircle,
+  Trash2
 } from 'lucide-react-native';
 import { theme } from '@config/theme';
 
@@ -176,6 +177,7 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   CloudUpload,
   X,
   XCircle,
+  Trash2
 };
 
 /**
