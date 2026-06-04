@@ -66,6 +66,7 @@ export interface ProjectAsTaskComponentProps {
 
 export interface ProjectContextValue {
   projectData: ProjectData | null;
+  oldProjectData: ProjectData | null;
   isLoading: boolean;
   error: Error | null;
   mode: 'preview' | 'edit' | 'read-only';
@@ -89,6 +90,7 @@ export interface ProjectProviderProps {
   children: React.ReactNode;
   config: ProjectPlayerConfig;
   initialData: ProjectData | null;
+  oldProjectData: ProjectData | null;
   onTaskUpdate?: (task: Task) => void;
 }
 
@@ -133,6 +135,7 @@ export interface ProjectPlayerConfig {
 export interface ProjectPlayerData {
   solutionId?: string;
   projectId?: string;
+  oldProjectId?: string;
   entityId?: string;
   userStatus?: string;
   data?: ProjectData;

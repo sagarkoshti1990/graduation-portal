@@ -82,6 +82,7 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
 }) => {
   const {
     projectData: loadedProject,
+    oldProjectData,
     isLoading,
     error,
   } = useProjectLoader(config, data ?? {});
@@ -114,6 +115,7 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
     <ProjectProvider
       config={config}
       initialData={loadedProject}
+      oldProjectData={oldProjectData}
       onTaskUpdate={onTaskUpdate}
     >
       <TaskCompletionTracker

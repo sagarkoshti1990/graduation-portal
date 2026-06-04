@@ -81,6 +81,7 @@ export interface AssessmentSurveyCardProps {
   participantStatus?: string;
   certificate?: any;
   participantAccountUserStatus?: ValueOf<typeof USER_STATUS>;
+  isReadOnly?:boolean
 }
 
 /**

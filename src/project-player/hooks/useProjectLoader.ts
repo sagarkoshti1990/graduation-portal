@@ -25,6 +25,7 @@ export const useProjectLoader = (
   const {user} = useAuth();
   const { t } = useLanguage();
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [oldProjectData, setOldProjectData] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -151,8 +152,15 @@ export const useProjectLoader = (
                 templateId,
                 categoryId: newChildId,
               };
-            }),
+            }).filter((e:any) => e?.tasks?.length > 0),
           };
+
+          if(data?.oldProjectId) {
+            const oldData = await getProjectDetails(data?.oldProjectId);
+            if(oldData?.data) {
+              setOldProjectData(oldData.data)
+            }
+          }
 
           setProjectData(updatedPathwayData);
         } else if (data.solutionId) {
@@ -170,5 +178,5 @@ export const useProjectLoader = (
     loadData();
   }, [config.mode,t, data.projectId, data.solutionId, data.data, data,error, user?.id]);
 
-  return { projectData, isLoading, error };
+  return { projectData,oldProjectData, isLoading, error };
 };

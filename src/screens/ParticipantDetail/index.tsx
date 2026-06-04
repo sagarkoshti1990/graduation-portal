@@ -40,6 +40,7 @@ import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
 import { getAnswerData } from '@utils/helper';
 import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
+import { MODE } from '@constants/PROJECTDATA';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -48,6 +49,7 @@ import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_
  */
 type ParticipantDetailRouteParams = {
   id?: string;
+  coachId?:string;
 };
 
 /**
@@ -64,6 +66,9 @@ export default function ParticipantDetail() {
   const { setRefComponent } = useGlobal()
   // Extract the id parameter from the route
   const participantId = route.params?.id;
+  const coachId = route.params?.coachId
+  const authUserId = coachId || user?.id;
+
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('intervention-plan');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -79,7 +84,7 @@ export default function ParticipantDetail() {
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
-  const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | null>(null);
+  const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | undefined>(undefined);
   
   // Set document title with participant name
   const pageTitle = participant?.name
@@ -97,10 +102,10 @@ export default function ParticipantDetail() {
       : false;
 
   const fetchEntityDetails = useCallback(async () => {
-    if (participantId && user?.id && !isFetchingRef.current) {
+    if (participantId && authUserId && !isFetchingRef.current) {
       try {
         isFetchingRef.current = true;
-        const result = await dataService.getParticipantDetails(participantId, user.id);
+        const result = await dataService.getParticipantDetails(participantId, authUserId);
         const participantData = result.data as any;
         const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
         const response = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId)   
@@ -118,13 +123,14 @@ export default function ParticipantDetail() {
         }
       } catch (error) {
         logger.log(error);
+        setParticipant(undefined);
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
       }
     }
     // @ts-ignore
-  }, [participantId, user?.id, setNavbarData]);
+  }, [participantId, authUserId, setNavbarData]);
 
   // Re-fetch data when screen comes into focus (e.g., navigating back)
   useFocusEffect(
@@ -235,7 +241,7 @@ export default function ParticipantDetail() {
         ) : null})
       }
     }
-    if (setRefComponent && participant && participantId && user?.id && solutions.length === 0 && updatedProgress !== undefined) {
+    if (setRefComponent && participant && participantId && authUserId && solutions.length === 0 && updatedProgress !== undefined) {
       fetchSolutions();
     } else
     if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
@@ -246,7 +252,7 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [setRefComponent, updatedProgress, participant, participantId, solutions, user?.id]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId]);
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
@@ -318,14 +324,13 @@ export default function ParticipantDetail() {
                 showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
               }
             />
-            {fetchedProjectData && (
-              <InterventionPlan
-                key={`project-player-${participantId}`}
-                participantProfile={participant}
-                onTaskCompletionChange={setAreAllTasksCompleted}
-                projectData={fetchedProjectData}
-              />
-            )}
+            <InterventionPlan
+              key={`project-player-${participantId}`}
+              participantProfile={participant}
+              onTaskCompletionChange={setAreAllTasksCompleted}
+              projectData={fetchedProjectData}
+              {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
+            />
           </>
         ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
@@ -380,14 +385,13 @@ export default function ParticipantDetail() {
                       readLessText={t('common.showLess')}
                     />
                   )}
-                  {fetchedProjectData && (
-                    <InterventionPlan
-                      participantProfile={participant}
-                      onIdpCreation={handleIdpCreated}
-                      onProgressChange={handleProgressChange}
-                      projectData={fetchedProjectData}
-                    />
-                  )}
+                  <InterventionPlan
+                    participantProfile={participant}
+                    onIdpCreation={handleIdpCreated}
+                    onProgressChange={handleProgressChange}
+                    projectData={fetchedProjectData}
+                    {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
+                  />
                 </Box>
               )}
               {activeTab === PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
@@ -395,6 +399,7 @@ export default function ParticipantDetail() {
                   <AssessmentSurveys
                     participant={participant as ParticipantData}
                     completionPercentage={updatedProgress || 0}
+                    {...(coachId ? {isReadOnly:true}:{})}
                   />
                 </Box>
               )}
@@ -407,8 +412,9 @@ export default function ParticipantDetail() {
         isOpen={isProfileModalOpen}
         onClose={closeProfileModal}
         participantId={participant.userId || ''}
-        userId={user?.id || ''}
+        userId={authUserId || ''}
         onParticipantSaved={handleParticipantAddressSaved}
+        {...(coachId ? {isReadOnly:true}:{})}
       />
     </Box>
   );

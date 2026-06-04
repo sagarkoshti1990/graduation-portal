@@ -28,6 +28,7 @@ type ParticipantProfileModalProps = {
   participantId:string,
   userId:string,
   onParticipantSaved: (patch: { location: string; email?: string }) => void;
+  isReadOnly?:boolean
 };
 
 function ParticipantProfileModalInner({
@@ -36,6 +37,7 @@ function ParticipantProfileModalInner({
   participantId,
   userId,
   onParticipantSaved,
+  isReadOnly
 }: ParticipantProfileModalProps) {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -53,10 +55,14 @@ function ParticipantProfileModalInner({
     email?: string;
     form?: string;
   }>({});
-  const canEditProfile =
-    participant?.accountUserStatus !== USER_STATUS.INACTIVE &&
+  
+  let canEditProfile = true;
+  if(typeof isReadOnly === "boolean") {
+    canEditProfile = !isReadOnly;
+  } else {
+    canEditProfile = participant?.accountUserStatus !== USER_STATUS.INACTIVE &&
     participant?.status !== STATUS.DROPOUT;
-
+  }
   useEffect(() => {
     const init = async () => {
       const response = await getParticipantsList({ entityId: participantId, userId })

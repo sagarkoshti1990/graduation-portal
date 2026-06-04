@@ -64,6 +64,7 @@ const sortTasksWithChildren = (tasks: any[] = []) => {
 };
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
+  mode,
   projectData,
   participantProfile,
   onIdpCreation,
@@ -83,8 +84,10 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   // Update local status when prop changes
   useEffect(() => {
     setLocalStatus(participantProfile?.status);
-    const sortedTasks = sortTasksWithChildren(projectData.tasks);
-    setProjectSortData({...projectData,tasks:sortedTasks});
+    if(projectData) {
+      const sortedTasks = sortTasksWithChildren(projectData.tasks);
+      setProjectSortData({...projectData,tasks:sortedTasks});
+    }
   }, [participantProfile?.status,projectData]);
 
 
@@ -195,12 +198,13 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     [ participantProfile?.entityId, participantProfile?.status,participantProfile?.province?.value, projectSortData],
   );
   
-  if(!config?.mode || !projectSortData){
+  if(projectData && (!config?.mode || !projectSortData)){
     if(!config?.mode) {
       console.log(`config is not defined`,config);
     }
     return;
   }
+
   // Show empty state for ENROLLED status when player is not shown yet
   if (localStatus === STATUS.ENROLLED) {
     return (
@@ -245,7 +249,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     return (
       <Box flex={1} mt="$1">
         <ProjectPlayer
-          config={config}
+          config={mode ? {...config,mode} : config}
           data={projectPlayerData}
           onTaskUpdate={handleTaskUpdate}
           onProgressChange={onProgressChange}

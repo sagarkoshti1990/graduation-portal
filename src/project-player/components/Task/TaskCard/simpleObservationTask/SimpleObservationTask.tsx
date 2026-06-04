@@ -6,7 +6,9 @@ import React, {
 } from 'react';
 import {
   Box,
+  Modal,
   Spinner,
+  Text,
   useAlert,
 } from '@ui';
 import { useProjectContext } from '../../../../context/ProjectContext';
@@ -29,7 +31,6 @@ import {
   updateEntityDetails,
 } from '../../../../../services/participantService';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useProjectStable } from '../../../../context/ProjectContext';
 import { useTaskPermissions } from '../hooks/useTaskPermissions';
 import { useTaskStatus } from '../hooks/useTaskStatus';
 import {
@@ -69,7 +70,8 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
 }) => {
   // config comes from the prop; projectData._id is read from the ref at
   // action time only (handleTaskClick) — no subscription to live projectData.
-  const { config,projectDataRef } = projectContext;
+  const { config,projectDataRef:proData } = projectContext;
+  const projectDataRef = proData?.current || proData;
   const route = useRoute();
   const navigation = useNavigation();
   const { handleStatusChange, handleAddToPlan } = useTaskActions();
@@ -91,6 +93,7 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean|string>(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
 
@@ -140,7 +143,7 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
     if (!isEdit) return;
     if (isObservationTask) {
       // Read project ID from ref at action time — no subscription needed.
-      const projectTemplateId = projectDataRef.current?._id;
+      const projectTemplateId = projectDataRef?._id;
       if (!participantId || !projectTemplateId) { console.error('Missing userId or projectTemplateId'); return; }
       if (isNetworkOffline()) {
         const offlineSolutionId: string =
@@ -168,9 +171,24 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
       setShowUploadModal(true);
     }
   }, [isEdit, isObservationTask, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating]);
-
+  
   const handleCheckboxChange = useCallback(async (checked: boolean) => {
     if (!isEdit) return;
+
+    if(parentIndex !== undefined) {
+      const projectObj = projectDataRef
+      const parentData = projectObj?.tasks?.[parentIndex]
+      if(parentData?.projectTemplateDetails?.metaInformation?.isReplaceable) { 
+        const data = parentData?.children?.find((item:any)=>item.status === TASK_STATUS.COMPLETED)
+        if(!data?.name) {
+          const value = 'GBL_PATH';
+          const pathway = projectObj?.categories?.find((item:any) => item?.externalId?.includes(value));
+          setShowConfirmModal(pathway.name || "");
+          return false;
+        }
+      }
+    }
+
     setIsStatusUpdating(true);
     try {
       await handleStatusChange({taskId:task._id,parentIndex,index}, checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO);
@@ -359,6 +377,22 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
         isOpen={showPreviewModal} onClose={handleClosePreviewModal}
         taskName={task?.name} attachments={task?.attachments || []}
       />
+      <Modal
+        isOpen={!!showConfirmModal}
+        onClose={setShowConfirmModal}
+        headerTitle={`${t('projectPlayer.confirmPathwaySelection')}`}
+        headerAlignment="baseline"
+        size="lg"
+        confirmButtonText={t('projectPlayer.continue')}
+        onConfirm={() => console.log(projectDataRef?.userProfile)}
+        cancelButtonText={t('projectPlayer.changeIt')}
+        onCancel={() =>       
+          // @ts-ignore
+          navigation.navigate('template', { id: projectDataRef?.userProfile?.id, projectId: projectDataRef?._id })
+        }
+      >
+        <Text>{t('projectPlayer.confirmPathwaySelectionSubtitle',{pathwayName:showConfirmModal})}</Text>
+      </Modal>
     </>
   );
 }

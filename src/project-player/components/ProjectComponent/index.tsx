@@ -52,6 +52,7 @@ function getDeletableTaskIds(tasks: any[] = []): string[] {
 const ProjectComponent = React.memo(() => {
   const {
     projectData,
+    oldProjectData,
     mode,
     config,
     addedToPlanTaskIds,
@@ -160,7 +161,8 @@ const ProjectComponent = React.memo(() => {
         projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
         baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
       };
-
+      console.log(reqBody,oldProjectData,"reqBody")
+      // return false
       // Call API to submit intervention plan
       const response  = await submitInterventionPlan(reqBody);
       const newProjectId = response?.data?.projectId

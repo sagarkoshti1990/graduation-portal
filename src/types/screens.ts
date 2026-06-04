@@ -50,7 +50,8 @@ export interface TemplateData {
 }
 
 export interface InterventionPlanProps {
-  projectData:ProjectData
+  mode?:string|boolean;
+  projectData?:ProjectData
   participantName?: string;
   participantProfile?:any;
   onIdpCreation?: (projectId?: string) => void;

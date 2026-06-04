@@ -89,6 +89,7 @@ const ProjectContent = memo<ProjectContentProps>(({
               <TaskComponent
                 key={task._id}
                 task={task}
+                parentIndex={index}
                 isLastTask={index === onboardingTasks.length - 1}
                 isOnboardingTask={true}
                 projectContext={projectContext}

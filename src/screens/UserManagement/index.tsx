@@ -55,7 +55,6 @@ const buildDetailsForUserAndProgramRow = (
   }
 
   if (roleTitle === 'user') {
-    console.log('programRow?.metaInformation?', programRow?.metaInformation);
     if (programRow?.status === 'IN_PROGRESS') {
       const pct = programRow?.metaInformation?.idpProgress?.completionPercentage || 0;
       if (typeof pct === 'number' && !Number.isNaN(pct)) {
@@ -86,13 +85,14 @@ const mergeUsersWithProgramParticipantMap = (
   usersData.map((u) => {
     const extra = byUserId[String(u.id)];
     if (!extra) {
-      return u;
+      return {...u,extra};
     }
 
     const details = buildDetailsForUserAndProgramRow(u, extra);
     return {
       ...u,
       ...(details ? { details } : {}),
+      extra
     };
   });
 

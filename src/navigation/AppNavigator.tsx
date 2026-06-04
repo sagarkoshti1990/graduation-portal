@@ -128,6 +128,7 @@ const getAccessPages = (
           path: '/assign-users',
           component: AssignUsersScreen,
         },
+        { name: 'participant-detail', path: '/participants/:id/coach/:coachId', component: ParticipantDetail },
       ];
     case 'supervisor':
       return [
@@ -157,6 +158,7 @@ const getAccessPages = (
           path: '/profile-permissions',
           component: ProfilePermissions,
         },
+        { name: 'participant-detail', path: '/participants/:id/coach/:coachId', component: ParticipantDetail },
       ];
     case 'lc':
       return [
@@ -167,7 +169,7 @@ const getAccessPages = (
         { name: 'log-visit', path: '/participants/:id/log-visit', component: LogVisit },
         { name: 'check-ins-list', path: '/participants/:id/check-ins-list/:solutionId?', component: CheckInsList },
         { name: 'observation', path: '/participants/:id/observation/:solutionId/:submissionNumber?', component: Observation },
-        { name: 'template', path: '/participants/:id/template', component: TemplateScreen },
+        { name: 'template', path: '/participants/:id/template/:projectId?', component: TemplateScreen },
         { name: 'participants', component: ParticipantsList },
         { name: 'project', path: '/project', component: ProjectPlayer },
       ];

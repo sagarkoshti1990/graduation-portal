@@ -23,6 +23,7 @@ import { solutionNamesOrder } from '@constants/app.constant';
 interface AssessmentSurveysProps {
   participant: ParticipantData;
   completionPercentage: number;
+  isReadOnly?:boolean;
 }
 
 const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT];
@@ -33,7 +34,8 @@ const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPO
  */
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   participant,
-  completionPercentage = 0
+  completionPercentage = 0,
+  isReadOnly
 }) => {
   const { t } = useLanguage();
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
@@ -165,6 +167,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               participantId={participant?.id || ''}
               participantStatus={participant?.status}
               participantAccountUserStatus={participant?.accountUserStatus}
+              isReadOnly={isReadOnly}
             />
           ))
         ) : (

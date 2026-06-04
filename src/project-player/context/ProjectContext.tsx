@@ -40,6 +40,7 @@ type ProjectStableContextValue = Omit<
  */
 type ProjectDataContextValue = {
   projectData: ProjectData | null;
+  oldProjectData:ProjectData | null;
   addedToPlanTaskIds: string[];
   taskPlanActionPerformedIds: string[];
 };
@@ -197,6 +198,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   children,
   config,
   initialData,
+  oldProjectData,
   onTaskUpdate,
 }) => {
   const mountedRef = useRef(true);
@@ -205,6 +207,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   const [projectData, setProjectData] = useState<ProjectData | null>(
     initialData,
   );
+  
   const projectDataRef = useRef<ProjectData | null>(initialData);
   const [isLoading] = useState(false);
   const [error] = useState<Error | null>(null);
@@ -273,7 +276,13 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       // NOTE: API sync logic below is unreachable in the current flow
       // (kept for future restoration). projectDataRef is used to read current
       // data without adding it to the dependency array.
-      const updatedTaskObj = projectData?.tasks?.[parentIndex||0]?.children?.[index || 0];
+      let updatedTaskObj;
+      const parentTask = projectData?.tasks?.[parentIndex||0];
+      if(index && parentTask?.children && parentTask?.children?.length > 0) {
+        updatedTaskObj = projectData?.tasks?.[parentIndex||0]?.children?.[index];
+      } else {
+        updatedTaskObj = projectData?.tasks?.[parentIndex||0];
+      }
       const currentProjectId = projectData?._id;
 
       if (onTaskUpdate && updatedTaskObj) {
@@ -462,6 +471,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       setTaskPlanActionPerformed,
       onTaskUpdate,
       projectDataRef,
+      oldProjectData
     }),
     [
       isLoading,
@@ -476,6 +486,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       setTaskAddedToPlan,
       setTaskPlanActionPerformed,
       onTaskUpdate,
+      oldProjectData
     ],
   );
 
@@ -484,10 +495,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   const dataValue = useMemo<ProjectDataContextValue>(
     () => ({
       projectData,
+      oldProjectData,
       addedToPlanTaskIds,
       taskPlanActionPerformedIds,
     }),
-    [projectData, addedToPlanTaskIds, taskPlanActionPerformedIds],
+    [projectData,oldProjectData, addedToPlanTaskIds, taskPlanActionPerformedIds],
   );
 
   return (
@@ -531,6 +543,7 @@ export const useProjectContext = (): ProjectContextValue => {
   const data   = useProjectData();
   return {
     projectData:               data.projectData,
+    oldProjectData:            data.oldProjectData,
     isLoading:                 stable.isLoading,
     error:                     stable.error,
     mode:                      stable.mode,
