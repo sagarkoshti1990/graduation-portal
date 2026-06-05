@@ -103,7 +103,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 id: participant?.id,
               });
 
-              if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT) {
+              if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT || isReadOnly) {
                 if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
                     return null;
                 }

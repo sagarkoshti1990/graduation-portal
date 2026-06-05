@@ -202,7 +202,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
     // @ts-ignore
-    navigation.push(link, { id: participantId });
+    navigation.push(link, { id: participantId,...(coachId ? {coachId} : {}) });
   };
 
   const handleCompleteProject = async (solution: any) => {

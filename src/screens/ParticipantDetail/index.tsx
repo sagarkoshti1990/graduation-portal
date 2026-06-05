@@ -172,6 +172,7 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     const fetchSolutions = async () => {
+      if(coachId) return false;
       // When offline, load solutions from the per-participant downloaded mapping.
       // The global targeted-solutions cache may be empty; the participant mapping
       // is always populated during download and has the correct solutionId/keyword data.
