@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     `${prefix}/project/v1/project/templates/list?categoryIds=${ids}&groupByCategory=true&taskDetails=true`,
   UPDATE_TASK: (id: string) => `${prefix}/project/v1/userProjects/update/${id}`,
   SUBMIT_INTERVENTION_PLAN: `${prefix}/project/v1/userProjects/createProjectPlan`,
+  UPDATE_INTERVENTION_PLAN: (id: string) => `${prefix}/project/v1/userProjects/updateProjectPlan/${id}`,
   GET_SOLUTION_DETAILS: (solutionId: string, taskId: string) =>
     `${prefix}/project/v1/userProjects/solutionDetails/${solutionId}?taskId=${taskId}`,
   PRE_SIGNED_URLS: `${prefix}/project/v1/cloud-services/files/preSignedUrls`,

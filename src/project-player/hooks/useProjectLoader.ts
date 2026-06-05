@@ -122,45 +122,54 @@ export const useProjectLoader = (
           const categoryIdsString = data?.categoryIds.join(',');
           const taskResponse = await getTaskDetails(categoryIdsString);
           const taskResult = taskResponse.data;
-
-          const updatedPathwayData = {
-            ...pathwayData,
-            children: pathwayData?.children?.map((child: any) => {
-              let taskEntry = taskResult?.[child._id];
-              let newChildId = child._id;
-              if (!taskEntry) {
-                const relation = data?.pillarCategoryRelation?.find(
-                  (rel: any) => rel.pillarId === child._id,
-                );
-
-                newChildId = relation?.selectedCategoryId;
-                if (newChildId) {
-                  taskEntry = taskResult?.[newChildId];
-                }
-              }
-
-              // 3️⃣ Normalize tasks safely
-              const tasks = Array.isArray(taskEntry)
-                ? taskEntry?.[0]?.tasks ?? []
-                : taskEntry?.tasks ?? [];
-
-                const templateId = taskEntry?.[0]?._id
-
-              return {
-                ...child,
-                tasks,
-                templateId,
-                categoryId: newChildId,
-              };
-            }).filter((e:any) => e?.tasks?.length > 0),
-          };
-
+          const children:any = [];
+          const categoryExternalIds:any = []
           if(data?.oldProjectId) {
             const oldData = await getProjectDetails(data?.oldProjectId);
             if(oldData?.data) {
               setOldProjectData(oldData.data)
             }
+            // const resultCat = 
+            for(let key in taskResult) {
+              const cat = taskResult[key][0]?.categories?.find((item:any) => item._id === key);
+              if(cat?.externalId) {
+                categoryExternalIds.push(cat.externalId);
+              }
+            }
           }
+          pathwayData?.children?.forEach((child: any) => {
+            let taskEntry = taskResult?.[child._id];
+            let newChildId = child._id;
+            if (!taskEntry) {
+              const relation = data?.pillarCategoryRelation?.find(
+                (rel: any) => rel.pillarId === child._id,
+              );
+
+              newChildId = relation?.selectedCategoryId;
+              if (newChildId) {
+                taskEntry = taskResult?.[newChildId];
+              }
+            }
+
+            // 3️⃣ Normalize tasks safely
+            const tasks = Array.isArray(taskEntry)
+              ? taskEntry?.[0]?.tasks ?? []
+              : taskEntry?.tasks ?? [];
+
+            const templateId = taskEntry?.[0]?._id
+            categoryExternalIds.push(child.externalId);
+            children.push( {
+              ...child,
+              tasks,
+              templateId,
+              categoryId: newChildId,
+            });
+          })
+          const updatedPathwayData = {
+            ...pathwayData,
+            categoryExternalIds,
+            children: children.filter((e:any) => e?.tasks?.length > 0),
+          };
 
           setProjectData(updatedPathwayData);
         } else if (data.solutionId) {

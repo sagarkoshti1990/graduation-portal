@@ -17,7 +17,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Container from '@ui/Container';
 import { LucideIcon, Modal, useAlert } from '@ui';
-import { submitInterventionPlan } from '../../services/projectPlayerService';
+import { submitInterventionPlan, updateInterventionPlan } from '../../services/projectPlayerService';
 import { PLAYER_MODE } from '@constants/app.constant';
 
 function getExcludedTaskIds(
@@ -129,13 +129,24 @@ const ProjectComponent = React.memo(() => {
           // Determine if this is a task or project based on type
           const isProject = pillar.type === 'project';
           const isSocialProtectionPillar = pillar.tasks?.find((task:any) => task.isDeletable) as boolean;
+          let oldData:any = oldProjectData?.tasks?.find((item:any) => pillar.templateId === item?.projectTemplateDetails?._id && item?.projectTemplateDetails?.metaInformation?.isReplaceable === true);
+          if(!oldData?.projectTemplateDetails?._id) {
+            oldData = oldProjectData?.tasks?.[0]
+          }
           const templatePayload: any = {
-            categoryId: pillar.categoryId,
-            templateId: pillar.templateId,
             ...(isProject
               ? { targetProjectName: pillar.name }
               : { targetTaskName: pillar.name }),
             customTasks,
+            ...(oldData?.projectTemplateDetails?._id ? {
+              existingTemplateId:oldData?.projectTemplateDetails?._id,
+              existingCategoryId:oldData?.projectTemplateDetails?.categoryId,
+              newCategoryId: pillar.categoryId,
+              newTemplateId: pillar.templateId,
+            }:{
+              categoryId: pillar.categoryId,
+              templateId: pillar.templateId,
+            })
           };
 
           // ONLY attach excludedTaskIds to Social Protection pillar
@@ -154,29 +165,32 @@ const ProjectComponent = React.memo(() => {
         return;
       }
 
-      const reqBody = {
-        templates,
-        userId,
-        entityId: config.profileInfo?.entityId || userId, // Fallback to userId if entityId not available
-        projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
-        baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
-      };
-      console.log(reqBody,oldProjectData,"reqBody")
-      // return false
-      // Call API to submit intervention plan
-      const response  = await submitInterventionPlan(reqBody);
-      const newProjectId = response?.data?.projectId
-      if (!response.error) {
+      if(oldProjectData) {
+        const playLoad:any = {replacements:templates,replacementReason:"",categoryExternalIds:projectData.categoryExternalIds} 
+        const response  = await updateInterventionPlan(oldProjectData._id,playLoad);
+        console.log(response,"sagar");
         showAlert('success', t('template.IdpCreationSuccess'));
-
+      } else {
+        const reqBody = {
+          templates,
+          userId,
+          entityId: config.profileInfo?.entityId || userId, // Fallback to userId if entityId not available
+          projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
+          baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
+        };
+        
+        // Call API to submit intervention plan
+        const response  = await submitInterventionPlan(reqBody);
+        const newProjectId = response?.data?.projectId
+        if (!response.error) {
+          showAlert('success', t('template.IdpCreationSuccess'));
+        } else {
+          showAlert('error',response.error || t('projectPlayer.error.submitFailed'));
+        }
         // Call the config callback if provided (this will update status to IN_PROGRESS)
         if (config.onSubmitInterventionPlan) {
           config.onSubmitInterventionPlan(newProjectId);
         }
-      } else {
-        showAlert(
-          'error',
-          response.error || t('projectPlayer.error.submitFailed'));
       }
     } catch (error) {
       console.error('Error submitting intervention plan:', error);
@@ -184,7 +198,7 @@ const ProjectComponent = React.memo(() => {
     } finally {
       setIsSubmittingInterventionPlan(false);
     }
-  }, [projectData, config, addedToPlanTaskIds, showAlert, t]);
+  }, [projectData, oldProjectData, config, addedToPlanTaskIds, showAlert, t]);
 
   if (!projectData) {
     return null;
