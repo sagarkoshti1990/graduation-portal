@@ -129,10 +129,8 @@ const ProjectComponent = React.memo(() => {
           // Determine if this is a task or project based on type
           const isProject = pillar.type === 'project';
           const isSocialProtectionPillar = pillar.tasks?.find((task:any) => task.isDeletable) as boolean;
-          let oldData:any = oldProjectData?.tasks?.find((item:any) => pillar.templateId === item?.projectTemplateDetails?._id && item?.projectTemplateDetails?.metaInformation?.isReplaceable === true);
-          if(!oldData?.projectTemplateDetails?._id) {
-            oldData = oldProjectData?.tasks?.[0]
-          }
+          let oldData:any = oldProjectData?.tasks?.find((item:any) => pillar.templateId === item?.projectTemplateDetails?._id || item?.projectTemplateDetails?.metaInformation?.isReplaceable === true);
+          
           const templatePayload: any = {
             ...(isProject
               ? { targetProjectName: pillar.name }
@@ -168,8 +166,15 @@ const ProjectComponent = React.memo(() => {
       if(oldProjectData) {
         const playLoad:any = {replacements:templates,replacementReason:"",categoryExternalIds:projectData.categoryExternalIds} 
         const response  = await updateInterventionPlan(oldProjectData._id,playLoad);
-        console.log(response,"sagar");
-        showAlert('success', t('template.IdpCreationSuccess'));
+        if(!response.error) {
+          const newProjectId = response?.data?.projectId          
+          if (config.onSubmitInterventionPlan) {
+            config.onSubmitInterventionPlan(newProjectId);
+          }
+          showAlert('success', t('template.IdpCreationSuccess'));
+        } else {
+          showAlert('error',response.error || t('projectPlayer.error.submitFailed'));
+        }
       } else {
         const reqBody = {
           templates,
@@ -184,12 +189,12 @@ const ProjectComponent = React.memo(() => {
         const newProjectId = response?.data?.projectId
         if (!response.error) {
           showAlert('success', t('template.IdpCreationSuccess'));
+          // Call the config callback if provided (this will update status to IN_PROGRESS)
+          if (config.onSubmitInterventionPlan) {
+            config.onSubmitInterventionPlan(newProjectId);
+          }
         } else {
           showAlert('error',response.error || t('projectPlayer.error.submitFailed'));
-        }
-        // Call the config callback if provided (this will update status to IN_PROGRESS)
-        if (config.onSubmitInterventionPlan) {
-          config.onSubmitInterventionPlan(newProjectId);
         }
       }
     } catch (error) {

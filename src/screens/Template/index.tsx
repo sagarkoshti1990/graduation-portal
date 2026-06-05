@@ -108,7 +108,10 @@ const DevelopInterventionPlan: React.FC = () => {
   const handleIdpCreation = useCallback(async (newProjectId: any) => {
     // console.log('handleIdpCreation -  Project ID:', newProjectId);
     setIdpCreated(true);
-    if (newProjectId) {
+    if(existingProjectId) {
+      // @ts-ignore
+      navigation.navigate('participant-detail' as never, { id: route.params?.id as never });
+    } else if (newProjectId) {
       // Extract project ID from the response
 
       const response = await getProjectDetails(newProjectId);
@@ -126,15 +129,15 @@ const DevelopInterventionPlan: React.FC = () => {
       });
 
        // create user program Mapping for the participant
-      await createOrUpdateProgramUserMapping({
-        userId: participantId,
-        programId: process.env.GLOBAL_LC_PROGRAM_ID,
-        metaInformation: {
-          idpProjectId: newProjectId,
-          idpProjectCreatedAt: thisDate,
-        },
-        status: STATUS.IN_PROGRESS
-      });
+      // await createOrUpdateProgramUserMapping({
+      //   userId: participantId,
+      //   programId: process.env.GLOBAL_LC_PROGRAM_ID,
+      //   metaInformation: {
+      //     idpProjectId: newProjectId,
+      //     idpProjectCreatedAt: thisDate,
+      //   },
+      //   status: STATUS.IN_PROGRESS
+      // });
 
       // create user program Mapping for the participant
       await createOrUpdateProgramUserMapping({

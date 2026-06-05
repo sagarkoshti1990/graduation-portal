@@ -261,28 +261,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   }, [projectData, addedToPlanTaskIds.length, taskPlanActionPerformedIds.length]);
 
   const updateTask = useCallback(
-    async ({taskId, parentIndex, index}: {taskId: string; parentIndex?: number; index?: number}, participantId: string, updates: Partial<Task>): Promise<void> => {
+    async (taskId: string, participantId: string, updates: Partial<Task>): Promise<void> => {
       // Use functional updater to avoid stale projectData closure.
-      setProjectData(prev => {
-        if (!prev) return prev;
-        return updateTaskStatus({
-          data: prev,
-          taskIndex: parentIndex || 0,
-          childIndex: index,
-          updatedData: updates,
-        });
-      });
-
-      // NOTE: API sync logic below is unreachable in the current flow
-      // (kept for future restoration). projectDataRef is used to read current
-      // data without adding it to the dependency array.
-      let updatedTaskObj;
-      const parentTask = projectData?.tasks?.[parentIndex||0];
-      if(index && parentTask?.children && parentTask?.children?.length > 0) {
-        updatedTaskObj = projectData?.tasks?.[parentIndex||0]?.children?.[index];
-      } else {
-        updatedTaskObj = projectData?.tasks?.[parentIndex||0];
-      }
+      const {task,project} = updateTaskStatus({
+        taskId,
+        data: projectData,
+        updatedData: updates,
+      })
+      setProjectData(project);
+      let updatedTaskObj = task;
       const currentProjectId = projectData?._id;
 
       if (onTaskUpdate && updatedTaskObj) {

@@ -73,7 +73,7 @@ export interface ProjectContextValue {
   config: ProjectPlayerConfig; // Full config object
 
   // Actions
-  updateTask: ({taskId,parentIndex,index}:{taskId:string, parentIndex?:number, index?:number }, participantId:string ,updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId:string, participantId:string ,updates: Partial<Task>) => Promise<void>;
   updateProjectInfo: (updates: Partial<ProjectData>) => void;
   addTask: (pillarId: string, task: Task) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;

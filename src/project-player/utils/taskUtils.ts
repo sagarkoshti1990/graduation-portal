@@ -1,4 +1,4 @@
-import { Task, TaskStatus } from '../types/project.types';
+import { ProjectData, Task, TaskStatus } from '../types/project.types';
 import { TASK_STATUS } from '../../constants/app.constant';
 
 // Find a task by ID in a nested structure
@@ -111,47 +111,51 @@ export const formatFileSize = (bytes: number) => {
   const gb = mb / 1024;
   return `${gb.toFixed(1)} GB`;
 };
-type UpdateTaskParams = {
-  data: any;
-  taskIndex: number;
-  childIndex?: number;
-  updatedData: Partial<any>;
-};
+
+interface UpdateTaskParams {
+  data: ProjectData | null;
+  taskId: string;
+  updatedData: Partial<Task>;
+}
 
 export const updateTaskStatus = ({
   data,
-  taskIndex,
-  childIndex,
+  taskId,
   updatedData,
 }: UpdateTaskParams) => {
-  // create NEW array reference
-  const updatedTasks = [...data.tasks];
+  let updatedTask: Task | null = null;
 
-  // Parent task update
-  if (childIndex === undefined) {
-    updatedTasks[taskIndex] = {
-      ...updatedTasks[taskIndex],
-      ...updatedData,
-    };
-  } else {
-    // keep children reference immutable
-    const updatedChildren = [
-      ...updatedTasks[taskIndex].children,
-    ];
+  const updateTaskRecursive = (tasks: Task[]): Task[] => {
+    return tasks.map((task) => {
+      // Match found
+      if (task._id === taskId) {
+        updatedTask = {
+          ...task,
+          ...updatedData,
+        };
 
-    updatedChildren[childIndex] = {
-      ...updatedChildren[childIndex],
-      ...updatedData,
-    };
+        return updatedTask;
+      }
 
-    updatedTasks[taskIndex] = {
-      ...updatedTasks[taskIndex],
-      children: updatedChildren,
-    };
-  }
+      // Check children recursively
+      if (task.children?.length) {
+        return {
+          ...task,
+          children: updateTaskRecursive(task.children),
+        };
+      }
+
+      return task;
+    });
+  };
+
+  const updatedProject = {
+    ...data,
+    tasks: updateTaskRecursive(data?.tasks || []),
+  };
 
   return {
-    ...data,
-    tasks: updatedTasks,
+    project: updatedProject as ProjectData,
+    task:updatedTask,
   };
 };

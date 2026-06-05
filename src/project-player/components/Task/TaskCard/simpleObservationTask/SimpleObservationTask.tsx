@@ -172,17 +172,15 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
     }
   }, [isEdit, isObservationTask, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating]);
   
-  const handleCheckboxChange = useCallback(async (checked: boolean) => {
+  const handleCheckboxChange = useCallback(async (checked: boolean,canChangePathway:boolean=true) => {
     if (!isEdit) return;
-
-    if(parentIndex !== undefined) {
-      const projectObj = projectDataRef
-      const parentData = projectObj?.tasks?.[parentIndex]
+    if(task.parentId !== undefined && canChangePathway) {
+      const parentData = projectDataRef?.tasks.find((item:any) => item._id === task.parentId);
       if(parentData?.projectTemplateDetails?.metaInformation?.isReplaceable) { 
         const data = parentData?.children?.find((item:any)=>item.status === TASK_STATUS.COMPLETED)
         if(!data?.name) {
           const value = 'GBL_PATH';
-          const pathway = projectObj?.categories?.find((item:any) => item?.externalId?.includes(value));
+          const pathway = projectDataRef?.categories?.find((item:any) => item?.externalId?.includes(value));
           setShowConfirmModal(pathway.name || "");
           return false;
         }
@@ -197,8 +195,9 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
      }
   }, [isEdit, task._id,parentIndex,index, handleStatusChange]);
   
-  const handleTitlePress = useCallback(() => {
-    if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted);
+  const handleTitlePress = useCallback((canChangePathway:any) => {
+console.log(canChangePathway,"sagar")
+    if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted,canChangePathway);
   }, [isManualToggleDisabled, handleCheckboxChange, isCompleted]);
 
   const updateEntityFile = useCallback(async (data: any) => {
@@ -384,7 +383,10 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
         headerAlignment="baseline"
         size="lg"
         confirmButtonText={t('projectPlayer.continue')}
-        onConfirm={() => console.log(projectDataRef?.userProfile)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          handleTitlePress(false);
+        }}
         cancelButtonText={t('projectPlayer.changeIt')}
         onCancel={() =>       
           // @ts-ignore

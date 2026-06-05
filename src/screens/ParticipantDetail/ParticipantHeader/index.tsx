@@ -159,8 +159,12 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [participantProp?.idpProjectId,projectData]);
 
   const handleBackPress = () => {
-    // @ts-ignore
-    navigation.navigate('participants');
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // @ts-ignore
+      navigation.navigate('participants');
+    }
   };
 
   const handleEnrollParticipant = async () => {
