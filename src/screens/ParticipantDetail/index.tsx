@@ -315,6 +315,7 @@ export default function ParticipantDetail() {
         // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
+        coachId={coachId}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
