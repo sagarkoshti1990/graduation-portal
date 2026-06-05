@@ -196,7 +196,6 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
   }, [isEdit, task._id,parentIndex,index, handleStatusChange]);
   
   const handleTitlePress = useCallback((canChangePathway:any) => {
-console.log(canChangePathway,"sagar")
     if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted,canChangePathway);
   }, [isManualToggleDisabled, handleCheckboxChange, isCompleted]);
 

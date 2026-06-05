@@ -44,6 +44,7 @@
     "offline": "Offline Mode",
     "online": "Online",
     "selectOption": "Select an option",
+    "selectAtLeastOneOption":"Select AtLeast One Option",
     "placeholder": "Search users, templates, logs...",
     "actions": "Actions",
     "noDataFound": "No data found",
@@ -1833,7 +1834,11 @@
       "dropoutWarning": "This participant has dropped out of the program. You are viewing their records in read-only mode. No changes can be made.",
       "viewLog": "View Log",
       "previous": "Previous",
-      "complete": "Complete"
+      "complete": "Complete",
+      "targetingCriteria":"Targeting Criteria Met",
+      "targetingCriteriaDescription":"Mark if the participant meets the targeting criteria",
+      "targetingCriteriaCSGSRDGrant":"Participants is receiving CSG/SRD Grant",
+      "targetingCriteriaAge":"Age of participant is between 18-50"
     },
     "profileModal": {
       "title": "Participant Profile",

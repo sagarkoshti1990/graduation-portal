@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { HStack, Box, Container, ReadMoreAlert } from '@ui';
+import { HStack, Box, Container, ReadMoreAlert, Text } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
@@ -41,6 +41,7 @@ import { useGlobal } from '@contexts/GlobalContext';
 import { getAnswerData } from '@utils/helper';
 import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
 import { MODE } from '@constants/PROJECTDATA';
+import TargetingCriteriaCard from './ParticipantHeader/TargetingCriteriaCard';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -85,7 +86,7 @@ export default function ParticipantDetail() {
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
   const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | undefined>(undefined);
-  
+  const [targetingCriteria,setTargetingCriteria] = useState(false);
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -288,7 +289,7 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-  
+
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
@@ -317,7 +318,9 @@ export default function ParticipantDetail() {
       />
 
       <Container px="$4" py="$6" $md-px="$6">
-        {showOnboardingProject ? (
+        {!participant?.onBoardedProjectId && !targetingCriteria ?
+          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={setTargetingCriteria}/>
+        : showOnboardingProject ? (
           <>
             <DownloadFormsCard
               mode={
