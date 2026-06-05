@@ -47,7 +47,11 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
 
   // Use prop if provided, otherwise fall back to route params
   const id = propId || route.params?.id;
+  // @ts-ignore
   const solutionId = route.params?.solutionId || '';
+  // @ts-ignore
+  const coachId = route.params?.coachId
+  const authUserId = coachId || user?.id;
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [selectedSolution, setSelectedSolution] = useState<string>(solutionId);
@@ -58,7 +62,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     const fetchData = async () => {
       try {
         const [response, solutionsData] = await Promise.all([
-          id ? getParticipantsList({ entityId: id, userId: user?.id as string }) : Promise.resolve(undefined),
+          id ? getParticipantsList({ entityId: id, userId: authUserId as string }) : Promise.resolve(undefined),
           getTargetedSolutions({ type: 'observation' }),
         ]);
         const { userDetails, ...rest } = response?.result?.data?.[0]
@@ -77,13 +81,13 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
       }
     };
 
-    if (id && user?.id) {
+    if (id && authUserId) {
       fetchData();
     }
     return () => {
       setNavbarData(null);
     };
-  }, [id, setNavbarData, user?.id]);
+  }, [id, setNavbarData, authUserId]);
 
   /**
    * Handle Back Navigation

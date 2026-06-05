@@ -44,6 +44,7 @@
     "offline": "Offline Mode",
     "online": "Online",
     "selectOption": "Select an option",
+    "selectAtLeastOneOption":"Select AtLeast One Option",
     "placeholder": "Search users, templates, logs...",
     "actions": "Actions",
     "noDataFound": "No data found",
@@ -135,6 +136,10 @@
     "customTaskAddSuccess": "Task added successfully.",
     "customTaskUpdateSuccess": "Task updated successfully.",
     "evidencePreview": "Evidence Preview",
+    "confirmPathwaySelection":"Confirm Your Pathway Selection",
+    "confirmPathwaySelectionSubtitle":"Do you want to continue with the {{pathwayName}}, or would you like to change it?",
+    "changeIt":"Change it",
+    "continue":"Continue",
     "viewAllUploadedEvidence": "View all uploaded evidence files for this task",
     "imagePreviewPlaceholder": "Image preview would be displayed here",
     "noFilesUploaded": "No files uploaded yet",
@@ -1336,7 +1341,8 @@
         "resetPassword": "Reset Password",
         "deactivate": "Deactivate",
         "confirmDeactivate": "Confirm deactivation",
-        "deactivateMessage": "Deactivate {{name}}? They will lose access."
+        "deactivateMessage": "Deactivate {{name}}? They will lose access.",
+        "view-progress":"View Progress"
       },
       "resetPassword": {
         "title": "Reset Password",
@@ -1828,7 +1834,11 @@
       "dropoutWarning": "This participant has dropped out of the program. You are viewing their records in read-only mode. No changes can be made.",
       "viewLog": "View Log",
       "previous": "Previous",
-      "complete": "Complete"
+      "complete": "Complete",
+      "targetingCriteria":"Targeting Criteria Met",
+      "targetingCriteriaDescription":"Mark if the participant meets the targeting criteria",
+      "targetingCriteriaCSGSRDGrant":"Participants is receiving CSG/SRD Grant",
+      "targetingCriteriaAge":"Age of participant is between 18-50"
     },
     "profileModal": {
       "title": "Participant Profile",

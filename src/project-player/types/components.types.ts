@@ -22,6 +22,7 @@ export interface TaskAccordionProps {
   task: Task;
   level?: number;
   showAccordionWrapper?: boolean;
+  parentIndex?:number
 }
 
 export interface TaskComponentProps {
@@ -31,6 +32,9 @@ export interface TaskComponentProps {
   isChildOfProject?: boolean;
   isOnboardingTask?: boolean;
   showAccordionWrapper?: boolean;
+  index?:number
+  parentIndex?:number,
+  projectContext?:any
 }
 
 export interface UploadComponentProps {
@@ -57,17 +61,19 @@ export interface ProjectAsTaskComponentProps {
   task: Task;
   level?: number;
   showAccordionWrapper?: boolean;
+  parentIndex?:number
 }
 
 export interface ProjectContextValue {
   projectData: ProjectData | null;
+  oldProjectData: ProjectData | null;
   isLoading: boolean;
   error: Error | null;
   mode: 'preview' | 'edit' | 'read-only';
   config: ProjectPlayerConfig; // Full config object
 
   // Actions
-  updateTask: (taskId: string,participantId:string ,updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId:string, participantId:string ,updates: Partial<Task>) => Promise<void>;
   updateProjectInfo: (updates: Partial<ProjectData>) => void;
   addTask: (pillarId: string, task: Task) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
@@ -84,6 +90,7 @@ export interface ProjectProviderProps {
   children: React.ReactNode;
   config: ProjectPlayerConfig;
   initialData: ProjectData | null;
+  oldProjectData: ProjectData | null;
   onTaskUpdate?: (task: Task) => void;
 }
 
@@ -128,6 +135,7 @@ export interface ProjectPlayerConfig {
 export interface ProjectPlayerData {
   solutionId?: string;
   projectId?: string;
+  oldProjectId?: string;
   entityId?: string;
   userStatus?: string;
   data?: ProjectData;

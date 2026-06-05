@@ -1,4 +1,4 @@
-import { Task, TaskStatus } from '../types/project.types';
+import { ProjectData, Task, TaskStatus } from '../types/project.types';
 import { TASK_STATUS } from '../../constants/app.constant';
 
 // Find a task by ID in a nested structure
@@ -110,4 +110,52 @@ export const formatFileSize = (bytes: number) => {
 
   const gb = mb / 1024;
   return `${gb.toFixed(1)} GB`;
+};
+
+interface UpdateTaskParams {
+  data: ProjectData | null;
+  taskId: string;
+  updatedData: Partial<Task>;
+}
+
+export const updateTaskStatus = ({
+  data,
+  taskId,
+  updatedData,
+}: UpdateTaskParams) => {
+  let updatedTask: Task | null = null;
+
+  const updateTaskRecursive = (tasks: Task[]): Task[] => {
+    return tasks.map((task) => {
+      // Match found
+      if (task._id === taskId) {
+        updatedTask = {
+          ...task,
+          ...updatedData,
+        };
+
+        return updatedTask;
+      }
+
+      // Check children recursively
+      if (task.children?.length) {
+        return {
+          ...task,
+          children: updateTaskRecursive(task.children),
+        };
+      }
+
+      return task;
+    });
+  };
+
+  const updatedProject = {
+    ...data,
+    tasks: updateTaskRecursive(data?.tasks || []),
+  };
+
+  return {
+    project: updatedProject as ProjectData,
+    task:updatedTask,
+  };
 };

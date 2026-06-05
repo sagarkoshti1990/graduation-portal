@@ -4,7 +4,7 @@ import { ColumnDef } from '@app-types/components';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { LucideIcon, Menu } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
-import { theme } from '@config/theme';
+import { useNavigation } from '@react-navigation/native';
 import { AdminUserManagementData } from '@app-types/Users';
 import { styles as dataTableStyles } from '@components/DataTable/Styles';
 import { MenuItemData } from '@components/ui/Menu';
@@ -50,6 +50,7 @@ export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
     <HStack
       bg={styles.roleColors[role as keyof typeof styles.roleColors] || '$textSecondary'}
       {...(isParticipant ? styles.roleBadgeParticipant : styles.roleBadge)}
+      width={"100%"}
     >
       <Text
         {...TYPOGRAPHY.bodySmall}
@@ -72,6 +73,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     <HStack
       {...(isActive ? styles.statusBadgeActive : styles.statusBadgeInactive)}
       {...styles.statusBadge}
+      width={"100%"}
     >
       <Text
         {...TYPOGRAPHY.bodySmall}
@@ -127,7 +129,7 @@ const getCustomTrigger = (triggerProps: any) => (
     <LucideIcon
       name="MoreVertical"
       size={20}
-      color={theme.tokens.colors.textForeground}
+      color={"$textForeground"}
     />
   </Pressable>
 );
@@ -137,7 +139,7 @@ const getCustomTrigger = (triggerProps: any) => (
  */
 const getUserMenuItems = (
   _t: (key: string) => string,
-  canDeactivate: boolean
+  canDeactivate: {canDeactivate:boolean,isParticipantRole:boolean}
 ): MenuItemData[] => {
   const items: MenuItemData[] = [
     {
@@ -145,7 +147,7 @@ const getUserMenuItems = (
       label: 'admin.users.actionMenu.viewProfile',
       textValue: 'View Profile',
       iconName: 'Eye',
-      iconColor: theme.tokens.colors.textForeground,
+      iconColor: "$textForeground",
       iconSizeValue: 20,
     },
     {
@@ -153,7 +155,7 @@ const getUserMenuItems = (
       label: 'admin.users.actionMenu.edit',
       textValue: 'Edit',
       iconName: 'Pencil',
-      iconColor: theme.tokens.colors.textForeground,
+      iconColor: "$textForeground",
       iconSizeValue: 20,
     },
     // {
@@ -161,23 +163,35 @@ const getUserMenuItems = (
     //   label: 'admin.users.actionMenu.resetPassword',
     //   textValue: 'Reset Password',
     //   iconName: 'RotateCcw',
-    //   iconColor: theme.tokens.colors.textForeground,
+    //   iconColor: "$textForeground",
     //   iconSizeValue: 20,
     // },
   ];
 
-  if (canDeactivate) {
+  if (canDeactivate?.isParticipantRole) {
+    items.push({
+      key: 'view-progress',
+      label: 'admin.users.actionMenu.view-progress',
+      textValue: 'view-progress',
+      iconName: 'ListChecks',
+      iconColor: "$textForeground",
+      iconSizeValue: 20,
+      color: "$textForeground",
+    });
+  }
+
+  if (canDeactivate?.canDeactivate) {
     items.push({
       key: 'deactivate',
       label: 'admin.users.actionMenu.deactivate',
       textValue: 'Deactivate',
       iconName: 'UserX',
-      iconColor: theme.tokens.colors.error600,
+      iconColor: "$error600",
       iconSizeValue: 20,
-      color: theme.tokens.colors.error600,
+      color: "$error600",
     });
   }
-
+  
   return items;
 };
 
@@ -194,6 +208,7 @@ const ActionsColumn: React.FC<{
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   const isAdmin = currentUser?.role === 'Admin';
+  const navigation = useNavigation();
 
   // Check if the target user has Admin role
   const isTargetUserAdmin = (() => {
@@ -222,8 +237,10 @@ const ActionsColumn: React.FC<{
     // Check direct role property as fallback
     const directRole = (user as any)?.role?.toLowerCase();
     const hasDirectAdminRole = directRole === 'admin' || directRole === 'brac admin' || directRole?.includes('admin');
+    const isParticipantRole = roleLabels?.includes('participant');
     
-    return hasAdminLabel || hasAdminTitle || hasDirectAdminRole || user?.status?.toLowerCase() === 'inactive';
+    const isTargetUserAdminData = hasAdminLabel || hasAdminTitle || hasDirectAdminRole || user?.status?.toLowerCase() === 'inactive';
+    return {isTargetUserAdmin:isTargetUserAdminData,isParticipantRole}
   })();
 
   const handleMenuSelect = (key: string) => {
@@ -241,14 +258,21 @@ const ActionsColumn: React.FC<{
       case 'deactivate':
         onDeactivate?.(user);
         break;
+      case 'view-progress':
+        const coachId = user.extra?.hierarchy?.find((item:any) => item.level === 0)?.id
+        if(coachId) {          
+          // @ts-ignore
+          navigation.push('participant-detail', { id: user?.id,coachId })
+        }
+        break;
       default:
         console.log('Action:', key, 'for user:', user.id);
     }
   };
 
   // Only show Deactivate if current user is Admin AND target user is NOT Admin
-  const canDeactivate = isAdmin && !isTargetUserAdmin;
-  const menuItems = getUserMenuItems(t, canDeactivate);
+  const canDeactivate = isAdmin && !isTargetUserAdmin.isTargetUserAdmin;
+  const menuItems = getUserMenuItems(t, {canDeactivate,isParticipantRole:isTargetUserAdmin.isParticipantRole});
 
   return (
     <Menu
@@ -303,7 +327,10 @@ export const getUsersColumns = (handlers?: {
     label: 'admin.users.email',
     flex: 2.5,
     render: (user) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.emailText}>
+      <Text {...TYPOGRAPHY.paragraph} {...styles.emailText}
+      width={"100%"}
+      
+      >
         {user.email}
       </Text>
     ),

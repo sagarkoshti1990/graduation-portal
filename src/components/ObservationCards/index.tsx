@@ -36,15 +36,18 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   participantStatus,
   certificate,
   participantAccountUserStatus,
+  isReadOnly,
 }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
   const { name, description, navigationUrl, entity } = card;
   const [iconMeta, setIconMeta] = useState<IconMeta | null>(null);
-  const isReadOnlyParticipant =
-    participantStatus === STATUS.GRADUATED ||
-    participantStatus === STATUS.DROPOUT ||
-    participantAccountUserStatus === USER_STATUS.INACTIVE;
+  let isReadOnlyParticipant = false;
+  if(typeof isReadOnly === "boolean") {
+    isReadOnlyParticipant = isReadOnly;
+  } else {
+    isReadOnlyParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT || participantAccountUserStatus === USER_STATUS.INACTIVE;
+  }
   const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
   const shouldShowViewButton =
     entity?.status &&
@@ -53,6 +56,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   const shouldShowActionButton = !!entity?.status;
   const canOpenCardFromPressable =
     !entity?.status && !!navigationUrl && !isReadOnlyParticipant;
+    
   const handleCardAction = () => {
     if (!navigationUrl || !userId) {
       logger.log('userId is required');
@@ -173,7 +177,6 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                       as={LucideIcon}
                       name="FileText"
                       size={16}
-
                     />
                     <ButtonText
                       {...assessmentSurveyCardStyles.buttonText}

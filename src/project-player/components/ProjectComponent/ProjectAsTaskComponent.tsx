@@ -1,20 +1,20 @@
-import React from 'react';
+import React, { memo } from 'react';
 import TaskAccordion from '../Task/TaskAccordion';
 import { ProjectAsTaskComponentProps } from '../../types/components.types';
 
-const ProjectAsTaskComponent: React.FC<ProjectAsTaskComponentProps> = ({
+const ProjectAsTaskComponent = memo<ProjectAsTaskComponentProps>(({
   task,
   level = 0,
   showAccordionWrapper,
-}) => {
-  // Render the project as an accordion
-  return (
-    <TaskAccordion
-      task={task}
-      level={level}
-      showAccordionWrapper={showAccordionWrapper}
-    />
-  );
-};
+  parentIndex
+}) => (
+  <TaskAccordion
+    parentIndex={parentIndex}
+    task={task}
+    level={level}
+    showAccordionWrapper={showAccordionWrapper}
+  />
+));
 
+ProjectAsTaskComponent.displayName = 'ProjectAsTaskComponent';
 export default ProjectAsTaskComponent;

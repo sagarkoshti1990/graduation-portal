@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Box, VStack, Text, HStack, Pressable } from '@gluestack-ui/themed';
 import { ProjectInfoCardProps } from '../../types/components.types';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -10,31 +10,30 @@ import { usePlatform } from '@utils/platform';
 import { LucideIcon } from '@ui';
 import { theme } from '@config/theme';
 
-const ProjectInfoCard: React.FC<ProjectInfoCardProps> = ({ project }) => {
+const ProjectInfoCard = memo<ProjectInfoCardProps>(({ project }) => {
   const { mode } = useProjectContext();
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
 
-  // Count completed tasks based on status
-  const completedTasks =
-    project?.tasks?.filter(task => {
-      // Check if task status is completed
-      return task.status === TASK_STATUS.COMPLETED;
-    }).length || 0;
+  const completedTasks = useMemo(
+    () => project?.tasks?.filter(task => task.status === TASK_STATUS.COMPLETED).length ?? 0,
+    [project?.tasks],
+  );
   const totalTasks = project.tasks?.length || 0;
 
-  // Check if any task is a project type (has children)
-const hasChildren =
-  !!project?.children?.length ||
-  project?.tasks?.some(task => task?.children?.length);
-  // Count total pillars (project type tasks)
+  const hasChildren = useMemo(
+    () => !!project?.children?.length || project?.tasks?.some(task => !!task?.children?.length),
+    [project?.children, project?.tasks],
+  );
   const totalPillars = project?.children?.length || 0;
 
-  // Count total child tasks across all pillars
-  const totalChildTasks =
-    project?.children?.reduce((acc, pillar) => {
-      return acc + (pillar.children?.length || pillar.tasks?.length || 0);
-    }, 0) || 0;
+  const totalChildTasks = useMemo(
+    () =>
+      project?.children?.reduce((acc, pillar) => {
+        return acc + (pillar.children?.length || pillar.tasks?.length || 0);
+      }, 0) ?? 0,
+    [project?.children],
+  );
 
   const isPreview = mode === PLAYER_MODE.PREVIEW;
   const isNaked = !hasChildren && !isPreview;
@@ -229,5 +228,7 @@ const hasChildren =
       </HStack>
     </Box>
   );
-};
+});
+
+ProjectInfoCard.displayName = 'ProjectInfoCard';
 export default ProjectInfoCard;

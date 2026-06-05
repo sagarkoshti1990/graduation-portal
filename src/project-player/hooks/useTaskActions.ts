@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useProjectContext } from '../context/ProjectContext';
+import { useProjectStable } from '../context/ProjectContext';
 import { Attachment, TaskStatus } from '../types/project.types';
 import { uploadFiles } from '../services/projectPlayerService';
 import dataService from '../../../src/services/dataService';
@@ -13,13 +13,11 @@ export async function fileToBase64(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
-      // ✅ Already base64 available
       if (file?.base64) {
         resolve(file.base64);
         return;
       }
 
-      // ✅ WEB FILE SUPPORT
       const webFile = file?.file || file;
 
       if (
@@ -27,40 +25,23 @@ export async function fileToBase64(
         webFile instanceof File
       ) {
         const reader = new FileReader();
-
-        reader.onload = () => {
-          resolve(reader.result as string);
-        };
-
-        reader.onerror = (error) => {
-          reject(error);
-        };
-
+        reader.onload = () => { resolve(reader.result as string); };
+        reader.onerror = (error) => { reject(error); };
         reader.readAsDataURL(webFile);
         return;
       }
 
-      // ✅ REACT NATIVE SUPPORT
-      // if originalFile contains base64
       if (file?.originalFile?.base64) {
         resolve(file.originalFile.base64);
         return;
       }
 
-      // if uri itself is base64
-      if (
-        file?.uri &&
-        file.uri.startsWith("data:")
-      ) {
+      if (file?.uri && file.uri.startsWith("data:")) {
         resolve(file.uri);
         return;
       }
 
-      reject(
-        new Error(
-          "Unsupported file type or base64 not available"
-        )
-      );
+      reject(new Error("Unsupported file type or base64 not available"));
     } catch (error) {
       reject(error);
     }
@@ -80,16 +61,34 @@ export const normalizeFiles = (
   }));
 };
 
+/**
+ * Uses useProjectStable() so this hook (and every component that calls it)
+ * never re-renders purely because projectData changed.
+ *
+ * participantId is read from projectDataRef.current inside callbacks —
+ * it is only needed at action time, not during render, so reading from a ref
+ * is safe and avoids stale-closure issues.
+ */
 export const useTaskActions = () => {
-  const { updateTask, mode, setTaskAddedToPlan, setTaskPlanActionPerformed, projectData } =
-    useProjectContext();
+  const {
+    updateTask,
+    mode,
+    setTaskAddedToPlan,
+    setTaskPlanActionPerformed,
+    projectDataRef,
+  } = useProjectStable();
 
   const canEdit = mode === 'edit';
-  // externalId is the participant ID stored in the project
-  const participantId = (projectData as any)?.entityInformation?.externalId as string | undefined;
 
   const handleStatusChange = useCallback(
-    async (taskId: string, status: TaskStatus, files1: NormalizedFile[] = [], excludedFiles: Attachment[] = []) => {
+    async (
+      {taskId}: {taskId: string; parentIndex?: number; index?: number},
+      status: TaskStatus,
+      files1: NormalizedFile[] = [],
+      excludedFiles: Attachment[] = [],
+    ) => {
+      // Read participantId at call time from the ref (stable, no subscription).
+      const participantId = (projectDataRef.current as any)?.entityInformation?.externalId as string | undefined;
       if (!canEdit || !participantId) return;
 
       const files = normalizeFiles(files1);
@@ -98,8 +97,6 @@ export const useTaskActions = () => {
 
       if (files.length > 0) {
         if (isOffline) {
-          // Store file content as base64 and queue a structured PendingFile entry so
-          // syncService can upload the real bytes and patch the server URL after sync.
           if (participantId) {
             try {
               const existing = await offlineStorage.read<PendingFile[]>(
@@ -110,23 +107,20 @@ export const useTaskActions = () => {
               const newEntries: PendingFile[] = [];
               for (const file of files) {
                 if (existingNames.has(file.name)) continue;
-                // Unique key: timestamp + original name avoids collisions on re-upload
                 const storageKey = PARTICIPANT_KEYS.fileBlob(
                   participantId,
                   `${Date.now()}_${file.name}`,
                 );
-
-                // Persist content for deferred upload
                 try {
                   const base64 = await fileToBase64(file);
                   await offlineStorage.create(storageKey, base64);
-                } catch (e:any) { console.log("error",e.message) /* non-fatal: sync will skip if blob is missing */ }
+                } catch (e: any) { console.log("error", e.message) }
 
                 newEntries.push({
                   taskId,
-                  fileName: file.name,       // original name preserved
+                  fileName: file.name,
                   fileType: file.type ?? '',
-                  storageKey,                // timestamped blob key
+                  storageKey,
                 });
               }
 
@@ -138,7 +132,6 @@ export const useTaskActions = () => {
               }
             } catch { /* non-fatal */ }
           }
-          // Local stubs — url is empty until sync uploads the real file
           const localStubs: Attachment[] = files.map(f => ({
             name: f.name,
             type: f.type,
@@ -165,7 +158,7 @@ export const useTaskActions = () => {
         return { success: false, data: undefined };
       }
     },
-    [canEdit, updateTask, participantId],
+    [canEdit, updateTask, projectDataRef],
   );
 
   const handleFileUpload = useCallback(

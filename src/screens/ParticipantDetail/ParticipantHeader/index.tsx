@@ -41,7 +41,8 @@ import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../../services/participantService';
 import { useAuth } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
-import { isNetworkOffline } from '@utils/networkStatus.native';
+import { isNetworkOffline } from '@utils/networkStatus';
+import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 
 const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};
@@ -69,6 +70,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   projectData,
   onParticipantRefresh,
   solutions,
+  coachId
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
@@ -159,8 +161,12 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [participantProp?.idpProjectId,projectData]);
 
   const handleBackPress = () => {
-    // @ts-ignore
-    navigation.navigate('participants');
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // @ts-ignore
+      navigation.navigate('participants');
+    }
   };
 
   const handleEnrollParticipant = async () => {
@@ -193,10 +199,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     }
   };
 
-  const handleLogVisitPress = () => {
+  const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
     // @ts-ignore
-    navigation.push('log-visit', { id: participantId });
+    navigation.push(link, { id: participantId,...(coachId ? {coachId} : {}) });
   };
 
   const handleCompleteProject = async (solution: any) => {
@@ -307,10 +313,20 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       );
     }
 
+    if(coachId) {
+      // @ts-ignore
+      return <Button variant="outlineghost" onPress={() => {
+        handleLogVisitPress("check-ins-list")
+      }}>
+        <ButtonIcon as={LucideIcon} name="History" size={16} />
+        <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
+      </Button>
+    }
+
     // Enrolled, In Progress, Completed: Log Visit
     return (
       <Button variant="solid" size="sm"
-        onPress={handleLogVisitPress}
+        onPress={() => handleLogVisitPress('log-visit')}
       >
         <ButtonIcon as={LucideIcon} name="FileText" />
         <ButtonText>{t('participantDetail.header.logVisit')}</ButtonText>

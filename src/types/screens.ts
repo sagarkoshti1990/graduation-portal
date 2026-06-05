@@ -50,13 +50,12 @@ export interface TemplateData {
 }
 
 export interface InterventionPlanProps {
-  participantStatus?: StatusType;
-  participantId?: string;
+  mode?:string|boolean;
+  projectData?:ProjectData
   participantName?: string;
   participantProfile?:any;
   onIdpCreation?: (projectId?: string) => void;
   onProgressChange?: (progress: number) => void;
-  getProjectData?: (projectData: ProjectData) => void;
   onTaskCompletionChange?: (areAllCompleted: boolean) => void;
 }
 
@@ -88,6 +87,7 @@ export interface ParticipantHeaderProps {
   projectData?: ProjectData | null;
   onParticipantRefresh?: () => Promise<string | undefined> | string | undefined;
   solutions?: any[];
+  coachId?:string;
 }
 
 export type SubCategory = {

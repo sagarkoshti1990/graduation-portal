@@ -145,7 +145,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     if (isEditMode && task) {
       setIsSubmitting(true);
       try {
-        await updateTask(task._id, {
+        await updateTask(task._id,projectData?.userProfile?.id , {
           name: taskName,
           description: instructions,
           serviceProvider: serviceProvider,
@@ -202,6 +202,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     toast,
     t,
     showAlert,
+    projectData?.userProfile?.id
   ]);
 
   const parentPillarName =

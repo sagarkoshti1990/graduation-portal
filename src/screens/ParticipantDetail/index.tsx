@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { HStack, Box, Container, ReadMoreAlert } from '@ui';
+import { HStack, Box, Container, ReadMoreAlert, Text } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
@@ -22,16 +22,9 @@ import InterventionPlan from './InterventionPlan';
 import AssessmentSurveys from './AssessmentSurveys';
 import type {
   ParticipantData,
-  ParticipantStatus,
   // PathwayType,
 } from '@app-types/participant';
 import { Loader } from '@ui';
-import ProjectPlayer, { ProjectPlayerData } from '../../project-player/index';
-import {
-  MODE,
-  // DUMMY_PROJECT_DATA,
-  PROJECT_PLAYER_CONFIGS,
-} from '@constants/PROJECTDATA';
 import {
   ENTITY_STATUS,
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
@@ -47,6 +40,8 @@ import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
 import { getAnswerData } from '@utils/helper';
 import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
+import { MODE } from '@constants/PROJECTDATA';
+import TargetingCriteriaCard from './ParticipantHeader/TargetingCriteriaCard';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -55,6 +50,7 @@ import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_
  */
 type ParticipantDetailRouteParams = {
   id?: string;
+  coachId?:string;
 };
 
 /**
@@ -71,6 +67,9 @@ export default function ParticipantDetail() {
   const { setRefComponent } = useGlobal()
   // Extract the id parameter from the route
   const participantId = route.params?.id;
+  const coachId = route.params?.coachId
+  const authUserId = coachId || user?.id;
+
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('intervention-plan');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -81,12 +80,13 @@ export default function ParticipantDetail() {
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
     undefined,
   );
-  const [hasProgressBaseline, setHasProgressBaseline] = useState(false);
   const isFetchingRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
+  const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | undefined>(undefined);
+  const [targetingCriteria,setTargetingCriteria] = useState(false);
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -103,10 +103,13 @@ export default function ParticipantDetail() {
       : false;
 
   const fetchEntityDetails = useCallback(async () => {
-    if (participantId && user?.id && !isFetchingRef.current) {
+    if (participantId && authUserId && !isFetchingRef.current) {
       try {
         isFetchingRef.current = true;
-        const result = await dataService.getParticipantDetails(participantId, user.id);
+        const result = await dataService.getParticipantDetails(participantId, authUserId);
+        const participantData = result.data as any;
+        const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
+        const response = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId)   
 
         if (result.isOffline && !result.offlineDataAvailable) {
           setIsOfflineUnavailable(true);
@@ -114,20 +117,21 @@ export default function ParticipantDetail() {
           setStatus('');
         } else {
           setIsOfflineUnavailable(false);
-          const participantData = result.data as any;
+          setFetchedProjectData(response.data);
           setParticipant(participantData);
           setNavbarData({ subtitle: participantData?.name });
           setStatus(participantData?.status);
         }
       } catch (error) {
         logger.log(error);
+        setParticipant(undefined);
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
       }
     }
     // @ts-ignore
-  }, [participantId, user?.id, setNavbarData]);
+  }, [participantId, authUserId, setNavbarData]);
 
   // Re-fetch data when screen comes into focus (e.g., navigating back)
   useFocusEffect(
@@ -143,7 +147,6 @@ export default function ParticipantDetail() {
         setIdpCreated(false);
         setAreAllTasksCompleted(false);
         setUpdatedProgress(undefined);
-        setHasProgressBaseline(false);
         setIsLoading(true);
         setChallenges(undefined);
         setIsOfflineUnavailable(false);
@@ -165,11 +168,11 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     setUpdatedProgress(undefined);
-    setHasProgressBaseline(false);
   }, [participantId]);
 
   useEffect(() => {
     const fetchSolutions = async () => {
+      if(coachId) return false;
       // When offline, load solutions from the per-participant downloaded mapping.
       // The global targeted-solutions cache may be empty; the participant mapping
       // is always populated during download and has the correct solutionId/keyword data.
@@ -227,40 +230,22 @@ export default function ParticipantDetail() {
       }
 
       setSolutions(solutionsWithEntityStatus);
-      // if (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
-      //   const completionActionResult = await verifyParticipantCompletionActions({
-      //     participantData: participant,
-      //     userId: user?.id as string,
-      //     solutions: solutionsData
-      //   });
-      //   if (completionActionResult.success) {
-      //     setIsLoading(true);
-      //     try {
-      //       const refreshedResponse = await getParticipantsList({
-      //         entityId: participantId,
-      //         userId: user?.id as string,
-      //       });
-      //       const refreshedRow = refreshedResponse?.result?.data?.[0] || {};
 
-      //       if (refreshedRow) {
-      //         const { userDetails: refreshedUserDetails, ...refreshedRest } = refreshedRow;
-      //         setParticipant({
-      //           ...(refreshedUserDetails || {}),
-      //           ...refreshedRest,
-      //           accountUserStatus: refreshedUserDetails?.status,
-      //         } as User);
-      //       }
-      //     } catch (refreshError) {
-      //       logger.log('Best-effort participant refresh failed:', refreshError);
-      //     }
-      //     setIsLoading(false);
-      //   }
-      // }
+      if (setRefComponent) {
+      setRefComponent({bottom :
+        solutionsWithEntityStatus.length > 0 ? (
+          <LogVisitModulePopup
+            participant={participant as ParticipantData}
+            solutions={solutionsWithEntityStatus}
+            observationLogsTitle={'actions.observationLogs'}
+            noSolutionsMessage={'logVisit.noSolutions'}
+          />
+        ) : null})
+      }
     }
-
-    if (participant && participantId && user?.id && solutions.length === 0 && updatedProgress !== undefined) {
+    if (setRefComponent && participant && participantId && authUserId && solutions.length === 0 && updatedProgress !== undefined) {
       fetchSolutions();
-    }
+    } else
     if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
       const bool = solutions.find((item:any) =>
         item.keywords.some((key:any) => FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.includes(key))
@@ -269,13 +254,9 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [updatedProgress, participant, participantId, solutions.length, user?.id]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId]);
 
   const handleProgressChange = async (progress: number) => {
-    if (!hasProgressBaseline) {
-      setHasProgressBaseline(true);
-      return;
-    }
     setUpdatedProgress(progress);
   };
 
@@ -294,20 +275,6 @@ export default function ParticipantDetail() {
     [],
   );
 
-  useEffect(() => {
-    if (setRefComponent) {
-      setRefComponent({bottom :
-        solutions.length > 0 ? (
-          <LogVisitModulePopup
-            participant={participant as ParticipantData}
-            solutions={solutions}
-            observationLogsTitle={t('actions.observationLogs')}
-            noSolutionsMessage={t('logVisit.noSolutions')}
-          />
-        ) : null})
-    }
-  }, [setRefComponent, solutions.length, participant, t]);
-
   const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
 
   if (isLoading) {
@@ -323,7 +290,7 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-  
+
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
@@ -349,19 +316,25 @@ export default function ParticipantDetail() {
         // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
+        coachId={coachId}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
-        {showOnboardingProject ? (
+        {!participant?.onBoardedProjectId && !targetingCriteria ?
+          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={setTargetingCriteria}/>
+        : showOnboardingProject ? (
           <>
-            <DownloadFormsCard mode={showOnboardingProject === "not_enrolled" ? "edit" : "read-only"} />
+            <DownloadFormsCard
+              mode={
+                showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
+              }
+            />
             <InterventionPlan
               key={`project-player-${participantId}`}
-              participantStatus={status as ParticipantStatus}
-              participantId={participant?.id}
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
-              getProjectData={setProjectData}
+              projectData={fetchedProjectData}
+              {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
         ) : (
@@ -393,48 +366,48 @@ export default function ParticipantDetail() {
 
             {/* Tab Content */}
             <Box flex={1} mt="$2" mb="$4" bg="transparent" width="$full">
-              {activeTab ===
-                PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
-                  <Box gap="$2">
-                    {challenges?.challengeNotes &&
-                      <ReadMoreAlert
-                        label={t("participantDetail.interventionPlan.challenges")}
-                        variant="warning"
-                        text={challenges?.challengeNotes || ""}
-                        lineLimit={2}
-                        readMoreText={t("common.showMore")}
-                        readLessText={t("common.showLess")}
-                      />
-                    }
-                    {challenges?.successNotes &&
-                      <ReadMoreAlert
-                        label={t("participantDetail.interventionPlan.successNotes")}
-                        variant="success"
-                        text={challenges?.successNotes || ""}
-                        lineLimit={2}
-                        readMoreText={t("common.showMore")}
-                        readLessText={t("common.showLess")}
-                      />
-                      }
-                    <InterventionPlan
-                      participantStatus={status as ParticipantStatus}
-                      participantId={participant?.id}
-                      participantProfile={participant}
-                      onIdpCreation={handleIdpCreated}
-                      onProgressChange={handleProgressChange}
-                      getProjectData={setProjectData}
+              {activeTab === PARTICIPANT_DETAILS_TABS.INTERVENTION_PLAN && (
+                <Box gap="$2">
+                  {challenges?.challengeNotes && (
+                    <ReadMoreAlert
+                      label={t('participantDetail.interventionPlan.challenges')}
+                      variant="warning"
+                      text={challenges?.challengeNotes || ''}
+                      lineLimit={2}
+                      readMoreText={t('common.showMore')}
+                      readLessText={t('common.showLess')}
                     />
-                  </Box>
-                )}
-              {activeTab ===
-                PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
-                  <Box mt="$6">
-                    <AssessmentSurveys
-                      participant={participant as ParticipantData}
-                      completionPercentage={updatedProgress || 0}
+                  )}
+                  {challenges?.successNotes && (
+                    <ReadMoreAlert
+                      label={t(
+                        'participantDetail.interventionPlan.successNotes',
+                      )}
+                      variant="success"
+                      text={challenges?.successNotes || ''}
+                      lineLimit={2}
+                      readMoreText={t('common.showMore')}
+                      readLessText={t('common.showLess')}
                     />
-                  </Box>
-                )}
+                  )}
+                  <InterventionPlan
+                    participantProfile={participant}
+                    onIdpCreation={handleIdpCreated}
+                    onProgressChange={handleProgressChange}
+                    projectData={fetchedProjectData}
+                    {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
+                  />
+                </Box>
+              )}
+              {activeTab === PARTICIPANT_DETAILS_TABS.ASSESSMENTS_SURVEYS && (
+                <Box mt="$6">
+                  <AssessmentSurveys
+                    participant={participant as ParticipantData}
+                    completionPercentage={updatedProgress || 0}
+                    {...(coachId ? {isReadOnly:true}:{})}
+                  />
+                </Box>
+              )}
             </Box>
           </Box>
         )}
@@ -443,9 +416,10 @@ export default function ParticipantDetail() {
       <ParticipantProfileModal
         isOpen={isProfileModalOpen}
         onClose={closeProfileModal}
-        participantId={participant.userId || ""}
-        userId={user?.id || ""}
+        participantId={participant.userId || ''}
+        userId={authUserId || ''}
         onParticipantSaved={handleParticipantAddressSaved}
+        {...(coachId ? {isReadOnly:true}:{})}
       />
     </Box>
   );

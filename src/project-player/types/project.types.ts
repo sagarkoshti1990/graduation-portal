@@ -21,6 +21,8 @@ export interface ProjectData {
   updatedAt: string;
   children?: Task[];
   categories?: any[];
+  userProfile?: any;
+  categoryExternalIds?:string[]
 }
 
 export interface Task {
@@ -130,23 +132,43 @@ export interface RenderModalsProps {
 }
 
 export interface createProjectPlanPayload{
-    templates: Array<{
-      templateId: string;
-      targetTaskName?: string;
-      targetProjectName?: string;
-      customTasks: Array<{
-        name: string;
-        description: string;
-        type: string;
-      }>;
-    }>;
-    userId: string;
-    entityId: string;
-    programName: string;
-    isPrivateProgram: boolean;
-    projectConfig: {
+  templates: Array<{
+    templateId: string;
+    targetTaskName?: string;
+    targetProjectName?: string;
+    customTasks: Array<{
       name: string;
       description: string;
-    };
-    isATargetedSolution: boolean;
-  }
+      type: string;
+    }>;
+  }>;
+  userId: string;
+  entityId: string;
+  programName: string;
+  isPrivateProgram: boolean;
+  projectConfig: {
+    name: string;
+    description: string;
+  };
+  isATargetedSolution: boolean;
+}
+
+interface Replacement {
+  existingTemplateId?: string;
+  existingCategoryId?: string;
+  newTemplateId: string;
+  newCategoryId: string;
+  targetTaskName: string;
+  customTasks: Array<{
+    name: string;
+    description: string;
+    type: string;
+  }>;
+  excludedTaskIds: string[];
+}
+
+export interface PathwayReplacementPayload {
+  replacements: Replacement[];
+  replacementReason: string;
+  categoryExternalIds: string[];
+}

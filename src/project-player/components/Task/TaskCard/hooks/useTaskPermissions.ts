@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PROJECT_MODES } from '../../../../../constants/app.constant';
-import { useProjectContext } from '../../../../context/ProjectContext';
+import { useProjectStable } from '../../../../context/ProjectContext';
 
 export interface TaskPermissions {
   isReadOnly: boolean;
@@ -9,16 +9,19 @@ export interface TaskPermissions {
   isInterventionPlanEditMode: boolean;
 }
 
+// Uses useProjectStable() so task cards don't re-render on projectData changes.
 export function useTaskPermissions(isChildOfProject: boolean): TaskPermissions {
-  const { mode } = useProjectContext();
+  const { mode } = useProjectStable();
 
-  const isReadOnly = useMemo(() => mode === PROJECT_MODES.READ_ONLY, [mode]);
-  const isPreview = useMemo(() => mode === PROJECT_MODES.PREVIEW, [mode]);
-  const isEdit = useMemo(() => mode === PROJECT_MODES.EDIT, [mode]);
-  const isInterventionPlanEditMode = useMemo(
-    () => isEdit && !isPreview && isChildOfProject,
-    [isEdit, isPreview, isChildOfProject],
-  );
-
-  return { isReadOnly, isPreview, isEdit, isInterventionPlanEditMode };
+  return useMemo(() => {
+    const isReadOnly = mode === PROJECT_MODES.READ_ONLY;
+    const isPreview  = mode === PROJECT_MODES.PREVIEW;
+    const isEdit     = mode === PROJECT_MODES.EDIT;
+    return {
+      isReadOnly,
+      isPreview,
+      isEdit,
+      isInterventionPlanEditMode: isEdit && !isPreview && isChildOfProject,
+    };
+  }, [mode, isChildOfProject]);
 }

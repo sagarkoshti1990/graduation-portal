@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useProjectContext } from '../../../../context/ProjectContext';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useProjectStable } from '../../../../context/ProjectContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAlert } from '@ui';
 import type { Task } from '../../../../types/project.types';
@@ -20,18 +20,22 @@ export interface CustomTaskActionsResult {
   confirmDeleteLoading: boolean;
 }
 
+// Uses useProjectStable() so custom task cards don't re-render on projectData changes.
 export function useCustomTaskActions(task: Task): CustomTaskActionsResult {
-  const { deleteTask } = useProjectContext();
+  const { deleteTask } = useProjectStable();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
 
   const [modalState, setModalState] = useState<ModalState>({ type: null });
   const [confirmDeleteLoading, setConfirmDeleteLoading] = useState(false);
 
-  const showSuccess = useCallback((msg: string) => showAlert('success', msg), [showAlert]);
-  const showError = useCallback((msg: string) => showAlert('error', msg), [showAlert]);
+  const taskRef = useRef(task);
+  useEffect(() => { taskRef.current = task; });
 
-  const openEditModal = useCallback(() => setModalState({ type: 'edit', task }), [task]);
+  const openEditModal = useCallback(
+    () => setModalState({ type: 'edit', task: taskRef.current }),
+    [],
+  );
   const openDeleteModal = useCallback(() => setModalState({ type: 'delete' }), []);
   const closeModal = useCallback(() => setModalState({ type: null }), []);
 
@@ -41,13 +45,13 @@ export function useCustomTaskActions(task: Task): CustomTaskActionsResult {
     try {
       await deleteTask(task._id);
       closeModal();
-      showSuccess(t('projectPlayer.taskDeleted'));
+      showAlert('success', t('projectPlayer.taskDeleted'));
     } catch (e) {
-      showError(e instanceof Error ? e.message : t('common.serverError500'));
+      showAlert('error', e instanceof Error ? e.message : t('common.serverError500'));
     } finally {
       setConfirmDeleteLoading(false);
     }
-  }, [task?._id, deleteTask, closeModal, showSuccess, showError, t]);
+  }, [task?._id, deleteTask, closeModal, showAlert, t]);
 
   return {
     modalState,

@@ -3,7 +3,7 @@ import { PROJECT_PLAYER_CONFIGS } from '../../constants/PROJECTDATA';
 import { ApiResponse, NormalizedFile } from '../types/components.types';
 import { API_ENDPOINTS } from './apiEndpoints';
 import { isWeb } from '@utils/platform';
-import { createProjectPlanPayload } from '../types';
+import { createProjectPlanPayload, PathwayReplacementPayload } from '../types';
 import { PROJECT_STATUS } from '@constants/app.constant';
 import { isNetworkOffline } from '@utils/networkStatus';
 import offlineStorage, { getOfflineParticipantIds } from '../../services/offlineStorage';
@@ -215,6 +215,22 @@ export const submitInterventionPlan = async (
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.SUBMIT_INTERVENTION_PLAN, reqBody,
+    );
+
+    return { data: response.data.result || response.data };
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+
+export const updateInterventionPlan = async (
+  projectId: string,
+  reqBody : PathwayReplacementPayload
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await apiClient.post(
+      API_ENDPOINTS.UPDATE_INTERVENTION_PLAN(projectId), reqBody,
     );
 
     return { data: response.data.result || response.data };
