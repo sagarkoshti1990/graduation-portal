@@ -165,6 +165,21 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+
+export const apiPublic: AxiosInstance = axios.create({
+  // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
+  baseURL: process.env.API_BASE_URL || '',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/plain, */*',
+    // @ts-ignore - process.env is injected by webpack DefinePlugin on web
+    // 'internal-access-token': process.env.INTERNAL_ACCESS_TOKEN || '',
+    // @ts-ignore - process.env is injected by webpack DefinePlugin on web
+    ...(!isAndroid ? {} : { origin: process.env.ORIGIN || '' }),
+  },
+});
+
 /**
  * Request Interceptor
  * Adds authentication token to requests and handles other request details
