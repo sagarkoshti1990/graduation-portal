@@ -10,23 +10,24 @@ export interface TaskListRendererProps {
   isLastTask?: boolean;
   isChildOfProject?: boolean;
   isOnboardingTask?: boolean;
-  parentIndex?:number;
-  index?:number;
-  projectContext?:any;
+  parentIndex?: number;
+  index?: number;
+  projectContext?: any;
 }
 
 type RenderVariant = 'readonly' | 'custom' | 'simple';
 
-const TaskListRenderer : React.FC<TaskListRendererProps> = ({
+const TaskListRenderer: React.FC<TaskListRendererProps> = ({
   task,
   projectContext,
   isLastTask = false,
   isChildOfProject = false,
   isOnboardingTask = false,
   parentIndex,
-  index
+  index,
 }) => {
-  const {mode} = projectContext
+  const { mode } = projectContext;
+
   const variant = useMemo<RenderVariant>(() => {
     if (mode === PROJECT_MODES.READ_ONLY) return 'readonly';
     if (task.isCustomTask && mode === PROJECT_MODES.EDIT) return 'custom';
@@ -35,9 +36,8 @@ const TaskListRenderer : React.FC<TaskListRendererProps> = ({
 
   const commonProps = { task, isLastTask, isChildOfProject, isOnboardingTask, parentIndex, index, projectContext };
 
-  // Stable render prop — only recreated when task identity or layout flags
-  // change. Prevents CustomTaskManager from re-rendering when the parent
-  // re-renders for unrelated reasons (e.g. sibling task update).
+  // Stable render prop — only recreated when task identity or layout flags change.
+  // Prevents CustomTaskManager from re-rendering when unrelated siblings update.
   const renderWithCustomActions = useCallback(
     (customActions: React.ReactNode) => (
       <SimpleObservationTask

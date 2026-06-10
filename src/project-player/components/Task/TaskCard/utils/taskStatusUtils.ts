@@ -18,13 +18,14 @@ export function getStatusIconConfig(params: {
   isPreview: boolean;
   isAddedToPlan: boolean;
   isRejected: boolean;
+  isReadOnly: boolean;
 }): { iconName: string; checkColor: string } {
   const {
     isOnboardingTask, isChildOfProject, isCompleted,
-    isOptional, isPreview, isAddedToPlan, isRejected,
+    isOptional, isPreview, isAddedToPlan, isRejected,isReadOnly
   } = params;
 
-  if (isOnboardingTask) {
+  if (isOnboardingTask || isReadOnly) {
     return {
       checkColor: isCompleted ? '$success500' : '$textMuted',
       iconName: isCompleted ? 'CheckCircle' : 'Circle',

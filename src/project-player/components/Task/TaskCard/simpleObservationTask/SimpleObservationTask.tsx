@@ -5,7 +5,6 @@ import React, {
   useCallback,
 } from 'react';
 import {
-  Box,
   Modal,
   Spinner,
   Text,
@@ -18,7 +17,6 @@ import {
   TASK_STATUS,
   STATUS,
 } from '../../../../../constants/app.constant';
-import { taskCardStyles } from '../styles';
 import FileUploadModal from '../../FileEvidence/FileUploadModal';
 import EvidencePreviewModal from '../../FileEvidence/EvidencePreviewModal';
 import { usePlatform } from '@utils/platform';
@@ -39,9 +37,6 @@ import {
 } from '../utils/taskStatusUtils';
 import { filterNewFiles, buildOnboardingFileUpdate } from '../utils/taskTransformers';
 import type { Task } from '../../../../types/project.types';
-import StatusIndicator from './StatusIndicator';
-import TaskInfo from './TaskInfo';
-import ActionButton from './ActionButton';
 import MainContent from './MainContent';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,12 +48,12 @@ export interface SimpleObservationTaskProps {
   isOnboardingTask?: boolean;
   /** Edit/delete action buttons injected by CustomTaskManager. */
   extraActions?: React.ReactNode;
-  parentIndex?:number;
-  index?:number;
-  projectContext?:any
+  parentIndex?: number;
+  index?: number;
+  projectContext?: any;
 }
 
-const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
+const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   task,
   projectContext,
   isLastTask = false,
@@ -66,11 +61,11 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
   isOnboardingTask = false,
   extraActions,
   parentIndex,
-  index
+  index,
 }) => {
   // config comes from the prop; projectData._id is read from the ref at
   // action time only (handleTaskClick) — no subscription to live projectData.
-  const { config,projectDataRef:proData } = projectContext;
+  const { config, projectDataRef: proData } = projectContext;
   const projectDataRef = proData?.current || proData;
   const route = useRoute();
   const navigation = useNavigation();
@@ -87,40 +82,32 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
 
   const {
     isCompleted, isObservationTask, hasUploadedFiles, isEvidenceRequired,
-    isTaskDone, isOnboardingCompletedUI, isManualToggleDisabled,
+    isOnboardingCompletedUI, isManualToggleDisabled,
     isAddedToPlan, setIsAddedToPlan, isRejected, setIsRejected,
   } = useTaskStatus(task, isOnboardingTask);
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean|string>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean | {name:string,fun: ((data:{checkFirstTaskComplete: boolean}) => Promise<void>)}>(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
 
   // ── Derived values ────────────────────────────────────────────────────────
 
-  const uiConfig = useMemo(
-    () => ({
-      showAsCard: isChildOfProject,
-      showAsInline: !isChildOfProject || isPreview,
-      showCheckbox: isChildOfProject && !isPreview,
-      showActionButton: !isPreview || task?.isDeletable,
-      isInteractive: isEdit,
-    }),
-    [isChildOfProject, isPreview, isEdit, task?.isDeletable],
+  const showCheckbox = useMemo(
+    () => isChildOfProject && !isPreview,
+    [isChildOfProject, isPreview],
   );
 
-  const onboardingTextStyle = useMemo(
-    () => ({ textDecorationLine: 'none' as const, opacity: isOnboardingCompletedUI ? 0.6 : 1 }),
-    [isOnboardingCompletedUI],
+  const showActionButton = useMemo(
+    () => !isPreview || !!task?.isDeletable,
+    [isPreview, task],
   );
 
-  const onboardingDescStyle = useMemo(
-    () => ({ opacity: isOnboardingCompletedUI ? 0.6 : 1 }),
-    [isOnboardingCompletedUI],
+  const actionIconName = useMemo(
+    () => getActionIconName(task),
+    [task.metaInformation?.icon, task.type],
   );
-
-  const actionIconName = useMemo(() => getActionIconName(task), [task.metaInformation?.icon, task.type]);
 
   const uploadConfig = useMemo(
     () => getUploadConfig(task, isOnboardingTask),
@@ -139,64 +126,74 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
   const handleAcceptTask = useCallback(() => { updateAddToPlan(true); setIsRejected(false); }, [updateAddToPlan]);
   const handleRejectTask = useCallback(() => { updateAddToPlan(false); setIsRejected(true); }, [updateAddToPlan]);
 
-  const handleTaskClick = useCallback(async () => {
-    if (!isEdit) return;
-    if (isObservationTask) {
-      // Read project ID from ref at action time — no subscription needed.
-      const projectTemplateId = projectDataRef?._id;
-      if (!participantId || !projectTemplateId) { console.error('Missing userId or projectTemplateId'); return; }
-      if (isNetworkOffline()) {
-        const offlineSolutionId: string =
-          task.solutionDetails?._id ?? (task.solutionDetails as any)?.observationId ?? (task.solutionDetails as any)?.id ?? '';
-        if (offlineSolutionId) {
-          // @ts-ignore
-          navigation.navigate('observation', { id: participantId, solutionId: offlineSolutionId, submissionNumber: 1, taskId: task._id });
-        } else { showAlert('error', t('projectPlayer.unableToLoadObservation')); }
-        return;
-      }
-      setIsStatusUpdating(true);
-      try {
-        const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
-        if (solutionDetails?.data?._id) {
-          // @ts-ignore
-          navigation.navigate('observation', { id: participantId, solutionId: solutionDetails.data._id, submissionNumber: 1, taskId: task._id });
-        } else { showAlert('error', t('projectPlayer.unableToLoadObservation')); }
-      } catch (error) {
-        console.error('getSolutionDetails API failed:', error);
-        showAlert('error', t('projectPlayer.unableToLoadObservation'));
-      } finally {
-        setIsStatusUpdating(false);
-      }
-    } else {
-      setShowUploadModal(true);
-    }
-  }, [isEdit, isObservationTask, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating]);
-  
-  const handleCheckboxChange = useCallback(async (checked: boolean,canChangePathway:boolean=true) => {
-    if (!isEdit) return;
-    if(task.parentId !== undefined && canChangePathway) {
-      const parentData = projectDataRef?.tasks.find((item:any) => item._id === task.parentId);
-      if(parentData?.projectTemplateDetails?.metaInformation?.isReplaceable) { 
-        const data = parentData?.children?.find((item:any)=>item.status === TASK_STATUS.COMPLETED)
-        if(!data?.name) {
+// check pathway confirmation befor any task compeltion first time
+  const handleCheckFirstTaskComplete = useCallback((canChangePathway: boolean | ((checkFirstTaskComplete: boolean) => Promise<void>)) => {
+    if (task.parentId !== undefined && typeof canChangePathway !== "boolean") {
+      const parentData = projectDataRef?.tasks.find((item: any) => item._id === task.parentId);
+      if (parentData?.projectTemplateDetails?.metaInformation?.isReplaceable) {
+        const data = parentData?.children?.find((item: any) => item.status === TASK_STATUS.COMPLETED);
+        if (!data?.name) {
           const value = 'GBL_PATH';
-          const pathway = projectDataRef?.categories?.find((item:any) => item?.externalId?.includes(value));
-          setShowConfirmModal(pathway.name || "");
+          const pathway = projectDataRef?.categories?.find((item: any) => item?.externalId?.includes(value));
+          setShowConfirmModal({name:pathway.name, fun:canChangePathway});
           return false;
         }
       }
     }
+    return true
+  },[task,projectDataRef])
+
+  const handleTaskClick = useCallback(async ({checkFirstTaskComplete}:{checkFirstTaskComplete:boolean}) => {
+    if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? false : handleTaskClick)) return;
+    if (!isObservationTask) {
+      if (!isEdit) return;
+      setShowUploadModal(true);
+      return;
+    }
+    // Observation tasks: allow navigation in edit mode (fill) and read-only mode (view).
+    // Block in preview mode where neither flag is set.
+    if (!isEdit && !isReadOnly) return;
+    const projectTemplateId = projectDataRef?._id;
+    if (!participantId || !projectTemplateId) { console.error('Missing userId or projectTemplateId'); return; }
+    if (isNetworkOffline()) {
+      const offlineSolutionId: string =
+        task.solutionDetails?._id ?? (task.solutionDetails as any)?.observationId ?? (task.solutionDetails as any)?.id ?? '';
+      if (offlineSolutionId) {
+        // @ts-ignore
+        navigation.navigate('observation', { id: participantId, solutionId: offlineSolutionId, submissionNumber: 1, taskId: task._id });
+      } else { showAlert('error', t('projectPlayer.unableToLoadObservation')); }
+      return;
+    }
+    setIsStatusUpdating(true);
+    try {
+      const solutionDetails = await getSolutionDetails(projectTemplateId, task._id);
+      if (solutionDetails?.data?._id) {
+        // @ts-ignore
+        navigation.navigate('observation', { id: participantId, solutionId: solutionDetails.data._id, submissionNumber: 1, taskId: task._id });
+      } else { showAlert('error', t('projectPlayer.unableToLoadObservation')); }
+    } catch (error) {
+      console.error('getSolutionDetails API failed:', error);
+      showAlert('error', t('projectPlayer.unableToLoadObservation'));
+    } finally {
+      setIsStatusUpdating(false);
+    }
+  }, [isEdit, isReadOnly, isObservationTask, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating,handleCheckFirstTaskComplete]);
+
+  const handleCheckboxChange = useCallback(async (checked: boolean, checkFirstTaskComplete: boolean) => {
+    if (!isEdit) return;
+    if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? checkFirstTaskComplete : handleTitlePress)) return;
 
     setIsStatusUpdating(true);
     try {
-      await handleStatusChange({taskId:task._id,parentIndex,index}, checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO);
+      await handleStatusChange({ taskId: task._id, parentIndex, index }, checked ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO);
     } finally {
       setIsStatusUpdating(false);
-     }
-  }, [isEdit, task._id,parentIndex,index, handleStatusChange]);
-  
-  const handleTitlePress = useCallback((canChangePathway:any) => {
-    if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted,canChangePathway);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, task._id, task.parentId, parentIndex, index, handleStatusChange]);
+
+  const handleTitlePress = useCallback(({checkFirstTaskComplete}:{checkFirstTaskComplete:boolean}) => {
+    if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted, checkFirstTaskComplete);
   }, [isManualToggleDisabled, handleCheckboxChange, isCompleted]);
 
   const updateEntityFile = useCallback(async (data: any) => {
@@ -226,141 +223,53 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
     try {
       const newFiles = filterNewFiles(files, task?.attachments);
       const data = await handleStatusChange(
-        {taskId:task._id,parentIndex,index}, TASK_STATUS.COMPLETED, newFiles,
+        { taskId: task._id, parentIndex, index }, TASK_STATUS.COMPLETED, newFiles,
         uploadConfig.maxFiles && uploadConfig.maxFiles > 1 ? task?.attachments : [],
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }
-  }, [task._id,parentIndex,index, task?.attachments, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
+  }, [task._id, parentIndex, index, task?.attachments, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
 
   const handleCloseUploadModal = useCallback(() => setShowUploadModal(false), []);
   const handleClosePreviewModal = useCallback(() => setShowPreviewModal(false), []);
   const handleOpenPreviewModal = useCallback(() => setShowPreviewModal(true), []);
   const handleUploadMethodSelect = useCallback((method: any) => logger.info('Upload method:', method), []);
 
-  // ── Render functions ──────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
-  const statusIndicator = useMemo(() => (
-    <StatusIndicator
-      isInterventionPlanEditMode={isInterventionPlanEditMode}
-      isObservationTask={isObservationTask}
-      isEvidenceRequired={isEvidenceRequired}
-      isStatusUpdating={isStatusUpdating}
-      isTaskDone={isTaskDone}
-      showCheckbox={uiConfig.showCheckbox}
-      isCompleted={isCompleted}
-      onCheckboxChange={handleCheckboxChange}
-      isReadOnly={isReadOnly}
-      taskId={task._id}
-      taskName={task?.name ?? ''}
-      isOptional={!!task?.isDeletable}
-      isOnboardingTask={isOnboardingTask}
-      isChildOfProject={isChildOfProject}
-      isPreview={isPreview}
-      isAddedToPlan={isAddedToPlan}
-      isRejected={isRejected}
-      t={t}
-    />
-  ), [
-    isInterventionPlanEditMode, isObservationTask, isEvidenceRequired,
-    isStatusUpdating, isTaskDone, uiConfig.showCheckbox, isCompleted,
-    handleCheckboxChange, isReadOnly, task._id, task?.name, task?.isDeletable,
-    isOnboardingTask, isChildOfProject, isPreview, isAddedToPlan, isRejected, t,
-  ]);
-
-  const taskInfo = useMemo(() => (
-    <TaskInfo
-      task={task}
-      isPreview={isPreview}
-      isReadOnly={isReadOnly}
-      isWeb={isWeb}
-      isCompleted={isCompleted}
-      showCheckbox={uiConfig.showCheckbox}
-      showAsCard={uiConfig.showAsCard}
-      isInterventionPlanEditMode={isInterventionPlanEditMode}
-      isObservationTask={isObservationTask}
-      isEvidenceRequired={isEvidenceRequired}
-      isManualToggleDisabled={isManualToggleDisabled}
-      isStatusUpdating={isStatusUpdating}
-      isTaskDone={isTaskDone}
-      handleTaskClick={handleTaskClick}
-      handleTitlePress={handleTitlePress}
-      handleOpenPreviewModal={handleOpenPreviewModal}
-      doneText={t('projectPlayer.done')}
-      toDoText={t('projectPlayer.toDo')}
-      evidenceRequiredText={t('projectPlayer.evidenceRequired')}
-      completeFormText={t('projectPlayer.completeFormToMarkDone')}
-      uploadEvidenceText={t('projectPlayer.uploadEvidenceToMarkDone')}
-      fileText={t('projectPlayer.file')}
-      filesText={t('projectPlayer.files')}
-    />
-  ), [
-    task, isPreview, isReadOnly, isWeb, isCompleted, uiConfig.showCheckbox, uiConfig.showAsCard,
-    isInterventionPlanEditMode, isObservationTask, isEvidenceRequired,
-    isManualToggleDisabled, isStatusUpdating, isTaskDone,
-    handleTaskClick, handleTitlePress, handleOpenPreviewModal, t
-  ]);
-
-  const actionButton = useMemo(() => (
-    <ActionButton
-      showActionButton={uiConfig.showActionButton}
-      isPreview={isPreview}
-      isOptional={!!task?.isDeletable}
-      isAddedToPlan={isAddedToPlan}
-      isRejected={isRejected}
-      isReadOnly={isReadOnly}
-      isStatusUpdating={isStatusUpdating}
-      isWeb={isWeb}
-      showAsCard={uiConfig.showAsCard}
-      isOnboardingTask={isOnboardingTask}
-      isEdit={isEdit}
-      actionIconName={actionIconName}
-      handleTaskClick={handleTaskClick}
-      handleAcceptTask={handleAcceptTask}
-      handleRejectTask={handleRejectTask}
-      buttonLabel={task.metaInformation?.buttonLabel}
-      uploadText={t('projectPlayer.upload')}
-    />
-  ), [
-    uiConfig.showActionButton, uiConfig.showAsCard, isPreview, task?.isDeletable,
-    task.metaInformation?.buttonLabel, isAddedToPlan, isRejected, isReadOnly,
-    isStatusUpdating, isWeb, isOnboardingTask, isEdit, actionIconName,
-    handleTaskClick, handleAcceptTask, handleRejectTask, t,
-  ]);
-
-  const renderDivider = useCallback(() => {
-    if (isLastTask) return null;
-    return (
-      <Box {...taskCardStyles.divider}
-        marginVertical={!isWeb ? '$2' : isChildOfProject && isPreview ? '$1' : undefined}
-        marginHorizontal={!isChildOfProject ? '$5' : undefined}
-      />
-    );
-  }, [isLastTask, isWeb, isChildOfProject, isPreview]);
-  
   return (
     <>
       <MainContent
-        isOnboardingTask={isOnboardingTask}
+        task={task}
+        isReadOnly={isReadOnly}
         isLastTask={isLastTask}
         isMobile={isMobile}
         isWeb={isWeb}
-        task={task}
-        onboardingTextStyle={onboardingTextStyle}
-        onboardingDescStyle={onboardingDescStyle}
-        showAsCard={uiConfig.showAsCard}
+        isOnboardingTask={isOnboardingTask}
+        isChildOfProject={isChildOfProject}
+        isOnboardingCompletedUI={isOnboardingCompletedUI}
         isEdit={isEdit}
         isPreview={isPreview}
+        isInterventionPlanEditMode={isInterventionPlanEditMode}
+        isCompleted={isCompleted}
+        isObservationTask={isObservationTask}
+        isEvidenceRequired={isEvidenceRequired}
+        isStatusUpdating={isStatusUpdating}
+        isManualToggleDisabled={isManualToggleDisabled}
         isAddedToPlan={isAddedToPlan}
         isRejected={isRejected}
-        isInterventionPlanEditMode={isInterventionPlanEditMode}
-        isChildOfProject={isChildOfProject}
-        statusIndicator={statusIndicator}
-        taskInfo={taskInfo}
-        actionButton={actionButton}
+        showCheckbox={showCheckbox}
+        showActionButton={showActionButton}
+        actionIconName={actionIconName}
+        onCheckboxChange={handleCheckboxChange}
+        handleTaskClick={handleTaskClick}
+        handleTitlePress={handleTitlePress}
+        handleOpenPreviewModal={handleOpenPreviewModal}
+        handleAcceptTask={handleAcceptTask}
+        handleRejectTask={handleRejectTask}
+        t={t}
         extraActions={extraActions}
       />
-      {!uiConfig.showAsCard && !isOnboardingTask && renderDivider()}
       <FileUploadModal
         isOpen={showUploadModal} onClose={handleCloseUploadModal}
         taskName={task?.name}
@@ -383,20 +292,24 @@ const SimpleObservationTask : React.FC<SimpleObservationTaskProps> = ({
         size="lg"
         confirmButtonText={t('projectPlayer.continue')}
         onConfirm={() => {
-          setShowConfirmModal(false);
-          handleTitlePress(false);
+          setShowConfirmModal((pre) => {
+            if (typeof pre !== 'boolean') {
+              pre?.fun?.({checkFirstTaskComplete:false});
+            }
+            return false;
+          });
         }}
         cancelButtonText={t('projectPlayer.changeIt')}
-        onCancel={() =>       
+        onCancel={() =>
           // @ts-ignore
           navigation.navigate('template', { id: projectDataRef?.userProfile?.id, projectId: projectDataRef?._id })
         }
       >
-        <Text>{t('projectPlayer.confirmPathwaySelectionSubtitle',{pathwayName:showConfirmModal})}</Text>
+        <Text>{t('projectPlayer.confirmPathwaySelectionSubtitle', { pathwayName: showConfirmModal?.name })}</Text>
       </Modal>
     </>
   );
-}
+};
 
 SimpleObservationTask.displayName = 'SimpleObservationTask';
 
