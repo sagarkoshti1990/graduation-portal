@@ -246,12 +246,9 @@ const DevelopInterventionPlan: React.FC = () => {
     const selectedSubCategoryIds = Object.values(selectionByPillar)
       .map(selection => selection.subCategoryId || selection.categoryId)
       .filter((id): id is string => Boolean(id)); // Filter out empty strings/undefined
-    if(existingProjectId) {
-      return selectedSubCategoryIds;
-    }
     // Combine pillar IDs without categories + selected subcategory IDs
     return [...pillarIdsToGetIdp, ...selectedSubCategoryIds];
-  }, [pillarIdsToGetIdp, selectionByPillar, existingProjectId]);
+  }, [pillarIdsToGetIdp, selectionByPillar]);
 
   const ProjectPlayerConfigData: ProjectPlayerData = useMemo(
     () => ({
@@ -288,9 +285,14 @@ const DevelopInterventionPlan: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
+        let categories = [];
+        if(existingProjectId) {
+          const response = await getProjectDetails(existingProjectId);
+          categories = response?.data?.categories || [];
+        }
 
-        const templatesData = await getProjectCategoryList();
-
+        const templatesResponse = await getProjectCategoryList();
+        const templatesData = templatesResponse.filter((item:any) => !categories.find((cat:any) => cat.externalId === item.externalId))
         if (!isMounted) return;
         setTemplates(templatesData || []);
       } catch (err) {

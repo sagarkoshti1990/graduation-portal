@@ -67,8 +67,14 @@ const ProjectComponent = React.memo(() => {
   const { showAlert } = useAlert();
 
   const deletableTaskIds = useMemo(
-    () => getDeletableTaskIds(projectData?.children ?? []),
-    [projectData?.children],
+    () => {
+      let children = projectData?.children;
+      if(oldProjectData?._id) {
+        children = children?.filter((item:any)=> item?.templateData?.metaInformation?.isReplaceable)
+      }
+      return getDeletableTaskIds(children ?? [])
+    },
+    [projectData?.children,oldProjectData?._id],
   );
   const taskPlanActionPerformedIdsSet = useMemo(
     () => new Set(taskPlanActionPerformedIds),
@@ -129,22 +135,13 @@ const ProjectComponent = React.memo(() => {
           // Determine if this is a task or project based on type
           const isProject = pillar.type === 'project';
           const isSocialProtectionPillar = pillar.tasks?.find((task:any) => task.isDeletable) as boolean;
-          let oldData:any = oldProjectData?.tasks?.find((item:any) => pillar.templateId === item?.projectTemplateDetails?._id || item?.projectTemplateDetails?.metaInformation?.isReplaceable === true);
-          
           const templatePayload: any = {
+            templateId: pillar.templateId,
+            categoryId: pillar.categoryId,
             ...(isProject
               ? { targetProjectName: pillar.name }
               : { targetTaskName: pillar.name }),
             customTasks,
-            ...(oldData?.projectTemplateDetails?._id ? {
-              existingTemplateId:oldData?.projectTemplateDetails?._id,
-              existingCategoryId:oldData?.projectTemplateDetails?.categoryId,
-              newCategoryId: pillar.categoryId,
-              newTemplateId: pillar.templateId,
-            }:{
-              categoryId: pillar.categoryId,
-              templateId: pillar.templateId,
-            })
           };
 
           // ONLY attach excludedTaskIds to Social Protection pillar
@@ -164,7 +161,10 @@ const ProjectComponent = React.memo(() => {
       }
 
       if(oldProjectData) {
-        const playLoad:any = {replacements:templates,replacementReason:"",categoryExternalIds:projectData.categoryExternalIds} 
+        // const playLoad:any = {replacements:templates,replacementReason:"",categoryExternalIds:projectData.categoryExternalIds} 
+        const playLoad = {
+          templates,
+        };
         const response  = await updateInterventionPlan(oldProjectData._id,playLoad);
         if(!response.error) {
           const newProjectId = response?.data?.projectId          

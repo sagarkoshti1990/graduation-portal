@@ -35,8 +35,9 @@ const ProjectContent = memo<ProjectContentProps>(({
   isModalOpen,
   setIsModalOpen,
 }) => {
-  const { projectData, mode, config } = useProjectContext();
+  const { projectData,oldProjectData, mode, config } = useProjectContext();
   const { t } = useLanguage();
+  const isPreviewMode = useMemo(() => mode === PLAYER_MODE.PREVIEW, [mode]);
 
   const projectContext = useMemo(
     () => ({ mode, config, projectDataRef:projectData }),
@@ -45,12 +46,17 @@ const ProjectContent = memo<ProjectContentProps>(({
 
   const pillars = useMemo(() => {
     if (!projectData || !hasChildren) return [];
+   
+    if(oldProjectData?._id && isPreviewMode && projectData.children?.length) {
+      return projectData.children.filter((item:any)=> item?.templateData?.metaInformation?.isReplaceable);
+    }
+    
     return (
       projectData.children?.length
         ? [...projectData.children]
         : projectData.tasks?.filter((task: any) => task.children?.length) ?? []
     );
-  }, [projectData, hasChildren]);
+  }, [projectData,isPreviewMode,oldProjectData?._id, hasChildren]);
 
   const socialProtectionPillarIds = useMemo(
     () =>
@@ -65,8 +71,7 @@ const ProjectContent = memo<ProjectContentProps>(({
     [projectData, hasChildren],
   );
 
-  const isPreviewMode = useMemo(() => mode === PLAYER_MODE.PREVIEW, [mode]);
-
+  
   // Stable accordion default so it doesn't re-mount on unrelated renders.
   const defaultAccordionValue = useMemo(
     () => (socialProtectionPillarIds.length ? socialProtectionPillarIds : undefined),

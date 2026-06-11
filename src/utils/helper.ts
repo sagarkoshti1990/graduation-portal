@@ -1,3 +1,4 @@
+import { PILLAR_NAMES } from "@constants/app.constant";
 import {Image, Platform} from "react-native"
 import ReactNativeBlobUtil from 'react-native-blob-util';
 export function applyFilters(data: any[], filters: Record<string, any>): any[] {
@@ -209,3 +210,54 @@ export const getAnswerData = (items:any[],answers:any) => {
   });
   return value;
 }
+
+
+function getPillarOrderIndex(name = ''): number {
+  const normalized = name.toLowerCase();
+  const order = [
+    PILLAR_NAMES.SOCIAL_EMPOWERMENT,
+    PILLAR_NAMES.LIVELIHOOD,
+    PILLAR_NAMES.FINANCIAL_INCLUSION,
+    PILLAR_NAMES.SOCIAL_PROTECTION,
+  ];
+  const index = order.findIndex(pillar => normalized.includes(pillar));
+  return index === -1 ? order.length : index;
+}
+
+const sortByExternalIdOrder = (
+  data: any[],
+  order: string[]
+) => {
+  const orderMap = new Map(
+    order.map((item, index) => [item, index])
+  );
+
+  return [...data].sort((a, b) => {
+    return (
+      (orderMap.get(a.externalId) ?? Infinity) -
+      (orderMap.get(b.externalId) ?? Infinity)
+    );
+  });
+};
+
+export const sortTasksWithChildren = (tasks: any[] = []) => {
+  return [...tasks]
+    .sort(
+      (a, b) =>
+        getPillarOrderIndex(a?.name) -
+        getPillarOrderIndex(b?.name),
+    )
+    .map((task) => {
+      if (task?.children?.length) {
+        return {
+          ...task,
+          children: sortByExternalIdOrder(
+            task.children,
+            task.taskSequence ?? [],
+          ),
+        };
+      }
+
+      return task;
+    });
+};

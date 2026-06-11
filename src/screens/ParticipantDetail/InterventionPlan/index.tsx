@@ -8,60 +8,10 @@ import ProjectPlayer, {
 } from '../../../project-player/index';
 import { ProjectData, Task } from '../../../project-player/types/project.types';
 import { MODE, PROJECT_PLAYER_CONFIGS } from '@constants/PROJECTDATA';
-import { PILLAR_NAMES, STATUS } from '@constants/app.constant';
+import { STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
-
-
-function getPillarOrderIndex(name = ''): number {
-  const normalized = name.toLowerCase();
-  const order = [
-    PILLAR_NAMES.SOCIAL_EMPOWERMENT,
-    PILLAR_NAMES.LIVELIHOOD,
-    PILLAR_NAMES.FINANCIAL_INCLUSION,
-    PILLAR_NAMES.SOCIAL_PROTECTION,
-  ];
-  const index = order.findIndex(pillar => normalized.includes(pillar));
-  return index === -1 ? order.length : index;
-}
-
-const sortByExternalIdOrder = (
-  data: any[],
-  order: string[]
-) => {
-  const orderMap = new Map(
-    order.map((item, index) => [item, index])
-  );
-
-  return [...data].sort((a, b) => {
-    return (
-      (orderMap.get(a.externalId) ?? Infinity) -
-      (orderMap.get(b.externalId) ?? Infinity)
-    );
-  });
-};
-
-const sortTasksWithChildren = (tasks: any[] = []) => {
-  return [...tasks]
-    .sort(
-      (a, b) =>
-        getPillarOrderIndex(a?.name) -
-        getPillarOrderIndex(b?.name),
-    )
-    .map((task) => {
-      if (task?.children?.length) {
-        return {
-          ...task,
-          children: sortByExternalIdOrder(
-            task.children,
-            task.taskSequence ?? [],
-          ),
-        };
-      }
-
-      return task;
-    });
-};
+import { sortTasksWithChildren } from '@utils/helper';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   mode,
