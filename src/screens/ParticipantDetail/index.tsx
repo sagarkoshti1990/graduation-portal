@@ -100,6 +100,8 @@ export default function ParticipantDetail() {
       ? "dropout"
       : status === STATUS.NOT_ENROLLED
       ? "not_enrolled"
+      : status === STATUS.NOT_ELIGIBLE
+      ? "not_eligible"
       : false;
 
   const fetchEntityDetails = useCallback(async () => {
@@ -277,6 +279,23 @@ export default function ParticipantDetail() {
 
   const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
 
+  const handleTargetingCriteriaResponce = useCallback((item:string|boolean) => {
+    if(item === STATUS.NOT_ELIGIBLE) {
+      setStatus(STATUS.NOT_ELIGIBLE);
+      setParticipant((prev: User | undefined) =>
+        prev
+          ? ({
+              ...prev,
+              status: STATUS.NOT_ELIGIBLE,
+            } as User)
+          : prev,
+      );
+    } else {
+      setTargetingCriteria(true)
+    }
+  }
+  , []);
+  
   if (isLoading) {
     return <Loader fullScreen message="Loading participant details..." />;
   }
@@ -290,7 +309,7 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-
+  
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
@@ -320,9 +339,11 @@ export default function ParticipantDetail() {
       />
 
       <Container px="$4" py="$6" $md-px="$6">
-        {!participant?.onBoardedProjectId && !targetingCriteria ?
-          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={setTargetingCriteria}/>
-        : showOnboardingProject ? (
+        {showOnboardingProject === "not_eligible" ? (
+          <></>
+        ) : !participant?.onBoardedProjectId && !targetingCriteria ?
+          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+         : showOnboardingProject ? (
           <>
             <DownloadFormsCard
               mode={

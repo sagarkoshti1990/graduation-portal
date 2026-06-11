@@ -22,24 +22,24 @@ const ContentWrapper = memo<ContentWrapperProps>(({ isInterventionPlanEditMode, 
 ContentWrapper.displayName = 'ContentWrapper';
 
 interface StatusBadgeTriggerProps {
-  triggerProps: any; isTaskDone: boolean; isManualToggleDisabled: boolean;
+  triggerProps: any; isCompleted: boolean; isManualToggleDisabled: boolean;
   isStatusUpdating: boolean; doneText: string; toDoText: string;
 }
 const StatusBadgeTrigger = memo<StatusBadgeTriggerProps>(
-  ({ triggerProps, isTaskDone, isManualToggleDisabled, isStatusUpdating, doneText, toDoText }) => {
+  ({ triggerProps, isCompleted, isManualToggleDisabled, isStatusUpdating, doneText, toDoText }) => {
     const [isHovered, setIsHovered] = useState(false);
     return (
       <Pressable {...triggerProps} disabled onHoverIn={() => setIsHovered(true)} onHoverOut={() => setIsHovered(false)}>
         <Box
           {...taskCardStyles.statusBadge}
-          {...(isTaskDone ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
+          {...(isCompleted ? (isHovered ? taskCardStyles.statusBadgeDoneHover : taskCardStyles.statusBadgeDone) : taskCardStyles.statusBadgeToDo)}
           opacity={isManualToggleDisabled ? 1 : undefined} minWidth={50} justifyContent="center"
         >
           <Text
-            {...(isTaskDone ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
+            {...(isCompleted ? (isHovered ? taskCardStyles.statusBadgeDoneTextHover : taskCardStyles.statusBadgeDoneText) : taskCardStyles.statusBadgeToDoText)}
             opacity={isStatusUpdating ? 0.5 : 1}
           >
-            {isTaskDone ? doneText : toDoText}
+            {isCompleted ? doneText : toDoText}
           </Text>
         </Box>
       </Pressable>
@@ -53,8 +53,8 @@ export interface TaskInfoProps {
   isPreview: boolean; isReadOnly: boolean; isWeb: boolean; isCompleted: boolean;
   showCheckbox: boolean; showAsCard: boolean; isInterventionPlanEditMode: boolean;
   isObservationTask: boolean; isEvidenceRequired: boolean; isManualToggleDisabled: boolean;
-  isStatusUpdating: boolean; isTaskDone: boolean;
-  handleTaskClick: () => void; handleTitlePress: () => void; handleOpenPreviewModal: () => void;
+  isStatusUpdating: boolean;
+  handleTaskClick: () => void; handleTitlePress: (canChangePathway?: any) => void; handleOpenPreviewModal: () => void;
   doneText: string; toDoText: string; evidenceRequiredText: string;
   completeFormText: string; uploadEvidenceText: string; fileText: string; filesText: string;
 }
@@ -62,7 +62,7 @@ export interface TaskInfoProps {
 const TaskInfo = memo<TaskInfoProps>(({
   task, isPreview, isReadOnly, isWeb, isCompleted, showCheckbox, showAsCard,
   isInterventionPlanEditMode, isObservationTask, isEvidenceRequired,
-  isManualToggleDisabled, isStatusUpdating, isTaskDone,
+  isManualToggleDisabled, isStatusUpdating,
   handleTaskClick, handleTitlePress, handleOpenPreviewModal,
   doneText, toDoText, evidenceRequiredText, completeFormText, uploadEvidenceText,
   fileText, filesText,
@@ -76,20 +76,28 @@ const TaskInfo = memo<TaskInfoProps>(({
     </Box>
   ) : null;
 
-  const evidenceRequiredBadge = (isEvidenceRequired || isObservationTask) && showAsCard && isInterventionPlanEditMode ? (
+  // Shown in both intervention-plan edit mode and read-only mode so status
+  // information is always visible to the viewer.
+  const evidenceRequiredBadge = isEvidenceRequired && showAsCard && isInterventionPlanEditMode ? (
     <Box {...taskAccordionStyles.actionRequiredBadge}>
       <Text {...taskAccordionStyles.actionRequiredText}>{evidenceRequiredText || 'Evidence Required'}</Text>
     </Box>
   ) : null;
 
   const statusBadgeTriggerFn = (triggerProps: any) => (
-    <StatusBadgeTrigger triggerProps={triggerProps} isTaskDone={isTaskDone}
+    <StatusBadgeTrigger triggerProps={triggerProps} isCompleted={isCompleted}
       isManualToggleDisabled={isManualToggleDisabled} isStatusUpdating={isStatusUpdating}
       doneText={doneText} toDoText={toDoText} />
   );
 
-  const statusBadge = isInterventionPlanEditMode && showAsCard ? (
-    <Tooltip isDisabled={!isManualToggleDisabled || isStatusUpdating || isTaskDone} placement="top" trigger={statusBadgeTriggerFn}>
+  // Visible in intervention-plan edit mode AND read-only mode (tooltip disabled when
+  // read-only because "complete form to mark done" hints are irrelevant to viewers).
+  const statusBadge = (isInterventionPlanEditMode || isReadOnly) && showAsCard ? (
+    <Tooltip
+      isDisabled={isReadOnly || !isManualToggleDisabled || isStatusUpdating || isCompleted}
+      placement="top"
+      trigger={statusBadgeTriggerFn}
+    >
       <TooltipContent {...taskCardStyles.tooltipContent}>
         <TooltipText {...taskCardStyles.tooltipText}>
           {isObservationTask ? completeFormText : uploadEvidenceText}
@@ -100,11 +108,33 @@ const TaskInfo = memo<TaskInfoProps>(({
 
   return (
     <VStack space="xs" flex={1}>
-      {isPreview || isReadOnly ? (
+      {isPreview ? (
         <HStack space="sm" alignItems="center" flexWrap="wrap">
           <Text {...titleTypography} color="$textPrimary" {...textStyle} style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}>{task?.name}</Text>
           {taskBadge}{evidenceRequiredBadge}
         </HStack>
+      ) : isReadOnly ? (
+        <>
+          <ContentWrapper isInterventionPlanEditMode={isInterventionPlanEditMode} isObservationTask={isObservationTask} onPress={handleTaskClick}>
+            <Text {...titleTypography} color="$textPrimary" {...textStyle} fontWeight={(titleTypography as any).fontWeight} style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}>{task.name}</Text>
+          </ContentWrapper>
+          <HStack space="sm" alignItems="center" flexWrap="wrap">
+            {statusBadge}{taskBadge}{evidenceRequiredBadge}
+            {isReadOnly && isEvidenceRequired && (
+              <Box {...taskAccordionStyles.actionRequiredBadge}>
+                <Text {...taskAccordionStyles.actionRequiredText}>{evidenceRequiredText}</Text>
+              </Box>
+            )}
+            {isReadOnly && task.attachments && task.attachments.length > 0 && (
+              <Button variant={'outlineghost' as any} px="$2" height="$6" onPress={handleOpenPreviewModal}>
+                <ButtonIcon as={LucideIcon} name="Paperclip" size={taskCardStyles.fileCountIcon.size} />
+                <ButtonText {...taskCardStyles.fileCountText}>
+                  {task.attachments.length}{' '}{task.attachments.length === 1 ? fileText : filesText}
+                </ButtonText>
+              </Button>
+            )}
+          </HStack>
+        </>
       ) : (
         <>
           <ContentWrapper isInterventionPlanEditMode={isInterventionPlanEditMode} isObservationTask={isObservationTask} onPress={handleTaskClick}>

@@ -1,14 +1,12 @@
 import React from 'react';
-import { Linking, Platform, Alert, Image } from 'react-native';
+import { Image } from 'react-native';
 import {
   Box,
   VStack,
   HStack,
   Text,
-  Pressable,
   ScrollView,
   Button,
-  ButtonText,
   ButtonIcon,
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
@@ -16,8 +14,7 @@ import { theme } from '@config/theme';
 import Modal from '@ui/Modal';
 import { useLanguage } from '@contexts/LanguageContext';
 import { evidencePreviewModalStyles as styles } from './styles';
-import { EvidencePreviewModalProps, EvidenceAttachment } from '../../../types/components.types';
-import logger from '@utils/logger';
+import { EvidencePreviewModalProps } from '../../../types/components.types';
 import { openDownload } from '@utils/helper';
 
 const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({

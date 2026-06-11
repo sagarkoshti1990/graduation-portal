@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Linking, Platform } from 'react-native';
 import {
   HStack,
@@ -73,6 +73,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   coachId
 }) => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { t } = useLanguage();
   const { isWeb, isMobile } = usePlatform();
   const { showAlert } = useAlert();
@@ -161,8 +162,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [participantProp?.idpProjectId,projectData]);
 
   const handleBackPress = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
+      // @ts-ignore
+    if (route.params?.redirectUrl) {
+      // @ts-ignore
+      navigation.navigate(route.params?.redirectUrl);
+      return;
     } else {
       // @ts-ignore
       navigation.navigate('participants');
@@ -260,11 +264,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [effectiveProgress, participantProp?.idpProjectId, status, solutions?.length]);
 
   const renderStatusBadge = () => {
-    if (status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+    if (status === STATUS.NOT_ELIGIBLE || status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return (
         <Box {...participantHeaderStyles.statusBadge}>
           <Text {...participantHeaderStyles.statusBadgeText}>
-            {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : t('participantDetail.header.droppedOut')}
+            {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : status === STATUS.NOT_ELIGIBLE ? t('participantDetail.header.notEligible') : t('participantDetail.header.droppedOut')}
           </Text>
         </Box>
       );
@@ -292,7 +296,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderSecondButton = () => {
     // Dropout: No second button
-    if (status === STATUS.DROPOUT || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+    if (status === STATUS.DROPOUT || status === STATUS.NOT_ELIGIBLE || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return null;
     }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)

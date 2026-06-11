@@ -26,7 +26,7 @@ interface AssessmentSurveysProps {
   isReadOnly?:boolean;
 }
 
-const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT];
+const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT, STATUS.NOT_ELIGIBLE];
 
 /**
  * AssessmentSurveys Component
@@ -103,7 +103,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
                 id: participant?.id,
               });
 
-              if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT || isReadOnly) {
+              if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT || participant?.status === STATUS.NOT_ELIGIBLE || isReadOnly) {
                 if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
                     return null;
                 }

@@ -17,6 +17,7 @@ import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@contexts/LanguageContext';
 import { STATUS } from '@constants/app.constant';
+import { sortTasksWithChildren } from '@utils/helper';
 
 export const useProjectLoader = (
   config: ProjectPlayerConfig,
@@ -87,7 +88,7 @@ export const useProjectLoader = (
                 },
               });
               
-              const participantId = projectData.entityInformation?.externalId;
+              const participantId = projectData?.entityInformation?.externalId;
               if (!participantId) {
                   throw new Error('Created project is missing entityInformation.externalId');
               }
@@ -156,12 +157,13 @@ export const useProjectLoader = (
               ? taskEntry?.[0]?.tasks ?? []
               : taskEntry?.tasks ?? [];
 
-            const templateId = taskEntry?.[0]?._id
+            const templateData = taskEntry?.[0]
             categoryExternalIds.push(child.externalId);
             children.push( {
               ...child,
               tasks,
-              templateId,
+              templateData,
+              templateId:templateData?._id,
               categoryId: newChildId,
             });
           })
@@ -170,8 +172,9 @@ export const useProjectLoader = (
             categoryExternalIds,
             children: children.filter((e:any) => e?.tasks?.length > 0),
           };
-
-          setProjectData(updatedPathwayData);
+          
+          const sortedTasks = sortTasksWithChildren(updatedPathwayData.children);
+          setProjectData({...updatedPathwayData,children:sortedTasks});
         } else if (data.solutionId) {
           setProjectData(null);
         }

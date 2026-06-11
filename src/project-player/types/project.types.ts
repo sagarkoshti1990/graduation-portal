@@ -153,22 +153,9 @@ export interface createProjectPlanPayload{
   isATargetedSolution: boolean;
 }
 
-interface Replacement {
-  existingTemplateId?: string;
-  existingCategoryId?: string;
-  newTemplateId: string;
-  newCategoryId: string;
-  targetTaskName: string;
-  customTasks: Array<{
-    name: string;
-    description: string;
-    type: string;
-  }>;
-  excludedTaskIds: string[];
-}
-
 export interface PathwayReplacementPayload {
-  replacements: Replacement[];
-  replacementReason: string;
-  categoryExternalIds: string[];
+  // replacements: Replacement[];
+  // replacementReason: string;
+  // categoryExternalIds: string[];
+  templates:any[]
 }

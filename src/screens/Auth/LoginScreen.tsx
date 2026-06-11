@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
   Box,
   VStack,
-  // HStack, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  HStack, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   Text,
   Input,
   InputField,
@@ -12,11 +12,11 @@ import {
   ButtonText,
   Heading,
   Spinner,
-  // Checkbox, // Commented out - Remember Me checkbox UI is hidden but functionality remains
-  // CheckboxIndicator, // Commented out - Remember Me checkbox UI is hidden but functionality remains
-  // CheckboxIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
-  // CheckboxLabel, // Commented out - Remember Me checkbox UI is hidden but functionality remains
-  // CheckIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  Checkbox, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  CheckboxIndicator, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  CheckboxIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  CheckboxLabel, // Commented out - Remember Me checkbox UI is hidden but functionality remains
+  CheckIcon, // Commented out - Remember Me checkbox UI is hidden but functionality remains
   Image,
 } from '@ui';
 import { useAuth } from '@contexts/AuthContext';
@@ -289,7 +289,7 @@ const LoginScreen: React.FC = () => {
               </VStack>
 
               {/* Remember Me Checkbox - UI hidden but functionality preserved */}
-              {/* <HStack {...loginStyles.hstack}>
+              <HStack {...loginStyles.hstack}>
                 <Checkbox
                   value="remember"
                   isChecked={rememberMe}
@@ -301,7 +301,7 @@ const LoginScreen: React.FC = () => {
                   </CheckboxIndicator>
                   <CheckboxLabel>{t('login.rememberMe')}</CheckboxLabel>
                 </Checkbox>
-              </HStack> */}
+              </HStack>
 
               {/* Error Message */}
               {error ? (

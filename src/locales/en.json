@@ -1835,10 +1835,14 @@
       "viewLog": "View Log",
       "previous": "Previous",
       "complete": "Complete",
-      "targetingCriteria":"Targeting Criteria Met",
+      "targetingCriteria":"Targeting Criteria",
       "targetingCriteriaDescription":"Mark if the participant meets the targeting criteria",
       "targetingCriteriaCSGSRDGrant":"Participants is receiving CSG/SRD Grant",
-      "targetingCriteriaAge":"Age of participant is between 18-50"
+      "targetingCriteriaAge":"Age of participant is between 18-50",
+      "proceed":"Proceed",
+      "notEligible":"Not Eligible",
+      "confirmNotEligible":"Participant Not Eligible",
+      "confirmNotEligibleSubtitle":"Are you sure that this participant does not meet the Targeting Criteria and is not Eligible for onboarding?"
     },
     "profileModal": {
       "title": "Participant Profile",
@@ -1921,6 +1925,7 @@
     "dashboard": "Dashboard",
     "searchByNameOrId": "Search by name",
     "notEnrolled": "Not Onboarded",
+    "notEligible": "Not Eligible",
     "enrolled": "Onboarded",
     "inProgress": "In Progress",
     "completed": "Completed",
@@ -2083,6 +2088,7 @@
   },
   "template": {
     "pageTitle": "Develop Intervention Plan",
+    "updatePageTitle": "Update Intervention Plan",
     "pageSubtitle": "Select a development plan template for {{name}}",
     "backButton": "Back",
     "IdpCreationSuccess": "Plan assigned successfully.",

@@ -47,6 +47,7 @@ export const getStatusColors = (statusValue: string): StatusBadgeColors => {
         border: "$success300",
       };
     case STATUS.DROPOUT:
+    case STATUS.NOT_ELIGIBLE:
       return {
         bg: "$error100",
         text: "$error600",

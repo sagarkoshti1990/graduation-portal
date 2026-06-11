@@ -30,7 +30,6 @@ export interface StatusIndicatorProps {
   isObservationTask: boolean;
   isEvidenceRequired: boolean;
   isStatusUpdating: boolean;
-  isTaskDone: boolean;
   showCheckbox: boolean;
   isCompleted: boolean;
   onCheckboxChange: (checked: boolean) => void;
@@ -48,7 +47,7 @@ export interface StatusIndicatorProps {
 
 const StatusIndicator = memo<StatusIndicatorProps>(({
   isInterventionPlanEditMode, isObservationTask, isEvidenceRequired,
-  isStatusUpdating, isTaskDone, showCheckbox, isCompleted, onCheckboxChange,
+  isStatusUpdating, showCheckbox, isCompleted, onCheckboxChange,
   isReadOnly, taskId, taskName, isOptional, isOnboardingTask, isChildOfProject,
   isPreview, isAddedToPlan, isRejected, t,
 }) => {
@@ -60,7 +59,7 @@ const StatusIndicator = memo<StatusIndicatorProps>(({
         </Box>
       );
     }
-    if (isTaskDone) return <LucideIcon name="CheckCircle" size={20} color="$success500" />;
+    if (isCompleted) return <LucideIcon name="CheckCircle" size={20} color="$success500" />;
     const tooltipText = isObservationTask
       ? t('projectPlayer.completeFormToMarkDone')
       : t('projectPlayer.uploadEvidenceToMarkDone');
@@ -73,7 +72,8 @@ const StatusIndicator = memo<StatusIndicatorProps>(({
     );
   }
 
-  if (showCheckbox) {
+  // In read-only mode render the status icon instead of an interactive checkbox.
+  if (showCheckbox && !isReadOnly) {
     return (
       <Box alignItems="center" justifyContent="center">
         {isStatusUpdating ? (
@@ -81,7 +81,7 @@ const StatusIndicator = memo<StatusIndicatorProps>(({
         ) : (
           <Checkbox
             value={taskId} isChecked={isCompleted} onChange={onCheckboxChange}
-            isDisabled={isReadOnly || isStatusUpdating} size="md"
+            isDisabled={isStatusUpdating} size="md"
             aria-label={`Mark ${taskName} as ${isCompleted ? 'incomplete' : 'complete'}`}
             opacity={isReadOnly ? 0.6 : 1}
           >
@@ -99,7 +99,7 @@ const StatusIndicator = memo<StatusIndicatorProps>(({
   }
 
   const { iconName, checkColor } = getStatusIconConfig({
-    isOnboardingTask, isChildOfProject, isCompleted, isOptional, isPreview, isAddedToPlan, isRejected,
+    isOnboardingTask, isChildOfProject, isCompleted, isOptional, isPreview, isAddedToPlan, isRejected,isReadOnly
   });
 
   return isStatusUpdating

@@ -46,7 +46,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   if(typeof isReadOnly === "boolean") {
     isReadOnlyParticipant = isReadOnly;
   } else {
-    isReadOnlyParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT || participantAccountUserStatus === USER_STATUS.INACTIVE;
+    isReadOnlyParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT || participantStatus === STATUS.NOT_ELIGIBLE || participantAccountUserStatus === USER_STATUS.INACTIVE;
   }
   const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
   const shouldShowViewButton =

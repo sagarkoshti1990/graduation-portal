@@ -43,8 +43,6 @@ import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
 import DownloadConfigModal from '@components/DownloadConfigModal';
 import OfflineBadge from '@components/OfflineBadge';
 import dataService from '../../services/dataService';
-import offlineStorage from '../../services/offlineStorage';
-import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
 
 interface ActionColumnProps {
@@ -297,6 +295,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const isReadOnlyStatus =
     participant?.status === STATUS.GRADUATED ||
     participant?.status === STATUS.DROPOUT ||
+    participant?.status === STATUS.NOT_ELIGIBLE ||
     participant?.userDetails?.status === USER_STATUS.INACTIVE;
   const isNotOnboarded =
     participant?.userDetails?.status === USER_STATUS.INACTIVE

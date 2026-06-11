@@ -262,7 +262,7 @@ const ActionsColumn: React.FC<{
         const coachId = user.extra?.hierarchy?.find((item:any) => item.level === 0)?.id
         if(coachId) {          
           // @ts-ignore
-          navigation.push('participant-detail', { id: user?.id,coachId })
+          navigation.push('participant-detail', { id: user?.id,coachId,redirectUrl:"user-management" })
         }
         break;
       default:
