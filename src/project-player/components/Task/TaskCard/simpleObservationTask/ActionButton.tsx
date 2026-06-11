@@ -10,20 +10,20 @@ export interface ActionButtonProps {
   isStatusUpdating: boolean; isWeb: boolean; showAsCard: boolean;
   isOnboardingTask: boolean; isEdit: boolean; isObservationTask?: boolean; actionIconName: string;
   handleTaskClick: () => void; handleAcceptTask: () => void; handleRejectTask: () => void;
-  buttonLabel?: string; uploadText: string;
+  buttonLabel?: string; uploadText: string; isSyncTaskId?: boolean;
 }
 
 const ActionButton = memo<ActionButtonProps>(({
   showActionButton, isPreview, isOptional, isAddedToPlan, isRejected,
   isReadOnly, isStatusUpdating, isWeb, showAsCard, isOnboardingTask, isEdit, isObservationTask,
-  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText,
+  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText,isSyncTaskId
 }) => {
   if (!showActionButton) return null;
 
   if (isPreview && isOptional) {
     return (
       <HStack space="xs" alignItems="center">
-        <Pressable onPress={handleAcceptTask}>
+        <Pressable onPress={!isSyncTaskId ? handleAcceptTask : ()=> console.log("this is SyncTaskId")}>
           {(state: any) => {
             const isHovered = state?.hovered || state?.pressed || false;
             return (
@@ -35,7 +35,7 @@ const ActionButton = memo<ActionButtonProps>(({
             );
           }}
         </Pressable>
-        <Pressable onPress={handleRejectTask}>
+        <Pressable onPress={!isSyncTaskId ? handleRejectTask : ()=> console.log("this is SyncTaskId")}>
           {(state: any) => {
             const isHovered = state?.hovered || state?.pressed || false;
             return (

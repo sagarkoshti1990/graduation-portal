@@ -6,11 +6,9 @@ import React, {
 } from 'react';
 import {
   Modal,
-  Spinner,
   Text,
   useAlert,
 } from '@ui';
-import { useProjectContext } from '../../../../context/ProjectContext';
 import { useTaskActions } from '../../../../hooks/useTaskActions';
 import { useLanguage } from '@contexts/LanguageContext';
 import {
@@ -81,7 +79,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     useTaskPermissions(isChildOfProject);
 
   const {
-    isCompleted, isObservationTask, hasUploadedFiles, isEvidenceRequired,
+    isCompleted, isObservationTask, isSyncTaskId, isEvidenceRequired,
     isOnboardingCompletedUI, isManualToggleDisabled,
     isAddedToPlan, setIsAddedToPlan, isRejected, setIsRejected,
   } = useTaskStatus(task, isOnboardingTask);
@@ -120,7 +118,14 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   const showError = useCallback((msg: string) => showAlert('error', msg), [showAlert]);
 
   const updateAddToPlan = useCallback(
-    (added: boolean) => { handleAddToPlan(task._id, added); setIsAddedToPlan(added); },
+    (added: boolean) => { 
+      const parentTasks = projectDataRef?.children || projectDataRef?.tasks;
+      const parentData = parentTasks.find((item: any) => item?.tasks?.find((item2:any) => task._id === item2._id));
+      const tasks = parentData?.children || parentData?.tasks;
+      const syncTaskIds = [task,...tasks.filter((item: any) => item?.metaInformation?.syncTaskIds?.includes(task._id))];
+      syncTaskIds.forEach((taskItem:any) => handleAddToPlan(taskItem._id, added));
+      setIsAddedToPlan(added);
+    },
     [handleAddToPlan, task._id],
   );
   const handleAcceptTask = useCallback(() => { updateAddToPlan(true); setIsRejected(false); }, [updateAddToPlan]);
@@ -269,6 +274,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         handleRejectTask={handleRejectTask}
         t={t}
         extraActions={extraActions}
+        isSyncTaskId={isSyncTaskId}
       />
       <FileUploadModal
         isOpen={showUploadModal} onClose={handleCloseUploadModal}

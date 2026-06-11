@@ -16,6 +16,7 @@ export interface TaskStatusResult {
   setIsAddedToPlan: (v: boolean) => void;
   isRejected: boolean;
   setIsRejected: (v: boolean) => void;
+  isSyncTaskId?: boolean
 }
 
 /**
@@ -76,6 +77,11 @@ export function useTaskStatus(task: Task, isOnboardingTask: boolean): TaskStatus
     [isObservationTask, isEvidenceRequired],
   );
 
+  const isSyncTaskId = useMemo(
+    () => task?.metaInformation?.syncTaskIds?.length,
+    [task?.metaInformation?.syncTaskIds],
+  );
+
   return {
     isCompleted,
     isObservationTask,
@@ -88,5 +94,6 @@ export function useTaskStatus(task: Task, isOnboardingTask: boolean): TaskStatus
     setIsAddedToPlan,
     isRejected,
     setIsRejected,
+    isSyncTaskId
   };
 }
