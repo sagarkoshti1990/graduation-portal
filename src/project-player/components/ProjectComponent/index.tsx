@@ -243,26 +243,24 @@ const ProjectComponent = React.memo(() => {
           >
             <>
               {/* Warning Banner - Show when Submit is disabled */}
-              <Box
-                bg="$warning50"
-                borderWidth={1}
-                borderColor="$warning300"
-                borderRadius="$md"
-                padding="$3"
-                display={'none'}
-                $md-display={'flex'}
-              >
-                <HStack space="sm" alignItems="center">
-                  <LucideIcon
-                    name="AlertCircle"
-                    size={18}
-                    color="#ca8a04"
-                  />
-                  <Text fontSize="$sm" color="$warning700">
-                    {t('participantDetail.interventionPlan.warningMsg')}
-                  </Text>
-                </HStack>
-              </Box>
+              {!oldProjectData?._id && (
+                <Box
+                  bg="$warning50"
+                  borderWidth={1}
+                  borderColor="$warning300"
+                  borderRadius="$md"
+                  padding="$3"
+                  display={'none'}
+                  $md-display={'flex'}
+                >
+                  <HStack space="sm" alignItems="center">
+                    <LucideIcon name="AlertCircle" size={18} color="#ca8a04" />
+                    <Text fontSize="$sm" color="$warning700">
+                      {t('participantDetail.interventionPlan.warningMsg')}
+                    </Text>
+                  </HStack>
+                </Box>
+              )}
 
               {/* Responsive Button Container - stacks on mobile, row on web */}
               <Box {...projectComponentStyles.footerButtonContainer}>

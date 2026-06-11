@@ -1841,7 +1841,7 @@
       "targetingCriteriaAge":"Age of participant is between 18-50",
       "proceed":"Proceed",
       "notEligible":"Not Eligible",
-      "confirmNotEligible":"Participant Not Eligible:",
+      "confirmNotEligible":"Participant Not Eligible",
       "confirmNotEligibleSubtitle":"Are you sure that this participant does not meet the Targeting Criteria and is not Eligible for onboarding?"
     },
     "profileModal": {
@@ -2088,6 +2088,7 @@
   },
   "template": {
     "pageTitle": "Develop Intervention Plan",
+    "updatePageTitle": "Update Intervention Plan",
     "pageSubtitle": "Select a development plan template for {{name}}",
     "backButton": "Back",
     "IdpCreationSuccess": "Plan assigned successfully.",

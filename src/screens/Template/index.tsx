@@ -434,11 +434,13 @@ const DevelopInterventionPlan: React.FC = () => {
       >
         <VStack {...(templateStyles.headerContent as any)}>
           <Text {...(TYPOGRAPHY.h4 as any)}>
-            {t('template.pageTitle')}
+            {t(existingProjectId ? "template.updatePageTitle" :'template.pageTitle')}
           </Text>
-          <Text {...(TYPOGRAPHY.bodySmall as any)}>
-            {t('template.pageSubtitle', { name: participantName })}
-          </Text>
+          {!existingProjectId && (
+            <Text {...(TYPOGRAPHY.bodySmall as any)}>
+              {t('template.pageSubtitle', { name: participantName })}
+            </Text>
+          )}
         </VStack>
       </PageHeader>
 
