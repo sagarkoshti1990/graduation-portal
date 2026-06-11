@@ -53,6 +53,7 @@ const overviewToStatusMap = {
   inprogress: { key: STATUS.IN_PROGRESS, label: 'participants.inProgress' },
   // completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
   droppedout: { key: STATUS.DROPOUT, label: 'participants.droppedOut' },
+  notEligible: { key: STATUS.NOT_ELIGIBLE, label: 'participants.notEligible' },
   graduated: { key: STATUS.GRADUATED, label: 'participants.graduatedStatus' },
 } as const;
 
@@ -133,8 +134,8 @@ const ParticipantsList: React.FC = () => {
     } else {
       // inactive
       return allStatusItems.filter((item: StatusFilterItem) => 
-        item.key === STATUS.DROPOUT 
-      // || item.key === STATUS.GRADUATED
+        item.key === STATUS.DROPOUT ||
+        item.key === STATUS.NOT_ELIGIBLE
       );
     }
   }, [allStatusItems, activeFilter]);
@@ -153,8 +154,8 @@ const ParticipantsList: React.FC = () => {
     
     const inactiveCount = allStatusItems
       .filter((item: StatusFilterItem) => 
-        item.key === STATUS.DROPOUT
-      // || item.key === STATUS.GRADUATED
+        item.key === STATUS.DROPOUT ||
+        item.key === STATUS.NOT_ELIGIBLE
       )
       .reduce((sum: number, item: StatusFilterItem) => sum + item.count, 0);
     

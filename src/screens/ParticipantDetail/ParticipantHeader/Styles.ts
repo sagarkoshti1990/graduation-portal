@@ -46,6 +46,7 @@ export const getStatusCard = (status: StatusCardStatus) => {
         bg: '$success50' as const,
       };
     case STATUS.DROPOUT:
+    case STATUS.NOT_ELIGIBLE:
       return {
         ...statusCardBase,
         borderColor: '$error200' as const,

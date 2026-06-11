@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   VStack,
@@ -10,22 +10,27 @@ import {
   CheckboxLabel,
   Button,
   ButtonText,
+  ButtonSpinner,
   LucideIcon,
+  Modal,
 } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CheckIcon } from '@gluestack-ui/themed';
 import { updateEntityDetails } from '../../../services/participantService';
 import { User } from '@contexts/AuthContext';
+import { STATUS } from '@constants/app.constant';
 
 interface TargetingCriteriaCardProps {
-  user: User|null;
+  user: User | null;
   participant: User;
-  setTargetingCriteria:(item:boolean) => void;
+  setTargetingCriteria: (item: boolean | string) => void;
 }
-const hasAllOptionsSelected = (options:any,selectedValues: string[]) => {
-  return options.every((option:any) => selectedValues.includes(option.value));
+
+const hasAllOptionsSelected = (options: any, selectedValues: string[]) => {
+  return options.every((option: any) => selectedValues.includes(option.value));
 };
+
 const TargetingCriteriaCard = ({
   user,
   participant,
@@ -33,10 +38,11 @@ const TargetingCriteriaCard = ({
 }: TargetingCriteriaCardProps) => {
   const { t } = useLanguage();
 
-  const [selectedValues, setSelectedValues] = React.useState<string[]>([]);
-  const [error, setError] = React.useState<string | null>(null);
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [buttonLoader,setButtonLoader] = useState<boolean>(false);
 
-  const options = [
+  const options = useMemo(() => [
     {
       label: t('participantDetail.header.targetingCriteriaCSGSRDGrant'),
       value: 'csgsrdgrant',
@@ -45,27 +51,30 @@ const TargetingCriteriaCard = ({
       label: t('participantDetail.header.targetingCriteriaAge'),
       value: 'age',
     },
-  ];
+  ],
+  [t]);
 
-  const handaleEetTargetingCriteria = (values:string[]) => {
-    const status = hasAllOptionsSelected(options,values);
-    if(status) {
+  const handaleEetTargetingCriteria = (values: string[]) => {
+    const status = hasAllOptionsSelected(options, values);
+
+    if (status) {
       setTargetingCriteria(true);
     }
-  }
+  };
 
-  useEffect(()=>{
-    // participant
-    const targetingCriteria = participant?.metaInformation?.targetingCriteria || {}
-    let values = [];
-    for(let key in targetingCriteria) {
-      if(targetingCriteria[key]){
-        values.push(key)
+  useEffect(() => {
+    const targetingCriteria = participant?.metaInformation?.targetingCriteria || {};
+    const values: string[] = [];
+
+    for (const key in targetingCriteria) {
+      if(targetingCriteria[key]) {
+        values.push(key);
       }
     }
-    setSelectedValues(values)
-    handaleEetTargetingCriteria(values)
-  },[participant?.metaInformation?.targetingCriteria])
+
+    setSelectedValues(values);
+    handaleEetTargetingCriteria(values);
+  }, [participant?.metaInformation?.targetingCriteria]);
 
   const handleCheckboxChange = (value: string) => {
     setSelectedValues((prev) => {
@@ -75,22 +84,29 @@ const TargetingCriteriaCard = ({
 
       return [...prev, value];
     });
+  };
 
-    setError(null);
+  const handleNotEligible = async () => {
+    const dataResult = await updateEntityDetails({
+      userId: `${user?.id}`,
+      entityId: participant?.entityId,
+      entityUpdates: {
+        status: STATUS.NOT_ELIGIBLE,
+      },
+    });
+
+    if (dataResult.data) {
+      setTargetingCriteria(STATUS.NOT_ELIGIBLE);
+    }
   };
 
   const handleSubmit = async () => {
-    if (selectedValues.length === 0) {
-      setError(t('common.selectAtLeastOneOption'));
-      return;
-    }
-
     const targetingCriteria = options.reduce(
       (acc, option) => {
         acc[option.value] = selectedValues.includes(option.value);
         return acc;
       },
-      {} as Record<string, boolean>
+      {} as Record<string, boolean>,
     );
 
     try {
@@ -105,14 +121,18 @@ const TargetingCriteriaCard = ({
       });
 
       if(dataResult.data) {
-        handaleEetTargetingCriteria(selectedValues)
+        handaleEetTargetingCriteria(selectedValues);
+        setButtonLoader(false);
       }
-
-      setError(null);
     } catch (err) {
       console.error('Failed to update targeting criteria', err);
     }
   };
+
+  const isAllSelected = useMemo(
+    () => hasAllOptionsSelected(options, selectedValues),
+    [options, selectedValues]
+  );
 
   return (
     <Box
@@ -176,22 +196,59 @@ const TargetingCriteriaCard = ({
           })}
         </VStack>
 
-        {error && (
-          <Text color="$error500" {...TYPOGRAPHY.bodySmall}>
-            {error}
-          </Text>
-        )}
+        <HStack alignItems="center" space="md">
+          <Button
+            mt="$4"
+            // @ts-ignore
+            variant="outlineghost"
+            onPress={() => {
+              setShowConfirmModal(true);
+              setButtonLoader(true);
+            }}
+            isDisabled={buttonLoader}
+          >
+            {buttonLoader && (
+              <ButtonSpinner />
+            )}
+            <ButtonText>{t('participantDetail.header.notEligible')}</ButtonText>
+          </Button>
 
-        <HStack alignItems="center">
           <Button
             mt="$4"
             variant="solid"
-            onPress={handleSubmit}
+            onPress={async () => {
+              setButtonLoader(true);
+              await handleSubmit();
+            }}
+            isDisabled={!isAllSelected || buttonLoader}
           >
-            <ButtonText>Proceed</ButtonText>
+            {buttonLoader && (
+              <ButtonSpinner />
+            )}
+            <ButtonText>{t('participantDetail.header.proceed')}</ButtonText>
           </Button>
         </HStack>
       </VStack>
+
+      <Modal
+        isOpen={!!showConfirmModal}
+        onClose={()=>{
+          setButtonLoader(false);
+          setShowConfirmModal(false);
+        }}
+        headerTitle={`${t('participantDetail.header.confirmNotEligible')}`}
+        headerAlignment="baseline"
+        size="lg"
+        confirmButtonText={t('participantDetail.header.notEligible')}
+        onConfirm={() => handleNotEligible()}
+        cancelButtonText={t('common.cancel')}
+        onCancel={()=>{
+          setButtonLoader(false);
+          setShowConfirmModal(false);
+        }}
+      >
+        <Text>{t('participantDetail.header.confirmNotEligibleSubtitle')}</Text>
+      </Modal>
     </Box>
   );
 };

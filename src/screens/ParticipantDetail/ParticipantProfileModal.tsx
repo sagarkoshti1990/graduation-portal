@@ -61,7 +61,7 @@ function ParticipantProfileModalInner({
     canEditProfile = !isReadOnly;
   } else {
     canEditProfile = participant?.accountUserStatus !== USER_STATUS.INACTIVE &&
-    participant?.status !== STATUS.DROPOUT;
+    participant?.status !== STATUS.DROPOUT && participant?.status !== STATUS.NOT_ELIGIBLE;
   }
   useEffect(() => {
     const init = async () => {

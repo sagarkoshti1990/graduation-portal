@@ -129,6 +129,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       [STATUS.IN_PROGRESS]: MODE.editMode,
       [STATUS.COMPLETED]: MODE.readOnlyMode,
       [STATUS.DROPOUT]: MODE.readOnlyMode,
+      [STATUS.NOT_ELIGIBLE]: MODE.readOnlyMode,
       [STATUS.GRADUATED]: MODE.readOnlyMode,
     };
 
@@ -194,7 +195,8 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     localStatus === STATUS.NOT_ONBOARDED ||
     localStatus === STATUS.IN_PROGRESS ||
     localStatus === STATUS.COMPLETED ||
-    localStatus === STATUS.DROPOUT
+    localStatus === STATUS.DROPOUT ||
+    localStatus === STATUS.NOT_ELIGIBLE
   ) {
     return (
       <Box flex={1} mt="$1">
