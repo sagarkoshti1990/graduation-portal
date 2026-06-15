@@ -75,8 +75,8 @@ const MainContent = memo<MainContentProps>(({
   isStatusUpdating, isManualToggleDisabled, isAddedToPlan, isRejected,
   showCheckbox, onCheckboxChange,
   showActionButton, actionIconName, handleAcceptTask, handleRejectTask,
-  handleTaskClick, handleTitlePress, handleOpenPreviewModal,isSyncTaskId,
-  t, extraActions,
+  handleTaskClick, handleTitlePress, handleOpenPreviewModal,
+  t, extraActions, isSyncTaskId,
 }) => {
   // showAsCard === isChildOfProject by definition
   const showAsCard = isChildOfProject;

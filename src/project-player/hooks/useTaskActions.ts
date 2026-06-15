@@ -74,7 +74,6 @@ export const useTaskActions = () => {
     updateTask,
     mode,
     setTaskAddedToPlan,
-    setTaskPlanActionPerformed,
     projectDataRef,
   } = useProjectStable();
 
@@ -180,9 +179,8 @@ export const useTaskActions = () => {
   const handleAddToPlan = useCallback(
     (taskId: string, added: boolean) => {
       setTaskAddedToPlan(taskId, added);
-      setTaskPlanActionPerformed(taskId);
     },
-    [setTaskAddedToPlan, setTaskPlanActionPerformed],
+    [setTaskAddedToPlan],
   );
 
   return {

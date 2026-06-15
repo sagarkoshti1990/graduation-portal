@@ -20,23 +20,6 @@ import { LucideIcon, Modal, useAlert } from '@ui';
 import { submitInterventionPlan, updateInterventionPlan } from '../../services/projectPlayerService';
 import { PLAYER_MODE } from '@constants/app.constant';
 
-function getExcludedTaskIds(
-  tasks: any[] = [],
-  addedToPlanSet: Set<string>,
-): string[] {
-  return tasks.flatMap(task => {
-    const nested = [
-      ...(task.tasks?.find((st: any) => st.isDeletable) as boolean
-        ? getExcludedTaskIds(task.tasks, addedToPlanSet)
-        : []),
-    ];
-    const isOptional = task?.isDeletable === true;
-    const isAddedToPlan = addedToPlanSet.has(task._id);
-    const excluded = isOptional && !isAddedToPlan ? [task._id] : [];
-    return [...excluded, ...nested];
-  });
-}
-
 function getDeletableTaskIds(tasks: any[] = []): string[] {
   return tasks.flatMap(task => {
     const nested = [
@@ -55,8 +38,7 @@ const ProjectComponent = React.memo(() => {
     oldProjectData,
     mode,
     config,
-    addedToPlanTaskIds,
-    taskPlanActionPerformedIds,
+    addedToPlanTasks,
   } =
     useProjectContext();
   const { t } = useLanguage();
@@ -76,15 +58,15 @@ const ProjectComponent = React.memo(() => {
     },
     [projectData?.children,oldProjectData?._id],
   );
-  const taskPlanActionPerformedIdsSet = useMemo(
-    () => new Set(taskPlanActionPerformedIds),
-    [taskPlanActionPerformedIds],
-  );
   const allActionsCompleted = useMemo(
-    () => deletableTaskIds.every(id => taskPlanActionPerformedIdsSet.has(id)),
-    [deletableTaskIds, taskPlanActionPerformedIdsSet],
+    () => deletableTaskIds.every(id => id in addedToPlanTasks),
+    [deletableTaskIds, addedToPlanTasks],
   );
-  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted;
+  const hasAtLeastOneSelected = useMemo(
+    () => Object.values(addedToPlanTasks).some(Boolean),
+    [addedToPlanTasks],
+  );
+  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted || !hasAtLeastOneSelected;
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
   const isEditMode =
     mode === 'edit' && config.showAddCustomTaskButton !== false;
@@ -109,16 +91,10 @@ const ProjectComponent = React.memo(() => {
         }>;
       }> = [];
 
-      const excludedTaskIds = Array.from(
-        new Set(
-          getExcludedTaskIds(
-            [
-              ...(projectData.children || []),
-            ],
-            new Set(addedToPlanTaskIds),
-          ),
-        ),
-      );
+      const excludedTaskIds = Object.entries(addedToPlanTasks)
+        .filter(([, value]) => !value)
+        .map(([taskId]) => taskId);
+
       // Process children (templates/pillars)
       if (projectData.children && projectData.children.length > 0) {
         projectData.children.forEach((pillar: any) => {
@@ -203,7 +179,7 @@ const ProjectComponent = React.memo(() => {
     } finally {
       setIsSubmittingInterventionPlan(false);
     }
-  }, [projectData, oldProjectData, config, addedToPlanTaskIds, showAlert, t]);
+  }, [projectData, oldProjectData, config, addedToPlanTasks, showAlert, t]);
 
   if (!projectData) {
     return null;

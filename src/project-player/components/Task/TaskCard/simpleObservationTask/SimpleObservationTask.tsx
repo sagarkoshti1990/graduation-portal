@@ -79,9 +79,9 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     useTaskPermissions(isChildOfProject);
 
   const {
-    isCompleted, isObservationTask, isSyncTaskId, isEvidenceRequired,
+    isCompleted, isObservationTask, isEvidenceRequired,
     isOnboardingCompletedUI, isManualToggleDisabled,
-    isAddedToPlan, setIsAddedToPlan, isRejected, setIsRejected,
+    isAddedToPlan, isRejected, isSyncTaskId,
   } = useTaskStatus(task, isOnboardingTask);
 
   // ── Local state ──────────────────────────────────────────────────────────
@@ -118,21 +118,27 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   const showError = useCallback((msg: string) => showAlert('error', msg), [showAlert]);
 
   const updateAddToPlan = useCallback(
-    (added: boolean) => { 
-      const parentTasks = projectDataRef?.children || projectDataRef?.tasks;
-      const parentData = parentTasks.find((item: any) => item?.tasks?.find((item2:any) => task._id === item2._id));
-      const tasks = parentData?.children || parentData?.tasks;
-      const syncTaskIds = [task,...tasks.filter((item: any) => item?.metaInformation?.syncTaskIds?.includes(task._id))];
-      syncTaskIds.forEach((taskItem:any) => handleAddToPlan(taskItem._id, added));
-      setIsAddedToPlan(added);
+    (added: boolean) => {
+      // Resolve the ref at call-time so we always read the latest data.
+      const data: any = proData?.current ?? proData;
+      const parentTasks: any[] = data?.children || data?.tasks || [];
+      const parentData = parentTasks.find((item: any) => item?.tasks?.find((item2: any) => item2._id === task._id));
+      const siblingTasks: any[] = parentData?.children || parentData?.tasks || [];
+      const taskIdsToUpdate = [
+        task._id,
+        ...siblingTasks
+          .filter((item: any) => item?.metaInformation?.syncTaskIds?.includes(task._id))
+          .map((item: any) => item._id),
+      ];
+      taskIdsToUpdate.forEach((taskId: string) => handleAddToPlan(taskId, added));
     },
-    [handleAddToPlan, task._id],
+    [handleAddToPlan, task._id, proData],
   );
-  const handleAcceptTask = useCallback(() => { updateAddToPlan(true); setIsRejected(false); }, [updateAddToPlan]);
-  const handleRejectTask = useCallback(() => { updateAddToPlan(false); setIsRejected(true); }, [updateAddToPlan]);
+  const handleAcceptTask = useCallback(() => updateAddToPlan(true), [updateAddToPlan]);
+  const handleRejectTask = useCallback(() => updateAddToPlan(false), [updateAddToPlan]);
 
 // check pathway confirmation befor any task compeltion first time
-  const handleCheckFirstTaskComplete = useCallback((canChangePathway: boolean | ((checkFirstTaskComplete: boolean) => Promise<void>)) => {
+  const handleCheckFirstTaskComplete = useCallback((canChangePathway: boolean | ((checkFirstTaskComplete?: any) => Promise<void>)) => {
     if (task.parentId !== undefined && typeof canChangePathway !== "boolean") {
       const parentData = projectDataRef?.tasks.find((item: any) => item._id === task.parentId);
       if (parentData?.projectTemplateDetails?.metaInformation?.isReplaceable) {
@@ -184,7 +190,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     }
   }, [isEdit, isReadOnly, isObservationTask, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating,handleCheckFirstTaskComplete]);
 
-  const handleCheckboxChange = useCallback(async (checked: boolean, checkFirstTaskComplete: boolean) => {
+  const handleCheckboxChange = useCallback(async (checked: boolean, checkFirstTaskComplete?: any) => {
     if (!isEdit) return;
     if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? checkFirstTaskComplete : handleTitlePress)) return;
 
@@ -197,7 +203,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEdit, task._id, task.parentId, parentIndex, index, handleStatusChange]);
 
-  const handleTitlePress = useCallback(({checkFirstTaskComplete}:{checkFirstTaskComplete:boolean}) => {
+  const handleTitlePress = useCallback(async ({ checkFirstTaskComplete }: { checkFirstTaskComplete?: any }) => {
     if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted, checkFirstTaskComplete);
   }, [isManualToggleDisabled, handleCheckboxChange, isCompleted]);
 
@@ -267,14 +273,14 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         showActionButton={showActionButton}
         actionIconName={actionIconName}
         onCheckboxChange={handleCheckboxChange}
-        handleTaskClick={handleTaskClick}
+        handleTaskClick={() => handleTaskClick({checkFirstTaskComplete: false})}
         handleTitlePress={handleTitlePress}
         handleOpenPreviewModal={handleOpenPreviewModal}
         handleAcceptTask={handleAcceptTask}
         handleRejectTask={handleRejectTask}
+        isSyncTaskId={isSyncTaskId}
         t={t}
         extraActions={extraActions}
-        isSyncTaskId={isSyncTaskId}
       />
       <FileUploadModal
         isOpen={showUploadModal} onClose={handleCloseUploadModal}
