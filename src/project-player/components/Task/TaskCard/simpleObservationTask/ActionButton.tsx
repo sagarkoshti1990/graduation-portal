@@ -9,14 +9,14 @@ export interface ActionButtonProps {
   isAddedToPlan: boolean; isRejected: boolean; isReadOnly: boolean;
   isStatusUpdating: boolean; isWeb: boolean; showAsCard: boolean;
   isOnboardingTask: boolean; isEdit: boolean; isObservationTask?: boolean; actionIconName: string;
-  handleTaskClick: () => void; handleAcceptTask: () => void; handleRejectTask: () => void;
-  buttonLabel?: string; uploadText: string; isSyncTaskId?: boolean;
+  handleTaskClick: () => void; handleAcceptTask: () => void; handleRejectTask: () => void; completeFormText:string;
+  buttonLabel?: string; uploadText: string; isCompleted?: boolean; isSyncTaskId?: boolean;
 }
 
 const ActionButton = memo<ActionButtonProps>(({
   showActionButton, isPreview, isOptional, isAddedToPlan, isRejected,
   isReadOnly, isStatusUpdating, isWeb, showAsCard, isOnboardingTask, isEdit, isObservationTask,
-  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText, isSyncTaskId,
+  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText, isCompleted, isSyncTaskId,completeFormText
 }) => {
   if (!showActionButton) return null;
 
@@ -63,10 +63,10 @@ const ActionButton = memo<ActionButtonProps>(({
     <Button onPress={handleTaskClick} isDisabled={isStatusUpdating}
       size={isWeb ? (showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
       variant={"outlineghost" as any} $web-cursor={isEdit || isReadOnly ? 'pointer' : undefined}>
-      <ButtonIcon name={actionIconName} size={16} as={LucideIcon} />
+      <ButtonIcon name={isObservationTask && isCompleted ? "Eye" :actionIconName} size={16} as={LucideIcon} />
       <ButtonText {...TYPOGRAPHY.button} {...taskCardStyles.actionButtonText}
         fontSize={showAsCard || isOnboardingTask || !isWeb ? '$xs' : undefined}>
-        {buttonLabel || uploadText}
+        {isObservationTask && isCompleted ? completeFormText : buttonLabel || uploadText}
       </ButtonText>
     </Button>
   );

@@ -273,7 +273,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         showActionButton={showActionButton}
         actionIconName={actionIconName}
         onCheckboxChange={handleCheckboxChange}
-        handleTaskClick={() => handleTaskClick({checkFirstTaskComplete: false})}
+        handleTaskClick={() => handleTaskClick({checkFirstTaskComplete: true})}
         handleTitlePress={handleTitlePress}
         handleOpenPreviewModal={handleOpenPreviewModal}
         handleAcceptTask={handleAcceptTask}
