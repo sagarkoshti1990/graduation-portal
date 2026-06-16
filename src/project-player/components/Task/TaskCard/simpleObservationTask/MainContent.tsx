@@ -159,7 +159,9 @@ const MainContent = memo<MainContentProps>(({
       handleAcceptTask={handleAcceptTask}
       handleRejectTask={handleRejectTask}
       buttonLabel={task.metaInformation?.buttonLabel}
+      isCompleted={isCompleted}
       uploadText={t('projectPlayer.upload')}
+      completeFormText={t('projectPlayer.viewForm')}
     />
   );
 
