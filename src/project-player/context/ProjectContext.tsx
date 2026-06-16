@@ -27,7 +27,7 @@ import { updateTaskStatus } from '../utils/taskUtils';
  */
 type ProjectStableContextValue = Omit<
   ProjectContextValue,
-  'projectData' | 'addedToPlanTaskIds' | 'taskPlanActionPerformedIds'
+  'projectData' | 'addedToPlanTasks'
 > & {
   /** Ref to the current projectData. Read in callbacks without subscribing. */
   projectDataRef: React.RefObject<ProjectData | null>;
@@ -41,8 +41,7 @@ type ProjectStableContextValue = Omit<
 type ProjectDataContextValue = {
   projectData: ProjectData | null;
   oldProjectData:ProjectData | null;
-  addedToPlanTaskIds: string[];
-  taskPlanActionPerformedIds: string[];
+  addedToPlanTasks: Record<string, boolean>;
 };
 
 const ProjectStableContext = createContext<ProjectStableContextValue | undefined>(undefined);
@@ -211,10 +210,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   const projectDataRef = useRef<ProjectData | null>(initialData);
   const [isLoading] = useState(false);
   const [error] = useState<Error | null>(null);
-  const [addedToPlanTaskIds, setAddedToPlanTaskIds] = useState<string[]>([]);
-  const [taskPlanActionPerformedIds, setTaskPlanActionPerformedIds] = useState<
-    string[]
-  >([]);
+  const [addedToPlanTasks, setAddedToPlanTasks] = useState<Record<string, boolean>>({});
 
   const isEditMode = config.mode === MODE.editMode.mode;
 
@@ -232,33 +228,29 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   }, [config.baseUrl, config.accessToken]);
 
   useEffect(() => {
-    if (
-      !projectData ||
-      addedToPlanTaskIds.length > 0 ||
-      taskPlanActionPerformedIds.length > 0
-    )
-      return;
+    if (!projectData || Object.keys(addedToPlanTasks).length > 0) return;
 
-    const collectAddedToPlanIds = (tasks: Task[] = []): string[] =>
-      tasks.flatMap(task => {
-        const nested = [
-          ...(task?.children ? collectAddedToPlanIds(task.children) : []),
-          ...(task?.tasks ? collectAddedToPlanIds(task.tasks) : []),
-        ];
-        const isAdded = task?.metaInformation?.addedToPlan === true;
-        return [...(isAdded ? [task._id] : []), ...nested];
-      });
+    const collectAddedToPlanTasks = (tasks: Task[] = []): Record<string, boolean> =>
+      tasks.reduce<Record<string, boolean>>((acc, task) => {
+        const nested = {
+          ...(task?.children ? collectAddedToPlanTasks(task.children) : {}),
+          ...(task?.tasks ? collectAddedToPlanTasks(task.tasks) : {}),
+        };
+        if (task?.metaInformation?.addedToPlan === true) {
+          acc[task._id] = true;
+        }
+        return { ...acc, ...nested };
+      }, {});
 
-    const initialIds = collectAddedToPlanIds([
+    const initialTasks = collectAddedToPlanTasks([
       ...(projectData.children || []),
       ...(projectData.tasks || []),
     ]);
 
-    if (initialIds.length > 0) {
-      setAddedToPlanTaskIds(initialIds);
-      setTaskPlanActionPerformedIds(initialIds);
+    if (Object.keys(initialTasks).length > 0) {
+      setAddedToPlanTasks(initialTasks);
     }
-  }, [projectData, addedToPlanTaskIds.length, taskPlanActionPerformedIds.length]);
+  }, [projectData, addedToPlanTasks]);
 
   const updateTask = useCallback(
     async (taskId: string, participantId: string, updates: Partial<Task>): Promise<void> => {
@@ -424,21 +416,10 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
   const setTaskAddedToPlan = useCallback(
     (taskId: string, added: boolean) => {
-      setAddedToPlanTaskIds(prev => {
-        if (added) {
-          return prev.includes(taskId) ? prev : [...prev, taskId];
-        }
-        return prev.filter(id => id !== taskId);
-      });
+      setAddedToPlanTasks(prev => ({ ...prev, [taskId]: added }));
     },
     [],
   );
-
-  const setTaskPlanActionPerformed = useCallback((taskId: string) => {
-    setTaskPlanActionPerformedIds(prev =>
-      prev.includes(taskId) ? prev : [...prev, taskId],
-    );
-  }, []);
 
   // Stable value — only recreated when config or callbacks change.
   // Task-level hooks subscribe here so they never re-render from task updates.
@@ -455,7 +436,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       saveLocal,
       syncToServer,
       setTaskAddedToPlan,
-      setTaskPlanActionPerformed,
       onTaskUpdate,
       projectDataRef,
       oldProjectData
@@ -471,7 +451,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       saveLocal,
       syncToServer,
       setTaskAddedToPlan,
-      setTaskPlanActionPerformed,
       onTaskUpdate,
       oldProjectData
     ],
@@ -483,10 +462,9 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     () => ({
       projectData,
       oldProjectData,
-      addedToPlanTaskIds,
-      taskPlanActionPerformedIds,
+      addedToPlanTasks,
     }),
-    [projectData,oldProjectData, addedToPlanTaskIds, taskPlanActionPerformedIds],
+    [projectData, oldProjectData, addedToPlanTasks],
   );
 
   return (
@@ -541,10 +519,8 @@ export const useProjectContext = (): ProjectContextValue => {
     deleteTask:                stable.deleteTask,
     saveLocal:                 stable.saveLocal,
     syncToServer:              stable.syncToServer,
-    addedToPlanTaskIds:        data.addedToPlanTaskIds,
+    addedToPlanTasks:          data.addedToPlanTasks,
     setTaskAddedToPlan:        stable.setTaskAddedToPlan,
-    taskPlanActionPerformedIds: data.taskPlanActionPerformedIds,
-    setTaskPlanActionPerformed: stable.setTaskPlanActionPerformed,
     onTaskUpdate:              stable.onTaskUpdate,
   };
 };

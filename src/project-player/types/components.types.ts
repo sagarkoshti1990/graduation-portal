@@ -79,10 +79,8 @@ export interface ProjectContextValue {
   deleteTask: (taskId: string) => Promise<void>;
   saveLocal: () => void;
   syncToServer: () => Promise<void>;
-  addedToPlanTaskIds: string[];
+  addedToPlanTasks: Record<string, boolean>;
   setTaskAddedToPlan: (taskId: string, added: boolean) => void;
-  taskPlanActionPerformedIds: string[];
-  setTaskPlanActionPerformed: (taskId: string) => void;
   onTaskUpdate?: (task: Task) => void;
 }
 

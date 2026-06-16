@@ -10,38 +10,42 @@ export interface ActionButtonProps {
   isStatusUpdating: boolean; isWeb: boolean; showAsCard: boolean;
   isOnboardingTask: boolean; isEdit: boolean; isObservationTask?: boolean; actionIconName: string;
   handleTaskClick: () => void; handleAcceptTask: () => void; handleRejectTask: () => void;
-  buttonLabel?: string; uploadText: string;
+  buttonLabel?: string; uploadText: string; isSyncTaskId?: boolean;
 }
 
 const ActionButton = memo<ActionButtonProps>(({
   showActionButton, isPreview, isOptional, isAddedToPlan, isRejected,
   isReadOnly, isStatusUpdating, isWeb, showAsCard, isOnboardingTask, isEdit, isObservationTask,
-  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText,
+  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText, isSyncTaskId,
 }) => {
   if (!showActionButton) return null;
 
   if (isPreview && isOptional) {
+    // Sync-dependent tasks are shown but locked — their state is controlled by the primary task.
+    const isLocked = !!isSyncTaskId;
     return (
-      <HStack space="xs" alignItems="center">
-        <Pressable onPress={handleAcceptTask}>
+      <HStack space="xs" alignItems="center" opacity={isLocked ? 0.45 : 1}>
+        <Pressable onPress={isLocked ? undefined : handleAcceptTask} disabled={isLocked}>
           {(state: any) => {
-            const isHovered = state?.hovered || state?.pressed || false;
+            const isHovered = !isLocked && (state?.hovered || state?.pressed || false);
             return (
               <Box bg={isAddedToPlan ? '$tickButtonActiveBg' : isHovered ? '$success100' : 'transparent'}
                 padding="$2" borderRadius="$lg" borderWidth={1}
-                borderColor={isAddedToPlan ? '$tickButtonActiveBg' : '$success500'} $web-cursor="pointer">
+                borderColor={isAddedToPlan ? '$tickButtonActiveBg' : '$success500'}
+                $web-cursor={isLocked ? 'not-allowed' : 'pointer'}>
                 <LucideIcon name="Check" size={16} color={isAddedToPlan ? '$white' : '$success500'} strokeWidth={3} />
               </Box>
             );
           }}
         </Pressable>
-        <Pressable onPress={handleRejectTask}>
+        <Pressable onPress={isLocked ? undefined : handleRejectTask} disabled={isLocked}>
           {(state: any) => {
-            const isHovered = state?.hovered || state?.pressed || false;
+            const isHovered = !isLocked && (state?.hovered || state?.pressed || false);
             return (
               <Box bg={isHovered || isRejected ? '$error100' : 'transparent'}
                 padding="$2" borderRadius="$lg" borderWidth={1}
-                borderColor="$error500" $web-cursor="pointer">
+                borderColor="$error500"
+                $web-cursor={isLocked ? 'not-allowed' : 'pointer'}>
                 <LucideIcon name="X" size={16} color="$error500" strokeWidth={3} />
               </Box>
             );

@@ -61,6 +61,7 @@ export interface MainContentProps {
 
   // External injections (e.g. edit/delete actions from CustomTaskManager)
   extraActions?: React.ReactNode;
+  isSyncTaskId?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ const MainContent = memo<MainContentProps>(({
   showCheckbox, onCheckboxChange,
   showActionButton, actionIconName, handleAcceptTask, handleRejectTask,
   handleTaskClick, handleTitlePress, handleOpenPreviewModal,
-  t, extraActions,
+  t, extraActions, isSyncTaskId,
 }) => {
   // showAsCard === isChildOfProject by definition
   const showAsCard = isChildOfProject;
@@ -140,6 +141,7 @@ const MainContent = memo<MainContentProps>(({
 
   const actionButton = (
     <ActionButton
+      isSyncTaskId={isSyncTaskId}
       showActionButton={showActionButton}
       isPreview={isPreview}
       isOptional={!!task?.isDeletable}
