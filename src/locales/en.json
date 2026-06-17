@@ -1273,7 +1273,7 @@
       "status": "Status",
       "province": "Province",
       "district": "District",
-      "searchPlaceholder": "Search by name or email...",
+      "searchPlaceholder": "Search by name",
       "searchParticipantsPlaceholder": "Search participants",
       "allRoles": "All Roles",
       "admin": "Admin",
