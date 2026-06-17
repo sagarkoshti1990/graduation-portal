@@ -354,7 +354,7 @@ export default function FilterButton({
       <HStack {...filterStyles.filterFieldsContainer}>
         {/* Search Bar - Only show if there's a search field in data, placed first */}
         {searchItem && (
-          <Box width="$full" $md-width="20%" flex={1} $md-flex={2}>
+          <Box minWidth="$56" flex={1}>
             <SearchBar
               key={`search-${clearCount}`}
               placeholder={t('admin.filters.searchPlaceholder')}

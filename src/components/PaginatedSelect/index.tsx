@@ -16,6 +16,7 @@ import {
   CloseIcon,
   Icon as GluestackIcon,
   Divider,
+  ModalFooter,
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -139,7 +140,7 @@ const PaginatedSelect: React.FC<PaginatedSelectProps> = ({
   // Core fetch — uses ref so the effect that watches `isOpen` always calls latest version
   const doFetch = useCallback(
     async (page: number, search: string, reset: boolean) => {
-      if (isLoadingRef.current) return;
+      if (isLoadingRef.current || isLoading) return;
       isLoadingRef.current = true;
       setIsLoading(true);
 
@@ -297,7 +298,6 @@ const PaginatedSelect: React.FC<PaginatedSelectProps> = ({
       >
         <ModalBackdrop />
         <ModalContent {...commonModalContentStyles} maxHeight="80%">
-
           {/* ── Header ── */}
           <ModalHeader pt="$5" pb="$3" px="$5">
             <HStack flex={1} alignItems="flex-start" justifyContent="space-between">
@@ -362,190 +362,183 @@ const PaginatedSelect: React.FC<PaginatedSelectProps> = ({
           )}
 
           {/* ── Scrollable list ── */}
-          <ModalBody padding="$0" pt="$2" pb="$0">
-            <ScrollView
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-              showsVerticalScrollIndicator={false}
-              style={styles.scrollView}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Initial loading spinner */}
-              {isLoading && items.length === 0 && (
-                <Box py="$10" alignItems="center" justifyContent="center">
-                  <ActivityIndicator
-                    size="small"
-                    color={theme.tokens.colors.primary500}
-                  />
-                </Box>
-              )}
+          <ScrollView
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            // showsVerticalScrollIndicator={false}
+            style={styles.scrollView}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Initial loading spinner */}
+            {isLoading && items.length === 0 && (
+              <Box py="$10" alignItems="center" justifyContent="center">
+                <ActivityIndicator
+                  size="small"
+                  color={theme.tokens.colors.primary500}
+                />
+              </Box>
+            )}
 
-              {/* Empty state */}
-              {!isLoading && items.length === 0 && total !== null && (
-                <Box py="$10" alignItems="center" justifyContent="center" px="$6">
-                  <LucideIcon
-                    name="SearchX"
-                    size={36}
-                    color={theme.tokens.colors.textMutedForeground}
-                  />
-                  <Text
-                    mt="$3"
-                    fontSize="$sm"
-                    fontWeight="$medium"
-                    color="$textMutedForeground"
-                    fontFamily="Inter"
-                    textAlign="center"
+            {/* Empty state */}
+            {!isLoading && items.length === 0 && total !== null && (
+              <Box py="$10" alignItems="center" justifyContent="center" px="$6">
+                <LucideIcon
+                  name="SearchX"
+                  size={36}
+                  color={theme.tokens.colors.textMutedForeground}
+                />
+                <Text
+                  mt="$3"
+                  fontSize="$sm"
+                  fontWeight="$medium"
+                  color="$textMutedForeground"
+                  fontFamily="Inter"
+                  textAlign="center"
+                >
+                  {t('common.noDataFound', 'No results found')}
+                </Text>
+              </Box>
+            )}
+
+            {/* ── Item cards ── */}
+            <VStack px="$6" pt="$1" pb="$2" space="md">
+              {items.map((item, index) => {
+                const itemValue = getValue(item);
+                const itemLabel = getLabel(item);
+
+                // Optional secondary info line (status, site, etc.)
+                const secondaryText: string | null = item.status
+                  ? `- ${item.status}`
+                  : item.site_name
+                  ? `- ${item.site_name}`
+                  : item.province_name
+                  ? `- ${item.province_name}`
+                  : null;
+
+                // Use tempValue (in-modal highlight) — not the applied value prop
+                const isActive = itemValue === tempValue;
+
+                return (
+                  <Pressable
+                    key={`${itemValue}-${index}`}
+                    onPress={() => handleTempSelect(item)}
                   >
-                    {t('common.noDataFound', 'No results found')}
-                  </Text>
-                </Box>
-              )}
-
-              {/* ── Item cards ── */}
-              <VStack px="$6" pt="$1" pb="$2" space="md">
-                {items.map((item, index) => {
-                  const itemValue = getValue(item);
-                  const itemLabel = getLabel(item);
-
-                  // Optional secondary info line (status, site, etc.)
-                  const secondaryText: string | null =
-                    item.status
-                      ? `- ${item.status}`
-                      : item.site_name
-                      ? `- ${item.site_name}`
-                      : item.province_name
-                      ? `- ${item.province_name}`
-                      : null;
-
-                  // Use tempValue (in-modal highlight) — not the applied value prop
-                  const isActive = itemValue === tempValue;
-
-                  return (
-                    <Pressable
-                      key={`${itemValue}-${index}`}
-                      onPress={() => handleTempSelect(item)}
+                    <HStack
+                      alignItems="center"
+                      py="$3"
+                      px="$4"
+                      borderWidth={1}
+                      borderColor={isActive ? '$borderColor' : '$borderColor'}
+                      borderRadius="$xl"
+                      space="md"
+                      bg={isActive ? '$backgroundColor' : '$backgroundColor'}
                     >
-                      <HStack
-                        alignItems="center"
-                        py="$3"
-                        px="$4"
-                        borderWidth={1}
-                        borderColor={isActive ? '$borderColor' : '$borderColor'}
-                        borderRadius="$xl"
-                        space="md"
-                        bg={isActive ? '$backgroundColor' : '$backgroundColor'}
+                      {/* Radio indicator */}
+                      <Box
+                        bg={isActive ? '$primary600' : 'transparent'}
+                        borderRadius="$full"
                       >
-                        {/* Radio indicator */}
-                        <Box
-                          bg={isActive ? '$primary600' : 'transparent'}
-                          borderRadius="$full"
+                        <LucideIcon
+                          size={14}
+                          name={isActive ? 'Check' : 'Circle'}
+                          color={isActive ? '$white' : '$borderColor'}
+                        />
+                      </Box>
+
+                      {/* Label + optional secondary text */}
+                      <VStack flex={1} space="xs">
+                        <Text
+                          fontSize="$sm"
+                          fontWeight={isActive ? '$semibold' : '$medium'}
+                          fontFamily="Inter"
+                          color="$textForeground"
+                          numberOfLines={2}
                         >
-                          <LucideIcon
-                            size={14}
-                            name={isActive ? 'Check' : 'Circle'}
-                            color={isActive ? '$white' : '$borderColor'}
-                          />
-                        </Box>
-
-                        {/* Label + optional secondary text */}
-                        <VStack flex={1} space="xs">
+                          {itemLabel}
+                        </Text>
+                        {secondaryText && (
                           <Text
-                            fontSize="$sm"
-                            fontWeight={isActive ? '$semibold' : '$medium'}
+                            fontSize="$xs"
                             fontFamily="Inter"
-                            color="$textForeground"
-                            numberOfLines={2}
+                            color="$textMutedForeground"
+                            numberOfLines={1}
                           >
-                            {itemLabel}
+                            {secondaryText}
                           </Text>
-                          {secondaryText && (
-                            <Text
-                              fontSize="$xs"
-                              fontFamily="Inter"
-                              color="$textMutedForeground"
-                              numberOfLines={1}
-                            >
-                              {secondaryText}
-                            </Text>
-                          )}
-                        </VStack>
-                      </HStack>
-                    </Pressable>
-                  );
-                })}
-              </VStack>
+                        )}
+                      </VStack>
+                    </HStack>
+                  </Pressable>
+                );
+              })}
+            </VStack>
 
-              {/* Pagination loading indicator */}
-              {isLoading && items.length > 0 && (
-                <Box py="$4" alignItems="center">
-                  <ActivityIndicator
-                    size="small"
-                    color={theme.tokens.colors.primary500}
-                  />
-                </Box>
-              )}
+            {/* Pagination loading indicator */}
+            {isLoading && items.length > 0 && (
+              <Box py="$4" alignItems="center">
+                <ActivityIndicator
+                  size="small"
+                  color={theme.tokens.colors.primary500}
+                />
+              </Box>
+            )}
 
-              {/* End of list */}
-              {!isLoading && !hasMore && items.length > 0 && (
-                <Box py="$3" alignItems="center">
-                  <Text fontSize="$xs" color="$textMutedForeground" fontFamily="Inter">
-                    {'— ' + t('common.allLoaded', 'end of list') + ' —'}
-                  </Text>
-                </Box>
-              )}
-            </ScrollView>
-
-            {/* ── Footer ── */}
-            <Divider bg="$borderLight100" />
-            <HStack px="$5" py="$4" justifyContent="space-between" space="md">
-              {/* Cancel — closes without applying */}
-              <Pressable
-                onPress={() => setIsOpen(false)}
-                accessibilityLabel={t('common.cancel', 'Cancel')}
-                style={styles.footerButton}
+            {/* End of list */}
+            {!isLoading && !hasMore && items.length > 0 && (
+              <Box py="$3" alignItems="center">
+                <Text fontSize="$xs" color="$textMutedForeground" fontFamily="Inter">
+                  {'— ' + t('common.allLoaded', 'end of list') + ' —'}
+                </Text>
+              </Box>
+            )}
+          </ScrollView>
+          <ModalFooter gap="$4" borderTopWidth="$1" borderTopColor="$borderLight100" >
+            {/* Cancel — closes without applying */}
+            <Pressable
+              onPress={() => setIsOpen(false)}
+              accessibilityLabel={t('common.cancel', 'Cancel')}
+              style={styles.footerButton}
+            >
+              <Box
+                py="$3"
+                borderRadius="$md"
+                borderWidth={1}
+                borderColor="$borderLight300"
+                bg="$white"
+                alignItems="center"
               >
-                <Box
-                  py="$3"
-                  borderRadius="$md"
-                  borderWidth={1}
-                  borderColor="$borderLight300"
-                  bg="$white"
-                  alignItems="center"
-                >
-                  <Text fontSize="$sm" fontFamily="Inter" fontWeight="$medium" color="$textForeground">
-                    {t('common.cancel', 'Cancel')}
-                  </Text>
-                </Box>
-              </Pressable>
+                <Text fontSize="$sm" fontFamily="Inter" fontWeight="$medium" color="$textForeground">
+                  {t('common.cancel', 'Cancel')}
+                </Text>
+              </Box>
+            </Pressable>
 
-              {/* Select — applies the highlighted item; disabled until something is highlighted */}
-              <Pressable
-                onPress={handleConfirm}
-                disabled={!tempValue}
-                accessibilityLabel={t('common.select', 'Select')}
-                style={styles.footerButton}
+            {/* Select — applies the highlighted item; disabled until something is highlighted */}
+            <Pressable
+              onPress={handleConfirm}
+              disabled={!tempValue}
+              accessibilityLabel={t('common.select', 'Select')}
+              style={styles.footerButton}
+            >
+              <Box
+                py="$3"
+                borderRadius="$md"
+                bg={tempValue ? '$primary600' : '$borderLight200'}
+                alignItems="center"
+                opacity={tempValue ? 1 : 0.6}
               >
-                <Box
-                  py="$3"
-                  borderRadius="$md"
-                  bg={tempValue ? '$primary600' : '$borderLight200'}
-                  alignItems="center"
-                  opacity={tempValue ? 1 : 0.6}
+                <Text
+                  fontSize="$sm"
+                  fontFamily="Inter"
+                  fontWeight="$semibold"
+                  color={tempValue ? '$white' : '$textMutedForeground'}
                 >
-                  <Text
-                    fontSize="$sm"
-                    fontFamily="Inter"
-                    fontWeight="$semibold"
-                    color={tempValue ? '$white' : '$textMutedForeground'}
-                  >
-                    {t('common.select', 'Select')}
-                  </Text>
-                </Box>
-              </Pressable>
-            </HStack>
-          </ModalBody>
-
+                  {t('common.select', 'Select')}
+                </Text>
+              </Box>
+            </Pressable>
+          </ModalFooter>
         </ModalContent>
       </GluestackModal>
     </>

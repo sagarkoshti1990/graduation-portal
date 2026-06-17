@@ -889,62 +889,60 @@ const mappedLCsColumns: ColumnDef<any>[] = useMemo(() => [
 ], []);
 
 return (
-   <VStack space="md" width="100%">
-     <TitleHeader
-       title="admin.menu.assignUsers"
-       description={isSupervisor ? "admin.assignUsers.assignParticipantsToLCsDescription" : "admin.assignUsersDescription"}
-       bottom={!isSupervisor && (
-         <HStack space="md" alignItems="center">
-           <Button
-             {...(activeTab === 'LC_TO_SUPERVISOR'
-               ? titleHeaderStyles.solidButton
-               : titleHeaderStyles.outlineButton)}
-             onPress={() => setActiveTab('LC_TO_SUPERVISOR')}
-           >
-             <Text
-               {...(activeTab === 'LC_TO_SUPERVISOR'
-                 ? titleHeaderStyles.solidButtonText
-                 : titleHeaderStyles.outlineButtonText)}
-             >
-               {t('admin.actions.lctosupervisior')}
-             </Text>
-           </Button>
+  <VStack space="md" width="100%">
+    <TitleHeader
+      title="admin.menu.assignUsers"
+      description={isSupervisor ? "admin.assignUsers.assignParticipantsToLCsDescription" : "admin.assignUsersDescription"}
+      bottom={!isSupervisor && (
+        <HStack space="md" alignItems="center">
+          <Button
+            {...(activeTab === 'LC_TO_SUPERVISOR'
+              ? titleHeaderStyles.solidButton
+              : titleHeaderStyles.outlineButton)}
+            onPress={() => setActiveTab('LC_TO_SUPERVISOR')}
+          >
+            <Text
+              {...(activeTab === 'LC_TO_SUPERVISOR'
+                ? titleHeaderStyles.solidButtonText
+                : titleHeaderStyles.outlineButtonText)}
+            >
+              {t('admin.actions.lctosupervisior')}
+            </Text>
+          </Button>
 
 
-           <Button
-             {...(activeTab === 'PARTICIPANT_TO_LC'
-               ? titleHeaderStyles.solidButton
-               : titleHeaderStyles.outlineButton)}
-             onPress={() => setActiveTab('PARTICIPANT_TO_LC')}
-           >
-             <Text
-               {...(activeTab === 'PARTICIPANT_TO_LC'
-                 ? titleHeaderStyles.solidButtonText
-                 : titleHeaderStyles.outlineButtonText)}
-             >
-               {t('admin.actions.participanttolc')}
-             </Text>
-           </Button>
-         </HStack>
-       )}
-     />
+          <Button
+            {...(activeTab === 'PARTICIPANT_TO_LC'
+              ? titleHeaderStyles.solidButton
+              : titleHeaderStyles.outlineButton)}
+            onPress={() => setActiveTab('PARTICIPANT_TO_LC')}
+          >
+            <Text
+              {...(activeTab === 'PARTICIPANT_TO_LC'
+                ? titleHeaderStyles.solidButtonText
+                : titleHeaderStyles.outlineButtonText)}
+            >
+              {t('admin.actions.participanttolc')}
+            </Text>
+          </Button>
+        </HStack>
+      )}
+    />
 
-
-     {activeTab === 'LC_TO_SUPERVISOR' && (
-       <>
-         <UserAvatarCard
-           title="admin.assignUsers.step1SelectSupervisor"
-           description="admin.assignUsers.filterByProvince"
-           filterOptions={supervisorFilterOptions}
-           onChange={handleSupervisorFilterChange}
-           selectedValues={{
-             ...supervisorFilterValues,
-             selectedSupervisorData: selectedSupervisor, // Pass full supervisor object
-           }}
-           showSelectedCard={!!supervisorFilterValues.selectSupervisor}
-           showLcList={false}
-         />
-
+    {activeTab === 'LC_TO_SUPERVISOR' && (
+      <>
+        <UserAvatarCard
+          title="admin.assignUsers.step1SelectSupervisor"
+          description="admin.assignUsers.filterByProvince"
+          filterOptions={supervisorFilterOptions}
+          onChange={handleSupervisorFilterChange}
+          selectedValues={{
+            ...supervisorFilterValues,
+            selectedSupervisorData: selectedSupervisor, // Pass full supervisor object
+          }}
+          showSelectedCard={!!supervisorFilterValues.selectSupervisor}
+          showLcList={false}
+        />
 
         {supervisorFilterValues.selectSupervisor && (
           <>
@@ -1012,132 +1010,131 @@ return (
       </>
     )}
 
-
-     {activeTab === 'PARTICIPANT_TO_LC' && (
-       <>
-         <UserAvatarCard
+    {activeTab === 'PARTICIPANT_TO_LC' && (
+      <>
+        <UserAvatarCard
           title={isSupervisor ? "admin.assignUsers.step1SelectLC" : "admin.assignUsers.step1SelectSupervisorAndLC"}
           description={isSupervisor ? "admin.assignUsers.chooseLC" : "admin.assignUsers.chooseSupervisor"}
-           filterOptions={[
-             // Supervisor paginated-select — only for admins (not supervisors)
-             ...(isSupervisor ? [] : [{
-               nameKey: 'admin.filters.selectSupervisor',
-               attr: 'selectSupervisor',
-               type: 'paginated-select',
-               placeholderKey: 'admin.filters.chooseSupervisor',
-               fetchFn: fetchSupervisorsForSelect,
-               pageSize: 20,
-               showSearch: true,
-             }]),
-             // LC paginated-select — depends on selected supervisor; resets when supervisor changes
-             {
-               nameKey: 'admin.filters.selectLC',
-               attr: 'selectLC',
-               type: 'paginated-select',
-               placeholderKey: 'admin.filters.chooseLC',
-               fetchFn: fetchLCsForSelect,
-               dependencyAttr: 'selectSupervisor',
-               dependencyKey: isSupervisor
-                 ? String(user?.id || user?._id || '')
-                 : (selectedSupervisorId || null),
-               disabled: !isSupervisor && !selectedSupervisorId,
-               pageSize: 20,
-               showSearch: true,
-             },
-           ]}
-           onChange={handleSupervisorFilterChange}
-           selectedValues={{ ...supervisorFilterValues, selectLC: selectedLc?.value }}
-           showSelectedCard={false}
-           showLcList={false}
-         />
+          filterOptions={[
+            // Supervisor paginated-select — only for admins (not supervisors)
+            ...(isSupervisor ? [] : [{
+              nameKey: 'admin.filters.selectSupervisor',
+              attr: 'selectSupervisor',
+              type: 'paginated-select',
+              placeholderKey: 'admin.filters.chooseSupervisor',
+              fetchFn: fetchSupervisorsForSelect,
+              pageSize: 20,
+              showSearch: true,
+            }]),
+            // LC paginated-select — depends on selected supervisor; resets when supervisor changes
+            {
+              nameKey: 'admin.filters.selectLC',
+              attr: 'selectLC',
+              type: 'paginated-select',
+              placeholderKey: 'admin.filters.chooseLC',
+              fetchFn: fetchLCsForSelect,
+              dependencyAttr: 'selectSupervisor',
+              dependencyKey: isSupervisor
+                ? String(user?.id || user?._id || '')
+                : (selectedSupervisorId || null),
+              disabled: !isSupervisor && !selectedSupervisorId,
+              pageSize: 20,
+              showSearch: true,
+            },
+          ]}
+          onChange={handleSupervisorFilterChange}
+          selectedValues={{ ...supervisorFilterValues, selectLC: selectedLc?.value }}
+          showSelectedCard={false}
+          showLcList={false}
+        />
 
-         {selectedLc && (
-           <>
-             <UserAvatarCard
-               title="admin.assignUsers.step2AssignParticipants"
-               description="admin.assignUsers.filterAndSelectParticipants"
-               filterOptions={AssignParticipantFilterOptions}
-               onChange={(values) => setParticipantFilterValues(values)}
-               selectedValues={{ ...participantFilterValues, selectedLc }}
-               showLcList={true}
-               isParticipantList={true}
-               isLoading={isLoadingParticipants}
-               lcList={getAvailableParticipants().map((p: any) => {
-                 // Build location string with province and site
-                 const locationParts = [];
-                 if (p.province) locationParts.push(p.province);
-                 if (p.site) locationParts.push(p.site);
-                 const location = locationParts.length > 0 ? locationParts.join(' • ') : '';
-                 
-                 return {
-                   labelKey: p.labelKey,
-                   value: p.value,
-                   location: location,
-                   province: p.province,
-                   site: p.site,
-                   status: p.status,
-                 };
-               })}
-              paginationConfig={{
-                page: participantsPage,
-                pageSize: participantsPageSize,
-                total: participantsTotal,
-                onPageChange: setParticipantsPage,
-                onPageSizeChange: (size: number) => {
-                  setParticipantsPage(1);
-                  setParticipantsPageSize(size);
-                },
-              }}
-               onAssign={handleAssignParticipants}
-             />
+        {selectedLc && (
+          <>
+            <UserAvatarCard
+              title="admin.assignUsers.step2AssignParticipants"
+              description="admin.assignUsers.filterAndSelectParticipants"
+              filterOptions={AssignParticipantFilterOptions}
+              onChange={(values) => setParticipantFilterValues(values)}
+              selectedValues={{ ...participantFilterValues, selectedLc }}
+              showLcList={true}
+              isParticipantList={true}
+              isLoading={isLoadingParticipants}
+              lcList={getAvailableParticipants().map((p: any) => {
+                // Build location string with province and site
+                const locationParts = [];
+                if (p.province) locationParts.push(p.province);
+                if (p.site) locationParts.push(p.site);
+                const location = locationParts.length > 0 ? locationParts.join(' • ') : '';
+                
+                return {
+                  labelKey: p.labelKey,
+                  value: p.value,
+                  location: location,
+                  province: p.province,
+                  site: p.site,
+                  status: p.status,
+                };
+              })}
+            paginationConfig={{
+              page: participantsPage,
+              pageSize: participantsPageSize,
+              total: participantsTotal,
+              onPageChange: setParticipantsPage,
+              onPageSizeChange: (size: number) => {
+                setParticipantsPage(1);
+                setParticipantsPageSize(size);
+              },
+            }}
+              onAssign={handleAssignParticipants}
+            />
 
-             {/* Hardcoded List of Participants Mapped to LC - TODO: Replace with API data */}
-             <Card {...(AssignUsersStyles.tableCardStyles as ViewProps)}>
-               <VStack space="md" width="100%">
-                 <VStack space="sm">
-                   <Text {...(AssignUsersStyles.tableTitleText as TextProps)}>
-                     {t('admin.assignUsers.listOfParticipantsMappedToLc')}
-                   </Text>
-                   <Text {...(AssignUsersStyles.tableSubtitleText as TextProps)}>
-                     {t('admin.assignUsers.currentParticipantAssignmentsFor').replace(
-                       '{{lc}}',
-                       selectedLc?.labelKey || 'LC'
-                     )}
-                   </Text>
-                 </VStack>
+            {/* Hardcoded List of Participants Mapped to LC - TODO: Replace with API data */}
+            <Card {...(AssignUsersStyles.tableCardStyles as ViewProps)}>
+              <VStack space="md" width="100%">
+                <VStack space="sm">
+                  <Text {...(AssignUsersStyles.tableTitleText as TextProps)}>
+                    {t('admin.assignUsers.listOfParticipantsMappedToLc')}
+                  </Text>
+                  <Text {...(AssignUsersStyles.tableSubtitleText as TextProps)}>
+                    {t('admin.assignUsers.currentParticipantAssignmentsFor').replace(
+                      '{{lc}}',
+                      selectedLc?.labelKey || 'LC'
+                    )}
+                  </Text>
+                </VStack>
 
-                 <Box marginTop="$6">
-                   <DataTable
-                     data={mappedParticipants || []}
-                     columns={mappedParticipantsColumns}
-                     getRowKey={(item: any) => item.value}
-                     isLoading={isLoadingMappedParticipants}
-                     emptyMessage="common.noDataFound"
-                     responsive={true}
-                     pagination={{
-                       enabled: true,
-                       pageSize: mappedParticipantsPageSize,
-                       maxPageNumbers: 5,
-                       showPageSizeSelector: true,
-                       pageSizeOptions: [5, 10, 25, 50],
-                       serverSide: {
-                         total: mappedParticipantsTotal,
-                         count: mappedParticipantsPage,
-                       },
-                     }}
-                     onPageChange={setMappedParticipantsPage}
-                     onPageSizeChange={(size: number) => {
-                       setMappedParticipantsPageSize(size);
-                       setMappedParticipantsPage(1); // Reset to first page when page size changes
-                     }}
-                   />
-                 </Box>
-               </VStack>
-             </Card>
-           </>
-         )}
-       </>
-     )}
+                <Box marginTop="$6">
+                  <DataTable
+                    data={mappedParticipants || []}
+                    columns={mappedParticipantsColumns}
+                    getRowKey={(item: any) => item.value}
+                    isLoading={isLoadingMappedParticipants}
+                    emptyMessage="common.noDataFound"
+                    responsive={true}
+                    pagination={{
+                      enabled: true,
+                      pageSize: mappedParticipantsPageSize,
+                      maxPageNumbers: 5,
+                      showPageSizeSelector: true,
+                      pageSizeOptions: [5, 10, 25, 50],
+                      serverSide: {
+                        total: mappedParticipantsTotal,
+                        count: mappedParticipantsPage,
+                      },
+                    }}
+                    onPageChange={setMappedParticipantsPage}
+                    onPageSizeChange={(size: number) => {
+                      setMappedParticipantsPageSize(size);
+                      setMappedParticipantsPage(1); // Reset to first page when page size changes
+                    }}
+                  />
+                </Box>
+              </VStack>
+            </Card>
+          </>
+        )}
+      </>
+    )}
    </VStack>
  );
 };

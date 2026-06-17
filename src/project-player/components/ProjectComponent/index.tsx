@@ -62,11 +62,8 @@ const ProjectComponent = React.memo(() => {
     () => deletableTaskIds.every(id => id in addedToPlanTasks),
     [deletableTaskIds, addedToPlanTasks],
   );
-  const hasAtLeastOneSelected = useMemo(
-    () => Object.values(addedToPlanTasks).some(Boolean),
-    [addedToPlanTasks],
-  );
-  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted || !hasAtLeastOneSelected;
+  
+  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted;
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
   const isEditMode =
     mode === 'edit' && config.showAddCustomTaskButton !== false;
