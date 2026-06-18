@@ -170,11 +170,10 @@ export const useProjectLoader = (
           const updatedPathwayData = {
             ...pathwayData,
             categoryExternalIds,
-            children: children.filter((e:any) => e?.tasks?.length > 0),
+            children:sortTasksWithChildren(children),
           };
           
-          const sortedTasks = sortTasksWithChildren(updatedPathwayData.children);
-          setProjectData({...updatedPathwayData,children:sortedTasks});
+          setProjectData(updatedPathwayData);
         } else if (data.solutionId) {
           setProjectData(null);
         }
