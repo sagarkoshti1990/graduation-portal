@@ -39,7 +39,7 @@ import {
   ParticipantData,
 } from '@app-types/participant';
 import { openDownload } from '@utils/helper';
-import { ACTION_COLUMN } from '@constants/GET_ANSWER_DATA';
+import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 import DownloadConfigModal from '@components/DownloadConfigModal';
 import OfflineBadge from '@components/OfflineBadge';
 import dataService from '../../services/dataService';
@@ -591,7 +591,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                 submissionNumber={
                   selectedSubmissionNumber || (undefined as any)
                 }
-                userData={ACTION_COLUMN}
+                userData={LOG_VISIT_MODULE_POPUP}
               />
             ) : selectedSolutionId && modalType === 'view-log' ? (
               <Box flex={1}>
