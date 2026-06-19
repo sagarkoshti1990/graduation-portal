@@ -137,11 +137,17 @@ export const updateTaskStatus = ({
         return updatedTask;
       }
 
-      // Check children recursively
       if (task.children?.length) {
         return {
           ...task,
           children: updateTaskRecursive(task.children),
+        };
+      }
+
+      if (task.tasks?.length) {
+        return {
+          ...task,
+          tasks: updateTaskRecursive(task.tasks),
         };
       }
 
