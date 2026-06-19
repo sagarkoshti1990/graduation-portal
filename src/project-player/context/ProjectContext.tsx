@@ -254,15 +254,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
   const updateTask = useCallback(
     async (taskId: string, participantId: string, updates: Partial<Task>): Promise<void> => {
-      // Use functional updater to avoid stale projectData closure.
+      const current = projectDataRef.current;
       const {task,project} = updateTaskStatus({
         taskId,
-        data: projectData,
+        data: current,
         updatedData: updates,
       })
       setProjectData(project);
       let updatedTaskObj = task;
-      const currentProjectId = projectData?._id;
+      const currentProjectId = current?._id;
 
       if (onTaskUpdate && updatedTaskObj) {
         const taskForCallback = updatedTaskObj;

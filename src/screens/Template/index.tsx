@@ -683,7 +683,7 @@ const DevelopInterventionPlan: React.FC = () => {
                   </Box>
                 </VStack>
 
-                <VStack gap="$1" mb="$1">
+                {existingProjectId && <VStack gap="$1" mb="$1">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
                     {t('template.categoryModal.subCategoryLabel', { pillarName: pillar?.name })}
                   </Text>
@@ -744,7 +744,7 @@ const DevelopInterventionPlan: React.FC = () => {
                       /> */}
                     </Box>
                   </Box>
-                </VStack>
+                </VStack>}
               </React.Fragment>
             ) : null,
           )}
