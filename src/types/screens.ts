@@ -111,6 +111,7 @@ export type PillarSelection = {
   subCategoryId?: string;
   categoryName?:string;
   subCategoryName?:string;
+  keywords?:string[]
 };
 
 export interface ParticipantProgressCardProps {

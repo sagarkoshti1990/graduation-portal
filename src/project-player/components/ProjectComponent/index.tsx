@@ -91,11 +91,12 @@ const ProjectComponent = React.memo(() => {
       const excludedTaskIds = Object.entries(addedToPlanTasks)
         .filter(([, value]) => !value)
         .map(([taskId]) => taskId);
-
+      let keywords: string[] = [];
       // Process children (templates/pillars)
       if (projectData.children && projectData.children.length > 0) {
         projectData.children.forEach((pillar: any) => {
           // Get custom tasks from this pillar (check both tasks and children properties)
+          keywords = [...keywords,...(pillar?.projectKeywords || [])];
           const pillarTasks = pillar.tasks || pillar.children || [];
           const customTasks = pillarTasks
             .filter((task: any) => task.isCustomTask === true)
@@ -135,10 +136,12 @@ const ProjectComponent = React.memo(() => {
 
       if(oldProjectData) {
         // const playLoad:any = {replacements:templates,replacementReason:"",categoryExternalIds:projectData.categoryExternalIds} 
-        const playLoad = {
+        const reqBody = {
           templates,
+          keywords
         };
-        const response  = await updateInterventionPlan(oldProjectData._id,playLoad);
+        
+        const response  = await updateInterventionPlan(oldProjectData._id,reqBody);
         if(!response.error) {
           const newProjectId = response?.data?.projectId          
           if (config.onSubmitInterventionPlan) {
@@ -155,6 +158,7 @@ const ProjectComponent = React.memo(() => {
           entityId: config.profileInfo?.entityId || userId, // Fallback to userId if entityId not available
           projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
           baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
+          keywords
         };
         
         // Call API to submit intervention plan
