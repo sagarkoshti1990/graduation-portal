@@ -140,9 +140,10 @@ export const useProjectLoader = (
           }
           pathwayData?.children?.forEach((child: any) => {
             let taskEntry = taskResult?.[child._id];
+            let relation:any = {};
             let newChildId = child._id;
             if (!taskEntry) {
-              const relation = data?.pillarCategoryRelation?.find(
+              relation = data?.pillarCategoryRelation?.find(
                 (rel: any) => rel.pillarId === child._id,
               );
 
@@ -163,6 +164,7 @@ export const useProjectLoader = (
               ...child,
               tasks,
               templateData,
+              projectKeywords: relation?.keywords || [],
               templateId:templateData?._id,
               categoryId: newChildId,
             });

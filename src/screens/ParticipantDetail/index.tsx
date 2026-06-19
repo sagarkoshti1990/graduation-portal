@@ -82,7 +82,7 @@ export default function ParticipantDetail() {
   );
   const isFetchingRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
-  const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [projectData, setProjectData] = useState<ProjectData | undefined>(undefined);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
   const [targetingCriteria,setTargetingCriteria] = useState(false);
@@ -141,7 +141,7 @@ export default function ParticipantDetail() {
       return () => {
         setActiveTab("intervention-plan")
         setSolutions([]);
-        setProjectData(null);
+        setProjectData(undefined);
         setNavbarData(null);
         setParticipant(undefined);
         setStatus("");
@@ -357,7 +357,7 @@ export default function ParticipantDetail() {
               {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
-        ) : projectData ? (
+        ) : (
           // ENROLLED, IN_PROGRESS, DROPOUT: Show tabs with ProjectPlayer in InterventionPlan
           <Box>
             {/* Tabs */}
@@ -430,7 +430,7 @@ export default function ParticipantDetail() {
               )}
             </Box>
           </Box>
-        ) : <></>}
+        )}
       </Container>
 
       <ParticipantProfileModal
