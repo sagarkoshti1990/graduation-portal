@@ -3,6 +3,7 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useRef,
 } from 'react';
 import {
   Modal,
@@ -85,6 +86,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   } = useTaskStatus(task, isOnboardingTask);
 
   // ── Local state ──────────────────────────────────────────────────────────
+  const handleTitlePressRef = useRef<((args: { checkFirstTaskComplete?: any }) => void) | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean | {name:string,fun: ((data:{checkFirstTaskComplete: boolean}) => Promise<void>)}>(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -140,19 +142,22 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
 // check pathway confirmation befor any task compeltion first time
   const handleCheckFirstTaskComplete = useCallback((canChangePathway: boolean | ((checkFirstTaskComplete?: any) => Promise<void>)) => {
     if (task.parentId !== undefined && typeof canChangePathway !== "boolean") {
-      const parentData = projectDataRef?.tasks.find((item: any) => item._id === task.parentId);
+      // Read the ref at call time so we always see the latest projectData,
+      // even when this component hasn't re-rendered since a sibling completed.
+      const liveData = proData?.current || proData;
+      const parentData = liveData?.tasks?.find((item: any) => item._id === task.parentId);
       if (parentData?.projectTemplateDetails?.metaInformation?.isReplaceable) {
         const data = parentData?.children?.find((item: any) => item.status === TASK_STATUS.COMPLETED);
         if (!data?.name) {
           const value = 'GBL_PATH';
-          const pathway = projectDataRef?.categories?.find((item: any) => item?.externalId?.includes(value));
+          const pathway = liveData?.categories?.find((item: any) => item?.externalId?.includes(value));
           setShowConfirmModal({name:pathway.name, fun:canChangePathway});
           return false;
         }
       }
     }
     return true
-  },[task,projectDataRef])
+  },[task.parentId, proData])
 
   const handleTaskClick = useCallback(async ({checkFirstTaskComplete}:{checkFirstTaskComplete:boolean}) => {
     if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? false : handleTaskClick)) return;
@@ -192,7 +197,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
 
   const handleCheckboxChange = useCallback(async (checked: boolean, checkFirstTaskComplete?: any) => {
     if (!isEdit) return;
-    if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? checkFirstTaskComplete : handleTitlePress)) return;
+    if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? checkFirstTaskComplete : handleTitlePressRef.current)) return;
 
     setIsStatusUpdating(true);
     try {
@@ -200,12 +205,13 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     } finally {
       setIsStatusUpdating(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit, task._id, task.parentId, parentIndex, index, handleStatusChange]);
+  }, [isEdit, task._id, parentIndex, index, handleStatusChange, handleCheckFirstTaskComplete]);
 
   const handleTitlePress = useCallback(async ({ checkFirstTaskComplete }: { checkFirstTaskComplete?: any }) => {
     if (!isManualToggleDisabled) handleCheckboxChange(!isCompleted, checkFirstTaskComplete);
   }, [isManualToggleDisabled, handleCheckboxChange, isCompleted]);
+
+  handleTitlePressRef.current = handleTitlePress;
 
   const updateEntityFile = useCallback(async (data: any) => {
     if (data?.success) {
