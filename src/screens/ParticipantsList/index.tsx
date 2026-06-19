@@ -53,7 +53,7 @@ const overviewToStatusMap = {
   inprogress: { key: STATUS.IN_PROGRESS, label: 'participants.inProgress' },
   // completed: { key: STATUS.COMPLETED, label: 'participants.completed' },
   droppedout: { key: STATUS.DROPOUT, label: 'participants.droppedOut' },
-  notEligible: { key: STATUS.NOT_ELIGIBLE, label: 'participants.notEligible' },
+  not_eligible: { key: STATUS.NOT_ELIGIBLE, label: 'participants.notEligible' },
   graduated: { key: STATUS.GRADUATED, label: 'participants.graduatedStatus' },
 } as const;
 

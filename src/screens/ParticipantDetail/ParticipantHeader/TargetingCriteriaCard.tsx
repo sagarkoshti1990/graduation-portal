@@ -40,7 +40,7 @@ const TargetingCriteriaCard = ({
 
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
-  const [buttonLoader,setButtonLoader] = useState<boolean>(false);
+  const [buttonLoader,setButtonLoader] = useState<boolean|string>(false);
 
   const options = useMemo(() => [
     {
@@ -203,11 +203,12 @@ const TargetingCriteriaCard = ({
             variant="outlineghost"
             onPress={() => {
               setShowConfirmModal(true);
-              setButtonLoader(true);
+              setButtonLoader('notEligible');
             }}
+            // @ts-ignore
             isDisabled={buttonLoader}
           >
-            {buttonLoader && (
+            {buttonLoader === 'notEligible' && (
               <ButtonSpinner />
             )}
             <ButtonText>{t('participantDetail.header.notEligible')}</ButtonText>
@@ -217,12 +218,13 @@ const TargetingCriteriaCard = ({
             mt="$4"
             variant="solid"
             onPress={async () => {
-              setButtonLoader(true);
+              setButtonLoader('proceed');
               await handleSubmit();
             }}
+            // @ts-ignore
             isDisabled={!isAllSelected || buttonLoader}
           >
-            {buttonLoader && (
+            {buttonLoader === 'proceed' && (
               <ButtonSpinner />
             )}
             <ButtonText>{t('participantDetail.header.proceed')}</ButtonText>
