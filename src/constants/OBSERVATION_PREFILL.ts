@@ -1,18 +1,17 @@
 const OBSERVATION_PREFILL_FIELD_IDS = {
-  FACILITATOR_NAME: '6a0eeab34682fdc70cef200e',
-  PROVINCE: '6a0eeab34682fdc70cef2014',
-  SITE: '6a0eeab34682fdc70cef201a',
-  DATE_OF_COLLECTION: '6a0eeab34682fdc70cef2020',
-  PARTICIPANT_NAME: '6a0eeab34682fdc70cef2033',
-  NATIONAL_ID_NUMBER: '6a0eeab34682fdc70cef2039',
-  COUNTRY_CODE: '6a0f0d28c7134584643a9dbd',
-  CELL_PHONE_NUMBER: '6a0eeab34682fdc70cef204b',
-  ALTERNATE_COUNTRY_CODE: '6a0f0edbc7134584643a9dc2',
-  EMAIL_ADDRESS: '6a0eeab34682fdc70cef2057',
-  VISIT_DATE: '6a0f06224682fdc70cef3671',
-  GENDER:"6a0eeab34682fdc70cef203f",
-  DOB:"6a0eeab34682fdc70cef2045"
-
+  FACILITATOR_NAME: 'facilitator_name',
+  PROVINCE: 'province',
+  SITE: 'site',
+  DATE_OF_COLLECTION: 'date_of_collection',
+  PARTICIPANT_NAME: 'name',
+  NATIONAL_ID_NUMBER: 'national_id',
+  COUNTRY_CODE: 'phone_code',
+  CELL_PHONE_NUMBER: 'phone',
+  ALTERNATE_COUNTRY_CODE: 'alt_phone_code',
+  EMAIL_ADDRESS: 'email',
+  VISIT_DATE: 'visit_date',
+  GENDER:"gender",
+  DOB:"dob"
 } as const;
 
 type ObservationPrefillParams = {
@@ -26,7 +25,7 @@ type ObservationPrefillParams = {
   alternatePhoneCode?: string;
   email?: string;
   gender?:string;
-  dob?:string;
+  dob?:string;
 };
 
 export const buildObservationPrefillData = ({
@@ -40,7 +39,7 @@ export const buildObservationPrefillData = ({
   alternatePhoneCode,
   email,
   gender,
-  dob
+  dob
 }: ObservationPrefillParams, formatCountryCode: (phoneCode?: string | number | null) => string) => ({
   [OBSERVATION_PREFILL_FIELD_IDS.FACILITATOR_NAME]: facilitatorName, // "Facilitator Name"
   [OBSERVATION_PREFILL_FIELD_IDS.PROVINCE]: { value: provinceLabel, readonly: provinceLabel ? true : false }, // "Province"
