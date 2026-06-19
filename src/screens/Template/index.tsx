@@ -289,14 +289,14 @@ const DevelopInterventionPlan: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        // let categories = [];
-        // if(existingProjectId) {
-        //   const response = await getProjectDetails(existingProjectId);
-        //   categories = response?.data?.categories || [];
-        // }
+        let categories = [];
+        if(existingProjectId) {
+          const response = await getProjectDetails(existingProjectId);
+          categories = response?.data?.categories || [];
+        }
 
         const templatesResponse = await getProjectCategoryList();
-        const templatesData = templatesResponse;//.filter((item:any) => !categories.find((cat:any) => cat.externalId === item.externalId))
+        const templatesData = templatesResponse.filter((item:any) => !categories.find((cat:any) => cat.externalId === item.externalId))
         if (!isMounted) return;
         setTemplates(templatesData || []);
       } catch (err) {

@@ -342,7 +342,7 @@ export default function ParticipantDetail() {
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria ?
           <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
-         : showOnboardingProject && projectData ? (
+         : showOnboardingProject ? (
           <>
             <DownloadFormsCard
               mode={
