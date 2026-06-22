@@ -32,7 +32,7 @@ import CheckInsListContent from '../ParticipantDetail/Check-ins-list/CheckInsLis
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
-import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS, ALLOWOFFLINESTATUS } from '@constants/app.constant';
 import Select from '@components/ui/Inputs/Select';
 import {
   AssessmentSurveyCardData,
@@ -305,7 +305,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   // Build menu items — always include Download Offline (Section 8.5)
   const menuItemsWithDownload = [
     ...getParticipantsMenuItems,
-    ...(!isOffline && !isWeb ?
+    ...(!isOffline && !isWeb && ALLOWOFFLINESTATUS.includes(participant?.status) ?
     [{
       key: 'download',
       label: 'actions.downloadOffline',
@@ -620,11 +620,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       <DownloadConfigModal
         isOpen={modalType === 'download'}
         onClose={handleCloseModal}
-        participantId={participant.userId}
-        projectId={(participant as any).idpProjectId}
-        participantStatus={participant.status}
-        participantData={participant}
-        onBoardedProjectId={(participant as any).onBoardedProjectId}
+        participantId={participant?.userId}
         onSuccess={() => {
           setBadgeRefreshKey(k => k + 1);
           // handleCloseModal();

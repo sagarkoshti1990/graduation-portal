@@ -48,11 +48,6 @@ export interface StartDownloadParams {
   /** Optional callback for real-time per-step progress reporting to the UI. */
   onProgress?: DownloadProgressCallback;
   /**
-   * Already-set onboarding project ID (participant.onBoardedProjectId).
-   * When provided the project-creation step is skipped entirely.
-   */
-  onBoardedProjectId?: string;
-  /**
    * Province value (e.g. participantSnapshot?.province?.value).
    * Required when onboarding project creation is needed.
    */
@@ -438,7 +433,7 @@ async function processObservationTask(
     return null;
   }
   const resolved = await processObservationForm(participantId, participantName, solutionId);
-  return { ...resolved, solutionId };
+  return { ...resolved, solutionId, name:task?.solutionDetails?.name };
 }
 
 /**
@@ -498,19 +493,6 @@ const OBSERVATION_SOLUTION_DOWNLOAD_MAP: ObservationModuleSpec[] = [
   { configKey: 'endline',          moduleKey: 'observation:endline',          keywords: FILTER_KEYWORDS.ENDLINE,               useProjectTasks: false },
 ];
 
-// Used only to identify HH tasks within the fetched project task list.
-const OBSERVATION_KEYWORD_MAP: Record<string, string[]> = {
-  'observation:householdProfile': ['household', 'house hold'],
-};
-
-function resolveObservationModuleKey(task: Task): DownloadModuleKey | null {
-  const nameLower = (task.name ?? '').toLowerCase();
-  for (const [key, keywords] of Object.entries(OBSERVATION_KEYWORD_MAP)) {
-    if (keywords.some(kw => nameLower.includes(kw))) return key as DownloadModuleKey;
-  }
-  return null;
-}
-
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -522,7 +504,6 @@ export const startDownload = async ({
   lcUserId,
   participantSnapshot,
   onProgress,
-  onBoardedProjectId,
   province,
   participantEntityId,
 }: StartDownloadParams): Promise<DownloadResult> => {
@@ -539,7 +520,7 @@ export const startDownload = async ({
     // project created yet.  We create it here (before saving any offline data) so the
     // rest of the pipeline can use a valid project ID.  Dependent offline storage
     // (project data, solutions mapping, etc.) will reference this newly created ID.
-    let resolvedProjectId = projectId ?? onBoardedProjectId;
+    let resolvedProjectId = projectId;
 
     if (!resolvedProjectId) {
       // entityId: try top-level fields, then userDetails, then fall back to participantId
@@ -625,11 +606,18 @@ export const startDownload = async ({
       await offlineStorage.create(PARTICIPANT_KEYS.listSnapshot(participantId), participantSnapshot);
     }
 
+    // observations matched from the project task list.
+    let solutionEntries: OfflineSolutionEntry[] = [];
+
+    const participantName: string =
+      participantSnapshot?.name ??
+      `${participantSnapshot?.firstName ?? ''} ${participantSnapshot?.lastName ?? ''}`.trim() ??
+      participantId;
+
     // Fetch the project when explicitly selected OR when householdProfile is selected.
     // HH forms are discovered from project tasks; all other observation modules use the
     // targeted solutions API and do not require the project task list.
-    const needsProject =
-      downloadConfig.project || downloadConfig.tasks || downloadConfig.observation.householdProfile;
+    const needsProject = downloadConfig.project;
     let tasks: Task[] = [];
     if (needsProject) {
       if (downloadConfig.project) onProgress?.('project', 'loading');
@@ -642,56 +630,44 @@ export const startDownload = async ({
           await markComplete(participantId, 'project');
           onProgress?.('project', 'completed');
         }
-        if (downloadConfig.tasks) await markComplete(participantId, 'tasks');
+        const hhTasks = tasks.filter(
+          (t: Task) => t.type?.toLowerCase() === 'observation',
+        );
+        for (const task of hhTasks) {
+          const resolved = await processObservationTask(participantId, participantName, task);
+          if (resolved) {
+            solutionEntries.push({
+              name:resolved.name,
+              keyword: resolved.keywords?.[0],
+              keywords: resolved.keywords,
+              solutionId: resolved.solutionId,
+              submissionId: resolved.submissionId,
+              submissionNumber: resolved.submissionNumber,
+              observationId: resolved.observationId,
+              entityId: resolved.entityId,
+            });
+          }
+        }
       } catch (err) {
         if (downloadConfig.project) onProgress?.('project', 'failed');
         throw err; // project is required for HH and task progress
       }
     }
 
-    const participantName: string =
-      participantSnapshot?.name ??
-      `${participantSnapshot?.firstName ?? ''} ${participantSnapshot?.lastName ?? ''}`.trim() ??
-      participantId;
-
     // Process each selected observation module via the unified module map.
-    // HH (householdProfile): matched from the project task list.
     // All others: fetched via the targeted solutions API using their FILTER_KEYWORDS constants.
     // Collect resolved IDs for each form so we can save the solutions mapping at the end.
-    let solutionEntries: OfflineSolutionEntry[] = [];
-
     for (const module of OBSERVATION_SOLUTION_DOWNLOAD_MAP) {
       if (!downloadConfig.observation[module.configKey]) continue;
       onProgress?.(module.moduleKey, 'loading');
       try {
-        if (module.useProjectTasks) {
-          const hhTasks = tasks.filter(
-            (t: Task) => t.type?.toLowerCase() === 'observation' && resolveObservationModuleKey(t) === module.moduleKey,
-          );
-          for (const task of hhTasks) {
-            const resolved = await processObservationTask(participantId, participantName, task);
-            if (resolved) {
-              solutionEntries.push({
-                name:resolved.name,
-                keyword: module.moduleKey,
-                keywords: resolved.keywords,
-                solutionId: resolved.solutionId,
-                submissionId: resolved.submissionId,
-                submissionNumber: resolved.submissionNumber,
-                observationId: resolved.observationId,
-                entityId: resolved.entityId,
-              });
-            }
-          }
-        } else {
-          const resolved = await fetchAndStoreSolutionForms(
-            participantId,
-            participantName,
-            module.keywords,
-            module.moduleKey,
-          );
-          solutionEntries = [...solutionEntries,...resolved];
-        }
+        const resolved = await fetchAndStoreSolutionForms(
+          participantId,
+          participantName,
+          module.keywords,
+          module.moduleKey,
+        );
+        solutionEntries = [...solutionEntries,...resolved];
         await markComplete(participantId, module.moduleKey);
         onProgress?.(module.moduleKey, 'completed');
       } catch (err) {

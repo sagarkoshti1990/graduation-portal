@@ -1,5 +1,6 @@
 import type { DownloadConfig } from '@app-types/offline';
 import { STATUS } from '@constants/app.constant';
+import { ProjectData, Task } from '../project-player/types';
 
 // ---------------------------------------------------------------------------
 // Status-based download option visibility (Section 3.6)
@@ -10,8 +11,29 @@ export interface DownloadModuleOption {
   labelKey: string; // i18n key
   enabled: boolean;
   recommended: boolean;
-  nested?: { key: string; labelKey: string; enabled: boolean; recommended: boolean }[];
+  required?: boolean;
+  nested?: { key: string; labelKey: string; enabled: boolean; recommended: boolean,required?: boolean; }[];
 }
+
+const getObservationTasks = (tasks: Task[]): DownloadModuleOption[] => {
+  const observations: DownloadModuleOption[] = [];
+
+  const traverse = (items: Task[]) => {
+    items.forEach((item) => {
+      if (item.type === 'observation') {
+        observations.push({key:item?._id,labelKey: item?.name,enabled:true, recommended:true, required: true});
+      }
+
+      if (item.children?.length) {
+        traverse(item.children);
+      }
+    });
+  };
+
+  traverse(tasks);
+
+  return observations;
+};
 
 /**
  * Returns the download options (enabled/disabled, recommended) for a participant
@@ -22,11 +44,16 @@ export interface DownloadModuleOption {
  *   IN_PROGRESS   → participant, project, logVisit, individualVisit, midline
  *   COMPLETED     → participant, project (read-only), individualVisit, midline, interventionPlan, endline
  */
-export function getDownloadOptions(participantStatus: string): DownloadModuleOption[] {
+export function getDownloadOptions(participantStatus: string,project?: ProjectData): DownloadModuleOption[] {
   const isNotOnboarded = participantStatus === STATUS.NOT_ONBOARDED || participantStatus === STATUS.NOT_ENROLLED;
   const isInProgress   = participantStatus === STATUS.IN_PROGRESS;
   const isCompleted    = participantStatus === STATUS.COMPLETED || participantStatus === STATUS.GRADUATED;
-
+  let taskObservation: DownloadModuleOption[] = [];
+  
+  if(project?.children || project?.tasks) {
+    taskObservation = getObservationTasks(project.children || project.tasks || []);
+  }
+  
   return [
     {
       key: 'participant',
@@ -39,6 +66,8 @@ export function getDownloadOptions(participantStatus: string): DownloadModuleOpt
       labelKey: 'actions.downloadProject',
       enabled: true,
       recommended: true,
+      ...(taskObservation?.length > 0
+      ? {nested:taskObservation} : {}),
     },
     {
       key: 'observation',
@@ -51,12 +80,6 @@ export function getDownloadOptions(participantStatus: string): DownloadModuleOpt
           labelKey: 'actions.downloadLogVisit',
           enabled: isNotOnboarded || isInProgress,
           recommended: isNotOnboarded || isInProgress,
-        },
-        {
-          key: 'householdProfile',
-          labelKey: 'actions.downloadHouseholdProfile',
-          enabled: isNotOnboarded,
-          recommended: isNotOnboarded,
         },
         {
           key: 'individualVisit',
@@ -112,8 +135,8 @@ export function buildDownloadConfig(selected: Set<string>): DownloadConfig {
 /**
  * Builds the default/recommended selection set for a given status.
  */
-export function getDefaultSelection(participantStatus: string): Set<string> {
-  const options = getDownloadOptions(participantStatus);
+export function getDefaultSelection(participantStatus: string,project?:ProjectData): {selected:Set<string>, options:DownloadModuleOption[]} {
+  const options = getDownloadOptions(participantStatus,project);
   const selected = new Set<string>();
 
   for (const opt of options) {
@@ -122,6 +145,5 @@ export function getDefaultSelection(participantStatus: string): Set<string> {
       if (nested.recommended && nested.enabled) selected.add(nested.key);
     }
   }
-
-  return selected;
+  return { selected, options }
 }

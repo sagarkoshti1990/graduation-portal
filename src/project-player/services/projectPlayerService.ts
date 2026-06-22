@@ -38,16 +38,12 @@ apiClient.interceptors.request.use(async config => {
 apiClient.interceptors.response.use(
   res => res,
   error => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isNetworkOffline()) {
       const redirectUrl =
         PROJECT_PLAYER_CONFIGS.redirectionLinks.unauthorizedRedirectUrl;
 
       if (isWeb) {
         window.location.href = redirectUrl;
-      } else {
-        const routeName = redirectUrl.startsWith('/')
-          ? redirectUrl.slice(1)
-          : redirectUrl;
       }
     }
     return Promise.reject(error);
@@ -71,6 +67,7 @@ export const handleApiError = (error: unknown): ApiResponse<null> => {
 };
 
 export const getProjectTemplatesList = async (): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.get(API_ENDPOINTS.PROJECT_TEMPLATES_LIST);
 
@@ -84,6 +81,7 @@ export const createProjectForEntity = async (
   entityId: string,
   province:string
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(API_ENDPOINTS.CREATE_PROJECT, {
       entityId,
@@ -130,6 +128,7 @@ export const updateTask = async (
   projectId: string,
   requestBody: any,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_TASK(projectId),
@@ -144,6 +143,7 @@ export const updateTask = async (
 
 
 export const updateProjectInfo = async (projectId: string, programUsersRef: string): Promise<any> => {
+  if (isNetworkOffline()) throw new Error('offline');
   try {
     const response = await apiClient.post(API_ENDPOINTS.UPDATE_PROJECT_INFO(projectId), {
       programUserMappingReference: programUsersRef
@@ -155,6 +155,7 @@ export const updateProjectInfo = async (projectId: string, programUsersRef: stri
 };
 
 export const completeProject = async (projectId: string): Promise<any> => {
+  if (isNetworkOffline()) throw new Error('offline');
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_PROJECT_INFO(projectId),
@@ -172,6 +173,7 @@ export const completeProject = async (projectId: string): Promise<any> => {
 export const getCategoryList = async (
   parentId: string,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_CATEGORY_LIST(parentId),
@@ -185,6 +187,7 @@ export const getCategoryList = async (
 export const getTemplateDetails = async (
   categoryId: string,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_TEMPLATE(categoryId),
@@ -198,6 +201,7 @@ export const getTemplateDetails = async (
 export const getTaskDetails = async (
   categoryIds: string,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_TASK_DETAILS(categoryIds),
@@ -212,6 +216,7 @@ export const getTaskDetails = async (
 export const submitInterventionPlan = async (
   reqBody : createProjectPlanPayload
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.SUBMIT_INTERVENTION_PLAN, reqBody,
@@ -228,6 +233,7 @@ export const updateInterventionPlan = async (
   projectId: string,
   reqBody : PathwayReplacementPayload
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_INTERVENTION_PLAN(projectId), reqBody,
@@ -244,6 +250,7 @@ export const getSolutionDetails = async (
   taskId: string,
   payload: any = {}
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.GET_SOLUTION_DETAILS(solutionId, taskId),
@@ -269,6 +276,7 @@ export const getSolutionDetails = async (
 export const preSignedUrls = async (
   payload: Record<string, { files: string[] }>
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.PRE_SIGNED_URLS,
@@ -285,6 +293,7 @@ export const uploadFiles = async (
   id: string,
   files: NormalizedFile[]
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await preSignedUrls({
       [id]: {
@@ -293,7 +302,7 @@ export const uploadFiles = async (
     });
     if (response?.data?.[id]) {
       const responceData = await Promise.all(files.map(async (file) => {
-        const presignedUrl = response.data[id].files.find(f => f.file === file.name);
+        const presignedUrl = response.data[id].files.find((f: { file: string; url?: string; payload?: { sourcePath?: string } }) => f.file === file.name);
         if (presignedUrl?.url) {
          await fetch(presignedUrl.url, { 
           method: 'PUT',

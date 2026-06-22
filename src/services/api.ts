@@ -12,6 +12,7 @@ import offlineStorage from './offlineStorage';
 import { isAndroid } from '@utils/platform'; // isWeb removed as window.localStorage/sessionStorage are no longer used
 import { refreshToken } from './authenticationService';
 import { resetToScreen } from '@utils/navigationRef';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -90,6 +91,8 @@ const isNetworkError = (error: AxiosError) =>
   !error.response && !!error.request;
 
 const isRetryableError = (error: AxiosError) => {
+  if (isNetworkOffline()) return false;
+
   const status = error.response?.status;
 
   if (status === 400 || status === 401 || status === 403) {
@@ -352,8 +355,9 @@ api.interceptors.response.use(
         }
       } catch (storageError) {
         logger.error('Error handling token refresh:', storageError);
-        // Redirect to logout page
-        resetToScreen('logout');
+        if (!isNetworkOffline()) {
+          resetToScreen('logout');
+        }
         return Promise.reject(error);
       }
     }

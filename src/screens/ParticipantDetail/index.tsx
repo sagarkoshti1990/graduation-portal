@@ -32,7 +32,7 @@ import {
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
-import { ProjectData } from 'src/project-player/types/project.types';
+import { ProjectData } from '../../project-player/types';
 import logger from '@utils/logger';
 import { FILTER_KEYWORDS, INDIVIDUAL_CHECKIN_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { getObservationSubmissions, getTargetedSolutions } from '../../services/solutionService';
@@ -309,7 +309,6 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
-  
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
