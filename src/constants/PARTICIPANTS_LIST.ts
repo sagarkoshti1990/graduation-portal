@@ -497,6 +497,7 @@ export const PARTICIPANTS_DATA: ParticipantData[] = [
   },
 ];
 
+export const notOfflineParticipantMenuItems = ['dropout','view-check-ins-Logs'] 
 /**
  * Menu items configuration for Participants actions menu
  * Returns menu items with icon names and colors for participant actions

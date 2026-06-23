@@ -180,6 +180,7 @@ function LogVisitModulePopupComponent({
         <Box flex={1} minHeight="$64">
           {selectedSubmissionNumber || openForm ? (
             <ObservationContent
+              authUser={user}
               participant={participant}
               hideElements={hideElements}
               _css={observationCss}

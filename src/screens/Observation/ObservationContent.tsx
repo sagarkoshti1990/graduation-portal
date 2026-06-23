@@ -11,7 +11,7 @@ import {
   updateObservationEntities,
 } from '../../services/solutionService';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useAuth } from '@contexts/AuthContext';
+import { User } from '@contexts/AuthContext';
 import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
@@ -46,6 +46,7 @@ interface ObservationContentProps {
   hideElements?: any;
   _css?: any;
   _webComponent?:any;
+  authUser:User | null
 }
 
 /**
@@ -62,10 +63,10 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   userData,
   hideElements,
   _css,
+  authUser,
   _webComponent
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const [observation, setObservation] = useState<ObservationData | null>(null);
   const [defaultValuesLocal, setDefaultValuesLocal] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -83,7 +84,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
     if (progress === 100 && !taskAutoCompletedRef.current && dataService.isNetworkOffline() && taskId && participantKey) {
       taskAutoCompletedRef.current = true;
-      dataService.saveTaskEdit(participantKey, (participant as any)?.onBoardedProjectId ?? '', { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] }, user?.id ?? '')
+      dataService.saveTaskEdit(participantKey, (participant as any)?.onBoardedProjectId ?? '', { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] }, authUser?.id ?? '')
         .then(() => logger.info('ObservationContent: task auto-completed at 100% offline', taskId))
         .catch(err => logger.warn('ObservationContent: failed to auto-complete task at 100%', err));
     }
@@ -210,7 +211,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           return;
         }
         const formData = await offlineStorage.read<ObservationFormData>(
-          PARTICIPANT_KEYS.form(user?.id ?? '', participantKey, solutionId),
+          PARTICIPANT_KEYS.form(authUser?.id ?? '', participantKey, solutionId),
         );
         if (formData) {
           const defaultValues = userData
@@ -369,7 +370,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       try {
         await dataService.saveFormEdits(participantKey, submissionId, {
           answers,endTime,externalId:evidenceCode,isSubmitted,startTime,status,solutionId
-        }, user?.id ?? '');
+        }, authUser?.id ?? '');
         logger.info('ObservationContent: form edits saved for sync');
       } catch (err) {
         logger.warn('ObservationContent: failed to save form edits', err);
@@ -378,7 +379,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       // Auto-mark the linked task as completed when offline
       if (taskId) {
         try {
-          await dataService.saveTaskEdit(participantKey, (participant as any)?.onBoardedProjectId ?? '', { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] }, user?.id ?? '');
+          await dataService.saveTaskEdit(participantKey, (participant as any)?.onBoardedProjectId ?? '', { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] }, authUser?.id ?? '');
           logger.info('ObservationContent: task auto-marked completed offline', taskId);
         } catch (err) {
           logger.warn('ObservationContent: failed to auto-mark task complete', err);
@@ -386,7 +387,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       }
     }
     handleBackPress();
-  },[handleBackPress,participant,solutionId,taskId,user?.id])
+  },[handleBackPress,participant,solutionId,taskId,authUser?.id])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(

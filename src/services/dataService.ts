@@ -119,7 +119,7 @@ async function loadOfflineParticipantList(
     if (search?.trim()) {
       const q = search.trim().toLowerCase();
       filtered = filtered.filter((p: any) => {
-        const name = ((p.firstName ?? '') + ' ' + (p.lastName ?? '')).toLowerCase();
+        const name = (p.name ?? '').toLowerCase();
         const externalId = (p.externalId ?? p.userId ?? '').toLowerCase();
         return name.includes(q) || externalId.includes(q);
       });

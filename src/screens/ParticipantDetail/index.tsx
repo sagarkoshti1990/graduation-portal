@@ -209,6 +209,8 @@ export default function ParticipantDetail() {
       }
 
       const solutionsData = await getTargetedSolutions({
+        authUserId,
+        participantId: participantId,
         type: 'observation',
         'filter[keywords]': keywordsString,
       });    // Verify participant completion conditions and perform certificate/graduation actions
@@ -345,7 +347,7 @@ export default function ParticipantDetail() {
           <>
             <DownloadFormsCard
               mode={
-                showOnboardingProject === 'not_enrolled' ? 'edit' : dataService.isNetworkOffline() ? 'hide' :  'read-only'
+                dataService.isNetworkOffline() ? 'hide' : showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
               }
             />
             <InterventionPlan

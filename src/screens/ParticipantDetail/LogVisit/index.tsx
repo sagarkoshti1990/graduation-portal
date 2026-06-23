@@ -15,6 +15,7 @@ import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { useAuth, User } from '@contexts/AuthContext';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 /**
  * Route parameters type definition for LogVisit screen
@@ -36,6 +37,7 @@ type LogVisitRouteProp = RouteProp<{
  */
 const LogVisit: React.FC = () => {
   const route = useRoute<LogVisitRouteProp>();
+  const { isOffline } = useOfflineSync()
   const [loading, setLoading] = useState<boolean>(true);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
@@ -49,6 +51,7 @@ const LogVisit: React.FC = () => {
     const fetchSolutions = async () => {
       try {
         const data = await getTargetedSolutions({
+          authUserId: user?.id,
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
           "filter[keywords]": FILTER_KEYWORDS.LOG_VISIT.join(','),
@@ -111,13 +114,26 @@ const LogVisit: React.FC = () => {
         title={t('participantDetail.header.logVisit')}
         subtitle={t('logVisit.selectVisitType', { name: participant?.name || '' })}
         onBackPress={handleBackPress}
-        rightSection={<Button variant="outlineghost" onPress={() => {
-          // @ts-ignore
-          navigation.navigate('check-ins-list', { id: route.params?.id });
-        }}>
-          <ButtonIcon as={LucideIcon} name="History" size={16} />
-          <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
-        </Button>}
+        {...(!isOffline
+          ? {
+              rightSection: (
+                <Button
+                  // @ts-ignore
+                  variant="outlineghost"
+                  onPress={() => {
+                    // @ts-ignore
+                    navigation.navigate('check-ins-list', { id: route.params?.id });
+                  }}
+                >
+                  <ButtonIcon as={LucideIcon} name="History" size={16} />
+                  <ButtonText {...TYPOGRAPHY.bodySmall}>
+                    {t('logVisit.viewCheckIns')}
+                  </ButtonText>
+                </Button>
+              ),
+            }
+          : {})
+        }
       />
       <Container>
         {/* Cards */}

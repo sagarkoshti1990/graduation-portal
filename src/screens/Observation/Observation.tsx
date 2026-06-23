@@ -162,6 +162,7 @@ const Observation: React.FC = () => {
 
   return (
     <ObservationContent
+      authUser={user}
       participant={participant}
       solutionId={solutionId}
       submissionNumber={submissionNumber}

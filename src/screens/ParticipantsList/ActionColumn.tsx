@@ -24,6 +24,7 @@ import {
   getParticipantsMenuItems,
   DROPOUT_REASON_OPTIONS,
   OTHER_DROPOUT_REASON,
+  notOfflineParticipantMenuItems,
 } from '@constants/PARTICIPANTS_LIST';
 import logger from '@utils/logger';
 import { usePlatform } from '@utils/platform';
@@ -42,8 +43,8 @@ import { openDownload } from '@utils/helper';
 import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 import DownloadConfigModal from '@components/DownloadConfigModal';
 import OfflineBadge from '@components/OfflineBadge';
-import dataService from '../../services/dataService';
 import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -78,6 +79,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const { isMobile, isWeb } = usePlatform();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { isOffline } = useOfflineSync();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<
     'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | 'download' | null
@@ -91,7 +93,6 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const [customDropoutReason, setCustomDropoutReason] = useState('');
   const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
-  const [isOffline,setIsOffline] = useState(false);
 
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
@@ -149,9 +150,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
       setLogVisitLoading(true);
       try {
-        const isOfflineData = dataService.isNetworkOffline();
-        setIsOffline(isOfflineData)
         const data = await getTargetedSolutions({
+          authUserId: user?.id,
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
           'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
@@ -303,9 +303,11 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       : participant?.status === STATUS.NOT_ONBOARDED;
 
   // Build menu items — always include Download Offline (Section 8.5)
+  const filterMenuItems = isOffline ? getParticipantsMenuItems.filter((item:any) => !notOfflineParticipantMenuItems.includes(item.key)) : getParticipantsMenuItems;
+  
   const menuItemsWithDownload = [
-    ...getParticipantsMenuItems,
-    ...(!isOffline && ALLOWOFFLINESTATUS.includes(participant?.status) ?
+    ...filterMenuItems,
+    ...(!isOffline && !isWeb && ALLOWOFFLINESTATUS.includes(participant?.status) ?
     [{
       key: 'download',
       label: 'actions.downloadOffline',
@@ -571,6 +573,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
               </Box>
             ) : selectedSolutionId && modalType === 'log-visit' ? (
               <ObservationContent
+                authUser={user}
                 participant={participant}
                 hideElements={{
                   header: [

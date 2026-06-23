@@ -2186,6 +2186,15 @@
     "participantId": "ID: {{id}}",
     "logoutConfirmTitle": "Unsynced Changes",
     "logoutConfirmMessage": "You have {{count}} unsynced item(s). Logging out now may cause data loss.",
-    "logoutAnyway": "Log Out Anyway"
+    "logoutAnyway": "Log Out Anyway",
+    "syncSelected": "Sync Selected",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selected": "selected",
+    "syncError": "Sync failed",
+    "syncComplete": "Sync Complete",
+    "labelFiles": "Files",
+    "labelForms": "Observations",
+    "labelTasks": "Tasks"
   }
 }
