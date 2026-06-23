@@ -2181,6 +2181,11 @@
     "downloadFailed": "Failed",
     "pageUnavailableOffline": "This page is not available offline.",
     "dataNotDownloaded": "Offline data has not been downloaded for this participant.",
-    "goBack": "Go Back"
+    "goBack": "Go Back",
+    "sync": "Sync",
+    "participantId": "ID: {{id}}",
+    "logoutConfirmTitle": "Unsynced Changes",
+    "logoutConfirmMessage": "You have {{count}} unsynced item(s). Logging out now may cause data loss.",
+    "logoutAnyway": "Log Out Anyway"
   }
 }

@@ -61,9 +61,9 @@ export function isOfflineFallback(v: any): v is OfflineFallback {
 // Pending-sync check — per participant
 // ---------------------------------------------------------------------------
 
-async function hasPendingForParticipant(participantId: string): Promise<boolean> {
+async function hasPendingForParticipant(userId: string, participantId: string): Promise<boolean> {
   try {
-    const allKeys = await offlineStorage.getParticipantKeys(participantId);
+    const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
     // Check for any pending task edits across all projects
     const hasTaskEdits = allKeys.some((k: string) => k.includes(':projectEdits:'));
     if (hasTaskEdits) return true;
@@ -93,38 +93,56 @@ export interface ParticipantListResult {
   fromCache: boolean;
 }
 
+/**
+ * Load participant list from offline storage with support for search, filter,
+ * and pagination (Issue 7). All reads are scoped to the given userId.
+ */
 async function loadOfflineParticipantList(
+  userId: string,
   search?: string,
   status?: string,
+  page?: number,
+  limit?: number,
 ): Promise<ParticipantListResult | null> {
   try {
-    const ids = await getOfflineParticipantIds();
+    const ids = await getOfflineParticipantIds(userId);
     if (ids.length === 0) return null; // no participants downloaded
 
     const snapshots = await Promise.all(
-      ids.map((id: string) => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(id))),
+      ids.map((id: string) => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(userId, id))),
     );
-    let participants = snapshots.filter((p): p is Participant => p !== null);
+    // Keep all non-null snapshots for overview count computation
+    const allParticipants = snapshots.filter((p): p is Participant => p !== null);
 
+    // Apply search filter
+    let filtered = [...allParticipants];
     if (search?.trim()) {
       const q = search.trim().toLowerCase();
-      participants = participants.filter((p: any) => {
+      filtered = filtered.filter((p: any) => {
         const name = ((p.firstName ?? '') + ' ' + (p.lastName ?? '')).toLowerCase();
         const externalId = (p.externalId ?? p.userId ?? '').toLowerCase();
         return name.includes(q) || externalId.includes(q);
       });
     }
 
+    // Apply status filter
     if (status && status !== 'all') {
-      participants = participants.filter(
+      filtered = filtered.filter(
         (p: any) => (p.status ?? p.accountUserStatus ?? '').toLowerCase() === status.toLowerCase(),
       );
     }
 
-    const allParticipants = snapshots.filter((p): p is Participant => p !== null);
+    const filteredTotal = filtered.length;
+
+    // Apply pagination when both page and limit are specified
+    if (page && limit && limit > 0) {
+      const startIndex = (page - 1) * limit;
+      filtered = filtered.slice(startIndex, startIndex + limit);
+    }
+
     return {
-      participants,
-      total: participants.length,
+      participants: filtered,
+      total: filteredTotal,
       overview: computeOfflineOverview(allParticipants),
       fromCache: true,
     };
@@ -167,7 +185,7 @@ export async function getParticipantList(
   const emptyValue: ParticipantListResult = { participants: [], total: 0, overview: null, fromCache: false };
 
   if (isNetworkOffline()) {
-    const cached = await loadOfflineParticipantList(params.search, params.status);
+    const cached = await loadOfflineParticipantList(params.userId, params.search, params.status, params.page, params.limit);
     if (cached !== null) return buildFromCache(cached, true);
     return buildOfflineNoData(emptyValue);
   }
@@ -182,7 +200,7 @@ export async function getParticipantList(
     return buildOnlineSuccess(result, OFFLINE_API_CONFIG.PARTICIPANTS_LIST.supported);
   } catch (err) {
     logger.warn('dataService.getParticipantList: API failed — falling back to offline', err);
-    const cached = await loadOfflineParticipantList(params.search, params.status);
+    const cached = await loadOfflineParticipantList(params.userId, params.search, params.status, params.page, params.limit);
     if (cached !== null) return buildFromCache(cached, false);
     throw err;
   }
@@ -208,20 +226,20 @@ export async function getParticipantDetails(
         accountUserStatus: userDetails?.status,
       };
       await offlineStorage
-        .create(PARTICIPANT_KEYS.listSnapshot(participantId), participantData)
+        .create(PARTICIPANT_KEYS.listSnapshot(userId, participantId), participantData)
         .catch(() => {});
       return participantData;
     },
     {
       offlineSupported: OFFLINE_API_CONFIG.PARTICIPANT_DETAILS.supported,
       cacheReader: async () => {
-        const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(participantId));
+        const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(userId, participantId));
         const snapshot = await offlineStorage.read<any>(
-          PARTICIPANT_KEYS.listSnapshot(participantId),
+          PARTICIPANT_KEYS.listSnapshot(userId, participantId),
         );
         return details ?? snapshot ?? null;
       },
-      hasPendingSyncFn: () => hasPendingForParticipant(participantId),
+      hasPendingSyncFn: () => hasPendingForParticipant(userId, participantId),
       emptyValue: null,
     },
   );
@@ -273,13 +291,14 @@ function applyEditMapToTasks(tasks: any[], editMap: Map<string, any>): any[] {
 }
 
 async function applyPendingEditsToProject<T>(
+  userId: string,
   participantId: string,
   projectId: string,
   project: T,
 ): Promise<T> {
   try {
     const edits = await offlineStorage.read<{ tasks: any[] }>(
-      PARTICIPANT_KEYS.projectEdits(participantId, projectId),
+      PARTICIPANT_KEYS.projectEdits(userId, participantId, projectId),
     );
     // No pending edits — project cache is already the correct source of truth.
     if (!edits?.tasks?.length) return project;
@@ -298,16 +317,17 @@ async function applyPendingEditsToProject<T>(
 export async function getProject<T = any>(
   participantId: string,
   projectId: string,
+  userId: string,
 ): Promise<OfflineServiceResponse<T | null>> {
   const offline = isNetworkOffline();
   const hasPending =
-    !offline && projectId ? await hasPendingForParticipant(participantId) : false;
+    !offline && projectId ? await hasPendingForParticipant(userId, participantId) : false;
 
   if (offline || hasPending) {
-    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId,projectId));
+    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(userId, participantId, projectId));
     if (cached) {
       // Merge any pending offline task edits so the UI reflects the correct state
-      const withEdits = await applyPendingEditsToProject(participantId, projectId, cached);
+      const withEdits = await applyPendingEditsToProject(userId, participantId, projectId, cached);
       return buildFromCache(withEdits, offline);
     }
     if (offline) return buildOfflineNoData<T | null>(null);
@@ -319,16 +339,16 @@ export async function getProject<T = any>(
   }
 
   try {
-    const res = await getProjectDetails(projectId);
+    const res = await getProjectDetails(projectId, userId);
     const project = res.data as T;
     if (!project) return buildOnlineSuccess<T | null>(null, OFFLINE_API_CONFIG.PROJECT.supported);
-    offlineStorage.create(PARTICIPANT_KEYS.project(participantId,projectId), project).catch(() => {});
+    offlineStorage.create(PARTICIPANT_KEYS.project(userId, participantId, projectId), project).catch(() => {});
     return buildOnlineSuccess(project, OFFLINE_API_CONFIG.PROJECT.supported);
   } catch (err) {
     logger.warn('dataService.getProject: API failed — falling back to cached project', err);
-    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(participantId,projectId));
+    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(userId, participantId, projectId));
     if (cached) {
-      const withEdits = await applyPendingEditsToProject(participantId, projectId, cached);
+      const withEdits = await applyPendingEditsToProject(userId, participantId, projectId, cached);
       return buildFromCache(withEdits, false);
     }
     throw err;
@@ -342,6 +362,7 @@ export async function getProject<T = any>(
 export async function getObservationForm(
   participantId: string,
   formId: string,
+  userId: string,
 ): Promise<OfflineServiceResponse<ObservationFormData | null>> {
   const offline = isNetworkOffline();
 
@@ -349,7 +370,7 @@ export async function getObservationForm(
   if (!offline) {
     try {
       const edits = await offlineStorage.read<any>(
-        PARTICIPANT_KEYS.formEdits(participantId, formId),
+        PARTICIPANT_KEYS.formEdits(userId, participantId, formId),
       );
       hasPendingEdits = !!(edits && Object.keys(edits).length > 0);
     } catch { /* non-fatal */ }
@@ -357,7 +378,7 @@ export async function getObservationForm(
 
   if (offline || hasPendingEdits) {
     const cached = await offlineStorage.read<ObservationFormData>(
-      PARTICIPANT_KEYS.form(participantId, formId),
+      PARTICIPANT_KEYS.form(userId, participantId, formId),
     );
     if (cached) return buildFromCache(cached, offline);
     if (offline) return buildOfflineNoData<ObservationFormData | null>(null);
@@ -402,6 +423,7 @@ export async function getProjectCategories(): Promise<OfflineServiceResponse<any
 
 export async function getEntityDetails(
   participantId: string,
+  userId: string,
 ): Promise<OfflineServiceResponse<any>> {
   return withOfflineFirst(
     async () => {
@@ -411,16 +433,16 @@ export async function getEntityDetails(
     {
       offlineSupported: OFFLINE_API_CONFIG.ENTITY_DETAILS.supported,
       cacheReader: async () => {
-        const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(participantId));
+        const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(userId, participantId));
         const snapshot = await offlineStorage.read<any>(
-          PARTICIPANT_KEYS.listSnapshot(participantId),
+          PARTICIPANT_KEYS.listSnapshot(userId, participantId),
         );
         return details ?? snapshot ?? null;
       },
       cacheWriter: async (data: any) => {
-        await offlineStorage.create(PARTICIPANT_KEYS.details(participantId), data);
+        await offlineStorage.create(PARTICIPANT_KEYS.details(userId, participantId), data);
       },
-      hasPendingSyncFn: () => hasPendingForParticipant(participantId),
+      hasPendingSyncFn: () => hasPendingForParticipant(userId, participantId),
       emptyValue: null,
     },
   );
@@ -470,22 +492,24 @@ export const mergeTasks = (oldData: any, newData: any) => {
 
 export async function saveTaskEdit(
   participantId: string,
-  projectId:string,
+  projectId: string,
   taskEdit: { tasks: any[] },
+  userId: string,
 ): Promise<void> {
   const existing =
-    (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(participantId,projectId))) ??
+    (await offlineStorage.read<{ tasks: any[] }>(PARTICIPANT_KEYS.projectEdits(userId, participantId, projectId))) ??
     { tasks: [] };
-  const newDaya = mergeTasks(existing,taskEdit);
-  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(participantId,projectId), newDaya);
+  const newDaya = mergeTasks(existing, taskEdit);
+  await offlineStorage.create(PARTICIPANT_KEYS.projectEdits(userId, participantId, projectId), newDaya);
 }
 
 export async function saveFormEdits(
   participantId: string,
   formId: string,
   edits: ObservationFormEdits,
+  userId: string,
 ): Promise<void> {
-  await offlineStorage.create(PARTICIPANT_KEYS.formEdits(participantId, formId), edits);
+  await offlineStorage.create(PARTICIPANT_KEYS.formEdits(userId, participantId, formId), edits);
 }
 
 // ---------------------------------------------------------------------------
@@ -500,8 +524,19 @@ export interface PendingBreakdown {
   total: number;
 }
 
-export async function getPendingBreakdown(participantIds?: string[]): Promise<PendingBreakdown> {
-  const ids = participantIds ?? (await getOfflineParticipantIds());
+/** Per-participant pending sync info used by the redesigned SyncOverviewModal (Issue 4). */
+export interface ParticipantPendingEntry {
+  participantId: string;
+  name: string;
+  externalId: string;
+  files: number;
+  forms: number;
+  tasks: number;
+  total: number;
+}
+
+export async function getPendingBreakdown(userId: string, participantIds?: string[]): Promise<PendingBreakdown> {
+  const ids = participantIds ?? (await getOfflineParticipantIds(userId));
   if (ids.length === 0) return { files: 0, forms: 0, tasks: 0, failed: 0, total: 0 };
 
   let files = 0,
@@ -511,10 +546,10 @@ export async function getPendingBreakdown(participantIds?: string[]): Promise<Pe
 
   for (const id of ids) {
     try {
-      const filesPending = await offlineStorage.read<string[]>(PARTICIPANT_KEYS.filesPending(id));
+      const filesPending = await offlineStorage.read<any[]>(PARTICIPANT_KEYS.filesPending(userId, id));
       if (filesPending?.length) files += filesPending.length;
 
-      const allKeys = await offlineStorage.getParticipantKeys(id);
+      const allKeys = await offlineStorage.getParticipantKeys(userId, id);
       forms += allKeys.filter((k: string) => k.endsWith(':edits') && k.includes(':form:')).length;
 
       const projectEditKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
@@ -526,11 +561,56 @@ export async function getPendingBreakdown(participantIds?: string[]): Promise<Pe
   }
 
   try {
-    const syncFailed = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED);
+    const syncFailed = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED(userId));
     if (syncFailed?.length) failed = syncFailed.length;
   } catch { /* non-fatal */ }
 
   return { files, forms, tasks, failed, total: files + forms + tasks };
+}
+
+/**
+ * Returns a per-participant breakdown of pending sync items for the given user.
+ * Only includes participants that have at least one pending item.
+ * Used by the redesigned SyncOverviewModal to show participant-wise sync info (Issue 4).
+ */
+export async function getPerParticipantPendingBreakdown(userId: string): Promise<ParticipantPendingEntry[]> {
+  const ids = await getOfflineParticipantIds(userId);
+  if (ids.length === 0) return [];
+
+  const entries: ParticipantPendingEntry[] = [];
+
+  for (const id of ids) {
+    try {
+      let files = 0, forms = 0, tasks = 0;
+
+      const filesPending = await offlineStorage.read<any[]>(PARTICIPANT_KEYS.filesPending(userId, id));
+      if (filesPending?.length) files = filesPending.length;
+
+      const allKeys = await offlineStorage.getParticipantKeys(userId, id);
+      forms = allKeys.filter((k: string) => k.endsWith(':edits') && k.includes(':form:')).length;
+
+      const projectEditKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
+      for (const key of projectEditKeys) {
+        const edits = await offlineStorage.read<any>(key);
+        if (edits?.tasks?.length) tasks += edits.tasks.length;
+      }
+
+      const total = files + forms + tasks;
+      if (total === 0) continue; // skip participants with no pending items
+
+      // Read snapshot for display name / external ID
+      const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(userId, id));
+      const name =
+        snapshot?.name ||
+        `${snapshot?.firstName ?? ''} ${snapshot?.lastName ?? ''}`.trim() ||
+        id;
+      const externalId = snapshot?.externalId ?? snapshot?.userId ?? id;
+
+      entries.push({ participantId: id, name, externalId, files, forms, tasks, total });
+    } catch { /* non-fatal — skip this participant */ }
+  }
+
+  return entries;
 }
 
 // ---------------------------------------------------------------------------
@@ -548,6 +628,7 @@ const dataService = {
   getProjectCategories,
   getEntityDetails,
   getPendingBreakdown,
+  getPerParticipantPendingBreakdown,
   isOfflineFallback,
   isNetworkOffline,
   OFFLINE_UNAVAILABLE,

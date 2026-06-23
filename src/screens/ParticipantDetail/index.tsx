@@ -110,7 +110,7 @@ export default function ParticipantDetail() {
         const result = await dataService.getParticipantDetails(participantId, authUserId);
         const participantData = result.data as any;
         const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
-        const response = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId)   
+        const response = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId, authUserId ?? '')
 
         if (result.isOffline && !result.offlineDataAvailable) {
           setIsOfflineUnavailable(true);
@@ -180,7 +180,7 @@ export default function ParticipantDetail() {
       if (dataService.isNetworkOffline()) {
         if (participantId) {
           const stored = await offlineStorage.read<OfflineSolutionEntry[]>(
-            PARTICIPANT_KEYS.solutions(participantId),
+            PARTICIPANT_KEYS.solutions(authUserId ?? '', participantId),
           );
           if (stored?.length) {
             setSolutions(
@@ -345,7 +345,7 @@ export default function ParticipantDetail() {
           <>
             <DownloadFormsCard
               mode={
-                showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
+                showOnboardingProject === 'not_enrolled' ? 'edit' : dataService.isNetworkOffline() ? 'hide' :  'read-only'
               }
             />
             <InterventionPlan

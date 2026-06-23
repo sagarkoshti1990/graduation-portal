@@ -21,6 +21,7 @@ import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { openDownload } from '@utils/helper';
 import { usePlatform } from '@utils/platform';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 type ParticipantProfileModalProps = {
   isOpen: boolean;
@@ -42,6 +43,7 @@ function ParticipantProfileModalInner({
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const { isMobile } = usePlatform();
+  const { isOffline } = useOfflineSync();
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [participant, setParticipant] = useState<User | undefined>();
   const [editedAddress, setEditedAddress] = useState({
@@ -300,7 +302,7 @@ function ParticipantProfileModalInner({
             <Text {...profileStyles.fieldLabel}>
               {t('common.profileFields.address')}
             </Text>
-            {canEditProfile && !isEditingAddress && (
+            {canEditProfile && !isEditingAddress && !isOffline && (
               <Pressable onPress={handleToggleEdit}>
                 <LucideIcon
                   name={isEditingAddress ? 'X' : 'Pencil'}

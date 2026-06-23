@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { HStack, Text, Spinner } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAuth } from '@contexts/AuthContext';
 import { getDownloadStatus } from '../../services/downloadService';
 import type { DownloadStatus } from '@app-types/offline';
 
@@ -59,13 +60,14 @@ const BADGE_CONFIG: Record<
  */
 const OfflineBadge: React.FC<OfflineBadgeProps> = ({ participantId, refreshKey, size = 'xs' }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [badgeState, setBadgeState] = useState<BadgeState>('none');
   const iconSize = size === 'xs' ? 10 : 12;
   const fontSize = size === 'xs' ? '$2xs' : '$xs';
 
   useEffect(() => {
     let cancelled = false;
-    getDownloadStatus(participantId)
+    getDownloadStatus(user?.id ?? '', participantId)
       .then(status => {
         if (!cancelled) setBadgeState(resolveBadgeState(status));
       })

@@ -49,7 +49,7 @@ export const getTargetedSolutions = async (
   if (isNetworkOffline()) {
     const keyword = params?.["filter[keywords]"];
     let cached:any = await offlineStorage.read<AssessmentSurveyCardData[]>(
-      PARTICIPANT_KEYS.solutions(params.participantId),
+      PARTICIPANT_KEYS.solutions(params.userId ?? '', params.participantId),
     ).catch(() => null);
     if(keyword) {
       const keywords = keyword.split(",");

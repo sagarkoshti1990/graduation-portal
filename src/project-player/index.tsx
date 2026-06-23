@@ -117,6 +117,7 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
       initialData={loadedProject}
       oldProjectData={oldProjectData}
       onTaskUpdate={onTaskUpdate}
+      offlineKeyPrefix={data?.offlineKeyPrefix ?? ''}
     >
       <TaskCompletionTracker
         onTaskCompletionChange={onTaskCompletionChange}

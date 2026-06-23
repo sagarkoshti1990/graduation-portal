@@ -199,6 +199,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   initialData,
   oldProjectData,
   onTaskUpdate,
+  offlineKeyPrefix = '',
 }) => {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -316,6 +317,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
           participantId,
           currentProjectId,
           payloadTask,
+          offlineKeyPrefix,
         );
       } else {
         result = await updateTaskAPI(currentProjectId, payloadTask);
@@ -325,7 +327,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         throw new Error(result.error || 'Failed to update task');
       }
     },
-    [onTaskUpdate, isEditMode],
+    [onTaskUpdate, isEditMode, offlineKeyPrefix],
   );
 
   const updateProjectInfo = useCallback((updates: Partial<ProjectData>) => {

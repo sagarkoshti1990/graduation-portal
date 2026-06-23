@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { Box, VStack, Text, Button, ButtonText, LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAuth } from '@contexts/AuthContext';
 import { interventionPlanStyles } from './Styles';
 import ProjectPlayer, {
   ProjectPlayerData,
@@ -22,6 +23,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   onTaskCompletionChange,
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [isEditMode] = useState(true);
   const [addedTasks, setAddedTasks] = useState<Set<string>>(new Set());
@@ -144,9 +146,10 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       userStatus: participantProfile?.status,
       pillarCategoryRelation: undefined,
       data: projectSortData ?? undefined,
-      province: participantProfile?.province?.value
+      province: participantProfile?.province?.value,
+      offlineKeyPrefix: user?.id ?? '',
     }),
-    [ participantProfile?.entityId, participantProfile?.status,participantProfile?.province?.value, projectSortData],
+    [ participantProfile?.entityId, participantProfile?.status, participantProfile?.province?.value, projectSortData, user?.id],
   );
   
   if(projectData && (!config?.mode || !projectSortData)){

@@ -13,6 +13,7 @@ import offlineStorage from '../../services/offlineStorage';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import ExpandableFab from '@components/FlotingButton';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { useAuth } from '@contexts/AuthContext';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -40,7 +41,9 @@ function LogVisitModulePopupComponent({
   const [expanded, setExpanded] = useState(false);
   const [openForm,setOpenForm] = useState(false);
 
-  const { showAlert } = useAlert()
+  const { showAlert } = useAlert();
+  const { user } = useAuth();
+  const lcUserId = user?.id ?? '';
 
   const animatedValue = useRef(new Animated.Value(0)).current;
 
@@ -58,7 +61,7 @@ function LogVisitModulePopupComponent({
             const participantUserId = participant?.userId || '';
             if (participantUserId) {
               const stored = await offlineStorage.read<OfflineSolutionEntry[]>(
-                PARTICIPANT_KEYS.solutions(participantUserId),
+                PARTICIPANT_KEYS.solutions(lcUserId, participantUserId),
               );
               const entry = stored?.find(e => e.keyword === 'observation:logVisit');
               if (entry) {
@@ -81,7 +84,7 @@ function LogVisitModulePopupComponent({
       };
       fetchLogVisitSolution();
     }
-  }, [logVisitSolution, solutions, participant?.userId]);
+  }, [logVisitSolution, solutions, participant?.userId, lcUserId]);
 
   useEffect(() => {
     Animated.timing(animatedValue, {

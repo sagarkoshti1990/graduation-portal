@@ -124,7 +124,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
       let project;
       if(resolvedProjectId) {
-        const resultProject = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId)   
+        const resultProject = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId, user?.id ?? '')
         project = resultProject?.data;
       }
       setParticipant(participantData);
@@ -249,7 +249,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {}}
       headerTitle={t('actions.downloadOffline')}
       headerIcon={<LucideIcon name="Download" size={20} color="$primary500" />}
       size="md"

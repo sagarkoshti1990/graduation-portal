@@ -90,6 +90,7 @@ export interface ProjectProviderProps {
   initialData: ProjectData | null;
   oldProjectData: ProjectData | null;
   onTaskUpdate?: (task: Task) => void;
+  offlineKeyPrefix?: string;
 }
 
 // ============================================
@@ -141,6 +142,7 @@ export interface ProjectPlayerData {
   selectedPathway?: string;
   pillarCategoryRelation?: any;
   province?:string;
+  offlineKeyPrefix?: string;
 }
 
 export interface ProjectPlayerProps {

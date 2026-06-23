@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 import { addNetworkListener } from '@utils/networkStatus';
 import { getPendingBreakdown, isNetworkOffline, type PendingBreakdown } from '../services/dataService';
 import { startSync, startSyncAll } from '../services/syncService';
+import { useAuth } from './AuthContext';
 import type { SyncProgress } from '@app-types/offline';
 
 interface OfflineSyncContextType {
@@ -50,6 +51,9 @@ const OfflineSyncContext = createContext<OfflineSyncContextType>({
 });
 
 export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
+
   const [isOffline, setIsOffline] = useState<boolean>(isNetworkOffline());
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
@@ -59,13 +63,14 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
   const justCameOnlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshPending = useCallback(async () => {
+    if (!userId) return; // no user logged in — nothing to refresh
     try {
-      const breakdown = await getPendingBreakdown();
+      const breakdown = await getPendingBreakdown(userId);
       setPendingBreakdown(breakdown);
     } catch {
       // non-fatal
     }
-  }, []);
+  }, [userId]);
 
   // Native: subscribe to network state changes so isOffline state stays current.
   // Uses the addNetworkListener abstraction — no direct NetInfo import needed here.
@@ -75,8 +80,8 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
     const unsubscribe = addNetworkListener((offline) => {
       setIsOffline(prev => {
         if (prev === offline) return prev;
-        if (!offline) {
-          getPendingBreakdown()
+        if (!offline && userId) {
+          getPendingBreakdown(userId)
             .then(breakdown => {
               setPendingBreakdown(breakdown);
               if (breakdown.total > 0) {
@@ -95,7 +100,7 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
     });
 
     return unsubscribe;
-  }, []);
+  }, [userId]);
 
   // Web: window online/offline events
   useEffect(() => {
@@ -108,7 +113,8 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
 
     const handleOnline = async () => {
       setIsOffline(false);
-      const breakdown = await getPendingBreakdown().catch(() => DEFAULT_BREAKDOWN);
+      if (!userId) return;
+      const breakdown = await getPendingBreakdown(userId).catch(() => DEFAULT_BREAKDOWN);
       setPendingBreakdown(breakdown);
       if (breakdown.total > 0) {
         setJustCameOnline(true);
@@ -139,31 +145,31 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
   const closeSyncModal = useCallback(() => setShowSyncModal(false), []);
 
   const syncParticipant = useCallback(async (participantId: string) => {
-    if (isSyncing) return;
+    if (isSyncing || !userId) return;
     setIsSyncing(true);
     setSyncProgress({ stage: 'idle', percentage: 0, current: 0, total: 0 });
     try {
-      await startSync(participantId, (progress) => setSyncProgress(progress));
+      await startSync(participantId, userId, (progress) => setSyncProgress(progress));
     } finally {
       setIsSyncing(false);
       setSyncProgress(null);
       await refreshPending();
     }
-  }, [isSyncing, refreshPending]);
+  }, [isSyncing, userId, refreshPending]);
 
   const syncAll = useCallback(async () => {
-    if (isSyncing) return;
+    if (isSyncing || !userId) return;
     setIsSyncing(true);
     setSyncProgress({ stage: 'idle', percentage: 0, current: 0, total: 0 });
     try {
-      await startSyncAll((progress) => setSyncProgress(progress));
+      await startSyncAll(userId, (progress) => setSyncProgress(progress));
       setJustCameOnline(false);
     } finally {
       setIsSyncing(false);
       setSyncProgress(null);
       await refreshPending();
     }
-  }, [isSyncing, refreshPending]);
+  }, [isSyncing, userId, refreshPending]);
 
   const value: OfflineSyncContextType = {
     isOffline,

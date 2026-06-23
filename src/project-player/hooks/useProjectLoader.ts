@@ -13,7 +13,6 @@ import {
 import { createOrUpdateProgramUserMapping, updateEntityDetails } from '../../../src/services/participantService';
 import { getProjectCategoryList} from '../../../src/services/projectService';
 import dataService, { isNetworkOffline } from '../../../src/services/dataService';
-import { useAuth } from '@contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@contexts/LanguageContext';
 import { STATUS } from '@constants/app.constant';
@@ -23,7 +22,6 @@ export const useProjectLoader = (
   config: ProjectPlayerConfig,
   data: ProjectPlayerData,
 ) => {
-  const {user} = useAuth();
   const { t } = useLanguage();
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [oldProjectData, setOldProjectData] = useState<ProjectData | null>(null);
@@ -46,7 +44,7 @@ export const useProjectLoader = (
             if (entityId) {
               // Offline-first: always check dataService — it reads cache when offline or
               // when there are pending unsynced edits (Rules 1, 2, 3).
-              const result = await dataService.getProject<ProjectData>(entityId, projectId);
+              const result = await dataService.getProject<ProjectData>(entityId, projectId, data.offlineKeyPrefix ?? '');
 
               if (result.isOffline && !result.offlineDataAvailable) {
                 // Offline AND no cached project — user needs to download first
@@ -59,14 +57,14 @@ export const useProjectLoader = (
               // a background refresh so the UI eventually shows the server's latest state —
               // but only after we have rendered with the local edits.
               if (projectData && result.fromCache && !result.isOffline) {
-                dataService.getProject<ProjectData>(entityId, projectId).then(fresh => {
+                dataService.getProject<ProjectData>(entityId, projectId, data.offlineKeyPrefix ?? '').then(fresh => {
                   if (fresh.data && !fresh.fromCache) setProjectData(fresh.data);
                 }).catch(() => {});
               }
             } else {
               // No entityId available — fall back to scanning offline participant storage
               // (getProjectDetails already does this when isNetworkOffline() is true)
-              const res = await getProjectDetails(projectId);
+              const res = await getProjectDetails(projectId, data.offlineKeyPrefix ?? '');
               if (!res.data && isNetworkOffline()) {
                 throw new Error(t('offlineSync.dataUnavailable'));
               }
@@ -80,7 +78,7 @@ export const useProjectLoader = (
             const thisDate = new Date().toISOString();
             if (projectData?._id) {
               await updateEntityDetails({
-                userId: `${user?.id}`,
+                userId: `${data.offlineKeyPrefix ?? ''}`,
                 entityId: entityId,
                 entityUpdates: {
                   onBoardedProjectId: projectData._id,
@@ -126,7 +124,7 @@ export const useProjectLoader = (
           const children:any = [];
           const categoryExternalIds:any = []
           if(data?.oldProjectId) {
-            const oldData = await getProjectDetails(data?.oldProjectId);
+            const oldData = await getProjectDetails(data?.oldProjectId, data.offlineKeyPrefix ?? '');
             if(oldData?.data) {
               setOldProjectData(oldData.data)
             }
@@ -189,7 +187,7 @@ export const useProjectLoader = (
     };
 
     loadData();
-  }, [config.mode,t, data.projectId, data.solutionId, data.data, data,error, user?.id]);
+  }, [config.mode, t, data.projectId, data.solutionId, data.data, data, error]);
 
   return { projectData,oldProjectData, isLoading, error };
 };

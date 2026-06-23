@@ -22,7 +22,9 @@ import {
   ChevronDownIcon,
   Modal,
   LucideIcon,
-  useAlert
+  useAlert,
+  Button,
+  ButtonText,
 } from '@ui';
 import { useGlobal } from '@contexts/GlobalContext';
 import { stylesHeader } from './Styles';
@@ -38,6 +40,7 @@ import { MenuItemData } from '@components/ui/Menu';
 import { getUserProfile } from '../../services/authenticationService';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import openExternalLink from '@utils/openExternalLink';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 /**
  * Header Component - Enhanced for LC Layout Support
@@ -88,6 +91,8 @@ const Header: React.FC<{
   const { t, currentLanguage, changeLanguage } = useLanguage();
   const [authUser, setAuthUser] = useState<User | null>(null);
   const { showAlert } = useAlert();
+  const { pendingBreakdown } = useOfflineSync();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const openMyProfile = async () => {
     try {
@@ -109,7 +114,11 @@ const Header: React.FC<{
     if (key === 'myProfile') {
       await openMyProfile();
     } else if (key === 'logout') {
-      logout();
+      if (pendingBreakdown.total > 0) {
+        setShowLogoutConfirm(true);
+      } else {
+        logout();
+      }
     }
   };
   // Wrapper for hamburger menu selection - handles myProfile in Header, passes others to parent
@@ -452,6 +461,25 @@ const Header: React.FC<{
             </Box>
           </Box>
         </VStack>
+      </Modal>
+
+      <Modal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        headerContent={t('offlineSync.logoutConfirmTitle')}
+        size="sm"
+      >
+        <Text fontSize="$sm" color="$textSecondary" mb="$4">
+          {t('offlineSync.logoutConfirmMessage', { count: pendingBreakdown.total })}
+        </Text>
+        <HStack space="md" justifyContent="flex-end">
+          <Button variant="outline" size="sm" onPress={() => setShowLogoutConfirm(false)}>
+            <ButtonText>{t('common.cancel')}</ButtonText>
+          </Button>
+          <Button variant="solid" size="sm" onPress={() => { setShowLogoutConfirm(false); logout(); }}>
+            <ButtonText>{t('offlineSync.logoutAnyway')}</ButtonText>
+          </Button>
+        </HStack>
       </Modal>
     </Box>
   );

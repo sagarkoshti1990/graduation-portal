@@ -76,13 +76,14 @@ function base64ToFile(base64: string, fileName: string, mimeType: string): File 
  * the target task (a participant may have edits across multiple projects).
  */
 async function patchTaskAttachmentUrl(
+  userId: string,
   participantId: string,
   taskId: string,
   fileName: string,
   serverUrl: string,
   sourcePath?: string,
 ): Promise<void> {
-  const allKeys = await offlineStorage.getParticipantKeys(participantId);
+  const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
 
   for (const key of editKeys) {
@@ -110,25 +111,23 @@ async function patchTaskAttachmentUrl(
 }
 
 async function syncFiles(
+  userId: string,
   participantId: string,
   onProgress?: ProgressCallback,
 ): Promise<{ synced: number; failed: number }> {
-  const pending = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(participantId));
-  console.log(pending,"file");
+  const pending = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(userId, participantId));
   if (!pending?.length) return { synced: 0, failed: 0 };
 
   let synced = 0, failed = 0;
   const syncedNames: string[] = [];
-  console.log(pending,"file");
 
   for (let i = 0; i < pending.length; i++) {
     const { taskId, fileName, fileType, storageKey } = pending[i];
     // storageKey is the timestamped blob key; fall back to legacy key for old entries
-    const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(participantId, fileName);
+    const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
     try {
       // Read the stored base64 content
       const base64 = await offlineStorage.read<string>(blobKey);
-  console.log(base64,blobKey,"base64");
 
       if (!base64) {
         // No content stored (e.g. blob was cleaned up already) — treat as done
@@ -140,15 +139,14 @@ async function syncFiles(
 
       // Reconstruct File object and upload via pre-signed URL
       const file = base64ToFile(base64, fileName, fileType);
-  console.log(file,"file 1");
       const result = await uploadFiles(taskId, [file]);
-  console.log(result,"result");
       const uploaded = result.data?.[0];
 
       if (uploaded?.url) {
         // Patch the attachment stub in stored task edits so the task sync step
         // sends the real server URL instead of the empty placeholder.
         await patchTaskAttachmentUrl(
+          userId,
           participantId,
           taskId,
           fileName,
@@ -172,9 +170,9 @@ async function syncFiles(
   if (syncedNames.length > 0) {
     const remaining = pending.filter(p => !syncedNames.includes(p.fileName));
     if (remaining.length === 0) {
-      await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(participantId)).catch(() => {});
+      await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(userId, participantId)).catch(() => {});
     } else {
-      await offlineStorage.create(PARTICIPANT_KEYS.filesPending(participantId), remaining);
+      await offlineStorage.create(PARTICIPANT_KEYS.filesPending(userId, participantId), remaining);
     }
   }
 
@@ -200,10 +198,11 @@ function parseFormIdFromKey(key: string): string | null {
 }
 
 async function syncFormEdits(
+  userId: string,
   participantId: string,
   onProgress?: ProgressCallback,
 ): Promise<{ synced: number; failed: number }> {
-  const allKeys = await offlineStorage.getParticipantKeys(participantId);
+  const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter(
     (k: string) => k.endsWith(':edits') && k.includes(':form:'),
   );
@@ -223,7 +222,7 @@ async function syncFormEdits(
 
       // Load the cached form data to get entityId (required for the API call)
       const formData = await offlineStorage.read<ObservationFormData>(
-        PARTICIPANT_KEYS.form(participantId, formId),
+        PARTICIPANT_KEYS.form(userId, participantId, formId),
       );
 
       if (!formData?.submissionId) {
@@ -252,10 +251,11 @@ async function syncFormEdits(
 // ---------------------------------------------------------------------------
 
 async function syncTaskEdits(
+  userId: string,
   participantId: string,
   onProgress?: ProgressCallback,
 ): Promise<{ synced: number; failed: number }> {
-  const allKeys = await offlineStorage.getParticipantKeys(participantId);
+  const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
 
   if (!editKeys.length) return { synced: 0, failed: 0 };
@@ -266,7 +266,7 @@ async function syncTaskEdits(
     const projectEdits = await offlineStorage.read<{ tasks: any[] }>(editKey);
     if (!projectEdits?.tasks?.length) continue;
 
-    // Extract projectId from key: participant:${participantId}:projectEdits:${projectId}
+    // Extract projectId from key: participant:{userId}:{participantId}:projectEdits:{projectId}
     const projectId = editKey.split(':projectEdits:')[1];
     if (!projectId) {
       logger.warn(`syncService: cannot parse projectId from key "${editKey}" — skipping`);
@@ -293,49 +293,50 @@ async function syncTaskEdits(
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Sync all pending changes for a single participant. */
+/** Sync all pending changes for a single participant. userId scopes all storage keys. */
 export const startSync = async (
   participantId: string,
+  userId: string,
   onProgress?: ProgressCallback,
 ): Promise<SyncResult> => {
   const errors: string[] = [];
   let syncedCount = 0, failedCount = 0;
 
   onProgress?.(makeProgress('files', 0, 1));
-  const filesResult = await syncFiles(participantId, onProgress);
+  const filesResult = await syncFiles(userId, participantId, onProgress);
   syncedCount += filesResult.synced;
   failedCount += filesResult.failed;
 
   onProgress?.(makeProgress('forms', 0, 1));
-  const formsResult = await syncFormEdits(participantId, onProgress);
+  const formsResult = await syncFormEdits(userId, participantId, onProgress);
   syncedCount += formsResult.synced;
   failedCount += formsResult.failed;
 
   onProgress?.(makeProgress('tasks', 0, 1));
-  const tasksResult = await syncTaskEdits(participantId, onProgress);
+  const tasksResult = await syncTaskEdits(userId, participantId, onProgress);
   syncedCount += tasksResult.synced;
   failedCount += tasksResult.failed;
 
   // Record failures for retry; update per-participant lastSyncedAt on success
   if (failedCount > 0) {
-    const existing = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED) ?? [];
+    const existing = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED(userId)) ?? [];
     if (!existing.includes(participantId)) {
-      await offlineStorage.create(OFFLINE_KEYS.SYNC_FAILED, [...existing, participantId]);
+      await offlineStorage.create(OFFLINE_KEYS.SYNC_FAILED(userId), [...existing, participantId]);
     }
   } else {
-    const existing = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED) ?? [];
+    const existing = await offlineStorage.read<string[]>(OFFLINE_KEYS.SYNC_FAILED(userId)) ?? [];
     await offlineStorage.create(
-      OFFLINE_KEYS.SYNC_FAILED,
+      OFFLINE_KEYS.SYNC_FAILED(userId),
       existing.filter((id: string) => id !== participantId),
     );
     // Record per-participant sync timestamp so the UI badge can show "last synced"
     await offlineStorage.create(
-      PARTICIPANT_KEYS.lastSyncedAt(participantId),
+      PARTICIPANT_KEYS.lastSyncedAt(userId, participantId),
       Date.now(),
     ).catch(() => {});
   }
 
-  await offlineStorage.create(OFFLINE_KEYS.SYNC_LAST, Date.now()).catch(() => {});
+  await offlineStorage.create(OFFLINE_KEYS.SYNC_LAST(userId), Date.now()).catch(() => {});
   onProgress?.(makeProgress('done', 1, 1));
 
   return {
@@ -346,11 +347,12 @@ export const startSync = async (
   };
 };
 
-/** Sync all offline participants sequentially. */
+/** Sync all offline participants for the given user sequentially. */
 export const startSyncAll = async (
+  userId: string,
   onProgress?: ProgressCallback,
 ): Promise<SyncResult> => {
-  const ids = await getOfflineParticipantIds();
+  const ids = await getOfflineParticipantIds(userId);
   if (ids.length === 0) {
     return { success: true, syncedCount: 0, failedCount: 0, errors: [] };
   }
@@ -359,7 +361,7 @@ export const startSyncAll = async (
   const errors: string[] = [];
 
   for (const id of ids) {
-    const result = await startSync(id, onProgress);
+    const result = await startSync(id, userId, onProgress);
     syncedCount += result.syncedCount;
     failedCount += result.failedCount;
     errors.push(...result.errors);

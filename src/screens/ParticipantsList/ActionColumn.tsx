@@ -305,7 +305,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   // Build menu items — always include Download Offline (Section 8.5)
   const menuItemsWithDownload = [
     ...getParticipantsMenuItems,
-    ...(!isOffline && !isWeb && ALLOWOFFLINESTATUS.includes(participant?.status) ?
+    ...(!isOffline && ALLOWOFFLINESTATUS.includes(participant?.status) ?
     [{
       key: 'download',
       label: 'actions.downloadOffline',

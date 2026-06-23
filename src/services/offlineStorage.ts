@@ -349,13 +349,14 @@ export const getSize = async (): Promise<number> => {
 };
 
 /**
- * Returns all storage keys that belong to a specific participant.
+ * Returns all storage keys that belong to a specific participant under a specific user.
  * On web, reads from IndexedDB (where participant:* keys live).
  * On native, reads from AsyncStorage.
+ * userId prefix ensures multi-user isolation.
  */
-export const getParticipantKeys = async (participantId: string): Promise<string[]> => {
+export const getParticipantKeys = async (userId: string, participantId: string): Promise<string[]> => {
   try {
-    const prefix = `participant:${participantId}:`;
+    const prefix = `participant:${userId}:${participantId}:`;
     if (Platform.OS === 'web') {
       return idbGetAllKeys(prefix);
     }
@@ -369,34 +370,38 @@ export const getParticipantKeys = async (participantId: string): Promise<string[
 // ---------------------------------------------------------------------------
 // Offline participant ID registry
 // Tracks which participants have been downloaded for offline use.
-// Key: OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS  Value: string[]
+// All registry keys are scoped per userId to ensure multi-user isolation.
+// Key: OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS(userId)  Value: string[]
 // ---------------------------------------------------------------------------
 
-/** Register a participant as offline-capable. Idempotent. */
-export const addOfflineParticipantId = async (id: string): Promise<void> => {
-  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+/**
+ * Register a participant as offline-capable for a specific user.
+ * Idempotent — safe to call multiple times with the same id.
+ */
+export const addOfflineParticipantId = async (userId: string, id: string): Promise<void> => {
+  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS(userId));
   const ids = existing ?? [];
   if (!ids.includes(id)) {
-    await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS, [...ids, id]);
+    await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS(userId), [...ids, id]);
   }
 };
 
-/** Remove a participant from the offline registry (e.g. on clear). */
-export const removeOfflineParticipantId = async (id: string): Promise<void> => {
-  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+/** Remove a participant from the offline registry for a specific user (e.g. on clear). */
+export const removeOfflineParticipantId = async (userId: string, id: string): Promise<void> => {
+  const existing = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS(userId));
   const ids = (existing ?? []).filter((x: string) => x !== id);
-  await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS, ids);
+  await create(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS(userId), ids);
 };
 
-/** Returns all participant IDs that have been downloaded for offline use. */
-export const getOfflineParticipantIds = async (): Promise<string[]> => {
-  const ids = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS);
+/** Returns all participant IDs downloaded for a specific user. */
+export const getOfflineParticipantIds = async (userId: string): Promise<string[]> => {
+  const ids = await read<string[]>(OFFLINE_KEYS.OFFLINE_PARTICIPANT_IDS(userId));
   return ids ?? [];
 };
 
-/** Returns true if this participant has been downloaded for offline use. */
-export const isParticipantOffline = async (id: string): Promise<boolean> => {
-  const ids = await getOfflineParticipantIds();
+/** Returns true if this participant has been downloaded for the given user. */
+export const isParticipantOffline = async (userId: string, id: string): Promise<boolean> => {
+  const ids = await getOfflineParticipantIds(userId);
   return ids.includes(id);
 };
 

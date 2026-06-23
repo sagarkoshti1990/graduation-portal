@@ -97,14 +97,14 @@ export const createProjectForEntity = async (
 
 export const getProjectDetails = async (
   projectID: string,
+  userId?: string,
 ): Promise<ApiResponse<any>> => {
   if (isNetworkOffline()) {
-    // Project cache is keyed by participantId; scan all downloaded participants
-    // to find the project matching this projectID.
-    const ids = await getOfflineParticipantIds().catch(() => [] as string[]);
+    // Project cache is keyed by userId + participantId; scan all downloaded participants.
+    const ids = await getOfflineParticipantIds(userId ?? '').catch(() => [] as string[]);
     for (const participantId of ids) {
       const project = await offlineStorage
-        .read<any>(PARTICIPANT_KEYS.project(participantId,projectID))
+        .read<any>(PARTICIPANT_KEYS.project(userId ?? '', participantId, projectID))
         .catch(() => null);
       if (project && (project._id === projectID || project.id === projectID)) {
         return { data: project };

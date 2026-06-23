@@ -94,7 +94,7 @@ async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
 // Status helpers
 // ---------------------------------------------------------------------------
 
-async function initStatus(participantId: string): Promise<void> {
+async function initStatus(userId: string, participantId: string): Promise<void> {
   const status: DownloadStatus = {
     status: 'in_progress',
     completedModules: [],
@@ -102,18 +102,18 @@ async function initStatus(participantId: string): Promise<void> {
     lastStep: 'start',
     startedAt: Date.now(),
   };
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), status);
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), status);
 }
 
-async function patchStatus(participantId: string, patch: Partial<DownloadStatus>): Promise<void> {
-  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), { ...(current ?? {}), ...patch });
+async function patchStatus(userId: string, participantId: string, patch: Partial<DownloadStatus>): Promise<void> {
+  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), { ...(current ?? {}), ...patch });
 }
 
-async function markComplete(participantId: string, module: string): Promise<void> {
-  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+async function markComplete(userId: string, participantId: string, module: string): Promise<void> {
+  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));
   if (!current) return;
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), {
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), {
     ...current,
     completedModules: current.completedModules.includes(module)
       ? current.completedModules
@@ -123,10 +123,10 @@ async function markComplete(participantId: string, module: string): Promise<void
   });
 }
 
-async function markFailed(participantId: string, module: string): Promise<void> {
-  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+async function markFailed(userId: string, participantId: string, module: string): Promise<void> {
+  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));
   if (!current) return;
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), {
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), {
     ...current,
     failedModules: current.failedModules.includes(module)
       ? current.failedModules
@@ -165,7 +165,7 @@ async function ensureOnboardingProject({
 }): Promise<string> {
   // Guard: re-read from cache in case a previous download already created the project
   const cachedDetails = await offlineStorage
-    .read<any>(PARTICIPANT_KEYS.details(participantId))
+    .read<any>(PARTICIPANT_KEYS.details(lcUserId, participantId))
     .catch(() => null);
   if (cachedDetails?.onBoardedProjectId) {
     logger.info(`DownloadService: Onboarding project already in cache for "${participantId}" — skipping creation`);
@@ -191,7 +191,7 @@ async function ensureOnboardingProject({
 
   // Re-check cache (concurrent creation guard — e.g. two simultaneous download attempts)
   const recheckDetails = await offlineStorage
-    .read<any>(PARTICIPANT_KEYS.details(participantId))
+    .read<any>(PARTICIPANT_KEYS.details(lcUserId, participantId))
     .catch(() => null);
   if (recheckDetails?.onBoardedProjectId) {
     logger.info(`DownloadService: Concurrent creation detected for "${participantId}" — using existing project`);
@@ -275,20 +275,20 @@ async function fetchAndStoreParticipant(participantId: string, lcUserId: string)
     accountUserStatus: userDetails?.status,
   };
 
-  await offlineStorage.create(PARTICIPANT_KEYS.details(participantId), mappedParticipant);
+  await offlineStorage.create(PARTICIPANT_KEYS.details(lcUserId, participantId), mappedParticipant);
   logger.info(`DownloadService: Stored participant "${participantId}"`);
   return mappedParticipant;
 }
 
-async function fetchAndStoreProject(participantId: string, projectId: string): Promise<Task[]> {
-  const response = await getProjectDetails(projectId);
+async function fetchAndStoreProject(userId: string, participantId: string, projectId: string): Promise<Task[]> {
+  const response = await getProjectDetails(projectId, userId);
   if (!response.data) throw new Error(`Project "${projectId}" returned no data`);
   const project = response.data;
   // Flatten children[].tasks[] for pillar-structured projects; fall back to root tasks[]
   const tasks: Task[] = project.tasks
     ?? (project.children ?? []).flatMap((c: any) => c.tasks ?? []);
   // Store the full project only — tasks are extracted from it when needed (no separate key)
-  await offlineStorage.create(PARTICIPANT_KEYS.project(participantId,projectId), project);
+  await offlineStorage.create(PARTICIPANT_KEYS.project(userId, participantId, projectId), project);
   logger.info(`DownloadService: Stored project "${projectId}" with ${tasks.length} tasks`);
   return tasks;
 }
@@ -319,6 +319,7 @@ const getSubmissionNumber = (
  * Shared by the project-task path (HH) and the targeted-solutions path (all others).
  */
 async function processObservationForm(
+  userId: string,
   participantId: string,
   participantName: string,
   solutionId: string,
@@ -413,13 +414,14 @@ async function processObservationForm(
   };
 
   // Keyed by solutionId — matches what ObservationContent passes to getObservationForm()
-  await offlineStorage.create(PARTICIPANT_KEYS.form(participantId, solutionId), formData);
+  await offlineStorage.create(PARTICIPANT_KEYS.form(userId, participantId, solutionId), formData);
   logger.info(`DownloadService: Stored form for solution "${solutionId}" (obs: "${observationId}")`);
   return { entityId: entityId!, submissionId: submissionId || "", submissionNumber: submissionNumber, observationId, solutionId };
 }
 
 /** Thin wrapper used by the project-task (HH) path to extract solutionId from a task. */
 async function processObservationTask(
+  userId: string,
   participantId: string,
   participantName: string,
   task: Task,
@@ -432,7 +434,7 @@ async function processObservationTask(
     logger.warn(`DownloadService: No solutionId on task "${task._id}" — skipping`);
     return null;
   }
-  const resolved = await processObservationForm(participantId, participantName, solutionId);
+  const resolved = await processObservationForm(userId, participantId, participantName, solutionId);
   return { ...resolved, solutionId, name:task?.solutionDetails?.name };
 }
 
@@ -442,6 +444,7 @@ async function processObservationTask(
  * Per-solution failures are logged and skipped so one bad form doesn't fail the whole module.
  */
 async function fetchAndStoreSolutionForms(
+  userId: string,
   participantId: string,
   participantName: string,
   keywords: string[],
@@ -460,7 +463,7 @@ async function fetchAndStoreSolutionForms(
     if (!solution.solutionId) continue;
     try {
       const resolved = await withRetry(
-        () => processObservationForm(participantId, participantName, solution.solutionId),
+        () => processObservationForm(userId, participantId, participantName, solution.solutionId),
         `solutionForm:${solution.solutionId}`,
       );
       results.push({ ...solution,...resolved, keyword: moduleKey });
@@ -512,7 +515,7 @@ export const startDownload = async ({
   try {
     // initStatus is inside the try block so any storage failure is caught and returned
     // as a DownloadResult rather than propagating out of startDownload.
-    await initStatus(participantId);
+    await initStatus(lcUserId, participantId);
 
     // ── Step 0: Resolve project ID — create onboarding project when not yet set ──
     //
@@ -547,11 +550,11 @@ export const startDownload = async ({
         logger.error(
           `DownloadService: Cannot create onboarding project for "${participantId}" — missing entityId or province`,
         );
-        await patchStatus(participantId, { status: 'failed' });
+        await patchStatus(lcUserId, participantId, { status: 'failed' });
         return {
           success: false,
           status: (await offlineStorage.read<DownloadStatus>(
-            PARTICIPANT_KEYS.downloadStatus(participantId),
+            PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId),
           ))!,
           error: 'Province and entity ID are required to create the onboarding project',
         };
@@ -572,17 +575,17 @@ export const startDownload = async ({
           'onboardingProject',
         );
         createdOnboardingProjectId = resolvedProjectId;
-        await markComplete(participantId, 'onboarding');
+        await markComplete(lcUserId, participantId, 'onboarding');
         onProgress?.('onboarding', 'completed');
       } catch (err: any) {
         logger.error(`DownloadService: Failed to create onboarding project for "${participantId}"`, err);
-        await markFailed(participantId, 'onboarding');
+        await markFailed(lcUserId, participantId, 'onboarding');
         onProgress?.('onboarding', 'failed');
-        await patchStatus(participantId, { status: 'failed' });
+        await patchStatus(lcUserId, participantId, { status: 'failed' });
         return {
           success: false,
           status: (await offlineStorage.read<DownloadStatus>(
-            PARTICIPANT_KEYS.downloadStatus(participantId),
+            PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId),
           ))!,
           error: err?.message ?? 'Failed to create onboarding project',
         };
@@ -593,7 +596,7 @@ export const startDownload = async ({
       onProgress?.('participant', 'loading');
       try {
         await withRetry(() => fetchAndStoreParticipant(participantId, lcUserId), 'participant');
-        await markComplete(participantId, 'participant');
+        await markComplete(lcUserId, participantId, 'participant');
         onProgress?.('participant', 'completed');
       } catch (err) {
         onProgress?.('participant', 'failed');
@@ -603,7 +606,7 @@ export const startDownload = async ({
 
     // Always save the list-row snapshot so offline participant list can render
     if (participantSnapshot) {
-      await offlineStorage.create(PARTICIPANT_KEYS.listSnapshot(participantId), participantSnapshot);
+      await offlineStorage.create(PARTICIPANT_KEYS.listSnapshot(lcUserId, participantId), participantSnapshot);
     }
 
     // observations matched from the project task list.
@@ -623,18 +626,18 @@ export const startDownload = async ({
       if (downloadConfig.project) onProgress?.('project', 'loading');
       try {
         tasks = await withRetry(
-          () => fetchAndStoreProject(participantId, resolvedProjectId!),
+          () => fetchAndStoreProject(lcUserId, participantId, resolvedProjectId!),
           'project',
         );
         if (downloadConfig.project) {
-          await markComplete(participantId, 'project');
+          await markComplete(lcUserId, participantId, 'project');
           onProgress?.('project', 'completed');
         }
         const hhTasks = tasks.filter(
           (t: Task) => t.type?.toLowerCase() === 'observation',
         );
         for (const task of hhTasks) {
-          const resolved = await processObservationTask(participantId, participantName, task);
+          const resolved = await processObservationTask(lcUserId, participantId, participantName, task);
           if (resolved) {
             solutionEntries.push({
               name:resolved.name,
@@ -662,17 +665,18 @@ export const startDownload = async ({
       onProgress?.(module.moduleKey, 'loading');
       try {
         const resolved = await fetchAndStoreSolutionForms(
+          lcUserId,
           participantId,
           participantName,
           module.keywords,
           module.moduleKey,
         );
         solutionEntries = [...solutionEntries,...resolved];
-        await markComplete(participantId, module.moduleKey);
+        await markComplete(lcUserId, participantId, module.moduleKey);
         onProgress?.(module.moduleKey, 'completed');
       } catch (err) {
         logger.error(`DownloadService: Failed module "${module.moduleKey}"`, err);
-        await markFailed(participantId, module.moduleKey);
+        await markFailed(lcUserId, participantId, module.moduleKey);
         onProgress?.(module.moduleKey, 'failed');
       }
     }
@@ -680,33 +684,33 @@ export const startDownload = async ({
     // Save solutions mapping — must happen AFTER all schemas are downloaded so the
     // mapping and the form data are always in sync.
     if (solutionEntries.length > 0) {
-      await offlineStorage.create(PARTICIPANT_KEYS.solutions(participantId), solutionEntries);
+      await offlineStorage.create(PARTICIPANT_KEYS.solutions(lcUserId, participantId), solutionEntries);
       logger.info(`DownloadService: Saved ${solutionEntries.length} solution entries for "${participantId}"`);
     }
 
-    await addOfflineParticipantId(participantId);
+    await addOfflineParticipantId(lcUserId, participantId);
 
-    const finalStatus = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+    const finalStatus = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId));
     const resolvedStatus = (finalStatus?.failedModules ?? []).length > 0 ? 'partial' : 'completed';
-    await patchStatus(participantId, { status: resolvedStatus, completedAt: Date.now() });
+    await patchStatus(lcUserId, participantId, { status: resolvedStatus, completedAt: Date.now() });
 
     logger.info(`DownloadService: "${resolvedStatus}" for participant "${participantId}"`);
     return {
       success: true,
-      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId)))!,
+      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId)))!,
       createdOnboardingProjectId,
     };
   } catch (err: any) {
     logger.error(`DownloadService: Fatal error for participant "${participantId}"`, err);
-    await patchStatus(participantId, { status: 'failed' });
+    await patchStatus(lcUserId, participantId, { status: 'failed' });
     return {
       success: false,
-      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId)))!,
+      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId)))!,
       error: err?.message ?? 'Unknown error',
       createdOnboardingProjectId,
     };
   }
 };
 
-export const getDownloadStatus = async (participantId: string): Promise<DownloadStatus | null> =>
-  offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+export const getDownloadStatus = async (userId: string, participantId: string): Promise<DownloadStatus | null> =>
+  offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));

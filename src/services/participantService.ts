@@ -25,15 +25,15 @@ export const getParticipantsList = async (params: ParticipantSearchParams): Prom
   if (isNetworkOffline()) {
     if (params.entityId) {
       // Single-participant lookup: return details or list-snapshot from cache
-      const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(params.entityId)).catch(() => null);
-      const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(params.entityId)).catch(() => null);
+      const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(params.userId, params.entityId)).catch(() => null);
+      const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(params.userId, params.entityId)).catch(() => null);
       const row = details ?? snapshot ?? null;
       return { result: { data: row ? [row] : [], count: row ? 1 : 0 } } as unknown as ParticipantSearchResponse;
     }
     // Full list: read all downloaded snapshots
-    const ids = await getOfflineParticipantIds().catch(() => [] as string[]);
+    const ids = await getOfflineParticipantIds(params.userId).catch(() => [] as string[]);
     const snapshots = await Promise.all(
-      ids.map(id => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(id)).catch(() => null)),
+      ids.map(id => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(params.userId, id)).catch(() => null)),
     );
     const participants = snapshots.filter(Boolean);
     return { result: { data: participants, count: participants.length } } as unknown as ParticipantSearchResponse;
@@ -192,16 +192,16 @@ export const getSitesByProvince = (provinceValue: string): Site[] => {
   return SITES;
 };
 
-export const getEntityDetails = async (userId: string): Promise<any> => {
+export const getEntityDetails = async (participantId: string, lcUserId?: string): Promise<any> => {
   // Prevent API call when offline — return cached entity details.
   if (isNetworkOffline()) {
-    const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(userId)).catch(() => null);
-    const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(userId)).catch(() => null);
+    const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(lcUserId ?? '', participantId)).catch(() => null);
+    const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(lcUserId ?? '', participantId)).catch(() => null);
     return { data: details ?? snapshot ?? null };
   }
 
   try {
-    const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(userId));
+    const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(participantId));
     return { data: response.data.result };
   } catch (error) {
     throw error;

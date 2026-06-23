@@ -7,6 +7,7 @@ import offlineStorage from '../../../src/services/offlineStorage';
 import { PARTICIPANT_KEYS } from '../../../src/constants/STORAGE_KEYS';
 import type { PendingFile } from '../../../src/types/offline';
 import { NormalizedFile } from '../types';
+import { useAuth } from '../../../src/contexts/AuthContext';
 
 export async function fileToBase64(
   file: NormalizedFile
@@ -76,6 +77,8 @@ export const useTaskActions = () => {
     setTaskAddedToPlan,
     projectDataRef,
   } = useProjectStable();
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
 
   const canEdit = mode === 'edit';
 
@@ -99,7 +102,7 @@ export const useTaskActions = () => {
           if (participantId) {
             try {
               const existing = await offlineStorage.read<PendingFile[]>(
-                PARTICIPANT_KEYS.filesPending(participantId),
+                PARTICIPANT_KEYS.filesPending(userId, participantId),
               ) ?? [];
               const existingNames = new Set(existing.map(p => p.fileName));
 
@@ -107,6 +110,7 @@ export const useTaskActions = () => {
               for (const file of files) {
                 if (existingNames.has(file.name)) continue;
                 const storageKey = PARTICIPANT_KEYS.fileBlob(
+                  userId,
                   participantId,
                   `${Date.now()}_${file.name}`,
                 );
@@ -125,7 +129,7 @@ export const useTaskActions = () => {
 
               if (newEntries.length > 0) {
                 await offlineStorage.create(
-                  PARTICIPANT_KEYS.filesPending(participantId),
+                  PARTICIPANT_KEYS.filesPending(userId, participantId),
                   [...existing, ...newEntries],
                 );
               }

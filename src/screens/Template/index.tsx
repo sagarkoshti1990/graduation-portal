@@ -260,14 +260,16 @@ const DevelopInterventionPlan: React.FC = () => {
       categoryIds: categoryIdsArray,
       selectedPathway: selectedPathway,
       pillarCategoryRelation: getPillarCategoryRelationships,
-      oldProjectId: existingProjectId
+      oldProjectId: existingProjectId,
+      offlineKeyPrefix: user?.id ?? '',
     }),
     [
       categoryIdsArray,
       selectedPathway,
       getPillarCategoryRelationships,
       participant?.idpProjectId,
-      existingProjectId
+      existingProjectId,
+      user?.id,
     ],
   );
 

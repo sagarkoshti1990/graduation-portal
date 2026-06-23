@@ -8,9 +8,13 @@ import './src/config/i18n'; // Initialize i18n
 import { GlobalProvider, useGlobal } from './src/contexts/GlobalContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { GluestackUIProvider, useColorMode, useToken } from '@gluestack-ui/themed';
+import {
+  GluestackUIProvider,
+  useColorMode,
+  useToken,
+} from '@gluestack-ui/themed';
 import { theme } from './src/config/theme';
-import { AuthProvider } from './src/contexts/AuthContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { OfflineSyncProvider } from './src/contexts/OfflineSyncContext';
 import OfflineBanner from './src/components/OfflineBanner';
 import DeploymentStateBanner from './src/components/DeploymentStateBanner';
@@ -23,51 +27,53 @@ const stylesLayout = {
   safeAreaView: {
     flex: 1,
   },
-}
+};
 
 function App() {
   const mode = useColorMode();
   const isDark = mode === 'dark';
-  const backgroundDark = useToken("colors", "backgroundDark950")
-  const backgroundLight = useToken("colors", "primary500")
+  const backgroundDark = useToken('colors', 'backgroundDark950');
+  const backgroundLight = useToken('colors', 'primary500');
+  // Only show sync-related UI when the user is authenticated
+  const { isLoggedIn } = useAuth();
 
   return (
-    <SafeAreaView
-      style={stylesLayout.safeAreaView}
-    >
+    <SafeAreaView style={stylesLayout.safeAreaView}>
       {/* Status Bar */}
       <StatusBar
         barStyle={isDark ? 'dark-content' : 'light-content'}
         backgroundColor={isDark ? backgroundDark : backgroundLight}
       />
-      <OfflineBanner />
+      {/* Offline/sync UI is only relevant for authenticated users */}
+      {isLoggedIn && <OfflineBanner />}
       <DeploymentStateBanner />
-      <OnlineSyncBanner />
+      {isLoggedIn && <OnlineSyncBanner />}
       <AppNavigator />
-      <SyncOverviewModal />
+      {isLoggedIn && <SyncOverviewModal />}
     </SafeAreaView>
   );
 }
 
 const AppWrap = () => {
   const { colorMode } = useGlobal();
-  return <GluestackUIProvider config={theme} colorMode={colorMode}>
-    <AuthProvider>
-      <SafeAreaProvider>
-        <App />
-      </SafeAreaProvider>
-    </AuthProvider>
-  </GluestackUIProvider>
-}
-
+  return (
+    <GluestackUIProvider config={theme} colorMode={colorMode}>
+      <AuthProvider>
+        <OfflineSyncProvider>
+          <SafeAreaProvider>
+            <App />
+          </SafeAreaProvider>
+        </OfflineSyncProvider>
+      </AuthProvider>
+    </GluestackUIProvider>
+  );
+};
 
 const RootApp = () => {
   return (
     <GlobalProvider>
       <LanguageProvider>
-        <OfflineSyncProvider>
-          <AppWrap />
-        </OfflineSyncProvider>
+        <AppWrap />
       </LanguageProvider>
     </GlobalProvider>
   );
