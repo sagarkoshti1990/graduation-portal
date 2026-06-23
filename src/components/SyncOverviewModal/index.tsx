@@ -87,8 +87,8 @@ const SyncOverviewModal: React.FC = () => {
     <Modal
       isOpen={showSyncModal}
       onClose={closeSyncModal}
-      headerContent={t('offlineSync.modalTitle')}
-      headerIcon={<LucideIcon name="RefreshCw" size={22} color="$primary500" />}
+      headerTitle={t('offlineSync.modalTitle')}
+      headerIcon={<LucideIcon name="RefreshCw" size={16} color="$primary500" />}
       size="md"
       showCloseButton={!isSyncing}
     >

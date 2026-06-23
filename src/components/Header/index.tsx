@@ -466,7 +466,7 @@ const Header: React.FC<{
       <Modal
         isOpen={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
-        headerContent={t('offlineSync.logoutConfirmTitle')}
+        headerTitle={t('offlineSync.logoutConfirmTitle')}
         size="sm"
       >
         <Text fontSize="$sm" color="$textSecondary" mb="$4">

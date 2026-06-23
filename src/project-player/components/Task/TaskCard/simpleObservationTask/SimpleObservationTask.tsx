@@ -238,10 +238,11 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     if (!files?.length) return;
     setIsStatusUpdating(true);
     try {
-      const newFiles = filterNewFiles(files, task?.attachments);
+      const { newFiles, existingFiles } = filterNewFiles(files, task?.attachments);
+      
       const data = await handleStatusChange(
         { taskId: task._id, parentIndex, index }, TASK_STATUS.COMPLETED, newFiles,
-        uploadConfig.maxFiles && uploadConfig.maxFiles > 1 ? task?.attachments : [],
+        (uploadConfig.maxFiles === undefined || (uploadConfig.maxFiles && uploadConfig.maxFiles > 1)) ? existingFiles : [],
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }

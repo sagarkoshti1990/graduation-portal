@@ -291,7 +291,7 @@ export const preSignedUrls = async (
 
 export const uploadFiles = async (
   id: string,
-  files: File[]
+  files: NormalizedFile[]
 ): Promise<ApiResponse<any>> => {
   if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
@@ -304,11 +304,21 @@ export const uploadFiles = async (
       const responceData = await Promise.all(files.map(async (file) => {
         const presignedUrl = response.data[id].files.find((f: { file: string; url?: string; payload?: { sourcePath?: string } }) => f.file === file.name);
         if (presignedUrl?.url) {
-         await fetch(presignedUrl.url, { 
-          method: 'PUT',
-          body: file.file ?? file.originalFile as File,
-        });
-      }
+          let uploadBody: BodyInit | null = null;
+          if (isWeb) {
+            uploadBody = (file.file ?? file.originalFile) as File;
+          } else if (file.uri) {
+            // React Native: read the local file as a Blob via its URI
+            const localResponse = await fetch(file.uri);
+            uploadBody = await localResponse.blob();
+          }
+          if (uploadBody) {
+            await fetch(presignedUrl.url, {
+              method: 'PUT',
+              body: uploadBody,
+            });
+          }
+        }
         return {
           name: file.name,
           sourcePath: presignedUrl?.payload?.sourcePath,

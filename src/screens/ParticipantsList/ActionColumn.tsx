@@ -371,7 +371,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         onClose={handleCloseModal}
         headerContent={
           modalType === 'dropout' ? (
-            t('actions.confirmDropout') || 'Confirm Dropout'
+            <Text fontSize={'$lg'} fontWeight={'$semibold'}>
+              {t('actions.confirmDropout') || 'Confirm Dropout'}
+            </Text>
           ) : modalType === 'log-visit' ? (
             <HStack
               space="md"

@@ -104,7 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
       <Modal
         isOpen={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
-        headerContent={t('offlineSync.logoutConfirmTitle')}
+        headerTitle={t('offlineSync.logoutConfirmTitle')}
         size="sm"
       >
         <Text fontSize="$sm" color="$textSecondary" mb="$4">

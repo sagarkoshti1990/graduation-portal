@@ -7,14 +7,23 @@ import type { Task } from '../../../../types/project.types';
 export function filterNewFiles(
   selectedFiles: any[],
   existingAttachments: Task['attachments'],
-): any[] {
-  if (!selectedFiles?.length) return [];
-  return selectedFiles.filter(
-    file =>
-      !existingAttachments?.find(
+) {
+  const newFiles: any[] = [];
+  const existingFiles: any[] = [];
+  if (!selectedFiles?.length) return { newFiles, existingFiles };
+  selectedFiles.forEach(file => {
+    if (
+      existingAttachments?.find(
         existing => file?.url && existing?.url && file.url === existing.url,
-      ),
-  );
+      )
+    ) {
+      newFiles.push(file);
+    } else {
+      existingFiles.push(file);
+    }
+  });
+
+  return { newFiles, existingFiles };
 }
 
 /**
