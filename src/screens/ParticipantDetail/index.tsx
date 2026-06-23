@@ -82,10 +82,9 @@ export default function ParticipantDetail() {
   );
   const isFetchingRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
-  const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [projectData, setProjectData] = useState<ProjectData | undefined>(undefined);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
-  const [fetchedProjectData, setFetchedProjectData] = useState<ProjectData | undefined>(undefined);
   const [targetingCriteria,setTargetingCriteria] = useState(false);
   // Set document title with participant name
   const pageTitle = participant?.name
@@ -119,7 +118,7 @@ export default function ParticipantDetail() {
           setStatus('');
         } else {
           setIsOfflineUnavailable(false);
-          setFetchedProjectData(response.data);
+          setProjectData(response.data);
           setParticipant(participantData);
           setNavbarData({ subtitle: participantData?.name });
           setStatus(participantData?.status);
@@ -142,7 +141,7 @@ export default function ParticipantDetail() {
       return () => {
         setActiveTab("intervention-plan")
         setSolutions([]);
-        setProjectData(null);
+        setProjectData(undefined);
         setNavbarData(null);
         setParticipant(undefined);
         setStatus("");
@@ -353,7 +352,7 @@ export default function ParticipantDetail() {
               key={`project-player-${participantId}`}
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
-              projectData={fetchedProjectData}
+              projectData={projectData}
               {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
@@ -414,7 +413,7 @@ export default function ParticipantDetail() {
                     participantProfile={participant}
                     onIdpCreation={handleIdpCreated}
                     onProgressChange={handleProgressChange}
-                    projectData={fetchedProjectData}
+                    projectData={projectData}
                     {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>

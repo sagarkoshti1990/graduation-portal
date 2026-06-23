@@ -507,7 +507,7 @@ const buildDefaultValuesFromObservation = (
           for (const pageQuestion of question.pageQuestions) {
             // pageQuestion.question is an array of strings, key is a string. Compare lowercase.
             const keyFound = userDataKeys.find(key => 
-              key === pageQuestion.createdFromQuestionId
+              key === pageQuestion.createdFromQuestionId || key === pageQuestion.entityFieldName
                || (Array.isArray(pageQuestion?.question)
                 ? pageQuestion.question
                     .map((q: string) => (typeof q === 'string' ? q?.toLowerCase() : ''))

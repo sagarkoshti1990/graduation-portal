@@ -10,6 +10,8 @@ import {
   Button,
   ButtonText,
   Container,
+  Input,
+  InputField
 } from '@ui';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Modal from '@components/ui/Modal';
@@ -193,6 +195,7 @@ const DevelopInterventionPlan: React.FC = () => {
         // Check if category is selected
         if (selection.categoryId) {
           return {
+            ...selection,
             pillarId: pillarId,
             pillarName: pillar.name,
             selectedCategoryId: selection.categoryId,
@@ -213,6 +216,7 @@ const DevelopInterventionPlan: React.FC = () => {
           
           if (selectedCategory && !selectedCategory.hasChildren) {
             return {
+              ...selection,
               pillarId: pillarId,
               pillarName: pillar.name,
               selectedCategoryId: selection.categoryId,
@@ -648,7 +652,7 @@ const DevelopInterventionPlan: React.FC = () => {
               <React.Fragment key={pillar._id}>
                 <VStack gap="$1" mb="$2">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
-                    {t('template.categoryModal.categoryLabel', { pillarName: pillar?.name })}
+                    {t('template.categoryModal.categoryLabel', { pillarName: pillar?.name })} <Text color="$error600">*</Text>
                   </Text>
                   <Box {...(templateStyles.selectWrapper as any)}>
                     <Select
@@ -666,8 +670,8 @@ const DevelopInterventionPlan: React.FC = () => {
                           [pillar._id]: {
                             categoryId: value,
                             categoryName: selectedCategory?.label || '',
-                            subCategoryId: '', // reset
-                            subCategoryName: '', // reset
+                            // subCategoryId: '', // reset
+                            // subCategoryName: '', // reset
                           },
                         }));
                       }}
@@ -679,7 +683,7 @@ const DevelopInterventionPlan: React.FC = () => {
                   </Box>
                 </VStack>
 
-                {/* <VStack gap="$1" mb="$1">
+                {existingProjectId && <VStack gap="$1" mb="$1">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
                     {t('template.categoryModal.subCategoryLabel', { pillarName: pillar?.name })}
                   </Text>
@@ -695,7 +699,22 @@ const DevelopInterventionPlan: React.FC = () => {
                     }
                   >
                     <Box {...(templateStyles.selectWrapper as any)}>
-                      <Select
+                      <Input variant="outline" size="md">
+                        <InputField
+                          onChange={(e:any) => {
+                            setSelectionByPillar(prev => ({
+                              ...prev,
+                              [pillar._id]: {
+                                ...(prev?.[pillar._id] || {}),
+                                keywords:[e.target.value]
+                              },
+                            }));
+                          }}
+                          placeholder='Enter Text here'
+                        />
+                      </Input>
+                    
+                      {/* <Select
                         key={`subcategory-${pillar._id}-${selectionByPillar[pillar._id]?.categoryId || 'none'
                           }`}
                         options={getSubCategoriesForPillar(pillar._id).map(
@@ -722,10 +741,10 @@ const DevelopInterventionPlan: React.FC = () => {
                           'template.categoryModal.subCategoryPlaceholder',
                         )}
                         borderColor="$transparent"
-                      />
+                      /> */}
                     </Box>
                   </Box>
-                </VStack> */}
+                </VStack>}
               </React.Fragment>
             ) : null,
           )}
@@ -734,16 +753,18 @@ const DevelopInterventionPlan: React.FC = () => {
             .filter((pillar: any) => pillar?.hasChildCategories)
             .every(
               (pillar: any) =>
-                selectionByPillar[pillar._id]?.categoryId &&
-                selectionByPillar[pillar._id]?.subCategoryId,
+                selectionByPillar[pillar._id]?.categoryId
+                // && selectionByPillar[pillar._id]?.subCategoryId,
             ) && (
               <Box {...(templateStyles.summaryBox as any)}>
                 {pillarData
                   .filter((pillar: any) => pillar?.hasChildCategories)
                   .map((pillar: any) => {
                     const selection = selectionByPillar[pillar._id];
-
-                    if (!selection?.categoryId || !selection?.subCategoryId) {
+                    
+                    if (!selection?.categoryId 
+                      // || !selection?.subCategoryId
+                    ) {
                       return null;
                     }
 
@@ -758,7 +779,8 @@ const DevelopInterventionPlan: React.FC = () => {
                         >
                           {t('template.categoryModal.selectedLabel', {
                             category: selection.categoryName,
-                            subcategory: selection.subCategoryName,
+                            subcategory: selection?.keywords?.join(","),
+                            // subcategory: selection.subCategoryName,
                           })}
                         </Text>
                         <Text

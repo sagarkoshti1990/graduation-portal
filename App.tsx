@@ -13,6 +13,7 @@ import { theme } from './src/config/theme';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { OfflineSyncProvider } from './src/contexts/OfflineSyncContext';
 import OfflineBanner from './src/components/OfflineBanner';
+import DeploymentStateBanner from './src/components/DeploymentStateBanner';
 import OnlineSyncBanner from './src/components/OnlineSyncBanner';
 import SyncOverviewModal from './src/components/SyncOverviewModal';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -40,6 +41,7 @@ function App() {
         backgroundColor={isDark ? backgroundDark : backgroundLight}
       />
       <OfflineBanner />
+      <DeploymentStateBanner />
       <OnlineSyncBanner />
       <AppNavigator />
       <SyncOverviewModal />
