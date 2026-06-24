@@ -4,26 +4,57 @@ import { Platform } from 'react-native';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters, mapStatusLabelToAPI, PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
+import { COUNTRY_CODES } from '@constants/COUNTRY_CODES';
 import FilterButton from '@components/Filter';
 import TitleHeader from '@components/TitleHeader';
 // import { titleHeaderStyles } from '@components/TitleHeader/Styles';
 import DataTable from '@components/DataTable';
 import { getUsersColumns, RoleBadge } from './UsersTableConfig';
+import Select from '@components/ui/Inputs/Select';
 import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser } from '../../services/usersService';
+import { CreateUserForm } from './CreateUserForm';
+import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, createUser, getSitesByProvince } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
-import type { 
+import type {
   // UserSearchParams,
-   Role
+  Role
 } from '@app-types/Users';
 import { getSignedUrl, uploadFileToSignedUrl, bulkUserCreate } from '../../services/bulkUploadService';
 import { theme } from '@config/theme';
 import { getUserProfile } from '../../services/authenticationService';
 import { TabButton } from '@components/Tabs';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+
+// Custom wrapper to prevent cursor jumping during fast typing on heavy screens
+export const FastInputField = ({ value, defaultValue, onChangeText, ...props }: any) => {
+  const initialValue = value !== undefined ? value : (defaultValue || '');
+  const [localValue, setLocalValue] = useState(initialValue);
+  const isTyping = useRef(false);
+  const timeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!isTyping.current && value !== undefined && localValue !== value) {
+      setLocalValue(value);
+    }
+  }, [value]);
+
+  const handleChange = (text: string) => {
+    setLocalValue(text);
+    isTyping.current = true;
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      isTyping.current = false;
+    }, 500);
+
+    if (onChangeText) onChangeText(text);
+  };
+
+  return <InputField {...props} value={localValue} onChangeText={handleChange} />;
+};
 import offlineStorage from '../../services/offlineStorage';
 import logger from '@utils/logger';
 
@@ -85,7 +116,7 @@ const mergeUsersWithProgramParticipantMap = (
   usersData.map((u) => {
     const extra = byUserId[String(u.id)];
     if (!extra) {
-      return {...u,extra};
+      return { ...u, extra };
     }
 
     const details = buildDetailsForUserAndProgramRow(u, extra);
@@ -198,7 +229,11 @@ const UserManagementScreen = () => {
 
   // API state management
   const [filters, setFilters] = useState<Record<string, any>>({});
- // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
+
+  // Use custom hook for filter management - handles all API calls for roles, provinces
+  const { filters: filterOptions, roles, provinces, genders, isFiltersLoading } = useUserManagementFilters(filters);
+
+  // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
   const [users, setUsers] = useState<AdminUserManagementData[]>([]);
   /** Program-user search rows keyed by user id; applied async after the main user list loads. */
   const [programParticipantByUserId, setProgramParticipantByUserId] = useState<Record<string, any>>({});
@@ -245,6 +280,166 @@ const UserManagementScreen = () => {
     isSubmitting: false,
     isLoading: false,
   });
+
+  // Create User modal state (Array of JSON)
+  const initialCreateUserFields = useMemo(() => [
+    { id: 'firstName', value: '', error: '' },
+    { id: 'lastName', value: '', error: '' },
+    { id: 'email', value: '', error: '' },
+    { id: 'countryCode', value: '+27', error: '' },
+    { id: 'phoneNumber', value: '', error: '' },
+    { id: 'alternativePhoneCode', value: '+27', error: '' },
+    { id: 'alternativePhone', value: '', error: '' },
+    { id: 'nationalId', value: '', error: '' },
+    { id: 'gender', value: '', error: '' },
+    { id: 'dob', value: '', error: '' },
+    { id: 'username', value: '', error: '' },
+    { id: 'password', value: '', error: '' },
+    { id: 'confirmPassword', value: '', error: '' },
+    { id: 'roleId', value: '', error: '' },
+    { id: 'provinceId', value: '', error: '' },
+    { id: 'siteId', value: '', error: '' },
+  ], []);
+
+  const [createUserFields, setCreateUserFields] = useState(initialCreateUserFields);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [isCreateUserSubmitting, setIsCreateUserSubmitting] = useState(false);
+  const [showCreateUserPassword, setShowCreateUserPassword] = useState(false);
+  const [formSites, setFormSites] = useState<any[]>([]);
+
+  const getCreateField = useCallback((id: string) => createUserFields.find(f => f.id === id)?.value || '', [createUserFields]);
+  const getCreateError = useCallback((id: string) => createUserFields.find(f => f.id === id)?.error || '', [createUserFields]);
+
+  const selectedFormProvince = getCreateField('provinceId');
+  useEffect(() => {
+    const fetchFormSites = async () => {
+      if (!selectedFormProvince) {
+        setFormSites([]);
+        return;
+      }
+      try {
+        const sitesResponse = await getSitesByProvince({
+          provinceId: selectedFormProvince,
+          page: 1,
+          limit: 100,
+        });
+        setFormSites(sitesResponse.result?.data || []);
+      } catch (error) {
+        setFormSites([]);
+      }
+    };
+    fetchFormSites();
+  }, [selectedFormProvince]);
+
+  const handleCreateFieldChange = useCallback((id: string, text: string) => {
+    setCreateUserFields(prev => {
+      // Get current email value from prev state (before this update)
+      const currentEmail = prev.find(f => f.id === 'email')?.value || '';
+      const currentUsername = prev.find(f => f.id === 'username')?.value || '';
+      // Auto-sync username with email only if user hasn't manually customised it
+      // (i.e., username still matches the old email value or is empty)
+      const shouldSyncUsername =
+        id === 'email' && (currentUsername === '' || currentUsername === currentEmail);
+
+      return prev.map(f => {
+        if (f.id === id) return { ...f, value: text, error: '' };
+        if (shouldSyncUsername && f.id === 'username') return { ...f, value: text, error: '' };
+        if (id === 'provinceId' && f.id === 'siteId') return { ...f, value: '', error: '' };
+        return f;
+      });
+    });
+  }, []);
+
+  const openCreateUserModal = useCallback(() => {
+    setCreateUserFields(initialCreateUserFields);
+    setIsCreateUserSubmitting(false);
+    setShowCreateUserPassword(false);
+    setIsCreateUserModalOpen(true);
+  }, [initialCreateUserFields]);
+
+  const closeCreateUserModal = useCallback(() => {
+    setIsCreateUserModalOpen(false);
+  }, []);
+
+  const validateCreateUserForm = useCallback(() => {
+    const errors: Record<string, string> = {};
+    const firstName = getCreateField('firstName');
+    const lastName = getCreateField('lastName');
+    const email = getCreateField('email');
+    const phoneNumber = getCreateField('phoneNumber');
+    const roleId = getCreateField('roleId');
+    const dob = getCreateField('dob');
+    // Accept only YYYY_MM_DD (with underscores) as requested
+    if (dob && !/^\d{4}_\d{2}_\d{2}$/.test(dob)) {
+      errors.dob = 'DOB must be in YYYY_MM_DD format.';
+    }
+
+    const nationalId = getCreateField('nationalId');
+
+    if (nationalId && !/^\d{13}$/.test(nationalId)) {
+      errors.nationalId = 'National ID must be 13 digits.';
+    }
+
+    if (!firstName.trim()) errors.firstName = t('admin.users.createUser.validation.firstNameRequired') || 'First name is required.';
+    else if (!/^[a-zA-Z\s]{2,50}$/.test(firstName.trim())) errors.firstName = 'First name must be 2-50 characters containing only letters.';
+
+    if (!lastName.trim()) errors.lastName = t('admin.users.createUser.validation.lastNameRequired') || 'Last name is required.';
+    else if (!/^[a-zA-Z\s]{2,50}$/.test(lastName.trim())) errors.lastName = 'Last name must be 2-50 characters containing only letters.';
+
+    if (!email.trim()) {
+      errors.email = t('admin.users.createUser.validation.emailRequired') || 'Email is required.';
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      errors.email = t('admin.users.createUser.validation.emailInvalid') || 'Enter a valid email address.';
+    } else {
+      const domain = email.split('@')[1]?.toLowerCase();
+      const isGmailTypo = ['gmai.com', 'gmal.com', 'gamil.com', 'gmaill.com', 'gmail.co', 'gmail.con', 'gmai.co'].includes(domain) || 
+                          (domain.startsWith('gmail') && domain !== 'gmail.com');
+      if (isGmailTypo) {
+        errors.email = 'Please enter a valid @gmail.com address.';
+      }
+    }
+
+    if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) errors.phoneNumber = t('admin.users.createUser.validation.phoneInvalid') || 'Phone number must be exactly 10 digits.';
+    const alternativePhone = getCreateField('alternativePhone');
+    if (alternativePhone && !/^\d{10}$/.test(alternativePhone)) errors.alternativePhone = t('admin.users.createUser.validation.altPhoneInvalid') || 'Alternative phone must be exactly 10 digits.';
+    if (!roleId) errors.roleId = t('admin.users.createUser.validation.roleRequired') || 'Role is required.';
+
+    // Check conditional fields based on Role
+    const selectedRole = roles.find(r => r.id.toString() === roleId);
+    const roleTitle = selectedRole?.title?.toLowerCase() || '';
+    const roleLabel = selectedRole?.label?.toLowerCase() || '';
+    const requiresExtraFields = ['admin', 'supervisor', 'linkage champion', 'participant', 'org_admin', 'tenant_admin', 'lc', 'user'].some(k => roleTitle.includes(k) || roleLabel.includes(k));
+
+    if (requiresExtraFields) {
+      const organisation = getCreateField('organisation');
+      const position = getCreateField('position');
+      const gender = getCreateField('gender');
+      const dob = getCreateField('dob');
+      const username = getCreateField('username');
+      const password = getCreateField('password');
+      const confirmPassword = getCreateField('confirmPassword');
+
+      if (!gender) errors.gender = t('admin.users.createUser.validation.genderRequired') || 'Gender is required.';
+      if (!dob.trim()) errors.dob = t('admin.users.createUser.validation.dobRequired') || 'Date of Birth is required.';
+
+      if (!username.trim()) errors.username = t('admin.users.createUser.validation.usernameRequired') || 'Username is required.';
+      else if (username.trim().length < 3) errors.username = 'Username must be at least 3 characters long.';
+      // Allow email format (auto-synced from email field) OR regular alphanumeric username
+      else if (!/^[a-zA-Z0-9._%+@-]{3,100}$/.test(username.trim())) errors.username = 'Username can only contain letters, numbers, and characters: . _ % + @ -';
+
+      if (!password.trim()) errors.password = t('admin.users.createUser.validation.passwordRequired') || 'Password is required.';
+      else if (password.length < 8) errors.password = t('admin.users.createUser.validation.passwordLength') || 'Password must be at least 8 characters.';
+      else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(password)) {
+        errors.password = t('admin.users.createUser.validation.passwordComplexity') || 'Password must contain at least one uppercase, one lowercase, one number and one special character.';
+      }
+
+      if (!confirmPassword.trim()) errors.confirmPassword = 'Confirm Password is required.';
+      else if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+    }
+
+    setCreateUserFields(prev => prev.map(f => ({ ...f, error: errors[f.id] || '' })));
+    return Object.keys(errors).length === 0;
+  }, [roles, t, getCreateField]);
 
   const closeDeactivateModal = useCallback(() => {
     setDeactivateState({ user: null, isSubmitting: false });
@@ -410,7 +605,7 @@ const UserManagementScreen = () => {
   }, [resetPasswordState.password, resetPasswordState.user, t, showAlert, closeResetPasswordModal]);
 
   const columns = useMemo(
-    () => getUsersColumns({ 
+    () => getUsersColumns({
       onViewProfile: openProfileModal,
       onEdit: openEditUserModal,
       onResetPassword: openResetPasswordModal,
@@ -419,8 +614,8 @@ const UserManagementScreen = () => {
     [openProfileModal, openEditUserModal, openResetPasswordModal, openDeactivateModal]
   );
 
- const displayUsers = useMemo(() => mergeUsersWithProgramParticipantMap(users as any[], programParticipantByUserId),
-  [users, programParticipantByUserId]
+  const displayUsers = useMemo(() => mergeUsersWithProgramParticipantMap(users as any[], programParticipantByUserId),
+    [users, programParticipantByUserId]
   );
 
   // Ref to track previous roles length to detect when roles are first loaded
@@ -445,14 +640,91 @@ const UserManagementScreen = () => {
     loadPageSize();
   }, []);
 
-  // Use custom hook for filter management - handles all API calls for roles, provinces
-  const { filters: filterOptions, roles, provinces } = useUserManagementFilters(filters);
+  const handleCreateUserSubmit = useCallback(async () => {
+    if (!validateCreateUserForm()) return;
+
+    setIsCreateUserSubmitting(true);
+
+    try {
+      const roleId = getCreateField('roleId');
+      // Find role title
+      const selectedRole = roles.find(r => r.id.toString() === roleId);
+      const roleTitle = selectedRole?.title || roleId;
+      const roleLabel = selectedRole?.label || '';
+
+      const requiresExtraFields = ['admin', 'supervisor', 'linkage champion', 'participant', 'org_admin', 'tenant_admin', 'lc', 'user'].some(k => roleTitle.toLowerCase().includes(k) || roleLabel.toLowerCase().includes(k));
+
+      const payload: any = {
+        name: `${getCreateField('firstName')} ${getCreateField('lastName')}`.trim(),
+        username: getCreateField('username'),
+        email: getCreateField('email'),
+        roles: roleTitle, // Send the mapped string title (e.g. 'tenant_admin') instead of numeric ID
+        password: getCreateField('password'),
+      };
+
+      // Only include optional fields when they have a value
+      // API requires dob WITHOUT special characters (no / or -), so strip separators → YYYYMMDD
+      const dob = getCreateField('dob');
+      if (dob) {
+        payload.dob = dob.replace(/[\/\-]/g, ''); // "2000/09/08" → "20000908"
+      }
+      const gender = getCreateField('gender');
+      if (gender) payload.gender = gender;
+
+      const site = getCreateField('siteId');
+      if (site) payload.site = site;
+
+      const province = getCreateField('provinceId');
+      if (province) payload.province = province;
+
+      const phone = getCreateField('phoneNumber');
+      if (phone) payload.phone = phone;
+
+      const phoneCode = getCreateField('countryCode').replace('+', '');
+      if (phone && phoneCode) payload.phone_code = phoneCode;
+
+      const altPhone = getCreateField('alternativePhone');
+      if (altPhone) payload.alternative_phone = altPhone;
+
+      const altPhoneCode = getCreateField('alternativePhoneCode').replace('+', '');
+      if (altPhone && altPhoneCode) payload.alternative_phone_code = altPhoneCode;
+
+      const nationalIdVal = getCreateField('nationalId');
+      if (nationalIdVal) {
+        payload.national_id = Number(nationalIdVal);
+      }
+
+      console.log('[CreateUser] Payload being sent:', JSON.stringify(payload, null, 2));
+
+
+      await createUser(payload);
+
+      // Show alert BEFORE closing modal so it is visible to the user
+      showAlert('success', t('admin.users.createUser.success') || 'User created successfully.', { placement: 'bottom' });
+      setIsCreateUserSubmitting(false);
+      closeCreateUserModal();
+      setRefetchKey(k => k + 1);
+    } catch (error: any) {
+      const errMsg =
+        (error as any)?.data?.message ||
+        (error as any)?.message ||
+        t('admin.users.createUser.error') ||
+        'Failed to create user.';
+      showAlert('error', errMsg, { placement: 'bottom' });
+      setIsCreateUserSubmitting(false);
+    }
+  }, [roles, validateCreateUserForm, showAlert, t, closeCreateUserModal, getCreateField]);
 
   // Fetch users from API when filters change or when roles are first loaded
   useEffect(() => {
     // Check if roles just loaded (length changed from 0 to > 0)
     const rolesJustLoaded = prevRolesLengthRef.current === 0 && roles.length > 0;
     prevRolesLengthRef.current = roles.length;
+
+    // Don't fetch if filters are still loading
+    if (isFiltersLoading) {
+      return;
+    }
 
     // Don't fetch if roles haven't loaded yet (needed for type parameter)
     // Unless a specific role filter is set or roles just loaded
@@ -538,7 +810,7 @@ const UserManagementScreen = () => {
                 excludeMapped: false,
                 userIds,
               });
-             
+
               const other = participantsResponse.result?.data || [];
               setProgramParticipantByUserId(programParticipantsArrayToMap(other));
             } catch (e) {
@@ -547,13 +819,13 @@ const UserManagementScreen = () => {
           })();
         }
       } catch (error) {
-          //setDisplayUsers([]);
-          setUsers([]);
-          setTotalCount(0);
-          setProgramParticipantByUserId({});
-        
+        //setDisplayUsers([]);
+        setUsers([]);
+        setTotalCount(0);
+        setProgramParticipantByUserId({});
+
       } finally {
-          setIsLoading(false);   
+        setIsLoading(false);
       }
     };
 
@@ -687,15 +959,13 @@ const UserManagementScreen = () => {
               <ButtonIcon as={LucideIcon} name="Upload" size={16} />
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.actions.bulkUploadCSV')}</ButtonText>
             </Button>
-            {/* <Button variant={"solid" as any}
-              onPress={() => {
-                // Handle create user
-              }}
+            <Button variant={"solid" as any}
+              onPress={openCreateUserModal}
               isDisabled={isUploading}
             >
               <ButtonIcon as={LucideIcon} name="SquarePen" size={16} />
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.actions.createUser')}</ButtonText>
-            </Button> */}
+            </Button>
           </HStack>
         }
       />
@@ -762,23 +1032,23 @@ const UserManagementScreen = () => {
             emptyMessage="admin.users.noUsersFound"
             loadingMessage="admin.users.loadingUsers"
             _css={{
-              _table:{
+              _table: {
                 borderRadius: '$md',
                 borderWidth: 0,
               },
-              _header:{
-                _tableHeader:{
-                borderBottomWidth: 1,
+              _header: {
+                _tableHeader: {
+                  borderBottomWidth: 1,
                   borderBottomColor: '$borderLight300' as const,
                   bg: '#fff' as const,
                   borderTopLeftRadius: '$md' as const,
                   borderTopRightRadius: '$md' as const,
                 },
-                _thText:{
+                _thText: {
                   fontWeight: '$medium',
-                
+
                 },
-              
+
               }
             }}
           />
@@ -926,7 +1196,7 @@ const UserManagementScreen = () => {
               </Text>
             </VStack>
           ) : (
-            <VStack space="lg"  alignItems="stretch">
+            <VStack space="lg" alignItems="stretch">
               {/* Personal Information */}
               <VStack space="sm">
                 <HStack space="xs" alignItems="center">
@@ -1111,7 +1381,7 @@ const UserManagementScreen = () => {
           </HStack>
         }
       >
-        <VStack space="lg" width="100%">
+        <VStack key={resetPasswordState.user?.id || 'empty'} space="lg" width="100%">
           {/* Username Field - Read Only */}
           <VStack space="xs" width="100%">
             <Text {...TYPOGRAPHY.bodySmall} fontWeight="$medium" color="$textForeground">
@@ -1139,10 +1409,10 @@ const UserManagementScreen = () => {
             </Text>
             <Box position="relative">
               <Input isDisabled={resetPasswordState.isSubmitting} isInvalid={!!resetPasswordState.error}>
-                <InputField
+                <FastInputField
                   placeholder={t('admin.users.resetPassword.passwordPlaceholder') || 'Enter new password'}
                   value={resetPasswordState.password}
-                  onChangeText={(text) => {
+                  onChangeText={(text: string) => {
                     setResetPasswordState(prev => ({
                       ...prev,
                       password: text,
@@ -1270,7 +1540,7 @@ const UserManagementScreen = () => {
           />
         }
       >
-        <VStack space="md" width="100%">
+        <VStack key={editUserState.user?.id || 'empty'} space="md" width="100%">
           {/* Content */}
           {editUserState.isLoading ? (
             <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
@@ -1304,9 +1574,9 @@ const UserManagementScreen = () => {
                         {t('admin.users.profileModal.fullName')}
                       </Text>
                       <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
-                        <InputField
+                        <FastInputField
                           value={editUserState.name}
-                          onChangeText={(text) => setEditUserState(prev => ({ ...prev, name: text }))}
+                          onChangeText={(text: string) => setEditUserState(prev => ({ ...prev, name: text }))}
                           placeholder={t('admin.users.profileModal.fullName')}
                           {...styles.editUserEditableInputField}
                         />
@@ -1462,6 +1732,37 @@ const UserManagementScreen = () => {
             </Button>
           </HStack>
         </VStack>
+      </Modal>
+
+      {/* Create New User Modal */}
+      <Modal
+        isOpen={isCreateUserModalOpen}
+        onClose={closeCreateUserModal}
+        size="lg"
+        headerTitle={t('admin.users.createUser.title') || 'Create New User'}
+        headerDescription={t('admin.users.createUser.description') || 'Add a new user to the system. Required fields are marked with *.'}
+        showCloseButton={true}
+        closeOnOverlayClick={!isCreateUserSubmitting}
+        style={{ zIndex: 9999 }}
+      >
+        <CreateUserForm
+          isMobile={isMobile}
+          t={t}
+          roles={roles}
+          provinces={provinces}
+          sites={formSites}
+          genders={genders}
+          COUNTRY_CODES={COUNTRY_CODES}
+          getCreateField={getCreateField}
+          handleCreateFieldChange={handleCreateFieldChange}
+          getCreateError={getCreateError}
+          isCreateUserSubmitting={isCreateUserSubmitting}
+          showCreateUserPassword={showCreateUserPassword}
+          setShowCreateUserPassword={setShowCreateUserPassword}
+          isCreateUserModalOpen={isCreateUserModalOpen}
+          onClose={closeCreateUserModal}
+          onSubmit={handleCreateUserSubmit}
+        />
       </Modal>
 
       {/* Hidden File Input for CSV Upload - triggers native file picker on "Upload CSV" click */}

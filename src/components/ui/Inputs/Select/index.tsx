@@ -16,6 +16,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  TextInput,
   TouchableWithoutFeedback,
 } from 'react-native';
 
@@ -68,6 +69,7 @@ type SelectProps = {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: string | number;
   disabled?: boolean;
+  searchable?: boolean;
 };
 
 const DROPDOWN_Z = 100000;
@@ -197,6 +199,7 @@ function WebSelect({
   size = 'sm',
   borderRadius = 10,
   disabled = false,
+  searchable = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
@@ -237,6 +240,17 @@ function WebSelect({
 
   const [open, setOpen] =
     useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !searchQuery) return normalizedOptions;
+    const lowerQuery = searchQuery.toLowerCase();
+    return normalizedOptions.filter(opt => {
+      const label = opt.nativeName || opt.name || opt.value;
+      return label.toLowerCase().includes(lowerQuery) || String(opt.value).toLowerCase().includes(lowerQuery);
+    });
+  }, [normalizedOptions, searchable, searchQuery]);
 
   const [pos, setPos] =
     useState<DropdownPosition>({
@@ -497,11 +511,34 @@ function WebSelect({
     >
       <ScrollView
         nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
         style={{
           maxHeight: pos.maxHeight,
         }}
       >
-        {normalizedOptions.map(
+        {searchable && (
+          <Box p="$2" borderBottomWidth={1} borderColor="$borderColor">
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={i18n.t('common.search', 'Search...')}
+              style={{
+                padding: 8,
+                fontSize: 14,
+                fontFamily: 'Inter',
+                color: '#000',
+                backgroundColor: '#f5f5f5',
+                borderRadius: 6,
+              }}
+              autoFocus
+            />
+          </Box>
+        )}
+        {filteredOptions.length === 0 ? (
+          <Box py="$3" px="$3">
+            <Text fontSize="$sm" color="$textMutedForeground">{i18n.t('common.noDataFound', 'No data found')}</Text>
+          </Box>
+        ) : filteredOptions.map(
           (option, index) => {
             const label =
               option.nativeName ||
@@ -650,6 +687,7 @@ function NativeSelect({
   size = 'sm',
   borderRadius = 10,
   disabled = false,
+  searchable = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
@@ -680,6 +718,17 @@ function NativeSelect({
 
   const [open, setOpen] =
     useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !searchQuery) return normalizedOptions;
+    const lowerQuery = searchQuery.toLowerCase();
+    return normalizedOptions.filter(opt => {
+      const label = opt.nativeName || opt.name || opt.value;
+      return label.toLowerCase().includes(lowerQuery) || String(opt.value).toLowerCase().includes(lowerQuery);
+    });
+  }, [normalizedOptions, searchable, searchQuery]);
 
   const [dropdownLayout, setDropdownLayout] =
     useState({
@@ -1031,7 +1080,28 @@ function NativeSelect({
                     false
                   }
                 >
-                  {normalizedOptions.map(
+                  {searchable && (
+                    <Box p="$2" borderBottomWidth={1} borderColor="$borderColor">
+                      <TextInput
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder={i18n.t('common.search', 'Search...')}
+                        style={{
+                          padding: 8,
+                          fontSize: 14,
+                          fontFamily: 'Inter',
+                          color: '#000',
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: 6,
+                        }}
+                      />
+                    </Box>
+                  )}
+                  {filteredOptions.length === 0 ? (
+                    <Box py="$3" px="$3">
+                      <Text fontSize="$sm" color="$textMutedForeground">{i18n.t('common.noDataFound', 'No data found')}</Text>
+                    </Box>
+                  ) : filteredOptions.map(
                     (
                       option,
                       index,
