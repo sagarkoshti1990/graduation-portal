@@ -491,6 +491,9 @@ export const createUser = async (
     phone_code?: string;
     alternative_phone?: string;
     alternative_phone_code?: string;
+    organisation?: string;
+    position?: string;
+    employee_id?: string;
   }
 ): Promise<any> => {
   try {
@@ -502,35 +505,88 @@ export const createUser = async (
 };
 
 /**
- * Get provinces list - Helper function that handles entity type fetching and caching
- * Fetches provinces by first getting entity types (from cache or API), then fetching provinces
- * This encapsulates the common pattern used across the application
+ * Get gender list - Fetches genders using entity type API
  * 
- * @returns A promise resolving to an array of ProvinceEntity, or empty array on error
+ * @returns A promise resolving to an array of entities, or empty array on error
  */
 export const getGenderList = async (): Promise<ProvinceEntity[]> => {
   try {
-    // First, check if entity types are in storage
     let entityTypes = await getEntityTypesFromStorage();
 
-    // If not in storage, fetch entity types from API
     if (!entityTypes || !entityTypes['gender']) {
       await getEntityTypesList();
       entityTypes = await getEntityTypesFromStorage();
     }
 
-    // Get province entity type ID
     const entityTypeId = entityTypes?.['gender'];
 
     if (!entityTypeId) {
       return [];
     }
 
-    // Fetch provinces using the entity type ID
     const response = await getProvincesByEntityType(entityTypeId);
     return response.result || [];
   } catch (error) {
     console.error('Error fetching gender list:', error);
+    return [];
+  }
+};
+
+/**
+ * Get organisation list - Fetches organisations using the same entity type API as provinces
+ * Uses entity type key 'organisation' with the same getProvincesByEntityType endpoint
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getOrganisationList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    let entityTypes = await getEntityTypesFromStorage();
+
+    if (!entityTypes || !Object.keys(entityTypes).some(k => k.toLowerCase().includes('org'))) {
+      await getEntityTypesList();
+      entityTypes = await getEntityTypesFromStorage();
+    }
+
+    const orgKey = Object.keys(entityTypes || {}).find(k => k.toLowerCase().includes('org'));
+    const entityTypeId = orgKey ? entityTypes?.[orgKey] : undefined;
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching organisation list:', error);
+    return [];
+  }
+};
+
+/**
+ * Get position list - Fetches positions using the same entity type API as provinces
+ * Uses entity type key 'position' with the same getProvincesByEntityType endpoint
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getPositionList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    let entityTypes = await getEntityTypesFromStorage();
+
+    if (!entityTypes || !entityTypes['position']) {
+      await getEntityTypesList();
+      entityTypes = await getEntityTypesFromStorage();
+    }
+
+    const entityTypeId = entityTypes?.['position'];
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching position list:', error);
     return [];
   }
 };

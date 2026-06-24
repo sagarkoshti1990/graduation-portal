@@ -14,6 +14,8 @@ interface CreateUserFormProps {
   provinces: any[];
   sites: any[];
   genders: any[];
+  organisations: any[];
+  positions: any[];
   COUNTRY_CODES: any[];
   getCreateField: (field: string) => any;
   handleCreateFieldChange: (field: string, value: any) => void;
@@ -33,6 +35,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   provinces,
   sites,
   genders,
+  organisations,
+  positions,
   COUNTRY_CODES,
   getCreateField,
   handleCreateFieldChange,
@@ -55,6 +59,22 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       return () => clearTimeout(timer);
     }
   }, [isCreateUserModalOpen]);
+
+  // Determine selected role type for conditional field visibility
+  const roleId = getCreateField('roleId');
+  const selRole = roles.find(r => r.id.toString() === roleId);
+  const roleTitle = (selRole?.title?.toLowerCase() || '');
+  const roleLabel = (selRole?.label?.toLowerCase() || '');
+
+  const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
+    k => roleTitle.includes(k) || roleLabel.includes(k)
+  );
+  const isParticipant = ['participant', 'user'].some(
+    k => roleTitle.includes(k) || roleLabel.includes(k)
+  );
+  // Show additional fields for any valid role selection (Supervisor, LC, or Participant)
+  const showAdditionalFields = isSupervisorOrLC || isParticipant;
+
   return (
     <VStack key={isCreateUserModalOpen ? 'open' : 'closed'} space="md" width="100%">
       {/* Personal Information */}
@@ -100,40 +120,24 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           </VStack>
         </HStack>
 
-        <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
-          <VStack space="xs" flex={1}>
-            <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.email') || 'Email Address *'}
-            </Text>
-            <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('email')} isDisabled={isCreateUserSubmitting} alignItems="center">
-              <Box pr="$2">
-                <LucideIcon name="Mail" size={16} color="$textMutedForeground" />
-              </Box>
-              <FastInputField
-                placeholder={t('admin.users.createUser.emailPlaceholder') || 'user@skillssa.co.za'}
-                value={getCreateField('email')}
-                onChangeText={(text: string) => handleCreateFieldChange('email', text)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </Input>
-            {getCreateError('email') && <Text color="$error600" fontSize="$xs">{getCreateError('email')}</Text>}
-          </VStack>
-          <VStack space="xs" flex={1}>
-            <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.nationalId') || 'National ID'}
-            </Text>
-            <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('nationalId')} isDisabled={isCreateUserSubmitting}>
-              <FastInputField
-                placeholder={t('admin.users.createUser.nationalIdPlaceholder') || 'Enter National ID'}
-                value={getCreateField('nationalId')}
-                onChangeText={(text: string) => handleCreateFieldChange('nationalId', text)}
-                keyboardType="numeric"
-              />
-            </Input>
-            {getCreateError('nationalId') && <Text color="$error600" fontSize="$xs">{getCreateError('nationalId')}</Text>}
-          </VStack>
-        </HStack>
+        <VStack space="xs" width={isMobile ? '100%' : '100%'}>
+          <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+            {t('admin.users.createUser.email') || 'Email Address *'}
+          </Text>
+          <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('email')} isDisabled={isCreateUserSubmitting} alignItems="center">
+            <Box pr="$2">
+              <LucideIcon name="Mail" size={16} color="$textMutedForeground" />
+            </Box>
+            <FastInputField
+              placeholder={t('admin.users.createUser.emailPlaceholder') || 'user@skillssa.co.za'}
+              value={getCreateField('email')}
+              onChangeText={(text: string) => handleCreateFieldChange('email', text)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </Input>
+          {getCreateError('email') && <Text color="$error600" fontSize="$xs">{getCreateError('email')}</Text>}
+        </VStack>
 
         <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
           <VStack space="xs" flex={1}>
@@ -158,7 +162,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             </Text>
             <Input {...styles.createUserFormInput} isDisabled={isCreateUserSubmitting}>
               <FastInputField
-                placeholder={t('admin.users.createUser.phoneNumberPlaceholder') || '00 000 0000'}
+                placeholder={t('admin.users.createUser.phoneNumberPlaceholder') || '000 000 000'}
                 value={getCreateField('phoneNumber')}
                 onChangeText={(text: string) => handleCreateFieldChange('phoneNumber', text)}
                 keyboardType="phone-pad"
@@ -192,7 +196,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             </Text>
             <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('alternativePhone')} isDisabled={isCreateUserSubmitting}>
               <FastInputField
-                placeholder={t('admin.users.createUser.alternativePhonePlaceholder') || '00 000 0000'}
+                placeholder={t('admin.users.createUser.alternativePhonePlaceholder') || '000 000 000'}
                 value={getCreateField('alternativePhone')}
                 onChangeText={(text: string) => handleCreateFieldChange('alternativePhone', text)}
                 keyboardType="phone-pad"
@@ -233,135 +237,207 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         </VStack>
       </VStack>
 
-      {/* Conditional Fields block based on selected role */}
-      {(() => {
-        const roleId = getCreateField('roleId');
-        const selRole = roles.find(r => r.id.toString() === roleId);
-        const isExtraRequired = ['admin', 'supervisor', 'linkage champion', 'participant', 'org_admin', 'tenant_admin', 'lc', 'user'].some(k => (selRole?.title?.toLowerCase() || '').includes(k) || (selRole?.label?.toLowerCase() || '').includes(k));
-        if (!isExtraRequired) return null;
-        return (
-          <>
-            <VStack space="sm">
-              <HStack space="xs" alignItems="center">
-                <LucideIcon name="FileText" size={16} color="$textMutedForeground" />
-                <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$normal">
-                  {t('admin.users.createUser.additionalInformation') || 'Additional Information'}
-                </Text>
-              </HStack>
+      {/* Additional Information — shown when a valid role is selected */}
+      {showAdditionalFields && (
+        <VStack space="sm">
+          <HStack space="xs" alignItems="center">
+            <LucideIcon name="FileText" size={16} color="$textMutedForeground" />
+            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$normal">
+              {t('admin.users.createUser.additionalInformation') || 'Additional Information'}
+            </Text>
+          </HStack>
 
+          <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
+            <VStack space="xs" flex={1}>
+              <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                {t('admin.users.createUser.gender') || 'Gender *'}
+              </Text>
+              <Box>
+                <Select
+                  {...styles.createUserFormSelect}
+                  options={[
+                    { value: '', label: 'Select gender' },
+                    ...genders.map(g => ({ value: g._id, label: g.name }))
+                  ]}
+                  value={getCreateField('gender')}
+                  onChange={(val) => handleCreateFieldChange('gender', val)}
+                  placeholder="Select gender"
+                  disabled={isCreateUserSubmitting}
+                />
+              </Box>
+              {getCreateError('gender') && <Text color="$error600" fontSize="$xs">{getCreateError('gender')}</Text>}
+            </VStack>
+            <VStack space="xs" flex={1}>
+              <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                {t('admin.users.createUser.dob') || 'DOB *'}
+              </Text>
+              <Box zIndex={999}>
+                <DatePicker
+                  {...styles.createUserFormInput}
+                  placeholder="YYYY_MM_DD"
+                  value={getCreateField('dob') ? getCreateField('dob').replace(/_/g, '-') : ''}
+                  onChange={(date: string) => handleCreateFieldChange('dob', date.replace(/-/g, '_'))}
+                />
+              </Box>
+              {getCreateError('dob') && <Text color="$error600" fontSize="$xs">{getCreateError('dob')}</Text>}
+            </VStack>
+          </HStack>
+
+          <VStack space="xs">
+            <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+              {t('admin.users.createUser.username') || 'Username *'}
+            </Text>
+            <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('username')} isDisabled={isCreateUserSubmitting}>
+              <FastInputField
+                placeholder="Enter username"
+                value={getCreateField('username')}
+                onChangeText={(text: string) => handleCreateFieldChange('username', text)}
+              />
+            </Input>
+            {getCreateError('username') && <Text color="$error600" fontSize="$xs">{getCreateError('username')}</Text>}
+          </VStack>
+
+          <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
+            <VStack space="xs" flex={1}>
+              <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                {t('admin.users.createUser.password') || 'Password *'}
+              </Text>
+              <Box position="relative">
+                <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('password')} isDisabled={isCreateUserSubmitting}>
+                  <FastInputField
+                    placeholder="Enter password"
+                    value={getCreateField('password')}
+                    onChangeText={(text: string) => handleCreateFieldChange('password', text)}
+                    secureTextEntry={!showCreateUserPassword}
+                    pr="$12"
+                  />
+                </Input>
+                <Pressable
+                  onPress={() => setShowCreateUserPassword(!showCreateUserPassword)}
+                  disabled={isCreateUserSubmitting}
+                  style={styles.resetPasswordEyeIconButton}
+                >
+                  <LucideIcon
+                    name={showCreateUserPassword ? 'EyeOff' : 'Eye'}
+                    size={20}
+                    color="#6B7280"
+                  />
+                </Pressable>
+              </Box>
+              {getCreateError('password') && <Text color="$error600" fontSize="$xs">{getCreateError('password')}</Text>}
+            </VStack>
+
+            <VStack space="xs" flex={1}>
+              <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                {t('admin.users.createUser.confirmPassword') || 'Confirm Password *'}
+              </Text>
+              <Box position="relative">
+                <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('confirmPassword')} isDisabled={isCreateUserSubmitting}>
+                  <FastInputField
+                    placeholder="Confirm password"
+                    value={getCreateField('confirmPassword')}
+                    onChangeText={(text: string) => handleCreateFieldChange('confirmPassword', text)}
+                    secureTextEntry={!showCreateUserPassword}
+                    pr="$12"
+                  />
+                </Input>
+                <Pressable
+                  onPress={() => setShowCreateUserPassword(!showCreateUserPassword)}
+                  disabled={isCreateUserSubmitting}
+                  style={styles.resetPasswordEyeIconButton}
+                >
+                  <LucideIcon
+                    name={showCreateUserPassword ? 'EyeOff' : 'Eye'}
+                    size={20}
+                    color="#6B7280"
+                  />
+                </Pressable>
+              </Box>
+              {getCreateError('confirmPassword') && <Text color="$error600" fontSize="$xs">{getCreateError('confirmPassword')}</Text>}
+            </VStack>
+          </HStack>
+
+          {/* Organisation, Position, Employee ID — only for Supervisor/LC roles */}
+          {isSupervisorOrLC && (
+            <>
               <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
                 <VStack space="xs" flex={1}>
                   <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                    {t('admin.users.createUser.gender') || 'Gender *'}
+                    {t('admin.users.createUser.organisation') || 'Organisation *'}
                   </Text>
                   <Box>
                     <Select
                       {...styles.createUserFormSelect}
                       options={[
-                        { value: '', label: 'Select gender' },
-                        ...genders.map(g => ({ value: g._id, label: g.name }))
+                        { value: '', label: t('admin.users.createUser.organisationPlaceholder') || 'Select organisation' },
+                        ...organisations.map(o => ({ value: o._id, label: o.name }))
                       ]}
-                      value={getCreateField('gender')}
-                      onChange={(val) => handleCreateFieldChange('gender', val)}
-                      placeholder="Select gender"
+                      value={getCreateField('organisationId')}
+                      onChange={(val) => handleCreateFieldChange('organisationId', val)}
+                      placeholder={t('admin.users.createUser.organisationPlaceholder') || 'Select organisation'}
                       disabled={isCreateUserSubmitting}
                     />
                   </Box>
-                  {getCreateError('gender') && <Text color="$error600" fontSize="$xs">{getCreateError('gender')}</Text>}
+                  {getCreateError('organisationId') && <Text color="$error600" fontSize="$xs">{getCreateError('organisationId')}</Text>}
                 </VStack>
                 <VStack space="xs" flex={1}>
                   <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                    {t('admin.users.createUser.dob') || 'DOB *'}
+                    {t('admin.users.createUser.position') || 'Position *'}
                   </Text>
-                  <Box zIndex={999}>
-                    <DatePicker
-                      {...styles.createUserFormInput}
-                      placeholder="YYYY_MM_DD"
-                      value={getCreateField('dob') ? getCreateField('dob').replace(/_/g, '-') : ''}
-                      onChange={(date: string) => handleCreateFieldChange('dob', date.replace(/-/g, '_'))}
+                  <Box>
+                    <Select
+                      {...styles.createUserFormSelect}
+                      options={[
+                        { value: '', label: t('admin.users.createUser.positionPlaceholder') || 'Select position' },
+                        ...positions.map(p => ({ value: p._id, label: p.name }))
+                      ]}
+                      value={getCreateField('positionId')}
+                      onChange={(val) => handleCreateFieldChange('positionId', val)}
+                      placeholder={t('admin.users.createUser.positionPlaceholder') || 'Select position'}
+                      disabled={isCreateUserSubmitting}
                     />
                   </Box>
-                  {getCreateError('dob') && <Text color="$error600" fontSize="$xs">{getCreateError('dob')}</Text>}
+                  {getCreateError('positionId') && <Text color="$error600" fontSize="$xs">{getCreateError('positionId')}</Text>}
                 </VStack>
               </HStack>
+            </>
+          )}
 
-              <VStack space="xs">
+          {/* National ID & Employee ID combined */}
+          <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
+            {isSupervisorOrLC && (
+              <VStack space="xs" flex={1}>
                 <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                  {t('admin.users.createUser.username') || 'Username *'}
+                  {t('admin.users.createUser.employeeId') || 'Employee ID *'}
                 </Text>
-                <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('username')} isDisabled={isCreateUserSubmitting}>
+                <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('employeeId')} isDisabled={isCreateUserSubmitting}>
                   <FastInputField
-                    placeholder="Enter username"
-                    value={getCreateField('username')}
-                    onChangeText={(text: string) => handleCreateFieldChange('username', text)}
+                    placeholder={t('admin.users.createUser.employeeIdPlaceholder') || 'Enter Employee ID'}
+                    value={getCreateField('employeeId')}
+                    onChangeText={(text: string) => handleCreateFieldChange('employeeId', text)}
                   />
                 </Input>
-                {getCreateError('username') && <Text color="$error600" fontSize="$xs">{getCreateError('username')}</Text>}
+                {getCreateError('employeeId') && <Text color="$error600" fontSize="$xs">{getCreateError('employeeId')}</Text>}
               </VStack>
+            )}
 
-              <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
-                <VStack space="xs" flex={1}>
-                  <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                    {t('admin.users.createUser.password') || 'Password *'}
-                  </Text>
-                  <Box position="relative">
-                    <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('password')} isDisabled={isCreateUserSubmitting}>
-                      <FastInputField
-                        placeholder="Enter password"
-                        value={getCreateField('password')}
-                        onChangeText={(text: string) => handleCreateFieldChange('password', text)}
-                        secureTextEntry={!showCreateUserPassword}
-                        pr="$12"
-                      />
-                    </Input>
-                    <Pressable
-                      onPress={() => setShowCreateUserPassword(!showCreateUserPassword)}
-                      disabled={isCreateUserSubmitting}
-                      style={styles.resetPasswordEyeIconButton}
-                    >
-                      <LucideIcon
-                        name={showCreateUserPassword ? 'EyeOff' : 'Eye'}
-                        size={20}
-                        color="#6B7280"
-                      />
-                    </Pressable>
-                  </Box>
-                  {getCreateError('password') && <Text color="$error600" fontSize="$xs">{getCreateError('password')}</Text>}
-                </VStack>
-
-                <VStack space="xs" flex={1}>
-                  <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                    {t('admin.users.createUser.confirmPassword') || 'Confirm Password *'}
-                  </Text>
-                  <Box position="relative">
-                    <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('confirmPassword')} isDisabled={isCreateUserSubmitting}>
-                      <FastInputField
-                        placeholder="Confirm password"
-                        value={getCreateField('confirmPassword')}
-                        onChangeText={(text: string) => handleCreateFieldChange('confirmPassword', text)}
-                        secureTextEntry={!showCreateUserPassword}
-                        pr="$12"
-                      />
-                    </Input>
-                    <Pressable
-                      onPress={() => setShowCreateUserPassword(!showCreateUserPassword)}
-                      disabled={isCreateUserSubmitting}
-                      style={styles.resetPasswordEyeIconButton}
-                    >
-                      <LucideIcon
-                        name={showCreateUserPassword ? 'EyeOff' : 'Eye'}
-                        size={20}
-                        color="#6B7280"
-                      />
-                    </Pressable>
-                  </Box>
-                  {getCreateError('confirmPassword') && <Text color="$error600" fontSize="$xs">{getCreateError('confirmPassword')}</Text>}
-                </VStack>
-              </HStack>
+            <VStack space="xs" flex={1}>
+              <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                {t('admin.users.createUser.nationalId') || 'National ID'}
+              </Text>
+              <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('nationalId')} isDisabled={isCreateUserSubmitting}>
+                <FastInputField
+                  placeholder={t('admin.users.createUser.nationalIdPlaceholder') || 'Enter National ID'}
+                  value={getCreateField('nationalId')}
+                  onChangeText={(text: string) => handleCreateFieldChange('nationalId', text)}
+                  keyboardType="numeric"
+                />
+              </Input>
+              {getCreateError('nationalId') && <Text color="$error600" fontSize="$xs">{getCreateError('nationalId')}</Text>}
             </VStack>
-          </>
-        );
-      })()}
+          </HStack>
+        </VStack>
+      )}
 
       {/* Geographic Assignment */}
       <VStack space="sm">
@@ -393,7 +469,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           </VStack>
           <VStack space="xs" flex={1}>
             <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.districtMunicipality') || 'District/Municipality'}
+              {t('admin.users.createUser.districtMunicipality') || 'Site'}
             </Text>
             <Box>
               <Select

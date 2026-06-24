@@ -10,6 +10,8 @@ import {
   getProvincesList,
   getSitesByProvince,
   getGenderList,
+  getOrganisationList,
+  getPositionList,
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
 import { useIsSupervisor } from '../contexts/AuthContext';
@@ -83,6 +85,8 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [provinces, setProvinces] = useState<ProvinceEntity[]>([]);
   const [genders, setGenders] = useState<any[]>([]);
+  const [organisations, setOrganisations] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [sites, setSites] = useState<SiteEntity[]>([]);
   const [isFiltersLoading, setIsFiltersLoading] = useState(true);
 
@@ -117,12 +121,17 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
         setRoles([]);
       }
 
-      // Fetch provinces
-      const provincesData = await getProvincesList();
-      const genderData = await getGenderList();
-      console.log('genderData', genderData);
+      // Fetch provinces, genders, organisations, and positions
+      const [provincesData, genderData, organisationData, positionData] = await Promise.all([
+        getProvincesList(),
+        getGenderList(),
+        getOrganisationList(),
+        getPositionList(),
+      ]);
       setProvinces(provincesData);
       setGenders(genderData);
+      setOrganisations(organisationData);
+      setPositions(positionData);
       setIsFiltersLoading(false);
     };
 
@@ -238,6 +247,8 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
     roles,
     provinces,
     genders,
+    organisations,
+    positions,
     sites,
     isFiltersLoading,
   };

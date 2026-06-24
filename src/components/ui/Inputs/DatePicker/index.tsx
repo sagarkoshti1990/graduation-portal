@@ -250,10 +250,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
         style={datePickerStyles.getContainerBoxStyle(Platform.OS) as any}
       >
         <Pressable onPress={handleToggle}>
-          <Box {...datePickerStyles.inputContainer} {...inputProps} data-date-input={Platform.OS === 'web'}>
-            <Input pointerEvents="none">
+          <Box {...datePickerStyles.inputContainer} data-date-input={Platform.OS === 'web'}>
+            <Input pointerEvents="none" {...inputProps}>
               <HStack {...datePickerStyles.inputHStack}>
-                <LucideIcon name="Calendar" size={16} color="$textMutedForeground" />
+                <LucideIcon name="Calendar" size={20} color="$textMutedForeground" />
                 <InputField
                   placeholder={placeholder}
                   value={displayValue}

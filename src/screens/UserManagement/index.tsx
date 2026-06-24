@@ -231,7 +231,7 @@ const UserManagementScreen = () => {
   const [filters, setFilters] = useState<Record<string, any>>({});
 
   // Use custom hook for filter management - handles all API calls for roles, provinces
-  const { filters: filterOptions, roles, provinces, genders, isFiltersLoading } = useUserManagementFilters(filters);
+  const { filters: filterOptions, roles, provinces, genders, organisations, positions, isFiltersLoading } = useUserManagementFilters(filters);
 
   // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
   const [users, setUsers] = useState<AdminUserManagementData[]>([]);
@@ -299,6 +299,9 @@ const UserManagementScreen = () => {
     { id: 'roleId', value: '', error: '' },
     { id: 'provinceId', value: '', error: '' },
     { id: 'siteId', value: '', error: '' },
+    { id: 'organisationId', value: '', error: '' },
+    { id: 'positionId', value: '', error: '' },
+    { id: 'employeeId', value: '', error: '' },
   ], []);
 
   const [createUserFields, setCreateUserFields] = useState(initialCreateUserFields);
@@ -399,9 +402,16 @@ const UserManagementScreen = () => {
       }
     }
 
-    if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) errors.phoneNumber = t('admin.users.createUser.validation.phoneInvalid') || 'Phone number must be exactly 10 digits.';
+    if (!phoneNumber.trim()) {
+      errors.phoneNumber = t('admin.users.createUser.validation.phoneRequired') || 'Phone number is required.';
+    } else if (!/^\d{9,10}$/.test(phoneNumber)) {
+      errors.phoneNumber = t('admin.users.createUser.validation.phoneInvalid') || 'Phone number must be 9 or 10 digits.';
+    }
+
     const alternativePhone = getCreateField('alternativePhone');
-    if (alternativePhone && !/^\d{10}$/.test(alternativePhone)) errors.alternativePhone = t('admin.users.createUser.validation.altPhoneInvalid') || 'Alternative phone must be exactly 10 digits.';
+    if (alternativePhone && !/^\d{9,10}$/.test(alternativePhone)) {
+      errors.alternativePhone = t('admin.users.createUser.validation.altPhoneInvalid') || 'Alternative phone must be 9 or 10 digits.';
+    }
     if (!roleId) errors.roleId = t('admin.users.createUser.validation.roleRequired') || 'Role is required.';
 
     // Check conditional fields based on Role
@@ -435,6 +445,21 @@ const UserManagementScreen = () => {
 
       if (!confirmPassword.trim()) errors.confirmPassword = 'Confirm Password is required.';
       else if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+
+      // Organisation, Position, and Employee ID — required only for Supervisor/LC (org_admin)
+      const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(k => roleTitle.includes(k) || roleLabel.includes(k));
+      if (isSupervisorOrLC) {
+        const organisationId = getCreateField('organisationId');
+        const positionId = getCreateField('positionId');
+        const employeeId = getCreateField('employeeId');
+        if (!organisationId) errors.organisationId = t('admin.users.createUser.validation.organisationRequired') || 'Organisation is required.';
+        if (!positionId) errors.positionId = t('admin.users.createUser.validation.positionRequired') || 'Position is required.';
+        if (!employeeId.trim()) {
+          errors.employeeId = t('admin.users.createUser.validation.employeeIdRequired') || 'Employee ID is required.';
+        } else if (!/^[A-Za-z]{3}\d{5}$/.test(employeeId.trim())) {
+          errors.employeeId = t('admin.users.createUser.validation.employeeIdInvalid') || 'Employee ID must be 3 letters followed by 5 digits (e.g. ADM00001).';
+        }
+      }
     }
 
     setCreateUserFields(prev => prev.map(f => ({ ...f, error: errors[f.id] || '' })));
@@ -692,6 +717,17 @@ const UserManagementScreen = () => {
       const nationalIdVal = getCreateField('nationalId');
       if (nationalIdVal) {
         payload.national_id = Number(nationalIdVal);
+      }
+
+      // Organisation, Position, Employee ID — only for Supervisor/LC
+      const isSupervisorOrLCPayload = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(k => roleTitle.toLowerCase().includes(k) || roleLabel.toLowerCase().includes(k));
+      if (isSupervisorOrLCPayload) {
+        const organisationId = getCreateField('organisationId');
+        if (organisationId) payload.organisation = organisationId;
+        const positionId = getCreateField('positionId');
+        if (positionId) payload.position = positionId;
+        const employeeId = getCreateField('employeeId');
+        if (employeeId) payload.employee_id = employeeId;
       }
 
       console.log('[CreateUser] Payload being sent:', JSON.stringify(payload, null, 2));
@@ -1752,6 +1788,8 @@ const UserManagementScreen = () => {
           provinces={provinces}
           sites={formSites}
           genders={genders}
+          organisations={organisations}
+          positions={positions}
           COUNTRY_CODES={COUNTRY_CODES}
           getCreateField={getCreateField}
           handleCreateFieldChange={handleCreateFieldChange}
