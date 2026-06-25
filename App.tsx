@@ -22,6 +22,7 @@ import OnlineSyncBanner from './src/components/OnlineSyncBanner';
 import SyncOverviewModal from './src/components/SyncOverviewModal';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
+import { OverlayProvider } from '@react-native-aria/overlays';
 
 const stylesLayout = {
   safeAreaView: {
@@ -72,9 +73,11 @@ const AppWrap = () => {
 const RootApp = () => {
   return (
     <GlobalProvider>
-      <LanguageProvider>
-        <AppWrap />
-      </LanguageProvider>
+      <OverlayProvider>
+        <LanguageProvider>
+          <AppWrap />
+        </LanguageProvider>
+      </OverlayProvider>
     </GlobalProvider>
   );
 };
