@@ -34,7 +34,7 @@ import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
-import { isNetworkOffline } from '@utils/networkStatus';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 // Status value type (values of STATUS object) - used for API filter + comparisons
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -66,6 +66,7 @@ const ParticipantsList: React.FC = () => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user } = useAuth();
+  const { isOffline } = useOfflineSync();
 
   // Set document title
   useDocumentTitle(t('lc.pageTitle.participants'));
@@ -83,9 +84,8 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
-  const offline = isNetworkOffline();
 
-  // Load pageSize from offline storage on mount
+  // Load pageSize from isOffline storage on mount
   useEffect(() => {
     const loadPageSize = async () => {
       try {
@@ -192,7 +192,7 @@ const ParticipantsList: React.FC = () => {
     if (pageSize) {
       fetchParticipants();
     }
-  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey]);
+  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline]);
   
   // When Active/Inactive filter changes, set default status
   useEffect(() => {
@@ -223,7 +223,7 @@ const ParticipantsList: React.FC = () => {
   const handlePageSizeChange = useCallback(async (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when page size changes
-    // Save to offline storage
+    // Save to isOffline storage
     try {
       await offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE, size);
     } catch (error) {
@@ -275,7 +275,7 @@ const ParticipantsList: React.FC = () => {
                   onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
                 />
               </Box>
-              {!offline && (
+              {!isOffline && (
                 <Box {...styles.buttonContainer}>
                   <GroupCheckInsButton />
                 </Box>
