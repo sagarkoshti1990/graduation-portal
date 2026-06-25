@@ -252,7 +252,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       headerTitle={t('actions.downloadOffline')}
       headerIcon={<LucideIcon name="Download" size={20} color="$primary500" />}
       size="md"
-      showCloseButton={!isDownloading}
+      showCloseButton={false}
     >
       <VStack space="lg">
         {/* Informational banner when the onboarding project will be created automatically */}

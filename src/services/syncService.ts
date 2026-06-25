@@ -29,6 +29,12 @@ import {
   updateTask as updateTaskAPI,
   uploadFiles,
 } from '../project-player/services/projectPlayerService';
+import {
+  updateEntityDetails,
+  // createOrUpdateProgramUserMapping
+} from './participantService';
+import { buildOnboardingFileUpdate } from '../project-player/components/Task/TaskCard/utils/taskTransformers';
+// import { STATUS } from '@constants/app.constant';
 
 type ProgressCallback = (progress: SyncProgress) => void;
 
@@ -135,7 +141,7 @@ async function syncFiles(
   const syncedNames: string[] = [];
 
   for (let i = 0; i < pending.length; i++) {
-    const { taskId, originalName, fileName, fileType, storageKey } = pending[i];
+    const { taskId, originalName, fileName, fileType, storageKey, isOnboardingTask, taskReferenceId } = pending[i];
     // storageKey is the unique blob key; fall back to legacy key for old entries
     const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
     try {
@@ -174,6 +180,31 @@ async function syncFiles(
           uploaded.url,
           uploaded.sourcePath,
         );
+
+        // Mirror the online updateEntityFile call: update participant entity
+        // fields (consent / SLA) when the file belongs to an onboarding task.
+        if (isOnboardingTask && taskReferenceId) {
+          try {
+            const updates = buildOnboardingFileUpdate(
+              { referenceId: taskReferenceId } as any,
+              [uploaded],
+              new Date().toISOString(),
+            );
+            if (updates) {
+              await updateEntityDetails({ userId, entityId: participantId, entityUpdates: updates });
+              // @ts-ignore
+              // await createOrUpdateProgramUserMapping({
+              //   userId: participantId,
+              //   programId: process.env.GLOBAL_LC_PROGRAM_ID,
+              //   metaInformation: updates,
+              //   status: STATUS.NOT_ONBOARDED,
+              // });
+            }
+          } catch (err) {
+            logger.warn(`syncService: onboarding entity update failed for task "${taskId}"`, err);
+          }
+        }
+
         // Remove the persisted blob — no longer needed
         await offlineStorage.remove(blobKey).catch(() => {});
       }

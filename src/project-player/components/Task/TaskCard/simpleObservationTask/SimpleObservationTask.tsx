@@ -241,12 +241,13 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
       const { newFiles, existingFiles } = filterNewFiles(files, task?.attachments);
       
       const data = await handleStatusChange(
-        { taskId: task._id, parentIndex, index }, TASK_STATUS.COMPLETED, newFiles,
+        { taskId: task._id, parentIndex, index, referenceId: task.referenceId, isOnboardingTask },
+        TASK_STATUS.COMPLETED, newFiles,
         (uploadConfig.maxFiles === undefined || (uploadConfig.maxFiles && uploadConfig.maxFiles > 1)) ? existingFiles : [],
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }
-  }, [task._id, parentIndex, index, task?.attachments, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
+  }, [task._id, task.referenceId, parentIndex, index, task?.attachments, isOnboardingTask, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
 
   const handleCloseUploadModal = useCallback(() => setShowUploadModal(false), []);
   const handleClosePreviewModal = useCallback(() => setShowPreviewModal(false), []);

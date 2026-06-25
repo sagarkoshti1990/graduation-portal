@@ -1,6 +1,6 @@
 import { PILLAR_NAMES } from "@constants/app.constant";
 import {Image, Platform} from "react-native"
-import ReactNativeBlobUtil from 'react-native-blob-util';
+import logger from '@utils/logger';
 export function applyFilters(data: any[], filters: Record<string, any>): any[] {
   return data.filter(item => {
     return Object.keys(filters).every(key => {
@@ -106,10 +106,57 @@ export const sortByNestedOrder = (data: any[], path: string, order: string[], di
 };
 
 
+/** MIME type lookup by lowercase file extension. */
+const MIME_MAP: Record<string, string> = {
+  pdf:  'application/pdf',
+  doc:  'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls:  'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt:  'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  png:  'image/png',
+  jpg:  'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif:  'image/gif',
+  webp: 'image/webp',
+  mp4:  'video/mp4',
+  mp3:  'audio/mpeg',
+  zip:  'application/zip',
+  txt:  'text/plain',
+  csv:  'text/csv',
+  json: 'application/json',
+};
+
+/** Strips query params and decodes percent-encoding to get a clean filename from a URL. */
+function fileNameFromUrl(url: string): string {
+  const noQuery = url.split('?')[0];
+  return decodeURIComponent(noQuery.split('/').pop() || '');
+}
+
+/** Returns the MIME type for the given filename, or 'application/octet-stream'. */
+function mimeFromFileName(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return MIME_MAP[ext] ?? 'application/octet-stream';
+}
+
+/**
+ * Downloads a file to the device.
+ *
+ * - Web: fetch → Blob → <a download>
+ * - Android: react-native-blob-util DownloadManager → device Downloads folder
+ * - iOS: not supported (no-op; route through a share sheet instead)
+ *
+ * @param assetSource  URL string or a bundled asset number (Image.resolveAssetSource)
+ * @param t            i18n translate function (optional)
+ * @param showAlert    Alert callback (type, message) (optional)
+ * @param headers      Extra request headers, e.g. { Authorization: 'Bearer …' } (optional)
+ */
 export const openDownload = async (
   assetSource: number | string,
   t?: any,
-  showAlert?: any
+  showAlert?: any,
+  headers?: Record<string, string>,
 ) => {
   const uri =
     typeof assetSource === 'string'
@@ -117,75 +164,89 @@ export const openDownload = async (
       : Image.resolveAssetSource(assetSource)?.uri;
 
   if (!uri) {
-    console.error('Download failed: URI is undefined');
+    logger.error('openDownload: URI is undefined');
     showAlert?.('error', t?.('downloadForms.downloadUriError'));
     return;
   }
 
-  // =========================
-  // 🌐 WEB DOWNLOAD (BLOB)
-  // =========================
+  // -------------------------------------------------------------------------
+  // Web
+  // -------------------------------------------------------------------------
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     try {
-      const response = await fetch(uri);
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+      const response = await fetch(uri, headers ? { headers } : undefined);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-
       const link = document.createElement('a');
       link.href = blobUrl;
-
-      const filename = uri.split('/').pop() || 'download';
-      link.download = decodeURIComponent(filename);
-
+      link.download = decodeURIComponent(uri.split('?')[0].split('/').pop() || 'download');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       window.URL.revokeObjectURL(blobUrl);
 
       showAlert?.('success', t?.('downloadForms.downloadSuccess'));
-    } catch (error) {
-      console.error('Web download error:', error);
+    } catch (err: any) {
+      logger.error(`openDownload: web download failed — ${err?.message ?? err}`);
       showAlert?.('error', t?.('downloadForms.downloadError'));
     }
-
     return;
   }
 
-  // =========================
-  // 📱 NATIVE DOWNLOAD
-  // =========================
+  // -------------------------------------------------------------------------
+  // Android — Android DownloadManager via react-native-blob-util
+  // Dynamic require keeps the native module out of the web bundle.
+  // -------------------------------------------------------------------------
+  if (Platform.OS !== 'android') {
+    logger.warn('openDownload: native download is only supported on Android');
+    return;
+  }
+
   try {
-    const { config, fs } = ReactNativeBlobUtil;
+    const RNBlobUtil = require('react-native-blob-util').default;
 
-    const downloads = fs.dirs.DownloadDir;
-    const filename =
-      decodeURIComponent(uri.split('/').pop() || `file_${Date.now()}`);
+    // Derive a clean filename from the URL (strip query params first)
+    let fileName = fileNameFromUrl(uri);
+    if (!fileName || !fileName.includes('.')) {
+      // No extension found — add .bin so DownloadManager can classify the file
+      fileName = `file_${Date.now()}.bin`;
+    }
 
-    const path = `${downloads}/${filename}`;
+    const mimeType = mimeFromFileName(fileName);
+    // Explicit destination in the device's Downloads directory — required on
+    // Android 10+ for the file to appear in the system Files / Downloads app.
+    const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
 
-    await config({
-      fileCache: true,
-      path,
+    logger.info(
+      `openDownload: starting — file="${fileName}", mime="${mimeType}", dest="${destPath}"`,
+    );
+
+    const res = await RNBlobUtil.config({
+      fileCache: false,
       addAndroidDownloads: {
         useDownloadManager: true,
         notification: true,
-        path,
-        description: 'Downloading file...',
-        mime: 'application/octet-stream',
+        title: fileName,
+        description: t?.('downloadForms.downloading') ?? 'Downloading file…',
+        mime: mimeType,
         mediaScannable: true,
+        path: destPath,
       },
-    }).fetch('GET', uri);
+    }).fetch('GET', uri, headers ?? {});
 
-    showAlert?.('success', t?.('downloadForms.downloadSuccess'));
-  } catch (err) {
-    console.error('Native download error:', err);
-    showAlert?.('error', t?.('downloadForms.downloadError'));
+    const savedPath: string = res.path();
+    const status: number  = res.respInfo?.status;
+    const respHeaders: Record<string, string> = res.respInfo?.headers ?? {};
+
+    logger.info(`openDownload: completed — path="${savedPath}", status=${status}`);
+    logger.info('openDownload: response headers', respHeaders);
+
+    showAlert?.('success', t?.('downloadForms.downloadSuccess') ?? 'Download completed successfully.');
+  } catch (err: any) {
+    logger.error(`openDownload: download failed — ${err?.message ?? err}`);
+    showAlert?.('error', t?.('downloadForms.downloadError') ?? 'Failed to download file.');
   }
 };
 

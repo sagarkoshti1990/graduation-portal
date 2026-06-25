@@ -107,6 +107,17 @@ export interface PendingFile {
    * (entries written before this field was added).
    */
   storageKey?: string;
+  /**
+   * True when the file belongs to an onboarding task.  When set, the sync
+   * stage calls updateEntityDetails / createOrUpdateProgramUserMapping after
+   * the upload succeeds — mirroring what updateEntityFile does in the online flow.
+   */
+  isOnboardingTask?: boolean;
+  /**
+   * task.referenceId at queue time — used by buildOnboardingFileUpdate to
+   * determine which entity fields to update (consent vs SLA).
+   */
+  taskReferenceId?: string;
 }
 
 // ---------------------------------------------------------------------------

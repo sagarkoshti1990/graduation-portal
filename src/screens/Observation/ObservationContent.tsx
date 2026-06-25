@@ -22,7 +22,7 @@ import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type { ObservationFormData } from '@app-types/offline';
-import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 interface ObservationData {
   entityId: string;
@@ -67,7 +67,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   _webComponent
 }) => {
   const { t } = useLanguage();
-  const { isOffline } = useOfflineSync()
+  const isOffline = isNetworkOffline();
   const [observation, setObservation] = useState<ObservationData | null>(null);
   const [defaultValuesLocal, setDefaultValuesLocal] = useState<any>({});
   const [loading, setLoading] = useState(true);

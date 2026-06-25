@@ -130,7 +130,13 @@ export const useTaskActions = () => {
 
   const handleStatusChange = useCallback(
     async (
-      {taskId}: {taskId: string; parentIndex?: number; index?: number},
+      {taskId, referenceId, isOnboardingTask}: {
+        taskId: string;
+        parentIndex?: number;
+        index?: number;
+        referenceId?: string;
+        isOnboardingTask?: boolean;
+      },
       status: TaskStatus,
       files1: NormalizedFile[] = [],
       excludedFiles: Attachment[] = [],
@@ -186,6 +192,8 @@ export const useTaskActions = () => {
                   fileName: file.name,
                   fileType: file.type ?? '',
                   storageKey,
+                  isOnboardingTask: isOnboardingTask ?? false,
+                  taskReferenceId: referenceId,
                 });
               }
 
