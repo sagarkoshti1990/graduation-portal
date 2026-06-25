@@ -16,6 +16,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { evidencePreviewModalStyles as styles } from './styles';
 import { EvidencePreviewModalProps } from '../../../types/components.types';
 import { openDownload } from '@utils/helper';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
   isOpen,
@@ -24,6 +25,7 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
   attachments,
 }) => {
   const { t } = useLanguage();
+  const isOffline = isNetworkOffline();
 
   // Format date helper
   const formatDate = (dateString?: string) => {
@@ -73,10 +75,10 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
                 </VStack>
 
                 {/* Download button */}
-                {attachment?.url &&
+                {!isOffline && attachment?.url &&
                   <Button
-                  // @ts-ignore
-                  variant="ghost"
+                    // @ts-ignore
+                    variant="ghost"
                     onPress={() => openDownload(attachment?.url || "")}
                   >
                     <ButtonIcon as={LucideIcon}
