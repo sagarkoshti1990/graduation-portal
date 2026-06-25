@@ -12,14 +12,13 @@ export function filterNewFiles(
   const existingFiles: any[] = [];
   if (!selectedFiles?.length) return { newFiles, existingFiles };
   selectedFiles.forEach(file => {
-    if (
-      existingAttachments?.find(
-        existing => file?.url && existing?.url && file.url === existing.url,
-      )
-    ) {
-      newFiles.push(file);
-    } else {
+    const exist = existingAttachments?.find(
+      existing => file?.url && existing?.url,
+    );
+    if (exist) {
       existingFiles.push(file);
+    } else {
+      newFiles.push(file);
     }
   });
 

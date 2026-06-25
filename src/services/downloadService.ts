@@ -12,6 +12,7 @@ import type { Task } from '../project-player/types';
 import {
   getProjectDetails,
   createProjectForEntity,
+  getSolutionDetails,
 } from '../project-player/services/projectPlayerService';
 import {
   getObservationEntities,
@@ -425,17 +426,41 @@ async function processObservationTask(
   participantId: string,
   participantName: string,
   task: Task,
+  projectId: string,
 ): Promise<(ResolvedFormIds & { solutionId: string }) | null> {
-  const solutionId: string | undefined =
-    task.solutionDetails?._id ??
-    task.solutionDetails?.observationId ??
-    task.solutionDetails?.id;
+  // Call getSolutionDetails first to obtain the authoritative solutionId and name.
+  // Response shape: { data: result.solutionDetails } where solutionDetails._id is the solutionId.
+  // Mirrors the UI components (SimpleObservationTask, ReadOnlyTask) which do the same
+  // before navigating to the observation form.
+  let solutionId: string | undefined;
+  let solutionName: string | undefined;
+  try {
+    const detailsResp = await getSolutionDetails(projectId, task._id);
+    // detailsResp.data = response.result.solutionDetails
+    solutionId = detailsResp?.data?._id;
+    solutionName = detailsResp?.data?.name;
+  } catch (err) {
+    logger.warn(`DownloadService: getSolutionDetails failed for task "${task._id}" — falling back to task data`, err);
+  }
+
+  // Fallback: read from the embedded task.solutionDetails when the API call fails or returns no _id
   if (!solutionId) {
-    logger.warn(`DownloadService: No solutionId on task "${task._id}" — skipping`);
+    solutionId =
+      task.solutionDetails?._id ??
+      task.solutionDetails?.observationId ??
+      task.solutionDetails?.id;
+  }
+  if (!solutionName) {
+    solutionName = task?.solutionDetails?.name;
+  }
+
+  if (!solutionId) {
+    logger.warn(`DownloadService: No solutionId resolved for task "${task._id}" — skipping`);
     return null;
   }
+
   const resolved = await processObservationForm(userId, participantId, participantName, solutionId);
-  return { ...resolved, solutionId, name:task?.solutionDetails?.name };
+  return { ...resolved, solutionId, name: solutionName };
 }
 
 /**
@@ -633,11 +658,22 @@ export const startDownload = async ({
           await markComplete(lcUserId, participantId, 'project');
           onProgress?.('project', 'completed');
         }
-        const hhTasks = tasks.filter(
-          (t: Task) => t.type?.toLowerCase() === 'observation',
-        );
+        // Collect observation tasks from both top-level tasks and their direct children.
+        // Task.children holds sub-tasks one level deep; the flat tasks[] returned by
+        // fetchAndStoreProject only contains top-level entries, so children are invisible
+        // to a simple .filter(). Dedup by _id in case a parent and child both happen to
+        // be observation tasks (avoids double-downloading the same form).
+        const seenTaskIds = new Set<string>();
+        const hhTasks = tasks
+          .flatMap((t: Task) => [t, ...(t.children ?? [])])
+          .filter((t: Task) => {
+            if (t.type?.toLowerCase() !== 'observation') return false;
+            if (seenTaskIds.has(t._id)) return false;
+            seenTaskIds.add(t._id);
+            return true;
+          });
         for (const task of hhTasks) {
-          const resolved = await processObservationTask(lcUserId, participantId, participantName, task);
+          const resolved = await processObservationTask(lcUserId, participantId, participantName, task, resolvedProjectId!);
           if (resolved) {
             solutionEntries.push({
               name:resolved.name,

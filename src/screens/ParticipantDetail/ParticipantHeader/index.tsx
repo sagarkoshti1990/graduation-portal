@@ -296,11 +296,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderSecondButton = () => {
     // Dropout: No second button
-    if (status === STATUS.DROPOUT || status === STATUS.NOT_ELIGIBLE || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+    if ((status === STATUS.NOT_ENROLLED && offline) || status === STATUS.DROPOUT || status === STATUS.NOT_ELIGIBLE || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return null;
     }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
-    if (status === STATUS.NOT_ENROLLED && !offline) {
+    if (status === STATUS.NOT_ENROLLED) {
       return (
         <Button
           onPress={handleEnrollParticipant}

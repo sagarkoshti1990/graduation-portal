@@ -1991,6 +1991,7 @@
     "viewAndDownloadCertificate": "View & Download Certificate",
     "observation":{"forms":"Observation From"},
     "downloadOffline": "Download Offline",
+    "TARGETING_CRITERIA_NOT_COMPLETED": "Targeting criteria not completed",
     "download": "Download",
     "downloadHint": "Download this participant for offline use",
     "downloadParticipant": "Participant Details",

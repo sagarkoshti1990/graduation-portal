@@ -58,15 +58,6 @@ function makeProgress(
 // Stage 1 — File uploads
 // ---------------------------------------------------------------------------
 
-/** Reconstructs a browser File from a base64 data-URL produced by FileReader.readAsDataURL. */
-function base64ToFile(base64: string, fileName: string, mimeType: string): File {
-  const [header, data] = base64.split(',');
-  const mime = header.match(/:(.*?);/)?.[1] ?? mimeType;
-  const binary = atob(data);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new File([bytes], fileName, { type: mime });
-}
 
 /**
  * After a file is uploaded and we have a server URL, patch the corresponding
@@ -86,23 +77,40 @@ async function patchTaskAttachmentUrl(
   const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
 
+  const patchAttachments = (attachments: any[]): any[] =>
+    (attachments ?? []).map((att: any) =>
+      att.name === fileName
+        ? { ...att, url: serverUrl, sourcePath: sourcePath ?? att.sourcePath }
+        : att,
+    );
+
   for (const key of editKeys) {
     const projectEdits = await offlineStorage.read<{ tasks: any[] }>(key);
     if (!projectEdits?.tasks) continue;
 
-    const hasTask = projectEdits.tasks.some((t: any) => t._id === taskId);
-    if (!hasTask) continue;
-
+    // Search top-level tasks first (Type 1 — direct task), then children (Type 2 — child task)
+    const hasTopLevel = projectEdits.tasks.some((t: any) => t._id === taskId);
+    const hasChild = !hasTopLevel && projectEdits.tasks.some(
+      (t: any) => t.children?.some((c: any) => c._id === taskId),
+    );
+    if (!hasTopLevel && !hasChild) continue;
     const updatedTasks = projectEdits.tasks.map((task: any) => {
-      if (task._id !== taskId) return task;
-      return {
-        ...task,
-        attachments: (task.attachments ?? []).map((att: any) =>
-          att.name === fileName
-            ? { ...att, url: serverUrl, sourcePath: sourcePath ?? att.sourcePath }
-            : att,
-        ),
-      };
+      if (hasTopLevel && task._id === taskId) {
+        // Type 1: attachment lives on the task itself
+        return { ...task, attachments: patchAttachments(task.attachments) };
+      }
+      if (hasChild && task.children?.some((c: any) => c._id === taskId)) {
+        // Type 2: attachment lives on the matching child
+        return {
+          ...task,
+          children: task.children.map((child: any) =>
+            child._id === taskId
+              ? { ...child, attachments: patchAttachments(child.attachments) }
+              : child,
+          ),
+        };
+      }
+      return task;
     });
 
     await offlineStorage.create(key, { ...projectEdits, tasks: updatedTasks });
@@ -137,9 +145,14 @@ async function syncFiles(
         continue;
       }
 
-      // Reconstruct File object and upload via pre-signed URL
-      const file = base64ToFile(base64, fileName, fileType);
-      const result = await uploadFiles(taskId, [file]);
+      // Pass base64 directly — uploadFiles decodes it via XHR + ArrayBuffer,
+      const result = await uploadFiles(taskId, [{
+        name: fileName,
+        size: 0,
+        type: fileType,
+        uri: '',
+        base64,
+      }]);
       const uploaded = result.data?.[0];
 
       if (uploaded?.url) {
@@ -250,6 +263,55 @@ async function syncFormEdits(
 // Stage 3 — Task edits
 // ---------------------------------------------------------------------------
 
+/**
+ * After a successful task-edit sync, merges the uploaded attachment URLs
+ * (from the now-patched projectEdits) back into the cached project so the
+ * local cache reflects the server state without needing a fresh API fetch.
+ *
+ * Only `status` and `attachments` are merged — structural fields always come
+ * from the cached project (mirrors the rule in dataService.applyEditMapToTasks).
+ */
+async function applyEditsToCachedProject(
+  userId: string,
+  participantId: string,
+  projectId: string,
+  editedTasks: any[],
+): Promise<void> {
+  const projectKey = PARTICIPANT_KEYS.project(userId, participantId, projectId);
+  const cached = await offlineStorage.read<any>(projectKey);
+  if (!cached) return;
+
+  // Build id → edit record map covering both top-level tasks and their children
+  const editMap = new Map<string, any>();
+  for (const task of editedTasks) {
+    editMap.set(task._id, task);
+    if (task.children?.length) {
+      for (const child of task.children) {
+        editMap.set(child._id, child);
+      }
+    }
+  }
+
+  const applyToTasks = (tasks: any[]): any[] =>
+    tasks.map(task => {
+      const edit = editMap.get(task._id);
+      const status = edit?.status ?? task.status;
+      const attachments = edit?.attachments !== undefined ? edit.attachments : task.attachments;
+      const merged = { ...task, status, attachments };
+      if (merged.tasks?.length)    merged.tasks    = applyToTasks(merged.tasks);
+      if (merged.children?.length) merged.children = applyToTasks(merged.children);
+      return merged;
+    });
+
+  const updatedProject = {
+    ...cached,
+    ...(cached.tasks    ? { tasks:    applyToTasks(cached.tasks)    } : {}),
+    ...(cached.children ? { children: applyToTasks(cached.children) } : {}),
+  };
+
+  await offlineStorage.create(projectKey, updatedProject).catch(() => {});
+}
+
 async function syncTaskEdits(
   userId: string,
   participantId: string,
@@ -279,6 +341,9 @@ async function syncTaskEdits(
       await updateTaskAPI(projectId, projectEdits);
       synced += projectEdits.tasks.length;
       onProgress?.(makeProgress('tasks', synced, synced));
+      // Merge the uploaded URLs back into the cached project so the local cache
+      // reflects the server state without needing a fresh fetch.
+      await applyEditsToCachedProject(userId, participantId, projectId, projectEdits.tasks);
       await offlineStorage.remove(editKey).catch(() => {});
     } catch (err) {
       logger.error(`syncService: task edit sync failed for project ${projectId}`, err);

@@ -544,7 +544,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           : 'photo';
       const options: CameraOptions & ImageLibraryOptions = {
         mediaType: cameraMediaType as any,
-        includeBase64: false,
+        includeBase64: true,
         maxHeight: 2000,
         maxWidth: 2000,
         quality: 0.8,
@@ -570,30 +570,31 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
 
           if (result?.assets && result.assets.length > 0) {
             const files = result.assets
-              .filter(asset => Boolean(asset?.uri))
-              .map(asset => {
-                // React Native file object
-                const rnFile = {
-                  uri: asset.uri as string,
-                  type: asset.type || 'application/octet-stream',
-                  name: asset.fileName || `file_${Date.now()}`,
-                  size: asset.fileSize,
-                };
+            .filter(asset => Boolean(asset?.uri))
+            .map(asset => {
+              const rnFile = {
+                uri: asset.uri as string,
+                type: asset.type || 'application/octet-stream',
+                name: asset.fileName || `file_${Date.now()}`,
+                size: asset.fileSize || 0,
+                base64: asset.base64
+                  ? `data:${asset.type || 'application/octet-stream'};base64,${asset.base64}`
+                  : undefined,
+              };
 
-                // Optional JS File object (web compatibility)
-                const jsFile =
-                  typeof File !== 'undefined'
-                    ? new File([], rnFile.name, {
+              const jsFile =
+                typeof File !== 'undefined'
+                  ? new File([], rnFile.name, {
                       type: rnFile.type,
                     })
-                    : null;
+                  : undefined;
 
-                return {
-                  ...rnFile,
-                  file: jsFile,
-                  originalAsset: asset,
-                };
-              });
+              return {
+                ...rnFile,
+                file: jsFile,
+                originalFile: asset, // use originalFile to match your interface
+              };
+            });
 
             if (files.length > 0) {
               addSelectedFiles(method, files);

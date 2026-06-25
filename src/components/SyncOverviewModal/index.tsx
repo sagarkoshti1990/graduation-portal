@@ -449,7 +449,7 @@ const SyncOverviewModal: React.FC = () => {
         )}
 
         {/* Footer */}
-        <HStack space="md" justifyContent="flex-end">
+        <HStack space="md" justifyContent="flex-end" flexWrap="wrap">
           <Button
             variant="outline"
             size="sm"

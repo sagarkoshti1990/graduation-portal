@@ -289,6 +289,41 @@ export const preSignedUrls = async (
 };
 
 
+/**
+ * Upload a file to a presigned S3 PUT URL via XMLHttpRequest.
+ *
+ * Why XHR instead of fetch + Blob on React Native:
+ * - Sending `{ uri, type, name }` as the body routes through the native networking
+ *   layer so the OS reads the file directly — no JS heap pressure.
+ * - Works with both file:// (iOS/Android) and content:// (Android document-picker) URIs.
+ * - Preserves Content-Type so S3 presigned-URL signature validation passes.
+ */
+function uploadViaXHR(uri: string, url: string, contentType: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    // S3 presigned URLs are signed against a specific Content-Type.
+    // A missing or mismatched Content-Type causes SignatureDoesNotMatch errors.
+    xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+    xhr.timeout = 120_000;
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`S3 upload failed — HTTP ${xhr.status}: ${xhr.responseText?.slice(0, 200)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('S3 upload network error'));
+    xhr.ontimeout = () => reject(new Error('S3 upload timed out'));
+
+    // React Native XHR accepts { uri, type, name } as the body.
+    // The native layer resolves file:// and content:// URIs and streams
+    // the bytes directly — the file never loads into the JS heap.
+    (xhr as any).send({ uri, type: contentType, name: 'upload' });
+  });
+}
+
 export const uploadFiles = async (
   id: string,
   files: NormalizedFile[]
@@ -304,18 +339,48 @@ export const uploadFiles = async (
       const responceData = await Promise.all(files.map(async (file) => {
         const presignedUrl = response.data[id].files.find((f: { file: string; url?: string; payload?: { sourcePath?: string } }) => f.file === file.name);
         if (presignedUrl?.url) {
-          let uploadBody: BodyInit | null = null;
           if (isWeb) {
-            uploadBody = (file.file ?? file.originalFile) as File;
-          } else if (file.uri) {
-            // React Native: read the local file as a Blob via its URI
-            const localResponse = await fetch(file.uri);
-            uploadBody = await localResponse.blob();
-          }
-          if (uploadBody) {
+            // Web: File object carries MIME type; browser sets Content-Type automatically.
             await fetch(presignedUrl.url, {
               method: 'PUT',
-              body: uploadBody,
+              body: (file.file ?? file.originalFile) as File,
+            });
+          } else if (file.uri) {
+            // React Native: XHR native upload handles file:// and content:// URIs.
+            await uploadViaXHR(
+              file.uri,
+              presignedUrl.url,
+              file.type || 'application/octet-stream',
+            );
+          } else if (file.base64) {
+            // React Native sync path: in-memory base64 data, no file URI available.
+            //
+            // Why not fetch(dataUri): React Native on Android uses OkHttp, which
+            //   does not support data: URIs — throws "Network request failed".
+            // Why not new Blob([Uint8Array]): RN BlobManager throws
+            //   "Creating blobs from ArrayBufferView are not supported".
+            // Why xhr.send(bytes.buffer) works: RN's XHR.send() has an explicit
+            //   ArrayBuffer branch — it base64-encodes the buffer in JS, sends
+            //   {type:'base64', data} across the bridge, and the native layer
+            //   (NSURLSession / OkHttp) decodes back to raw bytes for the HTTP body.
+            const rawBase64 = file.base64.includes(',')
+              ? file.base64.split(',')[1]
+              : file.base64;
+            const binary = atob(rawBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            await new Promise<void>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('PUT', presignedUrl.url);
+              xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+              xhr.timeout = 120_000;
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) resolve();
+                else reject(new Error(`S3 upload failed — HTTP ${xhr.status}: ${xhr.responseText?.slice(0, 200)}`));
+              };
+              xhr.onerror = () => reject(new Error('S3 upload network error'));
+              xhr.ontimeout = () => reject(new Error('S3 upload timed out'));
+              xhr.send(bytes.buffer);
             });
           }
         }

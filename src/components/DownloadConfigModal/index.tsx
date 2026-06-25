@@ -261,7 +261,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
           <HStack space="sm" alignItems="flex-start" bg="$info100" p="$3" borderRadius="$md">
             <LucideIcon name="Info" size={16} color="$info600" />
             <Text fontSize="$sm" color="$info800" flex={1}>
-              {t('actions.downloadWillCreateOnboarding')}
+              {t('actions.TARGETING_CRITERIA_NOT_COMPLETED')}
             </Text>
           </HStack>
         )}

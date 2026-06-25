@@ -45,6 +45,7 @@ import DownloadConfigModal from '@components/DownloadConfigModal';
 import OfflineBadge from '@components/OfflineBadge';
 import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { MenuItemData } from '@ui/Menu';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -93,6 +94,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const [customDropoutReason, setCustomDropoutReason] = useState('');
   const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
+  const [menuItemsWithDownload,setMenuItemsWithDownload] = useState<MenuItemData[]>([]);
 
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
@@ -146,6 +148,32 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   // instead of hitting the API (which would fail without network).
   useEffect(() => {
     const fetchLogVisitSolutions = async () => {
+
+       // Build menu items — always include Download Offline (Section 8.5)
+       let filterMenuItems = isOffline ? getParticipantsMenuItems.filter((item:any) => !notOfflineParticipantMenuItems.includes(item.key)) : getParticipantsMenuItems;
+       if(isNotOnboarded) {
+         filterMenuItems = filterMenuItems.filter(
+           e => !(isNotOnboarded && ["actions.logVisit","actions.viewCheckInsLogs"].includes(e?.label || "")),
+          )
+        } else {
+          filterMenuItems = filterMenuItems.filter(
+            e => !(["actions.viewLog"].includes(e?.label || "")),
+          )
+        } 
+
+        setMenuItemsWithDownload([
+          ...filterMenuItems,
+          ...(!isOffline && !isWeb && ALLOWOFFLINESTATUS.includes(participant?.status) ?
+          [{
+            key: 'download',
+            label: 'actions.downloadOffline',
+            textValue: 'Download Offline',
+            iconName: 'Download',
+            iconColor: theme.tokens.colors.textForegroundColor,
+            iconSizeValue: 20,
+          }]:[]),
+        ]);
+
       if (modalType !== 'log-visit' && modalType !== 'view-log' && modalType !== "view-check-ins-Logs") return;
 
       setLogVisitLoading(true);
@@ -302,22 +330,6 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       ? false
       : participant?.status === STATUS.NOT_ONBOARDED;
 
-  // Build menu items — always include Download Offline (Section 8.5)
-  const filterMenuItems = isOffline ? getParticipantsMenuItems.filter((item:any) => !notOfflineParticipantMenuItems.includes(item.key)) : getParticipantsMenuItems;
-  
-  const menuItemsWithDownload = [
-    ...filterMenuItems,
-    ...(!isOffline && !isWeb && ALLOWOFFLINESTATUS.includes(participant?.status) ?
-    [{
-      key: 'download',
-      label: 'actions.downloadOffline',
-      textValue: 'Download Offline',
-      iconName: 'Download',
-      iconColor: theme.tokens.colors.textForegroundColor,
-      iconSizeValue: 20,
-    }]:[]),
-  ] as typeof getParticipantsMenuItems;
-
   return (
     <Box>
       <HStack {...dataTableStyles.cardActionsSection} alignItems="center">
@@ -348,17 +360,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             {t(isNotOnboarded ? 'actions.logVisit' : 'actions.viewDetails')}
           </ButtonText>
         </Button>
-        {!isReadOnlyStatus && (
+        {!isReadOnlyStatus && menuItemsWithDownload.length > 0 && (
           <Menu
-            items={
-              isNotOnboarded
-                ? menuItemsWithDownload.filter(
-                    e => !(isNotOnboarded && ["actions.logVisit","actions.viewCheckInsLogs"].includes(e?.label || "")),
-                  )
-                :  menuItemsWithDownload.filter(
-                    e => !(["actions.viewLog"].includes(e?.label || "")),
-                  )
-            }
+            items={menuItemsWithDownload}
             placement="bottom right"
             offset={5}
             trigger={getCustomTrigger}
