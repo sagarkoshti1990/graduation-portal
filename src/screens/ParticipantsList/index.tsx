@@ -62,11 +62,11 @@ const overviewToStatusMap = {
  * Handles all screen-specific logic: navigation and dropout modal.
  */
 const ParticipantsList: React.FC = () => {
-  const navigation = useNavigation();
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user } = useAuth();
   const { isOffline } = useOfflineSync();
+  const navigation = useNavigation();
 
   // Set document title
   useDocumentTitle(t('lc.pageTitle.participants'));
@@ -193,6 +193,10 @@ const ParticipantsList: React.FC = () => {
       fetchParticipants();
     }
   }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  },[isOffline])
   
   // When Active/Inactive filter changes, set default status
   useEffect(() => {

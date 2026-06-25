@@ -334,7 +334,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     <Box>
       <HStack {...dataTableStyles.cardActionsSection} alignItems="center">
         {/* Offline availability badge — reads download status from local storage */}
-        <OfflineBadge participantId={participant.userId} refreshKey={badgeRefreshKey} />
+        <OfflineBadge
+          participantId={participant.userId}
+          refreshKey={badgeRefreshKey}
+        />
 
         {/* @ts-ignore: Back Button */}
         <Button
@@ -345,11 +348,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           size="sm"
         >
           {isNotOnboarded && (
-            <LucideIcon
-              name="ClipboardCheck"
-              size={20}
-              color={"$primary500"}
-            />
+            <LucideIcon name="ClipboardCheck" size={20} color={'$primary500'} />
           )}
 
           <ButtonText
@@ -363,7 +362,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         {!isReadOnlyStatus && menuItemsWithDownload.length > 0 && (
           <Menu
             items={menuItemsWithDownload}
-            placement="bottom right"
+            placement={isMobile ? 'top right' : 'bottom right'}
             offset={5}
             trigger={getCustomTrigger}
             onSelect={handleMenuSelect}
@@ -373,7 +372,11 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
 
       {/* Single Modal - renders different content based on modalType */}
       <Modal
-        isOpen={modalType !== null && modalType !== 'view-check-ins-Logs' && modalType !== 'download'}
+        isOpen={
+          modalType !== null &&
+          modalType !== 'view-check-ins-Logs' &&
+          modalType !== 'download'
+        }
         onClose={handleCloseModal}
         headerContent={
           modalType === 'dropout' ? (
@@ -390,36 +393,47 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
               <Text fontSize={'$lg'} fontWeight={'$semibold'}>
                 {t('actions.logVisit')}
               </Text>
-              <Button
-                // @ts-ignore
-                variant="outlineghost"
-                $md-mr="$6"
-                mr="$8"
-                // @ts-ignore
-                onPress={() =>
+              {!isOffline && (
+                <Button
                   // @ts-ignore
-                  openDownload(process.env.ENGAGEMENT_SCRIPT_URL, t, showAlert)
-                }
-              >
-                <ButtonIcon
-                  as={LucideIcon}
-                  name="Download"
-                  size={16}
-                  color={'$error.light'}
-                />
-                {!isMobile &&
-                <ButtonText fontSize={'$xs'} fontWeight={'$medium'}>
-                  {t('actions.downloadScript')}
-                </ButtonText>}
-              </Button>
+                  variant="outlineghost"
+                  $md-mr="$6"
+                  mr="$8"
+                  // @ts-ignore
+                  onPress={() =>
+                    // @ts-ignore
+                    openDownload(
+                      process.env.ENGAGEMENT_SCRIPT_URL,
+                      t,
+                      showAlert,
+                    )
+                  }
+                >
+                  <ButtonIcon
+                    as={LucideIcon}
+                    name="Download"
+                    size={16}
+                    color={'$error.light'}
+                  />
+                  {!isMobile && (
+                    <ButtonText fontSize={'$xs'} fontWeight={'$medium'}>
+                      {t('actions.downloadScript')}
+                    </ButtonText>
+                  )}
+                </Button>
+              )}
             </HStack>
           ) : modalType === 'view-log' ? (
-            <VStack space='sm'>
-              <Text fontSize={"$lg"} color='$textForegroundColor' fontWeight={600}>
+            <VStack space="sm">
+              <Text
+                fontSize={'$lg'}
+                color="$textForegroundColor"
+                fontWeight={600}
+              >
                 {t('actions.observationLogs')}
               </Text>
-              <Text fontSize={"$sm"} color='$textMutedForeground'>
-                {t('actions.viewAllActivity',{name:participant.name})}
+              <Text fontSize={'$sm'} color="$textMutedForeground">
+                {t('actions.viewAllActivity', { name: participant.name })}
               </Text>
             </VStack>
           ) : (
@@ -464,12 +478,18 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
         bodyProps={
           modalType !== 'dropout'
-            ? { padding: 0, paddingTop: 0, paddingBottom: 0, paddingRight:0,paddingLeft:0 }
+            ? {
+                padding: 0,
+                paddingTop: 0,
+                paddingBottom: 0,
+                paddingRight: 0,
+                paddingLeft: 0,
+              }
             : {}
         }
         headerProps={
           modalType === 'log-visit'
-            ? { paddingBottom: "$1", paddingTop: '$4' }
+            ? { paddingBottom: '$1', paddingTop: '$4' }
             : {}
         }
       >
@@ -568,7 +588,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             </VStack>
           </VStack>
         )}
-        
+
         {(modalType === 'log-visit' || modalType === 'view-log') && (
           <Box flex={1} minHeight={400}>
             {logVisitLoading ? (
@@ -588,11 +608,17 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                   ],
                 }}
                 _css={observationCss}
-                _webComponent={{styleObject:{
-                  ".d-flex.pt-24.px-24.flex-ai-start.flex-gap-10:has(mat-icon)":{display: "none !important"},
-                  ".page-group-container":{background: "transparent !important",border: "0 !important"},
-                  ".questions-grid":{"padding":"0 !important"}
-                }}}
+                _webComponent={{
+                  styleObject: {
+                    '.d-flex.pt-24.px-24.flex-ai-start.flex-gap-10:has(mat-icon)':
+                      { display: 'none !important' },
+                    '.page-group-container': {
+                      background: 'transparent !important',
+                      border: '0 !important',
+                    },
+                    '.questions-grid': { padding: '0 !important' },
+                  },
+                }}
                 solutionId={selectedSolutionId}
                 onClose={handleCloseModal}
                 // @ts-ignore - showAlert is a valid prop
@@ -610,7 +636,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                   preSelectedSolution={selectedSolutionId}
                   onFormSelect={handleFormSelect}
                   participant={participant}
-                  _dataNotFoundCard={{variant:"ghost"}}
+                  _dataNotFoundCard={{ variant: 'ghost' }}
                   loderHeight="400px"
                 />
               </Box>

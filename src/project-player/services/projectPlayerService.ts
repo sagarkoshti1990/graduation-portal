@@ -385,11 +385,14 @@ export const uploadFiles = async (
           }
         }
         return {
-          name: file.name,
+          // `name` keeps the original display name for backward compatibility.
+          name: file.originalName ?? file.name,
+          originalName: file.originalName ?? file.name,
+          fileName: file.name,   // unique generated name used for sync matching
           sourcePath: presignedUrl?.payload?.sourcePath,
           type: file?.type,
           url: presignedUrl?.url ? presignedUrl.url.split('?')[0] : undefined,
-          size:file?.size,
+          size: file?.size,
         };
       }));
       return { data: responceData };

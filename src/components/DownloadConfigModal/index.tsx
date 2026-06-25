@@ -181,7 +181,6 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       stepStatesRef.current = new Map(stepStatesRef.current).set(key, state);
       setStepStates(new Map(stepStatesRef.current));
     };
-
     try {
       const config = buildDownloadConfig(selected);
 
@@ -443,6 +442,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               <Button variant="outlineghost" size="sm" onPress={onClose} isDisabled={isDownloading}>
                 <ButtonText>{t('common.cancel')}</ButtonText>
               </Button>
+              {!needsOnboarding &&
               <Button
                 variant="solid"
                 size="sm"
@@ -457,7 +457,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
                 <ButtonText>
                   {isDownloading ? t('common.loading') : t('actions.download')}
                 </ButtonText>
-              </Button>
+              </Button>}
             </HStack>
           </>
         )}

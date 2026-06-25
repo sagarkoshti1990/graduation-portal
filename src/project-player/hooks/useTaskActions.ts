@@ -97,6 +97,18 @@ export const normalizeFiles = (files: any[] = []): NormalizedFile[] => {
 };
 
 /**
+ * Returns a unique file name by appending a timestamp before the extension.
+ * e.g. "invoice.pdf" → "invoice_1751023456789.pdf"
+ */
+function generateUniqueFileName(originalName: string): string {
+  const lastDot = originalName.lastIndexOf('.');
+  if (lastDot === -1) return `${originalName}_${Date.now()}`;
+  const base = originalName.slice(0, lastDot);
+  const ext = originalName.slice(lastDot);
+  return `${base}_${Date.now()}${ext}`;
+}
+
+/**
  * Uses useProjectStable() so this hook (and every component that calls it)
  * never re-renders purely because projectData changed.
  *
@@ -127,7 +139,14 @@ export const useTaskActions = () => {
       const participantId = (projectDataRef.current as any)?.entityInformation?.externalId as string | undefined;
       if (!canEdit || !participantId) return;
 
-      const files = normalizeFiles(files1);
+      // Assign each file a unique generated name while preserving the original
+      // for display. `file.name` is used for upload/storage; `file.originalName`
+      // is shown in the UI and stored alongside the attachment.
+      const files = normalizeFiles(files1).map(f => ({
+        ...f,
+        originalName: f.name,
+        name: generateUniqueFileName(f.name),
+      }));
       const isOffline = dataService.isNetworkOffline();
       let attachments: Attachment[] = [...excludedFiles];
 
@@ -138,15 +157,23 @@ export const useTaskActions = () => {
               const existing = await offlineStorage.read<PendingFile[]>(
                 PARTICIPANT_KEYS.filesPending(userId, participantId),
               ) ?? [];
-              const existingNames = new Set(existing.map(p => p.fileName));
+              // Dedup by (taskId + originalName) so the same file can be queued
+              // for different tasks independently, but a re-submission of the
+              // same file to the same task while it is still pending is skipped.
+              // Fall back to fileName for legacy entries without originalName.
+              const existingTaskFileKeys = new Set(
+                existing.map(p => `${p.taskId}:${p.originalName ?? p.fileName}`),
+              );
 
               const newEntries: PendingFile[] = [];
               for (const file of files) {
-                if (existingNames.has(file.name)) continue;
+                if (existingTaskFileKeys.has(`${taskId}:${file.originalName}`)) continue;
+                // Use the unique fileName as the blob storage key to avoid
+                // collisions when the same original name is uploaded again later.
                 const storageKey = PARTICIPANT_KEYS.fileBlob(
                   userId,
                   participantId,
-                  `${Date.now()}_${file.name}`,
+                  file.name,
                 );
                 try {
                   const base64 = await fileToBase64(file);
@@ -155,6 +182,7 @@ export const useTaskActions = () => {
 
                 newEntries.push({
                   taskId,
+                  originalName: file.originalName!,
                   fileName: file.name,
                   fileType: file.type ?? '',
                   storageKey,
@@ -170,7 +198,9 @@ export const useTaskActions = () => {
             } catch { /* non-fatal */ }
           }
           const localStubs: Attachment[] = files.map(f => ({
-            name: f.name,
+            name: f.originalName,      // original name for display
+            originalName: f.originalName,
+            fileName: f.name,          // unique name for sync matching
             type: f.type,
             size: f.size,
             url: '',

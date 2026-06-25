@@ -62,7 +62,7 @@ const EvidencePreviewModal: React.FC<EvidencePreviewModalProps> = ({
                       color={theme.tokens.colors.primary500}
                     />
                     <Text {...styles.fileNameText}>
-                      {attachment.name}
+                      {attachment.originalName ?? attachment.name}
                     </Text>
                   </HStack>
                   {attachment.uploadedBy && <Text {...styles.uploadInfoText}>

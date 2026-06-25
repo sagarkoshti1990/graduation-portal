@@ -77,9 +77,14 @@ async function patchTaskAttachmentUrl(
   const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
 
+  // Match by `fileName` (unique generated name) for new entries, fall back to
+  // `name` for legacy attachment stubs written before `fileName` was added.
+  const matchesFileName = (att: any): boolean =>
+    att.fileName ? att.fileName === fileName : att.name === fileName;
+
   const patchAttachments = (attachments: any[]): any[] =>
     (attachments ?? []).map((att: any) =>
-      att.name === fileName
+      matchesFileName(att)
         ? { ...att, url: serverUrl, sourcePath: sourcePath ?? att.sourcePath }
         : att,
     );
@@ -130,8 +135,8 @@ async function syncFiles(
   const syncedNames: string[] = [];
 
   for (let i = 0; i < pending.length; i++) {
-    const { taskId, fileName, fileType, storageKey } = pending[i];
-    // storageKey is the timestamped blob key; fall back to legacy key for old entries
+    const { taskId, originalName, fileName, fileType, storageKey } = pending[i];
+    // storageKey is the unique blob key; fall back to legacy key for old entries
     const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
     try {
       // Read the stored base64 content
@@ -145,9 +150,12 @@ async function syncFiles(
         continue;
       }
 
-      // Pass base64 directly — uploadFiles decodes it via XHR + ArrayBuffer,
+      // `name` is the unique generated fileName used for the S3 upload key.
+      // `originalName` is carried through so uploadFiles can populate the
+      // attachment's display name on the returned object.
       const result = await uploadFiles(taskId, [{
         name: fileName,
+        originalName: originalName ?? fileName,
         size: 0,
         type: fileType,
         uri: '',

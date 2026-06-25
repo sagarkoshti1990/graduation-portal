@@ -191,6 +191,7 @@ export interface EvidenceAttachment {
   uploadedBy?: string;
   uploadedAt?: string;
   size?: number;
+  originalName?:string;
 }
 
 export interface EvidencePreviewModalProps {
@@ -231,7 +232,10 @@ export interface UploadMethodOptionProps {
 }
 
 export interface NormalizedFile {
+  /** Unique generated file name used for upload, storage, and sync (e.g. "invoice_1751023456789.pdf"). */
   name: string;
+  /** Original file name exactly as selected by the user — used only for display (e.g. "invoice.pdf"). */
+  originalName?: string;
   size: number;
   type?: string;
   uri?: string;

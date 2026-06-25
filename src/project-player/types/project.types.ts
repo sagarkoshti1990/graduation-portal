@@ -58,7 +58,12 @@ export interface Task {
 
 export interface Attachment {
   _id: string;
+  /** Original file name exactly as selected by the user — used for display (e.g. "invoice.pdf"). */
   name: string;
+  /** Explicit display name — same as `name` for new uploads; preferred over `name` in UI. */
+  originalName?: string;
+  /** Unique generated file name used for upload, storage, and sync (e.g. "invoice_1751023456789.pdf"). */
+  fileName?: string;
   type: string;
   size: number;
   url?: string;
