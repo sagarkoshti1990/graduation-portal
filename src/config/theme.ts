@@ -25,7 +25,7 @@ export const theme = {
         light: '#ffffff',
         dark: '#1a1a1a',
       },
-      foreground: 'oklch(0.145 0 0)',
+      foreground: '#0a0a0a',
       mutedForeground: '#717182',
       mutedBorder: '#e0e0e0',
       error: {

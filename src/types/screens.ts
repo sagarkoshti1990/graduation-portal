@@ -12,6 +12,8 @@ export interface Participant {
   idpProjectId?:string;
   certificateId?:string;
   accountUserStatus?: string;
+  phone_code?: string;
+  phone?: string;
 }
 
 export type StatusCount = {
