@@ -85,6 +85,7 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
   ...menuProps
 }) => {
   const { t } = useLanguage();
+  const [isOpen, setIsOpen] = React.useState(false);
   const handleMenuItemPress = (key: string) => {
     if (onSelect) {
       onSelect(key);
@@ -113,6 +114,9 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
 
   return (
     <Menu
+      isOpen={isOpen}
+      onOpen={() => setIsOpen(true)}
+      onClose={() => setIsOpen(false)}
       placement={placement}
       offset={
         Platform.OS === 'web'
@@ -138,6 +142,7 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
             key={item.key || index.toString()}
             textValue={item.textValue}
             onPress={() => {
+              setIsOpen(false);
               if (!item.isComingSoon) {
                 handleMenuItemPress(item.key);
               }
