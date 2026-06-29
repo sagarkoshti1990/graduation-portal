@@ -275,6 +275,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
                   placeholder="YYYY_MM_DD"
                   value={getCreateField('dob') ? getCreateField('dob').replace(/_/g, '-') : ''}
                   onChange={(date: string) => handleCreateFieldChange('dob', date.replace(/-/g, '_'))}
+                  iconSize={20}
                 />
               </Box>
               {getCreateError('dob') && <Text color="$error600" fontSize="$xs">{getCreateError('dob')}</Text>}
