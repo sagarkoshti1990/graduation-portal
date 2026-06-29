@@ -73,7 +73,6 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     k => roleTitle.includes(k) || roleLabel.includes(k)
   );
   // Show additional fields for any valid role selection (Supervisor, LC, or Participant)
-  const showAdditionalFields = isSupervisorOrLC || isParticipant;
 
   return (
     <VStack key={isCreateUserModalOpen ? 'open' : 'closed'} space="md" width="100%">
@@ -89,7 +88,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
           <VStack space="xs" flex={1}>
             <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.firstName') || 'First Name *'}
+              {t('admin.users.createUser.firstName') || 'First Name'} *
             </Text>
             <Input 
               {...styles.createUserFormInput} 
@@ -107,7 +106,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           </VStack>
           <VStack space="xs" flex={1}>
             <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.lastName') || 'Last Name *'}
+              {t('admin.users.createUser.lastName') || 'Last Name'} *
             </Text>
             <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('lastName')} isDisabled={isCreateUserSubmitting}>
               <FastInputField
@@ -122,7 +121,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
         <VStack space="xs" width={isMobile ? '100%' : '100%'}>
           <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-            {t('admin.users.createUser.email') || 'Email Address *'}
+            {t('admin.users.createUser.email') || 'Email Address'} *
           </Text>
           <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('email')} isDisabled={isCreateUserSubmitting} alignItems="center">
             <Box pr="$2">
@@ -218,7 +217,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         </HStack>
         <VStack space="xs">
           <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-            {t('admin.users.createUser.role') || 'Role *'}
+            {t('admin.users.createUser.role') || 'Role'} *
           </Text>
           <Box zIndex={1000}>
             <Select
@@ -237,9 +236,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         </VStack>
       </VStack>
 
-      {/* Additional Information — shown when a valid role is selected */}
-      {showAdditionalFields && (
-        <VStack space="sm">
+      {/* Additional Information */}
+      <VStack space="sm">
           <HStack space="xs" alignItems="center">
             <LucideIcon name="FileText" size={16} color="$textMutedForeground" />
             <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$normal">
@@ -250,7 +248,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
             <VStack space="xs" flex={1}>
               <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                {t('admin.users.createUser.gender') || 'Gender *'}
+                {t('admin.users.createUser.gender') || 'Gender'} *
               </Text>
               <Box>
                 <Select
@@ -269,7 +267,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             </VStack>
             <VStack space="xs" flex={1}>
               <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                {t('admin.users.createUser.dob') || 'DOB *'}
+                {t('admin.users.createUser.dob') || 'DOB'} *
               </Text>
               <Box zIndex={999}>
                 <DatePicker
@@ -285,7 +283,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
           <VStack space="xs">
             <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.username') || 'Username *'}
+              {t('admin.users.createUser.username') || 'Username'} *
             </Text>
             <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('username')} isDisabled={isCreateUserSubmitting}>
               <FastInputField
@@ -300,7 +298,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
             <VStack space="xs" flex={1}>
               <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                {t('admin.users.createUser.password') || 'Password *'}
+                {t('admin.users.createUser.password') || 'Password'} *
               </Text>
               <Box position="relative">
                 <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('password')} isDisabled={isCreateUserSubmitting}>
@@ -329,7 +327,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
             <VStack space="xs" flex={1}>
               <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                {t('admin.users.createUser.confirmPassword') || 'Confirm Password *'}
+                {t('admin.users.createUser.confirmPassword') || 'Confirm Password'} *
               </Text>
               <Box position="relative">
                 <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('confirmPassword')} isDisabled={isCreateUserSubmitting}>
@@ -363,7 +361,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               <HStack space="md" flexDirection={isMobile ? 'column' : 'row'}>
                 <VStack space="xs" flex={1}>
                   <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                    {t('admin.users.createUser.organisation') || 'Organisation *'}
+                    {t('admin.users.createUser.organisation') || 'Organisation'} *
                   </Text>
                   <Box>
                     <Select
@@ -382,7 +380,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
                 </VStack>
                 <VStack space="xs" flex={1}>
                   <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                    {t('admin.users.createUser.position') || 'Position *'}
+                    {t('admin.users.createUser.position') || 'Position'} *
                   </Text>
                   <Box>
                     <Select
@@ -408,7 +406,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             {isSupervisorOrLC && (
               <VStack space="xs" flex={1}>
                 <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                  {t('admin.users.createUser.employeeId') || 'Employee ID *'}
+                  {t('admin.users.createUser.employeeId') || 'Employee ID'} *
                 </Text>
                 <Input {...styles.createUserFormInput} isInvalid={!!getCreateError('employeeId')} isDisabled={isCreateUserSubmitting}>
                   <FastInputField
@@ -437,7 +435,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             </VStack>
           </HStack>
         </VStack>
-      )}
+      
 
       {/* Geographic Assignment */}
       <VStack space="sm">
@@ -469,18 +467,18 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           </VStack>
           <VStack space="xs" flex={1}>
             <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-              {t('admin.users.createUser.districtMunicipality') || 'Site'}
+              {t('admin.users.createUser.site') || 'Site'}
             </Text>
             <Box>
               <Select
                 {...styles.createUserFormSelect}
                 options={[
-                  { value: '', label: getCreateField('provinceId') ? (t('admin.users.createUser.districtPlaceholderReady') || 'Select district') : (t('admin.users.createUser.districtPlaceholder') || 'Select province first') },
+                  { value: '', label: getCreateField('provinceId') ? (t('admin.users.createUser.sitePlaceholderReady') || 'Select site') : (t('admin.users.createUser.sitePlaceholder') || 'Select province first') },
                   ...sites.map(s => ({ value: s._id, label: s.name }))
                 ]}
                 value={getCreateField('siteId')}
                 onChange={(val) => handleCreateFieldChange('siteId', val)}
-                placeholder={getCreateField('provinceId') ? (t('admin.users.createUser.districtPlaceholderReady') || 'Select district') : (t('admin.users.createUser.districtPlaceholder') || 'Select province first')}
+                placeholder={getCreateField('provinceId') ? (t('admin.users.createUser.sitePlaceholderReady') || 'Select site') : (t('admin.users.createUser.sitePlaceholder') || 'Select province first')}
                 disabled={isCreateUserSubmitting || !getCreateField('provinceId')}
               />
             </Box>
