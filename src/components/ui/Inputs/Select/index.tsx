@@ -805,22 +805,22 @@ function NativeSelect({
     const availableBelow = Math.max(
       0,
       viewportBottom -
-        y -
-        height -
-        VIEWPORT_MARGIN -
-        DROPDOWN_GAP,
+      y -
+      height -
+      VIEWPORT_MARGIN -
+      DROPDOWN_GAP,
     );
 
     const availableAbove = Math.max(
       0,
       y -
-        VIEWPORT_MARGIN -
-        DROPDOWN_GAP,
+      VIEWPORT_MARGIN -
+      DROPDOWN_GAP,
     );
 
     const shouldOpenUp =
       availableBelow <
-        DEFAULT_DROPDOWN_MAX_HEIGHT &&
+      DEFAULT_DROPDOWN_MAX_HEIGHT &&
       availableAbove > availableBelow;
 
     const availableHeight =
@@ -833,7 +833,7 @@ function NativeSelect({
       Math.max(
         0,
         viewportWidth -
-          VIEWPORT_MARGIN * 2,
+        VIEWPORT_MARGIN * 2,
       ),
     );
 
@@ -842,8 +842,8 @@ function NativeSelect({
       Math.max(
         VIEWPORT_MARGIN,
         viewportWidth -
-          adjustedWidth -
-          VIEWPORT_MARGIN,
+        adjustedWidth -
+        VIEWPORT_MARGIN,
       ),
     );
 
@@ -862,18 +862,18 @@ function NativeSelect({
 
     const adjustedTop = shouldOpenUp
       ? Math.max(
-          VIEWPORT_MARGIN,
-          y - DROPDOWN_GAP - menuHeight,
-        )
+        VIEWPORT_MARGIN,
+        y - DROPDOWN_GAP - menuHeight,
+      )
       : Math.min(
-          y + height + DROPDOWN_GAP,
-          Math.max(
-            VIEWPORT_MARGIN,
-            viewportBottom -
-              VIEWPORT_MARGIN -
-              menuHeight,
-          ),
-        );
+        y + height + DROPDOWN_GAP,
+        Math.max(
+          VIEWPORT_MARGIN,
+          viewportBottom -
+          VIEWPORT_MARGIN -
+          menuHeight,
+        ),
+      );
 
     setDropdownLayout({
       top: adjustedTop,

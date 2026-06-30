@@ -167,6 +167,38 @@ export const getEntityTypesFromStorage = async (): Promise<Record<string, string
 };
 
 /**
+ * Shared bootstrap: ensures entity types are fetched exactly once even when
+ * multiple helpers (provinces, genders, orgs, positions) call concurrently.
+ * Returns the cached entity-type map after populating storage.
+ */
+let _entityTypesBootstrapPromise: Promise<Record<string, string> | null> | null = null;
+
+export const ensureEntityTypes = async (): Promise<Record<string, string> | null> => {
+  // Fast path: already in storage
+  const cached = await getEntityTypesFromStorage();
+  if (cached && Object.keys(cached).length > 0) {
+    return cached;
+  }
+
+  // Deduplicate concurrent fetches
+  if (!_entityTypesBootstrapPromise) {
+    _entityTypesBootstrapPromise = (async () => {
+      try {
+        await getEntityTypesList();
+        return await getEntityTypesFromStorage();
+      } catch (error) {
+        console.error('Error bootstrapping entity types:', error);
+        return null;
+      } finally {
+        _entityTypesBootstrapPromise = null;
+      }
+    })();
+  }
+
+  return _entityTypesBootstrapPromise;
+};
+
+/**
  * Get provinces list by entity type ID - Dynamic province filter from API
  * Uses the province entity type ID to fetch all provinces
  */
@@ -203,23 +235,13 @@ export const getProvincesByEntityType = async (
  */
 export const getProvincesList = async (): Promise<ProvinceEntity[]> => {
   try {
-    // First, check if entity types are in storage
-    let entityTypes = await getEntityTypesFromStorage();
-
-    // If not in storage, fetch entity types from API
-    if (!entityTypes || !entityTypes['province']) {
-      await getEntityTypesList();
-      entityTypes = await getEntityTypesFromStorage();
-    }
-
-    // Get province entity type ID
+    const entityTypes = await ensureEntityTypes();
     const provinceEntityTypeId = entityTypes?.['province'];
 
     if (!provinceEntityTypeId) {
       return [];
     }
 
-    // Fetch provinces using the entity type ID
     const provincesResponse = await getProvincesByEntityType(provinceEntityTypeId);
     return provincesResponse.result || [];
   } catch (error) {
@@ -511,13 +533,7 @@ export const createUser = async (
  */
 export const getGenderList = async (): Promise<ProvinceEntity[]> => {
   try {
-    let entityTypes = await getEntityTypesFromStorage();
-
-    if (!entityTypes || !entityTypes['gender']) {
-      await getEntityTypesList();
-      entityTypes = await getEntityTypesFromStorage();
-    }
-
+    const entityTypes = await ensureEntityTypes();
     const entityTypeId = entityTypes?.['gender'];
 
     if (!entityTypeId) {
@@ -540,13 +556,7 @@ export const getGenderList = async (): Promise<ProvinceEntity[]> => {
  */
 export const getOrganisationList = async (): Promise<ProvinceEntity[]> => {
   try {
-    let entityTypes = await getEntityTypesFromStorage();
-
-    if (!entityTypes || !Object.keys(entityTypes).some(k => k.toLowerCase().includes('org'))) {
-      await getEntityTypesList();
-      entityTypes = await getEntityTypesFromStorage();
-    }
-
+    const entityTypes = await ensureEntityTypes();
     const orgKey = Object.keys(entityTypes || {}).find(k => k.toLowerCase().includes('org'));
     const entityTypeId = orgKey ? entityTypes?.[orgKey] : undefined;
 
@@ -570,13 +580,7 @@ export const getOrganisationList = async (): Promise<ProvinceEntity[]> => {
  */
 export const getPositionList = async (): Promise<ProvinceEntity[]> => {
   try {
-    let entityTypes = await getEntityTypesFromStorage();
-
-    if (!entityTypes || !entityTypes['position']) {
-      await getEntityTypesList();
-      entityTypes = await getEntityTypesFromStorage();
-    }
-
+    const entityTypes = await ensureEntityTypes();
     const entityTypeId = entityTypes?.['position'];
 
     if (!entityTypeId) {

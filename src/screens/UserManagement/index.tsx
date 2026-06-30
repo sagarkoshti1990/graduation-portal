@@ -16,6 +16,8 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { CreateUserForm } from './CreateUserForm';
+import { validateSchema } from '@components/SchemaFormRenderer';
+import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
 import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, createUser, getSitesByProvince } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
 import type {
@@ -161,7 +163,7 @@ const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
     t('admin.users.profileModal.defaultRole');
 
   const badges = (
-    <HStack space="sm" alignItems="center">
+    <HStack space="sm" alignItems="center" justifyContent="flex-end" flexShrink={0}>
       <RoleBadge role={roleLabel} />
       <Badge
         bg={(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
@@ -202,14 +204,14 @@ const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
 
   // Desktop: left/right layout
   return (
-    <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1}>
-      <VStack space="xs" flex={1}>
-        <Text {...TYPOGRAPHY.h1} color="$textForeground">
+    <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1} pr="$8" gap="$2">
+      <VStack space="xs" flex={1} flexShrink={1}>
+        <Text {...TYPOGRAPHY.h1} color="$textForeground" numberOfLines={1}>
           {selectedUserProfile?.name || selectedUserBase?.name || '-'}
         </Text>
         <HStack space="xs" alignItems="center">
           <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
-          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" numberOfLines={1}>
             {selectedUserProfile?.email || selectedUserBase?.email || '-'}
           </Text>
         </HStack>
@@ -307,11 +309,45 @@ const UserManagementScreen = () => {
   const [createUserFields, setCreateUserFields] = useState(initialCreateUserFields);
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [isCreateUserSubmitting, setIsCreateUserSubmitting] = useState(false);
-  const [showCreateUserPassword, setShowCreateUserPassword] = useState(false);
   const [formSites, setFormSites] = useState<any[]>([]);
 
   const getCreateField = useCallback((id: string) => createUserFields.find(f => f.id === id)?.value || '', [createUserFields]);
   const getCreateError = useCallback((id: string) => createUserFields.find(f => f.id === id)?.error || '', [createUserFields]);
+
+  // Derived maps consumed by SchemaFormRenderer
+  const createUserValues = useMemo<Record<string, string>>(
+    () => Object.fromEntries(createUserFields.map(f => [f.id, f.value])),
+    [createUserFields]
+  );
+  const createUserErrors = useMemo<Record<string, string>>(
+    () => Object.fromEntries(createUserFields.map(f => [f.id, f.error]).filter(([, v]) => !!v)),
+    [createUserFields]
+  );
+
+  // Compute role-based visibility flags
+  const createUserFlags = useMemo(() => {
+    const roleId = getCreateField('roleId');
+    const selRole = roles.find((r: any) => r.id.toString() === roleId);
+    const roleTitle = (selRole?.title?.toLowerCase() || '');
+    const roleLabel = (selRole?.label?.toLowerCase() || '');
+    const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
+      (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
+    );
+    return { isSupervisorOrLC };
+  }, [getCreateField, roles]);
+
+  // Build normalized options map for SchemaFormRenderer
+  const createUserOptionsMap = useMemo(() => ({
+    roles: roles
+      .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
+      .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
+    genders: genders.map((g: any) => ({ value: g._id, label: g.name })),
+    provinces: provinces.map((p: any) => ({ value: p._id, label: p.name })),
+    sites: formSites.map((s: any) => ({ value: s._id, label: s.name })),
+    organisations: organisations.map((o: any) => ({ value: o._id, label: o.name })),
+    positions: positions.map((p: any) => ({ value: p._id, label: p.name })),
+    countryCodes: COUNTRY_CODES.map((c: any) => ({ value: c.value ?? c.dial_code ?? c, label: c.label ?? c.name ?? c })),
+  }), [roles, genders, provinces, formSites, organisations, positions]);
 
   const selectedFormProvince = getCreateField('provinceId');
   useEffect(() => {
@@ -356,7 +392,6 @@ const UserManagementScreen = () => {
   const openCreateUserModal = useCallback(() => {
     setCreateUserFields(initialCreateUserFields);
     setIsCreateUserSubmitting(false);
-    setShowCreateUserPassword(false);
     setIsCreateUserModalOpen(true);
   }, [initialCreateUserFields]);
 
@@ -365,106 +400,10 @@ const UserManagementScreen = () => {
   }, []);
 
   const validateCreateUserForm = useCallback(() => {
-    const errors: Record<string, string> = {};
-    const firstName = getCreateField('firstName');
-    const lastName = getCreateField('lastName');
-    const email = getCreateField('email');
-    const phoneNumber = getCreateField('phoneNumber');
-    const roleId = getCreateField('roleId');
-    const dob = getCreateField('dob');
-    // Accept only YYYY_MM_DD (with underscores) as requested
-    if (dob && !/^\d{4}_\d{2}_\d{2}$/.test(dob)) {
-      errors.dob = 'DOB must be in YYYY_MM_DD format.';
-    }
-
-    const nationalId = getCreateField('nationalId');
-
-    if (nationalId && !/^\d{13}$/.test(nationalId)) {
-      errors.nationalId = 'National ID must be 13 digits.';
-    }
-
-    if (!firstName.trim()) errors.firstName = t('admin.users.createUser.validation.firstNameRequired') || 'First name is required.';
-    else if (!/^[a-zA-Z\s]{2,50}$/.test(firstName.trim())) errors.firstName = 'First name must be 2-50 characters containing only letters.';
-
-    if (!lastName.trim()) errors.lastName = t('admin.users.createUser.validation.lastNameRequired') || 'Last name is required.';
-    else if (!/^[a-zA-Z\s]{2,50}$/.test(lastName.trim())) errors.lastName = 'Last name must be 2-50 characters containing only letters.';
-
-    if (!email.trim()) {
-      errors.email = t('admin.users.createUser.validation.emailRequired') || 'Email is required.';
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      errors.email = t('admin.users.createUser.validation.emailInvalid') || 'Enter a valid email address.';
-    } else {
-      const domain = email.split('@')[1]?.toLowerCase();
-      const isGmailTypo = ['gmai.com', 'gmal.com', 'gamil.com', 'gmaill.com', 'gmail.co', 'gmail.con', 'gmai.co'].includes(domain) || 
-                          (domain.startsWith('gmail') && domain !== 'gmail.com');
-      if (isGmailTypo) {
-        errors.email = 'Please enter a valid @gmail.com address.';
-      }
-    }
-
-    if (!phoneNumber.trim()) {
-      errors.phoneNumber = t('admin.users.createUser.validation.phoneRequired') || 'Phone number is required.';
-    } else if (!/^\d{9,10}$/.test(phoneNumber)) {
-      errors.phoneNumber = t('admin.users.createUser.validation.phoneInvalid') || 'Phone number must be 9 or 10 digits.';
-    }
-
-    const alternativePhone = getCreateField('alternativePhone');
-    if (alternativePhone && !/^\d{9,10}$/.test(alternativePhone)) {
-      errors.alternativePhone = t('admin.users.createUser.validation.altPhoneInvalid') || 'Alternative phone must be 9 or 10 digits.';
-    }
-    if (!roleId) errors.roleId = t('admin.users.createUser.validation.roleRequired') || 'Role is required.';
-
-    // Check conditional fields based on Role
-    const selectedRole = roles.find(r => r.id.toString() === roleId);
-    const roleTitle = selectedRole?.title?.toLowerCase() || '';
-    const roleLabel = selectedRole?.label?.toLowerCase() || '';
-    const requiresExtraFields = ['admin', 'supervisor', 'linkage champion', 'participant', 'org_admin', 'tenant_admin', 'lc', 'user'].some(k => roleTitle.includes(k) || roleLabel.includes(k));
-
-    if (requiresExtraFields) {
-      const organisation = getCreateField('organisation');
-      const position = getCreateField('position');
-      const gender = getCreateField('gender');
-      const dob = getCreateField('dob');
-      const username = getCreateField('username');
-      const password = getCreateField('password');
-      const confirmPassword = getCreateField('confirmPassword');
-
-      if (!gender) errors.gender = t('admin.users.createUser.validation.genderRequired') || 'Gender is required.';
-      if (!dob.trim()) errors.dob = t('admin.users.createUser.validation.dobRequired') || 'Date of Birth is required.';
-
-      if (!username.trim()) errors.username = t('admin.users.createUser.validation.usernameRequired') || 'Username is required.';
-      else if (username.trim().length < 3) errors.username = 'Username must be at least 3 characters long.';
-      // Allow email format (auto-synced from email field) OR regular alphanumeric username
-      else if (!/^[a-zA-Z0-9._%+@-]{3,100}$/.test(username.trim())) errors.username = 'Username can only contain letters, numbers, and characters: . _ % + @ -';
-
-      if (!password.trim()) errors.password = t('admin.users.createUser.validation.passwordRequired') || 'Password is required.';
-      else if (password.length < 8) errors.password = t('admin.users.createUser.validation.passwordLength') || 'Password must be at least 8 characters.';
-      else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(password)) {
-        errors.password = t('admin.users.createUser.validation.passwordComplexity') || 'Password must contain at least one uppercase, one lowercase, one number and one special character.';
-      }
-
-      if (!confirmPassword.trim()) errors.confirmPassword = 'Confirm Password is required.';
-      else if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match.';
-
-      // Organisation, Position, and Employee ID — required only for Supervisor/LC (org_admin)
-      const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(k => roleTitle.includes(k) || roleLabel.includes(k));
-      if (isSupervisorOrLC) {
-        const organisationId = getCreateField('organisationId');
-        const positionId = getCreateField('positionId');
-        const employeeId = getCreateField('employeeId');
-        if (!organisationId) errors.organisationId = t('admin.users.createUser.validation.organisationRequired') || 'Organisation is required.';
-        if (!positionId) errors.positionId = t('admin.users.createUser.validation.positionRequired') || 'Position is required.';
-        if (!employeeId.trim()) {
-          errors.employeeId = t('admin.users.createUser.validation.employeeIdRequired') || 'Employee ID is required.';
-        } else if (!/^[A-Za-z]{3}\d{5}$/.test(employeeId.trim())) {
-          errors.employeeId = t('admin.users.createUser.validation.employeeIdInvalid') || 'Employee ID must be 3 letters followed by 5 digits (e.g. ADM00001).';
-        }
-      }
-    }
-
+    const errors = validateSchema(CREATE_USER_FORM_SCHEMA, createUserValues, createUserFlags);
     setCreateUserFields(prev => prev.map(f => ({ ...f, error: errors[f.id] || '' })));
     return Object.keys(errors).length === 0;
-  }, [roles, t, getCreateField]);
+  }, [createUserValues, createUserFlags]);
 
   const closeDeactivateModal = useCallback(() => {
     setDeactivateState({ user: null, isSubmitting: false });
@@ -730,9 +669,6 @@ const UserManagementScreen = () => {
         if (employeeId) payload.employee_id = employeeId;
       }
 
-      console.log('[CreateUser] Payload being sent:', JSON.stringify(payload, null, 2));
-
-
       await createUser(payload);
 
       // Show alert BEFORE closing modal so it is visible to the user
@@ -749,7 +685,7 @@ const UserManagementScreen = () => {
       showAlert('error', errMsg, { placement: 'bottom' });
       setIsCreateUserSubmitting(false);
     }
-  }, [roles, validateCreateUserForm, showAlert, t, closeCreateUserModal, getCreateField]);
+  }, [roles, validateCreateUserForm, showAlert, t, closeCreateUserModal, getCreateField, createUserValues, createUserFlags]);
 
   // Fetch users from API when filters change or when roles are first loaded
   useEffect(() => {
@@ -1784,19 +1720,12 @@ const UserManagementScreen = () => {
         <CreateUserForm
           isMobile={isMobile}
           t={t}
-          roles={roles}
-          provinces={provinces}
-          sites={formSites}
-          genders={genders}
-          organisations={organisations}
-          positions={positions}
-          COUNTRY_CODES={COUNTRY_CODES}
-          getCreateField={getCreateField}
-          handleCreateFieldChange={handleCreateFieldChange}
-          getCreateError={getCreateError}
+          optionsMap={createUserOptionsMap}
+          flags={createUserFlags}
+          values={createUserValues}
+          errors={createUserErrors}
+          onFieldChange={handleCreateFieldChange}
           isCreateUserSubmitting={isCreateUserSubmitting}
-          showCreateUserPassword={showCreateUserPassword}
-          setShowCreateUserPassword={setShowCreateUserPassword}
           isCreateUserModalOpen={isCreateUserModalOpen}
           onClose={closeCreateUserModal}
           onSubmit={handleCreateUserSubmit}
