@@ -424,7 +424,7 @@ export default function ParticipantDetail() {
                   <AssessmentSurveys
                     participant={participant as ParticipantData}
                     completionPercentage={updatedProgress || 0}
-                    {...(coachId ? {isReadOnly:true}:{})}
+                    {...(coachId ? {isReadOnly:true, coachId}:{})}
                   />
                 </Box>
               )}
