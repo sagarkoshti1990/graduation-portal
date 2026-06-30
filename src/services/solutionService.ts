@@ -285,7 +285,7 @@ export const getObservationSolution = async ({
     }
     const response = await api.post(
       url,
-      undefined,
+      {createdBy},
       withRetry(OBSERVATION_RETRY_CONFIG),
     );
     return response.data;
