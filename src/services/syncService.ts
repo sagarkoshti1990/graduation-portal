@@ -34,7 +34,27 @@ import {
   // createOrUpdateProgramUserMapping
 } from './participantService';
 import { buildOnboardingFileUpdate } from '../project-player/components/Task/TaskCard/utils/taskTransformers';
+import {
+  runValidationForParticipant,
+  buildSkipSets,
+  createSyncValidationCache,
+} from './syncValidationService';
+import { deleteParticipantOfflineData } from './offlineCleanupService';
 // import { STATUS } from '@constants/app.constant';
+
+/**
+ * Controls which items the sync engine should skip.
+ * Produced by syncValidationService.buildSkipSets() after user decisions are
+ * collected; passed into startSync so the service layer stays UI-free.
+ */
+export interface SyncSkipOptions {
+  /** FormIds (solutionIds) whose edits must not be sent to the server. */
+  skipFormIds?: Set<string>;
+  /** TaskIds whose status edits must not be sent to the server. */
+  skipTaskIds?: Set<string>;
+  /** ProjectIds whose task edits must not be sent to the server. */
+  skipProjectIds?: Set<string>;
+}
 
 type ProgressCallback = (progress: SyncProgress) => void;
 
@@ -253,6 +273,7 @@ async function syncFormEdits(
   userId: string,
   participantId: string,
   onProgress?: ProgressCallback,
+  skipFormIds?: Set<string>,
 ): Promise<{ synced: number; failed: number }> {
   const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter(
@@ -272,6 +293,12 @@ async function syncFormEdits(
         continue;
       }
 
+      // Skip forms that were blocked or not confirmed by the validation phase.
+      if (skipFormIds?.has(formId)) {
+        logger.info(`syncService: form "${formId}" skipped by validation`);
+        continue;
+      }
+
       // Load the cached form data to get entityId (required for the API call)
       const formData = await offlineStorage.read<ObservationFormData>(
         PARTICIPANT_KEYS.form(userId, participantId, formId),
@@ -286,7 +313,9 @@ async function syncFormEdits(
       // Use stored observationId (may differ from solutionId used as storage key)
       await api.post(`${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formData.submissionId}`,{evidence:edits});
 
+      // Remove edit queue entry and form snapshot — both are now on the server.
       await offlineStorage.remove(key);
+      await offlineStorage.remove(PARTICIPANT_KEYS.form(userId, participantId, formId)).catch(() => {});
       synced++;
       onProgress?.(makeProgress('forms', i + 1, editKeys.length));
     } catch (err) {
@@ -355,6 +384,8 @@ async function syncTaskEdits(
   userId: string,
   participantId: string,
   onProgress?: ProgressCallback,
+  skipTaskIds?: Set<string>,
+  skipProjectIds?: Set<string>,
 ): Promise<{ synced: number; failed: number }> {
   const allKeys = await offlineStorage.getParticipantKeys(userId, participantId);
   const editKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
@@ -375,15 +406,37 @@ async function syncTaskEdits(
       continue;
     }
 
+    // Skip entire project if blocked by validation.
+    if (skipProjectIds?.has(projectId)) {
+      logger.info(`syncService: project "${projectId}" skipped by validation`);
+      continue;
+    }
+
+    // Filter out tasks that were blocked by the validation phase.
+    const tasksToSync = skipTaskIds?.size
+      ? projectEdits.tasks.filter((t: any) => !skipTaskIds.has(t._id))
+      : projectEdits.tasks;
+
+    if (!tasksToSync.length) {
+      logger.info(`syncService: all tasks for project "${projectId}" skipped by validation`);
+      continue;
+    }
+
+    const payload = tasksToSync.length === projectEdits.tasks.length
+      ? projectEdits
+      : { ...projectEdits, tasks: tasksToSync };
+
     try {
       // Send all pending task edits for this project in a single API call
-      await updateTaskAPI(projectId, projectEdits);
-      synced += projectEdits.tasks.length;
+      await updateTaskAPI(projectId, payload);
+      synced += tasksToSync.length;
       onProgress?.(makeProgress('tasks', synced, synced));
       // Merge the uploaded URLs back into the cached project so the local cache
       // reflects the server state without needing a fresh fetch.
-      await applyEditsToCachedProject(userId, participantId, projectId, projectEdits.tasks);
+      await applyEditsToCachedProject(userId, participantId, projectId, tasksToSync);
+      // Remove edit queue and cached project snapshot — both are now on the server.
       await offlineStorage.remove(editKey).catch(() => {});
+      await offlineStorage.remove(PARTICIPANT_KEYS.project(userId, participantId, projectId)).catch(() => {});
     } catch (err) {
       logger.error(`syncService: task edit sync failed for project ${projectId}`, err);
       failed++;
@@ -397,11 +450,16 @@ async function syncTaskEdits(
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Sync all pending changes for a single participant. userId scopes all storage keys. */
+/**
+ * Sync all pending changes for a single participant. userId scopes all storage
+ * keys.  Pass `skipOptions` (produced by syncValidationService.buildSkipSets)
+ * to omit items that failed pre-sync validation.
+ */
 export const startSync = async (
   participantId: string,
   userId: string,
   onProgress?: ProgressCallback,
+  skipOptions?: SyncSkipOptions,
 ): Promise<SyncResult> => {
   const errors: string[] = [];
   let syncedCount = 0, failedCount = 0;
@@ -412,12 +470,12 @@ export const startSync = async (
   failedCount += filesResult.failed;
 
   onProgress?.(makeProgress('forms', 0, 1));
-  const formsResult = await syncFormEdits(userId, participantId, onProgress);
+  const formsResult = await syncFormEdits(userId, participantId, onProgress, skipOptions?.skipFormIds);
   syncedCount += formsResult.synced;
   failedCount += formsResult.failed;
 
   onProgress?.(makeProgress('tasks', 0, 1));
-  const tasksResult = await syncTaskEdits(userId, participantId, onProgress);
+  const tasksResult = await syncTaskEdits(userId, participantId, onProgress, skipOptions?.skipTaskIds, skipOptions?.skipProjectIds);
   syncedCount += tasksResult.synced;
   failedCount += tasksResult.failed;
 
@@ -433,11 +491,24 @@ export const startSync = async (
       OFFLINE_KEYS.SYNC_FAILED(userId),
       existing.filter((id: string) => id !== participantId),
     );
-    // Record per-participant sync timestamp so the UI badge can show "last synced"
-    await offlineStorage.create(
-      PARTICIPANT_KEYS.lastSyncedAt(userId, participantId),
-      Date.now(),
-    ).catch(() => {});
+
+    // Auto-cleanup: when all records synced (no failures, no remaining edits)
+    // remove the participant's offline data so they don't appear as offline anymore.
+    const remainingKeys = await offlineStorage.getParticipantKeys(userId, participantId).catch(() => [] as string[]);
+    const hasPendingEdits = remainingKeys.some((k: string) =>
+      (k.endsWith(':edits') && k.includes(':form:')) ||
+      k.includes(':projectEdits:') ||
+      k.endsWith(':filesPending'),
+    );
+    if (!hasPendingEdits) {
+      await deleteParticipantOfflineData(userId, [participantId]).catch(() => {});
+    } else {
+      // Some items were skipped — record last-synced timestamp for the items that did sync.
+      await offlineStorage.create(
+        PARTICIPANT_KEYS.lastSyncedAt(userId, participantId),
+        Date.now(),
+      ).catch(() => {});
+    }
   }
 
   await offlineStorage.create(OFFLINE_KEYS.SYNC_LAST(userId), Date.now()).catch(() => {});
@@ -451,7 +522,16 @@ export const startSync = async (
   };
 };
 
-/** Sync all offline participants for the given user sequentially. */
+/**
+ * Sync all offline participants for the given user sequentially.
+ *
+ * Runs the full validation flow for each participant before syncing, using a
+ * shared cache so participant / project / observation data is fetched at most
+ * once across the entire session.  Items that are blocked by validation or have
+ * unresolved timestamp conflicts are automatically skipped — conflicts are not
+ * shown interactively here because this function is called without UI context.
+ * For interactive conflict resolution use `startSync` via `SyncOverviewModal`.
+ */
 export const startSyncAll = async (
   userId: string,
   onProgress?: ProgressCallback,
@@ -464,8 +544,23 @@ export const startSyncAll = async (
   let syncedCount = 0, failedCount = 0;
   const errors: string[] = [];
 
+  // Shared cache: avoids duplicate API calls when multiple participants share the same project.
+  const validationCache = createSyncValidationCache();
+
   for (const id of ids) {
-    const result = await startSync(id, userId, onProgress);
+    let skipOptions: SyncSkipOptions | undefined;
+    try {
+      const plan = await runValidationForParticipant(id, userId, validationCache);
+      if (plan.participantBlocked) {
+        logger.info(`startSyncAll: skipping "${id}" — participant blocked by validation`);
+        continue;
+      }
+      skipOptions = buildSkipSets(plan);
+    } catch (err) {
+      logger.warn(`startSyncAll: validation failed for "${id}" — proceeding without skip filter`, err);
+    }
+
+    const result = await startSync(id, userId, onProgress, skipOptions);
     syncedCount += result.syncedCount;
     failedCount += result.failedCount;
     errors.push(...result.errors);

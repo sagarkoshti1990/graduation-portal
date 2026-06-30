@@ -2196,6 +2196,22 @@
     "syncComplete": "Sync Complete",
     "labelFiles": "Files",
     "labelForms": "Observations",
-    "labelTasks": "Tasks"
+    "labelTasks": "Tasks",
+    "validating": "Validating...",
+    "participantProgressTitle": "Participant Progress Updated",
+    "participantProgressMessage": "This participant has already progressed further online (Current Status: {{onlineStatus}}). The offline data for this participant can no longer be synced. Would you like to remove all offline data related to this participant from this device?",
+    "removeAllOfflineData": "Remove Offline Data",
+    "projectUpdatedTitle": "Project Already Updated",
+    "projectUpdatedMessage": "This project has already progressed further online. The offline version can no longer be synced. Would you like to remove this project's offline data?",
+    "taskUpdatedTitle": "Task Already Updated",
+    "taskUpdatedMessage": "This task has already progressed further online and cannot be synced from offline data. This task will be skipped during the current sync.",
+    "taskObservationUpdatedTitle": "Task Observation Already Updated",
+    "taskObservationUpdatedMessage": "This task observation has already progressed further online. The offline observation can no longer be synced. Would you like to remove this offline observation?",
+    "observationCompletedTitle": "Observation Already Completed",
+    "observationCompletedMessage": "This observation has already been completed online. The offline observation can no longer be synced. Would you like to remove this offline observation?",
+    "conflictDetectedTitle": "Data Conflict Detected",
+    "conflictDetectedMessage": "This record has been updated online after it was downloaded offline. Syncing will overwrite the latest online changes. Do you want to continue?",
+    "overrideAndSync": "Override & Sync",
+    "skipAndRemove": "Skip & Remove"
   }
 }

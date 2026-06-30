@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Modal,
   VStack,
@@ -17,7 +17,18 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import { useAuth } from '@contexts/AuthContext';
 import { getPerParticipantPendingBreakdown, type ParticipantPendingEntry } from '../../services/dataService';
-import { startSync } from '../../services/syncService';
+import { startSync, type SyncSkipOptions } from '../../services/syncService';
+import {
+  runValidationForParticipant,
+  buildSkipSets,
+  createSyncValidationCache,
+  type ParticipantValidationPlan,
+} from '../../services/syncValidationService';
+import {
+  deleteParticipantOfflineData,
+  deleteProjectOfflineData,
+  deleteObservationOfflineData,
+} from '../../services/offlineCleanupService';
 import type { SyncProgress } from '@app-types/offline';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -42,6 +53,45 @@ const IDLE_STATE: ParticipantSyncState = {
   completedTasks: 0,
 };
 
+// ── Dialog types ──────────────────────────────────────────────────────────────
+
+/**
+ * One entry per distinct dialog kind.
+ *
+ *  participant-blocked   → "Participant Progress Updated" (Cancel | Remove Offline Data)
+ *  project-blocked       → "Project Already Updated" (Cancel | Skip & Remove)
+ *  task-blocked          → "Task Already Updated" (informational only — OK button)
+ *  form-blocked          → "Task Observation Already Updated" (Cancel | Skip & Remove)
+ *  form-completed        → "Observation Already Completed" (Cancel | Skip & Remove)
+ *  participant-conflict  → "Data Conflict Detected" (Cancel | Override & Sync)
+ *  project-conflict      → "Data Conflict Detected" (Cancel | Override & Sync)
+ *  form-conflict         → "Data Conflict Detected" (Cancel | Override & Sync)
+ */
+type DialogKind =
+  | 'participant-blocked'
+  | 'project-blocked'
+  | 'task-blocked'
+  | 'form-blocked'
+  | 'form-completed'
+  | 'participant-conflict'
+  | 'project-conflict'
+  | 'form-conflict';
+
+interface DialogItem {
+  id: string;
+  kind: DialogKind;
+  participantId: string;
+  participantName: string;
+  /** Online participant status — for 'participant-blocked' message interpolation */
+  onlineStatus?: string;
+  projectId?: string;
+  taskId?: string;
+  formId?: string;
+}
+
+/** What the user chose in a dialog. */
+type DialogDecision = 'cancel' | 'remove' | 'override' | 'ok';
+
 // ── Progress helper ───────────────────────────────────────────────────────────
 
 function applyProgress(
@@ -50,7 +100,6 @@ function applyProgress(
   p: SyncProgress,
 ): ParticipantSyncState {
   let { completedFiles, completedForms, completedTasks } = prev;
-
   if (p.stage === 'files') {
     completedFiles = p.current;
   } else if (p.stage === 'forms') {
@@ -64,7 +113,6 @@ function applyProgress(
     completedForms = entry.forms;
     completedTasks = entry.tasks;
   }
-
   return {
     ...prev,
     stage: p.stage,
@@ -90,6 +138,11 @@ const SyncOverviewModal: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkSyncing, setBulkSyncing] = useState(false);
 
+  // ── Validation / dialog state ──────────────────────────────────────────────
+  const [isValidating, setIsValidating] = useState(false);
+  const [currentDialog, setCurrentDialog] = useState<DialogItem | null>(null);
+  const dialogResolverRef = useRef<((d: DialogDecision) => void) | null>(null);
+
   // ── Load participants ──────────────────────────────────────────────────────
 
   const loadParticipants = useCallback(async () => {
@@ -111,33 +164,43 @@ const SyncOverviewModal: React.FC = () => {
       loadParticipants();
       setSyncStates({});
       setBulkSyncing(false);
+      setIsValidating(false);
+      setCurrentDialog(null);
     }
   }, [showSyncModal, loadParticipants]);
 
-  // ── Per-participant sync (independent — does not block others) ─────────────
+  // ── Sequential dialog queue ────────────────────────────────────────────────
+
+  const showDialog = useCallback((item: DialogItem): Promise<DialogDecision> => {
+    return new Promise(resolve => {
+      dialogResolverRef.current = resolve;
+      setCurrentDialog(item);
+    });
+  }, []);
+
+  const resolveDialog = useCallback((decision: DialogDecision) => {
+    dialogResolverRef.current?.(decision);
+    dialogResolverRef.current = null;
+    setCurrentDialog(null);
+  }, []);
+
+  // ── Per-participant sync ───────────────────────────────────────────────────
 
   const syncOne = useCallback(
-    async (entry: ParticipantPendingEntry) => {
+    async (entry: ParticipantPendingEntry, skipOptions?: SyncSkipOptions) => {
       const { participantId } = entry;
-
       setSyncStates(prev => ({
         ...prev,
         [participantId]: { ...IDLE_STATE, syncing: true, stage: 'idle' },
       }));
-
       try {
         await startSync(participantId, userId, (progress: SyncProgress) => {
           setSyncStates(prev => ({
             ...prev,
-            [participantId]: applyProgress(
-              prev[participantId] ?? IDLE_STATE,
-              entry,
-              progress,
-            ),
+            [participantId]: applyProgress(prev[participantId] ?? IDLE_STATE, entry, progress),
           }));
-        });
+        }, skipOptions);
 
-        // Ensure final done state (guard against missing 'done' callback)
         setSyncStates(prev => ({
           ...prev,
           [participantId]: {
@@ -151,35 +214,26 @@ const SyncOverviewModal: React.FC = () => {
         }));
 
         await refreshPending();
-
-        // Remove from list 2 s after done so the user sees the success state briefly
         setTimeout(() => {
           setParticipants(prev => prev.filter(p => p.participantId !== participantId));
-          setSyncStates(prev => {
-            const next = { ...prev };
-            delete next[participantId];
-            return next;
-          });
+          setSyncStates(prev => { const n = { ...prev }; delete n[participantId]; return n; });
         }, 2000);
       } catch {
         setSyncStates(prev => ({
           ...prev,
-          [participantId]: {
-            ...(prev[participantId] ?? IDLE_STATE),
-            syncing: false,
-            error: true,
-          },
+          [participantId]: { ...(prev[participantId] ?? IDLE_STATE), syncing: false, error: true },
         }));
       }
     },
     [userId, refreshPending],
   );
 
-  // ── Bulk sync ──────────────────────────────────────────────────────────────
+  // ── Bulk sync with validation + per-type dialogs ──────────────────────────
 
   const syncSelected = useCallback(async () => {
     if (isOffline || !selectedIds.size || bulkSyncing) return;
     setBulkSyncing(true);
+
     try {
       const toSync = participants.filter(
         p =>
@@ -187,24 +241,202 @@ const SyncOverviewModal: React.FC = () => {
           !syncStates[p.participantId]?.syncing &&
           !syncStates[p.participantId]?.done,
       );
-      await Promise.all(toSync.map(entry => syncOne(entry)));
+      if (!toSync.length) return;
+
+      // ── Phase 1: Validate all selected participants ──────────────────────
+      setIsValidating(true);
+      const validationCache = createSyncValidationCache();
+      const planResults = await Promise.allSettled(
+        toSync.map(p => runValidationForParticipant(p.participantId, userId, validationCache)),
+      );
+      setIsValidating(false);
+
+      const planMap = new Map<string, ParticipantValidationPlan>();
+      planResults.forEach((r, i) => {
+        if (r.status === 'fulfilled') planMap.set(toSync[i].participantId, r.value);
+      });
+
+      // ── Phase 2: Show per-type dialogs sequentially ──────────────────────
+      //  Track participants to skip entirely (blocked or conflict-cancelled)
+      const skipParticipantIds = new Set<string>();
+      //  Tracks projects the user chose to skip (conflict-cancelled)
+      const extraSkipProjectIds = new Set<string>();
+      //  Tracks forms the user approved for override-sync despite conflict
+      const overriddenConflictFormIds = new Set<string>();
+
+      for (const entry of toSync) {
+        const plan = planMap.get(entry.participantId);
+        if (!plan) continue;
+
+        // ── 1. Participant blocked ─────────────────────────────────────────
+        if (plan.participantBlocked) {
+          const decision = await showDialog({
+            id: `participant-blocked-${entry.participantId}`,
+            kind: 'participant-blocked',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            onlineStatus: plan.onlineParticipantStatus,
+          });
+          if (decision === 'remove') {
+            await deleteParticipantOfflineData(userId, [entry.participantId]);
+            await refreshPending();
+          }
+          skipParticipantIds.add(entry.participantId);
+          continue; // nothing further can sync for this participant
+        }
+
+        // ── 2. Participant conflict (equal status, timestamp divergence) ───
+        if (plan.participantConflict) {
+          const decision = await showDialog({
+            id: `participant-conflict-${entry.participantId}`,
+            kind: 'participant-conflict',
+            participantId: entry.participantId,
+            participantName: entry.name,
+          });
+          if (decision === 'cancel') {
+            skipParticipantIds.add(entry.participantId);
+            continue;
+          }
+          // 'override' → proceed with all items for this participant
+        }
+
+        // ── 3. Blocked projects ────────────────────────────────────────────
+        for (const projectId of plan.blockedProjectIds) {
+          const decision = await showDialog({
+            id: `project-blocked-${projectId}`,
+            kind: 'project-blocked',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            projectId,
+          });
+          if (decision === 'remove') {
+            await deleteProjectOfflineData(userId, entry.participantId, projectId);
+            await refreshPending();
+          }
+          // buildSkipSets already adds blockedProjectIds to skipProjectIds
+        }
+
+        // ── 4. Project conflicts ───────────────────────────────────────────
+        for (const projectId of plan.conflictProjectIds) {
+          const decision = await showDialog({
+            id: `project-conflict-${projectId}`,
+            kind: 'project-conflict',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            projectId,
+          });
+          if (decision === 'cancel') {
+            extraSkipProjectIds.add(projectId);
+          }
+          // 'override' → proceed with task sync for this project
+        }
+
+        // ── 5. Blocked tasks (informational only — no removal) ─────────────
+        for (const task of plan.taskResults.filter(tr => tr.outcome === 'blocked')) {
+          await showDialog({
+            id: `task-blocked-${task.taskId}`,
+            kind: 'task-blocked',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            projectId: task.projectId,
+            taskId: task.taskId,
+          });
+          // User clicks OK — task stays in queue, buildSkipSets adds it to skipTaskIds
+        }
+
+        // ── 6. Blocked task observations ──────────────────────────────────
+        for (const form of plan.formResults.filter(f => f.outcome === 'blocked')) {
+          const decision = await showDialog({
+            id: `form-blocked-${form.formId}`,
+            kind: 'form-blocked',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            formId: form.formId,
+          });
+          if (decision === 'remove') {
+            await deleteObservationOfflineData(userId, entry.participantId, form.formId);
+            await refreshPending();
+          }
+          // buildSkipSets adds blocked forms to skipFormIds
+        }
+
+        // ── 7. Completed standalone observations ──────────────────────────
+        for (const form of plan.formResults.filter(f => f.outcome === 'remove')) {
+          const decision = await showDialog({
+            id: `form-completed-${form.formId}`,
+            kind: 'form-completed',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            formId: form.formId,
+          });
+          if (decision === 'remove') {
+            await deleteObservationOfflineData(userId, entry.participantId, form.formId);
+            await refreshPending();
+          }
+          // buildSkipSets adds 'remove' forms to skipFormIds
+        }
+
+        // ── 8. Conflict forms (timestamp divergence) ──────────────────────
+        for (const form of plan.formResults.filter(f => f.outcome === 'conflict')) {
+          const decision = await showDialog({
+            id: `form-conflict-${form.formId}`,
+            kind: 'form-conflict',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            formId: form.formId,
+          });
+          if (decision === 'override') {
+            overriddenConflictFormIds.add(form.formId);
+          }
+          // 'cancel' → form stays in skipFormIds (added by buildSkipSets)
+        }
+      }
+
+      // ── Phase 3: Sync each participant with computed skip options ────────
+      await Promise.all(
+        toSync.map(entry => {
+          if (skipParticipantIds.has(entry.participantId)) return Promise.resolve();
+
+          const plan = planMap.get(entry.participantId);
+          let skipOptions: SyncSkipOptions | undefined;
+
+          if (plan) {
+            skipOptions = buildSkipSets(plan);
+
+            // Remove conflict forms the user approved
+            for (const formId of overriddenConflictFormIds) {
+              skipOptions.skipFormIds.delete(formId);
+            }
+            // Add projects the user cancelled override for
+            for (const projectId of extraSkipProjectIds) {
+              skipOptions.skipProjectIds.add(projectId);
+            }
+          }
+
+          return syncOne(entry, skipOptions);
+        }),
+      );
+
+      await refreshPending();
+      await loadParticipants();
     } finally {
       setBulkSyncing(false);
     }
-  }, [isOffline, selectedIds, bulkSyncing, participants, syncStates, syncOne]);
+  }, [
+    isOffline, selectedIds, bulkSyncing, participants, syncStates, userId,
+    syncOne, showDialog, refreshPending, loadParticipants,
+  ]);
 
   // ── Selection ──────────────────────────────────────────────────────────────
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   }, []);
 
-  // IDs that can still be synced (not yet syncing or done)
   const syncableIds = participants
     .filter(p => !syncStates[p.participantId]?.syncing && !syncStates[p.participantId]?.done)
     .map(p => p.participantId);
@@ -216,7 +448,7 @@ const SyncOverviewModal: React.FC = () => {
     });
   }, [syncableIds]);
 
-  // ── Derived state ──────────────────────────────────────────────────────────
+  // ── Derived ────────────────────────────────────────────────────────────────
 
   const anySyncing = Object.values(syncStates).some(s => s.syncing);
   const allSynced = participants.length === 0 && !loadingParticipants;
@@ -227,27 +459,23 @@ const SyncOverviewModal: React.FC = () => {
       !syncStates[p.participantId]?.syncing &&
       !syncStates[p.participantId]?.done,
   ).length;
+  const isBusy = isValidating || anySyncing || bulkSyncing;
 
   // ── Render helpers ─────────────────────────────────────────────────────────
 
-  const renderProgressRow = (
-    done: number,
-    total: number,
-    label: string,
-    isCurrentStage: boolean,
-  ) => {
+  const renderProgressRow = (done: number, total: number, label: string, isCurrent: boolean) => {
     if (total === 0) return null;
     const complete = done >= total;
     return (
       <HStack key={label} space="xs" alignItems="center">
         <LucideIcon
-          name={complete ? 'CircleCheck' : isCurrentStage ? 'RefreshCw' : 'Clock'}
+          name={complete ? 'CircleCheck' : isCurrent ? 'RefreshCw' : 'Clock'}
           size={10}
-          color={complete ? '$success600' : isCurrentStage ? '$primary500' : '$textLight400'}
+          color={complete ? '$success600' : isCurrent ? '$primary500' : '$textLight400'}
         />
         <Text
           fontSize="$xs"
-          color={complete ? '$success600' : isCurrentStage ? '$primary500' : '$textMutedForeground'}
+          color={complete ? '$success600' : isCurrent ? '$primary500' : '$textMutedForeground'}
         >
           {done}/{total} {label}
         </Text>
@@ -255,235 +483,276 @@ const SyncOverviewModal: React.FC = () => {
     );
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Dialog renderer ────────────────────────────────────────────────────────
+
+  const renderDialog = () => {
+    if (!currentDialog) return null;
+    const { kind, participantName, onlineStatus } = currentDialog;
+
+    // Buttons shared across kinds
+    const cancelBtn = (
+      <Button variant="outline" size="sm" onPress={() => resolveDialog('cancel')}>
+        <ButtonText>{t('common.cancel')}</ButtonText>
+      </Button>
+    );
+    const skipRemoveBtn = (
+      <Button variant="solid" size="sm" onPress={() => resolveDialog('remove')}>
+        <ButtonText>{t('offlineSync.skipAndRemove')}</ButtonText>
+      </Button>
+    );
+
+    let headerTitle = '';
+    let message = '';
+    let footer: React.ReactNode = null;
+
+    if (kind === 'participant-blocked') {
+      headerTitle = t('offlineSync.participantProgressTitle');
+      message = t('offlineSync.participantProgressMessage', {
+        onlineStatus: onlineStatus ?? '',
+      });
+      footer = (
+        <HStack space="md" justifyContent="flex-end">
+          {cancelBtn}
+          <Button variant="solid" size="sm" onPress={() => resolveDialog('remove')}>
+            <ButtonText>{t('offlineSync.removeAllOfflineData')}</ButtonText>
+          </Button>
+        </HStack>
+      );
+    } else if (kind === 'project-blocked') {
+      headerTitle = t('offlineSync.projectUpdatedTitle');
+      message = t('offlineSync.projectUpdatedMessage');
+      footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
+    } else if (kind === 'task-blocked') {
+      headerTitle = t('offlineSync.taskUpdatedTitle');
+      message = t('offlineSync.taskUpdatedMessage');
+      footer = (
+        <HStack justifyContent="flex-end">
+          <Button variant="solid" size="sm" onPress={() => resolveDialog('ok')}>
+            <ButtonText>{t('common.ok') || 'OK'}</ButtonText>
+          </Button>
+        </HStack>
+      );
+    } else if (kind === 'form-blocked') {
+      headerTitle = t('offlineSync.taskObservationUpdatedTitle');
+      message = t('offlineSync.taskObservationUpdatedMessage');
+      footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
+    } else if (kind === 'form-completed') {
+      headerTitle = t('offlineSync.observationCompletedTitle');
+      message = t('offlineSync.observationCompletedMessage');
+      footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
+    } else if (
+      kind === 'participant-conflict' ||
+      kind === 'project-conflict' ||
+      kind === 'form-conflict'
+    ) {
+      headerTitle = t('offlineSync.conflictDetectedTitle');
+      message = t('offlineSync.conflictDetectedMessage');
+      footer = (
+        <HStack space="md" justifyContent="flex-end">
+          {cancelBtn}
+          <Button variant="solid" size="sm" onPress={() => resolveDialog('override')}>
+            <ButtonText>{t('offlineSync.overrideAndSync')}</ButtonText>
+          </Button>
+        </HStack>
+      );
+    }
+
+    return (
+      <Modal
+        isOpen
+        onClose={() => resolveDialog('cancel')}
+        headerTitle={headerTitle}
+        size="md"
+        showCloseButton={false}
+        footerContent={footer}
+      >
+        <VStack space="sm">
+          <Text fontSize="$sm" fontWeight="$semibold">{participantName}</Text>
+          <Text fontSize="$sm" color="$textSecondary">{message}</Text>
+        </VStack>
+      </Modal>
+    );
+  };
+
+  // ── Main render ────────────────────────────────────────────────────────────
 
   return (
-    <Modal
-      isOpen={showSyncModal}
-      onClose={closeSyncModal}
-      headerTitle={t('offlineSync.modalTitle')}
-      headerIcon={<LucideIcon name="RefreshCw" size={16} color="$primary500" />}
-      size="lg"
-      showCloseButton={!anySyncing}
-    >
-      <VStack space="md">
+    <>
+      <Modal
+        isOpen={showSyncModal}
+        onClose={closeSyncModal}
+        headerTitle={t('offlineSync.modalTitle')}
+        headerIcon={<LucideIcon name="RefreshCw" size={16} color="$primary500" />}
+        size="lg"
+        showCloseButton={!isBusy}
+      >
+        <VStack space="md">
 
-        {/* Loading */}
-        {loadingParticipants && participants.length === 0 && (
-          <HStack space="sm" alignItems="center" justifyContent="center" py="$2">
-            <Spinner size="small" color="$primary500" />
-            <Text fontSize="$sm" color="$textSecondary">{t('common.loading')}</Text>
-          </HStack>
-        )}
+          {loadingParticipants && participants.length === 0 && (
+            <HStack space="sm" alignItems="center" justifyContent="center" py="$2">
+              <Spinner size="small" color="$primary500" />
+              <Text fontSize="$sm" color="$textSecondary">{t('common.loading')}</Text>
+            </HStack>
+          )}
 
-        {/* All synced */}
-        {allSynced && (
-          <VStack space="sm" alignItems="center" py="$4">
-            <LucideIcon name="CircleCheck" size={40} color="$success600" />
-            <Text fontSize="$md" fontWeight="$semibold" color="$success600">
-              {t('offlineSync.allSynced')}
-            </Text>
-          </VStack>
-        )}
+          {isValidating && (
+            <HStack space="sm" alignItems="center" justifyContent="center" py="$2">
+              <Spinner size="small" color="$primary500" />
+              <Text fontSize="$sm" color="$textSecondary">{t('offlineSync.validating')}</Text>
+            </HStack>
+          )}
 
-        {/* Select-all bar */}
-        {!loadingParticipants && syncableIds.length > 0 && (
-          <HStack justifyContent="space-between" alignItems="center" px="$1">
-            <Pressable onPress={toggleSelectAll}>
-              <HStack space="xs" alignItems="center">
-                <LucideIcon
-                  name={allSyncableSelected ? 'SquareCheckBig' : 'Square'}
-                  size={16}
-                  color="$primary500"
-                />
-                <Text fontSize="$xs" color="$primary500">
-                  {allSyncableSelected
-                    ? t('offlineSync.deselectAll')
-                    : t('offlineSync.selectAll')}
-                </Text>
-              </HStack>
-            </Pressable>
-            {selectedCount > 0 && (
-              <Text fontSize="$xs" color="$textMutedForeground">
-                {selectedCount}/{syncableIds.length} {t('offlineSync.selected')}
+          {allSynced && (
+            <VStack space="sm" alignItems="center" py="$4">
+              <LucideIcon name="CircleCheck" size={40} color="$success600" />
+              <Text fontSize="$md" fontWeight="$semibold" color="$success600">
+                {t('offlineSync.allSynced')}
               </Text>
-            )}
-          </HStack>
-        )}
+            </VStack>
+          )}
 
-        {/* Participant list */}
-        {!loadingParticipants && participants.length > 0 && (
-          <ScrollView maxHeight={350}>
-            <VStack space="sm">
-              {participants.map(entry => {
-                const state = syncStates[entry.participantId];
-                const isSyncing = state?.syncing ?? false;
-                const isDone = state?.done ?? false;
-                const isError = state?.error ?? false;
-                const isSelected = selectedIds.has(entry.participantId);
-                const canSync = !isOffline && !isSyncing && !isDone;
+          {!loadingParticipants && syncableIds.length > 0 && (
+            <HStack justifyContent="space-between" alignItems="center" px="$1">
+              <Pressable onPress={toggleSelectAll}>
+                <HStack space="xs" alignItems="center">
+                  <LucideIcon
+                    name={allSyncableSelected ? 'SquareCheckBig' : 'Square'}
+                    size={16}
+                    color="$primary500"
+                  />
+                  <Text fontSize="$xs" color="$primary500">
+                    {allSyncableSelected ? t('offlineSync.deselectAll') : t('offlineSync.selectAll')}
+                  </Text>
+                </HStack>
+              </Pressable>
+              {selectedCount > 0 && (
+                <Text fontSize="$xs" color="$textMutedForeground">
+                  {selectedCount}/{syncableIds.length} {t('offlineSync.selected')}
+                </Text>
+              )}
+            </HStack>
+          )}
 
-                const filesDone = state?.completedFiles ?? 0;
-                const formsDone = state?.completedForms ?? 0;
-                const tasksDone = state?.completedTasks ?? 0;
+          {!loadingParticipants && participants.length > 0 && (
+            <ScrollView maxHeight={350}>
+              <VStack space="sm">
+                {participants.map(entry => {
+                  const state = syncStates[entry.participantId];
+                  const isSyncing = state?.syncing ?? false;
+                  const isDone = state?.done ?? false;
+                  const isError = state?.error ?? false;
+                  const isSelected = selectedIds.has(entry.participantId);
+                  const canToggle = !isSyncing && !isDone;
 
-                const isFilesStage = state?.stage === 'files';
-                const isFormsStage = state?.stage === 'forms';
-                const isTasksStage = state?.stage === 'tasks';
-
-                return (
-                  <Pressable onPress={() => (canSync) ? toggleSelect(entry.participantId) : ""}
-                    key={entry.participantId}
-                    borderWidth={1}
-                    borderColor={
-                      isDone ? '$success300' : isError ? '$error300' : '$borderLight200'
-                    }
-                    borderRadius="$md"
-                    p="$3"
-                    backgroundColor={
-                      isDone ? '$success50' : isError ? '$error50' : 'transparent'
-                    }
-                  >
-                    <HStack justifyContent="space-between" alignItems="flex-start">
-                      {/* Checkbox / status icon + participant info */}
-                      <HStack space="sm" flex={1} mr="$2" alignItems="flex-start">
-                        <Box width={18} alignItems="center" mt="$0.5">
-                          {isSyncing ? (
-                            <Spinner size="small" color="$primary500" />
-                          ) : isDone ? (
-                            <LucideIcon name="CircleCheck" size={16} color="$success600" />
-                          ) : (
+                  return (
+                    <Pressable
+                      key={entry.participantId}
+                      onPress={() => canToggle && toggleSelect(entry.participantId)}
+                      borderWidth={1}
+                      borderColor={isDone ? '$success300' : isError ? '$error300' : '$borderLight200'}
+                      borderRadius="$md"
+                      p="$3"
+                      backgroundColor={isDone ? '$success50' : isError ? '$error50' : 'transparent'}
+                    >
+                      <HStack justifyContent="space-between" alignItems="flex-start">
+                        <HStack space="sm" flex={1} mr="$2" alignItems="flex-start">
+                          <Box width={18} alignItems="center" mt="$0.5">
+                            {isSyncing ? (
+                              <Spinner size="small" color="$primary500" />
+                            ) : isDone ? (
+                              <LucideIcon name="CircleCheck" size={16} color="$success600" />
+                            ) : (
                               <LucideIcon
                                 name={isSelected ? 'SquareCheckBig' : 'Square'}
                                 size={16}
                                 color={isSelected ? '$primary500' : '$borderLight400'}
                               />
-                          )}
-                        </Box>
-
-                        <VStack flex={1} space="xs">
-                          <Text fontSize="$sm" fontWeight="$semibold" numberOfLines={1}>
-                            {entry.name}
-                          </Text>
-                          <Text fontSize="$xs" color="$textMutedForeground">
-                            {t('offlineSync.participantId', { id: entry.externalId })}
-                          </Text>
-
-                          {/* Pending counts (idle) or per-category progress (syncing/done) */}
-                          <HStack space="md" flexWrap="wrap" mt="$0.5">
-                            {isSyncing || isDone ? (
-                              <>
-                                {renderProgressRow(filesDone, entry.files, t('offlineSync.labelFiles'), isFilesStage)}
-                                {renderProgressRow(formsDone, entry.forms, t('offlineSync.labelForms'), isFormsStage)}
-                                {renderProgressRow(tasksDone, entry.tasks, t('offlineSync.labelTasks'), isTasksStage)}
-                              </>
-                            ) : (
-                              <>
-                                {entry.files > 0 && (
-                                  <Text fontSize="$xs" color="$textSecondary">
-                                    {t('offlineSync.pendingFiles', { count: entry.files })}
-                                  </Text>
-                                )}
-                                {entry.forms > 0 && (
-                                  <Text fontSize="$xs" color="$textSecondary">
-                                    {t('offlineSync.pendingForms', { count: entry.forms })}
-                                  </Text>
-                                )}
-                                {entry.tasks > 0 && (
-                                  <Text fontSize="$xs" color="$textSecondary">
-                                    {t('offlineSync.pendingTasks', { count: entry.tasks })}
-                                  </Text>
-                                )}
-                              </>
                             )}
-                          </HStack>
+                          </Box>
 
-                          {/* Stage label / status */}
-                          {isSyncing && state?.stage && state.stage !== 'idle' && (
-                            <Text fontSize="$xs" color="$primary500">
-                              {state.stage === 'files'
-                                ? t('offlineSync.stageFiles')
-                                : state.stage === 'forms'
-                                ? t('offlineSync.stageForms')
-                                : t('offlineSync.stageTasks')}
+                          <VStack flex={1} space="xs">
+                            <Text fontSize="$sm" fontWeight="$semibold" numberOfLines={1}>
+                              {entry.name}
                             </Text>
-                          )}
-                          {isDone && (
-                            <Text fontSize="$xs" color="$success600">
-                              {t('offlineSync.syncComplete')}
+                            <Text fontSize="$xs" color="$textMutedForeground">
+                              {t('offlineSync.participantId', { id: entry.externalId })}
                             </Text>
-                          )}
-                          {isError && !isSyncing && (
-                            <Text fontSize="$xs" color="$error500">
-                              {t('offlineSync.syncError')}
-                            </Text>
-                          )}
-                        </VStack>
+
+                            <HStack space="md" flexWrap="wrap" mt="$0.5">
+                              {(isSyncing || isDone) ? (
+                                <>
+                                  {renderProgressRow(state?.completedFiles ?? 0, entry.files, t('offlineSync.labelFiles'), state?.stage === 'files')}
+                                  {renderProgressRow(state?.completedForms ?? 0, entry.forms, t('offlineSync.labelForms'), state?.stage === 'forms')}
+                                  {renderProgressRow(state?.completedTasks ?? 0, entry.tasks, t('offlineSync.labelTasks'), state?.stage === 'tasks')}
+                                </>
+                              ) : (
+                                <>
+                                  {entry.files > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingFiles', { count: entry.files })}</Text>}
+                                  {entry.forms > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingForms', { count: entry.forms })}</Text>}
+                                  {entry.tasks > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingTasks', { count: entry.tasks })}</Text>}
+                                </>
+                              )}
+                            </HStack>
+
+                            {isSyncing && state?.stage && state.stage !== 'idle' && (
+                              <Text fontSize="$xs" color="$primary500">
+                                {state.stage === 'files' ? t('offlineSync.stageFiles') : state.stage === 'forms' ? t('offlineSync.stageForms') : t('offlineSync.stageTasks')}
+                              </Text>
+                            )}
+                            {isDone && <Text fontSize="$xs" color="$success600">{t('offlineSync.syncComplete')}</Text>}
+                            {isError && !isSyncing && <Text fontSize="$xs" color="$error500">{t('offlineSync.syncError')}</Text>}
+                          </VStack>
+                        </HStack>
                       </HStack>
+                    </Pressable>
+                  );
+                })}
+              </VStack>
+            </ScrollView>
+          )}
 
-                      {/* Individual sync button (hidden while syncing or done) */}
-                      {/* {canSync && (
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onPress={() => syncOne(entry)}
-                          isDisabled={isOffline}
-                        >
-                          <ButtonIcon as={LucideIcon} name="RefreshCw" mr="$1" size={12} />
-                          <ButtonText>{t('offlineSync.sync')}</ButtonText>
-                        </Button>
-                      )} */}
-                    </HStack>
-                  </Pressable>
-                );
-              })}
-            </VStack>
-          </ScrollView>
-        )}
+          {isOffline && participants.length > 0 && (
+            <Text fontSize="$xs" color="$error500" textAlign="center">
+              {t('offlineSync.cannotSyncOffline')}
+            </Text>
+          )}
 
-        {/* Offline warning */}
-        {isOffline && participants.length > 0 && (
-          <Text fontSize="$xs" color="$error500" textAlign="center">
-            {t('offlineSync.cannotSyncOffline')}
-          </Text>
-        )}
-
-        {/* Footer */}
-        <HStack space="md" justifyContent="flex-end" flexWrap="wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onPress={closeSyncModal}
-            isDisabled={anySyncing}
-          >
-            <ButtonText>
-              {allSynced ? (t('common.close') || 'Close') : t('offlineSync.skipForNow')}
-            </ButtonText>
-          </Button>
-
-          {!allSynced && syncableIds.length > 0 && (
-            <Button
-              variant="solid"
-              size="sm"
-              onPress={syncSelected}
-              isDisabled={isOffline || selectedCount === 0 || bulkSyncing}
-            >
-              {bulkSyncing ? (
-                <Spinner size="small" color="$white" mr="$1" />
-              ) : (
-                <ButtonIcon as={LucideIcon} name="RefreshCw" mr="$1" />
-              )}
+          <HStack space="md" justifyContent="flex-end" flexWrap="wrap">
+            <Button variant="outline" size="sm" onPress={closeSyncModal} isDisabled={isBusy}>
               <ButtonText>
-                {selectedCount > 0
-                  ? `${t('offlineSync.syncSelected')} (${selectedCount})`
-                  : t('offlineSync.syncSelected')}
+                {allSynced ? (t('common.close') || 'Close') : t('offlineSync.skipForNow')}
               </ButtonText>
             </Button>
-          )}
-        </HStack>
 
-      </VStack>
-    </Modal>
+            {!allSynced && syncableIds.length > 0 && (
+              <Button
+                variant="solid"
+                size="sm"
+                onPress={syncSelected}
+                isDisabled={isOffline || selectedCount === 0 || isBusy}
+              >
+                {(isValidating || bulkSyncing) ? (
+                  <Spinner size="small" color="$white" mr="$1" />
+                ) : (
+                  <ButtonIcon as={LucideIcon} name="RefreshCw" mr="$1" />
+                )}
+                <ButtonText>
+                  {isValidating
+                    ? t('offlineSync.validating')
+                    : selectedCount > 0
+                    ? `${t('offlineSync.syncSelected')} (${selectedCount})`
+                    : t('offlineSync.syncSelected')}
+                </ButtonText>
+              </Button>
+            )}
+          </HStack>
+
+        </VStack>
+      </Modal>
+
+      {/* Type-specific conflict/block dialog — rendered above the main modal */}
+      {renderDialog()}
+    </>
   );
 };
 
