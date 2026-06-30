@@ -59,6 +59,7 @@ interface CheckInsListContentProps {
   _container?:any
   _dataNotFoundCard?:any
   loderHeight?:string
+  coachId?:string
 }
 
 /**
@@ -74,7 +75,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   participant: propParticipant,
   _container,
   _dataNotFoundCard,
-  loderHeight
+  loderHeight,
+  coachId
 }) => {
   type IconMeta = {
     color?: string;
@@ -227,7 +229,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         // Get observation entities to find observationId and entityId
         const observationData = await getObservationEntities({
           solutionId: selectedSolutionData.solutionId || selectedSolutionData.id,
-          profileData: {},
+          profileData: coachId ? {createdBy: coachId} : {},
         });
         const observationId = observationData?.result?._id;
         if (!observationId) {

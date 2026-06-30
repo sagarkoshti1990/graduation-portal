@@ -169,17 +169,17 @@ const getUserMenuItems = (
   ];
 
   // remove 
-  // if (canDeactivate?.isParticipantRole) {
-  //   items.push({
-  //     key: 'view-progress',
-  //     label: 'admin.users.actionMenu.view-progress',
-  //     textValue: 'view-progress',
-  //     iconName: 'ListChecks',
-  //     iconColor: "$textForeground",
-  //     iconSizeValue: 20,
-  //     color: "$textForeground",
-  //   });
-  // }
+  if (canDeactivate?.isParticipantRole) {
+    items.push({
+      key: 'view-progress',
+      label: 'admin.users.actionMenu.view-progress',
+      textValue: 'view-progress',
+      iconName: 'ListChecks',
+      iconColor: "$textForeground",
+      iconSizeValue: 20,
+      color: "$textForeground",
+    });
+  }
 
   if (canDeactivate?.canDeactivate) {
     items.push({

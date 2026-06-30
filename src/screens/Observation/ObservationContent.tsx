@@ -163,6 +163,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           entityId,
           submissionNumber:numsub,
           evidenceCode:observationSubmissionsLast?.evidencesStatus?.[0]?.code,
+          createdBy: participant?.hierarchy[0],
         });
         observationSolution = response.result;
       }
@@ -230,7 +231,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       try {
         const observationData = await getObservationEntities({
           solutionId,
-          profileData: {},
+          profileData: {createdBy: participant?.hierarchy[0]},
         });
         if(!observationData.result?.allowMultipleAssessemts && submissionNumber && submissionNumber > 1){
           showAlert('error', t('logVisit.multipleAssessemtsNotAllowed'));
