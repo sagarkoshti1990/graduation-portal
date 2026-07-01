@@ -334,7 +334,7 @@ export const useIsSupervisor = (): boolean => {
         }
         return org.roles.some((role: any) => {
           const roleTitle = role?.title?.toLowerCase() || '';
-          return roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
+          return roleTitle === 'admin' || roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
         });
       });
       return hasSupervisorRole;
