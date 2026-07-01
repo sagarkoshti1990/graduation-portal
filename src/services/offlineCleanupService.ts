@@ -18,6 +18,7 @@ import logger from '@utils/logger';
 import offlineStorage from './offlineStorage';
 import { removeOfflineParticipantId } from './offlineStorage';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import type { ObservationFormData } from '@app-types/offline';
 
 // ── Participant-level ─────────────────────────────────────────────────────────
 
@@ -168,11 +169,15 @@ export async function deleteTaskOfflineData(
 // ── Observation-level ─────────────────────────────────────────────────────────
 
 /**
- * Remove offline data for a single observation form.
+ * Remove ALL offline data for a single observation form.
  *
  * Removed data includes:
  *   - Form schema / submission snapshot
  *   - Pending form edit queue entry
+ *   - filesPending entries whose taskId matches this observation's submissionId
+ *   - Corresponding fileBlob entries for those files
+ *   - The observation's entry in the participant solutions list
+ *   - Questionnaire player IndexedDB record (web only, best-effort)
  *
  * Does NOT remove the participant profile, projects, other forms, or any
  * unrelated data.
@@ -183,10 +188,76 @@ export async function deleteObservationOfflineData(
   formId: string,
 ): Promise<void> {
   try {
-    await Promise.all([
-      offlineStorage.remove(PARTICIPANT_KEYS.form(userId, participantId, formId)).catch(() => {}),
-      offlineStorage.remove(PARTICIPANT_KEYS.formEdits(userId, participantId, formId)).catch(() => {}),
-    ]);
+    // Read form snapshot first so we can find files linked by submissionId.
+    const formData = await offlineStorage
+      .read<ObservationFormData>(PARTICIPANT_KEYS.form(userId, participantId, formId))
+      .catch(() => null);
+
+    const submissionId = formData?.submissionId;
+
+    // Keys that will be deleted in a single batch at the end.
+    const keysToRemove: string[] = [
+      PARTICIPANT_KEYS.form(userId, participantId, formId),
+      PARTICIPANT_KEYS.formEdits(userId, participantId, formId),
+    ];
+
+    // Remove filesPending entries that belong to this observation (matched by
+    // submissionId, which syncService uses as the taskId for observation files).
+    if (submissionId) {
+      const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
+      const pending = await offlineStorage.read<any[]>(filesPendingKey).catch(() => null);
+      if (pending?.length) {
+        const obsFiles = pending.filter((f: any) => f.taskId === submissionId);
+        const remaining = pending.filter((f: any) => f.taskId !== submissionId);
+
+        for (const f of obsFiles) {
+          const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
+          keysToRemove.push(blobKey);
+        }
+
+        if (remaining.length === 0) {
+          keysToRemove.push(filesPendingKey);
+        } else {
+          await offlineStorage.create(filesPendingKey, remaining).catch(() => {});
+        }
+      }
+    }
+
+    // Remove the observation entry from the participant's solutions list.
+    const solutionsKey = PARTICIPANT_KEYS.solutions(userId, participantId);
+    const solutions = await offlineStorage.read<any[]>(solutionsKey).catch(() => null);
+    if (solutions?.length) {
+      const filtered = solutions.filter((s: any) => s.solutionId !== formId);
+      if (filtered.length !== solutions.length) {
+        if (filtered.length === 0) {
+          keysToRemove.push(solutionsKey);
+        } else {
+          await offlineStorage.create(solutionsKey, filtered).catch(() => {});
+        }
+      }
+    }
+
+    await offlineStorage.removeMultiple(keysToRemove);
+
+    // Web only: remove the submission record from the questionnaire player's IndexedDB.
+    if (submissionId && typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      try {
+        await new Promise<void>(resolve => {
+          const openReq = indexedDB.open('questionnairePlayer', 1);
+          openReq.onerror = () => resolve();
+          openReq.onsuccess = () => {
+            const db = openReq.result;
+            if (!db.objectStoreNames.contains('questionnaire')) { resolve(); return; }
+            const tx = db.transaction('questionnaire', 'readwrite');
+            tx.objectStore('questionnaire').delete(submissionId);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+          };
+        });
+      } catch {
+        // Questionnaire player DB may not exist — skip silently.
+      }
+    }
   } catch (err) {
     logger.warn(
       `offlineCleanupService: failed to delete observation "${formId}" data`,

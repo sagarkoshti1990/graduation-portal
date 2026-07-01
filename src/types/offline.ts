@@ -59,6 +59,9 @@ export interface ObservationFormData {
   data: Record<string, any>;
   status: string;
   updatedAt: string;
+  /** Unix-ms timestamp recorded when this observation was downloaded for offline use.
+   *  Used by syncValidationService to detect when the server copy was updated after download. */
+  downloadedAt?: number;
 }
 
 export interface ObservationFormEdits {

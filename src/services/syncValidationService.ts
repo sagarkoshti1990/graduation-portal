@@ -26,7 +26,7 @@ import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type { ObservationFormData, DownloadStatus } from '@app-types/offline';
 import { getParticipantsList } from './participantService';
 import { getProjectDetails } from '../project-player/services/projectPlayerService';
-import { getObservationSolution } from './solutionService';
+import { getObservationSubmissions } from './solutionService';
 
 // ── Status priority maps ─────────────────────────────────────────────────────
 
@@ -95,6 +95,8 @@ export interface FormValidationResult {
   formId: string;
   outcome: ObservationOutcome;
   submissionId?: string;
+  /** Distinguishes the two observation conflict sub-types for appropriate dialog messaging. */
+  conflictSubType?: 'draft-ahead' | 'timestamp';
 }
 
 /** Complete per-participant validation plan produced before sync starts. */
@@ -122,8 +124,8 @@ export interface ParticipantValidationPlan {
 export interface SyncValidationCache {
   participants: Map<string, any>;
   projects:     Map<string, any>;
-  /** Key pattern: `${observationId}:${entityId}:${submissionNumber}` */
-  observations: Map<string, any>;
+  /** Key pattern: `${observationId}:${entityId}` → full submissions list for that observation. */
+  observations: Map<string, any[]>;
 }
 
 export function createSyncValidationCache(): SyncValidationCache {
@@ -194,24 +196,39 @@ async function fetchProjectOnline(
   }
 }
 
-async function fetchObservationOnline(
+/**
+ * Fetches the specific online submission record for an offline observation.
+ *
+ * Calls `getObservationSubmissions` (the same API used elsewhere in the app),
+ * caches the full submissions list by `${observationId}:${entityId}`, then
+ * filters to the entry whose `_id` matches the offline `submissionId`.
+ *
+ * Returns: the matched submission object (with `status` and `updatedAt`), or
+ * null if the API call fails or the submission is not found.
+ */
+async function fetchObservationSubmission(
   observationId: string,
   entityId: string,
-  submissionNumber: number,
-  evidenceCode: string,
+  submissionId: string,
   cache?: SyncValidationCache,
 ): Promise<any | null> {
-  const key = `${observationId}:${entityId}:${submissionNumber}`;
-  if (cache?.observations.has(key)) return cache.observations.get(key);
-  try {
-    const res = await getObservationSolution({ observationId, entityId, submissionNumber, evidenceCode });
-    const data = res?.result ?? res ?? null;
-    cache?.observations.set(key, data);
-    return data;
-  } catch (err) {
-    logger.warn('SyncValidation: fetchObservationOnline failed', err);
-    return null;
+  const listKey = `${observationId}:${entityId}`;
+
+  let submissions: any[];
+  if (cache?.observations.has(listKey)) {
+    submissions = cache.observations.get(listKey) ?? [];
+  } else {
+    try {
+      const res = await getObservationSubmissions({ observationId, entityId });
+      submissions = res?.result ?? [];
+      cache?.observations.set(listKey, submissions);
+    } catch (err) {
+      logger.warn('SyncValidation: fetchObservationSubmission failed', err);
+      return null;
+    }
   }
+
+  return submissions.find((s: any) => s._id === submissionId) ?? null;
 }
 
 // ── Key parsing ──────────────────────────────────────────────────────────────
@@ -436,28 +453,22 @@ export async function runValidationForParticipant(
       .read<ObservationFormData>(PARTICIPANT_KEYS.form(userId, participantId, formId))
       .catch(() => null);
 
-    if (!formData?.entityId || !formData?.observationId) continue;
+    if (!formData?.entityId || !formData?.observationId || !formData?.submissionId) continue;
 
-    // Extract evidenceCode from the cached schema; fall back to common defaults.
-    const evidenceCode: string =
-      formData.schema?.assessment?.evidences?.[0]?.code ??
-      formData.schema?.evidenceMethod?.code ??
-      'OB';
-
-    const onlineObs = await fetchObservationOnline(
+    // Fetch the specific online submission by submissionId using getObservationSubmissions.
+    const onlineSubmission = await fetchObservationSubmission(
       formData.observationId,
       formData.entityId,
-      formData.submissionNumber,
-      evidenceCode,
+      formData.submissionId,
       cache,
     );
 
-    if (!onlineObs) continue;
+    if (!onlineSubmission) continue;
 
-    const onlineSubmission = onlineObs.submission ?? onlineObs;
-    const onlineObsStatus: string = onlineSubmission?.status ?? 'notStarted';
+    const onlineObsStatus: string = onlineSubmission.status ?? 'notStarted';
+    const onlineUpdatedAt: string | undefined = onlineSubmission.updatedAt;
 
-    // Rule 4: already completed online → offer removal
+    // Rule 1: already completed online → offer removal (no sync allowed)
     if (onlineObsStatus === 'completed') {
       plan.formResults.push({ formId, outcome: 'remove', submissionId: formData.submissionId });
       continue;
@@ -467,14 +478,34 @@ export async function runValidationForParticipant(
     const onlineObsPri  = getPriority(OBSERVATION_STATUS_PRIORITY, onlineObsStatus);
 
     if (onlineObsPri > offlineObsPri) {
-      plan.formResults.push({ formId, outcome: 'blocked' });
+      // Rule 2: special case — offline=not-started + online=draft → conflict with override option.
+      // All other "online is ahead" cases remain blocked (no override offered).
+      const offlineIsNotStarted = formData.status === 'notStarted' || formData.status === 'not-started';
+      const onlineIsDraft       = onlineObsStatus === 'draft';
+      if (offlineIsNotStarted && onlineIsDraft) {
+        plan.formResults.push({
+          formId,
+          outcome: 'conflict',
+          submissionId: formData.submissionId,
+          conflictSubType: 'draft-ahead',
+        });
+      } else {
+        plan.formResults.push({ formId, outcome: 'blocked' });
+      }
       continue;
     }
 
+    // Rule 4: offline status priority > online → allow sync directly (fall through to 'allowed').
+
+    // Rule 3: same status → check timestamp divergence
     if (onlineObsPri === offlineObsPri) {
-      const onlineUpdatedAt: string | undefined = onlineSubmission?.updatedAt;
-      if (hasTimestampConflict(downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
-        plan.formResults.push({ formId, outcome: 'conflict', submissionId: formData.submissionId });
+      if (hasTimestampConflict(formData.downloadedAt ?? downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
+        plan.formResults.push({
+          formId,
+          outcome: 'conflict',
+          submissionId: formData.submissionId,
+          conflictSubType: 'timestamp',
+        });
         continue;
       }
     }

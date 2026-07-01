@@ -47,6 +47,8 @@ import OfflineBadge from '@components/OfflineBadge';
 import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import { MenuItemData } from '@ui/Menu';
+import { isParticipantOffline } from '../../services/offlineStorage';
+import { deleteParticipantOfflineData } from '../../services/offlineCleanupService';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -115,7 +117,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     setSelectedSubmissionNumber(null);
   };
 
-  const handleMenuSelect = (key: string) => {
+  const handleMenuSelect = async (key: string) => {
     // const participantId = participant.userId;
 
     switch (key) {
@@ -135,6 +137,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         break;
       case 'download':
         setModalType('download');
+        break;
+      case 'remove-offline':
+        await deleteParticipantOfflineData(`${user?.id}`, [participant.userId]);
         break;
       case 'view-check-ins-Logs' :
         setModalType("view-check-ins-Logs")
@@ -160,8 +165,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           filterMenuItems = filterMenuItems.filter(
             e => !(["actions.viewLog"].includes(e?.label || "")),
           )
-        } 
+        }
 
+        const isParticipantDataOffline = await isParticipantOffline(`${user?.id}`, participant.userId);
+        
         setMenuItemsWithDownload([
           ...filterMenuItems,
           ...(!isOffline && !isWeb && ALLOWOFFLINESTATUS.includes(participant?.status) ?
@@ -173,6 +180,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             iconColor: theme.tokens.colors.textForegroundColor,
             iconSizeValue: 20,
           }]:[]),
+          ...(isParticipantDataOffline ? 
+          [{
+            key: 'remove-offline',
+            label: 'actions.removeOffline',
+            textValue: 'Remove Offline',
+            iconName: 'Trash2',
+            iconColor: theme.tokens.colors.textForegroundColor,
+            iconSizeValue: 20,
+          }] :[]),
         ]);
 
       if (modalType !== 'log-visit' && modalType !== 'view-log' && modalType !== "view-check-ins-Logs") return;

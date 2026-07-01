@@ -412,6 +412,7 @@ async function processObservationForm(
     data: schema?.submission?.answers ?? assessmentResp?.result?.submission?.answers ?? {},
     status: 'started',
     updatedAt: new Date().toISOString(),
+    downloadedAt: Date.now(),
   };
 
   // Keyed by solutionId — matches what ObservationContent passes to getObservationForm()

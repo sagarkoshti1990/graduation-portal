@@ -252,8 +252,141 @@ async function syncFiles(
 }
 
 // ---------------------------------------------------------------------------
-// Stage 2 — Form edits
+// Stage 2 — Form edits (including offline file extraction)
 // ---------------------------------------------------------------------------
+
+/**
+ * Recursively scans a form-answers object for embedded data-URL file content
+ * (base64 strings produced when a user uploads a file while offline).
+ *
+ * For each data URL found, uploads the file via the presigned-URL mechanism
+ * and replaces the data URL in the (deep-cloned) answers object with the
+ * returned server URL, so the observation submission reaches the server with
+ * real file URLs rather than large base64 payloads.
+ *
+ * On the web platform the function also reads from the questionnaire player's
+ * own IndexedDB (`questionnairePlayer` / `questionnaire` store) in case the
+ * web component stored additional file blobs there that were not forwarded
+ * through the QUESTIONNAIRE_SAVE bridge.
+ *
+ * The function is best-effort: upload failures are logged and skipped so they
+ * never block the form-answers sync.
+ *
+ * @returns The (possibly mutated clone of) answers with data URLs replaced.
+ */
+async function prepareObservationAnswers(
+  answers: any,
+  submissionId: string,
+  userId: string,
+  participantId: string,
+): Promise<any> {
+  if (!answers || typeof answers !== 'object') return answers;
+
+  // Deep-clone so we never mutate the stored record until all uploads succeed.
+  const patched = JSON.parse(JSON.stringify(answers));
+
+  type FileEntry = { path: (string | number)[]; dataUrl: string; mimeType: string; fileName: string };
+  const fileEntries: FileEntry[] = [];
+
+  function collectDataUrls(obj: any, path: (string | number)[]): void {
+    if (!obj || typeof obj !== 'object') return;
+    const keys = Array.isArray(obj)
+      ? obj.map((_, i) => i as string | number)
+      : Object.keys(obj);
+    for (const key of keys) {
+      const val = (obj as any)[key];
+      const currentPath = [...path, key];
+      if (typeof val === 'string' && val.startsWith('data:') && val.includes(';base64,')) {
+        const mimeMatch = val.match(/^data:([^;]+);/);
+        const mimeType = mimeMatch?.[1] ?? 'application/octet-stream';
+        const ext = mimeType.split('/')[1]?.replace(/[^a-z0-9]/gi, '') ?? 'bin';
+        fileEntries.push({
+          path: currentPath,
+          dataUrl: val,
+          mimeType,
+          // Unique name: avoid collisions across multiple files per submission.
+          fileName: `obs-${submissionId}-${fileEntries.length}.${ext}`,
+        });
+      } else if (val && typeof val === 'object') {
+        collectDataUrls(val, currentPath);
+      }
+    }
+  }
+
+  collectDataUrls(patched, []);
+
+  // On web: also scan the questionnaire player's own IndexedDB for any file
+  // blobs that the web component stored separately (not forwarded in answers).
+  if (typeof window !== 'undefined') {
+    try {
+      const playerData = await offlineStorage.read<any>(submissionId, {
+        dbName: 'questionnairePlayer',
+        storeName: 'questionnaire',
+      });
+      if (playerData) {
+        collectDataUrls(playerData, ['_player']);
+      }
+    } catch {
+      // Questionnaire player DB may not exist yet — skip silently.
+    }
+  }
+
+  if (fileEntries.length === 0) return patched;
+
+  // Upload each discovered file and patch the URL back into the answers.
+  // Use submissionId as the group key for the presigned-URL request.
+  for (const entry of fileEntries) {
+    try {
+      const result = await uploadFiles(submissionId, [{
+        name: entry.fileName,
+        originalName: entry.fileName,
+        base64: entry.dataUrl,
+        type: entry.mimeType,
+        size: 0,
+        uri: '',
+      }]);
+      const uploaded = result.data?.[0];
+      const serverUrl: string | undefined =
+        typeof uploaded?.url === 'string' ? uploaded.url : undefined;
+
+      if (serverUrl) {
+        // Navigate the cloned object via the recorded path and replace the data URL.
+        let node: any = patched;
+        for (let i = 0; i < entry.path.length - 1; i++) {
+          node = node[entry.path[i]];
+          if (node == null) break;
+        }
+        if (node != null) {
+          node[entry.path[entry.path.length - 1]] = serverUrl;
+        }
+
+        // Also persist the uploaded file reference in filesPending so the
+        // normal file-sync accounting stays consistent.
+        const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
+        const existingPending = await offlineStorage.read<PendingFile[]>(filesPendingKey) ?? [];
+        const alreadyQueued = existingPending.some(f => f.fileName === entry.fileName);
+        if (!alreadyQueued) {
+          await offlineStorage.create(filesPendingKey, [
+            ...existingPending,
+            {
+              taskId: submissionId,
+              originalName: entry.fileName,
+              fileName: entry.fileName,
+              fileType: entry.mimeType,
+            } as PendingFile,
+          ]).catch(() => {});
+        }
+      }
+    } catch (err) {
+      logger.warn(
+        `syncService: observation file upload failed (submission: "${submissionId}", path: ${entry.path.join('.')})`,
+        err,
+      );
+    }
+  }
+
+  return patched;
+}
 
 /**
  * Parses the formId (= observationId) out of a form-edits storage key.
@@ -310,8 +443,20 @@ async function syncFormEdits(
         continue;
       }
 
-      // Use stored observationId (may differ from solutionId used as storage key)
-      await api.post(`${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formData.submissionId}`,{evidence:edits});
+      // Extract any offline file uploads (data URLs) from the answers and upload
+      // them to the server before posting the form evidence, so the submission
+      // arrives with real file URLs instead of base64 payloads.
+      const patchedAnswers = await prepareObservationAnswers(
+        edits.answers,
+        formData.submissionId,
+        userId,
+        participantId,
+      );
+      const evidencePayload = patchedAnswers !== edits.answers
+        ? { ...edits, answers: patchedAnswers }
+        : edits;
+
+      await api.post(`${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formData.submissionId}`, { evidence: evidencePayload });
 
       // Remove edit queue entry and form snapshot — both are now on the server.
       await offlineStorage.remove(key);

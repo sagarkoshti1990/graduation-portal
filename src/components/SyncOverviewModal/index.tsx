@@ -91,6 +91,8 @@ interface DialogItem {
   formId?: string;
   /** Rich conflict details for the 'task-conflict' dialog */
   taskConflict?: TaskConflictDetails;
+  /** Observation conflict sub-type — drives the correct message in 'form-conflict' */
+  conflictSubType?: 'draft-ahead' | 'timestamp';
 }
 
 /** What the user chose in a dialog. */
@@ -404,7 +406,7 @@ const SyncOverviewModal: React.FC = () => {
           // buildSkipSets adds 'remove' forms to skipFormIds
         }
 
-        // ── 8. Conflict forms (timestamp divergence) ──────────────────────
+        // ── 8. Conflict forms (NOT_STARTED+DRAFT or timestamp divergence) ─
         for (const form of plan.formResults.filter(f => f.outcome === 'conflict')) {
           const decision = await showDialog({
             id: `form-conflict-${form.formId}`,
@@ -412,9 +414,13 @@ const SyncOverviewModal: React.FC = () => {
             participantId: entry.participantId,
             participantName: entry.name,
             formId: form.formId,
+            conflictSubType: form.conflictSubType,
           });
           if (decision === 'override') {
             overriddenConflictFormIds.add(form.formId);
+          } else if (decision === 'remove') {
+            await deleteObservationOfflineData(userId, entry.participantId, form.formId);
+            await refreshPending();
           }
           // 'cancel' → form stays in skipFormIds (added by buildSkipSets)
         }
@@ -694,11 +700,21 @@ const SyncOverviewModal: React.FC = () => {
       headerTitle = t('offlineSync.observationCompletedTitle');
       message = t('offlineSync.observationCompletedMessage');
       footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
-    } else if (
-      kind === 'participant-conflict' ||
-      kind === 'project-conflict' ||
-      kind === 'form-conflict'
-    ) {
+    } else if (kind === 'form-conflict') {
+      headerTitle = t('offlineSync.observationConflictTitle');
+      message = currentDialog.conflictSubType === 'draft-ahead'
+        ? t('offlineSync.observationConflictDraftMessage')
+        : t('offlineSync.observationConflictTimestampMessage');
+      footer = (
+        <HStack space="sm" justifyContent="flex-end" flexWrap="wrap">
+          {cancelBtn}
+          {skipRemoveBtn}
+          <Button variant="solid" size="sm" onPress={() => resolveDialog('override')}>
+            <ButtonText>{t('offlineSync.overrideAndSync')}</ButtonText>
+          </Button>
+        </HStack>
+      );
+    } else if (kind === 'participant-conflict' || kind === 'project-conflict') {
       headerTitle = t('offlineSync.conflictDetectedTitle');
       message = t('offlineSync.conflictDetectedMessage');
       footer = (
