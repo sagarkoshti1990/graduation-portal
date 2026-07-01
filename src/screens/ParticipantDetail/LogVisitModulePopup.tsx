@@ -20,6 +20,7 @@ type ModulePopupProps = {
   observationLogsTitle: string;
   noSolutionsMessage: string;
   buttonText?:string;
+  canAccessCoachObservations?:boolean
 };
 export const observationCss = {
   _header: {
@@ -33,7 +34,8 @@ function LogVisitModulePopupComponent({
   solutions,
   observationLogsTitle,
   noSolutionsMessage,
-  buttonText
+  buttonText,
+  canAccessCoachObservations
 }: ModulePopupProps) {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
   const [selectedSubmissionNumber, setSelectedSubmissionNumber] = useState<number | null>(null);
@@ -177,6 +179,7 @@ function LogVisitModulePopupComponent({
         <Box flex={1} minHeight="$64">
           {selectedSubmissionNumber || openForm ? (
             <ObservationContent
+              canAccessCoachObservations={canAccessCoachObservations}
               participant={participant}
               hideElements={hideElements}
               _css={observationCss}

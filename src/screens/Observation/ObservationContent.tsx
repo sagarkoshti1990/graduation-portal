@@ -45,6 +45,7 @@ interface ObservationContentProps {
   hideElements?: any;
   _css?: any;
   _webComponent?:any;
+  canAccessCoachObservations?:boolean
 }
 
 /**
@@ -61,6 +62,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   userData,
   hideElements,
   _css,
+  canAccessCoachObservations,
   _webComponent
 }) => {
   const { t } = useLanguage();
@@ -163,6 +165,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           entityId,
           submissionNumber:numsub,
           evidenceCode:observationSubmissionsLast?.evidencesStatus?.[0]?.code,
+          ...(canAccessCoachObservations ? {createdBy: participant?.hierarchy[0]} : {}),
         });
         observationSolution = response.result;
       }
@@ -230,7 +233,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       try {
         const observationData = await getObservationEntities({
           solutionId,
-          profileData: {},
+          profileData: canAccessCoachObservations ? {createdBy: participant?.hierarchy[0]} : {},
         });
         if(!observationData.result?.allowMultipleAssessemts && submissionNumber && submissionNumber > 1){
           showAlert('error', t('logVisit.multipleAssessemtsNotAllowed'));
