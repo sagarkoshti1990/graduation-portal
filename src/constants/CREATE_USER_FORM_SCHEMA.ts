@@ -34,7 +34,7 @@ export interface DisabledWhenCondition {
 
 export interface FormField {
   name: string;
-  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date';
+  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea';
   required: boolean;
   label: { key: string; fallback: string };
   placeholder?: { key?: string; fallback: string };
@@ -91,26 +91,26 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       {
         fields: [
           {
-            name: 'firstName',
+            name: 'name',
             type: 'text',
             autoFocus: true,
             required: true,
-            label: { key: 'firstName', fallback: 'First Name' },
-            placeholder: { key: 'firstNamePlaceholder', fallback: 'Enter first name' },
+            label: { key: 'name', fallback: 'Name' },
+            placeholder: { key: 'namePlaceholder', fallback: 'Enter Name' },
             validation: [
-              { rule: 'required', message: { key: 'errors.firstNameRequired', fallback: 'First name is required' } },
-              { rule: 'maxLength', value: 50, message: { key: 'errors.firstNameMax', fallback: 'First name is too long' } },
+              { rule: 'required', message: { key: 'errors.nameRequired', fallback: 'Name is required' } },
+              { rule: 'maxLength', value: 100, message: { key: 'errors.nameMax', fallback: 'Name is too long' } },
             ],
           },
           {
-            name: 'lastName',
+            name: 'username',
             type: 'text',
             required: true,
-            label: { key: 'lastName', fallback: 'Last Name' },
-            placeholder: { key: 'lastNamePlaceholder', fallback: 'Enter last name' },
+            label: { key: 'username', fallback: 'Username' },
+            placeholder: { fallback: 'Enter username' },
             validation: [
-              { rule: 'required', message: { key: 'errors.lastNameRequired', fallback: 'Last name is required' } },
-              { rule: 'maxLength', value: 50, message: { key: 'errors.lastNameMax', fallback: 'Last name is too long' } },
+              { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
+              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
             ],
           },
         ],
@@ -131,14 +131,18 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             ],
           },
           {
-            name: 'address',
+            name: 'nationalId',
             type: 'text',
-            required: false,
-            icon: 'MapPin',
-            label: { key: 'address', fallback: 'Address' },
-            placeholder: { key: 'addressPlaceholder', fallback: 'Enter address' },
+            required: true,
+            label: { key: 'nationalId', fallback: 'National ID' },
+            placeholder: { key: 'nationalIdPlaceholder', fallback: 'Enter National ID' },
+            inputProps: { keyboardType: 'numeric' },
             validation: [
-              { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
+              {
+                rule: 'pattern',
+                value: '^[0-9]{13}$',
+                message: { key: 'errors.nationalIdInvalid', fallback: 'National ID must be 13 digits' },
+              },
             ],
           },
         ],
@@ -260,21 +264,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
           },
         ],
       },
-      {
-        fields: [
-          {
-            name: 'username',
-            type: 'text',
-            required: true,
-            label: { key: 'username', fallback: 'Username' },
-            placeholder: { fallback: 'Enter username' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
-              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
-            ],
-          },
-        ],
-      },
+
       {
         fields: [
           {
@@ -345,21 +335,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
             ],
           },
-          {
-            name: 'nationalId',
-            type: 'text',
-            required: false,
-            label: { key: 'nationalId', fallback: 'National ID' },
-            placeholder: { key: 'nationalIdPlaceholder', fallback: 'Enter National ID' },
-            inputProps: { keyboardType: 'numeric' },
-            validation: [
-              {
-                rule: 'pattern',
-                value: '^[0-9]{13}$',
-                message: { key: 'errors.nationalIdInvalid', fallback: 'National ID must be 13 digits' },
-              },
-            ],
-          },
+
         ],
       },
     ],
@@ -390,6 +366,21 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'sitePlaceholder', fallback: 'Select province first' },
             placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
             optionsSource: 'sites',
+          },
+        ],
+      },
+      {
+        fields: [
+          {
+            name: 'address',
+            type: 'textarea',
+            required: false,
+            icon: 'MapPin',
+            label: { key: 'address', fallback: 'Address' },
+            placeholder: { key: 'addressPlaceholder', fallback: 'Enter address' },
+            validation: [
+              { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
+            ],
           },
         ],
       },

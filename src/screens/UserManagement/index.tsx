@@ -285,8 +285,7 @@ const UserManagementScreen = () => {
 
   // Create User modal state (Array of JSON)
   const initialCreateUserFields = useMemo(() => [
-    { id: 'firstName', value: '', error: '' },
-    { id: 'lastName', value: '', error: '' },
+    { id: 'name', value: '', error: '' },
     { id: 'email', value: '', error: '' },
     { id: 'address', value: '', error: '' },
     { id: 'countryCode', value: '+27', error: '' },
@@ -620,7 +619,7 @@ const UserManagementScreen = () => {
       const requiresExtraFields = ['admin', 'supervisor', 'linkage champion', 'participant', 'org_admin', 'tenant_admin', 'lc', 'user'].some(k => roleTitle.toLowerCase().includes(k) || roleLabel.toLowerCase().includes(k));
 
       const payload: any = {
-        name: `${getCreateField('firstName')} ${getCreateField('lastName')}`.trim(),
+        name: getCreateField('name').trim(),
         username: getCreateField('username'),
         email: getCreateField('email'),
         roles: roleTitle, // Send the mapped string title (e.g. 'tenant_admin') instead of numeric ID

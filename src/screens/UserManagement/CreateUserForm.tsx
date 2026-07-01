@@ -71,14 +71,14 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
       {/* Footer */}
       <VStack space="md" width="100%">
-        <Box bg="$background50" p="$3" borderRadius="$md" mb="$2">
+        {/* <Box bg="$background50" p="$3" borderRadius="$md" mb="$2">
           <HStack space="xs" alignItems="flex-start">
             <LucideIcon name="Info" size={14} color="$textMutedForeground" style={{ marginTop: 2 }} />
             <Text {...TYPOGRAPHY.caption} color="$textMutedForeground" flex={1}>
               {t('admin.users.createUser.passwordNote')}
             </Text>
           </HStack>
-        </Box>
+        </Box> */}
 
         <HStack space="md" justifyContent="flex-end">
           <Button variant={'outlineghost' as any} onPress={onClose} isDisabled={isCreateUserSubmitting}>

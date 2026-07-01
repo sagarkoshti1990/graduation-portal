@@ -21,7 +21,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { VStack, HStack, Text, Box, Input, InputField, Pressable } from '@ui';
+import { VStack, HStack, Text, Box, Input, InputField, Pressable, Textarea, TextareaInput } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
 import DatePicker from '@components/ui/Inputs/DatePicker';
@@ -56,6 +56,32 @@ const FastInputField = React.forwardRef(({ value, defaultValue, onChangeText, ..
   return <InputField ref={ref} {...props} value={localValue} onChangeText={handleChange} />;
 });
 FastInputField.displayName = 'SFR_FastInputField';
+
+
+// ─── Local FastTextareaInput ──────────────────────────────────────────────────
+const FastTextareaInput = React.forwardRef(({ value, defaultValue, onChangeText, ...props }: any, ref: any) => {
+  const initialValue = value !== undefined ? value : (defaultValue || '');
+  const [localValue, setLocalValue] = useState(initialValue);
+  const isTyping = useRef(false);
+  const timeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!isTyping.current && value !== undefined && localValue !== value) {
+      setLocalValue(value);
+    }
+  }, [value]);
+
+  const handleChange = (text: string) => {
+    setLocalValue(text);
+    isTyping.current = true;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => { isTyping.current = false; }, 500);
+    if (onChangeText) onChangeText(text);
+  };
+
+  return <TextareaInput ref={ref} {...props} value={localValue} onChangeText={handleChange} />;
+});
+FastTextareaInput.displayName = 'SFR_FastTextareaInput';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -322,6 +348,32 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           </Pressable>
         )}
       </Box>
+    );
+  }
+
+  // ── Textarea ────────────────────────────────────────────────────────────────
+  if (field.type === 'textarea') {
+    const keyboardType = (field.inputProps?.keyboardType as any) ?? 'default';
+    const autoCapitalize = (field.inputProps?.autoCapitalize as any) ?? 'sentences';
+    const maxLength = field.inputProps?.maxLength;
+
+    return (
+      <Textarea
+        {...styles.createUserFormInput}
+        isInvalid={!!error}
+        isDisabled={disabled}
+      >
+        <FastTextareaInput
+          ref={field.autoFocus ? autoFocusRef : undefined}
+          placeholder={placeholder}
+          value={value}
+          onChangeText={(text: string) => onChange(field.name, text)}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          maxLength={maxLength}
+          minHeight={100}
+        />
+      </Textarea>
     );
   }
 
