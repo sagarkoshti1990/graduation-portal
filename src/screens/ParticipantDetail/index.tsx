@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { HStack, Box, Container, ReadMoreAlert, Text } from '@ui';
+import { HStack, Box, Container, ReadMoreAlert, Text, Modal, Button, ButtonText } from '@ui';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
@@ -9,7 +9,7 @@ import {
   // verifyParticipantCompletionActions
 } from '../../services/participantService';
 import dataService from '../../services/dataService';
-import offlineStorage from '../../services/offlineStorage';
+import offlineStorage, { isParticipantOffline } from '../../services/offlineStorage';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type { OfflineSolutionEntry } from '@app-types/offline';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -42,6 +42,8 @@ import { getAnswerData } from '@utils/helper';
 import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
 import { MODE } from '@constants/PROJECTDATA';
 import TargetingCriteriaCard from './ParticipantHeader/TargetingCriteriaCard';
+import { isOfflineEligible } from '../../services/offlineCacheUpdateService';
+import { deleteParticipantOfflineData } from '../../services/offlineCleanupService';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -87,6 +89,7 @@ export default function ParticipantDetail() {
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
   const [targetingCriteria,setTargetingCriteria] = useState(false);
+  const [showOfflineIneligibleModal, setShowOfflineIneligibleModal] = useState(false);
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -112,7 +115,15 @@ export default function ParticipantDetail() {
         const participantData = result.data as any;
         const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
         const response = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId, authUserId ?? '')
-
+        // If online and the participant's status is no longer offline-eligible,
+        // check whether stale offline data exists and prompt the user to delete it.
+        if (!result.isOffline && !isOfflineEligible(participantData.status) && user?.id && participantData.userId) {
+          const hasOfflineData = await isParticipantOffline(`${user.id}`, participantData.userId);
+          if (hasOfflineData) {
+            setShowOfflineIneligibleModal(true);
+          }
+        }
+        
         if (result.isOffline && !result.offlineDataAvailable) {
           setIsOfflineUnavailable(true);
           setParticipant(undefined);
@@ -280,6 +291,15 @@ export default function ParticipantDetail() {
 
   const closeProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
 
+  const handleDeleteOfflineData = useCallback(async () => {
+    const pid = (participant as any)?.userId;
+    if (pid && user?.id) {
+      await deleteParticipantOfflineData(`${user.id}`, [pid]).catch(() => {});
+    }
+    setShowOfflineIneligibleModal(false);
+    fetchEntityDetails();
+  }, [participant, user?.id, fetchEntityDetails]);
+
   const handleTargetingCriteriaResponce = useCallback((item:string|boolean) => {
     if(item === STATUS.NOT_ELIGIBLE) {
       setStatus(STATUS.NOT_ELIGIBLE);
@@ -442,6 +462,28 @@ export default function ParticipantDetail() {
         onParticipantSaved={handleParticipantAddressSaved}
         {...(coachId ? {isReadOnly:true}:{})}
       />
+
+      {/* Non-dismissible modal — shown when offline data exists but the participant
+          is no longer eligible for offline access. User MUST tap Delete to proceed. */}
+      <Modal
+        isOpen={showOfflineIneligibleModal}
+        onClose={() => {}}
+        headerTitle={t('offlineSync.deleteOfflineDataTitle')}
+        size="md"
+        showCloseButton={false}
+        closeOnOverlayClick={false}
+        footerContent={
+          <HStack space="md" justifyContent="flex-end">
+            <Button variant="solid" size="sm" onPress={handleDeleteOfflineData}>
+              <ButtonText>{t('offlineSync.deleteOfflineDataAction')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <Text fontSize="$sm" color="$textSecondary">
+          {t('offlineSync.offlineDataIneligibleMessage')}
+        </Text>
+      </Modal>
     </Box>
   );
 }

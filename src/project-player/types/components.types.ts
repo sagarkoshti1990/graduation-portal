@@ -91,6 +91,8 @@ export interface ProjectProviderProps {
   oldProjectData: ProjectData | null;
   onTaskUpdate?: (task: Task) => void;
   offlineKeyPrefix?: string;
+  /** Participant ID (offline registry key) — enables offline cache updates after online task operations. */
+  participantId?: string;
 }
 
 // ============================================
@@ -143,6 +145,8 @@ export interface ProjectPlayerData {
   pillarCategoryRelation?: any;
   province?:string;
   offlineKeyPrefix?: string;
+  /** Participant ID (offline registry key) — passed through to ProjectProvider for offline cache updates. */
+  participantId?: string;
 }
 
 export interface ProjectPlayerProps {

@@ -148,8 +148,9 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       data: projectSortData ?? undefined,
       province: participantProfile?.province?.value,
       offlineKeyPrefix: user?.id ?? '',
+      participantId: (participantProfile as any)?.userId ?? '',
     }),
-    [ participantProfile?.entityId, participantProfile?.status, participantProfile?.province?.value, projectSortData, user?.id],
+    [ participantProfile?.entityId, participantProfile?.status, participantProfile?.province?.value, projectSortData, user?.id, (participantProfile as any)?.userId],
   );
   
   if(projectData && (!config?.mode || !projectSortData)){

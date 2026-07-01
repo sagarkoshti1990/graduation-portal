@@ -34,6 +34,7 @@ import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../services/participantService';
 import { STATUS, USER_STATUS, ALLOWOFFLINESTATUS } from '@constants/app.constant';
+import { removeOfflineDataIfIneligible } from '../../services/offlineCacheUpdateService';
 import Select from '@components/ui/Inputs/Select';
 import {
   AssessmentSurveyCardData,
@@ -282,6 +283,11 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
       });
 
       showAlert('success', t('actions.dropoutSuccess'));
+
+      // If this participant had offline data, remove it — DROPOUT is not offline-eligible.
+      if (user?.id && participant.userId) {
+        removeOfflineDataIfIneligible(`${user.id}`, participant.userId, STATUS.DROPOUT).catch(() => {});
+      }
 
       // Close modal and reset state
       setSelectedDropoutReason('');

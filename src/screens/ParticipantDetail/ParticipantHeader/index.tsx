@@ -43,6 +43,9 @@ import { useAuth } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
 import { isNetworkOffline } from '@utils/networkStatus';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import { isParticipantOffline } from '../../../services/offlineStorage';
+import { deleteParticipantOfflineData } from '../../../services/offlineCleanupService';
+import { isOfflineEligible } from '../../../services/offlineCacheUpdateService';
 
 const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};
@@ -82,6 +85,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const [isCompletingProject, setIsCompletingProject] = useState(false)
+  const [showOfflineDeleteConfirm, setShowOfflineDeleteConfirm] = useState(false)
   const [pathwayAndCategory, setPathwayAndCategory] = useState<string[]>([]);
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
@@ -173,34 +177,52 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     }
   };
 
-  const handleEnrollParticipant = async () => {
+  const performEnrollment = async () => {
     const entityId = (participantProp as User)?.entityId;
     if (!entityId) return;
-
     try {
       const [projResult] = await Promise.all([
         updateTask((participantProp as any)?.onBoardedProjectId, { status: TASK_STATUS.COMPLETED }),
         updateEntityDetails({
           userId: `${user?.id}`,
-          entityId: (participantProp as User)?.entityId,
-          entityUpdates: {
-            status: STATUS.ENROLLED,
-          },
+          entityId,
+          entityUpdates: { status: STATUS.ENROLLED },
         }),
       ]);
-
       if (!(projResult as any)?._id) {
         return showAlert('error', t('participantDetail.header.taskStatusUpdateFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-
-      // Notify parent component about status update
-      if (onStatusUpdate) {
-        onStatusUpdate(STATUS.ENROLLED);
-      }
+      if (onStatusUpdate) onStatusUpdate(STATUS.ENROLLED);
     } catch (error) {
       showAlert('error', t('common.somethingWentWrong'));
     }
+  };
+
+  const handleEnrollParticipant = async () => {
+    // Enrollment moves the participant to ONBOARDED (= STATUS.ENROLLED), which is not
+    // offline-eligible.  If they currently have offline data, ask the user to confirm
+    // deletion before proceeding.
+    if (!isOfflineEligible(STATUS.ENROLLED) && user?.id) {
+      const pid = (participantProp as any)?.userId || (participantProp as User)?.id;
+      if (pid) {
+        const isDownloaded = await isParticipantOffline(`${user.id}`, pid);
+        if (isDownloaded) {
+          setShowOfflineDeleteConfirm(true);
+          return;
+        }
+      }
+    }
+    await performEnrollment();
+  };
+
+  const handleOfflineDeleteAndEnroll = async () => {
+    setShowOfflineDeleteConfirm(false);
+    const pid = (participantProp as any)?.userId || (participantProp as User)?.id;
+    if (pid && user?.id) {
+      await deleteParticipantOfflineData(`${user.id}`, [pid]).catch(() => {});
+    }
+    await performEnrollment();
   };
 
   const handleLogVisitPress = (link:string) => {
@@ -570,6 +592,30 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         </Container>
       </Box>
       {renderCertificateModal()}
+
+      {/* Offline data deletion confirmation — shown before enrolling a participant
+          whose status would become ineligible for offline storage */}
+      <Modal
+        isOpen={showOfflineDeleteConfirm}
+        onClose={() => setShowOfflineDeleteConfirm(false)}
+        headerTitle={t('offlineSync.deleteOfflineDataTitle')}
+        size="md"
+        showCloseButton={false}
+        footerContent={
+          <HStack space="md" justifyContent="flex-end">
+            <Button variant="outline" size="sm" onPress={() => setShowOfflineDeleteConfirm(false)}>
+              <ButtonText>{t('common.cancel')}</ButtonText>
+            </Button>
+            <Button variant="solid" size="sm" onPress={handleOfflineDeleteAndEnroll}>
+              <ButtonText>{t('offlineSync.deleteOfflineDataConfirm')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <Text fontSize="$sm" color="$textSecondary">
+          {t('offlineSync.deleteOfflineDataMessage')}
+        </Text>
+      </Modal>
     </>
   );
 };

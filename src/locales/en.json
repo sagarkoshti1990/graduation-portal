@@ -2148,6 +2148,11 @@
     "downloadUriError": "File not found. Contact support."
   },
   "offlineSync": {
+    "deleteOfflineDataTitle": "Delete Offline Data",
+    "deleteOfflineDataMessage": "This participant has offline data. Do you want to delete offline data and continue?",
+    "deleteOfflineDataConfirm": "Delete & Continue",
+    "deleteOfflineDataAction": "Delete Offline Data",
+    "offlineDataIneligibleMessage": "This participant is no longer eligible for offline access. Please delete the offline data to continue.",
     "banner": "You are offline. Some data may not be available.",
     "dataUnavailable": "You are offline and this data is not available offline.",
     "backOnline": "You're back online. {{count}} item(s) pending sync.",

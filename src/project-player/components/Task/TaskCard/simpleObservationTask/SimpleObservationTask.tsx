@@ -319,11 +319,13 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
             return false;
           });
         }}
-        cancelButtonText={t('projectPlayer.changeIt')}
-        onCancel={() =>
-          // @ts-ignore
-          navigation.navigate('template', { id: projectDataRef?.userProfile?.id, projectId: projectDataRef?._id })
-        }
+        {...(!isNetworkOffline() ? {
+          cancelButtonText:t('projectPlayer.changeIt'),
+          onCancel: () => {
+            // @ts-ignore
+            navigation.navigate('template', { id: projectDataRef?.userProfile?.id, projectId: projectDataRef?._id })
+          }
+        } : {})}
       >
         <Text>{t('projectPlayer.confirmPathwaySelectionSubtitle', { pathwayName: showConfirmModal?.name })}</Text>
       </Modal>

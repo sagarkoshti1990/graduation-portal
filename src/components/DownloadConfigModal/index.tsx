@@ -257,9 +257,9 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       <VStack space="lg">
         {/* Informational banner when the onboarding project will be created automatically */}
         {needsOnboarding && !isDownloading && !downloadDone && (
-          <HStack space="sm" alignItems="flex-start" bg="$info100" p="$3" borderRadius="$md">
-            <LucideIcon name="Info" size={16} color="$info600" />
-            <Text fontSize="$sm" color="$info800" flex={1}>
+          <HStack space="sm" alignItems="flex-start" bg="$warning100" p="$3" borderRadius="$md">
+            <LucideIcon name="Info" size={16} color="$warning700" />
+            <Text fontSize="$sm" color="$warning700" flex={1}>
               {t('actions.TARGETING_CRITERIA_NOT_COMPLETED')}
             </Text>
           </HStack>

@@ -17,6 +17,7 @@ import { updateTask as updateTaskAPI } from '../services/projectPlayerService';
 import { MODE } from '@constants/PROJECTDATA';
 import dataService from '../../services/dataService';
 import { updateTaskStatus } from '../utils/taskUtils';
+import { updateOfflineProject } from '../../services/offlineCacheUpdateService';
 
 // ─── Context value shapes ──────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   oldProjectData,
   onTaskUpdate,
   offlineKeyPrefix = '',
+  participantId = '',
 }) => {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -254,13 +256,13 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   }, [projectData, addedToPlanTasks]);
 
   const updateTask = useCallback(
-    async (taskId: string, participantId: string, updates: Partial<Task>): Promise<void> => {
+    async (taskId: string, callerParticipantId: string, updates: Partial<Task>): Promise<void> => {
       const current = projectDataRef.current;
-      const {task,project} = updateTaskStatus({
+      const {task, project} = updateTaskStatus({
         taskId,
         data: current,
         updatedData: updates,
-      })
+      });
       setProjectData(project);
       let updatedTaskObj = task;
       const currentProjectId = current?._id;
@@ -311,23 +313,29 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
       const isOffline = dataService.isNetworkOffline();
       let result: unknown;
-      
+
       if (isOffline) {
         await dataService.saveTaskEdit(
-          participantId,
+          callerParticipantId,
           currentProjectId,
           payloadTask,
           offlineKeyPrefix,
         );
       } else {
         result = await updateTaskAPI(currentProjectId, payloadTask);
+        // After online success, keep offline snapshot in sync.
+        // Use callerParticipantId when provided, fall back to provider-level participantId.
+        const pid = callerParticipantId || participantId;
+        if (!isApiErrorResult(result) && pid && offlineKeyPrefix && project && currentProjectId) {
+          updateOfflineProject(offlineKeyPrefix, pid, currentProjectId, project).catch(() => {});
+        }
       }
 
       if (isApiErrorResult(result)) {
         throw new Error(result.error || 'Failed to update task');
       }
     },
-    [onTaskUpdate, isEditMode, offlineKeyPrefix],
+    [onTaskUpdate, isEditMode, offlineKeyPrefix, participantId],
   );
 
   const updateProjectInfo = useCallback((updates: Partial<ProjectData>) => {
@@ -361,13 +369,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       if (isApiErrorResult(result)) {
         throw new Error(result.error || 'Failed to add task');
       }
+      // After online success, reflect the new task in the offline snapshot.
+      if (participantId && offlineKeyPrefix && currentProjectId) {
+        const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
+        updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+      }
     }
 
     setProjectData(p => {
       if (!p) return null;
       return mergeTaskIntoProject(p, pillarId, task);
     });
-  }, []);
+  }, [participantId, offlineKeyPrefix]);
 
   const deleteTask = useCallback(
     async (taskId: string): Promise<void> => {
@@ -398,6 +411,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         if (isApiErrorResult(result)) {
           throw new Error(result.error || 'Failed to delete task');
         }
+        // After online success, reflect the deletion in the offline snapshot.
+        if (participantId && offlineKeyPrefix && currentProjectId) {
+          const updatedProject = removeTaskFromProject(prev, taskId);
+          updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+        }
       }
 
       setProjectData(p => {
@@ -405,7 +423,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         return removeTaskFromProject(p, taskId);
       });
     },
-    [isEditMode],
+    [isEditMode, participantId, offlineKeyPrefix],
   );
 
   const saveLocal = useCallback(() => {

@@ -17,6 +17,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { profileStyles } from '@components/ui/Modal/Styles';
 import { theme } from '@config/theme';
 import { getParticipantsList, updateParticipantAddress } from '../../services/participantService';
+import { updateOfflineParticipantDetails } from '../../services/offlineCacheUpdateService';
 import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { openDownload } from '@utils/helper';
@@ -173,6 +174,8 @@ function ParticipantProfileModalInner({
       };
       const res = await updateParticipantAddress(reqBody);
       if (res) {
+        // Keep offline address in sync with the server update.
+        updateOfflineParticipantDetails(userId, participantId, { location: street }).catch(() => {});
         onParticipantSaved({
           location: street,
           //  email
@@ -208,6 +211,8 @@ function ParticipantProfileModalInner({
     onParticipantSaved,
     showAlert,
     t,
+    userId,
+    participantId,
   ]);
 
   return (
