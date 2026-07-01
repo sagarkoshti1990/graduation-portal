@@ -130,6 +130,17 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               { rule: 'email', message: { key: 'errors.emailInvalid', fallback: 'Enter a valid email address' } },
             ],
           },
+          {
+            name: 'address',
+            type: 'text',
+            required: false,
+            icon: 'MapPin',
+            label: { key: 'address', fallback: 'Address' },
+            placeholder: { key: 'addressPlaceholder', fallback: 'Enter address' },
+            validation: [
+              { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
+            ],
+          },
         ],
       },
       {

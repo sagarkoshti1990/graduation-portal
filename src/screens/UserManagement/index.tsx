@@ -288,6 +288,7 @@ const UserManagementScreen = () => {
     { id: 'firstName', value: '', error: '' },
     { id: 'lastName', value: '', error: '' },
     { id: 'email', value: '', error: '' },
+    { id: 'address', value: '', error: '' },
     { id: 'countryCode', value: '+27', error: '' },
     { id: 'phoneNumber', value: '', error: '' },
     { id: 'alternativePhoneCode', value: '+27', error: '' },
@@ -652,6 +653,9 @@ const UserManagementScreen = () => {
 
       const altPhoneCode = getCreateField('alternativePhoneCode').replace('+', '');
       if (altPhone && altPhoneCode) payload.alternative_phone_code = altPhoneCode;
+
+      const address = getCreateField('address');
+      if (address) payload.address = address;
 
       const nationalIdVal = getCreateField('nationalId');
       if (nationalIdVal) {

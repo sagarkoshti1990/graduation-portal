@@ -513,6 +513,7 @@ export const createUser = async (
     phone_code?: string;
     alternative_phone?: string;
     alternative_phone_code?: string;
+    address?: string;
     organisation?: string;
     position?: string;
     employee_id?: string;
