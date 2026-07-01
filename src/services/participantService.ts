@@ -444,13 +444,13 @@ export const verifyParticipantCompletionActions = async ({
   }
 };
 
-export const getSolutionWithEntityStatus = async (solutions: any[], participantId: string) => {
+export const getSolutionWithEntityStatus = async (solutions: any[], participantId: string, createdBy?: string) => {
   return Promise.all(
     solutions.map(async (solution) => {
       try {
         const entityResponse = await getObservationEntities({
           solutionId: solution.solutionId,
-          profileData: {},
+          profileData: (createdBy ? {createdBy} : {}),
         });
         // Find the participant entity from the response
         const participantEntity = entityResponse.result?.entities?.find(
@@ -460,6 +460,8 @@ export const getSolutionWithEntityStatus = async (solutions: any[], participantI
         return {
           ...solution,
           entity: participantEntity || null,
+          observationId: entityResponse.result?._id,
+          allowMultipleAssessemts: entityResponse.result?.allowMultipleAssessemts
         };
       } catch (error) {
         logger.error('Failed to fetch entity for solution', {

@@ -300,7 +300,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return null;
     }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
-    if (status === STATUS.NOT_ENROLLED) {
+    if (status === STATUS.NOT_ENROLLED && !offline && !coachId) {
       return (
         <Button
           onPress={handleEnrollParticipant}

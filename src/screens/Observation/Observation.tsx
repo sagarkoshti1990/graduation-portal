@@ -4,7 +4,7 @@ import ObservationContent from './ObservationContent';
 import { Loader, useAlert } from '@ui';
 import { getParticipantsList } from '../../services/participantService';
 import dataService from '../../services/dataService';
-import { useAuth } from '@contexts/AuthContext';
+import { useAuth, useIsSupervisor } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
 import { buildObservationPrefillData } from '@constants/OBSERVATION_PREFILL';
 
@@ -49,6 +49,7 @@ const Observation: React.FC = () => {
   const [participant, setParticipant] = useState<ParticipantData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const {user, setNavbarData} = useAuth();
+  const isSupervisor = useIsSupervisor();
   const { showAlert } = useAlert();
   const handleBackPress = () => {
       // @ts-ignore
@@ -170,6 +171,7 @@ const Observation: React.FC = () => {
       onClose={handleBackPress}
       showAlert={(type, message, options) => showAlert(type as any, message, options)}
       userData={userData}
+      canAccessCoachObservations={isSupervisor}
     />
   );
 };
