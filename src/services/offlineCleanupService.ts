@@ -90,6 +90,81 @@ export async function deleteProjectOfflineData(
   }
 }
 
+// ── Task-level ────────────────────────────────────────────────────────────────
+
+/**
+ * Remove offline data for a single project task.
+ *
+ * Actions:
+ *   - Removes the task entry from the project's edit queue (projectEdits).
+ *     If no tasks remain, the entire edit queue key and project snapshot are
+ *     also removed so the project no longer appears pending.
+ *   - Removes any file blobs and filesPending entries that belong to this task.
+ *
+ * Does NOT touch participant profile data, other projects, or observation forms.
+ */
+export async function deleteTaskOfflineData(
+  userId: string,
+  participantId: string,
+  projectId: string,
+  taskId: string,
+): Promise<void> {
+  try {
+    const editKey = PARTICIPANT_KEYS.projectEdits(userId, participantId, projectId);
+    const projectEdits = await offlineStorage.read<{ tasks: any[] }>(editKey).catch(() => null);
+
+    if (projectEdits?.tasks?.length) {
+      const isTopLevel = projectEdits.tasks.some((t: any) => t._id === taskId);
+      let remaining: any[];
+      if (isTopLevel) {
+        remaining = projectEdits.tasks.filter((t: any) => t._id !== taskId);
+      } else {
+        // Remove the child from its parent's children array.
+        // If a parent then has no children and no own edits, remove it too.
+        remaining = projectEdits.tasks
+          .map((t: any) => {
+            if (!t.children?.some((c: any) => c._id === taskId)) return t;
+            return { ...t, children: t.children.filter((c: any) => c._id !== taskId) };
+          })
+          .filter((t: any) => {
+            const hasOwnEdits = t.status !== undefined || (t.attachments?.length ?? 0) > 0;
+            const hasChildren = (t.children?.length ?? 0) > 0;
+            return hasOwnEdits || hasChildren;
+          });
+      }
+      if (remaining.length === 0) {
+        await offlineStorage.remove(editKey).catch(() => {});
+        await offlineStorage.remove(PARTICIPANT_KEYS.project(userId, participantId, projectId)).catch(() => {});
+      } else {
+        await offlineStorage.create(editKey, { ...projectEdits, tasks: remaining }).catch(() => {});
+      }
+    }
+
+    // Remove pending file entries and their blobs for this task
+    const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
+    const pending = await offlineStorage.read<any[]>(filesPendingKey).catch(() => null);
+    if (pending?.length) {
+      const taskFiles = pending.filter((f: any) => f.taskId === taskId);
+      const otherFiles = pending.filter((f: any) => f.taskId !== taskId);
+
+      await Promise.all(
+        taskFiles.map(async (f: any) => {
+          const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
+          await offlineStorage.remove(blobKey).catch(() => {});
+        }),
+      );
+
+      if (otherFiles.length === 0) {
+        await offlineStorage.remove(filesPendingKey).catch(() => {});
+      } else {
+        await offlineStorage.create(filesPendingKey, otherFiles).catch(() => {});
+      }
+    }
+  } catch (err) {
+    logger.warn(`offlineCleanupService: failed to delete task "${taskId}" data`, err);
+  }
+}
+
 // ── Observation-level ─────────────────────────────────────────────────────────
 
 /**

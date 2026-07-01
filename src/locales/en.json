@@ -2212,6 +2212,22 @@
     "conflictDetectedTitle": "Data Conflict Detected",
     "conflictDetectedMessage": "This record has been updated online after it was downloaded offline. Syncing will overwrite the latest online changes. Do you want to continue?",
     "overrideAndSync": "Override & Sync",
-    "skipAndRemove": "Skip & Remove"
+    "skipAndRemove": "Skip & Remove",
+    "taskConflictTitle": "Task Conflict Detected",
+    "taskConflictMessage": "This task has changed online after it was downloaded offline. Please review the differences below before deciding how to proceed.",
+    "taskConflictParentTaskName": "Parent Task",
+    "taskConflictTaskName": "Task Name",
+    "taskConflictExternalId": "External ID",
+    "taskConflictStatus": "Status",
+    "taskConflictEvidence": "Evidence",
+    "taskConflictOffline": "Offline",
+    "taskConflictOnline": "Online",
+    "taskConflictFiles": "file(s)",
+    "taskConflictNoFiles": "No files uploaded",
+    "taskConflictReason": "Conflict Reason",
+    "taskConflictReasonStatusAhead": "Online task status is ahead of the offline task.",
+    "taskConflictReasonTimestamp": "Online task was updated after the offline download.",
+    "taskConflictReasonEvidence": "Online evidence differs from the offline evidence.",
+    "taskConflictReasonMultiple": "Multiple differences detected."
   }
 }

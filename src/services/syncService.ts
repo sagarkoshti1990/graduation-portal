@@ -412,9 +412,15 @@ async function syncTaskEdits(
       continue;
     }
 
-    // Filter out tasks that were blocked by the validation phase.
+    // Filter out tasks (and their children) that were skipped by the validation phase.
     const tasksToSync = skipTaskIds?.size
-      ? projectEdits.tasks.filter((t: any) => !skipTaskIds.has(t._id))
+      ? projectEdits.tasks
+          .filter((t: any) => !skipTaskIds.has(t._id))
+          .map((t: any) => {
+            if (!t.children?.length) return t;
+            const allowed = t.children.filter((c: any) => !skipTaskIds.has(c._id));
+            return allowed.length === t.children.length ? t : { ...t, children: allowed };
+          })
       : projectEdits.tasks;
 
     if (!tasksToSync.length) {
@@ -434,9 +440,25 @@ async function syncTaskEdits(
       // Merge the uploaded URLs back into the cached project so the local cache
       // reflects the server state without needing a fresh fetch.
       await applyEditsToCachedProject(userId, participantId, projectId, tasksToSync);
-      // Remove edit queue and cached project snapshot — both are now on the server.
-      await offlineStorage.remove(editKey).catch(() => {});
-      await offlineStorage.remove(PARTICIPANT_KEYS.project(userId, participantId, projectId)).catch(() => {});
+      // If some tasks were skipped (user chose Cancel), preserve only those tasks
+      // so they can be retried next session.  Also handles skipped children: if a
+      // parent has skipped children, preserve the parent with only those children.
+      const skippedTasks = skipTaskIds?.size
+        ? projectEdits.tasks.flatMap((t: any) => {
+            if (skipTaskIds.has(t._id)) return [t];
+            if (t.children?.length) {
+              const skippedChildren = t.children.filter((c: any) => skipTaskIds.has(c._id));
+              if (skippedChildren.length > 0) return [{ ...t, children: skippedChildren }];
+            }
+            return [];
+          })
+        : [];
+      if (skippedTasks.length > 0) {
+        await offlineStorage.create(editKey, { ...projectEdits, tasks: skippedTasks }).catch(() => {});
+      } else {
+        await offlineStorage.remove(editKey).catch(() => {});
+        await offlineStorage.remove(PARTICIPANT_KEYS.project(userId, participantId, projectId)).catch(() => {});
+      }
     } catch (err) {
       logger.error(`syncService: task edit sync failed for project ${projectId}`, err);
       failed++;

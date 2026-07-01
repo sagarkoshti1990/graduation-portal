@@ -64,11 +64,31 @@ export const OBSERVATION_STATUS_PRIORITY: Record<string, number> = {
 export type ValidationOutcome = 'blocked' | 'conflict' | 'allowed';
 export type ObservationOutcome = ValidationOutcome | 'remove';
 
+/** Detailed conflict data shown in the per-task conflict dialog. */
+export interface TaskConflictDetails {
+  taskName: string;
+  taskExternalId?: string;
+  /** Set when the conflicting task is a child task — names the parent for dialog context. */
+  parentTaskName?: string;
+  offlineStatus: string;
+  onlineStatus: string;
+  offlineUpdatedAt?: string;
+  onlineUpdatedAt?: string;
+  offlineEvidenceCount: number;
+  onlineEvidenceCount: number;
+  offlineFileNames: string[];
+  onlineFileNames: string[];
+  /** One or more reasons explaining why the conflict was detected. */
+  conflictReasons: Array<'status-ahead' | 'timestamp-conflict' | 'evidence-differs'>;
+}
+
 export interface TaskValidationResult {
   taskId: string;
   /** The project this task belongs to — needed for targeted removal in the UI. */
   projectId: string;
-  outcome: ValidationOutcome;
+  outcome: 'conflict' | 'allowed';
+  /** Present when outcome is 'conflict' — drives the rich comparison dialog. */
+  conflictDetails?: TaskConflictDetails;
 }
 
 export interface FormValidationResult {
@@ -310,21 +330,91 @@ export async function runValidationForParticipant(
       }
     }
 
-    // Validation 3: individual task statuses (only when project itself is not blocked)
-    if (!plan.projectBlocked && projectEdits?.tasks?.length) {
+    // Validation 3: per-task conflict detection (skip observation-type tasks).
+    // Supports two levels: parent tasks and their children.  Exactly two levels
+    // are supported; no recursive descent beyond children is performed.
+    if (!plan.blockedProjectIds.includes(projectId) && projectEdits?.tasks?.length) {
       const onlineTaskMap = buildOnlineTaskMap(onlineProject);
-      for (const offlineTask of projectEdits.tasks) {
-        const onlineTask = onlineTaskMap.get(offlineTask._id);
-        if (!onlineTask) continue;
+      const offlineSnapshotTaskMap = buildOnlineTaskMap(offlineProject);
 
-        const offlineTaskPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, offlineTask.status);
-        const onlineTaskPri  = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineTask.status);
+      // Validate a single task (parent or child).  parentTaskName is provided
+      // only when the task is a child, so the conflict dialog can show context.
+      function validateOneTask(editTask: any, parentTaskName?: string): void {
+        const onlineTask = onlineTaskMap.get(editTask._id);
+        if (!onlineTask) return;
+        // Observation form tasks are handled by the Observation Sync Queue — skip.
+        if (onlineTask.type === 'observation') return;
+
+        const offlineSnapshotTask = offlineSnapshotTaskMap.get(editTask._id);
+
+        // Rule 1: online task status is ahead of what the user edited offline
+        const editStatus = editTask.status ?? offlineSnapshotTask?.status ?? '';
+        const offlineTaskPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, editStatus);
+        const onlineTaskPri  = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineTask.status ?? '');
+        const statusConflict = onlineTaskPri > offlineTaskPri;
+
+        // Rule 2: online task was modified after the offline download
+        const tsConflict = hasTimestampConflict(
+          downloadedAt,
+          offlineSnapshotTask?.updatedAt,
+          onlineTask.updatedAt,
+        );
+
+        if (!statusConflict && !tsConflict) {
+          plan.taskResults.push({ taskId: editTask._id, projectId, outcome: 'allowed' });
+          return;
+        }
+
+        // Build evidence comparison for the conflict dialog
+        const offlineAtts: any[] = editTask.attachments ?? offlineSnapshotTask?.attachments ?? [];
+        const onlineAtts: any[]  = onlineTask.attachments ?? [];
+        const offlineNames = offlineAtts.map((a: any) => a.originalName ?? a.name ?? '');
+        const onlineNames  = onlineAtts.map((a: any) => a.originalName ?? a.name ?? '');
+        const evidenceDiffers =
+          offlineAtts.length !== onlineAtts.length ||
+          offlineNames.some((f: string) => !onlineNames.includes(f));
+
+        const conflictReasons: TaskConflictDetails['conflictReasons'] = [];
+        if (statusConflict)  conflictReasons.push('status-ahead');
+        if (tsConflict)      conflictReasons.push('timestamp-conflict');
+        if (evidenceDiffers) conflictReasons.push('evidence-differs');
 
         plan.taskResults.push({
-          taskId: offlineTask._id,
+          taskId: editTask._id,
           projectId,
-          outcome: onlineTaskPri > offlineTaskPri ? 'blocked' : 'allowed',
+          outcome: 'conflict',
+          conflictDetails: {
+            taskName: onlineTask.name ?? offlineSnapshotTask?.name ?? editTask._id,
+            taskExternalId: onlineTask.externalId ?? offlineSnapshotTask?.externalId,
+            parentTaskName,
+            offlineStatus: editStatus,
+            onlineStatus: onlineTask.status ?? '',
+            offlineUpdatedAt: offlineSnapshotTask?.updatedAt,
+            onlineUpdatedAt: onlineTask.updatedAt,
+            offlineEvidenceCount: offlineAtts.length,
+            onlineEvidenceCount: onlineAtts.length,
+            offlineFileNames: offlineNames,
+            onlineFileNames: onlineNames,
+            conflictReasons,
+          },
         });
+      }
+
+      for (const editTask of projectEdits.tasks) {
+        if (editTask.children?.length) {
+          // Parent has children → validate each child; skip the parent itself.
+          // Resolve the parent name from the online or offline snapshot for dialog context.
+          const onlineParent = onlineTaskMap.get(editTask._id);
+          const offlineParent = offlineSnapshotTaskMap.get(editTask._id);
+          const parentName: string =
+            onlineParent?.name ?? offlineParent?.name ?? editTask._id;
+          for (const editChild of editTask.children) {
+            validateOneTask(editChild, parentName);
+          }
+        } else {
+          // No children → validate the parent task directly.
+          validateOneTask(editTask);
+        }
       }
     }
   }
@@ -418,7 +508,7 @@ export function buildSkipSets(
   }
 
   for (const t of plan.taskResults) {
-    if (t.outcome === 'blocked') skipTaskIds.add(t.taskId);
+    if (t.outcome === 'conflict') skipTaskIds.add(t.taskId);
   }
 
   for (const f of plan.formResults) {

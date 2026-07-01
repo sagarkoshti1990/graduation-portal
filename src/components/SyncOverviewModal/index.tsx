@@ -23,11 +23,13 @@ import {
   buildSkipSets,
   createSyncValidationCache,
   type ParticipantValidationPlan,
+  type TaskConflictDetails,
 } from '../../services/syncValidationService';
 import {
   deleteParticipantOfflineData,
   deleteProjectOfflineData,
   deleteObservationOfflineData,
+  deleteTaskOfflineData,
 } from '../../services/offlineCleanupService';
 import type { SyncProgress } from '@app-types/offline';
 
@@ -60,7 +62,7 @@ const IDLE_STATE: ParticipantSyncState = {
  *
  *  participant-blocked   → "Participant Progress Updated" (Cancel | Remove Offline Data)
  *  project-blocked       → "Project Already Updated" (Cancel | Skip & Remove)
- *  task-blocked          → "Task Already Updated" (informational only — OK button)
+ *  task-conflict         → "Task Conflict Detected"  (Cancel | Override & Sync | Skip & Remove)
  *  form-blocked          → "Task Observation Already Updated" (Cancel | Skip & Remove)
  *  form-completed        → "Observation Already Completed" (Cancel | Skip & Remove)
  *  participant-conflict  → "Data Conflict Detected" (Cancel | Override & Sync)
@@ -70,7 +72,7 @@ const IDLE_STATE: ParticipantSyncState = {
 type DialogKind =
   | 'participant-blocked'
   | 'project-blocked'
-  | 'task-blocked'
+  | 'task-conflict'
   | 'form-blocked'
   | 'form-completed'
   | 'participant-conflict'
@@ -87,6 +89,8 @@ interface DialogItem {
   projectId?: string;
   taskId?: string;
   formId?: string;
+  /** Rich conflict details for the 'task-conflict' dialog */
+  taskConflict?: TaskConflictDetails;
 }
 
 /** What the user chose in a dialog. */
@@ -122,6 +126,21 @@ function applyProgress(
     syncing: p.stage !== 'done',
     done: p.stage === 'done',
   };
+}
+
+// ── Task conflict helpers ─────────────────────────────────────────────────────
+
+function formatTaskStatus(status?: string): string {
+  if (!status) return '—';
+  return status
+    .replace(/-/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^\w/, c => c.toUpperCase());
+}
+
+function formatTaskDate(dateStr?: string): string {
+  if (!dateStr) return '—';
+  try { return new Date(dateStr).toLocaleString(); } catch { return dateStr; }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -263,6 +282,8 @@ const SyncOverviewModal: React.FC = () => {
       const extraSkipProjectIds = new Set<string>();
       //  Tracks forms the user approved for override-sync despite conflict
       const overriddenConflictFormIds = new Set<string>();
+      //  Tracks tasks the user approved for override-sync despite conflict
+      const overriddenConflictTaskIds = new Set<string>();
 
       for (const entry of toSync) {
         const plan = planMap.get(entry.participantId);
@@ -331,17 +352,24 @@ const SyncOverviewModal: React.FC = () => {
           // 'override' → proceed with task sync for this project
         }
 
-        // ── 5. Blocked tasks (informational only — no removal) ─────────────
-        for (const task of plan.taskResults.filter(tr => tr.outcome === 'blocked')) {
-          await showDialog({
-            id: `task-blocked-${task.taskId}`,
-            kind: 'task-blocked',
+        // ── 5. Conflicting tasks ───────────────────────────────────────────
+        for (const task of plan.taskResults.filter(tr => tr.outcome === 'conflict')) {
+          const decision = await showDialog({
+            id: `task-conflict-${task.taskId}`,
+            kind: 'task-conflict',
             participantId: entry.participantId,
             participantName: entry.name,
             projectId: task.projectId,
             taskId: task.taskId,
+            taskConflict: task.conflictDetails,
           });
-          // User clicks OK — task stays in queue, buildSkipSets adds it to skipTaskIds
+          if (decision === 'remove') {
+            await deleteTaskOfflineData(userId, entry.participantId, task.projectId, task.taskId);
+            await refreshPending();
+          } else if (decision === 'override') {
+            overriddenConflictTaskIds.add(task.taskId);
+          }
+          // 'cancel' → task stays in skipTaskIds (added by buildSkipSets)
         }
 
         // ── 6. Blocked task observations ──────────────────────────────────
@@ -405,11 +433,15 @@ const SyncOverviewModal: React.FC = () => {
 
             // Remove conflict forms the user approved
             for (const formId of overriddenConflictFormIds) {
-              skipOptions.skipFormIds.delete(formId);
+              skipOptions.skipFormIds?.delete(formId);
+            }
+            // Remove conflict tasks the user approved for override
+            for (const taskId of overriddenConflictTaskIds) {
+              skipOptions.skipTaskIds?.delete(taskId);
             }
             // Add projects the user cancelled override for
             for (const projectId of extraSkipProjectIds) {
-              skipOptions.skipProjectIds.add(projectId);
+              skipOptions.skipProjectIds?.add(projectId);
             }
           }
 
@@ -522,15 +554,137 @@ const SyncOverviewModal: React.FC = () => {
       headerTitle = t('offlineSync.projectUpdatedTitle');
       message = t('offlineSync.projectUpdatedMessage');
       footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
-    } else if (kind === 'task-blocked') {
-      headerTitle = t('offlineSync.taskUpdatedTitle');
-      message = t('offlineSync.taskUpdatedMessage');
+    } else if (kind === 'task-conflict') {
+      const tc = currentDialog.taskConflict;
+      headerTitle = t('offlineSync.taskConflictTitle');
       footer = (
-        <HStack justifyContent="flex-end">
-          <Button variant="solid" size="sm" onPress={() => resolveDialog('ok')}>
-            <ButtonText>{t('common.ok') || 'OK'}</ButtonText>
+        <HStack space="sm" justifyContent="flex-end" flexWrap="wrap">
+          {cancelBtn}
+          <Button variant="outline" size="sm" onPress={() => resolveDialog('override')}>
+            <ButtonText>{t('offlineSync.overrideAndSync')}</ButtonText>
           </Button>
+          {skipRemoveBtn}
         </HStack>
+      );
+      return (
+        <Modal
+          isOpen
+          onClose={() => resolveDialog('cancel')}
+          headerTitle={headerTitle}
+          size="lg"
+          showCloseButton={false}
+          footerContent={footer}
+        >
+          <VStack space="sm">
+            <Text fontSize="$sm" color="$textSecondary">
+              {t('offlineSync.taskConflictMessage')}
+            </Text>
+            <ScrollView maxHeight={320}>
+              <VStack space="md" mt="$2">
+                {/* Parent task context — only shown for child task conflicts */}
+                {tc?.parentTaskName && (
+                  <VStack space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.taskConflictParentTaskName')}
+                    </Text>
+                    <Text fontSize="$sm" color="$textSecondary">{tc.parentTaskName}</Text>
+                  </VStack>
+                )}
+                {/* Task info */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.taskConflictTaskName')}
+                  </Text>
+                  <Text fontSize="$sm" fontWeight="$semibold">{tc?.taskName ?? '—'}</Text>
+                </VStack>
+                {tc?.taskExternalId && (
+                  <VStack space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.taskConflictExternalId')}
+                    </Text>
+                    <Text fontSize="$sm">{tc.taskExternalId}</Text>
+                  </VStack>
+                )}
+
+                {/* Status comparison */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.taskConflictStatus')}
+                  </Text>
+                  <HStack space="md">
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">{formatTaskStatus(tc?.offlineStatus)}</Text>
+                      <Text fontSize="$xs" color="$textMutedForeground">{formatTaskDate(tc?.offlineUpdatedAt)}</Text>
+                    </VStack>
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">{formatTaskStatus(tc?.onlineStatus)}</Text>
+                      <Text fontSize="$xs" color="$textMutedForeground">{formatTaskDate(tc?.onlineUpdatedAt)}</Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+
+                {/* Evidence comparison */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.taskConflictEvidence')}
+                  </Text>
+                  <HStack space="md">
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">
+                        {tc?.offlineEvidenceCount ?? 0} {t('offlineSync.taskConflictFiles')}
+                      </Text>
+                      {tc?.offlineFileNames?.length ? (
+                        tc.offlineFileNames.map((name, i) => (
+                          <Text key={i} fontSize="$xs" color="$textSecondary" numberOfLines={1}>{name}</Text>
+                        ))
+                      ) : (
+                        <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictNoFiles')}</Text>
+                      )}
+                    </VStack>
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">
+                        {tc?.onlineEvidenceCount ?? 0} {t('offlineSync.taskConflictFiles')}
+                      </Text>
+                      {tc?.onlineFileNames?.length ? (
+                        tc.onlineFileNames.map((name, i) => (
+                          <Text key={i} fontSize="$xs" color="$textSecondary" numberOfLines={1}>{name}</Text>
+                        ))
+                      ) : (
+                        <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictNoFiles')}</Text>
+                      )}
+                    </VStack>
+                  </HStack>
+                </VStack>
+
+                {/* Conflict reasons */}
+                {tc?.conflictReasons?.length ? (
+                  <VStack space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.taskConflictReason')}
+                    </Text>
+                    {tc.conflictReasons.length > 1 && (
+                      <Text fontSize="$xs" color="$warning600">{t('offlineSync.taskConflictReasonMultiple')}</Text>
+                    )}
+                    {tc.conflictReasons.map(reason => (
+                      <Text key={reason} fontSize="$xs" color="$textSecondary">
+                        {'• '}
+                        {reason === 'status-ahead'
+                          ? t('offlineSync.taskConflictReasonStatusAhead')
+                          : reason === 'timestamp-conflict'
+                          ? t('offlineSync.taskConflictReasonTimestamp')
+                          : t('offlineSync.taskConflictReasonEvidence')}
+                      </Text>
+                    ))}
+                  </VStack>
+                ) : null}
+              </VStack>
+            </ScrollView>
+          </VStack>
+        </Modal>
       );
     } else if (kind === 'form-blocked') {
       headerTitle = t('offlineSync.taskObservationUpdatedTitle');
