@@ -14,7 +14,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { CreateUserForm } from './CreateUserForm';
-import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, getSitesByProvince } from '../../services/usersService';
+import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
 import type { 
   // UserSearchParams,
@@ -467,11 +467,6 @@ const UserManagementScreen = () => {
     const rolesJustLoaded = prevRolesLengthRef.current === 0 && roles.length > 0;
     prevRolesLengthRef.current = roles.length;
 
-    // Don't fetch if filters are still loading
-    if (isFiltersLoading) {
-      return;
-    }
-
     // Don't fetch if roles haven't loaded yet (needed for type parameter)
     // Unless a specific role filter is set or roles just loaded
     if (roles.length === 0 && !filters.role && !rolesJustLoaded) {
@@ -569,7 +564,6 @@ const UserManagementScreen = () => {
         setUsers([]);
         setTotalCount(0);
         setProgramParticipantByUserId({});
-
       } finally {
         setIsLoading(false);
       }
@@ -792,9 +786,7 @@ const UserManagementScreen = () => {
                 },
                 _thText: {
                   fontWeight: '$medium',
-
                 },
-
               }
             }}
           />
@@ -1127,7 +1119,7 @@ const UserManagementScreen = () => {
           </HStack>
         }
       >
-        <VStack key={resetPasswordState.user?.id || 'empty'} space="lg" width="100%">
+        <VStack space="lg" width="100%">
           {/* Username Field - Read Only */}
           <VStack space="xs" width="100%">
             <Text {...TYPOGRAPHY.bodySmall} fontWeight="$medium" color="$textForeground">
@@ -1286,7 +1278,7 @@ const UserManagementScreen = () => {
           />
         }
       >
-        <VStack key={editUserState.user?.id || 'empty'} space="md" width="100%">
+        <VStack space="md" width="100%">
           {/* Content */}
           {editUserState.isLoading ? (
             <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
