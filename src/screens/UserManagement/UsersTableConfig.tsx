@@ -238,7 +238,7 @@ const ActionsColumn: React.FC<{
     // Check direct role property as fallback
     const directRole = (user as any)?.role?.toLowerCase();
     const hasDirectAdminRole = directRole === 'admin' || directRole === 'brac admin' || directRole?.includes('admin');
-    const isParticipantRole = roleLabels?.includes('participant');
+    const isParticipantRole = roleLabels?.includes('participant') && user?.extra?.metaInformation?.onBoardedProjectId;
     
     const isTargetUserAdminData = hasAdminLabel || hasAdminTitle || hasDirectAdminRole || user?.status?.toLowerCase() === 'inactive';
     return {isTargetUserAdmin:isTargetUserAdminData,isParticipantRole}

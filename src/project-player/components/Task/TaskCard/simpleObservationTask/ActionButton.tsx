@@ -57,7 +57,7 @@ const ActionButton = memo<ActionButtonProps>(({
 
   // In read-only mode: hide upload/non-observation actions; keep observation button
   // active so the viewer can open the form. The observation form handles its own permissions.
-  if (isReadOnly && !isObservationTask) return null;
+  if ((isReadOnly && !isObservationTask) || (isReadOnly && isObservationTask && !isCompleted)) return null;
 
   return (
     <Button onPress={handleTaskClick} isDisabled={isStatusUpdating}
