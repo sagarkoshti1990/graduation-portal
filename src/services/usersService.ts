@@ -33,7 +33,7 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
       tenant_code = process?.env?.TENANT_CODE_NAME || 'brac',
       type = ROLE_NAMES.USER,
       page = 1,
-      limit = 20, 
+      limit = 20,
       search,
       role,
       status,

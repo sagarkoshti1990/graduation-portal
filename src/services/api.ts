@@ -16,10 +16,10 @@ import { resetToScreen } from '@utils/navigationRef';
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
   | {
-    env: {
-      [key: string]: string | undefined;
-    };
-  }
+      env: {
+        [key: string]: string | undefined;
+      };
+    }
   | undefined;
 
 const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_TOKEN;
