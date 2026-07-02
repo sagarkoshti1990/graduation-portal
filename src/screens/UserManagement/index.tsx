@@ -30,33 +30,7 @@ import { getUserProfile } from '../../services/authenticationService';
 import { TabButton } from '@components/Tabs';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 
-// Custom wrapper to prevent cursor jumping during fast typing on heavy screens
-export const FastInputField = ({ value, defaultValue, onChangeText, ...props }: any) => {
-  const initialValue = value !== undefined ? value : (defaultValue || '');
-  const [localValue, setLocalValue] = useState(initialValue);
-  const isTyping = useRef(false);
-  const timeoutRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!isTyping.current && value !== undefined && localValue !== value) {
-      setLocalValue(value);
-    }
-  }, [value]);
-
-  const handleChange = (text: string) => {
-    setLocalValue(text);
-    isTyping.current = true;
-
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      isTyping.current = false;
-    }, 500);
-
-    if (onChangeText) onChangeText(text);
-  };
-
-  return <InputField {...props} value={localValue} onChangeText={handleChange} />;
-};
+import { FastInputField } from '@components/SchemaFormRenderer';
 import offlineStorage from '../../services/offlineStorage';
 import logger from '@utils/logger';
 
@@ -283,127 +257,15 @@ const UserManagementScreen = () => {
     isLoading: false,
   });
 
-  // Create User modal state (Array of JSON)
-  const initialCreateUserFields = useMemo(() => [
-    { id: 'name', value: '', error: '' },
-    { id: 'email', value: '', error: '' },
-    { id: 'address', value: '', error: '' },
-    { id: 'countryCode', value: '+27', error: '' },
-    { id: 'phoneNumber', value: '', error: '' },
-    { id: 'alternativePhoneCode', value: '+27', error: '' },
-    { id: 'alternativePhone', value: '', error: '' },
-    { id: 'nationalId', value: '', error: '' },
-    { id: 'gender', value: '', error: '' },
-    { id: 'dob', value: '', error: '' },
-    { id: 'username', value: '', error: '' },
-    { id: 'password', value: '', error: '' },
-    { id: 'confirmPassword', value: '', error: '' },
-    { id: 'roleId', value: '', error: '' },
-    { id: 'provinceId', value: '', error: '' },
-    { id: 'siteId', value: '', error: '' },
-    { id: 'organisationId', value: '', error: '' },
-    { id: 'positionId', value: '', error: '' },
-    { id: 'employeeId', value: '', error: '' },
-  ], []);
-
-  const [createUserFields, setCreateUserFields] = useState(initialCreateUserFields);
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
-  const [isCreateUserSubmitting, setIsCreateUserSubmitting] = useState(false);
-  const [formSites, setFormSites] = useState<any[]>([]);
-
-  const getCreateField = useCallback((id: string) => createUserFields.find(f => f.id === id)?.value || '', [createUserFields]);
-  const getCreateError = useCallback((id: string) => createUserFields.find(f => f.id === id)?.error || '', [createUserFields]);
-
-  // Derived maps consumed by SchemaFormRenderer
-  const createUserValues = useMemo<Record<string, string>>(
-    () => Object.fromEntries(createUserFields.map(f => [f.id, f.value])),
-    [createUserFields]
-  );
-  const createUserErrors = useMemo<Record<string, string>>(
-    () => Object.fromEntries(createUserFields.map(f => [f.id, f.error]).filter(([, v]) => !!v)),
-    [createUserFields]
-  );
-
-  // Compute role-based visibility flags
-  const createUserFlags = useMemo(() => {
-    const roleId = getCreateField('roleId');
-    const selRole = roles.find((r: any) => r.id.toString() === roleId);
-    const roleTitle = (selRole?.title?.toLowerCase() || '');
-    const roleLabel = (selRole?.label?.toLowerCase() || '');
-    const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
-      (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
-    );
-    return { isSupervisorOrLC };
-  }, [getCreateField, roles]);
-
-  // Build normalized options map for SchemaFormRenderer
-  const createUserOptionsMap = useMemo(() => ({
-    roles: roles
-      .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
-      .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
-    genders: genders.map((g: any) => ({ value: g._id, label: g.name })),
-    provinces: provinces.map((p: any) => ({ value: p._id, label: p.name })),
-    sites: formSites.map((s: any) => ({ value: s._id, label: s.name })),
-    organisations: organisations.map((o: any) => ({ value: o._id, label: o.name })),
-    positions: positions.map((p: any) => ({ value: p._id, label: p.name })),
-    countryCodes: COUNTRY_CODES.map((c: any) => ({ value: c.value ?? c.dial_code ?? c, label: c.label ?? c.name ?? c })),
-  }), [roles, genders, provinces, formSites, organisations, positions]);
-
-  const selectedFormProvince = getCreateField('provinceId');
-  useEffect(() => {
-    const fetchFormSites = async () => {
-      if (!selectedFormProvince) {
-        setFormSites([]);
-        return;
-      }
-      try {
-        const sitesResponse = await getSitesByProvince({
-          provinceId: selectedFormProvince,
-          page: 1,
-          limit: 100,
-        });
-        setFormSites(sitesResponse.result?.data || []);
-      } catch (error) {
-        setFormSites([]);
-      }
-    };
-    fetchFormSites();
-  }, [selectedFormProvince]);
-
-  const handleCreateFieldChange = useCallback((id: string, text: string) => {
-    setCreateUserFields(prev => {
-      // Get current email value from prev state (before this update)
-      const currentEmail = prev.find(f => f.id === 'email')?.value || '';
-      const currentUsername = prev.find(f => f.id === 'username')?.value || '';
-      // Auto-sync username with email only if user hasn't manually customised it
-      // (i.e., username still matches the old email value or is empty)
-      const shouldSyncUsername =
-        id === 'email' && (currentUsername === '' || currentUsername === currentEmail);
-
-      return prev.map(f => {
-        if (f.id === id) return { ...f, value: text, error: '' };
-        if (shouldSyncUsername && f.id === 'username') return { ...f, value: text, error: '' };
-        if (id === 'provinceId' && f.id === 'siteId') return { ...f, value: '', error: '' };
-        return f;
-      });
-    });
-  }, []);
 
   const openCreateUserModal = useCallback(() => {
-    setCreateUserFields(initialCreateUserFields);
-    setIsCreateUserSubmitting(false);
     setIsCreateUserModalOpen(true);
-  }, [initialCreateUserFields]);
+  }, []);
 
   const closeCreateUserModal = useCallback(() => {
     setIsCreateUserModalOpen(false);
   }, []);
-
-  const validateCreateUserForm = useCallback(() => {
-    const errors = validateSchema(CREATE_USER_FORM_SCHEMA, createUserValues, createUserFlags);
-    setCreateUserFields(prev => prev.map(f => ({ ...f, error: errors[f.id] || '' })));
-    return Object.keys(errors).length === 0;
-  }, [createUserValues, createUserFlags]);
 
   const closeDeactivateModal = useCallback(() => {
     setDeactivateState({ user: null, isSubmitting: false });
@@ -604,91 +466,7 @@ const UserManagementScreen = () => {
     loadPageSize();
   }, []);
 
-  const handleCreateUserSubmit = useCallback(async () => {
-    if (!validateCreateUserForm()) return;
 
-    setIsCreateUserSubmitting(true);
-
-    try {
-      const roleId = getCreateField('roleId');
-      // Find role title
-      const selectedRole = roles.find(r => r.id.toString() === roleId);
-      const roleTitle = selectedRole?.title || roleId;
-      const roleLabel = selectedRole?.label || '';
-
-      const requiresExtraFields = ['admin', 'supervisor', 'linkage champion', 'participant', 'org_admin', 'tenant_admin', 'lc', 'user'].some(k => roleTitle.toLowerCase().includes(k) || roleLabel.toLowerCase().includes(k));
-
-      const payload: any = {
-        name: getCreateField('name').trim(),
-        username: getCreateField('username'),
-        email: getCreateField('email'),
-        roles: roleTitle, // Send the mapped string title (e.g. 'tenant_admin') instead of numeric ID
-        password: getCreateField('password'),
-      };
-
-      // Only include optional fields when they have a value
-      // API requires dob WITHOUT special characters (no / or -), so strip separators → YYYYMMDD
-      const dob = getCreateField('dob');
-      if (dob) {
-        payload.dob = dob.replace(/[\/\-]/g, ''); // "2000/09/08" → "20000908"
-      }
-      const gender = getCreateField('gender');
-      if (gender) payload.gender = gender;
-
-      const site = getCreateField('siteId');
-      if (site) payload.site = site;
-
-      const province = getCreateField('provinceId');
-      if (province) payload.province = province;
-
-      const phone = getCreateField('phoneNumber');
-      if (phone) payload.phone = phone;
-
-      const phoneCode = getCreateField('countryCode').replace('+', '');
-      if (phone && phoneCode) payload.phone_code = phoneCode;
-
-      const altPhone = getCreateField('alternativePhone');
-      if (altPhone) payload.alternative_phone = altPhone;
-
-      const altPhoneCode = getCreateField('alternativePhoneCode').replace('+', '');
-      if (altPhone && altPhoneCode) payload.alternative_phone_code = altPhoneCode;
-
-      const address = getCreateField('address');
-      if (address) payload.address = address;
-
-      const nationalIdVal = getCreateField('nationalId');
-      if (nationalIdVal) {
-        payload.national_id = Number(nationalIdVal);
-      }
-
-      // Organisation, Position, Employee ID — only for Supervisor/LC
-      const isSupervisorOrLCPayload = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(k => roleTitle.toLowerCase().includes(k) || roleLabel.toLowerCase().includes(k));
-      if (isSupervisorOrLCPayload) {
-        const organisationId = getCreateField('organisationId');
-        if (organisationId) payload.organisation = organisationId;
-        const positionId = getCreateField('positionId');
-        if (positionId) payload.position = positionId;
-        const employeeId = getCreateField('employeeId');
-        if (employeeId) payload.employee_id = employeeId;
-      }
-
-      await createUser(payload);
-
-      // Show alert BEFORE closing modal so it is visible to the user
-      showAlert('success', t('admin.users.createUser.success') || 'User created successfully.', { placement: 'bottom' });
-      setIsCreateUserSubmitting(false);
-      closeCreateUserModal();
-      setRefetchKey(k => k + 1);
-    } catch (error: any) {
-      const errMsg =
-        (error as any)?.data?.message ||
-        (error as any)?.message ||
-        t('admin.users.createUser.error') ||
-        'Failed to create user.';
-      showAlert('error', errMsg, { placement: 'bottom' });
-      setIsCreateUserSubmitting(false);
-    }
-  }, [roles, validateCreateUserForm, showAlert, t, closeCreateUserModal, getCreateField, createUserValues, createUserFlags]);
 
   // Fetch users from API when filters change or when roles are first loaded
   useEffect(() => {
@@ -1710,30 +1488,16 @@ const UserManagementScreen = () => {
       </Modal>
 
       {/* Create New User Modal */}
-      <Modal
+      <CreateUserForm
         isOpen={isCreateUserModalOpen}
         onClose={closeCreateUserModal}
-        size="lg"
-        headerTitle={t('admin.users.createUser.title') || 'Create New User'}
-        headerDescription={t('admin.users.createUser.description') || 'Add a new user to the system. Required fields are marked with *.'}
-        showCloseButton={true}
-        closeOnOverlayClick={!isCreateUserSubmitting}
-        style={{ zIndex: 9999 }}
-      >
-        <CreateUserForm
-          isMobile={isMobile}
-          t={t}
-          optionsMap={createUserOptionsMap}
-          flags={createUserFlags}
-          values={createUserValues}
-          errors={createUserErrors}
-          onFieldChange={handleCreateFieldChange}
-          isCreateUserSubmitting={isCreateUserSubmitting}
-          isCreateUserModalOpen={isCreateUserModalOpen}
-          onClose={closeCreateUserModal}
-          onSubmit={handleCreateUserSubmit}
-        />
-      </Modal>
+        onSuccess={() => {
+          setIsCreateUserModalOpen(false);
+          setRefetchKey(k => k + 1);
+        }}
+        isMobile={isMobile}
+        t={t}
+      />
 
       {/* Hidden File Input for CSV Upload - triggers native file picker on "Upload CSV" click */}
       {Platform.OS === 'web' && (

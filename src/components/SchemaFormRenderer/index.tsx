@@ -33,7 +33,7 @@ import type { FormSection, FormField, ValidationRule } from '@constants/CREATE_U
 // Inlined here to avoid a circular import from the parent screen module.
 // Prevents cursor-jumping during fast typing on heavy screens by buffering
 // local state while the parent's state update is in flight.
-const FastInputField = React.forwardRef(({ value, defaultValue, onChangeText, ...props }: any, ref: any) => {
+export const FastInputField = React.forwardRef(({ value, defaultValue, onChangeText, ...props }: any, ref: any) => {
   const initialValue = value !== undefined ? value : (defaultValue || '');
   const [localValue, setLocalValue] = useState(initialValue);
   const isTyping = useRef(false);
