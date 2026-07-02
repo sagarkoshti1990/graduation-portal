@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters, mapStatusLabelToAPI, PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
-import { COUNTRY_CODES } from '@constants/COUNTRY_CODES';
+
 import FilterButton from '@components/Filter';
 import TitleHeader from '@components/TitleHeader';
 // import { titleHeaderStyles } from '@components/TitleHeader/Styles';
@@ -16,9 +16,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { CreateUserForm } from './CreateUserForm';
-import { validateSchema } from '@components/SchemaFormRenderer';
-import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
-import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, createUser, getSitesByProvince } from '../../services/usersService';
+import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, getSitesByProvince } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
 import type {
   // UserSearchParams,
@@ -92,7 +90,7 @@ const mergeUsersWithProgramParticipantMap = (
   usersData.map((u) => {
     const extra = byUserId[String(u.id)];
     if (!extra) {
-      return { ...u, extra };
+      return {...u,extra};
     }
 
     const details = buildDetailsForUserAndProgramRow(u, extra);
