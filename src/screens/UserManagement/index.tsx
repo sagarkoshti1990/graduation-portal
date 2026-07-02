@@ -4,13 +4,11 @@ import { Platform } from 'react-native';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters, mapStatusLabelToAPI, PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
-
 import FilterButton from '@components/Filter';
 import TitleHeader from '@components/TitleHeader';
 // import { titleHeaderStyles } from '@components/TitleHeader/Styles';
 import DataTable from '@components/DataTable';
 import { getUsersColumns, RoleBadge } from './UsersTableConfig';
-import Select from '@components/ui/Inputs/Select';
 import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
@@ -18,17 +16,15 @@ import { styles } from './Styles';
 import { CreateUserForm } from './CreateUserForm';
 import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, getSitesByProvince } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
-import type {
+import type { 
   // UserSearchParams,
-  Role
+   Role
 } from '@app-types/Users';
 import { getSignedUrl, uploadFileToSignedUrl, bulkUserCreate } from '../../services/bulkUploadService';
 import { theme } from '@config/theme';
 import { getUserProfile } from '../../services/authenticationService';
 import { TabButton } from '@components/Tabs';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
-
-import { FastInputField } from '@components/SchemaFormRenderer';
 import offlineStorage from '../../services/offlineStorage';
 import logger from '@utils/logger';
 
@@ -205,8 +201,7 @@ const UserManagementScreen = () => {
   const [filters, setFilters] = useState<Record<string, any>>({});
 
   // Use custom hook for filter management - handles all API calls for roles, provinces
-  const { filters: filterOptions, roles, provinces, genders, organisations, positions, isFiltersLoading } = useUserManagementFilters(filters);
-
+  const { filters: filterOptions, roles, isFiltersLoading } = useUserManagementFilters(filters);
   // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
   const [users, setUsers] = useState<AdminUserManagementData[]>([]);
   /** Program-user search rows keyed by user id; applied async after the main user list loads. */
@@ -429,7 +424,7 @@ const UserManagementScreen = () => {
   }, [resetPasswordState.password, resetPasswordState.user, t, showAlert, closeResetPasswordModal]);
 
   const columns = useMemo(
-    () => getUsersColumns({
+    () => getUsersColumns({ 
       onViewProfile: openProfileModal,
       onEdit: openEditUserModal,
       onResetPassword: openResetPasswordModal,
@@ -1160,7 +1155,7 @@ const UserManagementScreen = () => {
             </Text>
             <Box position="relative">
               <Input isDisabled={resetPasswordState.isSubmitting} isInvalid={!!resetPasswordState.error}>
-                <FastInputField
+                <InputField
                   placeholder={t('admin.users.resetPassword.passwordPlaceholder') || 'Enter new password'}
                   value={resetPasswordState.password}
                   onChangeText={(text: string) => {
@@ -1325,7 +1320,7 @@ const UserManagementScreen = () => {
                         {t('admin.users.profileModal.fullName')}
                       </Text>
                       <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
-                        <FastInputField
+                        <InputField
                           value={editUserState.name}
                           onChangeText={(text: string) => setEditUserState(prev => ({ ...prev, name: text }))}
                           placeholder={t('admin.users.profileModal.fullName')}
