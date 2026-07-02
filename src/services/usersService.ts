@@ -63,7 +63,6 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
     }
 
     const endpoint = `${API_ENDPOINTS.USERS_LIST}?${queryParams.toString()}`;
-
     // Build request body - province/site go in meta
     const requestBody: any = {};
     if (province || site) {
@@ -75,13 +74,11 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
         requestBody.meta.site = site; // Site ID
       }
     }
-
     // Log the complete API URL with query parameters (for debugging)
     const paramsObj: Record<string, string> = {};
     queryParams.forEach((value, key) => {
       paramsObj[key] = value;
     });
-
     // POST request to fetch users
     const response = await api.post<UserSearchResponse>(endpoint, requestBody);
     return response.data;
@@ -100,14 +97,12 @@ export const getRolesList = async (
 ): Promise<RolesListResponse> => {
   try {
     const { page = 1, limit = 100 } = params || {};
-
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
     const endpoint = `${API_ENDPOINTS.USER_ROLES_LIST}?${queryParams.toString()}`;
-
     // GET request to fetch roles
     const response = await api.get<RolesListResponse>(endpoint);
 
@@ -125,7 +120,6 @@ export const getRolesList = async (
 export const getEntityTypesList = async (): Promise<EntityTypesListResponse> => {
   try {
     const endpoint = API_ENDPOINTS.ENTITY_TYPES_LIST;
-
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<EntityTypesListResponse>(endpoint);
 
@@ -135,7 +129,6 @@ export const getEntityTypesList = async (): Promise<EntityTypesListResponse> => 
       response.data.result.forEach((entityType) => {
         entityTypesMap[entityType.name] = entityType._id;
       });
-
       await AsyncStorage.setItem(
         STORAGE_KEYS.ENTITY_TYPES,
         JSON.stringify(entityTypesMap)
@@ -211,7 +204,6 @@ export const getProvincesByEntityType = async (
 }> => {
   try {
     const endpoint = `${API_ENDPOINTS.ENTITIES_BY_TYPE}/${provinceEntityTypeId}`;
-
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<{
       message: string;
@@ -237,7 +229,6 @@ export const getProvincesList = async (): Promise<ProvinceEntity[]> => {
   try {
     const entityTypes = await ensureEntityTypes();
     const provinceEntityTypeId = entityTypes?.['province'];
-
     if (!provinceEntityTypeId) {
       return [];
     }
@@ -264,14 +255,12 @@ export const getSitesByEntityType = async (
 }> => {
   try {
     const { page = 1, limit = 100 } = params || {};
-
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
     const endpoint = `${API_ENDPOINTS.ENTITIES_BY_TYPE}/${siteEntityTypeId}?${queryParams.toString()}`;
-
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<{
       message: string;
@@ -296,7 +285,6 @@ export const getAllSites = async (): Promise<SiteEntity[]> => {
   try {
     // First, check if entity types are in storage
     let entityTypes = await getEntityTypesFromStorage();
-
     // If not in storage, fetch entity types from API
     if (!entityTypes || !entityTypes['site']) {
       await getEntityTypesList();
@@ -305,7 +293,6 @@ export const getAllSites = async (): Promise<SiteEntity[]> => {
 
     // Get site entity type ID
     const siteEntityTypeId = entityTypes?.['site'];
-
     if (!siteEntityTypeId) {
       return [];
     }
@@ -342,7 +329,6 @@ export const getSitesByProvince = async (
 }> => {
   try {
     const { provinceId, page = 1, limit = 100 } = params || {};
-
     // If no province provided, fetch all sites
     if (!provinceId || provinceId === 'all-provinces' || provinceId === 'all-Provinces') {
       const allSites = await getAllSites();
@@ -356,7 +342,6 @@ export const getSitesByProvince = async (
         },
       };
     }
-
     const queryParams = new URLSearchParams({
       type: 'site',
       page: page.toString(),
@@ -364,7 +349,6 @@ export const getSitesByProvince = async (
     });
 
     const endpoint = `${API_ENDPOINTS.PARTICIPANTS_SUB_ENTITY_LIST}/${provinceId}?${queryParams.toString()}`;
-
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<{
       message: string;
@@ -417,7 +401,6 @@ export const resetPassword = async (
 ): Promise<ResetPasswordResponse> => {
   try {
     console.log('Reset password called for user:', params.username);
-
     // TODO: Replace this with actual API call when endpoint is available
     // Example:
     // const response = await api.post<ResetPasswordResponse>(
@@ -425,7 +408,6 @@ export const resetPassword = async (
     //   params
     // );
     // return response.data;
-
     // Static response for now
     const staticResponse: ResetPasswordResponse = {
       responseCode: '200',
@@ -436,12 +418,9 @@ export const resetPassword = async (
         updatedAt: new Date().toISOString(),
       },
     };
-
     console.log('Password reset successful (static response)');
-
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-
     return staticResponse;
   } catch (error: any) {
     console.error('Reset password error:', {

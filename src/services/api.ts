@@ -189,7 +189,6 @@ api.interceptors.request.use(
     try {
       // Skip adding Authorization header for refresh token endpoint
       const isRefreshTokenRequest = config.url?.includes('/account/refresh');
-
       if (!isRefreshTokenRequest) {
         // Get token from storage (checks both localStorage and sessionStorage on web)
         const token = await getToken();
