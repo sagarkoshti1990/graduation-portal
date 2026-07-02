@@ -19,7 +19,8 @@ interface PlayerConfigProps {
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback: (event?: any) => void | undefined;
-  styleObject?:any
+  styleObject?:any;
+  _getOfflineData?:any;
 }
 
 export function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {

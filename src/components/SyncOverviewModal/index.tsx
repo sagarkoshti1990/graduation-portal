@@ -24,6 +24,7 @@ import {
   createSyncValidationCache,
   type ParticipantValidationPlan,
   type TaskConflictDetails,
+  type ObservationConflictDetails,
 } from '../../services/syncValidationService';
 import {
   deleteParticipantOfflineData,
@@ -63,11 +64,11 @@ const IDLE_STATE: ParticipantSyncState = {
  *  participant-blocked   → "Participant Progress Updated" (Cancel | Remove Offline Data)
  *  project-blocked       → "Project Already Updated" (Cancel | Skip & Remove)
  *  task-conflict         → "Task Conflict Detected"  (Cancel | Override & Sync | Skip & Remove)
- *  form-blocked          → "Task Observation Already Updated" (Cancel | Skip & Remove)
- *  form-completed        → "Observation Already Completed" (Cancel | Skip & Remove)
+ *  form-blocked          → "Observation Conflict Detected" rich comparison (Cancel | Skip & Remove)
+ *  form-completed        → "Observation Conflict Detected" rich comparison (Cancel | Skip & Remove)
  *  participant-conflict  → "Data Conflict Detected" (Cancel | Override & Sync)
  *  project-conflict      → "Data Conflict Detected" (Cancel | Override & Sync)
- *  form-conflict         → "Data Conflict Detected" (Cancel | Override & Sync)
+ *  form-conflict         → "Observation Conflict Detected" rich comparison (Cancel | Skip & Remove | Override & Sync*)
  */
 type DialogKind =
   | 'participant-blocked'
@@ -93,6 +94,8 @@ interface DialogItem {
   taskConflict?: TaskConflictDetails;
   /** Observation conflict sub-type — drives the correct message in 'form-conflict' */
   conflictSubType?: 'draft-ahead' | 'timestamp';
+  /** Rich comparison data for the 'form-conflict' dialog */
+  conflictDetails?: ObservationConflictDetails;
 }
 
 /** What the user chose in a dialog. */
@@ -382,6 +385,7 @@ const SyncOverviewModal: React.FC = () => {
             participantId: entry.participantId,
             participantName: entry.name,
             formId: form.formId,
+            conflictDetails: form.conflictDetails,
           });
           if (decision === 'remove') {
             await deleteObservationOfflineData(userId, entry.participantId, form.formId);
@@ -398,6 +402,7 @@ const SyncOverviewModal: React.FC = () => {
             participantId: entry.participantId,
             participantName: entry.name,
             formId: form.formId,
+            conflictDetails: form.conflictDetails,
           });
           if (decision === 'remove') {
             await deleteObservationOfflineData(userId, entry.participantId, form.formId);
@@ -415,6 +420,7 @@ const SyncOverviewModal: React.FC = () => {
             participantName: entry.name,
             formId: form.formId,
             conflictSubType: form.conflictSubType,
+            conflictDetails: form.conflictDetails,
           });
           if (decision === 'override') {
             overriddenConflictFormIds.add(form.formId);
@@ -692,27 +698,177 @@ const SyncOverviewModal: React.FC = () => {
           </VStack>
         </Modal>
       );
-    } else if (kind === 'form-blocked') {
-      headerTitle = t('offlineSync.taskObservationUpdatedTitle');
-      message = t('offlineSync.taskObservationUpdatedMessage');
-      footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
-    } else if (kind === 'form-completed') {
-      headerTitle = t('offlineSync.observationCompletedTitle');
-      message = t('offlineSync.observationCompletedMessage');
-      footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
-    } else if (kind === 'form-conflict') {
-      headerTitle = t('offlineSync.observationConflictTitle');
-      message = currentDialog.conflictSubType === 'draft-ahead'
-        ? t('offlineSync.observationConflictDraftMessage')
-        : t('offlineSync.observationConflictTimestampMessage');
-      footer = (
-        <HStack space="sm" justifyContent="flex-end" flexWrap="wrap">
-          {cancelBtn}
-          {skipRemoveBtn}
-          <Button variant="solid" size="sm" onPress={() => resolveDialog('override')}>
-            <ButtonText>{t('offlineSync.overrideAndSync')}</ButtonText>
-          </Button>
-        </HStack>
+    } else if (kind === 'form-blocked' || kind === 'form-completed' || kind === 'form-conflict') {
+      const oc = currentDialog.conflictDetails;
+      // Override & Sync is only available for genuine conflicts where the user can choose to override.
+      // Blocked (online ahead) and completed dialogs only offer Cancel / Skip & Remove.
+      const showOverride = kind === 'form-conflict' && oc?.onlineStatus !== 'completed';
+      const overrideBtn = showOverride ? (
+        <Button variant="solid" size="sm" onPress={() => resolveDialog('override')}>
+          <ButtonText>{t('offlineSync.overrideAndSync')}</ButtonText>
+        </Button>
+      ) : null;
+      return (
+        <Modal
+          isOpen
+          onClose={() => resolveDialog('cancel')}
+          headerTitle={t('offlineSync.observationConflictTitle')}
+          size="lg"
+          showCloseButton={false}
+          footerContent={
+            <HStack space="sm" justifyContent="flex-end" flexWrap="wrap">
+              {cancelBtn}
+              {skipRemoveBtn}
+              {overrideBtn}
+            </HStack>
+          }
+        >
+          <VStack space="sm">
+            <Text fontSize="$sm" fontWeight="$semibold">{participantName}</Text>
+            <Text fontSize="$sm" color="$textSecondary">
+              {t('offlineSync.observationConflictMessage')}
+            </Text>
+            <ScrollView maxHeight={340}>
+              <VStack space="md" mt="$2">
+
+                {/* Observation info */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.observationConflictName')}
+                  </Text>
+                  <Text fontSize="$sm" fontWeight="$semibold">{oc?.observationName ?? '—'}</Text>
+                </VStack>
+                {oc?.observationId && (
+                  <VStack space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.observationConflictObsId')}
+                    </Text>
+                    <Text fontSize="$sm">{oc.observationId}</Text>
+                  </VStack>
+                )}
+                <HStack space="md">
+                  <VStack flex={1} space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.observationConflictSubmissionNumber')}
+                    </Text>
+                    <Text fontSize="$sm">{oc?.submissionNumber ?? '—'}</Text>
+                  </VStack>
+                  {oc?.submissionId && (
+                    <VStack flex={2} space="xs">
+                      <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                        {t('offlineSync.observationConflictSubmissionId')}
+                      </Text>
+                      <Text fontSize="$sm" numberOfLines={1}>{oc.submissionId}</Text>
+                    </VStack>
+                  )}
+                </HStack>
+
+                {/* Status comparison */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.observationConflictStatus')}
+                  </Text>
+                  <HStack space="md">
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">{formatTaskStatus(oc?.offlineStatus)}</Text>
+                      <Text fontSize="$xs" color="$textMutedForeground">{formatTaskDate(oc?.offlineUpdatedAt)}</Text>
+                    </VStack>
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">{formatTaskStatus(oc?.onlineStatus)}</Text>
+                      <Text fontSize="$xs" color="$textMutedForeground">{formatTaskDate(oc?.onlineUpdatedAt)}</Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+
+                {/* Response summary */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.observationConflictResponses')}
+                  </Text>
+                  <HStack space="md">
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
+                      <Text fontSize="$sm">
+                        {t('offlineSync.observationConflictAnswered')}: {oc?.offlineAnsweredCount ?? 0}
+                      </Text>
+                      <Text fontSize="$sm">
+                        {t('offlineSync.observationConflictUnanswered')}: {oc?.offlineUnansweredCount ?? 0}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
+                      <Text fontSize="$sm">
+                        {t('offlineSync.observationConflictAnswered')}: {oc?.onlineAnsweredCount ?? 0}
+                      </Text>
+                      <Text fontSize="$sm">
+                        {t('offlineSync.observationConflictUnanswered')}: {oc?.onlineUnansweredCount ?? 0}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+
+                {/* Evidence comparison */}
+                <VStack space="xs">
+                  <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                    {t('offlineSync.observationConflictEvidence')}
+                  </Text>
+                  <HStack space="md">
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">
+                        {oc?.offlineEvidenceCount ?? 0} {t('offlineSync.taskConflictFiles')}
+                      </Text>
+                      {oc?.offlineFileNames?.length ? (
+                        oc.offlineFileNames.map((name, i) => (
+                          <Text key={i} fontSize="$xs" color="$textSecondary" numberOfLines={1}>{name}</Text>
+                        ))
+                      ) : (
+                        <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictNoFiles')}</Text>
+                      )}
+                    </VStack>
+                    <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                      <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
+                      <Text fontSize="$sm" fontWeight="$medium">
+                        {oc?.onlineEvidenceCount ?? 0} {t('offlineSync.taskConflictFiles')}
+                      </Text>
+                      {oc?.onlineFileNames?.length ? (
+                        oc.onlineFileNames.map((name, i) => (
+                          <Text key={i} fontSize="$xs" color="$textSecondary" numberOfLines={1}>{name}</Text>
+                        ))
+                      ) : (
+                        <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictNoFiles')}</Text>
+                      )}
+                    </VStack>
+                  </HStack>
+                </VStack>
+
+                {/* Conflict reason */}
+                {oc?.conflictReasons?.length ? (
+                  <VStack space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.observationConflictReason')}
+                    </Text>
+                    {oc.conflictReasons.map(reason => (
+                      <Text key={reason} fontSize="$xs" color="$textSecondary">
+                        {'• '}
+                        {reason === 'completed'
+                          ? t('offlineSync.observationConflictReasonCompleted')
+                          : reason === 'status-ahead'
+                          ? t('offlineSync.observationConflictReasonStatusAhead')
+                          : reason === 'draft-ahead'
+                          ? t('offlineSync.observationConflictReasonDraftAhead')
+                          : t('offlineSync.observationConflictReasonTimestamp')}
+                      </Text>
+                    ))}
+                  </VStack>
+                ) : null}
+
+              </VStack>
+            </ScrollView>
+          </VStack>
+        </Modal>
       );
     } else if (kind === 'participant-conflict' || kind === 'project-conflict') {
       headerTitle = t('offlineSync.conflictDetectedTitle');

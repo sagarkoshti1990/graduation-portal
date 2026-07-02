@@ -91,12 +91,36 @@ export interface TaskValidationResult {
   conflictDetails?: TaskConflictDetails;
 }
 
+/** Rich comparison data for the 'form-conflict' dialog — mirrors TaskConflictDetails for observations. */
+export interface ObservationConflictDetails {
+  observationName: string;
+  observationId: string;
+  submissionNumber: number;
+  submissionId: string;
+  offlineStatus: string;
+  offlineUpdatedAt?: string;
+  onlineStatus: string;
+  onlineUpdatedAt?: string;
+  offlineAnsweredCount: number;
+  offlineUnansweredCount: number;
+  onlineAnsweredCount: number;
+  onlineUnansweredCount: number;
+  offlineEvidenceCount: number;
+  offlineFileNames: string[];
+  onlineEvidenceCount: number;
+  onlineFileNames: string[];
+  /** Why the conflict was detected. */
+  conflictReasons: Array<'draft-ahead' | 'timestamp' | 'completed' | 'status-ahead'>;
+}
+
 export interface FormValidationResult {
   formId: string;
   outcome: ObservationOutcome;
   submissionId?: string;
   /** Distinguishes the two observation conflict sub-types for appropriate dialog messaging. */
   conflictSubType?: 'draft-ahead' | 'timestamp';
+  /** Rich comparison data for the 'form-conflict' dialog. */
+  conflictDetails?: ObservationConflictDetails;
 }
 
 /** Complete per-participant validation plan produced before sync starts. */
@@ -194,6 +218,124 @@ async function fetchProjectOnline(
     logger.warn('SyncValidation: fetchProjectOnline failed', err);
     return null;
   }
+}
+
+// ── Observation conflict detail helpers ─────────────────────────────────────
+
+/**
+ * Extracts total question count from an observation schema.
+ * Tries common schema structures; returns 0 if the structure is unrecognised.
+ */
+function extractTotalQuestions(schema: any): number {
+  const evidences: any[] = schema?.assessment?.evidences ?? [];
+  let total = 0;
+  for (const ev of evidences) {
+    // Some schemas have ev.questions[], others have ev.sections[].questions[]
+    const qs: any[] = ev.questions ?? ev.sections?.flatMap((s: any) => s.questions ?? []) ?? [];
+    total += qs.length;
+  }
+  return total;
+}
+
+/**
+ * Counts answered questions and extracts file references from an answers object.
+ *
+ * A "question" is answered when its value is a non-empty primitive, array, or
+ * object.  File references are detected by the presence of a data URL prefix
+ * (`data:`) or a string that looks like an https URL to a hosted file.
+ */
+function countAnsweredAndFiles(answers: any): { answered: number; fileNames: string[] } {
+  if (!answers || typeof answers !== 'object') return { answered: 0, fileNames: [] };
+  let answered = 0;
+  const fileNames: string[] = [];
+
+  function scan(obj: any): void {
+    if (!obj || typeof obj !== 'object') return;
+    for (const [key, val] of Object.entries(obj)) {
+      if (val === null || val === undefined || val === '') continue;
+      if (typeof val === 'string') {
+        answered++;
+        if (val.startsWith('data:')) {
+          const ext = val.match(/^data:([^;]+)/)?.[1]?.split('/')[1] ?? 'bin';
+          fileNames.push(`${key}.${ext}`);
+        } else if (val.startsWith('https://') || val.startsWith('http://')) {
+          const name = val.split('/').pop()?.split('?')[0];
+          if (name) fileNames.push(name);
+        }
+      } else if (typeof val === 'boolean' || typeof val === 'number') {
+        answered++;
+      } else if (Array.isArray(val)) {
+        if (val.length > 0) answered++;
+      } else if (typeof val === 'object') {
+        scan(val);
+      }
+    }
+  }
+
+  scan(answers);
+  return { answered, fileNames };
+}
+
+/**
+ * Builds the rich `ObservationConflictDetails` object shown in the conflict
+ * dialog.  Counts offline answers from stored edits and fetches online answers
+ * via `getObservationSubmissions` with `getAnswers: true` (best-effort — the
+ * dialog still shows if the online fetch fails, with online counts set to 0).
+ */
+async function buildObservationConflictDetails(
+  formData: ObservationFormData,
+  editData: any,
+  onlineStatus: string,
+  onlineUpdatedAt: string | undefined,
+  conflictSubType: 'draft-ahead' | 'timestamp' | 'completed' | 'status-ahead',
+): Promise<ObservationConflictDetails> {
+  const totalQuestions = extractTotalQuestions(formData.schema);
+  const offlineAnswers = editData?.answers ?? formData.data ?? {};
+  const { answered: offlineAnswered, fileNames: offlineFiles } = countAnsweredAndFiles(offlineAnswers);
+
+  let onlineAnswered = 0;
+  let onlineFiles: string[] = [];
+  try {
+    const res = await getObservationSubmissions({
+      observationId: formData.observationId,
+      entityId: formData.entityId,
+      getAnswers: true,
+    });
+    const fullSub = (res?.result ?? []).find((s: any) => s._id === formData.submissionId);
+    if (fullSub?.answers) {
+      const onlineCount = countAnsweredAndFiles(fullSub.answers);
+      onlineAnswered = onlineCount.answered;
+      onlineFiles = onlineCount.fileNames;
+    }
+  } catch (err) {
+    logger.warn('SyncValidation: buildObservationConflictDetails — online answers fetch failed', err);
+  }
+
+  const observationName: string =
+    formData.schema?.assessment?.name ??
+    formData.schema?.solution?.name ??
+    formData.schema?.name ??
+    formData.observationId;
+
+  return {
+    observationName,
+    observationId: formData.observationId,
+    submissionNumber: formData.submissionNumber,
+    submissionId: formData.submissionId,
+    offlineStatus: formData.status,
+    offlineUpdatedAt: formData.updatedAt,
+    onlineStatus,
+    onlineUpdatedAt,
+    offlineAnsweredCount: offlineAnswered,
+    offlineUnansweredCount: Math.max(0, totalQuestions - offlineAnswered),
+    onlineAnsweredCount: onlineAnswered,
+    onlineUnansweredCount: Math.max(0, totalQuestions - onlineAnswered),
+    offlineEvidenceCount: offlineFiles.length,
+    offlineFileNames: offlineFiles,
+    onlineEvidenceCount: onlineFiles.length,
+    onlineFileNames: onlineFiles,
+    conflictReasons: [conflictSubType],
+  };
 }
 
 /**
@@ -470,7 +612,14 @@ export async function runValidationForParticipant(
 
     // Rule 1: already completed online → offer removal (no sync allowed)
     if (onlineObsStatus === 'completed') {
-      plan.formResults.push({ formId, outcome: 'remove', submissionId: formData.submissionId });
+      plan.formResults.push({
+        formId,
+        outcome: 'remove',
+        submissionId: formData.submissionId,
+        conflictDetails: await buildObservationConflictDetails(
+          formData, editData, onlineObsStatus, onlineUpdatedAt, 'completed',
+        ),
+      });
       continue;
     }
 
@@ -488,9 +637,18 @@ export async function runValidationForParticipant(
           outcome: 'conflict',
           submissionId: formData.submissionId,
           conflictSubType: 'draft-ahead',
+          conflictDetails: await buildObservationConflictDetails(
+            formData, editData, onlineObsStatus, onlineUpdatedAt, 'draft-ahead',
+          ),
         });
       } else {
-        plan.formResults.push({ formId, outcome: 'blocked' });
+        plan.formResults.push({
+          formId,
+          outcome: 'blocked',
+          conflictDetails: await buildObservationConflictDetails(
+            formData, editData, onlineObsStatus, onlineUpdatedAt, 'status-ahead',
+          ),
+        });
       }
       continue;
     }
@@ -505,6 +663,9 @@ export async function runValidationForParticipant(
           outcome: 'conflict',
           submissionId: formData.submissionId,
           conflictSubType: 'timestamp',
+          conflictDetails: await buildObservationConflictDetails(
+            formData, editData, onlineObsStatus, onlineUpdatedAt, 'timestamp',
+          ),
         });
         continue;
       }
