@@ -13,7 +13,8 @@ import { AdminUserManagementData } from '@app-types/Users';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser } from '../../services/usersService';
+import { CreateUserForm } from './CreateUserForm';
+import { deactivateUser, getUsersList, resetPassword, updateOrgAdminUser, getSitesByProvince } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
 import type { 
   // UserSearchParams,
@@ -130,7 +131,7 @@ const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
     t('admin.users.profileModal.defaultRole');
 
   const badges = (
-    <HStack space="sm" alignItems="center">
+    <HStack space="sm" alignItems="center" justifyContent="flex-end" flexShrink={0}>
       <RoleBadge role={roleLabel} />
       <Badge
         bg={(String(selectedUserBase?.status || selectedUserProfile?.status || '').toLowerCase() === 'active')
@@ -171,14 +172,14 @@ const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
 
   // Desktop: left/right layout
   return (
-    <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1}>
-      <VStack space="xs" flex={1}>
-        <Text {...TYPOGRAPHY.h1} color="$textForeground">
+    <HStack alignItems="center" justifyContent="space-between" flex={1} flexShrink={1} pr="$8" gap="$2">
+      <VStack space="xs" flex={1} flexShrink={1}>
+        <Text {...TYPOGRAPHY.h1} color="$textForeground" numberOfLines={1}>
           {selectedUserProfile?.name || selectedUserBase?.name || '-'}
         </Text>
         <HStack space="xs" alignItems="center">
           <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
-          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" numberOfLines={1}>
             {selectedUserProfile?.email || selectedUserBase?.email || '-'}
           </Text>
         </HStack>
@@ -198,7 +199,10 @@ const UserManagementScreen = () => {
 
   // API state management
   const [filters, setFilters] = useState<Record<string, any>>({});
- // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
+
+  // Use custom hook for filter management - handles all API calls for roles, provinces
+  const { filters: filterOptions, roles, isFiltersLoading } = useUserManagementFilters(filters);
+  // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
   const [users, setUsers] = useState<AdminUserManagementData[]>([]);
   /** Program-user search rows keyed by user id; applied async after the main user list loads. */
   const [programParticipantByUserId, setProgramParticipantByUserId] = useState<Record<string, any>>({});
@@ -245,6 +249,16 @@ const UserManagementScreen = () => {
     isSubmitting: false,
     isLoading: false,
   });
+
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+
+  const openCreateUserModal = useCallback(() => {
+    setIsCreateUserModalOpen(true);
+  }, []);
+
+  const closeCreateUserModal = useCallback(() => {
+    setIsCreateUserModalOpen(false);
+  }, []);
 
   const closeDeactivateModal = useCallback(() => {
     setDeactivateState({ user: null, isSubmitting: false });
@@ -419,8 +433,8 @@ const UserManagementScreen = () => {
     [openProfileModal, openEditUserModal, openResetPasswordModal, openDeactivateModal]
   );
 
- const displayUsers = useMemo(() => mergeUsersWithProgramParticipantMap(users as any[], programParticipantByUserId),
-  [users, programParticipantByUserId]
+  const displayUsers = useMemo(() => mergeUsersWithProgramParticipantMap(users as any[], programParticipantByUserId),
+    [users, programParticipantByUserId]
   );
 
   // Ref to track previous roles length to detect when roles are first loaded
@@ -445,14 +459,18 @@ const UserManagementScreen = () => {
     loadPageSize();
   }, []);
 
-  // Use custom hook for filter management - handles all API calls for roles, provinces
-  const { filters: filterOptions, roles, provinces } = useUserManagementFilters(filters);
+
 
   // Fetch users from API when filters change or when roles are first loaded
   useEffect(() => {
     // Check if roles just loaded (length changed from 0 to > 0)
     const rolesJustLoaded = prevRolesLengthRef.current === 0 && roles.length > 0;
     prevRolesLengthRef.current = roles.length;
+
+    // Don't fetch if filters are still loading
+    if (isFiltersLoading) {
+      return;
+    }
 
     // Don't fetch if roles haven't loaded yet (needed for type parameter)
     // Unless a specific role filter is set or roles just loaded
@@ -538,7 +556,7 @@ const UserManagementScreen = () => {
                 excludeMapped: false,
                 userIds,
               });
-             
+
               const other = participantsResponse.result?.data || [];
               setProgramParticipantByUserId(programParticipantsArrayToMap(other));
             } catch (e) {
@@ -547,13 +565,13 @@ const UserManagementScreen = () => {
           })();
         }
       } catch (error) {
-          //setDisplayUsers([]);
-          setUsers([]);
-          setTotalCount(0);
-          setProgramParticipantByUserId({});
-        
+        //setDisplayUsers([]);
+        setUsers([]);
+        setTotalCount(0);
+        setProgramParticipantByUserId({});
+
       } finally {
-          setIsLoading(false);   
+        setIsLoading(false);
       }
     };
 
@@ -687,15 +705,13 @@ const UserManagementScreen = () => {
               <ButtonIcon as={LucideIcon} name="Upload" size={16} />
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.actions.bulkUploadCSV')}</ButtonText>
             </Button>
-            {/* <Button variant={"solid" as any}
-              onPress={() => {
-                // Handle create user
-              }}
+            <Button variant={"solid" as any}
+              onPress={openCreateUserModal}
               isDisabled={isUploading}
             >
               <ButtonIcon as={LucideIcon} name="SquarePen" size={16} />
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.actions.createUser')}</ButtonText>
-            </Button> */}
+            </Button>
           </HStack>
         }
       />
@@ -762,23 +778,23 @@ const UserManagementScreen = () => {
             emptyMessage="admin.users.noUsersFound"
             loadingMessage="admin.users.loadingUsers"
             _css={{
-              _table:{
+              _table: {
                 borderRadius: '$md',
                 borderWidth: 0,
               },
-              _header:{
-                _tableHeader:{
-                borderBottomWidth: 1,
+              _header: {
+                _tableHeader: {
+                  borderBottomWidth: 1,
                   borderBottomColor: '$borderLight300' as const,
                   bg: '#fff' as const,
                   borderTopLeftRadius: '$md' as const,
                   borderTopRightRadius: '$md' as const,
                 },
-                _thText:{
+                _thText: {
                   fontWeight: '$medium',
-                
+
                 },
-              
+
               }
             }}
           />
@@ -926,7 +942,7 @@ const UserManagementScreen = () => {
               </Text>
             </VStack>
           ) : (
-            <VStack space="lg"  alignItems="stretch">
+            <VStack space="lg" alignItems="stretch">
               {/* Personal Information */}
               <VStack space="sm">
                 <HStack space="xs" alignItems="center">
@@ -1111,7 +1127,7 @@ const UserManagementScreen = () => {
           </HStack>
         }
       >
-        <VStack space="lg" width="100%">
+        <VStack key={resetPasswordState.user?.id || 'empty'} space="lg" width="100%">
           {/* Username Field - Read Only */}
           <VStack space="xs" width="100%">
             <Text {...TYPOGRAPHY.bodySmall} fontWeight="$medium" color="$textForeground">
@@ -1142,7 +1158,7 @@ const UserManagementScreen = () => {
                 <InputField
                   placeholder={t('admin.users.resetPassword.passwordPlaceholder') || 'Enter new password'}
                   value={resetPasswordState.password}
-                  onChangeText={(text) => {
+                  onChangeText={(text: string) => {
                     setResetPasswordState(prev => ({
                       ...prev,
                       password: text,
@@ -1270,7 +1286,7 @@ const UserManagementScreen = () => {
           />
         }
       >
-        <VStack space="md" width="100%">
+        <VStack key={editUserState.user?.id || 'empty'} space="md" width="100%">
           {/* Content */}
           {editUserState.isLoading ? (
             <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
@@ -1306,7 +1322,7 @@ const UserManagementScreen = () => {
                       <Input {...styles.editUserEditableInput} isDisabled={editUserState.isSubmitting}>
                         <InputField
                           value={editUserState.name}
-                          onChangeText={(text) => setEditUserState(prev => ({ ...prev, name: text }))}
+                          onChangeText={(text: string) => setEditUserState(prev => ({ ...prev, name: text }))}
                           placeholder={t('admin.users.profileModal.fullName')}
                           {...styles.editUserEditableInputField}
                         />
@@ -1463,6 +1479,18 @@ const UserManagementScreen = () => {
           </HStack>
         </VStack>
       </Modal>
+
+      {/* Create New User Modal */}
+      <CreateUserForm
+        isOpen={isCreateUserModalOpen}
+        onClose={closeCreateUserModal}
+        onSuccess={() => {
+          setIsCreateUserModalOpen(false);
+          setRefetchKey(k => k + 1);
+        }}
+        isMobile={isMobile}
+        t={t}
+      />
 
       {/* Hidden File Input for CSV Upload - triggers native file picker on "Upload CSV" click */}
       {Platform.OS === 'web' && (
