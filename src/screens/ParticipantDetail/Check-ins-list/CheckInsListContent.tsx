@@ -219,7 +219,10 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         const solutionNameData = solutions.find((sol: any) => sol.solutionId === selectedSolution);
         let filterAnswerValue,userId, entityId: string | null = null;
         setSolutionItem(solutionNameData || null);
-        if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
+        if(coachId) {
+          filterAnswerValue = participant?.entityId
+          userId = coachId;
+        } else if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
           userId = user?.id;
         } else {

@@ -335,13 +335,14 @@ export default function ParticipantDetail() {
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
         coachId={coachId}
+        isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || coachId))}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject === "not_eligible" ? (
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria ?
-          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
          : showOnboardingProject ? (
           <>
             <DownloadFormsCard
