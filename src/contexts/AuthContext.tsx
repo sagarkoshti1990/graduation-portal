@@ -334,6 +334,35 @@ export const useIsSupervisor = (): boolean => {
         }
         return org.roles.some((role: any) => {
           const roleTitle = role?.title?.toLowerCase() || '';
+          return roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
+        });
+      });
+      return hasSupervisorRole;
+    }
+    
+    return false;
+  }, [user, currentUserRole]);
+};
+
+export const useIsdminPanalAccess = (): boolean => {
+  const { user } = useAuth();
+  const currentUserRole = user?.role;
+
+  return useMemo(() => {
+    // Check mapped role first
+    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
+      return true;
+    }
+    
+    // Also check user's actual organizations for supervisor role titles
+    if (user && (user as any).organizations) {
+      const organizations = (user as any).organizations;
+      const hasSupervisorRole = organizations.some((org: any) => {
+        if (!org?.roles || !Array.isArray(org.roles)) {
+          return false;
+        }
+        return org.roles.some((role: any) => {
+          const roleTitle = role?.title?.toLowerCase() || '';
           return roleTitle === 'admin' || roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
         });
       });
