@@ -117,8 +117,8 @@ export interface FormValidationResult {
   formId: string;
   outcome: ObservationOutcome;
   submissionId?: string;
-  /** Distinguishes the two observation conflict sub-types for appropriate dialog messaging. */
-  conflictSubType?: 'draft-ahead' | 'timestamp';
+  /** Distinguishes observation conflict sub-types for appropriate dialog messaging. */
+  conflictSubType?: 'draft-ahead' | 'status-ahead' | 'timestamp';
   /** Rich comparison data for the 'form-conflict' dialog. */
   conflictDetails?: ObservationConflictDetails;
 }
@@ -171,6 +171,7 @@ function hasTimestampConflict(
   offlineUpdatedAt: string | undefined,
   onlineUpdatedAt: string | undefined,
 ): boolean {
+  
   if (!onlineUpdatedAt) return false;
   const onlineMs = new Date(onlineUpdatedAt).getTime();
 
@@ -627,29 +628,18 @@ export async function runValidationForParticipant(
     const onlineObsPri  = getPriority(OBSERVATION_STATUS_PRIORITY, onlineObsStatus);
 
     if (onlineObsPri > offlineObsPri) {
-      // Rule 2: special case — offline=not-started + online=draft → conflict with override option.
-      // All other "online is ahead" cases remain blocked (no override offered).
-      const offlineIsNotStarted = formData.status === 'notStarted' || formData.status === 'not-started';
-      const onlineIsDraft       = onlineObsStatus === 'draft';
-      if (offlineIsNotStarted && onlineIsDraft) {
-        plan.formResults.push({
-          formId,
-          outcome: 'conflict',
-          submissionId: formData.submissionId,
-          conflictSubType: 'draft-ahead',
-          conflictDetails: await buildObservationConflictDetails(
-            formData, editData, onlineObsStatus, onlineUpdatedAt, 'draft-ahead',
-          ),
-        });
-      } else {
-        plan.formResults.push({
-          formId,
-          outcome: 'blocked',
-          conflictDetails: await buildObservationConflictDetails(
-            formData, editData, onlineObsStatus, onlineUpdatedAt, 'status-ahead',
-          ),
-        });
-      }
+      // Rule 2: online is ahead but NOT completed (Rule 1 handles completed).
+      // Always offer Override & Sync — the user decides whether to overwrite the
+      // online progress rather than silently blocking the sync.
+      plan.formResults.push({
+        formId,
+        outcome: 'conflict',
+        submissionId: formData.submissionId,
+        conflictSubType: 'status-ahead',
+        conflictDetails: await buildObservationConflictDetails(
+          formData, editData, onlineObsStatus, onlineUpdatedAt, 'status-ahead',
+        ),
+      });
       continue;
     }
 
@@ -657,18 +647,20 @@ export async function runValidationForParticipant(
 
     // Rule 3: same status → check timestamp divergence
     if (onlineObsPri === offlineObsPri) {
-      if (hasTimestampConflict(formData.downloadedAt ?? downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
-        plan.formResults.push({
-          formId,
-          outcome: 'conflict',
-          submissionId: formData.submissionId,
-          conflictSubType: 'timestamp',
-          conflictDetails: await buildObservationConflictDetails(
-            formData, editData, onlineObsStatus, onlineUpdatedAt, 'timestamp',
-          ),
-        });
         continue;
-      }
+
+      // if (hasTimestampConflict(formData.downloadedAt ?? downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
+      //   plan.formResults.push({
+      //     formId,
+      //     outcome: 'conflict',
+      //     submissionId: formData.submissionId,
+      //     conflictSubType: 'timestamp',
+      //     conflictDetails: await buildObservationConflictDetails(
+      //       formData, editData, onlineObsStatus, onlineUpdatedAt, 'timestamp',
+      //     ),
+      //   });
+      //   continue;
+      // }
     }
 
     plan.formResults.push({ formId, outcome: 'allowed' });

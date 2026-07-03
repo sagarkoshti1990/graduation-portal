@@ -93,7 +93,7 @@ interface DialogItem {
   /** Rich conflict details for the 'task-conflict' dialog */
   taskConflict?: TaskConflictDetails;
   /** Observation conflict sub-type — drives the correct message in 'form-conflict' */
-  conflictSubType?: 'draft-ahead' | 'timestamp';
+  conflictSubType?: 'draft-ahead' | 'status-ahead' | 'timestamp';
   /** Rich comparison data for the 'form-conflict' dialog */
   conflictDetails?: ObservationConflictDetails;
 }

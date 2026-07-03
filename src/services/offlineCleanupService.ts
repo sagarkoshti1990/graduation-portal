@@ -201,6 +201,12 @@ export async function deleteObservationOfflineData(
       PARTICIPANT_KEYS.formEdits(userId, participantId, formId),
     ];
 
+    // ObservationContent.handleOfflineData writes formEdits keyed by submissionId
+    // (not solutionId), so we must delete both variants to guarantee nothing is left.
+    if (submissionId) {
+      keysToRemove.push(PARTICIPANT_KEYS.formEdits(userId, participantId, submissionId));
+    }
+
     // Remove filesPending entries that belong to this observation (matched by
     // submissionId, which syncService uses as the taskId for observation files).
     if (submissionId) {
