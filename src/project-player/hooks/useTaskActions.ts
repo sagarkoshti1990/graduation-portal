@@ -83,16 +83,17 @@ export const useTaskActions = () => {
     async (
       { taskId }: { taskId: string; parentIndex?: number; index?: number },
       status: TaskStatus,
-      files1: NormalizedFile[] = [],
-      excludedFiles: Attachment[] = [],
+      files1?: NormalizedFile[],
+      excludedFiles?: Attachment[],
     ) => {
       // Read participantId at call time from the ref (stable, no subscription).
       const participantId = (projectDataRef.current as any)?.entityInformation?.externalId as string | undefined;
       if (!canEdit || !participantId) return;
 
-      const files = normalizeFiles(files1);
+      const isFileAction = files1 !== undefined || excludedFiles !== undefined;
+      const files = files1 ? normalizeFiles(files1) : [];
       const isOffline = dataService.isNetworkOffline();
-      let attachments: Attachment[] = [...excludedFiles];
+      let attachments: Attachment[] = excludedFiles ? [...excludedFiles] : [];
 
       if (files.length > 0) {
         if (isOffline) {
@@ -149,28 +150,10 @@ export const useTaskActions = () => {
         }
       }
 
-      const findTask = (tasks: any[] = []): any | null => {
-        for (const t of tasks) {
-          if (t._id === taskId) return t;
-          const found = findTask(t.tasks || t.children);
-          if (found) return found;
-        }
-        return null;
-      };
-      const currentTask = findTask(
-        (projectDataRef.current as any)?.tasks ||
-          (projectDataRef.current as any)?.children
-      );
-
-      const isStatusChanged = currentTask ? currentTask.status !== status : true;
-      const hasFiles = files1.length > 0;
-      const hasExcluded = excludedFiles.length > 0;
-      const hadAttachments = (currentTask?.attachments?.length || 0) > 0;
-
       try {
         const updateData: any = { status };
 
-        if (hasFiles || hasExcluded || (!isStatusChanged && hadAttachments)) {
+        if (isFileAction) {
           updateData.attachments = attachments;
         }
 
