@@ -151,7 +151,15 @@ function formatTaskDate(dateStr?: string): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const SyncOverviewModal: React.FC = () => {
-  const { showSyncModal, closeSyncModal, isOffline, refreshPending } = useOfflineSync();
+  const { showSyncModal, closeSyncModal, isOffline, refreshPending, notifyOfflineDataChanged } = useOfflineSync();
+
+  // Refreshes pending-sync counters and tells offline-data-dependent UI
+  // (e.g. each participant's Offline badge) to re-check storage. Called
+  // after every point below that deletes/cleans up offline data.
+  const refreshAfterOfflineChange = useCallback(async () => {
+    await refreshPending();
+    notifyOfflineDataChanged();
+  }, [refreshPending, notifyOfflineDataChanged]);
   const { user } = useAuth();
   const { t } = useLanguage();
   const userId = user?.id ?? '';
@@ -237,7 +245,7 @@ const SyncOverviewModal: React.FC = () => {
           },
         }));
 
-        await refreshPending();
+        await refreshAfterOfflineChange();
         setTimeout(() => {
           setParticipants(prev => prev.filter(p => p.participantId !== participantId));
           setSyncStates(prev => { const n = { ...prev }; delete n[participantId]; return n; });
@@ -249,7 +257,7 @@ const SyncOverviewModal: React.FC = () => {
         }));
       }
     },
-    [userId, refreshPending],
+    [userId, refreshAfterOfflineChange],
   );
 
   // ── Bulk sync with validation + per-type dialogs ──────────────────────────
@@ -305,7 +313,7 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'remove') {
             await deleteParticipantOfflineData(userId, [entry.participantId]);
-            await refreshPending();
+            await refreshAfterOfflineChange();
           }
           skipParticipantIds.add(entry.participantId);
           continue; // nothing further can sync for this participant
@@ -337,7 +345,7 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'remove') {
             await deleteProjectOfflineData(userId, entry.participantId, projectId);
-            await refreshPending();
+            await refreshAfterOfflineChange();
           }
           // buildSkipSets already adds blockedProjectIds to skipProjectIds
         }
@@ -370,7 +378,7 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'remove') {
             await deleteTaskOfflineData(userId, entry.participantId, task.projectId, task.taskId);
-            await refreshPending();
+            await refreshAfterOfflineChange();
           } else if (decision === 'override') {
             overriddenConflictTaskIds.add(task.taskId);
           }
@@ -389,7 +397,7 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'remove') {
             await deleteObservationOfflineData(userId, entry.participantId, form.formId);
-            await refreshPending();
+            await refreshAfterOfflineChange();
           }
           // buildSkipSets adds blocked forms to skipFormIds
         }
@@ -406,7 +414,7 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'remove') {
             await deleteObservationOfflineData(userId, entry.participantId, form.formId);
-            await refreshPending();
+            await refreshAfterOfflineChange();
           }
           // buildSkipSets adds 'remove' forms to skipFormIds
         }
@@ -426,7 +434,7 @@ const SyncOverviewModal: React.FC = () => {
             overriddenConflictFormIds.add(form.formId);
           } else if (decision === 'remove') {
             await deleteObservationOfflineData(userId, entry.participantId, form.formId);
-            await refreshPending();
+            await refreshAfterOfflineChange();
           }
           // 'cancel' → form stays in skipFormIds (added by buildSkipSets)
         }
@@ -461,14 +469,14 @@ const SyncOverviewModal: React.FC = () => {
         }),
       );
 
-      await refreshPending();
+      await refreshAfterOfflineChange();
       await loadParticipants();
     } finally {
       setBulkSyncing(false);
     }
   }, [
     isOffline, selectedIds, bulkSyncing, participants, syncStates, userId,
-    syncOne, showDialog, refreshPending, loadParticipants,
+    syncOne, showDialog, refreshAfterOfflineChange, loadParticipants,
   ]);
 
   // ── Selection ──────────────────────────────────────────────────────────────

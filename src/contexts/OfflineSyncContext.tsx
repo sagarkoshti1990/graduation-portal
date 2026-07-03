@@ -29,6 +29,10 @@ interface OfflineSyncContextType {
   syncParticipant: (participantId: string) => Promise<void>;
   syncAll: () => Promise<void>;
   refreshPending: () => Promise<void>;
+  /** Bumps whenever any participant's downloaded offline data changes (removed or cleaned up after sync). */
+  offlineDataVersion: number;
+  /** Call after deleting/cleaning up a participant's offline data so badges depending on it re-check storage. */
+  notifyOfflineDataChanged: () => void;
 }
 
 const DEFAULT_BREAKDOWN: PendingBreakdown = { files: 0, forms: 0, tasks: 0, failed: 0, total: 0 };
@@ -48,6 +52,8 @@ const OfflineSyncContext = createContext<OfflineSyncContextType>({
   syncParticipant: async () => {},
   syncAll: async () => {},
   refreshPending: async () => {},
+  offlineDataVersion: 0,
+  notifyOfflineDataChanged: () => {},
 });
 
 export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -60,7 +66,12 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [pendingBreakdown, setPendingBreakdown] = useState<PendingBreakdown>(DEFAULT_BREAKDOWN);
   const [justCameOnline, setJustCameOnline] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [offlineDataVersion, setOfflineDataVersion] = useState(0);
   const justCameOnlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const notifyOfflineDataChanged = useCallback(() => {
+    setOfflineDataVersion(v => v + 1);
+  }, []);
 
   const refreshPending = useCallback(async () => {
     if (!userId) return; // no user logged in — nothing to refresh
@@ -154,8 +165,9 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
       setIsSyncing(false);
       setSyncProgress(null);
       await refreshPending();
+      notifyOfflineDataChanged();
     }
-  }, [isSyncing, userId, refreshPending]);
+  }, [isSyncing, userId, refreshPending, notifyOfflineDataChanged]);
 
   const syncAll = useCallback(async () => {
     if (isSyncing || !userId) return;
@@ -168,8 +180,9 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
       setIsSyncing(false);
       setSyncProgress(null);
       await refreshPending();
+      notifyOfflineDataChanged();
     }
-  }, [isSyncing, userId, refreshPending]);
+  }, [isSyncing, userId, refreshPending, notifyOfflineDataChanged]);
 
   const value: OfflineSyncContextType = {
     isOffline,
@@ -186,6 +199,8 @@ export const OfflineSyncProvider: React.FC<{ children: ReactNode }> = ({ childre
     syncParticipant,
     syncAll,
     refreshPending,
+    offlineDataVersion,
+    notifyOfflineDataChanged,
   };
 
   return (

@@ -84,7 +84,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const { isMobile, isWeb } = usePlatform();
   const { user } = useAuth();
   const { showAlert } = useAlert();
-  const { isOffline } = useOfflineSync();
+  const { isOffline, offlineDataVersion } = useOfflineSync();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<
     'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | 'download' | null
@@ -144,6 +144,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         break;
       case 'remove-offline':
         await deleteParticipantOfflineData(`${user?.id}`, [participant.userId]);
+        setBadgeRefreshKey(k => k + 1);
         break;
       case 'view-check-ins-Logs' :
         setModalType("view-check-ins-Logs")
@@ -231,7 +232,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     };
 
     fetchLogVisitSolutions();
-  }, [modalType]);
+  }, [modalType, badgeRefreshKey, offlineDataVersion]);
 
   const handleCloseModal = useCallback(() => {
     setModalType(null);

@@ -3,6 +3,7 @@ import { HStack, Text, Spinner } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import { getDownloadStatus } from '../../services/downloadService';
 import type { DownloadStatus } from '@app-types/offline';
 
@@ -56,11 +57,15 @@ const BADGE_CONFIG: Record<
 /**
  * Small badge showing whether a participant's data has been downloaded for
  * offline use. Shows an icon + translated text label.
- * Reads download status asynchronously on mount and whenever `refreshKey` changes.
+ * Reads download status asynchronously on mount, whenever `refreshKey` changes,
+ * and whenever any sync/cleanup elsewhere in the app changes offline data
+ * (via `offlineDataVersion` from OfflineSyncContext) — otherwise this badge
+ * would keep showing stale state after removal or sync-triggered cleanup.
  */
 const OfflineBadge: React.FC<OfflineBadgeProps> = ({ participantId, refreshKey, size = 'xs' }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { offlineDataVersion } = useOfflineSync();
   const [badgeState, setBadgeState] = useState<BadgeState>('none');
   const iconSize = size === 'xs' ? 10 : 12;
   const fontSize = size === 'xs' ? '$2xs' : '$xs';
@@ -75,7 +80,7 @@ const OfflineBadge: React.FC<OfflineBadgeProps> = ({ participantId, refreshKey, 
         if (!cancelled) setBadgeState('none');
       });
     return () => { cancelled = true; };
-  }, [participantId, refreshKey]);
+  }, [participantId, refreshKey, offlineDataVersion]);
 
   if (badgeState === 'none') return null;
 
