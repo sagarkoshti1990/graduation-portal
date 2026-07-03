@@ -139,9 +139,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             inputProps: { keyboardType: 'numeric' },
             validation: [
               {
-                rule: 'pattern',
-                value: '^[0-9]{13}$',
-                message: { key: 'errors.nationalIdInvalid', fallback: 'National ID must be 13 digits' },
+                rule: 'required',
+                message: {key: 'errors.nationalIdRequired', fallback: 'National ID is required'},
               },
             ],
           },
