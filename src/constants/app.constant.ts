@@ -18,6 +18,11 @@ export const USER_STATUS = {
   INACTIVE: 'INACTIVE',
 } as const;
 
+export const USER_STATUS_DISPLAY = {
+  ACTIVE: 'Active',
+  INACTIVE: 'Deactivated',
+} as const;
+
 export const ENTITY_STATUS = {
   NOT_STARTED: 'notStarted',
   STARTED: 'started',

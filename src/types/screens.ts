@@ -90,6 +90,7 @@ export interface ParticipantHeaderProps {
   onParticipantRefresh?: () => Promise<string | undefined> | string | undefined;
   solutions?: any[];
   coachId?:string;
+  isHideSecondButton?: Boolean;
 }
 
 export type SubCategory = {

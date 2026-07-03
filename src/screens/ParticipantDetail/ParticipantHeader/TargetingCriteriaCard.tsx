@@ -25,6 +25,7 @@ interface TargetingCriteriaCardProps {
   user: User | null;
   participant: User;
   setTargetingCriteria: (item: boolean | string) => void;
+  isReadOnly?: boolean;
 }
 
 const hasAllOptionsSelected = (options: any, selectedValues: string[]) => {
@@ -34,7 +35,8 @@ const hasAllOptionsSelected = (options: any, selectedValues: string[]) => {
 const TargetingCriteriaCard = ({
   user,
   participant,
-  setTargetingCriteria
+  setTargetingCriteria,
+  isReadOnly
 }: TargetingCriteriaCardProps) => {
   const { t } = useLanguage();
 
@@ -176,6 +178,7 @@ const TargetingCriteriaCard = ({
                 value={item.value}
                 isChecked={isChecked}
                 onChange={() => handleCheckboxChange(item.value)}
+                isDisabled={isReadOnly}
               >
                 <HStack alignItems="center" space="md">
                   <CheckboxIndicator borderRadius="$full">
@@ -195,8 +198,7 @@ const TargetingCriteriaCard = ({
             );
           })}
         </VStack>
-
-        <HStack alignItems="center" space="md">
+        {!isReadOnly && <HStack alignItems="center" space="md">
           <Button
             mt="$4"
             // @ts-ignore
@@ -229,7 +231,7 @@ const TargetingCriteriaCard = ({
             )}
             <ButtonText>{t('participantDetail.header.proceed')}</ButtonText>
           </Button>
-        </HStack>
+        </HStack>}
       </VStack>
 
       <Modal

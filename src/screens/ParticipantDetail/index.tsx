@@ -30,7 +30,7 @@ import {
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
   // GRADUATION_READINESS_PROGRESS_THRESHOLD,
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
-import { useAuth, useIsSupervisor, User } from '@contexts/AuthContext';
+import { useAuth, useIsdminPanalAccess, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from '../../project-player/types';
 import logger from '@utils/logger';
@@ -65,7 +65,7 @@ type ParticipantDetailRouteProp = RouteProp<{
 export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth();
-  const isSupervisor = useIsSupervisor();
+  const isdminPanalAccess = useIsdminPanalAccess();
   const { t } = useLanguage();
   const { setRefComponent } = useGlobal();
   // Extract the id parameter from the route
@@ -253,7 +253,7 @@ export default function ParticipantDetail() {
             solutions={solutionsWithEntityStatus}
             observationLogsTitle={'actions.observationLogs'}
             noSolutionsMessage={'logVisit.noSolutions'}
-            canAccessCoachObservations={isSupervisor}
+            canAccessCoachObservations={isdminPanalAccess}
           />
         ) : null})
       }
@@ -268,7 +268,7 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isSupervisor]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess]);
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
@@ -356,13 +356,14 @@ export default function ParticipantDetail() {
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
         coachId={coachId}
+        isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || coachId))}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject === "not_eligible" ? (
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria ?
-          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
          : showOnboardingProject ? (
           <>
             <DownloadFormsCard

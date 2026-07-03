@@ -10,6 +10,9 @@ import { styles as dataTableStyles } from '@components/DataTable/Styles';
 import { MenuItemData } from '@components/ui/Menu';
 import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
+import { StatusBadge as StatusBadge1 } from '../ParticipantsList/StatusBadge';
+import { USER_STATUS } from '@constants/app.constant';
+import { PARTICIPANT } from '@constants/ROLES';
 
 /**
  * Helper function to extract role label from user object
@@ -66,9 +69,14 @@ export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
 /**
  * Status Badge Component
  */
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  const isActive = status?.toLowerCase() === 'active';
-
+const StatusBadge: React.FC<{ status?: string,user?:any, roles:any[] }> = ({ status, user, roles }) => {
+  const isActive = user?.userDetails?.status?.toLowerCase() === 'active';
+  const arr = [USER_STATUS.ACTIVE];
+  const isParticipant = PARTICIPANT.find((item:string) => roles.find(subItem => item === subItem?.role?.title))
+  
+  if(isParticipant && arr.includes(user?.userDetails?.status)) {
+    return <StatusBadge1 {...{ status, user }} />
+  }
   return (
     <HStack
       {...(isActive ? styles.statusBadgeActive : styles.statusBadgeInactive)}
@@ -79,7 +87,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
         {...TYPOGRAPHY.bodySmall}
         {...styles.statusBadgeText}
       >
-        {status?.toLowerCase() === 'active' ? 'Active' : 'Deactivated'}
+        {isActive ? 'Active' : 'Deactivated'}
       </Text>
     </HStack>
   );
@@ -328,10 +336,7 @@ export const getUsersColumns = (handlers?: {
     label: 'admin.users.email',
     flex: 2.5,
     render: (user) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.emailText}
-      width={"100%"}
-      
-      >
+      <Text {...TYPOGRAPHY.paragraph} {...styles.emailText} width={"100%"}>
         {user.email}
       </Text>
     ),
@@ -344,17 +349,13 @@ export const getUsersColumns = (handlers?: {
     key: 'role',
     label: 'admin.users.role',
     flex: 1.2,
-    render: (user: any) => {
+    render: (user) => {
       // Extract all roles from user_organizations
       const roles = user?.user_organizations?.[0]?.roles?.map((role: any) => role.role.label) || [];
 
       // If no roles found, show "-"
       if (roles.length === 0) {
-        return (
-          <Text {...TYPOGRAPHY.paragraph}>
-            -
-          </Text>
-        );
+        return <Text {...TYPOGRAPHY.paragraph}>-</Text>;
       }
 
       // Render separate badges for each role
@@ -374,8 +375,8 @@ export const getUsersColumns = (handlers?: {
   {
     key: 'status',
     label: 'admin.users.status',
-    flex: 1.2,
-    render: (user) => <StatusBadge status={user.status} />,
+    flex: 1.6,
+    render: (user) => <StatusBadge roles={user?.user_organizations?.[0]?.roles} status={user?.extra?.status} user={{userDetails:{status:user?.status}}} />,
     mobileConfig: {
       rightRank: 2,
       showLabel: false,
@@ -431,9 +432,7 @@ export const getUsersColumns = (handlers?: {
       user?.details ? (
         <DetailsCell details={user.details} />
       ) : (
-        <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>
-          -
-        </Text>
+        <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>-</Text>
       ),
     mobileConfig: {
       leftRank: 4,

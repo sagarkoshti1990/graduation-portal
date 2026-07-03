@@ -180,6 +180,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
           </Text>
           <Button
             {...interventionPlanStyles.button}
+            isDisabled={mode === MODE.readOnlyMode?.mode}
             onPress={() => {
               // @ts-ignore
               navigation.navigate('template', { id: participantProfile?.userId  });

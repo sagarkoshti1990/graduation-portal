@@ -44,6 +44,7 @@ export const STATUS = {
   DROPOUT: 'Dropped out',
   DROPPED_OUT: 'Dropped out',
   GRADUATED: 'Graduated',
+  NOT_ELIGIBLE: 'Not Eligible',
 };
 
 /**
