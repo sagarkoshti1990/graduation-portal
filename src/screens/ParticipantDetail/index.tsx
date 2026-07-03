@@ -341,15 +341,18 @@ export default function ParticipantDetail() {
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject === "not_eligible" ? (
           <></>
-        ) : !participant?.onBoardedProjectId && !targetingCriteria ?
+        ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
           <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
          : showOnboardingProject ? (
           <>
-            <DownloadFormsCard
-              mode={
-                showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
-              }
-            />
+            {/* Hide Download Forms card for dropped out participants */}
+            {showOnboardingProject !== 'dropout' && (
+              <DownloadFormsCard
+                mode={
+                  showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
+                }
+              />
+            )}
             <InterventionPlan
               key={`project-player-${participantId}`}
               participantProfile={participant}

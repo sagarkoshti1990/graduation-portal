@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
   HStack,
@@ -44,6 +44,7 @@ import DownloadConfigModal from '@components/DownloadConfigModal';
 import OfflineBadge from '@components/OfflineBadge';
 import dataService from '../../services/dataService';
 import { observationCss } from '../ParticipantDetail/LogVisitModulePopup';
+import { ParticipantProfileModal } from '../ParticipantDetail/ParticipantProfileModal';
 
 interface ActionColumnProps {
   participant: ParticipantData;
@@ -82,6 +83,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const [modalType, setModalType] = useState<
     'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | 'download' | null
   >(null);
+
+  // Profile modal state for not-eligible participants
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Incremented after download completes so OfflineBadge re-reads storage
   const [badgeRefreshKey, setBadgeRefreshKey] = useState(0);
@@ -301,6 +305,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     participant?.userDetails?.status === USER_STATUS.INACTIVE
       ? false
       : participant?.status === STATUS.NOT_ONBOARDED;
+  const isNotEligible = participant?.status === STATUS.NOT_ELIGIBLE;
 
   // Build menu items — always include Download Offline (Section 8.5)
   const menuItemsWithDownload = [
@@ -327,10 +332,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           // @ts-ignore: variant outlineghost
           variant={isMobile ? 'outlineghost' : 'ghost'}
           flex={1}
-          onPress={isNotOnboarded ? handleLogVisit : handleViewDetails}
+          onPress={isNotEligible ? () => setIsProfileModalOpen(true) : isNotOnboarded ? handleLogVisit : handleViewDetails}
           size="sm"
         >
-          {isNotOnboarded && (
+          {isNotOnboarded && !isNotEligible && (
             <LucideIcon
               name="ClipboardCheck"
               size={20}
@@ -343,7 +348,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             color="$primary500"
             fontWeight="$medium"
           >
-            {t(isNotOnboarded ? 'actions.logVisit' : 'actions.viewDetails')}
+            {t(isNotEligible ? 'admin.users.actionMenu.viewProfile' : isNotOnboarded ? 'actions.logVisit' : 'actions.viewDetails')}
           </ButtonText>
         </Button>
         {!isReadOnlyStatus && (
@@ -629,6 +634,16 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           setBadgeRefreshKey(k => k + 1);
           // handleCloseModal();
         }}
+      />
+
+      {/* Profile modal for not-eligible participants */}
+      <ParticipantProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        participantId={participant.userId || ''}
+        userId={user?.id || ''}
+        onParticipantSaved={() => {}}
+        isReadOnly
       />
     </Box>
   );
