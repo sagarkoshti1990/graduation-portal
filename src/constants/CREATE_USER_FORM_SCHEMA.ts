@@ -275,9 +275,28 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             visibilityToggleGroup: 'userPassword',
             label: { key: 'password', fallback: 'Password' },
             placeholder: { fallback: 'Enter password' },
+            // validation: [
+            //   { rule: 'required', message: { key: 'errors.passwordRequired', fallback: 'Password is required' } },
+            //   { rule: 'minLength', value: 8, message: { key: 'errors.passwordMin', fallback: 'Password must be at least 8 characters' } },
+            // ],
             validation: [
-              { rule: 'required', message: { key: 'errors.passwordRequired', fallback: 'Password is required' } },
-              { rule: 'minLength', value: 8, message: { key: 'errors.passwordMin', fallback: 'Password must be at least 8 characters' } },
+              {
+                rule: 'minLength',
+                value: 8,
+                message: {
+                  key: 'errors.passwordMinLength',
+                  fallback: 'Password must be at least 8 characters long',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#^()_+\\-=[\\]{};:\'",.<>/?\\\\|`~]).+$',
+                message: {
+                  key: 'errors.passwordInvalid',
+                  fallback:
+                    'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+                },
+              },
             ],
           },
           {
