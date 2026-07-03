@@ -1788,7 +1788,7 @@
     "pleaseEnterBothEmailAndPassword": "Enter email and password.",
     "invalidEmailOrPassword": "Email or password is incorrect. Try again.",
     "anErrorOccurredDuringLogin": "Something went wrong. Try logging in again.",
-    "lcLogin": "Login as Coach",
+    "lcLogin": "Login as Coach / Supervisor",
     "testAccounts": "Test Accounts:",
     "welcomeToYourAccount": "Welcome To Your Account",
     "welcomeToYourAccountAdmin": "Welcome To Your Account Admin / Supervisor",
@@ -1801,7 +1801,7 @@
     "rememberMeDescription": "Remember me on this device for 30 days",
     "testAccountsCredentials": "admin@brac.net | supervisor@brac.net | lc@brac.net",
     "title": "Generating Better Livelihoods",
-    "adminLogin": "Login as Admin / Supervisor",
+    "adminLogin": "Login as Admin",
     "adminLoginFailed": "Email or password is incorrect. Try again.",
     "logIn": "Log In",
     "forgotPassword": "Forgot Password?"
