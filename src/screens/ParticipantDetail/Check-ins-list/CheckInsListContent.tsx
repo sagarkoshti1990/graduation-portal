@@ -53,6 +53,7 @@ interface CheckInsListContentProps {
     id: string;
     solutionId: string;
     submissionNumber: number;
+    entityType?: string;
   }) => void;
   preSelectedSolution?: string;
   participant?: ParticipantData;
@@ -219,12 +220,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         const solutionNameData = solutions.find((sol: any) => sol.solutionId === selectedSolution);
         let filterAnswerValue,userId, entityId: string | null = null;
         setSolutionItem(solutionNameData || null);
-        if(coachId) {
+        if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
-          userId = coachId;
-        } else if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
-          filterAnswerValue = participant?.entityId
-          userId = user?.id;
+          userId = coachId || user?.id;
         } else {
           userId = participant?.userId;
         }
@@ -293,7 +291,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         return;
       }
       onNavigateToObservation({
-        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? user?.id : participant.userId,
+        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? coachId || user?.id : participant.userId,
+        entityType:solutionItem?.entityType,
         solutionId: selectedSolution,
         submissionNumber,
       });

@@ -15,7 +15,7 @@ import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS, TASK_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_TYPE, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
@@ -46,6 +46,7 @@ interface ObservationContentProps {
   _css?: any;
   _webComponent?:any;
   canAccessCoachObservations?:boolean
+  entityType?: string
 }
 
 /**
@@ -63,6 +64,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   hideElements,
   _css,
   canAccessCoachObservations,
+  entityType,
   _webComponent
 }) => {
   const { t } = useLanguage();
@@ -160,12 +162,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
 
       if (!observationSolution) {
         
+        const entityParticiapnt = entityType === ENTITY_TYPE.LINKAGE_CHAMPION;
         const response = await getObservationSolution({
           observationId,
           entityId,
           submissionNumber:numsub,
           evidenceCode:observationSubmissionsLast?.evidencesStatus?.[0]?.code,
-          ...(canAccessCoachObservations ? {createdBy: participant?.hierarchy[0]} : {}),
+          ...(canAccessCoachObservations ? {createdBy: entityParticiapnt ? participant?.id : participant?.hierarchy[0]} : {}),
         });
         observationSolution = response.result;
       }
@@ -231,9 +234,10 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
 
       // ── ONLINE PATH: existing API flow ─────────────────────────────────────
       try {
+        const entityParticiapnt = entityType === ENTITY_TYPE.LINKAGE_CHAMPION;
         const observationData = await getObservationEntities({
           solutionId,
-          profileData: canAccessCoachObservations ? {createdBy: participant?.hierarchy[0]} : {},
+          profileData: canAccessCoachObservations ? {createdBy: entityParticiapnt ? participant?.id : participant?.hierarchy[0]} : {},
         });
         if(!observationData.result?.allowMultipleAssessemts && submissionNumber && submissionNumber > 1){
           showAlert('error', t('logVisit.multipleAssessemtsNotAllowed'));
