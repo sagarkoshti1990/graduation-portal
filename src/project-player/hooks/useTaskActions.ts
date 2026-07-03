@@ -81,18 +81,19 @@ export const useTaskActions = () => {
 
   const handleStatusChange = useCallback(
     async (
-      {taskId}: {taskId: string; parentIndex?: number; index?: number},
+      { taskId }: { taskId: string; parentIndex?: number; index?: number },
       status: TaskStatus,
-      files1: NormalizedFile[] = [],
-      excludedFiles: Attachment[] = [],
+      files1?: NormalizedFile[],
+      excludedFiles?: Attachment[],
     ) => {
       // Read participantId at call time from the ref (stable, no subscription).
       const participantId = (projectDataRef.current as any)?.entityInformation?.externalId as string | undefined;
       if (!canEdit || !participantId) return;
 
-      const files = normalizeFiles(files1);
+      const isFileAction = files1 !== undefined || excludedFiles !== undefined;
+      const files = files1 ? normalizeFiles(files1) : [];
       const isOffline = dataService.isNetworkOffline();
-      let attachments: Attachment[] = [...excludedFiles];
+      let attachments: Attachment[] = excludedFiles ? [...excludedFiles] : [];
 
       if (files.length > 0) {
         if (isOffline) {
@@ -150,7 +151,12 @@ export const useTaskActions = () => {
       }
 
       try {
-        const updateData: any = { status, attachments };
+        const updateData: any = { status };
+
+        if (isFileAction) {
+          updateData.attachments = attachments;
+        }
+
         await updateTask(taskId, participantId, updateData);
         return { success: true, data: updateData };
       } catch {
