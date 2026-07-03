@@ -113,6 +113,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     id: string;
     solutionId: string;
     submissionNumber: number;
+    entityType?: string;
   }) => {
     // @ts-ignore
     navigation.navigate('observation' as never, params);
