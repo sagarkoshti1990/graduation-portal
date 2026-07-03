@@ -21,6 +21,7 @@ type ObservationRouteParams = {
   solutionId?: string;
   submissionNumber?: number;
   taskId?: string;
+  entityType?: string;
 };
 
 /**
@@ -44,6 +45,7 @@ const Observation: React.FC = () => {
   const id = routeParams?.id || '';
   const solutionId = routeParams?.solutionId || '';
   const submissionNumber = routeParams?.submissionNumber;
+  const entityType = routeParams?.entityType;
   const taskId = routeParams?.taskId;
   const [userData, setUserData] = useState<any>(null);
   const [participant, setParticipant] = useState<ParticipantData | undefined>(undefined);
@@ -171,6 +173,7 @@ const Observation: React.FC = () => {
       showAlert={(type, message, options) => showAlert(type as any, message, options)}
       userData={userData}
       canAccessCoachObservations={isAdminPanalAccess}
+      entityType={entityType}
     />
   );
 };
