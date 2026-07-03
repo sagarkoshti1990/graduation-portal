@@ -21,8 +21,9 @@ import DeploymentStateBanner from './src/components/DeploymentStateBanner';
 import OnlineSyncBanner from './src/components/OnlineSyncBanner';
 import SyncOverviewModal from './src/components/SyncOverviewModal';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'react-native';
+import { Platform, StatusBar } from 'react-native';
 import { OverlayProvider } from '@react-native-aria/overlays';
+import { MenuProvider } from 'react-native-popup-menu';
 
 const stylesLayout = {
   safeAreaView: {
@@ -49,7 +50,16 @@ function App() {
       {isLoggedIn && <OfflineBanner />}
       <DeploymentStateBanner />
       {isLoggedIn && <OnlineSyncBanner />}
-      <AppNavigator />
+      {Platform.OS === 'web' ? (
+        // Web uses Gluestack's Menu (see src/components/ui/Menu/index.web.tsx),
+        // which needs no provider; react-native-popup-menu's MenuProvider is
+        // native-only infrastructure for src/components/ui/Menu/index.tsx.
+        <AppNavigator />
+      ) : (
+        <MenuProvider backHandler>
+          <AppNavigator />
+        </MenuProvider>
+      )}
       {isLoggedIn && <SyncOverviewModal />}
     </SafeAreaView>
   );
