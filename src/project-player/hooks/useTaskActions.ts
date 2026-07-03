@@ -81,7 +81,7 @@ export const useTaskActions = () => {
 
   const handleStatusChange = useCallback(
     async (
-      {taskId}: {taskId: string; parentIndex?: number; index?: number},
+      { taskId }: { taskId: string; parentIndex?: number; index?: number },
       status: TaskStatus,
       files1: NormalizedFile[] = [],
       excludedFiles: Attachment[] = [],
@@ -150,7 +150,12 @@ export const useTaskActions = () => {
       }
 
       try {
-        const updateData: any = { status, attachments };
+        const updateData: any = { status };
+
+        if (files1.length > 0 || excludedFiles.length > 0) {
+          updateData.attachments = attachments;
+        }
+
         await updateTask(taskId, participantId, updateData);
         return { success: true, data: updateData };
       } catch {
