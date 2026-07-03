@@ -149,10 +149,28 @@ export const useTaskActions = () => {
         }
       }
 
+      const findTask = (tasks: any[] = []): any | null => {
+        for (const t of tasks) {
+          if (t._id === taskId) return t;
+          const found = findTask(t.tasks || t.children);
+          if (found) return found;
+        }
+        return null;
+      };
+      const currentTask = findTask(
+        (projectDataRef.current as any)?.tasks ||
+          (projectDataRef.current as any)?.children
+      );
+
+      const isStatusChanged = currentTask ? currentTask.status !== status : true;
+      const hasFiles = files1.length > 0;
+      const hasExcluded = excludedFiles.length > 0;
+      const hadAttachments = (currentTask?.attachments?.length || 0) > 0;
+
       try {
         const updateData: any = { status };
 
-        if (files1.length > 0 || excludedFiles.length > 0) {
+        if (hasFiles || hasExcluded || (!isStatusChanged && hadAttachments)) {
           updateData.attachments = attachments;
         }
 
