@@ -138,13 +138,14 @@ export const useTaskActions = () => {
         isOnboardingTask?: boolean;
       },
       status: TaskStatus,
-      files1: NormalizedFile[] = [],
-      excludedFiles: Attachment[] = [],
+      files1?: NormalizedFile[],
+      excludedFiles?: Attachment[],
     ) => {
       // Read participantId at call time from the ref (stable, no subscription).
       const participantId = (projectDataRef.current as any)?.entityInformation?.externalId as string | undefined;
       if (!canEdit || !participantId) return;
 
+      const isFileAction = files1 !== undefined || excludedFiles !== undefined;
       // Assign each file a unique generated name while preserving the original
       // for display. `file.name` is used for upload/storage; `file.originalName`
       // is shown in the UI and stored alongside the attachment.
@@ -154,7 +155,7 @@ export const useTaskActions = () => {
         name: generateUniqueFileName(f.name),
       }));
       const isOffline = dataService.isNetworkOffline();
-      let attachments: Attachment[] = [...excludedFiles];
+      let attachments: Attachment[] = excludedFiles ? [...excludedFiles] : [];
 
       if (files.length > 0) {
         if (isOffline) {
@@ -226,7 +227,12 @@ export const useTaskActions = () => {
       }
 
       try {
-        const updateData: any = { status, attachments };
+        const updateData: any = { status };
+
+        if (isFileAction) {
+          updateData.attachments = attachments;
+        }
+
         await updateTask(taskId, participantId, updateData);
         return { success: true, data: updateData };
       } catch {
