@@ -409,7 +409,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
       showToast: false,
-      saveProgressStorageType: isNetworkOffline() ? "local" : "server",
+      saveProgressStorageType: isOffline ? "local" : "server",
       showNextTabButton: true,
       dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
