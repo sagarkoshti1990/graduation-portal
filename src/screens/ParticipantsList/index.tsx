@@ -14,7 +14,7 @@ import {
   ButtonText,
   useAlert,
 } from '@ui';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import SearchBar from '@components/SearchBar';
 import DataTable from '@components/DataTable';
 import { getParticipantsColumns } from './ParticipantsTableConfig';
@@ -162,37 +162,39 @@ const ParticipantsList: React.FC = () => {
     return { active: activeCount, inactive: inactiveCount };
   }, [allStatusItems]);
 
-  useEffect(() => {
-    const fetchParticipants = async () => {
-      // Early return if entity ID is not available
-      try {
-        setIsLoading(true);
-        const result = await dataService.getParticipantList({
-          userId: user?.id as string,
-          search: searchKey,
-          status: activeStatus,
-          page: currentPage,
-          limit: pageSize ?? undefined,
-        });
-        setParticipants(result.data.participants || []);
-        if (result.data.overview) {
-          setOverview(result.data.overview);
+  useFocusEffect(
+    useCallback(() => {  
+      const fetchParticipants = async () => {
+        // Early return if entity ID is not available
+        try {
+          setIsLoading(true);
+          const result = await dataService.getParticipantList({
+            userId: user?.id as string,
+            search: searchKey,
+            status: activeStatus,
+            page: currentPage,
+            limit: pageSize ?? undefined,
+          });
+          setParticipants(result.data.participants || []);
+          if (result.data.overview) {
+            setOverview(result.data.overview);
+          }
+          setTotalItems(result.data.total ?? 0);
+        } catch (err: any) {
+          const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch participants';
+          logger.error('Error fetching participants:', errorMessage, err);
+          setParticipants([]);
+          setOverview(null);
+          setTotalItems(0);
+        } finally {
+          setIsLoading(false);
         }
-        setTotalItems(result.data.total ?? 0);
-      } catch (err: any) {
-        const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch participants';
-        logger.error('Error fetching participants:', errorMessage, err);
-        setParticipants([]);
-        setOverview(null);
-        setTotalItems(0);
-      } finally {
-        setIsLoading(false);
+      };
+      if (pageSize) {
+        fetchParticipants();
       }
-    };
-    if (pageSize) {
-      fetchParticipants();
-    }
-  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline]);
+    }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline])
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -245,10 +247,7 @@ const ParticipantsList: React.FC = () => {
     [navigation],
   );
 
-  const handleDropoutSuccess = useCallback((participantId: string) => {
-    // Immediately remove from current list (avoids needing a full page refresh)
-    setParticipants((prev) => prev.filter((p) => p.userId !== participantId));
-    setTotalItems((prev) => (prev > 0 ? prev - 1 : 0));
+  const handleDropoutSuccess = useCallback(() => {
     // Refetch to sync overview counts + ensure inactive Dropped Out list includes participant
     setRefetchKey((k) => k + 1);
   }, []);

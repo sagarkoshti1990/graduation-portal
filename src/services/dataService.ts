@@ -343,8 +343,11 @@ export async function getProject<T = any>(
     const project = res.data as T;
     if (!project) return buildOnlineSuccess<T | null>(null, OFFLINE_API_CONFIG.PROJECT.supported);
     // Viewing the project for display must never persist it to offline storage —
-    // that only happens via the explicit Offline Download flow (downloadService's
-    // fetchAndStoreProject), which the user opts into per category.
+    const cached = await offlineStorage.read<T>(PARTICIPANT_KEYS.project(userId, participantId, projectId));
+    if(!offline && cached){
+      offlineStorage.create(PARTICIPANT_KEYS.project(userId, participantId, projectId), project).catch(() => {});
+    }
+
     return buildOnlineSuccess(project, OFFLINE_API_CONFIG.PROJECT.supported);
   } catch (err) {
     logger.warn('dataService.getProject: API failed — falling back to cached project', err);
