@@ -237,7 +237,7 @@ function ParticipantProfileModalInner({
       size={isMobile ? 'lg' : 'sm'}
       {...(!isEditingAddress
         ? {
-            footerContent: <RenderFooterContent participant={participant} />,
+            footerContent: !isOffline ? <RenderFooterContent participant={participant} />:<React.Fragment/>,
           }
         : {
             cancelButtonText: t('common.cancel'),
