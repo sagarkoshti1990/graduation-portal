@@ -86,6 +86,7 @@ export default function ParticipantDetail() {
   const isFetchingRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | undefined>(undefined);
+  const [projectUnavailableOffline, setProjectUnavailableOffline] = useState(false);
   const [solutions, setSolutions] = useState<any[]>([]);
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
   const [targetingCriteria,setTargetingCriteria] = useState(false);
@@ -131,6 +132,9 @@ export default function ParticipantDetail() {
         } else {
           setIsOfflineUnavailable(false);
           setProjectData(response.data);
+          setProjectUnavailableOffline(
+            !!resolvedProjectId && response.isOffline && !response.offlineDataAvailable,
+          );
           setParticipant(participantData);
           setNavbarData({ subtitle: participantData?.name });
           setStatus(participantData?.status);
@@ -379,6 +383,7 @@ export default function ParticipantDetail() {
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
               projectData={projectData}
+              projectUnavailableOffline={projectUnavailableOffline}
               {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
@@ -440,6 +445,7 @@ export default function ParticipantDetail() {
                     onIdpCreation={handleIdpCreated}
                     onProgressChange={handleProgressChange}
                     projectData={projectData}
+                    projectUnavailableOffline={projectUnavailableOffline}
                     {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>

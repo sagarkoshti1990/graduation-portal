@@ -17,6 +17,7 @@ import { sortTasksWithChildren } from '@utils/helper';
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   mode,
   projectData,
+  projectUnavailableOffline,
   participantProfile,
   onIdpCreation,
   onProgressChange,
@@ -153,6 +154,31 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     [ participantProfile?.entityId, participantProfile?.status, participantProfile?.province?.value, projectSortData, user?.id, (participantProfile as any)?.userId],
   );
   
+  // Offline and this project was never downloaded via the Offline Download flow —
+  // there's no cached data to show, so tell the user why instead of rendering an
+  // empty/broken ProjectPlayer.
+  if (!projectData && projectUnavailableOffline) {
+    return (
+      <Box {...interventionPlanStyles.container} mt="$7">
+        <VStack {...interventionPlanStyles.content}>
+          <Box {...interventionPlanStyles.iconContainer}>
+            <LucideIcon
+              name="WifiOff"
+              size={48}
+              color={interventionPlanStyles.iconColor}
+            />
+          </Box>
+          <Text {...interventionPlanStyles.title}>
+            {t('participantDetail.interventionPlan.projectUnavailableOfflineTitle')}
+          </Text>
+          <Text {...interventionPlanStyles.description}>
+            {t('participantDetail.interventionPlan.projectUnavailableOfflineDescription')}
+          </Text>
+        </VStack>
+      </Box>
+    );
+  }
+
   if(projectData && (!config?.mode || !projectSortData)){
     if(!config?.mode) {
       console.log(`config is not defined`,config);
@@ -226,7 +252,9 @@ export default memo(
       prevProps.participantProfile?.idpProjectId ===
         nextProps.participantProfile?.idpProjectId &&
       prevProps.participantProfile?.status ===
-        nextProps.participantProfile?.status
+        nextProps.participantProfile?.status &&
+      prevProps.projectData === nextProps.projectData &&
+      prevProps.projectUnavailableOffline === nextProps.projectUnavailableOffline
     );
   },
 );

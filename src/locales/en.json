@@ -1938,6 +1938,8 @@
     "interventionPlan": {
       "noPlanAssigned": "No Intervention Plan Assigned",
       "noPlanDescription": "Pillars and tasks will appear here once an intervention plan is assigned to this participant.",
+      "projectUnavailableOfflineTitle": "Project Information",
+      "projectUnavailableOfflineDescription": "Project information is not available offline. Please download the project data to access it offline.",
       "developPlan": "Develop Intervention Plan",
       "submitInterventionPlan": "Submit Intervention Plan",
       "changePathway": "Change Pathway",
