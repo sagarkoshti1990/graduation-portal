@@ -44,6 +44,7 @@ import { MODE } from '@constants/PROJECTDATA';
 import TargetingCriteriaCard from './ParticipantHeader/TargetingCriteriaCard';
 import { isOfflineEligible } from '../../services/offlineCacheUpdateService';
 import { deleteParticipantOfflineData } from '../../services/offlineCleanupService';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 /**
  * Route parameters type definition for ParticipantDetail screen
@@ -66,6 +67,7 @@ export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth();
   const isdminPanalAccess = useIsdminPanalAccess();
+  const { isOffline } = useOfflineSync();
   const { t } = useLanguage();
   const { setRefComponent } = useGlobal();
   // Extract the id parameter from the route
@@ -169,7 +171,7 @@ export default function ParticipantDetail() {
         setIsOfflineUnavailable(false);
         setRefComponent?.(undefined)
       };
-    }, [fetchEntityDetails, setNavbarData])
+    }, [fetchEntityDetails, setNavbarData, isOffline])
   );
 
   // Re-fetch when idpCreated changes
