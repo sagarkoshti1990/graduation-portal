@@ -374,7 +374,7 @@ export default function ParticipantDetail() {
             {showOnboardingProject !== 'dropout' && (
               <DownloadFormsCard
                 mode={
-                  showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
+                  dataService.isNetworkOffline() ? 'hide' : showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
                 }
               />
             )}
