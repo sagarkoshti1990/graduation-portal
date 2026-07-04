@@ -185,7 +185,7 @@ const normalizeAllowedTokenForDisplay = (token: string): string => {
 const normalizeAllowedTokenForAccept = (token: string): string => {
   const t = token.trim();
   if (t.includes('/')) return t;
-  return t.startsWith('.') ? t : `.${t}`;
+  return t.startsWith('.') ? t : `application/${t}`;
 };
 
 const getImageAcceptString = (allowedTypes: string[]): string => {
@@ -205,8 +205,8 @@ const getImageAcceptString = (allowedTypes: string[]): string => {
   return imageTokens.map(normalizeAllowedTokenForAccept).join(',');
 };
 
-const getDeviceAcceptString = (allowedTypes: string[]): string =>
-  allowedTypes.length === 0 ? '*/*' : allowedTypes.map(normalizeAllowedTokenForAccept).join(',');
+const getDeviceAcceptString = (allowedTypes: string[]): string[] =>
+  allowedTypes.length === 0 ? ['*/*'] : allowedTypes.map(normalizeAllowedTokenForAccept);
 
 const getAllowedMediaSupport = (allowedTypes: string[]) => {
   if (!allowedTypes || allowedTypes.length === 0) {
@@ -629,7 +629,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                 ? selectionLimit > 1
                 : true,
 
-            type: ['*/*'],
+            type: getDeviceAcceptString(resolvedAllowedFileTypes),
           });
 
           const files = Array.isArray(result)
@@ -958,7 +958,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           <input
             ref={deviceInputRef}
             type="file"
-            accept={getDeviceAcceptString(resolvedAllowedFileTypes)}
+            accept={getDeviceAcceptString(resolvedAllowedFileTypes).join(',')}
             multiple={!isSingleMode}
             style={{ display: 'none' }}
             onChange={(e) => handleWebFileChange(e, 'device')}

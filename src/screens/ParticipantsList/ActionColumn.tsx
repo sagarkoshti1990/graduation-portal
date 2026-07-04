@@ -185,7 +185,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             iconColor: theme.tokens.colors.textForegroundColor,
             iconSizeValue: 20,
           }]:[]),
-          ...(isParticipantDataOffline ? 
+          ...(!isOffline && isParticipantDataOffline ? 
           [{
             key: 'remove-offline',
             label: 'actions.removeOffline',
