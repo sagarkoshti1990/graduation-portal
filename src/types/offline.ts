@@ -92,7 +92,7 @@ export interface OfflineSolutionEntry {
 /** One entry in PARTICIPANT_KEYS.filesPending — enough context to upload and patch the task. */
 export interface PendingFile {
   /** Task ID that owns this attachment (used as the upload entity). */
-  taskId: string;
+  taskId?: string;
   /** Original file name exactly as selected by the user — used only for display (e.g. "invoice.pdf"). */
   originalName: string;
   /**
@@ -121,6 +121,11 @@ export interface PendingFile {
    * determine which entity fields to update (consent vs SLA).
    */
   taskReferenceId?: string;
+
+  // for observation files 
+  submissionId?: string;
+  solutionId?: string;
+  fieldId?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -16,12 +16,12 @@ import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS, ENTITY_TYPE, TASK_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_TYPE } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
-import type { ObservationFormData } from '@app-types/offline';
+import type { ObservationFormData, PendingFile } from '@app-types/offline';
 import { isNetworkOffline } from '@utils/networkStatus';
 
 interface ObservationData {
@@ -369,10 +369,43 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   );
 
   const handleOfflineData = useCallback(async (data:any)=>{
-    const {answers,endTime,evidenceCode,isSubmitted,startTime,status,submissionId} = data || {}
+    const { answers, endTime, evidenceCode, isSubmitted, startTime, status, files, submissionId } = data || {}
     const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
     if(answers && submissionId && participantKey) {
       try {
+        // Save files to storage and add them to the pending files list.
+        if(files?.length > 0) { 
+          let existing = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(authUser?.id || "", participantKey)) ?? [];
+          const existingTaskFileKeys = new Set(
+            existing.map(p => `${p.submissionId}:${p.originalName ?? p.fileName}`),
+          );
+
+          const newFiles: PendingFile[] = [];
+          for (const file of files) {
+            if (existingTaskFileKeys.has(`${file?.submissionId}:${file.originalName}`)) continue;
+            const newFileName = file.storedFile?.key || file.name;
+
+            if (file?.storedFile?.data) {
+              await offlineStorage.create(newFileName, file.storedFile.data);
+            }
+
+            newFiles.push({
+              submissionId,
+              solutionId,
+              fieldId: file?.submissionId,
+              originalName: file?.originalName,
+              fileName: file?.name,
+              fileType: file?.type ?? '',
+              storageKey: newFileName,
+            });
+          }
+          
+          await offlineStorage.create(
+            PARTICIPANT_KEYS.filesPending(authUser?.id || "", participantKey),
+            [...existing, ...newFiles],
+          );
+        }
+
         await dataService.saveFormEdits(participantKey, submissionId, {
           answers,endTime,externalId:evidenceCode,isSubmitted,startTime,status,solutionId
         }, authUser?.id ?? '');
@@ -382,7 +415,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       }
     }
     handleBackPress();
-  },[handleBackPress,participant,solutionId,authUser?.id])
+  },[handleBackPress, participant, solutionId, authUser?.id])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(

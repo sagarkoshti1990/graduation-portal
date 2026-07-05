@@ -22,7 +22,7 @@
 import logger from '@utils/logger';
 import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
 import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
-import type { SyncResult, SyncProgress, ObservationFormData, PendingFile } from '@app-types/offline';
+import type { SyncResult, SyncProgress, ObservationFormData, ObservationFormEdits, PendingFile } from '@app-types/offline';
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 import {
@@ -149,6 +149,98 @@ async function patchTaskAttachmentUrl(
   }
 }
 
+/**
+ * After an observation file is uploaded and we have a server URL, patch the
+ * corresponding file entry (added offline, still pointing at local/placeholder
+ * data) in the stored form edits so the next form sync sends the real URL.
+ * Mirrors patchTaskAttachmentUrl's read-modify-write pattern, but the form
+ * edits key is known directly (keyed by submissionId, not solutionId) so no
+ * key-scanning is needed.
+ */
+async function patchFormAttachmentUrl({
+  userId,
+  participantId,
+  submissionId,
+  fieldId,
+  fileName,
+  originalName,
+  storageKey,
+  serverUrl,
+  sourcePath,
+}:{
+  userId: string,
+  participantId: string,
+  submissionId: string,
+  fieldId: string,
+  fileName: string,
+  originalName?: string,
+  storageKey?: string,
+  serverUrl: string,
+  sourcePath?: string,
+}): Promise<void> {
+  console.log("sagar",{
+  userId,
+  participantId,
+  submissionId,
+  fieldId,
+  fileName,
+  originalName,
+  storageKey,
+  serverUrl,
+  sourcePath,
+})
+  const key = PARTICIPANT_KEYS.formEdits(userId, participantId, submissionId);
+  const form = await offlineStorage.read<ObservationFormEdits>(key);
+  if (!form?.answers) return;
+
+  // Locate the answer by qid — the object key under `answers` is not
+  // necessarily the fieldId, so search by value rather than index.
+  const answerEntry = Object.entries(form.answers).find(
+    ([, answer]) => (answer as any)?.qid === fieldId,
+  );
+  if (!answerEntry) {
+    logger.warn(`syncService: no answer with qid "${fieldId}" found in form "${submissionId}" — skipping attachment patch`);
+    return;
+  }
+  const [answerKey, answer] = answerEntry as [string, any];
+
+  // Match by generated fileName/storageKey first (unique), fall back to
+  // originalName for entries that only carry the display name.
+  const matchesUploadedFile = (entry: any): boolean =>
+    !!(
+      entry?.fileName === fileName ||
+      entry?.name === fileName ||
+      (storageKey && entry?.fileName === storageKey) ||
+      (originalName && entry?.originalName === originalName)
+    );
+
+  const patchFileEntry = (entry: any) =>
+    matchesUploadedFile(entry)
+      ? {
+          ...entry,
+          url: serverUrl,
+          previewUrl: serverUrl,
+          sourcePath: sourcePath ?? entry.sourcePath,
+          isUploaded: true,
+        }
+      : entry;
+
+  const patchFileList = (list: any): any =>
+    Array.isArray(list) ? list.map(patchFileEntry) : patchFileEntry(list);
+
+  const updatedAnswer = {
+    ...answer,
+    ...(answer.value !== undefined ? { value: patchFileList(answer.value) } : {}),
+    ...(answer.fileName !== undefined ? { fileName: patchFileList(answer.fileName) } : {}),
+  };
+
+  await offlineStorage.create(key, {
+    ...form,
+    answers: { ...form.answers, [answerKey]: updatedAnswer },
+  });
+}
+
+
 async function syncFiles(
   userId: string,
   participantId: string,
@@ -161,14 +253,15 @@ async function syncFiles(
   const syncedNames: string[] = [];
 
   for (let i = 0; i < pending.length; i++) {
-    const { taskId, originalName, fileName, fileType, storageKey, isOnboardingTask, taskReferenceId } = pending[i];
+    const { taskId, submissionId, fieldId, originalName, fileName, fileType, storageKey, isOnboardingTask, taskReferenceId } = pending[i];
     // storageKey is the unique blob key; fall back to legacy key for old entries
     const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
+    const uid = taskId || fieldId || "";
     try {
       // Read the stored base64 content
       const base64 = await offlineStorage.read<string>(blobKey);
 
-      if (!base64) {
+      if (!base64 || !uid) {
         // No content stored (e.g. blob was cleaned up already) — treat as done
         logger.warn(`syncService: no stored blob for "${fileName}" — skipping`);
         syncedNames.push(fileName);
@@ -179,50 +272,64 @@ async function syncFiles(
       // `name` is the unique generated fileName used for the S3 upload key.
       // `originalName` is carried through so uploadFiles can populate the
       // attachment's display name on the returned object.
-      const result = await uploadFiles(taskId, [{
+      const result = await uploadFiles(uid, [{
         name: fileName,
         originalName: originalName ?? fileName,
         size: 0,
         type: fileType,
         uri: '',
-        base64,
+        base64 : base64 || "",
       }]);
       const uploaded = result.data?.[0];
 
       if (uploaded?.url) {
         // Patch the attachment stub in stored task edits so the task sync step
         // sends the real server URL instead of the empty placeholder.
-        await patchTaskAttachmentUrl(
-          userId,
-          participantId,
-          taskId,
-          fileName,
-          uploaded.url,
-          uploaded.sourcePath,
-        );
+        if(taskId) {
+          await patchTaskAttachmentUrl(
+            userId,
+            participantId,
+            taskId,
+            fileName,
+            uploaded.url,
+            uploaded.sourcePath,
+          );
 
-        // Mirror the online updateEntityFile call: update participant entity
-        // fields (consent / SLA) when the file belongs to an onboarding task.
-        if (isOnboardingTask && taskReferenceId) {
-          try {
-            const updates = buildOnboardingFileUpdate(
-              { referenceId: taskReferenceId } as any,
-              [uploaded],
-              new Date().toISOString(),
-            );
-            if (updates) {
-              await updateEntityDetails({ userId, entityId: participantId, entityUpdates: updates });
-              // @ts-ignore
-              // await createOrUpdateProgramUserMapping({
-              //   userId: participantId,
-              //   programId: process.env.GLOBAL_LC_PROGRAM_ID,
-              //   metaInformation: updates,
-              //   status: STATUS.NOT_ONBOARDED,
-              // });
+          // Mirror the online updateEntityFile call: update participant entity
+          // fields (consent / SLA) when the file belongs to an onboarding task.
+          if (isOnboardingTask && taskReferenceId) {
+            try {
+              const updates = buildOnboardingFileUpdate(
+                { referenceId: taskReferenceId } as any,
+                [uploaded],
+                new Date().toISOString(),
+              );
+              if (updates) {
+                await updateEntityDetails({ userId, entityId: participantId, entityUpdates: updates });
+                // @ts-ignore
+                // await createOrUpdateProgramUserMapping({
+                //   userId: participantId,
+                //   programId: process.env.GLOBAL_LC_PROGRAM_ID,
+                //   metaInformation: updates,
+                //   status: STATUS.NOT_ONBOARDED,
+                // });
+              }
+            } catch (err) {
+              logger.warn(`syncService: onboarding entity update failed for task "${taskId}"`, err);
             }
-          } catch (err) {
-            logger.warn(`syncService: onboarding entity update failed for task "${taskId}"`, err);
           }
+        } else if (fieldId && submissionId) {
+          await patchFormAttachmentUrl({
+            userId,
+            participantId,
+            submissionId,
+            fieldId,
+            fileName,
+            originalName,
+            storageKey,
+            serverUrl: uploaded.url,
+            sourcePath: uploaded.sourcePath,
+          })
         }
 
         // Remove the persisted blob — no longer needed
