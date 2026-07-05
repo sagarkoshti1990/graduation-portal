@@ -261,6 +261,152 @@ export const toCamelCase = (str: string): any => {
     );
 };
 
+// ---------------------------------------------------------------------------
+// Embedded-file extraction for observation answers
+//
+// Some questionnaire question types (signature/drawing, etc.) embed a base64
+// data URL directly inside the answers object rather than referencing the
+// separate `files` array. On native, that raw base64 must never be persisted
+// into offline storage as-is (a single embedded photo/video can exceed
+// Android's per-row SQLite limit) — it's extracted to a file and replaced
+// with a metadata marker at save time. findEmbeddedFiles recognizes BOTH
+// that marker (native, already extracted) and raw data URLs (web, or any
+// record saved before this existed) so sync-time upload logic works
+// uniformly either way.
+// ---------------------------------------------------------------------------
+
+export interface OfflineFileMetadata {
+  __offlineFile: true;
+  localPath: string;
+  fileName: string;
+  originalName?: string;
+  fileType: string;
+  fileSize?: number;
+  uploadStatus: 'pending';
+}
+
+export type EmbeddedFileEntry =
+  | { kind: 'inline'; path: (string | number)[]; dataUrl: string; mimeType: string; fileName: string }
+  | {
+      kind: 'blob';
+      path: (string | number)[];
+      localPath: string;
+      fileName: string;
+      originalName?: string;
+      mimeType: string;
+      fileSize?: number;
+    }
+  | {
+      kind: 'stored';
+      path: (string | number)[];
+      dataUrl: string;
+      fileName: string;
+      originalName?: string;
+      mimeType: string;
+      fieldId?: string;
+    };
+
+/** Builds the metadata object that replaces an embedded data URL once extracted to a file. */
+export function makeOfflineFileMetadata(
+  meta: Omit<OfflineFileMetadata, '__offlineFile' | 'uploadStatus'>,
+): OfflineFileMetadata {
+  return { __offlineFile: true, uploadStatus: 'pending', ...meta };
+}
+
+function isOfflineFileMetadata(value: unknown): value is OfflineFileMetadata {
+  return !!value && typeof value === 'object' && (value as any).__offlineFile === true;
+}
+
+/**
+ * File-answer objects produced by the web component for file-type questions,
+ * e.g. { name, isUploaded: false, originalName, type, storedFile: { key, data }, submissionId }.
+ * `submissionId` here is actually the question's qid, not the form submissionId.
+ */
+function isStoredFileAnswer(value: unknown): value is {
+  name: string;
+  originalName?: string;
+  type?: string;
+  submissionId?: string;
+  isUploaded?: boolean;
+  storedFile: { key?: string; data: string };
+} {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    typeof (value as any).storedFile?.data === 'string' &&
+    (value as any).isUploaded !== true
+  );
+}
+
+/**
+ * Recursively finds base64 data-URL strings and offline-file metadata
+ * markers anywhere inside an arbitrary JSON-like object (e.g. observation
+ * answers). Read-only — never mutates `obj`. `namePrefix`/`startIndex` seed
+ * generated fileNames for newly found inline data URLs (metadata markers
+ * already carry their own fileName).
+ */
+export function findEmbeddedFiles(obj: any, namePrefix: string, startIndex = 0): EmbeddedFileEntry[] {
+  const entries: EmbeddedFileEntry[] = [];
+  function walk(node: any, path: (string | number)[]): void {
+    if (!node || typeof node !== 'object') return;
+    if (isOfflineFileMetadata(node)) {
+      entries.push({
+        kind: 'blob',
+        path,
+        localPath: node.localPath,
+        fileName: node.fileName,
+        originalName: node.originalName,
+        mimeType: node.fileType,
+        fileSize: node.fileSize,
+      });
+      return; // don't descend into the metadata object's own fields
+    }
+    if (isStoredFileAnswer(node)) {
+      entries.push({
+        kind: 'stored',
+        path,
+        dataUrl: node.storedFile.data,
+        fileName: node.name,
+        originalName: node.originalName,
+        mimeType: node.type ?? 'application/octet-stream',
+        fieldId: node.submissionId,
+      });
+      return; // don't descend into the file answer's own fields
+    }
+    const keys = Array.isArray(node) ? node.map((_, i) => i as string | number) : Object.keys(node);
+    for (const key of keys) {
+      const val = (node as any)[key];
+      const currentPath = [...path, key];
+      if (typeof val === 'string' && val.startsWith('data:') && val.includes(';base64,')) {
+        const mimeMatch = val.match(/^data:([^;]+);/);
+        const mimeType = mimeMatch?.[1] ?? 'application/octet-stream';
+        const ext = mimeType.split('/')[1]?.replace(/[^a-z0-9]/gi, '') ?? 'bin';
+        entries.push({
+          kind: 'inline',
+          path: currentPath,
+          dataUrl: val,
+          mimeType,
+          fileName: `${namePrefix}-${startIndex + entries.length}.${ext}`,
+        });
+      } else if (val && typeof val === 'object') {
+        walk(val, currentPath);
+      }
+    }
+  }
+  walk(obj, []);
+  return entries;
+}
+
+/** Writes `value` at `path` inside `obj`, mutating it in place. No-op if an intermediate node is missing. */
+export function setAtPath(obj: any, path: (string | number)[], value: any): void {
+  let node = obj;
+  for (let i = 0; i < path.length - 1; i++) {
+    node = node?.[path[i]];
+    if (node == null) return;
+  }
+  if (node != null) node[path[path.length - 1]] = value;
+}
+
 export const getAnswerData = (items:any[],answers:any) => {
   let value:any = {};
   items.forEach((item:any) => {
@@ -322,3 +468,21 @@ export const sortTasksWithChildren = (tasks: any[] = []) => {
       return task;
     });
 };
+
+export const removeFileFromAnsers = (value:any) => {
+  const files: any[] = []
+  
+  if (Array.isArray(value)) {
+    value = value.map((file: any) => {
+      if (file?.storedFile) {
+        // Remove storedFile from the file object
+        const { storedFile, ...rest } = file;
+        files.push({...file,storedFile});
+        return rest;
+      }
+
+      return file;
+    });
+  }
+  return {value,files}
+}

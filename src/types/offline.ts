@@ -111,6 +111,13 @@ export interface PendingFile {
    */
   storageKey?: string;
   /**
+   * Native only — local filesystem path where the file content was written
+   * (react-native-blob-util), used instead of `storageKey` so the base64
+   * never has to be stored in AsyncStorage. When present, sync reads the
+   * file from this path and deletes it after a successful upload.
+   */
+  localFilePath?: string;
+  /**
    * True when the file belongs to an onboarding task.  When set, the sync
    * stage calls updateEntityDetails / createOrUpdateProgramUserMapping after
    * the upload succeeds — mirroring what updateEntityFile does in the online flow.
@@ -126,6 +133,7 @@ export interface PendingFile {
   submissionId?: string;
   solutionId?: string;
   fieldId?: string;
+  mimeType?: string;
 }
 
 // ---------------------------------------------------------------------------

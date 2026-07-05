@@ -20,7 +20,9 @@
  */
 
 import logger from '@utils/logger';
+import { findEmbeddedFiles, setAtPath } from '@utils/helper';
 import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
+import fileStorageService from './fileStorageService';
 import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
 import type { SyncResult, SyncProgress, ObservationFormData, ObservationFormEdits, PendingFile } from '@app-types/offline';
 import api from './api';
@@ -251,16 +253,22 @@ async function syncFiles(
 
   let synced = 0, failed = 0;
   const syncedNames: string[] = [];
-
+  
   for (let i = 0; i < pending.length; i++) {
-    const { taskId, submissionId, fieldId, originalName, fileName, fileType, storageKey, isOnboardingTask, taskReferenceId } = pending[i];
+    const { taskId, fieldId, submissionId, originalName, fileName, fileType, storageKey, localFilePath, mimeType, isOnboardingTask, taskReferenceId } = pending[i];
     // storageKey is the unique blob key; fall back to legacy key for old entries
     const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
     const uid = taskId || fieldId || "";
     try {
-      // Read the stored base64 content
-      const base64 = await offlineStorage.read<string>(blobKey);
-
+      // localFilePath (native) means the content was written to the
+      // filesystem, not AsyncStorage — read it back from there instead.
+      let base64; 
+      if(localFilePath) {
+        base64 = await fileStorageService.readBase64FileAtPath(localFilePath).then(b64 => b64 ? `data:${mimeType};base64,${b64}` : null);
+      } else {
+        base64 = await offlineStorage.read<string>(blobKey);
+      }
+      
       if (!base64 || !uid) {
         // No content stored (e.g. blob was cleaned up already) — treat as done
         logger.warn(`syncService: no stored blob for "${fileName}" — skipping`);
@@ -318,22 +326,24 @@ async function syncFiles(
               logger.warn(`syncService: onboarding entity update failed for task "${taskId}"`, err);
             }
           }
-        } else if (fieldId && submissionId) {
-          await patchFormAttachmentUrl({
+        } else if(fieldId && submissionId) {
+           patchFormAttachmentUrl({
             userId,
             participantId,
-            submissionId,
-            fieldId,
+            fieldId: fieldId || "",
+            submissionId: submissionId || "",
             fileName,
-            originalName,
-            storageKey,
             serverUrl: uploaded.url,
             sourcePath: uploaded.sourcePath,
           })
         }
 
-        // Remove the persisted blob — no longer needed
-        await offlineStorage.remove(blobKey).catch(() => {});
+        // Remove the persisted content — no longer needed
+        if (localFilePath) {
+          await fileStorageService.deleteFileAtPath(localFilePath);
+        } else {
+          await offlineStorage.remove(blobKey).catch(() => {});
+        }
       }
 
       syncedNames.push(fileName);
@@ -392,35 +402,8 @@ async function prepareObservationAnswers(
   // Deep-clone so we never mutate the stored record until all uploads succeed.
   const patched = JSON.parse(JSON.stringify(answers));
 
-  type FileEntry = { path: (string | number)[]; dataUrl: string; mimeType: string; fileName: string };
-  const fileEntries: FileEntry[] = [];
-
-  function collectDataUrls(obj: any, path: (string | number)[]): void {
-    if (!obj || typeof obj !== 'object') return;
-    const keys = Array.isArray(obj)
-      ? obj.map((_, i) => i as string | number)
-      : Object.keys(obj);
-    for (const key of keys) {
-      const val = (obj as any)[key];
-      const currentPath = [...path, key];
-      if (typeof val === 'string' && val.startsWith('data:') && val.includes(';base64,')) {
-        const mimeMatch = val.match(/^data:([^;]+);/);
-        const mimeType = mimeMatch?.[1] ?? 'application/octet-stream';
-        const ext = mimeType.split('/')[1]?.replace(/[^a-z0-9]/gi, '') ?? 'bin';
-        fileEntries.push({
-          path: currentPath,
-          dataUrl: val,
-          mimeType,
-          // Unique name: avoid collisions across multiple files per submission.
-          fileName: `obs-${submissionId}-${fileEntries.length}.${ext}`,
-        });
-      } else if (val && typeof val === 'object') {
-        collectDataUrls(val, currentPath);
-      }
-    }
-  }
-
-  collectDataUrls(patched, []);
+  const namePrefix = `obs-${submissionId}`;
+  const fileEntries = findEmbeddedFiles(patched, namePrefix);
 
   // On web: also scan the questionnaire player's own IndexedDB for any file
   // blobs that the web component stored separately (not forwarded in answers).
@@ -431,7 +414,11 @@ async function prepareObservationAnswers(
         storeName: 'questionnaire',
       });
       if (playerData) {
-        collectDataUrls(playerData, ['_player']);
+        // startIndex continues the counter so generated fileNames from this
+        // second pass never collide with ones already found in `patched`.
+        fileEntries.push(...findEmbeddedFiles(playerData, namePrefix, fileEntries.length).map(
+          entry => ({ ...entry, path: ['_player', ...entry.path] }),
+        ));
       }
     } catch {
       // Questionnaire player DB may not exist yet — skip silently.
@@ -444,10 +431,22 @@ async function prepareObservationAnswers(
   // Use submissionId as the group key for the presigned-URL request.
   for (const entry of fileEntries) {
     try {
+      // "blob" entries were already extracted to the filesystem at save time
+      // (native — see ObservationContent.handleOfflineData) and only carry
+      // metadata in answers; "inline" entries still have the raw data URL
+      // (web, or any record saved before extraction existed).
+      const dataUrl = entry.kind === 'blob'
+        ? await fileStorageService.readBase64FileAtPath(entry.localPath).then(b64 => b64 ? `data:${entry.mimeType};base64,${b64}` : null)
+        : entry.dataUrl;
+      if (!dataUrl) {
+        logger.warn(`syncService: offline file "${entry.fileName}" not found — skipping`);
+        continue;
+      }
+
       const result = await uploadFiles(submissionId, [{
         name: entry.fileName,
-        originalName: entry.fileName,
-        base64: entry.dataUrl,
+        originalName: entry.kind === 'stored' ? (entry.originalName ?? entry.fileName) : entry.fileName,
+        base64: dataUrl,
         type: entry.mimeType,
         size: 0,
         uri: '',
@@ -457,32 +456,45 @@ async function prepareObservationAnswers(
         typeof uploaded?.url === 'string' ? uploaded.url : undefined;
 
       if (serverUrl) {
-        // Navigate the cloned object via the recorded path and replace the data URL.
-        let node: any = patched;
-        for (let i = 0; i < entry.path.length - 1; i++) {
-          node = node[entry.path[i]];
-          if (node == null) break;
+        if (entry.kind === 'stored') {
+          // Web-component file answers use a richer object shape than the
+          // plain-URL replacement used for inline/blob entries — patch the
+          // whole answer entry so it matches what the player expects post-upload.
+          setAtPath(patched, entry.path, {
+            isUploaded: true,
+            file: {},
+            url: serverUrl,
+            previewUrl: serverUrl,
+            sourcePath: uploaded?.sourcePath,
+            submissionId: entry.fieldId,
+            name: entry.fileName,
+            originalName: entry.originalName ?? entry.fileName,
+            type: entry.mimeType,
+          });
+        } else {
+          setAtPath(patched, entry.path, serverUrl);
         }
-        if (node != null) {
-          node[entry.path[entry.path.length - 1]] = serverUrl;
+
+        if (entry.kind === 'blob') {
+          await fileStorageService.deleteFileAtPath(entry.localPath);
         }
 
         // Also persist the uploaded file reference in filesPending so the
         // normal file-sync accounting stays consistent.
-        const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
-        const existingPending = await offlineStorage.read<PendingFile[]>(filesPendingKey) ?? [];
-        const alreadyQueued = existingPending.some(f => f.fileName === entry.fileName);
-        if (!alreadyQueued) {
-          await offlineStorage.create(filesPendingKey, [
-            ...existingPending,
-            {
-              taskId: submissionId,
-              originalName: entry.fileName,
-              fileName: entry.fileName,
-              fileType: entry.mimeType,
-            } as PendingFile,
-          ]).catch(() => {});
-        }
+        // const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
+        // const existingPending = await offlineStorage.read<PendingFile[]>(filesPendingKey) ?? [];
+        // const alreadyQueued = existingPending.some(f => f.fileName === entry.fileName);
+        // if (!alreadyQueued) {
+        //   await offlineStorage.create(filesPendingKey, [
+        //     ...existingPending,
+        //     {
+        //       taskId: submissionId,
+        //       originalName: entry.fileName,
+        //       fileName: entry.fileName,
+        //       fileType: entry.mimeType,
+        //     } as PendingFile,
+        //   ]).catch(() => {});
+        // }
       }
     } catch (err) {
       logger.warn(
@@ -553,15 +565,16 @@ async function syncFormEdits(
       // Extract any offline file uploads (data URLs) from the answers and upload
       // them to the server before posting the form evidence, so the submission
       // arrives with real file URLs instead of base64 payloads.
-      const patchedAnswers = await prepareObservationAnswers(
-        edits.answers,
-        formData.submissionId,
-        userId,
-        participantId,
-      );
-      const evidencePayload = patchedAnswers !== edits.answers
-        ? { ...edits, answers: patchedAnswers }
-        : edits;
+      // const patchedAnswers = await prepareObservationAnswers(
+      //   edits.answers,
+      //   formData.submissionId,
+      //   userId,
+      //   participantId,
+      // );
+      const evidencePayload = edits 
+      // patchedAnswers !== edits.answers
+      //   ? { ...edits, answers: patchedAnswers }
+      //   : edits;
 
       await api.post(`${API_ENDPOINTS.UPDATE_OBSERVATION_SUBMISSION}/${formData.submissionId}`, { evidence: evidencePayload });
 

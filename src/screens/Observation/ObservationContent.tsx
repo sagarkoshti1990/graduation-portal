@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Platform } from 'react-native';
 import WebComponentPlayer from '@components/WebComponent/WebComponentPlayer';
 import { Container, Spinner, VStack, Box } from '@ui';
 import { getToken } from '../../services/api';
@@ -15,9 +16,11 @@ import { User } from '@contexts/AuthContext';
 import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
+import fileStorageService from '../../services/fileStorageService';
 import { observationStyles } from './Styles';
 import { CARD_STATUS, ENTITY_TYPE } from '@constants/app.constant';
 import logger from '@utils/logger';
+import { findEmbeddedFiles, makeOfflineFileMetadata, removeFileFromAnsers, setAtPath } from '@utils/helper';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
@@ -373,6 +376,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
     if(answers && submissionId && participantKey) {
       try {
+        Object.values(answers).forEach((answer: any) => {
+          const fileName = removeFileFromAnsers(answer.fileName)
+          const { value } = removeFileFromAnsers(answer.value)
+          answer.fileName = fileName.value 
+          answer.value = value
+        });
+        
         // Save files to storage and add them to the pending files list.
         if(files?.length > 0) { 
           let existing = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(authUser?.id || "", participantKey)) ?? [];
@@ -385,18 +395,31 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
             if (existingTaskFileKeys.has(`${file?.submissionId}:${file.originalName}`)) continue;
             const newFileName = file.storedFile?.key || file.name;
 
+            // Android's per-row SQLite limit can be exceeded by a single
+            // embedded photo/video, so on native the base64 is written to a
+            // private file instead of AsyncStorage; only the local path is
+            // kept in the pending-file metadata. Web is unchanged — it keeps
+            // storing the base64 via offlineStorage (IndexedDB).
+            let localFilePath: string | undefined;
+            let mimeType: string | undefined;
             if (file?.storedFile?.data) {
-              await offlineStorage.create(newFileName, file.storedFile.data);
+              if (Platform.OS !== 'web') {
+                const saved = await fileStorageService.saveBase64File(newFileName, file.storedFile.data);
+                localFilePath = saved?.localPath;
+                mimeType = saved?.mimeType
+              } else {
+                await offlineStorage.create(newFileName, file.storedFile.data);
+              }
             }
-
             newFiles.push({
               submissionId,
               solutionId,
               fieldId: file?.submissionId,
               originalName: file?.originalName,
               fileName: file?.name,
-              fileType: file?.type ?? '',
+              fileType: mimeType ?? file?.type ?? '',
               storageKey: newFileName,
+              ...(localFilePath ? { localFilePath, mimeType } : {}),
             });
           }
           
