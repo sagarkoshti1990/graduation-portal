@@ -596,15 +596,10 @@ const DevelopInterventionPlan: React.FC = () => {
           </Box>
         }
         footerContent={
-          <Box {...(templateStyles.modalFooter as any)}>
-            <Button
-              {...profileStyles.cancelButton}
-              width="$full"
-              sx={{
-                '@md': {
-                  width: 'auto',
-                },
-              }}
+          <VStack {...(templateStyles.modalFooter as any)}>
+            <Button 
+              // @ts-ignore
+              variant={'outlineghost'}
               onPress={() => setIsModalOpen(false)}
             >
               <ButtonText
@@ -615,14 +610,7 @@ const DevelopInterventionPlan: React.FC = () => {
               </ButtonText>
             </Button>
             <Button
-              {...profileStyles.confirmButton}
               variant={'solid'}
-              width="$full"
-              sx={{
-                '@md': {
-                  width: 'auto',
-                },
-              }}
               onPress={handleConfirm}
               isDisabled={
                 !pillarData
@@ -634,14 +622,11 @@ const DevelopInterventionPlan: React.FC = () => {
                   )
               }
             >
-              <ButtonText
-                color={theme.tokens.colors.modalBackground}
-                {...TYPOGRAPHY.button}
-              >
+              <ButtonText>
                 {t('template.categoryModal.confirmButton')}
               </ButtonText>
             </Button>
-          </Box>
+          </VStack>
         }
       //size={isWeb ? 'md' : 'lg'}
       >
