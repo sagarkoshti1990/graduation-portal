@@ -466,16 +466,24 @@ export const mergeTasks = (oldData: any, newData: any) => {
 
       const existingTask = taskMap.get(task._id);
 
-      const childMap = new Map(
+      const childMap: Map<string, any> = new Map(
         existingTask.children.map((child: any) => [child._id, child])
       );
 
       task?.children?.forEach((child: any) => {
-        if (!childMap.has(child._id)) {
+        const existingChild = childMap.get(child._id);
+        // A custom task created offline and then deleted offline before ever
+        // syncing never existed on the server — drop it instead of queueing
+        // a delete for an id the backend has never seen.
+        if (existingChild?._pendingOp === 'create' && child._pendingOp === 'delete') {
+          childMap.delete(child._id);
+          return;
+        }
+        if (!existingChild) {
           childMap.set(child._id, child);
         } else {
           childMap.set(child._id, {
-            ...(childMap.get(child._id) ?? {}),
+            ...existingChild,
             ...child,
           });
         }

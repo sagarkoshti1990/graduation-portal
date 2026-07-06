@@ -645,6 +645,18 @@ async function applyEditsToCachedProject(
   await offlineStorage.create(projectKey, updatedProject).catch(() => {});
 }
 
+/**
+ * Strips the internal `_pendingOp` bookkeeping tag (used only to identify
+ * queued custom-task create/delete operations pre-sync) from the payload
+ * sent to the backend — it is not part of the UPDATE_TASK API contract.
+ */
+function stripPendingOpFields(tasks: any[]): any[] {
+  return tasks.map(({ _pendingOp, children, ...rest }: any) => ({
+    ...rest,
+    ...(children ? { children: stripPendingOpFields(children) } : {}),
+  }));
+}
+
 async function syncTaskEdits(
   userId: string,
   participantId: string,
@@ -698,8 +710,10 @@ async function syncTaskEdits(
       : { ...projectEdits, tasks: tasksToSync };
 
     try {
-      // Send all pending task edits for this project in a single API call
-      await updateTaskAPI(projectId, payload);
+      // Send all pending task edits for this project in a single API call.
+      // Strip internal bookkeeping fields (_pendingOp) before it hits the API.
+      const apiPayload = { ...payload, tasks: stripPendingOpFields(payload.tasks) };
+      await updateTaskAPI(projectId, apiPayload);
       synced += tasksToSync.length;
       onProgress?.(makeProgress('tasks', synced, synced));
       // Merge the uploaded URLs back into the cached project so the local cache

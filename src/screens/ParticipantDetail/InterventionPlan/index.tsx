@@ -13,6 +13,9 @@ import { STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
 import { sortTasksWithChildren } from '@utils/helper';
+import offlineStorage from '../../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   mode,
@@ -26,6 +29,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   const { t } = useLanguage();
   const { user } = useAuth();
   const navigation = useNavigation();
+  const { isOffline } = useOfflineSync();
   const [isEditMode] = useState(true);
   const [addedTasks, setAddedTasks] = useState<Set<string>>(new Set());
   const [projectSortData,setProjectSortData] = useState<ProjectData>();
@@ -51,7 +55,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   );
 
   // Handle task update callback from ProjectPlayer
-  const handleTaskUpdate = (task: Task) => {
+  const handleTaskUpdate = async (task: Task) => {
     if (task.metaInformation?.addedToPlan) {
       setAddedTasks(prev => new Set(prev).add(task._id));
     } else {
@@ -60,6 +64,13 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         next.delete(task._id);
         return next;
       });
+    }
+    const participantId = (participantProfile as any)?.userId ?? ''
+    const projectId = projectSortData?._id || "";
+    const userId = user?.id || "";
+     const cached = await offlineStorage.read(PARTICIPANT_KEYS.project(userId, participantId, projectId));
+    if(!isOffline && cached){
+      offlineStorage.create(PARTICIPANT_KEYS.project(userId, participantId, projectId), projectSortData).catch(() => {});
     }
   };
 

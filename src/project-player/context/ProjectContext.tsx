@@ -357,22 +357,45 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     const needsApi = !!(pillar.children?.length && currentProjectId);
 
     if (needsApi) {
-      const result = await updateTaskAPI(currentProjectId, {
-        tasks: [
+      if (dataService.isNetworkOffline()) {
+        // Offline: queue the create for later sync and persist it into the
+        // offline snapshot immediately so it survives app restart.
+        await dataService.saveTaskEdit(
+          participantId,
+          currentProjectId,
           {
-            _id: pillarId,
-            name: pillar.name,
-            children: [task],
+            tasks: [
+              {
+                _id: pillarId,
+                name: pillar.name,
+                children: [{ ...task, _pendingOp: 'create' }],
+              },
+            ],
           },
-        ],
-      });
-      if (isApiErrorResult(result)) {
-        throw new Error(result.error || 'Failed to add task');
-      }
-      // After online success, reflect the new task in the offline snapshot.
-      if (participantId && offlineKeyPrefix && currentProjectId) {
-        const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
-        updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+          offlineKeyPrefix,
+        );
+        if (participantId && offlineKeyPrefix) {
+          const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
+          updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+        }
+      } else {
+        const result = await updateTaskAPI(currentProjectId, {
+          tasks: [
+            {
+              _id: pillarId,
+              name: pillar.name,
+              children: [task],
+            },
+          ],
+        });
+        if (isApiErrorResult(result)) {
+          throw new Error(result.error || 'Failed to add task');
+        }
+        // After online success, reflect the new task in the offline snapshot.
+        if (participantId && offlineKeyPrefix && currentProjectId) {
+          const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
+          updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+        }
       }
     }
 
@@ -399,22 +422,45 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       );
 
       if (needsApi) {
-        const result = await updateTaskAPI(currentProjectId, {
-          tasks: [
+        if (dataService.isNetworkOffline()) {
+          // Offline: queue the delete for later sync and persist the removal
+          // into the offline snapshot immediately so it survives app restart.
+          await dataService.saveTaskEdit(
+            participantId,
+            currentProjectId,
             {
-              _id: parentId,
-              name: parentName,
-              children: [{ _id: deletedTask._id, isDeleted: true }],
+              tasks: [
+                {
+                  _id: parentId,
+                  name: parentName,
+                  children: [{ _id: deletedTask._id, isDeleted: true, _pendingOp: 'delete' }],
+                },
+              ],
             },
-          ],
-        });
-        if (isApiErrorResult(result)) {
-          throw new Error(result.error || 'Failed to delete task');
-        }
-        // After online success, reflect the deletion in the offline snapshot.
-        if (participantId && offlineKeyPrefix && currentProjectId) {
-          const updatedProject = removeTaskFromProject(prev, taskId);
-          updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+            offlineKeyPrefix,
+          );
+          if (participantId && offlineKeyPrefix) {
+            const updatedProject = removeTaskFromProject(prev, taskId);
+            updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+          }
+        } else {
+          const result = await updateTaskAPI(currentProjectId, {
+            tasks: [
+              {
+                _id: parentId,
+                name: parentName,
+                children: [{ _id: deletedTask._id, isDeleted: true }],
+              },
+            ],
+          });
+          if (isApiErrorResult(result)) {
+            throw new Error(result.error || 'Failed to delete task');
+          }
+          // After online success, reflect the deletion in the offline snapshot.
+          if (participantId && offlineKeyPrefix && currentProjectId) {
+            const updatedProject = removeTaskFromProject(prev, taskId);
+            updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+          }
         }
       }
 

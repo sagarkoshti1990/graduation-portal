@@ -1,3 +1,5 @@
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Button,
@@ -166,11 +168,11 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     }
 
     const newTask: Task = {
-      _id: crypto.randomUUID(),
+      _id: uuidv4(),
       name: taskName,
       description: instructions,
       type: 'simple',
-      externalId: crypto.randomUUID(),
+      externalId: uuidv4(),
       status: TASK_STATUS.TO_DO,
       isCustomTask: true,
       serviceProvider: serviceProvider || undefined,
