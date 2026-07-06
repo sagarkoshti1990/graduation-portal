@@ -53,12 +53,14 @@ interface CheckInsListContentProps {
     id: string;
     solutionId: string;
     submissionNumber: number;
+    entityType?: string;
   }) => void;
   preSelectedSolution?: string;
   participant?: ParticipantData;
   _container?:any
   _dataNotFoundCard?:any
   loderHeight?:string
+  coachId?:string
 }
 
 /**
@@ -74,7 +76,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   participant: propParticipant,
   _container,
   _dataNotFoundCard,
-  loderHeight
+  loderHeight,
+  coachId
 }) => {
   type IconMeta = {
     color?: string;
@@ -219,7 +222,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         setSolutionItem(solutionNameData || null);
         if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
-          userId = user?.id;
+          userId = coachId || user?.id;
         } else {
           userId = participant?.userId;
         }
@@ -227,7 +230,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         // Get observation entities to find observationId and entityId
         const observationData = await getObservationEntities({
           solutionId: selectedSolutionData.solutionId || selectedSolutionData.id,
-          profileData: {},
+          profileData: coachId ? {createdBy: coachId} : {},
         });
         const observationId = observationData?.result?._id;
         if (!observationId) {
@@ -288,7 +291,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         return;
       }
       onNavigateToObservation({
-        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? user?.id : participant.userId,
+        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? coachId || user?.id : participant.userId,
+        entityType:solutionItem?.entityType,
         solutionId: selectedSolution,
         submissionNumber,
       });

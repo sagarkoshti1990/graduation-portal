@@ -25,6 +25,7 @@ interface AssessmentSurveysProps {
   participant: ParticipantData;
   completionPercentage: number;
   isReadOnly?:boolean;
+  coachId?:string;
 }
 
 const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT, STATUS.NOT_ELIGIBLE];
@@ -36,7 +37,8 @@ const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPO
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   participant,
   completionPercentage = 0,
-  isReadOnly
+  isReadOnly,
+  coachId
 }) => {
   const { t } = useLanguage();
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
@@ -152,7 +154,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({
       solutionId,
-      profileData: {},
+      profileData: coachId ? {createdBy: coachId} : {},
     });
     if (
       observationData.result?.entityType === ENTITY_TYPE.PARTICIPANT &&

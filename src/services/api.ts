@@ -16,10 +16,10 @@ import { resetToScreen } from '@utils/navigationRef';
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
   | {
-      env: {
-        [key: string]: string | undefined;
-      };
-    }
+    env: {
+      [key: string]: string | undefined;
+    };
+  }
   | undefined;
 
 const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_TOKEN;
@@ -115,13 +115,13 @@ const buildApiError = (
   const network = isNetworkError(error);
   const apiError = new Error(
     responseData?.message ||
-      (timeout
-        ? 'Request timed out. Please try again.'
-        : network
-          ? 'Network error. Please check your connection.'
-          : statusCode
-            ? `Request failed with status ${statusCode}`
-            : error.message || 'Something went wrong while calling the API.'),
+    (timeout
+      ? 'Request timed out. Please try again.'
+      : network
+        ? 'Network error. Please check your connection.'
+        : statusCode
+          ? `Request failed with status ${statusCode}`
+          : error.message || 'Something went wrong while calling the API.'),
   ) as ApiRequestError;
 
   apiError.name = 'ApiRequestError';
@@ -189,7 +189,6 @@ api.interceptors.request.use(
     try {
       // Skip adding Authorization header for refresh token endpoint
       const isRefreshTokenRequest = config.url?.includes('/account/refresh');
-      
       if (!isRefreshTokenRequest) {
         // Get token from storage (checks both localStorage and sessionStorage on web)
         const token = await getToken();
@@ -211,13 +210,16 @@ api.interceptors.request.use(
       const userData = await offlineStorage.read<any>(STORAGE_KEYS.AUTH_USER);
       const orgCode = userData?.organizations?.[0]?.code;
       if (orgCode && config.headers) {
-        config.headers['organization'] = orgCode;
+        config.headers['orgId'] = orgCode;           // Required by accountCreate & other endpoints
+        config.headers['organization'] = orgCode;    // Keep for backward compatibility
       }
 
-      // Add tenant code header if available (from stored user data)
+      // Add tenant code headers if available (from stored user data)
       const tenantCode = userData?.tenant_code;
       if (tenantCode && config.headers) {
-        config.headers['tenant'] = tenantCode;
+        config.headers['tenantid'] = tenantCode;      // Required by accountCreate
+        config.headers['x-tenant-code'] = tenantCode; // Required by accountCreate
+        config.headers['tenant'] = tenantCode;        // Keep for backward compatibility
       }
       // Log request details (optional - can be removed in production)
       // logger.info(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
@@ -245,8 +247,7 @@ api.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log successful response (optional)
     logger.info(
-      `API Response: ${response.config.method?.toUpperCase()} ${
-        response.config.url
+      `API Response: ${response.config.method?.toUpperCase()} ${response.config.url
       }`,
       {
         status: response.status,
@@ -292,7 +293,7 @@ api.interceptors.response.use(
           try {
             logger.info('Attempting to refresh access token using refresh token');
             logger.info('Refresh token value:', storedRefreshToken.substring(0, 20) + '...');
-            
+
             const refreshResponse = await refreshToken(storedRefreshToken);
             logger.info('Refresh token call completed successfully');
 
@@ -324,12 +325,12 @@ api.interceptors.response.use(
               statusText: refreshError?.response?.statusText,
               url: refreshError?.config?.url,
             });
-            
+
             // Only redirect to logout if refresh token is actually invalid/expired
             // Check if it's a 401 or 403 error (token invalid/expired)
-            const isTokenInvalid = refreshError?.response?.status === 401 || 
-                                   refreshError?.response?.status === 403;
-            
+            const isTokenInvalid = refreshError?.response?.status === 401 ||
+              refreshError?.response?.status === 403;
+
             if (isTokenInvalid) {
               logger.warn(
                 'Refresh token is invalid or expired. Redirecting to logout page.'
@@ -389,8 +390,7 @@ api.interceptors.response.use(
       const data = error.response.data as any;
 
       logger.error(
-        `API Error: ${status} - ${error.config?.method?.toUpperCase()} ${
-          error.config?.url
+        `API Error: ${status} - ${error.config?.method?.toUpperCase()} ${error.config?.url
         }`,
         {
           status,

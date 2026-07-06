@@ -30,7 +30,7 @@ import {
   GRADUATION_READINESS_PROGRESS_THRESHOLD,
   // GRADUATION_READINESS_PROGRESS_THRESHOLD,
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
-import { useAuth, User } from '@contexts/AuthContext';
+import { useAuth, useIsdminPanalAccess, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from 'src/project-player/types/project.types';
 import logger from '@utils/logger';
@@ -62,9 +62,10 @@ type ParticipantDetailRouteProp = RouteProp<{
 
 export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
-  const { user, setNavbarData } = useAuth()
+  const { user, setNavbarData } = useAuth();
+  const isdminPanalAccess = useIsdminPanalAccess();
   const { t } = useLanguage();
-  const { setRefComponent } = useGlobal()
+  const { setRefComponent } = useGlobal();
   // Extract the id parameter from the route
   const participantId = route.params?.id;
   const coachId = route.params?.coachId
@@ -173,7 +174,6 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     const fetchSolutions = async () => {
-      if(coachId) return false;
       // When offline, load solutions from the per-participant downloaded mapping.
       // The global targeted-solutions cache may be empty; the participant mapping
       // is always populated during download and has the correct solutionId/keyword data.
@@ -212,13 +212,13 @@ export default function ParticipantDetail() {
         type: 'observation',
         'filter[keywords]': keywordsString,
       });    // Verify participant completion conditions and perform certificate/graduation actions
-      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string);
+      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string, coachId);
 
       if(participant?.status === STATUS.IN_PROGRESS) {
         const checkIns = solutionsWithEntityStatus.find(item => item?.keywords?.includes(INDIVIDUAL_CHECKIN_KEYWORD))
         if(checkIns?.entity?.submissionsCount >= 1 && checkIns?.entity) {
           const submissionsData = await getObservationSubmissions({
-            observationId:checkIns?._id,
+            observationId:checkIns?.observationId,
             entityId:checkIns?.entity?._id,
             getAnswers:true,
           });
@@ -240,14 +240,14 @@ export default function ParticipantDetail() {
             solutions={solutionsWithEntityStatus}
             observationLogsTitle={'actions.observationLogs'}
             noSolutionsMessage={'logVisit.noSolutions'}
+            canAccessCoachObservations={isdminPanalAccess}
           />
         ) : null})
       }
     }
-    if (setRefComponent && participant && participantId && authUserId && solutions.length === 0 && updatedProgress !== undefined) {
+    if (setRefComponent && participant && participantId && authUserId && solutions.length === 0 && (!participant?.idpProjectId || (participant?.idpProjectId && updatedProgress !== undefined))) {
       fetchSolutions();
-    } else
-    if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
+    } else if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
       const bool = solutions.find((item:any) =>
         item.keywords.some((key:any) => FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.includes(key))
       )
@@ -255,7 +255,7 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess]);
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
@@ -335,20 +335,24 @@ export default function ParticipantDetail() {
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
         coachId={coachId}
+        isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || coachId))}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject === "not_eligible" ? (
           <></>
-        ) : !participant?.onBoardedProjectId && !targetingCriteria ?
-          <TargetingCriteriaCard user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+        ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
+          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
          : showOnboardingProject ? (
           <>
-            <DownloadFormsCard
-              mode={
-                showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
-              }
-            />
+            {/* Hide Download Forms card for dropped out participants */}
+            {showOnboardingProject !== 'dropout' && (
+              <DownloadFormsCard
+                mode={
+                  showOnboardingProject === 'not_enrolled' ? 'edit' : 'read-only'
+                }
+              />
+            )}
             <InterventionPlan
               key={`project-player-${participantId}`}
               participantProfile={participant}
@@ -424,7 +428,7 @@ export default function ParticipantDetail() {
                   <AssessmentSurveys
                     participant={participant as ParticipantData}
                     completionPercentage={updatedProgress || 0}
-                    {...(coachId ? {isReadOnly:true}:{})}
+                    {...(coachId ? {isReadOnly:true, coachId}:{})}
                   />
                 </Box>
               )}

@@ -117,6 +117,7 @@ export interface AdminUserManagementData {
   province: string;
   lastLogin: string;
   extra:any;
+  user_organizations?: any[];
   details: {
     type: 'assigned' | 'progress';
     value: number; // For assigned: count, for progress: percentage

@@ -283,7 +283,7 @@ export const preSignedUrls = async (
 
 export const uploadFiles = async (
   id: string,
-  files: NormalizedFile[]
+  files: File[]
 ): Promise<ApiResponse<any>> => {
   try {
     const response = await preSignedUrls({
@@ -297,7 +297,7 @@ export const uploadFiles = async (
         if (presignedUrl?.url) {
          await fetch(presignedUrl.url, { 
           method: 'PUT',
-          body: file as File,
+          body: file.file ?? file.originalFile as File,
         });
       }
         return {

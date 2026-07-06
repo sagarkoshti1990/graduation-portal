@@ -20,6 +20,7 @@ interface DatePickerProps {
   minimumDate?: Date;
   isOpen?: boolean; // Controlled open state
   onOpenChange?: (isOpen: boolean) => void; // Callback when open state changes
+  iconSize?: number; // Size of the calendar icon
   [key: string]: any; // Allow additional props for styling
 }
 
@@ -38,6 +39,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   minimumDate,
   isOpen: controlledIsOpen,
   onOpenChange,
+  iconSize = 16,
   ...inputProps
 }) => {
   const { t } = useLanguage();
@@ -250,10 +252,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
         style={datePickerStyles.getContainerBoxStyle(Platform.OS) as any}
       >
         <Pressable onPress={handleToggle}>
-          <Box {...datePickerStyles.inputContainer} {...inputProps} data-date-input={Platform.OS === 'web'}>
-            <Input pointerEvents="none">
+          <Box {...datePickerStyles.inputContainer} data-date-input={Platform.OS === 'web'}>
+            <Input pointerEvents="none" {...inputProps}>
               <HStack {...datePickerStyles.inputHStack}>
-                <LucideIcon name="Calendar" size={16} color="$textMutedForeground" />
+                <LucideIcon name="Calendar" size={iconSize} color="$textMutedForeground" />
                 <InputField
                   placeholder={placeholder}
                   value={displayValue}

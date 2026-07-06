@@ -112,6 +112,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     id: string;
     solutionId: string;
     submissionNumber: number;
+    entityType?: string;
   }) => {
     // @ts-ignore
     navigation.navigate('observation' as never, params);
@@ -153,6 +154,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         preSelectedSolution={selectedSolution}
         participant={participant as ParticipantData}
         solutions={solutions}
+        coachId={coachId}
       />
     </Box>
   );
