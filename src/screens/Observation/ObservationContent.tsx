@@ -22,6 +22,7 @@ import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type { ObservationFormData } from '@app-types/offline';
 import { isNetworkOffline } from '@utils/networkStatus';
+import { shouldFetchOnline } from '@utils/helper';
 
 interface ObservationData {
   entityId: string;
@@ -159,9 +160,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       } else {
         numsub = 1;
       }
-
-      if (!observationSolution) {
-        
+      if(observationSolution) {
+        const statusData = shouldFetchOnline(observationSolution.submission,observationSubmissionsLast)
+        if(statusData) {
+          observationSolution = undefined;
+        }
+      }
+      if (!observationSolution) {  
         const entityParticiapnt = entityType === ENTITY_TYPE.LINKAGE_CHAMPION;
         const response = await getObservationSolution({
           observationId,
@@ -170,7 +175,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           evidenceCode:observationSubmissionsLast?.evidencesStatus?.[0]?.code,
           ...(canAccessCoachObservations ? {createdBy: entityParticiapnt ? participant?.id : participant?.hierarchy[0]} : {}),
         });
-        observationSolution = response.result;
+        observationSolution = {...response.result,submission:observationSubmissionsLast};
       }
 
       if(userData) {

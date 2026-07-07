@@ -261,3 +261,39 @@ export const sortTasksWithChildren = (tasks: any[] = []) => {
       return task;
     });
 };
+
+export function shouldFetchOnline(
+  offline: {
+    updatedAt: string;
+    status: string;
+  },
+  online: {
+    updatedAt: string;
+    status: string;
+  },
+): boolean {
+  if(!offline?.updatedAt) {
+    return true;
+  }
+  
+  const offlineTime = new Date(offline?.updatedAt).getTime();
+  const onlineTime = new Date(online?.updatedAt).getTime();
+
+  // Online is newer
+  if (onlineTime > offlineTime) {
+    return true;
+  }
+
+  // Offline is newer
+  if (offlineTime > onlineTime) {
+    return false;
+  }
+
+  // Same timestamp -> compare status
+  // return (
+  //   OBSERVATION_STATUS_PRIORITY[online.status] >
+  //   OBSERVATION_STATUS_PRIORITY[offline.status]
+  // );
+
+  return false;
+}
