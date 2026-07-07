@@ -479,43 +479,37 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                       {phoneField.required ? ' *' : ''}
                     </Text>
 
-                    {/* Combined Input Group */}
-                    <Input
-                      {...styles.createUserFormInput}
-                      isInvalid={!!combinedError}
-                      isDisabled={disabled}
-                      flexDirection="row"
-                      alignItems="center"
-                      paddingLeft={0}
-                    >
+                    {/* Side-by-side Select and Input Group */}
+                    <HStack space="xs" alignItems="center" width="100%">
                       {/* Country Code Select */}
                       <Box width={95} zIndex={1000}>
                         <Select
+                          {...styles.createUserFormSelect}
                           options={options}
                           value={codeValue}
                           onChange={(val: string) => onFieldChange(codeFieldName, val)}
                           placeholder={codeField.placeholder?.fallback ?? '+27'}
                           disabled={disabled}
-                          borderColor="transparent"
-                          bg="transparent"
                           searchable={true}
                         />
                       </Box>
 
-                      {/* Vertical Divider line */}
-                      <Box width={1} bg="$borderColor" height="60%" alignSelf="center" />
-
                       {/* Phone Number Input */}
-                      <FastInputField
-                        placeholder={phoneField.placeholder?.fallback ?? '000 000 000'}
-                        value={phoneValue}
-                        onChangeText={(text: string) => onFieldChange(phoneFieldName, text)}
-                        keyboardType={phoneField.inputProps?.keyboardType ?? 'phone-pad'}
-                        maxLength={phoneField.inputProps?.maxLength ?? 10}
+                      <Input
+                        {...styles.createUserFormInput}
+                        isInvalid={!!combinedError}
+                        isDisabled={disabled}
                         flex={1}
-                        paddingLeft="$3"
-                      />
-                    </Input>
+                      >
+                        <FastInputField
+                          placeholder={phoneField.placeholder?.fallback ?? '000 000 000'}
+                          value={phoneValue}
+                          onChangeText={(text: string) => onFieldChange(phoneFieldName, text)}
+                          keyboardType={phoneField.inputProps?.keyboardType ?? 'phone-pad'}
+                          maxLength={phoneField.inputProps?.maxLength ?? 10}
+                        />
+                      </Input>
+                    </HStack>
 
                     {/* Combined Error message */}
                     {combinedError ? (

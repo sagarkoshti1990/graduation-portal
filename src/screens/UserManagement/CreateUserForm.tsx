@@ -83,7 +83,10 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
     countryCodes: (countryCodes || []).map((c: any) => {
       const name = c.metaInformation?.name || c.name || '';
-      const code = name ? name.split(' ')[0] : (c.metaInformation?.externalId || c.registryDetails?.code || '');
+      const dialCodeMatch = name.match(/\+\d+/);
+      const code = dialCodeMatch 
+        ? dialCodeMatch[0] 
+        : (c.metaInformation?.externalId || c.registryDetails?.code || name);
       return { value: code, label: code };
     }),
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
@@ -118,6 +121,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         username: values.username,
         email: values.email,
         roles: roleTitle,
+        // @ts-ignore - process.env is injected by webpack DefinePlugin on web
         password: process.env.DEFAULT_USER_PASSWORD || 'Password@1234',
       };
 
