@@ -446,6 +446,108 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
             if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag]) {
               return null;
             }
+            // Check if this row has primary phone or alternative phone fields
+            const hasPrimary = row.fields.some(f => f.name === 'countryCode');
+            const hasAlt = row.fields.some(f => f.name === 'alternativePhoneCode');
+
+            if (hasPrimary || hasAlt) {
+              const renderPhoneWidget = (
+                codeFieldName: string,
+                phoneFieldName: string,
+                flexValue: number | undefined
+              ) => {
+                const codeField = row.fields.find(f => f.name === codeFieldName);
+                const phoneField = row.fields.find(f => f.name === phoneFieldName);
+
+                if (!codeField || !phoneField) return null;
+
+                const codeValue = values[codeFieldName] ?? '';
+                const phoneValue = values[phoneFieldName] ?? '';
+
+                const codeError = errors[codeFieldName];
+                const phoneError = errors[phoneFieldName];
+                const combinedError = phoneError || codeError;
+
+                const rawOptions = codeField.optionsSource ? (optionsMap[codeField.optionsSource] ?? []) : [];
+                const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
+
+                return (
+                  <VStack key={phoneFieldName} space="xs" flex={flexValue} width={flexValue ? undefined : '100%'}>
+                    {/* Field label */}
+                    <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                      {t(`admin.users.createUser.${phoneField.label.key}`, phoneField.label.fallback)}
+                      {phoneField.required ? ' *' : ''}
+                    </Text>
+
+                    {/* Combined Input Group */}
+                    <Input
+                      {...styles.createUserFormInput}
+                      isInvalid={!!combinedError}
+                      isDisabled={disabled}
+                      flexDirection="row"
+                      alignItems="center"
+                      paddingLeft={0}
+                    >
+                      {/* Country Code Select */}
+                      <Box width={95} zIndex={1000}>
+                        <Select
+                          options={options}
+                          value={codeValue}
+                          onChange={(val: string) => onFieldChange(codeFieldName, val)}
+                          placeholder={codeField.placeholder?.fallback ?? '+27'}
+                          disabled={disabled}
+                          borderColor="transparent"
+                          bg="transparent"
+                          searchable={true}
+                        />
+                      </Box>
+
+                      {/* Vertical Divider line */}
+                      <Box width={1} bg="$borderColor" height="60%" alignSelf="center" />
+
+                      {/* Phone Number Input */}
+                      <FastInputField
+                        placeholder={phoneField.placeholder?.fallback ?? '000 000 000'}
+                        value={phoneValue}
+                        onChangeText={(text: string) => onFieldChange(phoneFieldName, text)}
+                        keyboardType={phoneField.inputProps?.keyboardType ?? 'phone-pad'}
+                        maxLength={phoneField.inputProps?.maxLength ?? 10}
+                        flex={1}
+                        paddingLeft="$3"
+                      />
+                    </Input>
+
+                    {/* Combined Error message */}
+                    {combinedError ? (
+                      <Text color="$error600" fontSize="$xs">
+                        {combinedError}
+                      </Text>
+                    ) : null}
+                  </VStack>
+                );
+              };
+
+              const widgets = [];
+              if (hasPrimary) {
+                widgets.push({ code: 'countryCode', phone: 'phoneNumber' });
+              }
+              if (hasAlt) {
+                widgets.push({ code: 'alternativePhoneCode', phone: 'alternativePhone' });
+              }
+
+              const isMultiWidget = widgets.length > 1;
+
+              return (
+                <HStack
+                  key={rowIdx}
+                  space="md"
+                  flexDirection={isMobile || !isMultiWidget ? 'column' : 'row'}
+                  width="100%"
+                >
+                  {widgets.map(w => renderPhoneWidget(w.code, w.phone, isMultiWidget ? 1 : undefined))}
+                </HStack>
+              );
+            }
 
             // Determine which fields in this row are visible
             const visibleFields = row.fields.filter(

@@ -103,21 +103,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             ],
           },
           {
-            name: 'username',
-            type: 'text',
-            required: true,
-            label: { key: 'username', fallback: 'Username' },
-            placeholder: { fallback: 'Enter username' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
-              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
-            ],
-          },
-        ],
-      },
-      {
-        fields: [
-          {
             name: 'email',
             type: 'email',
             required: true,
@@ -128,6 +113,21 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'required', message: { key: 'errors.emailRequired', fallback: 'Email address is required' } },
               { rule: 'email', message: { key: 'errors.emailInvalid', fallback: 'Enter a valid email address' } },
+            ],
+          },
+        ],
+      },
+      {
+        fields: [
+          {
+            name: 'username',
+            type: 'text',
+            required: true,
+            label: { key: 'username', fallback: 'Username' },
+            placeholder: { fallback: 'Enter username' },
+            validation: [
+              { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
+              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
             ],
           },
           {
@@ -172,10 +172,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               },
             ],
           },
-        ],
-      },
-      {
-        fields: [
           {
             name: 'alternativePhoneCode',
             type: 'select',
@@ -265,46 +261,17 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       },
 
       {
+        visibleWhen: { flag: 'isSupervisorOrLC' },
         fields: [
           {
-            name: 'password',
-            type: 'password',
+            name: 'employeeId',
+            type: 'text',
             required: true,
-            toggleVisibility: true,
-            visibilityToggleGroup: 'userPassword',
-            label: { key: 'password', fallback: 'Password' },
-            placeholder: { fallback: 'Enter password' },
+            visibleWhen: { flag: 'isSupervisorOrLC' },
+            label: { key: 'employeeId', fallback: 'Employee ID' },
+            placeholder: { key: 'employeeIdPlaceholder', fallback: 'Enter Employee ID' },
             validation: [
-              {
-                rule: 'minLength',
-                value: 8,
-                message: {
-                  key: 'errors.passwordMinLength',
-                  fallback: 'Password must be at least 8 characters long',
-                },
-              },
-              {
-                rule: 'pattern',
-                value: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#^()_+\\-=[\\]{};:\'",.<>/?\\\\|`~]).+$',
-                message: {
-                  key: 'errors.passwordInvalid',
-                  fallback:
-                    'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
-                },
-              },
-            ],
-          },
-          {
-            name: 'confirmPassword',
-            type: 'password',
-            required: true,
-            toggleVisibility: true,
-            visibilityToggleGroup: 'userPassword',
-            label: { key: 'confirmPassword', fallback: 'Confirm Password' },
-            placeholder: { fallback: 'Confirm password' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.confirmPasswordRequired', fallback: 'Please confirm the password' } },
-              { rule: 'matchField', value: 'password', message: { key: 'errors.passwordMismatch', fallback: 'Passwords do not match' } },
+              { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
             ],
           },
         ],
@@ -334,22 +301,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               { rule: 'required', message: { key: 'errors.positionRequired', fallback: 'Position is required' } },
             ],
           },
-        ],
-      },
-      {
-        fields: [
-          {
-            name: 'employeeId',
-            type: 'text',
-            required: true,
-            visibleWhen: { flag: 'isSupervisorOrLC' },
-            label: { key: 'employeeId', fallback: 'Employee ID' },
-            placeholder: { key: 'employeeIdPlaceholder', fallback: 'Enter Employee ID' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
-            ],
-          },
-
         ],
       },
     ],

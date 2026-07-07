@@ -6,7 +6,6 @@ import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
 import { createUser, getSitesByProvince } from '../../services/usersService';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
-import { COUNTRY_CODES } from '@constants/COUNTRY_CODES';
 
 interface CreateUserFormProps {
   isOpen: boolean;
@@ -24,8 +23,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   t,
 }) => {
   const { showAlert } = useAlert();
-  const { roles, provinces, genders, organisations, positions } = useUserManagementFilters({});
-  
+  const { roles, provinces, genders, organisations, positions, countryCodes } = useUserManagementFilters({});
   const initialValues = useMemo(() => {
     const vals: Record<string, string> = {};
     CREATE_USER_FORM_SCHEMA.forEach(section => {
@@ -78,13 +76,17 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     roles: roles
       .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
       .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
-    genders: genders.map((g: any) => ({ value: g._id, label: g.name })),
-    provinces: provinces.map((p: any) => ({ value: p._id, label: p.name })),
-    sites: formSites.map((s: any) => ({ value: s._id, label: s.name })),
-    organisations: organisations.map((o: any) => ({ value: o._id, label: o.name })),
-    positions: positions.map((p: any) => ({ value: p._id, label: p.name })),
-    countryCodes: COUNTRY_CODES.map((c: any) => ({ value: c.value ?? c.dial_code ?? c, label: c.label ?? c.name ?? c })),
-  }), [roles, genders, provinces, formSites, organisations, positions]);
+    genders: genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name })),
+    provinces: provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
+    sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
+    organisations: organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name })),
+    positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
+    countryCodes: (countryCodes || []).map((c: any) => {
+      const name = c.metaInformation?.name || c.name || '';
+      const code = name ? name.split(' ')[0] : (c.metaInformation?.externalId || c.registryDetails?.code || '');
+      return { value: code, label: code };
+    }),
+  }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues(prev => {
@@ -116,7 +118,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         username: values.username,
         email: values.email,
         roles: roleTitle,
-        password: values.password,
+        password: process.env.DEFAULT_USER_PASSWORD || 'Password@1234',
       };
 
       if (values.dob) payload.dob = values.dob.replace(/[\/\-]/g, '');
