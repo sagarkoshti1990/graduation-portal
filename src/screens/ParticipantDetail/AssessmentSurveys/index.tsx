@@ -135,9 +135,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
             }
           })
         );
-        dataNew.push(onBoardingSolutionDetails);
-        const sortedData = sortByNestedOrder(dataNew, 'name', solutionNamesOrder);
-        setSolutions(sortedData.filter((item): item is AssessmentSurveyCardData => item !== null));
+        if (onBoardingSolutionDetails) {
+          dataNew.push(onBoardingSolutionDetails);
+        }
+        const filteredData = dataNew.filter((item): item is AssessmentSurveyCardData => item !== null && item !== undefined);
+        const sortedData = sortByNestedOrder(filteredData, 'name', solutionNamesOrder);
+        setSolutions(sortedData);
       } catch (error) {
         logger.error('Error fetching solutions:', error);
         setSolutions([]);
