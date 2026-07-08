@@ -321,7 +321,7 @@ export const useIsSupervisor = (): boolean => {
 
   return useMemo(() => {
     // Check mapped role first
-    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
+    if (currentUserRole?.toLowerCase() === 'supervisor') {
       return true;
     }
     
@@ -350,7 +350,7 @@ export const useIsdminPanalAccess = (): boolean => {
 
   return useMemo(() => {
     // Check mapped role first
-    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
+    if (currentUserRole?.toLowerCase() === 'supervisor') {
       return true;
     }
     

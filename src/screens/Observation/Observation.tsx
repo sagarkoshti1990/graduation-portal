@@ -22,6 +22,8 @@ type ObservationRouteParams = {
   submissionNumber?: number;
   taskId?: string;
   entityType?: string;
+  returnTo?: string;
+  returnParams?: string;
 };
 
 /**
@@ -38,8 +40,9 @@ type ObservationRouteProp = RouteProp<{
  */
 const Observation: React.FC = () => {
   const route = useRoute<ObservationRouteProp>();
-  const navigation = useNavigation();
-  
+  const navigation = useNavigation<any>();
+  const { returnTo, returnParams } = route.params || {};
+
   // Use props if provided, otherwise fall back to route params
   const routeParams = route.params as ObservationRouteParams | undefined;
   const id = routeParams?.id || '';
@@ -60,6 +63,17 @@ const Observation: React.FC = () => {
       navigation.navigate(routeParams.redirectUrl);
       return;
     }
+    if (returnTo) {
+      let parsedParams;
+      try {
+        parsedParams = returnParams ? JSON.parse(returnParams) : undefined;
+      } catch (error) {
+        console.error('Failed to parse returnParams:', error);
+      }
+      navigation.replace(returnTo, parsedParams);
+      return false;
+    }
+
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
     } else {

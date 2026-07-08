@@ -268,11 +268,8 @@ const ActionsColumn: React.FC<{
         onDeactivate?.(user);
         break;
       case 'view-progress':
-        const coachId = user.extra?.hierarchy?.find((item:any) => item.level === 0)?.id
-        if(coachId) {          
-          // @ts-ignore
-          navigation.push('participant-detail', { id: user?.id,coachId,redirectUrl:"user-management" })
-        }
+        // @ts-ignore
+        navigation.push('participant-detail', { id: user?.id });
         break;
       default:
         console.log('Action:', key, 'for user:', user.id);
