@@ -9,7 +9,6 @@ import {
   ButtonText,
   ButtonIcon,
   Spinner,
-  Pressable,
 } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -25,58 +24,13 @@ import { STATUS } from '@constants/app.constant';
 import type { DownloadStatus, DownloadModuleKey } from '@app-types/offline';
 import dataService from '../../services/dataService';
 import { ProjectData } from '../../project-player/types';
+import { StepState, StepRow, CheckRow, buildStepKeys, MODULE_LABEL } from './shared';
 
 interface DownloadConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   participantId: string;
   onSuccess?: () => void;
-}
-
-// Maps every DownloadModuleKey to its i18n label key
-const MODULE_LABEL: Record<DownloadModuleKey, string> = {
-  onboarding:                   'actions.downloadOnboarding',
-  participant:                  'actions.downloadParticipant',
-  project:                      'actions.downloadProject',
-  tasks:                        'actions.downloadProject',
-  'observation:logVisit':       'actions.downloadLogVisit',
-  'observation:householdProfile':'actions.downloadHouseholdProfile',
-  'observation:individualVisit':'actions.downloadIndividualVisit',
-  'observation:midline':        'actions.downloadMidline',
-  'observation:interventionPlan':'actions.downloadInterventionPlan',
-  'observation:endline':        'actions.downloadEndline',
-};
-
-// Download order matches the pipeline in downloadService.
-// 'onboarding' is always first when present (automatic, not user-selected).
-const DOWNLOAD_ORDER: DownloadModuleKey[] = [
-  'onboarding',
-  'participant',
-  'project',
-  'observation:logVisit',
-  'observation:householdProfile',
-  'observation:individualVisit',
-  'observation:midline',
-  'observation:interventionPlan',
-  'observation:endline',
-];
-
-type StepState = 'pending' | 'loading' | 'completed' | 'failed';
-
-/**
- * Build the ordered step keys that will actually appear in the progress UI.
- * `needsOnboarding` includes the automatic 'onboarding' step (not user-selected).
- */
-function buildStepKeys(selected: Set<string>, needsOnboarding: boolean): DownloadModuleKey[] {
-  return DOWNLOAD_ORDER.filter(key => {
-    if (key === 'onboarding') return needsOnboarding;
-    if (key === 'tasks') return false; // always bundled with project, never shown separately
-    if (key === 'participant') return selected.has('participant');
-    if (key === 'project') return selected.has('project');
-    // Observation keys: selected set uses short keys like 'logVisit'
-    const short = key.replace('observation:', '');
-    return selected.has(short);
-  });
 }
 
 const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
@@ -463,78 +417,6 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
         )}
       </VStack>
     </Modal>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Step row — shows PENDING / LOADING / COMPLETED / FAILED state per module
-// ---------------------------------------------------------------------------
-
-interface StepRowProps {
-  labelKey: string;
-  state: StepState;
-}
-
-const StepRow: React.FC<StepRowProps> = ({ labelKey, state }) => {
-  const { t } = useLanguage();
-
-  const icon = state === 'completed'
-    ? <LucideIcon name="CircleCheck" size={16} color="$success600" />
-    : state === 'failed'
-    ? <LucideIcon name="XCircle" size={16} color="$error500" />
-    : state === 'loading'
-    ? <Spinner size="small" color="$primary500" />
-    : <Box width={16} height={16} borderRadius="$full" borderWidth={1} borderColor="$borderLight300" />;
-
-  const textColor = state === 'completed'
-    ? '$textPrimary'
-    : state === 'failed'
-    ? '$error600'
-    : state === 'loading'
-    ? '$primary600'
-    : '$textMutedForeground';
-
-  return (
-    <HStack space="sm" alignItems="center" py="$0.5">
-      {icon}
-      <Text fontSize="$sm" color={textColor} flex={1}>
-        {t(labelKey)}
-      </Text>
-    </HStack>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Small checkbox row
-// ---------------------------------------------------------------------------
-interface CheckRowProps {
-  labelKey: string;
-  checked: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-  indented?: boolean;
-}
-
-const CheckRow: React.FC<CheckRowProps> = ({ labelKey, checked, onToggle, disabled, indented }) => {
-  const { t } = useLanguage();
-  return (
-    <Pressable onPress={disabled ? undefined : onToggle} opacity={disabled ? 0.5 : 1}>
-      <HStack space="sm" alignItems="center" pl={indented ? '$4' : '$0'}>
-        <Box
-          width={18}
-          height={18}
-          borderRadius="$sm"
-          borderWidth={2}
-          borderColor={checked ? '$primary500' : '$borderLight300'}
-          backgroundColor={checked ? '$primary500' : 'transparent'}
-          alignItems="center"
-          justifyContent="center"
-        >
-          {checked && <LucideIcon name="Check" size={12} color="white" />}
-        </Box>
-        <Text fontSize="$sm" color="$textPrimary">{t(labelKey)}</Text>
-      </HStack>
-    </Pressable>
   );
 };
 

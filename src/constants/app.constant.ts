@@ -13,6 +13,9 @@ export const STATUS = {
 
 export const ALLOWOFFLINESTATUS = [STATUS.NOT_ONBOARDED,STATUS.IN_PROGRESS];
 
+// Maximum number of participants that can be selected at once for bulk offline download.
+export const MAX_BULK_OFFLINE_DOWNLOAD = 10;
+
 export const USER_STATUS = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',

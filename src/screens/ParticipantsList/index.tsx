@@ -13,6 +13,10 @@ import {
   ButtonIcon,
   ButtonText,
   useAlert,
+  Checkbox,
+  CheckboxIndicator,
+  CheckboxIcon,
+  CheckIcon,
 } from '@ui';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import SearchBar from '@components/SearchBar';
@@ -23,7 +27,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import dataService from '../../services/dataService';
 import type { ParticipantOverview } from '@app-types/participant';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, ALLOWOFFLINESTATUS, MAX_BULK_OFFLINE_DOWNLOAD } from '@constants/app.constant';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
@@ -35,6 +39,7 @@ import { PAGE_SIZE_OPTIONS } from '@constants/USER_MANAGEMENT';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import BulkDownloadModal from '@components/BulkDownloadModal';
 
 // Status value type (values of STATUS object) - used for API filter + comparisons
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -63,10 +68,11 @@ const overviewToStatusMap = {
  */
 const ParticipantsList: React.FC = () => {
   const { t } = useLanguage();
-  const { isMobile } = usePlatform();
+  const { isMobile, isWeb } = usePlatform();
   const { user } = useAuth();
   const { isOffline } = useOfflineSync();
   const navigation = useNavigation();
+  const { showAlert } = useAlert();
 
   // Set document title
   useDocumentTitle(t('lc.pageTitle.participants'));
@@ -84,6 +90,13 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
+
+  // Bulk offline download — selection mode state. Full participant row objects
+  // are kept (not just IDs) so the selection survives page/search/status changes,
+  // mirroring the Map<string, item> pattern already used in UserAvatarCard.
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<Map<string, Participant>>(new Map());
+  const [isBulkDownloadModalOpen, setIsBulkDownloadModalOpen] = useState(false);
 
   // Load pageSize from isOffline storage on mount
   useEffect(() => {
@@ -237,21 +250,144 @@ const ParticipantsList: React.FC = () => {
     }
   }, []);
 
+  // Toggle one participant's bulk-download selection, enforcing MAX_BULK_OFFLINE_DOWNLOAD.
+  const toggleSelectParticipant = useCallback((participant: Participant) => {
+    setSelectedParticipants(prev => {
+      const next = new Map(prev);
+      if (next.has(participant.userId)) {
+        next.delete(participant.userId);
+        return next;
+      }
+      if (next.size >= MAX_BULK_OFFLINE_DOWNLOAD) {
+        showAlert('error', t('participants.maxBulkSelectionReached', { max: MAX_BULK_OFFLINE_DOWNLOAD }));
+        return prev;
+      }
+      next.set(participant.userId, participant);
+      return next;
+    });
+  }, [showAlert, t]);
+
   const handleRowClick = useCallback(
     (participant: Participant) => {
+      if (isSelectionMode) {
+        if (ALLOWOFFLINESTATUS.includes(participant.status as string)) {
+          toggleSelectParticipant(participant);
+        }
+        return;
+      }
       // @ts-ignore
       navigation.navigate('participant-detail', {
         id: participant.userId,
       });
     },
-    [navigation],
+    [navigation, isSelectionMode, toggleSelectParticipant],
   );
 
   const handleDropoutSuccess = useCallback(() => {
     // Refetch to sync overview counts + ensure inactive Dropped Out list includes participant
     setRefetchKey((k) => k + 1);
   }, []);
-  
+
+  // Bulk offline download — participants on the current page eligible for download,
+  // mirroring the same ALLOWOFFLINESTATUS gate used by the single-row "Download Offline" action.
+  const eligibleOnPage = useMemo(
+    () => participants.filter(p => ALLOWOFFLINESTATUS.includes(p.status as string)),
+    [participants],
+  );
+  const selectedOnPageCount = useMemo(
+    () => eligibleOnPage.filter(p => selectedParticipants.has(p.userId)).length,
+    [eligibleOnPage, selectedParticipants],
+  );
+  const allOnPageSelected = eligibleOnPage.length > 0 && selectedOnPageCount === eligibleOnPage.length;
+
+  const toggleSelectAllOnPage = useCallback(() => {
+    setSelectedParticipants(prev => {
+      const next = new Map(prev);
+      if (allOnPageSelected) {
+        eligibleOnPage.forEach(p => next.delete(p.userId));
+        return next;
+      }
+      let truncated = false;
+      for (const p of eligibleOnPage) {
+        if (next.has(p.userId)) continue;
+        if (next.size >= MAX_BULK_OFFLINE_DOWNLOAD) {
+          truncated = true;
+          break;
+        }
+        next.set(p.userId, p);
+      }
+      if (truncated) {
+        showAlert('error', t('participants.maxBulkSelectionReached', { max: MAX_BULK_OFFLINE_DOWNLOAD }));
+      }
+      return next;
+    });
+  }, [allOnPageSelected, eligibleOnPage, showAlert, t]);
+
+  const handleEnterSelectionMode = useCallback(() => {
+    setIsSelectionMode(true);
+    setSelectedParticipants(new Map());
+  }, []);
+
+  const handleCancelSelection = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedParticipants(new Map());
+  }, []);
+
+  const handleBulkDownloadClose = useCallback(() => {
+    setIsBulkDownloadModalOpen(false);
+    setIsSelectionMode(false);
+    setSelectedParticipants(new Map());
+  }, []);
+
+  const handleBulkDownloadSuccess = useCallback(() => {
+    setRefetchKey((k) => k + 1);
+  }, []);
+
+  // Prepend a selection checkbox to the "name" column's render when selection
+  // mode is active — reuses the existing checkbox pattern (UserAvatarCard) and
+  // DataTable's column/render extensibility instead of a new selection mechanism.
+  const tableColumns = useMemo(() => {
+    const baseColumns = getParticipantsColumns(activeStatus || undefined, {
+      onDropoutSuccess: handleDropoutSuccess,
+    });
+    if (!isSelectionMode) return baseColumns;
+
+    return baseColumns.map(col => {
+      if (col.key !== 'name') return col;
+      const originalRender = col.render;
+      return {
+        ...col,
+        render: (participant: Participant) => {
+          const eligible = ALLOWOFFLINESTATUS.includes(participant.status as string);
+          return (
+            <HStack space="sm" alignItems="center">
+              {eligible ? (
+                <Pressable
+                  onPress={() => {}}
+                  $web-onClick={(e: any) => e?.stopPropagation?.()}
+                  $web-onMouseDown={(e: any) => e?.stopPropagation?.()}
+                >
+                  <Checkbox
+                    value={participant.userId}
+                    isChecked={selectedParticipants.has(participant.userId)}
+                    onChange={() => toggleSelectParticipant(participant)}
+                  >
+                    <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                      <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+                    </CheckboxIndicator>
+                  </Checkbox>
+                </Pressable>
+              ) : (
+                <Box width={18} height={18} />
+              )}
+              {originalRender ? originalRender(participant) : <Text>{participant.name}</Text>}
+            </HStack>
+          );
+        },
+      };
+    });
+  }, [activeStatus, handleDropoutSuccess, isSelectionMode, selectedParticipants, toggleSelectParticipant]);
+
   return (
     <Box {...styles.mainContainer}>
       <ScrollView {...styles.scrollView}>
@@ -283,7 +419,53 @@ const ParticipantsList: React.FC = () => {
                   <GroupCheckInsButton />
                 </Box>
               )}
+              {!isOffline && !isWeb && !isSelectionMode && (
+                <Box {...styles.buttonContainer}>
+                  {/* @ts-ignore */}
+                  <Button variant="outlineghost" size="sm" onPress={handleEnterSelectionMode}>
+                    <ButtonIcon as={LucideIcon} name="ListChecks" mr="$2" />
+                    <ButtonText>{t('participants.bulkDownload')}</ButtonText>
+                  </Button>
+                </Box>
+              )}
             </HStack>
+
+            {/* Bulk download selection toolbar — shown while selection mode is active */}
+            {isSelectionMode && (
+              <HStack {...styles.searchFilterHStack} flexWrap="wrap">
+                <Pressable onPress={toggleSelectAllOnPage}>
+                  <HStack space="xs" alignItems="center">
+                    <Checkbox isChecked={allOnPageSelected} onChange={toggleSelectAllOnPage} value="select-all-on-page">
+                      <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                        <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+                      </CheckboxIndicator>
+                    </Checkbox>
+                    <Text fontSize="$sm" color="$textPrimary">{t('participants.selectAllOnPage')}</Text>
+                  </HStack>
+                </Pressable>
+
+                <Text fontSize="$sm" color="$textMutedForeground">
+                  {t('participants.selectedCount', { count: selectedParticipants.size, max: MAX_BULK_OFFLINE_DOWNLOAD })}
+                </Text>
+
+                {/* @ts-ignore */}
+                <Button variant="outlineghost" size="sm" onPress={handleCancelSelection}>
+                  <ButtonText>{t('participants.cancelSelection')}</ButtonText>
+                </Button>
+
+                <Button
+                  variant="solid"
+                  size="sm"
+                  isDisabled={selectedParticipants.size === 0}
+                  onPress={() => setIsBulkDownloadModalOpen(true)}
+                >
+                  <ButtonIcon as={LucideIcon} name="Download" mr="$2" />
+                  <ButtonText>
+                    {t('participants.downloadSelected', { count: selectedParticipants.size })}
+                  </ButtonText>
+                </Button>
+              </HStack>
+            )}
 
             {/* Status Filter Bar - Desktop: Filter buttons, Mobile: Dropdown */}
             {isMobile ? (
@@ -340,9 +522,7 @@ const ParticipantsList: React.FC = () => {
             {/* Participants Table */}
             <DataTable
               data={participants}
-              columns={getParticipantsColumns(activeStatus || undefined, {
-                onDropoutSuccess: handleDropoutSuccess,
-              })}
+              columns={tableColumns}
               getRowKey={participant => participant.userId}
               onRowClick={handleRowClick}
               isLoading={isLoading}
@@ -365,6 +545,13 @@ const ParticipantsList: React.FC = () => {
           </VStack>
         </Container>
       </ScrollView>
+
+      <BulkDownloadModal
+        isOpen={isBulkDownloadModalOpen}
+        onClose={handleBulkDownloadClose}
+        participants={Array.from(selectedParticipants.values())}
+        onSuccess={handleBulkDownloadSuccess}
+      />
     </Box>
   );
 };

@@ -2014,7 +2014,13 @@
     "groupCheckIns": "Group Check-ins",
     "groupCheckInsNoSolutions": "No group check-in solutions found.",
     "fetchSolutionsError": "Could not fetch solutions. Try again.",
-    "selectStatus": "Select Status"
+    "selectStatus": "Select Status",
+    "bulkDownload": "Bulk Download",
+    "cancelSelection": "Cancel",
+    "downloadSelected": "Download Selected ({{count}})",
+    "selectedCount": "{{count}}/{{max}} selected",
+    "selectAllOnPage": "Select all on this page",
+    "maxBulkSelectionReached": "You can select up to {{max}} participants at a time."
   },
   "table": {
     "showing": "Showing {{start}} to {{end}} of {{total}} entries",
@@ -2080,7 +2086,19 @@
     "syncOffline": "Sync Changes",
     "syncSuccess": "Participant data synced successfully.",
     "syncPartial": "Sync completed with some errors.",
-    "syncError": "Sync failed. Please try again."
+    "syncError": "Sync failed. Please try again.",
+    "bulkDownloadHint": "Choose what to download — this selection applies to every selected participant.",
+    "bulkDownloadInProgress": "Downloading participants…",
+    "bulkDownloadPending": "Pending",
+    "bulkDownloadDownloading": "Downloading…",
+    "bulkDownloadCompleted": "Completed",
+    "bulkDownloadFailed": "Failed",
+    "bulkDownloadSummary": "Bulk download finished",
+    "bulkDownloadParticipantCount": "{{count}} participants selected",
+    "bulkDownloadTotalSelected": "Total Selected",
+    "bulkDownloadSuccessCount": "Downloaded Successfully",
+    "bulkDownloadFailedCount": "Failed",
+    "reDownloadFailed": "Re-download Failed"
   },
   "logVisit": {
     "noSolutions": "No solutions found",
