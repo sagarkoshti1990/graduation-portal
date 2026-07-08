@@ -87,7 +87,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
       solutionId: card?.solutionId || card?.id,
       ...(submissionNumber ? {submissionNumber} : {}),
       returnTo: route.name,
-      returnParams: JSON.stringify(route.params),
+      returnParams: JSON.stringify(route.params || {}),
     });
   };
 

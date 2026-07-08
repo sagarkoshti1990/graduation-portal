@@ -136,7 +136,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({
       solutionId,
-      profileData: canAccessAdmin ? {createdBy: participant?.hierarchy[0]} : {},
+      profileData: canAccessAdmin ? {createdBy: participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id} : {},
     });
     if (
       observationData.result?.entityType === ENTITY_TYPE.PARTICIPANT &&
