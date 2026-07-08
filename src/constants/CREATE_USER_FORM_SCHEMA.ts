@@ -11,13 +11,13 @@
 
 export interface ValidationRule {
   rule:
-  | 'required'
-  | 'email'
-  | 'minLength'
-  | 'maxLength'
-  | 'pattern'
-  | 'matchField'
-  | 'dateNotInFuture';
+    | 'required'
+    | 'email'
+    | 'minLength'
+    | 'maxLength'
+    | 'pattern'
+    | 'matchField'
+    | 'dateNotInFuture';
   /** Numeric or string payload depending on rule (e.g. minLength value, pattern string, field name) */
   value?: number | string;
   message: { key: string; fallback: string };
