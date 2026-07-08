@@ -580,14 +580,14 @@ export const getCountryCodesList = async (): Promise<ProvinceEntity[]> => {
     let entityTypes = await ensureEntityTypes();
     // Find the country code entity type key
     let countryKey = Object.keys(entityTypes || {}).find(
-      k => k.toLowerCase() === 'alternative_phone_code'
+      k => k.toLowerCase() === 'country_code'
     );
 
     // If key not found, force a refresh from the server to bypass stale localStorage cache
     if (!countryKey) {
       entityTypes = await ensureEntityTypes(true);
       countryKey = Object.keys(entityTypes || {}).find(
-        k => k.toLowerCase() === 'alternative_phone_code'
+        k => k.toLowerCase() === 'country_code'
       );
     }
 

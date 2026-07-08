@@ -11,13 +11,13 @@
 
 export interface ValidationRule {
   rule:
-    | 'required'
-    | 'email'
-    | 'minLength'
-    | 'maxLength'
-    | 'pattern'
-    | 'matchField'
-    | 'dateNotInFuture';
+  | 'required'
+  | 'email'
+  | 'minLength'
+  | 'maxLength'
+  | 'pattern'
+  | 'matchField'
+  | 'dateNotInFuture';
   /** Numeric or string payload depending on rule (e.g. minLength value, pattern string, field name) */
   value?: number | string;
   message: { key: string; fallback: string };
@@ -33,8 +33,8 @@ export interface DisabledWhenCondition {
 }
 
 export interface FormField {
-  name: string;
-  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea';
+  name?: string;
+  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea' | 'note' | 'group';
   required: boolean;
   label: { key: string; fallback: string };
   placeholder?: { key?: string; fallback: string };
@@ -64,6 +64,7 @@ export interface FormField {
   visibilityToggleGroup?: string;
   validation?: ValidationRule[];
   placeholderWhenReady?: { key: string; fallback: string };
+  fields?: FormField[];
 }
 
 export interface FormRow {
@@ -149,50 +150,64 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       {
         fields: [
           {
-            name: 'countryCode',
-            type: 'select',
-            required: false,
-            label: { key: 'countryCode', fallback: 'Country Code' },
-            placeholder: { fallback: '+27' },
-            optionsSource: 'countryCodes',
-            searchable: true,
-          },
-          {
-            name: 'phoneNumber',
-            type: 'tel',
+            type: 'group',
             required: false,
             label: { key: 'phoneNumber', fallback: 'Phone Number' },
-            placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-            inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
-            validation: [
+            fields: [
               {
-                rule: 'pattern',
-                value: '^[0-9]{10}$',
-                message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                name: 'countryCode',
+                type: 'select',
+                required: false,
+                label: { key: 'countryCode', fallback: 'Country Code' },
+                placeholder: { fallback: '+27' },
+                optionsSource: 'countryCodes',
+                searchable: true,
+              },
+              {
+                name: 'phoneNumber',
+                type: 'tel',
+                required: false,
+                label: { key: 'phoneNumber', fallback: 'Phone Number' },
+                placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                validation: [
+                  {
+                    rule: 'pattern',
+                    value: '^[0-9]{10}$',
+                    message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                  },
+                ],
               },
             ],
           },
           {
-            name: 'alternativePhoneCode',
-            type: 'select',
+            type: 'group',
             required: false,
-            label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
-            placeholder: { fallback: '+27' },
-            optionsSource: 'countryCodes',
-            searchable: true,
-          },
-          {
-            name: 'alternativePhone',
-            type: 'tel',
-            required: false,
-            label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
-            placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
-            inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
-            validation: [
+            label: { key: 'alternativePhone', fallback: 'Alt Phone Number' },
+            fields: [
               {
-                rule: 'pattern',
-                value: '^[0-9]{10}$',
-                message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                name: 'alternativePhoneCode',
+                type: 'select',
+                required: false,
+                label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
+                placeholder: { fallback: '+27' },
+                optionsSource: 'countryCodes',
+                searchable: true,
+              },
+              {
+                name: 'alternativePhone',
+                type: 'tel',
+                required: false,
+                label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
+                placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                validation: [
+                  {
+                    rule: 'pattern',
+                    value: '^[0-9]{10}$',
+                    message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                  },
+                ],
               },
             ],
           },
@@ -346,6 +361,20 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
             ],
+          },
+        ],
+      },
+      {
+        fields: [
+          {
+            name: 'tempPasswordNote',
+            type: 'note',
+            required: false,
+            icon: 'Info',
+            label: {
+              key: 'tempPasswordNote',
+              fallback: 'A temporary password will be generated for the account. The user must reset this password before they can log in for the first time.',
+            },
           },
         ],
       },

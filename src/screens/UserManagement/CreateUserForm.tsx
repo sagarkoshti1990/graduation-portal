@@ -81,14 +81,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
     organisations: organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name })),
     positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
-    countryCodes: (countryCodes || []).map((c: any) => {
-      const name = c.metaInformation?.name || c.name || '';
-      const dialCodeMatch = name.match(/\+\d+/);
-      const code = dialCodeMatch 
-        ? dialCodeMatch[0] 
-        : (c.metaInformation?.externalId || c.registryDetails?.code || name);
-      return { value: code, label: code };
-    }),
+    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {

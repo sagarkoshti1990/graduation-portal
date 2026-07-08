@@ -231,6 +231,7 @@ interface FieldRendererProps {
   field: FormField;
   value: string;
   error?: string;
+  errors: Record<string, string>;
   onChange: (name: string, value: string) => void;
   disabled: boolean;
   optionsMap: OptionsMap;
@@ -248,6 +249,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   value,
   error,
+  errors,
   onChange,
   disabled,
   optionsMap,
@@ -258,6 +260,98 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   toggleVisibilityGroup,
   autoFocusRef,
 }) => {
+  // ── Group ───────────────────────────────────────────────────────────────────
+  if (field.type === 'group') {
+    const subFields = field.fields || [];
+    if (subFields.length === 0) return null;
+
+    const combinedError = subFields.map(sf => errors[sf.name!]).find(Boolean);
+
+    return (
+      <HStack
+        {...styles.createUserFormInput}
+        isInvalid={!!combinedError}
+        isDisabled={disabled}
+        alignItems="center"
+        paddingLeft={0}
+        height={40}
+        width="100%"
+      >
+        {subFields.map((subField, idx) => {
+          const subFieldName = subField.name!;
+          const subValue = values[subFieldName] ?? '';
+          const subError = errors[subFieldName];
+
+          // Options for select subfields
+          const rawOptions = subField.optionsSource ? (optionsMap[subField.optionsSource] ?? []) : [];
+          const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
+
+          return (
+            <React.Fragment key={subFieldName}>
+              {idx > 0 && (
+                <Box width={1} bg="$borderColor" height="60%" alignSelf="center" />
+              )}
+              {subField.type === 'select' ? (
+                <Box width={95} zIndex={1000}>
+                  <Select
+                    options={options}
+                    value={subValue}
+                    onChange={(val: string) => onChange(subFieldName, val)}
+                    placeholder={subField.placeholder?.fallback ?? '+27'}
+                    disabled={disabled}
+                    borderColor="transparent"
+                    bg="transparent"
+                    searchable={subField.searchable ?? true}
+                  />
+                </Box>
+              ) : (
+                <Input
+                  variant="outline"
+                  size="sm"
+                  borderColor="transparent"
+                  bg="transparent"
+                  isInvalid={!!subError}
+                  isDisabled={disabled}
+                  flex={1}
+                >
+                  <FastInputField
+                    placeholder={subField.placeholder?.fallback ?? ''}
+                    value={subValue}
+                    onChangeText={(text: string) => onChange(subFieldName, text)}
+                    keyboardType={subField.inputProps?.keyboardType ?? 'default'}
+                    maxLength={subField.inputProps?.maxLength}
+                  />
+                </Input>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </HStack>
+    );
+  }
+  // ── Note ────────────────────────────────────────────────────────────────────
+  if (field.type === 'note') {
+    return (
+      <HStack
+        space="sm"
+        alignItems="flex-start"
+        bg="$backgroundLight100"
+        p="$3"
+        borderRadius="$md"
+        borderWidth={1}
+        borderColor="$borderColor"
+        width="100%"
+      >
+        <Box mt={2}>
+          <LucideIcon name="Info" size={16} color="$primary500" />
+        </Box>
+        <Text size="sm" color="$textMutedForeground" flex={1}>
+          {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
+        </Text>
+      </HStack>
+    );
+  }
+
   const placeholder = field.placeholder?.fallback ?? '';
 
   // ── Select ──────────────────────────────────────────────────────────────────
@@ -446,102 +540,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
             if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag]) {
               return null;
             }
-            // Check if this row has primary phone or alternative phone fields
-            const hasPrimary = row.fields.some(f => f.name === 'countryCode');
-            const hasAlt = row.fields.some(f => f.name === 'alternativePhoneCode');
-
-            if (hasPrimary || hasAlt) {
-              const renderPhoneWidget = (
-                codeFieldName: string,
-                phoneFieldName: string,
-                flexValue: number | undefined
-              ) => {
-                const codeField = row.fields.find(f => f.name === codeFieldName);
-                const phoneField = row.fields.find(f => f.name === phoneFieldName);
-
-                if (!codeField || !phoneField) return null;
-
-                const codeValue = values[codeFieldName] ?? '';
-                const phoneValue = values[phoneFieldName] ?? '';
-
-                const codeError = errors[codeFieldName];
-                const phoneError = errors[phoneFieldName];
-                const combinedError = phoneError || codeError;
-
-                const rawOptions = codeField.optionsSource ? (optionsMap[codeField.optionsSource] ?? []) : [];
-                const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
-
-                return (
-                  <VStack key={phoneFieldName} space="xs" flex={flexValue} width={flexValue ? undefined : '100%'}>
-                    {/* Field label */}
-                    <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                      {t(`admin.users.createUser.${phoneField.label.key}`, phoneField.label.fallback)}
-                      {phoneField.required ? ' *' : ''}
-                    </Text>
-
-                    {/* Side-by-side Select and Input Group */}
-                    <HStack space="xs" alignItems="center" width="100%">
-                      {/* Country Code Select */}
-                      <Box width={95} zIndex={1000}>
-                        <Select
-                          {...styles.createUserFormSelect}
-                          options={options}
-                          value={codeValue}
-                          onChange={(val: string) => onFieldChange(codeFieldName, val)}
-                          placeholder={codeField.placeholder?.fallback ?? '+27'}
-                          disabled={disabled}
-                          searchable={true}
-                        />
-                      </Box>
-
-                      {/* Phone Number Input */}
-                      <Input
-                        {...styles.createUserFormInput}
-                        isInvalid={!!combinedError}
-                        isDisabled={disabled}
-                        flex={1}
-                      >
-                        <FastInputField
-                          placeholder={phoneField.placeholder?.fallback ?? '000 000 000'}
-                          value={phoneValue}
-                          onChangeText={(text: string) => onFieldChange(phoneFieldName, text)}
-                          keyboardType={phoneField.inputProps?.keyboardType ?? 'phone-pad'}
-                          maxLength={phoneField.inputProps?.maxLength ?? 10}
-                        />
-                      </Input>
-                    </HStack>
-
-                    {/* Combined Error message */}
-                    {combinedError ? (
-                      <Text color="$error600" fontSize="$xs">
-                        {combinedError}
-                      </Text>
-                    ) : null}
-                  </VStack>
-                );
-              };
-
-              const widgets = [];
-              if (hasPrimary) {
-                widgets.push({ code: 'countryCode', phone: 'phoneNumber' });
-              }
-              if (hasAlt) {
-                widgets.push({ code: 'alternativePhoneCode', phone: 'alternativePhone' });
-              }
-
-              const isMultiWidget = widgets.length > 1;
-
-              return (
-                <HStack
-                  key={rowIdx}
-                  space="md"
-                  flexDirection={isMobile || !isMultiWidget ? 'column' : 'row'}
-                  width="100%"
-                >
-                  {widgets.map(w => renderPhoneWidget(w.code, w.phone, isMultiWidget ? 1 : undefined))}
-                </HStack>
-              );
-            }
 
             // Determine which fields in this row are visible
             const visibleFields = row.fields.filter(
@@ -559,22 +557,25 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                 flexDirection={isMobile || !isMultiField ? 'column' : 'row'}
               >
                 {visibleFields.map(field => {
-                  const fieldValue = values[field.name] ?? '';
-                  const fieldError = errors[field.name];
+                  const fieldValue = field.name ? (values[field.name] ?? '') : '';
+                  const fieldError = field.name ? errors[field.name] : undefined;
 
                   return (
-                    <VStack key={field.name} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
+                    <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
                       {/* Field label */}
-                      <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                        {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
-                        {field.required ? ' *' : ''}
-                      </Text>
+                      {field.type !== 'note' && (
+                        <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                          {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
+                          {field.required ? ' *' : ''}
+                        </Text>
+                      )}
 
                       {/* Field input */}
                       <FieldRenderer
                         field={field}
                         value={fieldValue}
                         error={fieldError}
+                        errors={errors}
                         onChange={onFieldChange}
                         disabled={disabled}
                         optionsMap={optionsMap}
