@@ -148,7 +148,7 @@ const LogVisit: React.FC = () => {
         <VStack {...logVisitStyles.cardsContainer}>
           {!loading && solutions.length > 0 ? (
             solutions.map(card => (
-              <AssessmentCard key={card.id} card={card} userId={participant?.id || ''} />
+              <AssessmentCard key={card.id || card?._id} card={card} userId={participant?.id || ''} />
             ))
           ) : (
             !loading && (
