@@ -217,7 +217,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
             <VStack space="xs">
               {activeSteps?.map(key => {
                 const state = stepStates.get(key) ?? 'pending';
-                return <StepRow key={key} labelKey={MODULE_LABEL[key] ?? key} state={state} />;
+                return <StepRow key={key} labelKey={MODULE_LABEL[key] ?? key} state={state} hideIcon={true} />;
               })}
             </VStack>
           </VStack>
