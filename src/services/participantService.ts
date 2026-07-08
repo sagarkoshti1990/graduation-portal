@@ -476,6 +476,10 @@ export const getSolutionWithEntityStatus = async (solutions: any[], participantI
 }
 
 export const getProjectDetails = async (projectId: string): Promise<any> => {
+  if (!projectId) {
+    logger.warn('getProjectDetails called with empty projectId');
+    return null;
+  }
   try {
     const response = await api.post(API_ENDPOINTS.PROJECT_DETAILS(projectId));
     return response.data.result;
