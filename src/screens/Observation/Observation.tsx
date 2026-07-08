@@ -39,7 +39,8 @@ type ObservationRouteProp = RouteProp<{
 const Observation: React.FC = () => {
   const route = useRoute<ObservationRouteProp>();
   const navigation = useNavigation();
-  
+  const { returnTo, returnParams } = route.params;
+
   // Use props if provided, otherwise fall back to route params
   const routeParams = route.params as ObservationRouteParams | undefined;
   const id = routeParams?.id || '';
@@ -60,6 +61,17 @@ const Observation: React.FC = () => {
       navigation.navigate(routeParams.redirectUrl);
       return;
     }
+    // console.log(route.params.returnTo, "ppppppppppppp");
+
+    if (route.params?.returnTo) {
+          // console.log(route.params.returnTo,JSON.parse(route.params.returnParams), "zzzz");
+
+      navigation.replace(route.params.returnTo, JSON.parse(route.params.returnParams));
+      return false;
+    }
+
+    // navigation.navigate(returnTo, returnParams);
+
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
     } else {

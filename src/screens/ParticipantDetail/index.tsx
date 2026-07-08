@@ -68,7 +68,7 @@ export default function ParticipantDetail() {
   const { setRefComponent } = useGlobal();
   // Extract the id parameter from the route
   const participantId = route.params?.id;
-  const coachId = route.params?.coachId
+  const coachId = route.params?.coachId;
   const authUserId = coachId || user?.id;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +77,7 @@ export default function ParticipantDetail() {
   const [status, setStatus] = useState('');
   const [idpCreated, setIdpCreated] = useState(false);
   const [participant, setParticipant] = useState<User | undefined>();
+  const resolvedCoachId = coachId || participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
   const [areAllTasksCompleted, setAreAllTasksCompleted] = useState(false);
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
     undefined,
@@ -212,7 +213,7 @@ export default function ParticipantDetail() {
         type: 'observation',
         'filter[keywords]': keywordsString,
       });    // Verify participant completion conditions and perform certificate/graduation actions
-      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string, coachId);
+      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string, isdminPanalAccess ? resolvedCoachId : undefined);
 
       if(participant?.status === STATUS.IN_PROGRESS) {
         const checkIns = solutionsWithEntityStatus.find(item => item?.keywords?.includes(INDIVIDUAL_CHECKIN_KEYWORD))
@@ -255,7 +256,7 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCoachId]);
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
@@ -343,7 +344,7 @@ export default function ParticipantDetail() {
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
           <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
-         : showOnboardingProject ? (
+          : showOnboardingProject ? (
           <>
             {/* Hide Download Forms card for dropped out participants */}
             {showOnboardingProject !== 'dropout' && (
@@ -358,7 +359,7 @@ export default function ParticipantDetail() {
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
               projectData={projectData}
-              {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
+              {...(isdminPanalAccess ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
         ) : (

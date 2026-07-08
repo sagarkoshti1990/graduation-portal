@@ -3,6 +3,7 @@ import { VStack, Box, ScrollView, Text, Spinner } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { assessmentSurveysStyles } from './Styles';
 import { AssessmentCard } from '@components/ObservationCards';
+import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import type {
   AssessmentSurveyCardData,
   ParticipantData,
@@ -40,6 +41,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   coachId
 }) => {
   const { t } = useLanguage();
+  const canAccessAdmin = useIsdminPanalAccess();
+
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {
@@ -107,7 +110,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
 
               if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT || participant?.status === STATUS.NOT_ELIGIBLE || isReadOnly) {
                 if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
-                    return null;
+                  return null;
                 }
               }
               return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED, submissionsCount: entity?.submissionsCount || 1 } };
@@ -133,7 +136,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({
       solutionId,
-      profileData: coachId ? {createdBy: coachId} : {},
+      profileData: canAccessAdmin ? {createdBy: participant?.hierarchy[0]} : {},
     });
     if (
       observationData.result?.entityType === ENTITY_TYPE.PARTICIPANT &&
@@ -153,7 +156,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   if (loading) {
     return <Spinner height={isWeb ? ('$calc(100vh - 68px)' as any) : '$full'} size="large" color="$primary500" />;
   }
-  
+
   return (
     <ScrollView
       {...assessmentSurveysStyles.scrollView}
@@ -178,15 +181,15 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               {/* <Box {...assessmentSurveysStyles.emptyIconContainer}>
                 You can add an icon here if needed
               </Box> */}
-                <Text {...assessmentSurveysStyles.emptyTitle}>
-                  {t('participantDetail.assessmentSurveys.noSurveysTitle')}
-                </Text>
-                <Text {...assessmentSurveysStyles.emptyDescription}>
-                  {t(
-                    'participantDetail.assessmentSurveys.noSurveysDescription',
-                  )}
-                </Text>
-              </VStack>
+              <Text {...assessmentSurveysStyles.emptyTitle}>
+                {t('participantDetail.assessmentSurveys.noSurveysTitle')}
+              </Text>
+              <Text {...assessmentSurveysStyles.emptyDescription}>
+                {t(
+                  'participantDetail.assessmentSurveys.noSurveysDescription',
+                )}
+              </Text>
+            </VStack>
           </Box>
         )}
       </VStack>
