@@ -4,6 +4,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import { assessmentSurveysStyles } from './Styles';
 import { AssessmentCard } from '@components/ObservationCards';
+import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import type {
   AssessmentSurveyCardData,
   ParticipantData,
@@ -20,6 +21,7 @@ import { ENTITY_TYPE } from '@constants/ROLES';
 import { ENTITY_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD, STATUS, USER_STATUS } from '@constants/app.constant';
 import { sortByNestedOrder } from '@utils/helper';
 import { solutionNamesOrder } from '@constants/app.constant';
+import { getProjectDetails } from '../../../services/participantService';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
@@ -43,6 +45,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   const { t } = useLanguage();
   const { user } = useAuth();
   const lcUserId = user?.id ?? '';
+  const canAccessAdmin = useIsdminPanalAccess();
+
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {
@@ -94,6 +98,30 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
           return;
         }
 
+        let onBoardingSolutionDetails;
+        if (participant?.onBoardedProjectId) {
+          try {
+            const onBoardingData = await getProjectDetails(participant?.onBoardedProjectId);
+            if (onBoardingData) {
+              const HHTask = onBoardingData.tasks.find((task: any) => task.externalId === "ONBOARD_2");
+              // console.log('entity', entity);
+              if (HHTask.status === "completed") {
+                onBoardingSolutionDetails = HHTask.solutionDetails;
+                onBoardingSolutionDetails['id'] = 'household-profile';
+                onBoardingSolutionDetails['name'] = onBoardingSolutionDetails.name;
+                onBoardingSolutionDetails['status'] = HHTask.status;
+                onBoardingSolutionDetails['solutionId'] = String(onBoardingSolutionDetails._id);
+                onBoardingSolutionDetails['navigationUrl'] = 'observation';
+                onBoardingSolutionDetails['entity'] = {
+                    _id: participant?.id,
+                    status: 'completed'
+                  };
+              }
+            }
+          }catch (error) {
+            logger.error('Failed to fetch onboarding project details:', error);
+          }
+        }
         // ── ONLINE PATH ───────────────────────────────────────────────────────
         const data = await getTargetedSolutions({
           type: 'observation',
@@ -102,8 +130,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
           showReferenceFrom:true
         });
 
-        const dataNew = await Promise.all(
-          data.filter(item => !item.project || item.project._id === participant?.onBoardedProjectId).map(async (item) => {
+        let dataNew = await Promise.all(
+          data.filter(item => !item.project).map(async (item) => {
             try {
               const entity = await getdetails({
                 solutionId: item.solutionId,
@@ -112,7 +140,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
 
               if(participant?.accountUserStatus === USER_STATUS.INACTIVE || participant?.status === STATUS.DROPOUT || participant?.status === STATUS.NOT_ELIGIBLE || isReadOnly) {
                 if(!entity?.allowMultipleAssessemts && entity?.status !== ENTITY_STATUS.COMPLETED) {
-                    return null;
+                  return null;
                 }
               }
               return { ...item, entity:{...entity, status: entity?.status || ENTITY_STATUS.STARTED, submissionsCount: entity?.submissionsCount || 1 } };
@@ -122,8 +150,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
             }
           })
         );
-        const sortedData = sortByNestedOrder(dataNew, 'name', solutionNamesOrder);
-        setSolutions(sortedData.filter((item): item is AssessmentSurveyCardData => item !== null));
+        if (onBoardingSolutionDetails) {
+          dataNew.push(onBoardingSolutionDetails);
+        }
+        const filteredData = dataNew.filter((item): item is AssessmentSurveyCardData => item !== null && item !== undefined);
+        const sortedData = sortByNestedOrder(filteredData, 'name', solutionNamesOrder);
+        setSolutions(sortedData);
       } catch (error) {
         logger.error('Error fetching solutions:', error);
         setSolutions([]);
@@ -138,7 +170,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({
       solutionId,
-      profileData: coachId ? {createdBy: coachId} : {},
+      profileData: canAccessAdmin ? {createdBy: participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id} : {},
     });
     if (
       observationData.result?.entityType === ENTITY_TYPE.PARTICIPANT &&
@@ -154,11 +186,10 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     }
     return {};
   };
-
   if (loading) {
     return <Spinner height={isWeb ? ('$calc(100vh - 68px)' as any) : '$full'} size="large" color="$primary500" />;
   }
-  
+
   return (
     <ScrollView
       {...assessmentSurveysStyles.scrollView}
@@ -183,15 +214,15 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
               {/* <Box {...assessmentSurveysStyles.emptyIconContainer}>
                 You can add an icon here if needed
               </Box> */}
-                <Text {...assessmentSurveysStyles.emptyTitle}>
-                  {t('participantDetail.assessmentSurveys.noSurveysTitle')}
-                </Text>
-                <Text {...assessmentSurveysStyles.emptyDescription}>
-                  {t(
-                    'participantDetail.assessmentSurveys.noSurveysDescription',
-                  )}
-                </Text>
-              </VStack>
+              <Text {...assessmentSurveysStyles.emptyTitle}>
+                {t('participantDetail.assessmentSurveys.noSurveysTitle')}
+              </Text>
+              <Text {...assessmentSurveysStyles.emptyDescription}>
+                {t(
+                  'participantDetail.assessmentSurveys.noSurveysDescription',
+                )}
+              </Text>
+            </VStack>
           </Box>
         )}
       </VStack>

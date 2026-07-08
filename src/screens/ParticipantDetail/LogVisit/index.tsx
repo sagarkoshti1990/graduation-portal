@@ -115,25 +115,33 @@ const LogVisit: React.FC = () => {
         subtitle={t('logVisit.selectVisitType', { name: participant?.name || '' })}
         onBackPress={handleBackPress}
         {...(!isOffline
-          ? {
-              rightSection: (
-                <Button
+        ? {
+            rightSection: (
+              <Button
+                // @ts-ignore
+                variant="outlineghost"
+                onPress={() => {
+                  const resolvedCoachId =
+                    participant?.hierarchy?.[0] ||
+                    participant?.extra?.hierarchy?.find(
+                      (item: any) => item.level === 0,
+                    )?.id;
+
                   // @ts-ignore
-                  variant="outlineghost"
-                  onPress={() => {
-                    // @ts-ignore
-                    navigation.navigate('check-ins-list', { id: route.params?.id });
-                  }}
-                >
-                  <ButtonIcon as={LucideIcon} name="History" size={16} />
-                  <ButtonText {...TYPOGRAPHY.bodySmall}>
-                    {t('logVisit.viewCheckIns')}
-                  </ButtonText>
-                </Button>
-              ),
-            }
-          : {})
-        }
+                  navigation.navigate('check-ins-list', {
+                    id: route.params?.id,
+                    coachId: resolvedCoachId,
+                  });
+                }}
+              >
+                <ButtonIcon as={LucideIcon} name="History" size={16} />
+                <ButtonText {...TYPOGRAPHY.bodySmall}>
+                  {t('logVisit.viewCheckIns')}
+                </ButtonText>
+              </Button>
+            ),
+          }
+        : {})}
       />
       <Container>
         {/* Cards */}

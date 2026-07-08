@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   Card,
   Box,
@@ -39,6 +39,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   isReadOnly,
 }) => {
   const { t } = useLanguage();
+  const route = useRoute();
   const navigation = useNavigation();
   const { name, description, navigationUrl, entity } = card;
   const [iconMeta, setIconMeta] = useState<IconMeta | null>(null);
@@ -80,12 +81,13 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
     if(entity?.allowMultipleAssessemts) {
       submissionNumber = null;
     }
-    
     // @ts-ignore
     navigation.navigate(navigationUrl as never, {
       id: userId || '',
       solutionId: card?.solutionId || card?.id,
       ...(submissionNumber ? {submissionNumber} : {}),
+      returnTo: route.name,
+      returnParams: JSON.stringify(route.params || {}),
     });
   };
 
@@ -104,6 +106,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
           navigation.navigate(navigationUrl as never, {
             id: userId || '',
             solutionId: card?.solutionId || card?.id,
+            redirect: window.location.pathname + window.location.search,
           });
         }
       })}

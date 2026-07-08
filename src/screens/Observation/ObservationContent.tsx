@@ -84,7 +84,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   const [mockData, setMockData] = useState<any>();
   const [submission, setSubmission] = useState<any>(null);
   const taskAutoCompletedRef = useRef(false);
-  
+
   useEffect(() => {
     taskAutoCompletedRef.current = false;
   }, [taskId, participant]);

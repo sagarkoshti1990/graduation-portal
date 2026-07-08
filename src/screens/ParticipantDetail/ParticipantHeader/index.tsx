@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { Linking, Platform } from 'react-native';
 import {
   HStack,
@@ -39,7 +39,7 @@ import {
 } from '../../../project-player/services/projectPlayerService';
 import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../../services/participantService';
-import { useAuth } from '@contexts/AuthContext';
+import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
 import { isNetworkOffline } from '@utils/networkStatus';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -72,15 +72,14 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   updatedProgress,
   projectData,
   solutions,
-  coachId,
   isHideSecondButton
 }) => {
   const navigation = useNavigation();
-  const route = useRoute();
   const { t } = useLanguage();
   const { isWeb, isMobile } = usePlatform();
   const { showAlert } = useAlert();
   const { user } = useAuth();
+  const canAccessAdmin = useIsdminPanalAccess();
   const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
@@ -166,11 +165,10 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [participantProp?.idpProjectId,projectData]);
 
   const handleBackPress = () => {
+    const role = user?.role?.toLowerCase();
+    if (role === 'admin' || role === 'supervisor') {
       // @ts-ignore
-    if (route.params?.redirectUrl) {
-      // @ts-ignore
-      navigation.navigate(route.params?.redirectUrl);
-      return;
+      navigation.navigate('user-management');
     } else {
       // @ts-ignore
       navigation.navigate('participants');
@@ -227,8 +225,9 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
   const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
+    const resolvedCoachId = participantProp?.hierarchy?.[0] || participantProp?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
     // @ts-ignore
-    navigation.push(link, { id: participantId,...(coachId ? {coachId} : {}) });
+    navigation.push(link, { id: participantId,coachId: resolvedCoachId });
   };
 
   const handleCompleteProject = async (solution: any) => {
@@ -322,7 +321,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return null;
     }
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
-    if (status === STATUS.NOT_ENROLLED && !offline && !coachId) {
+    if (status === STATUS.NOT_ENROLLED && !offline && !canAccessAdmin ) {
       return (
         <Button
           onPress={handleEnrollParticipant}
@@ -339,7 +338,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       );
     }
 
-    if(coachId) {
+    if (canAccessAdmin ) {
       // @ts-ignore
       return <Button variant="outlineghost" onPress={() => {
         handleLogVisitPress("check-ins-list")
@@ -494,7 +493,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         variant="solid"
         size="sm"
         onPress={() => handleCompleteProject(certificateSolution)}
-        isDisabled={isCompletingProject || !!coachId}
+        isDisabled={isCompletingProject || canAccessAdmin}
       >
         {isCompletingProject ? (
           <Spinner size="small" color="$white" />
