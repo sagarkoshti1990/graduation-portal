@@ -243,6 +243,7 @@ interface FieldRendererProps {
   toggleVisibilityGroup: (group: string) => void;
   /** Forwarded ref for the first autoFocus field */
   autoFocusRef?: React.RefObject<any>;
+  isNested?: boolean;
 }
 
 const FieldRenderer: React.FC<FieldRendererProps> = ({
@@ -259,7 +260,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   visibilityGroups,
   toggleVisibilityGroup,
   autoFocusRef,
+  isNested = false,
 }) => {
+  console.log(`[FieldRenderer] Rendering field: "${field.name || field.label.key}" | type: "${field.type}" | isNested: ${isNested}`);
+
   // ── Group ───────────────────────────────────────────────────────────────────
   if (field.type === 'group') {
     const subFields = field.fields || [];
@@ -269,7 +273,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
     return (
       <HStack
-        {...styles.createUserFormInput}
+        {...(styles.createUserFormInput as any)}
         isInvalid={!!combinedError}
         isDisabled={disabled}
         alignItems="center"
@@ -277,55 +281,29 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         height={40}
         width="100%"
       >
-        {subFields.map((subField, idx) => {
-          const subFieldName = subField.name!;
-          const subValue = values[subFieldName] ?? '';
-          const subError = errors[subFieldName];
-
-          // Options for select subfields
-          const rawOptions = subField.optionsSource ? (optionsMap[subField.optionsSource] ?? []) : [];
-          const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
-
-          return (
-            <React.Fragment key={subFieldName}>
-              {idx > 0 && (
-                <Box width={1} bg="$borderColor" height="60%" alignSelf="center" />
-              )}
-              {subField.type === 'select' ? (
-                <Box width={95} zIndex={1000}>
-                  <Select
-                    options={options}
-                    value={subValue}
-                    onChange={(val: string) => onChange(subFieldName, val)}
-                    placeholder={subField.placeholder?.fallback ?? '+27'}
-                    disabled={disabled}
-                    borderColor="transparent"
-                    bg="transparent"
-                    searchable={subField.searchable ?? true}
-                  />
-                </Box>
-              ) : (
-                <Input
-                  variant="outline"
-                  size="sm"
-                  borderColor="transparent"
-                  bg="transparent"
-                  isInvalid={!!subError}
-                  isDisabled={disabled}
-                  flex={1}
-                >
-                  <FastInputField
-                    placeholder={subField.placeholder?.fallback ?? ''}
-                    value={subValue}
-                    onChangeText={(text: string) => onChange(subFieldName, text)}
-                    keyboardType={subField.inputProps?.keyboardType ?? 'default'}
-                    maxLength={subField.inputProps?.maxLength}
-                  />
-                </Input>
-              )}
-            </React.Fragment>
-          );
-        })}
+        {subFields.map((subField, idx) => (
+          <React.Fragment key={subField.name || subField.label.key}>
+            {idx > 0 && (
+              <Box width={1} bg="$borderColor" height="60%" alignSelf="center" />
+            )}
+            <FieldRenderer
+              field={subField}
+              value={subField.name ? (values[subField.name] ?? '') : ''}
+              error={subField.name ? errors[subField.name] : undefined}
+              errors={errors}
+              onChange={onChange}
+              disabled={disabled}
+              optionsMap={optionsMap}
+              flags={flags}
+              values={values}
+              t={t}
+              visibilityGroups={visibilityGroups}
+              toggleVisibilityGroup={toggleVisibilityGroup}
+              autoFocusRef={autoFocusRef}
+              isNested={true}
+            />
+          </React.Fragment>
+        ))}
       </HStack>
     );
   }
@@ -373,15 +351,16 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         : placeholder;
 
     return (
-      <Box zIndex={field.zIndex}>
+      <Box width={isNested ? 95 : '100%'} zIndex={field.zIndex ?? (isNested ? 1000 : 1)}>
         <Select
-          {...styles.createUserFormSelect}
+          {...(isNested ? {} : styles.createUserFormSelect)}
           options={options}
           value={value}
           onChange={(val: string) => onChange(field.name, val)}
           placeholder={activePlaceholder}
           disabled={isDisabled}
           searchable={field.searchable ?? false}
+          {...(isNested ? { borderColor: 'transparent', bg: 'transparent' } : {})}
         />
       </Box>
     );
@@ -478,10 +457,16 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   return (
     <Input
-      {...styles.createUserFormInput}
+      {...(isNested ? {} : (styles.createUserFormInput as any))}
       isInvalid={!!error}
       isDisabled={disabled}
       alignItems={field.icon ? 'center' : undefined}
+      {...(isNested ? {
+        borderColor: 'transparent',
+        bg: 'transparent',
+        flex: 1,
+        variant: 'outline'
+      } : {})}
     >
       {field.icon && (
         <Box pr="$2">
