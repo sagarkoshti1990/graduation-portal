@@ -16,8 +16,8 @@ export type DownloadModuleKey =
   | 'observation:householdProfile'
   | 'observation:individualVisit'
   | 'observation:midline'
-  | 'observation:interventionPlan'
-  | 'observation:endline';
+  // | 'observation:interventionPlan'
+  // | 'observation:endline';
 
 export interface DownloadConfig {
   participant: boolean;
@@ -25,11 +25,11 @@ export interface DownloadConfig {
   tasks: boolean;
   observation: {
     logVisit: boolean;
-    householdProfile: boolean;
+    // householdProfile: boolean;
     individualVisit: boolean;
     midline: boolean;
-    interventionPlan: boolean;
-    endline: boolean;
+    // interventionPlan: boolean;
+    // endline: boolean;
   };
   files: boolean;
   timestamp: number;

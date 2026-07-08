@@ -16,6 +16,7 @@ import { useAuth, User } from '@contexts/AuthContext';
 import {
   getDefaultSelection,
   buildDownloadConfig,
+  resolveDownloadContext,
   DownloadModuleOption,
 } from '@utils/downloadOptions';
 import { startDownload } from '../../services/downloadService';
@@ -48,19 +49,16 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null);
   const [options,setOptions] = useState<DownloadModuleOption[] | null>(null);
   const [participant, setParticipant] = useState<User | undefined>();
-  const projectId = (participant as any)?.idpProjectId;
-  const participantStatus = participant?.status;
-  const onBoardedProjectId = participant?.onBoardedProjectId;
 
   // Per-step progress state
   const [stepStates, setStepStates] = useState<Map<string, StepState>>(new Map());
   const [activeSteps, setActiveSteps] = useState<DownloadModuleKey[]>([]);
   // Use a ref for the callback so it doesn't cause re-render loops
   const stepStatesRef = useRef<Map<string, StepState>>(new Map());
-  
+
   // Onboarding project is missing when participant is NOT_ONBOARDED and no project ID was set yet.
   // The download service will create it automatically — we only need to show the extra step in the UI.
-  const needsOnboarding = participantStatus === STATUS.NOT_ONBOARDED && !onBoardedProjectId;
+  const needsOnboarding = participant ? resolveDownloadContext(participant).needsOnboarding : false;
 
   const downloadDone = downloadStatus !== null;
   const downloadPartial = downloadDone && (downloadStatus!.failedModules ?? []).length > 0;
@@ -106,24 +104,17 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   }, []);
 
   const handleDownload = useCallback(async () => {
+    if (!participant) return;
+    const ctx = resolveDownloadContext(participant);
+
     // For IN_PROGRESS, an IDP project ID is always required.
-    if (participantStatus === STATUS.IN_PROGRESS && !projectId) {
+    if (ctx.missingProject) {
       setDownloadError(t('actions.downloadNoProject'));
       return;
     }
 
-    // Resolve the project ID passed to the service.
-    // For NOT_ONBOARDED without an onBoardedProjectId, pass undefined — the service
-    // will create the onboarding project automatically in Step 0.
-    const resolvedProjectId =
-      participantStatus === STATUS.IN_PROGRESS
-        ? projectId
-        : participantStatus === STATUS.NOT_ONBOARDED
-        ? (onBoardedProjectId || undefined)
-        : undefined;
-
     // Build ordered step list (includes 'onboarding' when project creation is needed)
-    const steps = buildStepKeys(selected, needsOnboarding);
+    const steps = buildStepKeys(selected, ctx.needsOnboarding);
     const initialMap = new Map<string, StepState>(steps.map(k => [k, 'pending']));
     stepStatesRef.current = initialMap;
     setActiveSteps(steps);
@@ -138,33 +129,15 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
     try {
       const config = buildDownloadConfig(selected);
 
-      // province lives in userDetails in raw list rows (e.g. userDetails.province.value),
-      // but may be at the top level after flattening or as a plain string.
-      const rawProvince =
-        participant?.province ??
-        participant?.userDetails?.province;
-      const resolvedProvince: string | undefined =
-        typeof rawProvince === 'string'
-          ? rawProvince
-          : rawProvince?.value ?? rawProvince?.label;
-
-      // entityId may be at the top level, entity_id, inside userDetails, or equal to userId
-      // (fetchAndStoreParticipant filters the list API with entityId = participantId, confirming they are the same)
-      const resolvedEntityId: string | undefined =
-        participant?.entityId ??
-        (participant as any)?.entity_id ??
-        participant?.userDetails?.entityId ??
-        participant?.userId;
-
       const result = await startDownload({
         participantId,
-        projectId: resolvedProjectId,
+        projectId: ctx.resolvedProjectId,
         downloadConfig: config,
         lcUserId: user?.id ?? '',
         participantSnapshot: participant,
         onProgress,
-        province: resolvedProvince,
-        participantEntityId: resolvedEntityId,
+        province: ctx.resolvedProvince,
+        participantEntityId: ctx.resolvedEntityId,
       });
 
       setDownloadStatus(result.status);
@@ -180,7 +153,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
     } finally {
       setIsDownloading(false);
     }
-  }, [needsOnboarding, projectId, onBoardedProjectId, selected, participantId, participantStatus, t, refreshPending, onSuccess, user?.id]);
+  }, [selected, participant, participantId, t, refreshPending, onSuccess, user?.id]);
 
   // Build the result rows for the completed state — dedup 'tasks' (bundled under project)
   const resultRows: Array<{ key: string; label: string; state: 'success' | 'failed' }> = [];

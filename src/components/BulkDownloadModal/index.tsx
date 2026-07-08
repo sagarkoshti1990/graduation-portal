@@ -14,16 +14,18 @@ import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import {
-  getDefaultSelection,
+  getAllDefaultSelection,
+  getDownloadOptions,
+  getEnabledKeys,
+  resolveDownloadContext,
   buildDownloadConfig,
   DownloadModuleOption,
 } from '@utils/downloadOptions';
 import { startDownload } from '../../services/downloadService';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
-import { STATUS } from '@constants/app.constant';
-import type { DownloadModuleKey } from '@app-types/offline';
 import type { Participant } from '@app-types/screens';
 import dataService from '../../services/dataService';
+import { ProjectData } from '../../project-player/types';
 import { StepState, StepRow, CheckRow, buildStepKeys, MODULE_LABEL } from '../DownloadConfigModal/shared';
 
 interface BulkDownloadModalProps {
@@ -37,12 +39,19 @@ interface BulkDownloadModalProps {
 
 type ParticipantPhase = 'pending' | 'downloading' | 'completed' | 'failed';
 
+interface ProgressStep {
+  key: string;
+  labelKey: string;
+  /** true for a project task-observation row nested under the 'project' step. */
+  isProjectChild?: boolean;
+}
+
 interface ParticipantRunState {
   participantId: string;
   name: string;
   phase: ParticipantPhase;
   error?: string;
-  activeSteps: DownloadModuleKey[];
+  activeSteps: ProgressStep[];
   stepStates: Map<string, StepState>;
 }
 
@@ -67,14 +76,14 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   const isRunningRef = useRef(false);
   const hadSuccessRef = useRef(false);
 
-  // Build the ONE-TIME shared option list from the first selected participant's
-  // status — the selection applies to every participant in the batch. The
-  // dynamic per-project household task list is intentionally omitted here (it
-  // differs per participant and doesn't affect DownloadConfig — see downloadOptions.ts).
+  // Build the ONE-TIME shared option list, unfiltered by any single participant's
+  // status — every module available to at least one status is offered, since the
+  // batch can contain participants in different states. Per-participant availability
+  // (and the dynamic per-project household task list) is resolved individually for
+  // each participant when its download actually runs — see runDownloads below.
   useEffect(() => {
     if (!isOpen || participants.length === 0) return;
-    const first = participants[0];
-    const { selected: sel, options: op } = getDefaultSelection(first.status || '', undefined);
+    const { selected: sel, options: op } = getAllDefaultSelection();
     setOptions(op);
     setSelected(sel);
     setScreen('select');
@@ -128,8 +137,6 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
     isRunningRef.current = true;
     setScreen('running');
 
-    const config = buildDownloadConfig(selected);
-
     for (const participantId of participantIds) {
       setActiveParticipantId(participantId);
       patchRunState(participantId, { phase: 'downloading', error: undefined });
@@ -139,36 +146,60 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
         const participantData = detailsResult?.data as any;
         if (!participantData) throw new Error(t('actions.downloadError'));
 
-        const participantStatus = participantData.status;
-        const projectId = participantData.idpProjectId;
-        const onBoardedProjectId = participantData.onBoardedProjectId;
-        const needsOnboarding = participantStatus === STATUS.NOT_ONBOARDED && !onBoardedProjectId;
-
-        if (participantStatus === STATUS.IN_PROGRESS && !projectId) {
+        const ctx = resolveDownloadContext(participantData);
+        if (ctx.missingProject) {
           throw new Error(t('actions.downloadNoProject'));
         }
 
-        const resolvedProjectId =
-          participantStatus === STATUS.IN_PROGRESS
-            ? projectId
-            : participantStatus === STATUS.NOT_ONBOARDED
-            ? (onBoardedProjectId || undefined)
-            : undefined;
+        // Fetch the participant's project so its dynamic per-project task list
+        // (household observations) is reflected in availability, same as the
+        // single-participant modal does on open.
+        let project: ProjectData | undefined;
+        if (ctx.resolvedProjectId) {
+          const resultProject = await dataService.getProject<ProjectData>(
+            participantData.id,
+            ctx.resolvedProjectId,
+            user?.id ?? '',
+          );
+          project = resultProject?.data ?? undefined;
+        }
 
-        const rawProvince = participantData.province ?? participantData?.userDetails?.province;
-        const resolvedProvince: string | undefined =
-          typeof rawProvince === 'string' ? rawProvince : rawProvince?.value ?? rawProvince?.label;
+        // The admin's selection is the batch-wide *desired* modules — but this
+        // participant's own status (and project) decides which of those are
+        // actually available (e.g. Midline may be checked for the batch but not
+        // yet available for a NOT_ONBOARDED participant). Reuse the same
+        // status→options logic as the single-participant modal so both flows
+        // stay in sync.
+        const participantOptions = getDownloadOptions(ctx.participantStatus, project);
+        const availableKeys = getEnabledKeys(participantOptions);
+        const participantSelected = new Set([...selected].filter(key => availableKeys.has(key)));
+        if (participantSelected.size === 0) {
+          throw new Error(t('actions.downloadNoModulesAvailable'));
+        }
+        const config = buildDownloadConfig(participantSelected);
 
-        const resolvedEntityId: string | undefined =
-          participantData.entityId ??
-          participantData?.entity_id ??
-          participantData?.userDetails?.entityId ??
-          participantData.userId;
+        const fixedSteps = buildStepKeys(participantSelected, ctx.needsOnboarding);
+        let combinedSteps: ProgressStep[] = fixedSteps.map(key => ({ key, labelKey: MODULE_LABEL[key] ?? key }));
 
-        const steps = buildStepKeys(selected, needsOnboarding);
+        // Project's own task observations (household forms) are bundled into the
+        // 'project' download step but shown as nested rows under it, same as the
+        // nested checklist the single-participant modal shows on selection.
+        if (participantSelected.has('project')) {
+          const projectOption = participantOptions.find(o => o.key === 'project');
+          const nestedTaskSteps: ProgressStep[] = (projectOption?.nested ?? [])
+            .filter(item => item.enabled)
+            .map(item => ({ key: item.key, labelKey: item.labelKey, isProjectChild: true }));
+          const projectIdx = combinedSteps.findIndex(s => s.key === 'project');
+          combinedSteps = [
+            ...combinedSteps.slice(0, projectIdx + 1),
+            ...nestedTaskSteps,
+            ...combinedSteps.slice(projectIdx + 1),
+          ];
+        }
+
         patchRunState(participantId, {
-          activeSteps: steps,
-          stepStates: new Map(steps.map(k => [k, 'pending'])),
+          activeSteps: combinedSteps,
+          stepStates: new Map(fixedSteps.map(k => [k, 'pending'])),
         });
 
         const onProgress = (key: string, state: StepState) => {
@@ -177,13 +208,13 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
 
         const result = await startDownload({
           participantId,
-          projectId: resolvedProjectId,
+          projectId: ctx.resolvedProjectId,
           downloadConfig: config,
           lcUserId: user?.id ?? '',
           participantSnapshot: participantData,
           onProgress,
-          province: resolvedProvince,
-          participantEntityId: resolvedEntityId,
+          province: ctx.resolvedProvince,
+          participantEntityId: ctx.resolvedEntityId,
         });
 
         const hasFailedModules = (result.status?.failedModules ?? []).length > 0;
@@ -425,9 +456,20 @@ const ParticipantRow: React.FC<{ state: ParticipantRunState; isActive: boolean }
 
       {isActive && state.activeSteps.length > 0 && (
         <VStack space="xs" pl="$7">
-          {state.activeSteps.map(key => (
-            <StepRow key={key} labelKey={MODULE_LABEL[key] ?? key} state={state.stepStates.get(key) ?? 'pending'} />
-          ))}
+          {state.activeSteps.map(step => {
+            // its state (pending → loading → completed/failed) as a group.
+            const stepState = step.isProjectChild
+              ? state.stepStates.get('project') ?? 'pending'
+              : state.stepStates.get(step.key) ?? 'pending';
+            const row = <StepRow labelKey={step.labelKey} state={stepState} hideIcon={!step.isProjectChild} />;
+            return step.isProjectChild ? (
+              <Box key={step.key} pl="$4">
+                {row}
+              </Box>
+            ) : (
+              <React.Fragment key={step.key}>{row}</React.Fragment>
+            );
+          })}
         </VStack>
       )}
 

@@ -518,8 +518,8 @@ const OBSERVATION_SOLUTION_DOWNLOAD_MAP: ObservationModuleSpec[] = [
   { configKey: 'householdProfile', moduleKey: 'observation:householdProfile', keywords: [],                                    useProjectTasks: true  },
   { configKey: 'individualVisit',  moduleKey: 'observation:individualVisit',  keywords: FILTER_KEYWORDS.LOG_VISIT,             useProjectTasks: false },
   { configKey: 'midline',          moduleKey: 'observation:midline',          keywords: FILTER_KEYWORDS.MIDLINE,               useProjectTasks: false },
-  { configKey: 'interventionPlan', moduleKey: 'observation:interventionPlan', keywords: FILTER_KEYWORDS.INTERVENTION_PLAN,     useProjectTasks: false },
-  { configKey: 'endline',          moduleKey: 'observation:endline',          keywords: FILTER_KEYWORDS.ENDLINE,               useProjectTasks: false },
+  // { configKey: 'interventionPlan', moduleKey: 'observation:interventionPlan', keywords: FILTER_KEYWORDS.INTERVENTION_PLAN,     useProjectTasks: false },
+  // { configKey: 'endline',          moduleKey: 'observation:endline',          keywords: FILTER_KEYWORDS.ENDLINE,               useProjectTasks: false },
 ];
 
 // ---------------------------------------------------------------------------

@@ -2082,6 +2082,7 @@
     "downloadPartial": "Download completed with some errors.",
     "downloadError": "Download failed. Please try again.",
     "downloadNoProject": "No project found for this participant.",
+    "downloadNoModulesAvailable": "None of the selected modules are available for this participant.",
     "downloadNeedsOnboardingProject": "Participant is IN PROGRESS but has no onboarding project. Cannot download.",
     "syncOffline": "Sync Changes",
     "syncSuccess": "Participant data synced successfully.",

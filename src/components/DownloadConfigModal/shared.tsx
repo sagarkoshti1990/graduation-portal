@@ -21,8 +21,8 @@ export const MODULE_LABEL: Record<DownloadModuleKey, string> = {
   'observation:householdProfile':'actions.downloadHouseholdProfile',
   'observation:individualVisit':'actions.downloadIndividualVisit',
   'observation:midline':        'actions.downloadMidline',
-  'observation:interventionPlan':'actions.downloadInterventionPlan',
-  'observation:endline':        'actions.downloadEndline',
+  // 'observation:interventionPlan':'actions.downloadInterventionPlan',
+  // 'observation:endline':        'actions.downloadEndline',
 };
 
 // Download order matches the pipeline in downloadService.
@@ -35,8 +35,8 @@ export const DOWNLOAD_ORDER: DownloadModuleKey[] = [
   'observation:householdProfile',
   'observation:individualVisit',
   'observation:midline',
-  'observation:interventionPlan',
-  'observation:endline',
+  // 'observation:interventionPlan',
+  // 'observation:endline',
 ];
 
 /**
@@ -62,12 +62,15 @@ export function buildStepKeys(selected: Set<string>, needsOnboarding: boolean): 
 export interface StepRowProps {
   labelKey: string;
   state: StepState;
+  hideIcon?: boolean
 }
 
-export const StepRow: React.FC<StepRowProps> = ({ labelKey, state }) => {
+export const StepRow: React.FC<StepRowProps> = ({ labelKey, state, hideIcon }) => {
   const { t } = useLanguage();
 
-  const icon = state === 'completed'
+  const icon = !hideIcon
+    ? <LucideIcon name="CircleDot" size={16} color="$primary500" />
+    : state === 'completed'
     ? <LucideIcon name="CircleCheck" size={16} color="$success600" />
     : state === 'failed'
     ? <LucideIcon name="XCircle" size={16} color="$error500" />
@@ -84,7 +87,7 @@ export const StepRow: React.FC<StepRowProps> = ({ labelKey, state }) => {
     : '$textMutedForeground';
 
   return (
-    <HStack space="sm" alignItems="center" py="$0.5">
+    <HStack space={"sm"} alignItems="center" py="$0.5">
       {icon}
       <Text fontSize="$sm" color={textColor} flex={1}>
         {t(labelKey)}

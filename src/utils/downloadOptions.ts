@@ -93,21 +93,114 @@ export function getDownloadOptions(participantStatus: string,project?: ProjectDa
           enabled: isInProgress || isCompleted,
           recommended: false,
         },
-        {
-          key: 'interventionPlan',
-          labelKey: 'actions.downloadInterventionPlan',
-          enabled: isCompleted,
-          recommended: isCompleted,
-        },
-        {
-          key: 'endline',
-          labelKey: 'actions.downloadEndline',
-          enabled: isCompleted,
-          recommended: isCompleted,
-        },
+        // {
+        //   key: 'interventionPlan',
+        //   labelKey: 'actions.downloadInterventionPlan',
+        //   enabled: isCompleted,
+        //   recommended: isCompleted,
+        // },
+        // {
+        //   key: 'endline',
+        //   labelKey: 'actions.downloadEndline',
+        //   enabled: isCompleted,
+        //   recommended: isCompleted,
+        // },
       ],
     },
   ];
+}
+
+/**
+ * Returns every possible download module, unfiltered by any single participant's
+ * status — used to populate the bulk-download selection popup, where one selection
+ * is made up-front for a batch of participants who may each be in a different state.
+ * A module is included if it is enabled for at least one status. Per-participant
+ * availability is resolved later, at download time, via getDownloadOptions(status).
+ */
+export function getAllDownloadOptions(): DownloadModuleOption[] {
+  const perStatus = [STATUS.NOT_ONBOARDED, STATUS.IN_PROGRESS, STATUS.COMPLETED].map(status =>
+    getDownloadOptions(status),
+  );
+
+  return perStatus[0].map((opt, i) => {
+    const enabled = perStatus.some(list => list[i].enabled);
+    const nested = opt.nested?.map((nestedOpt, j) => {
+      const nestedEnabled = perStatus.some(list => list[i].nested?.[j]?.enabled);
+      return { ...nestedOpt, enabled: nestedEnabled, recommended: nestedEnabled };
+    });
+    return { ...opt, enabled, recommended: enabled, ...(nested ? { nested } : {}) };
+  });
+}
+
+/**
+ * Default/all-selected set for the bulk popup — every module available to at
+ * least one participant status starts checked; the user can deselect any of them.
+ */
+export function getAllDefaultSelection(): { selected: Set<string>; options: DownloadModuleOption[] } {
+  const options = getAllDownloadOptions();
+  const selected = new Set<string>();
+  for (const opt of options) {
+    if (opt.recommended && opt.enabled) selected.add(opt.key as string);
+    for (const nested of opt.nested ?? []) {
+      if (nested.recommended && nested.enabled) selected.add(nested.key);
+    }
+  }
+  return { selected, options };
+}
+
+/** Flattens a DownloadModuleOption tree into the set of keys enabled at that level. */
+export function getEnabledKeys(options: DownloadModuleOption[]): Set<string> {
+  const keys = new Set<string>();
+  for (const opt of options) {
+    if (opt.enabled) keys.add(opt.key as string);
+    for (const nested of opt.nested ?? []) {
+      if (nested.enabled) keys.add(nested.key);
+    }
+  }
+  return keys;
+}
+
+export interface ResolvedDownloadContext {
+  participantStatus: string;
+  resolvedProjectId?: string;
+  needsOnboarding: boolean;
+  resolvedProvince?: string;
+  resolvedEntityId?: string;
+  /** true when an IN_PROGRESS participant has no IDP project — download cannot proceed. */
+  missingProject: boolean;
+}
+
+/**
+ * Resolves the project id / province / entityId / onboarding-needed fields required
+ * to call startDownload, from a fetched participant record. Shared by the single and
+ * bulk download modals so this resolution isn't duplicated between them.
+ */
+export function resolveDownloadContext(participantData: any): ResolvedDownloadContext {
+  const participantStatus = participantData?.status;
+  const projectId = participantData?.idpProjectId;
+  const onBoardedProjectId = participantData?.onBoardedProjectId;
+  const needsOnboarding = participantStatus === STATUS.NOT_ONBOARDED && !onBoardedProjectId;
+  const missingProject = participantStatus === STATUS.IN_PROGRESS && !projectId;
+
+  const resolvedProjectId = missingProject
+    ? undefined
+    : participantStatus === STATUS.IN_PROGRESS
+    ? projectId
+    : participantStatus === STATUS.NOT_ONBOARDED
+    ? (onBoardedProjectId || undefined)
+    : undefined;
+
+  const rawProvince = participantData?.province ?? participantData?.userDetails?.province;
+  const resolvedProvince: string | undefined =
+    typeof rawProvince === 'string' ? rawProvince : rawProvince?.value ?? rawProvince?.label;
+
+  const resolvedEntityId: string | undefined =
+    participantData?.entityId ??
+    participantData?.entity_id ??
+    participantData?.userDetails?.entityId ??
+    participantData?.userId;
+
+  return { participantStatus, resolvedProjectId, needsOnboarding, resolvedProvince, resolvedEntityId, missingProject };
 }
 
 /**
@@ -121,11 +214,11 @@ export function buildDownloadConfig(selected: Set<string>): DownloadConfig {
     tasks:       selected.has('project'), // tasks are always bundled with project
     observation: {
       logVisit:         selected.has('logVisit'),
-      householdProfile: selected.has('householdProfile'),
+      // householdProfile: selected.has('householdProfile'),
       individualVisit:  selected.has('individualVisit'),
       midline:          selected.has('midline'),
-      interventionPlan: selected.has('interventionPlan'),
-      endline:          selected.has('endline'),
+      // interventionPlan: selected.has('interventionPlan'),
+      // endline:          selected.has('endline'),
     },
     files:     false,
     timestamp: Date.now(),
