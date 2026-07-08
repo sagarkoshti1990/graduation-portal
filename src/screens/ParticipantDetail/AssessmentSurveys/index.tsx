@@ -20,6 +20,7 @@ import { ENTITY_TYPE } from '@constants/ROLES';
 import { ENTITY_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD, STATUS, USER_STATUS } from '@constants/app.constant';
 import { sortByNestedOrder } from '@utils/helper';
 import { solutionNamesOrder } from '@constants/app.constant';
+import { getProjectDetails } from '../../../services/participantService';
 
 interface AssessmentSurveysProps {
   participant: ParticipantData;
@@ -92,6 +93,30 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
           return;
         }
 
+        let onBoardingSolutionDetails;
+        if (participant?.onBoardedProjectId) {
+          try {
+            const onBoardingData = await getProjectDetails(participant?.onBoardedProjectId);
+            if (onBoardingData) {
+              const HHTask = onBoardingData.tasks.find((task: any) => task.externalId === "ONBOARD_2");
+              // console.log('entity', entity);
+              if (HHTask.status === "completed") {
+                onBoardingSolutionDetails = HHTask.solutionDetails;
+                onBoardingSolutionDetails['id'] = 'household-profile';
+                onBoardingSolutionDetails['name'] = onBoardingSolutionDetails.name;
+                onBoardingSolutionDetails['status'] = HHTask.status;
+                onBoardingSolutionDetails['solutionId'] = String(onBoardingSolutionDetails._id);
+                onBoardingSolutionDetails['navigationUrl'] = 'observation';
+                onBoardingSolutionDetails['entity'] = {
+                    _id: participant?.id,
+                    status: 'completed'
+                  };
+              }
+            }
+          }catch (error) {
+            logger.error('Failed to fetch onboarding project details:', error);
+          }
+        }
         // ── ONLINE PATH ───────────────────────────────────────────────────────
         const data = await getTargetedSolutions({
           type: 'observation',
@@ -100,8 +125,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
           showReferenceFrom:true
         });
 
-        const dataNew = await Promise.all(
-          data.filter(item => !item.project || item.project._id === participant?.onBoardedProjectId).map(async (item) => {
+        let dataNew = await Promise.all(
+          data.filter(item => !item.project).map(async (item) => {
             try {
               const entity = await getdetails({
                 solutionId: item.solutionId,
@@ -120,8 +145,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
             }
           })
         );
-        const sortedData = sortByNestedOrder(dataNew, 'name', solutionNamesOrder);
-        setSolutions(sortedData.filter((item): item is AssessmentSurveyCardData => item !== null));
+        if (onBoardingSolutionDetails) {
+          dataNew.push(onBoardingSolutionDetails);
+        }
+        const filteredData = dataNew.filter((item): item is AssessmentSurveyCardData => item !== null && item !== undefined);
+        const sortedData = sortByNestedOrder(filteredData, 'name', solutionNamesOrder);
+        setSolutions(sortedData);
       } catch (error) {
         logger.error('Error fetching solutions:', error);
         setSolutions([]);
@@ -152,7 +181,6 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     }
     return {};
   };
-
   if (loading) {
     return <Spinner height={isWeb ? ('$calc(100vh - 68px)' as any) : '$full'} size="large" color="$primary500" />;
   }
