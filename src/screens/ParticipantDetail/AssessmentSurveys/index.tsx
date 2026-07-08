@@ -90,25 +90,30 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
           return;
         }
 
-        const onBoardingData = await getProjectDetails(participant?.onBoardedProjectId || '');
         let onBoardingSolutionDetails;
-        if (onBoardingData) {
-          const HHTask = onBoardingData.tasks.find((task: any) => task.externalId === "ONBOARD_2");
-           // console.log('entity', entity);
-          if (HHTask.status === "completed") {
-            onBoardingSolutionDetails = HHTask.solutionDetails;
-            onBoardingSolutionDetails['id'] = 'household-profile';
-            onBoardingSolutionDetails['name'] = onBoardingSolutionDetails.name;
-            onBoardingSolutionDetails['status'] = HHTask.status;
-            onBoardingSolutionDetails['solutionId'] = String(onBoardingSolutionDetails._id);
-            onBoardingSolutionDetails['navigationUrl'] = 'observation';
-            onBoardingSolutionDetails['entity'] = {
-                _id: participant?.id,
-                status: 'completed'
-              };
+        if (participant?.onBoardedProjectId) {
+          try {
+            const onBoardingData = await getProjectDetails(participant?.onBoardedProjectId);
+            if (onBoardingData) {
+              const HHTask = onBoardingData.tasks.find((task: any) => task.externalId === "ONBOARD_2");
+              // console.log('entity', entity);
+              if (HHTask.status === "completed") {
+                onBoardingSolutionDetails = HHTask.solutionDetails;
+                onBoardingSolutionDetails['id'] = 'household-profile';
+                onBoardingSolutionDetails['name'] = onBoardingSolutionDetails.name;
+                onBoardingSolutionDetails['status'] = HHTask.status;
+                onBoardingSolutionDetails['solutionId'] = String(onBoardingSolutionDetails._id);
+                onBoardingSolutionDetails['navigationUrl'] = 'observation';
+                onBoardingSolutionDetails['entity'] = {
+                    _id: participant?.id,
+                    status: 'completed'
+                  };
+              }
+            }
+          }catch (error) {
+            logger.error('Failed to fetch onboarding project details:', error);
           }
         }
-
         // ── ONLINE PATH ───────────────────────────────────────────────────────
         const data = await getTargetedSolutions({
           type: 'observation',
