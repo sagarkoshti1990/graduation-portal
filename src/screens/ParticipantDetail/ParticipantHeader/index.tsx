@@ -203,9 +203,13 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
   const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
-    const resolvedCoachId = participantProp?.hierarchy?.[0] || participantProp?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+    const resolvedCoachId = (participantProp as any)?.hierarchy?.[0] || (participantProp as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+    const params: any = { id: participantId };
+    if (user?.role?.toLowerCase() === 'supervisor') {
+      params.coachId = resolvedCoachId;
+    }
     // @ts-ignore
-    navigation.push(link, { id: participantId,coachId: resolvedCoachId });
+    navigation.push(link, params);
   };
 
   const handleCompleteProject = async (solution: any) => {

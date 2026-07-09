@@ -113,8 +113,12 @@ const LogVisit: React.FC = () => {
         onBackPress={handleBackPress}
         rightSection={<Button variant="outlineghost" onPress={() => {
           const resolvedCoachId = participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+          const params: any = { id: route.params?.id };
+          if (user?.role?.toLowerCase() === 'supervisor') {
+            params.coachId = resolvedCoachId;
+          }
           // @ts-ignore
-          navigation.navigate('check-ins-list', { id: route.params?.id, coachId: resolvedCoachId });
+          navigation.navigate('check-ins-list', params);
         }}>
           <ButtonIcon as={LucideIcon} name="History" size={16} />
           <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
