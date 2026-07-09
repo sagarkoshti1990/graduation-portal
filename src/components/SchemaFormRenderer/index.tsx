@@ -231,6 +231,7 @@ interface FieldRendererProps {
   field: FormField;
   value: string;
   error?: string;
+  errors: Record<string, string>;
   onChange: (name: string, value: string) => void;
   disabled: boolean;
   optionsMap: OptionsMap;
@@ -242,12 +243,14 @@ interface FieldRendererProps {
   toggleVisibilityGroup: (group: string) => void;
   /** Forwarded ref for the first autoFocus field */
   autoFocusRef?: React.RefObject<any>;
+  isNested?: boolean;
 }
 
 const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   value,
   error,
+  errors,
   onChange,
   disabled,
   optionsMap,
@@ -257,7 +260,76 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   visibilityGroups,
   toggleVisibilityGroup,
   autoFocusRef,
+  isNested = false,
 }) => {
+  console.log(`[FieldRenderer] Rendering field: "${field.name || field.label.key}" | type: "${field.type}" | isNested: ${isNested}`);
+
+  // ── Group ───────────────────────────────────────────────────────────────────
+  if (field.type === 'group') {
+    const subFields = field.fields || [];
+    if (subFields.length === 0) return null;
+
+    const combinedError = subFields.map(sf => errors[sf.name!]).find(Boolean);
+
+    return (
+      <HStack
+        {...(styles.createUserFormInput as any)}
+        isInvalid={!!combinedError}
+        isDisabled={disabled}
+        alignItems="center"
+        paddingLeft={0}
+        height={40}
+        width="100%"
+      >
+        {subFields.map((subField, idx) => (
+          <React.Fragment key={subField.name || subField.label.key}>
+            {idx > 0 && (
+              <Box width={1} bg="$borderColor" height="60%" alignSelf="center" />
+            )}
+            <FieldRenderer
+              field={subField}
+              value={subField.name ? (values[subField.name] ?? '') : ''}
+              error={subField.name ? errors[subField.name] : undefined}
+              errors={errors}
+              onChange={onChange}
+              disabled={disabled}
+              optionsMap={optionsMap}
+              flags={flags}
+              values={values}
+              t={t}
+              visibilityGroups={visibilityGroups}
+              toggleVisibilityGroup={toggleVisibilityGroup}
+              autoFocusRef={autoFocusRef}
+              isNested={true}
+            />
+          </React.Fragment>
+        ))}
+      </HStack>
+    );
+  }
+  // ── Note ────────────────────────────────────────────────────────────────────
+  if (field.type === 'note') {
+    return (
+      <HStack
+        space="sm"
+        alignItems="flex-start"
+        bg="$backgroundLight100"
+        p="$3"
+        borderRadius="$md"
+        borderWidth={1}
+        borderColor="$borderColor"
+        width="100%"
+      >
+        <Box mt={2}>
+          <LucideIcon name="Info" size={16} color="$primary500" />
+        </Box>
+        <Text size="sm" color="$textMutedForeground" flex={1}>
+          {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
+        </Text>
+      </HStack>
+    );
+  }
+
   const placeholder = field.placeholder?.fallback ?? '';
 
   // ── Select ──────────────────────────────────────────────────────────────────
@@ -279,15 +351,16 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         : placeholder;
 
     return (
-      <Box zIndex={field.zIndex}>
+      <Box width={isNested ? 95 : '100%'} zIndex={field.zIndex ?? (isNested ? 1000 : 1)}>
         <Select
-          {...styles.createUserFormSelect}
+          {...(isNested ? {} : styles.createUserFormSelect)}
           options={options}
           value={value}
           onChange={(val: string) => onChange(field.name, val)}
           placeholder={activePlaceholder}
           disabled={isDisabled}
           searchable={field.searchable ?? false}
+          {...(isNested ? { borderColor: 'transparent', bg: 'transparent' } : {})}
         />
       </Box>
     );
@@ -384,10 +457,16 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   return (
     <Input
-      {...styles.createUserFormInput}
+      {...(isNested ? {} : (styles.createUserFormInput as any))}
       isInvalid={!!error}
       isDisabled={disabled}
       alignItems={field.icon ? 'center' : undefined}
+      {...(isNested ? {
+        borderColor: 'transparent',
+        bg: 'transparent',
+        flex: 1,
+        variant: 'outline'
+      } : {})}
     >
       {field.icon && (
         <Box pr="$2">
@@ -463,22 +542,25 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                 flexDirection={isMobile || !isMultiField ? 'column' : 'row'}
               >
                 {visibleFields.map(field => {
-                  const fieldValue = values[field.name] ?? '';
-                  const fieldError = errors[field.name];
+                  const fieldValue = field.name ? (values[field.name] ?? '') : '';
+                  const fieldError = field.name ? errors[field.name] : undefined;
 
                   return (
-                    <VStack key={field.name} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
+                    <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
                       {/* Field label */}
-                      <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
-                        {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
-                        {field.required ? ' *' : ''}
-                      </Text>
+                      {field.type !== 'note' && (
+                        <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
+                          {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
+                          {field.required ? ' *' : ''}
+                        </Text>
+                      )}
 
                       {/* Field input */}
                       <FieldRenderer
                         field={field}
                         value={fieldValue}
                         error={fieldError}
+                        errors={errors}
                         onChange={onFieldChange}
                         disabled={disabled}
                         optionsMap={optionsMap}
