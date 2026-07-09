@@ -126,7 +126,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     return null;
   }
 
-  const resolvedCoachId = coachId || participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+  const resolvedCoachId = coachId || (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
 
   return (
     <Box flex={1} bg="$accent100">
