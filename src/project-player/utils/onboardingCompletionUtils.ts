@@ -23,9 +23,9 @@ async function isObservationTaskComplete(
   if (!solutionId) return false;
 
   const edits = await offlineStorage
-    .read<{ isSubmitted?: boolean }>(PARTICIPANT_KEYS.formEdits(userId, participantId, solutionId))
+    .read<{ status?: string }>(PARTICIPANT_KEYS.formEdits(userId, participantId, task?.submissions?.[0]?._id))
     .catch(() => null);
-  return edits?.isSubmitted === true;
+  return edits?.status === "submit";
 }
 
 /**

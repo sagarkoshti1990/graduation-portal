@@ -54,6 +54,7 @@ export interface Task {
   noOfEvidenceRequired?: number;
   referenceId?:string
   taskSequence?:string[]
+  submissions?:any[]
 }
 
 export interface Attachment {
