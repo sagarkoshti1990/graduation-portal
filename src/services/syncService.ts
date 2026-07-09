@@ -30,10 +30,12 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import {
   updateTask as updateTaskAPI,
   uploadFiles,
+  submitInterventionPlan,
+  updateInterventionPlan,
 } from '../project-player/services/projectPlayerService';
 import {
   updateEntityDetails,
-  // createOrUpdateProgramUserMapping
+  createOrUpdateProgramUserMapping,
 } from './participantService';
 import { buildOnboardingFileUpdate } from '../project-player/components/Task/TaskCard/utils/taskTransformers';
 import {
@@ -42,7 +44,8 @@ import {
   createSyncValidationCache,
 } from './syncValidationService';
 import { deleteParticipantOfflineData } from './offlineCleanupService';
-// import { STATUS } from '@constants/app.constant';
+import { updateOfflineParticipantDetails } from './offlineCacheUpdateService';
+import { STATUS } from '@constants/app.constant';
 
 /**
  * Controls which items the sync engine should skip.
@@ -70,7 +73,7 @@ function makeProgress(
   total: number,
 ): SyncProgress {
   const stageWeight: Record<SyncProgress['stage'], number> = {
-    idle: 0, files: 33, forms: 66, tasks: 99, done: 100,
+    idle: 0, files: 25, forms: 50, tasks: 75, idp: 95, done: 100,
   };
   return {
     stage,
@@ -748,6 +751,77 @@ async function syncTaskEdits(
 }
 
 // ---------------------------------------------------------------------------
+// Stage 4 — Intervention Plan submissions
+//
+// Replays a queued createProjectPlan/updateProjectPlan call (built offline by
+// ProjectComponent) once back online, then mirrors the same status-update
+// calls the online success path makes (Template/index.tsx handleIdpCreation):
+// updateEntityDetails + createOrUpdateProgramUserMapping, plus a local cache
+// patch so the participant's cached status/idpProjectId reflect the change
+// without a full re-download.
+// ---------------------------------------------------------------------------
+
+async function syncInterventionPlanSubmissions(
+  userId: string,
+  participantId: string,
+  onProgress?: ProgressCallback,
+): Promise<{ synced: number; failed: number }> {
+  const key = PARTICIPANT_KEYS.idpSubmissionPending(userId, participantId);
+  const pending = await offlineStorage.read<{
+    reqBody: any;
+    isReplace: boolean;
+    oldProjectId?: string;
+  }>(key);
+  if (!pending) return { synced: 0, failed: 0 };
+
+  onProgress?.(makeProgress('idp', 0, 1));
+  try {
+    const response = pending.isReplace
+      ? await updateInterventionPlan(pending.oldProjectId!, pending.reqBody)
+      : await submitInterventionPlan(pending.reqBody);
+
+    if (response.error) throw new Error(response.error);
+
+    const newProjectId = response?.data?.projectId;
+    const thisDate = new Date().toISOString();
+
+    await updateEntityDetails({
+      userId,
+      entityId: participantId,
+      entityUpdates: {
+        idpProjectId: newProjectId,
+        idpProjectCreatedAt: thisDate,
+        status: STATUS.IN_PROGRESS,
+      },
+    });
+    await createOrUpdateProgramUserMapping({
+      userId: participantId,
+      programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+      metaInformation: {
+        idpProjectId: newProjectId,
+        idpProjectCreatedAt: thisDate,
+      },
+      status: STATUS.IN_PROGRESS,
+    });
+
+    // Reflect the new status/project locally too, without a full re-download.
+    await updateOfflineParticipantDetails(userId, participantId, {
+      status: STATUS.IN_PROGRESS,
+      idpProjectId: newProjectId,
+      idpProjectCreatedAt: thisDate,
+    });
+
+    await offlineStorage.remove(key);
+    onProgress?.(makeProgress('idp', 1, 1));
+    return { synced: 1, failed: 0 };
+  } catch (err) {
+    logger.error(`syncService: failed to sync IDP submission for "${participantId}"`, err);
+    onProgress?.(makeProgress('idp', 0, 1));
+    return { synced: 0, failed: 1 };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -779,6 +853,11 @@ export const startSync = async (
   const tasksResult = await syncTaskEdits(userId, participantId, onProgress, skipOptions?.skipTaskIds, skipOptions?.skipProjectIds);
   syncedCount += tasksResult.synced;
   failedCount += tasksResult.failed;
+
+  onProgress?.(makeProgress('idp', 0, 1));
+  const idpResult = await syncInterventionPlanSubmissions(userId, participantId, onProgress);
+  syncedCount += idpResult.synced;
+  failedCount += idpResult.failed;
 
   // Record failures for retry; update per-participant lastSyncedAt on success
   if (failedCount > 0) {

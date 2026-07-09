@@ -28,7 +28,7 @@ const OFFLINE_DB_NAME  = 'gbl-offline-db';
 const OFFLINE_DB_STORE = 'offline-data';
 
 // Keys that must go to IndexedDB on web (large blobs, offline participant data)
-const IDB_KEY_PREFIXES: string[] = ['participant:', 'participants:', 'sync:'];
+const IDB_KEY_PREFIXES: string[] = ['participant:', 'participants:', 'sync:', 'library:'];
 
 function isIndexedDBKey(key: string): boolean {
   return Platform.OS === 'web' && IDB_KEY_PREFIXES.some(p => key.startsWith(p));

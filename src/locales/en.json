@@ -2183,6 +2183,7 @@
     "pageSubtitle": "Select a development plan template for {{name}}",
     "backButton": "Back",
     "IdpCreationSuccess": "Plan assigned successfully.",
+    "IdpQueuedOffline": "Plan saved offline. It will be created once you're back online.",
     "categoryModal": {
       "title": "Indicative Livelihood Pathway",
       "forParticipant": "For participant: {{name}}",

@@ -7,7 +7,7 @@ import { createProjectPlanPayload, PathwayReplacementPayload } from '../types';
 import { PROJECT_STATUS } from '@constants/app.constant';
 import { isNetworkOffline } from '@utils/networkStatus';
 import offlineStorage, { getOfflineParticipantIds } from '../../services/offlineStorage';
-import { PARTICIPANT_KEYS } from '../../constants/STORAGE_KEYS';
+import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '../../constants/STORAGE_KEYS';
 
 export const apiClient = axios.create({
   // Use baseUrl from PROJECT_PLAYER_CONFIGS (which gets from env, with fallback)
@@ -170,10 +170,42 @@ export const completeProject = async (projectId: string): Promise<any> => {
     throw new Error(apiError.error ?? 'Failed to complete project');
   }
 };
+/** Depth-first search for a category node by _id anywhere in the cached hierarchy. */
+const findCategoryNode = (nodes: any[], id: string): any | undefined => {
+  for (const node of nodes ?? []) {
+    if (node?._id === id) return node;
+    const found = findCategoryNode(node?.children ?? [], id);
+    if (found) return found;
+  }
+  return undefined;
+};
+
+/**
+ * Parameter-free — returns the full category hierarchy in one call. Only ever
+ * called online (at login, to warm the offline cache); the offline flow reads
+ * the cached tree directly instead of calling this.
+ */
+export const getAllLibraryCategories = async (): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.LIBRARY_CATEGORIES_ALL);
+    return { data: response.data.result };
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const getCategoryList = async (
   parentId: string,
 ): Promise<ApiResponse<any>> => {
-  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  // Offline master data priority — see getProjectCategoryList in projectService.ts.
+  const tree = await offlineStorage.read<any[]>(OFFLINE_KEYS.LIBRARY_CATEGORIES_TREE).catch(() => null);
+  if (tree) {
+    return { data: tree.filter((item: any) => item.parentId === parentId) };
+  }
+
+  if (isNetworkOffline()) return { data: [] };
+
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_CATEGORY_LIST(parentId),
@@ -201,7 +233,21 @@ export const getTemplateDetails = async (
 export const getTaskDetails = async (
   categoryIds: string,
 ): Promise<ApiResponse<any>> => {
-  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  // Offline master data priority — see getProjectCategoryList in projectService.ts.
+  const templates = await offlineStorage.read<any[]>(OFFLINE_KEYS.PROJECT_TEMPLATES_ALL).catch(() => null);
+  if (templates) {
+    const ids = categoryIds.split(',').map(id => id.trim()).filter(Boolean);
+    const grouped: Record<string, any[]> = {};
+    for (const id of ids) {
+      grouped[id] = templates.filter((template: any) =>
+        template?.categories?.some((c: any) => c?._id === id || c?.externalId === id),
+      );
+    }
+    return { data: grouped };
+  }
+
+  if (isNetworkOffline()) return { data: {} };
+
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_TASK_DETAILS(categoryIds),

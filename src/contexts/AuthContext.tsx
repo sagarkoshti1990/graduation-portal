@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import logger from '@utils/logger';
 import { login as loginService } from '../services/authenticationService';
+import { syncLibraryMasterData } from '../services/libraryDataService';
 import offlineStorage from '../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
@@ -145,6 +146,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             'User session restored from storage:',
             storedUser.email || storedUser.id,
           );
+          // Fire-and-forget: warm the IDP library cache if it hasn't been
+          // downloaded yet (no-op when already cached).
+          // syncLibraryMasterData().catch(err =>
+          //   logger.warn('AuthContext: failed to sync library master data on session restore', err),
+          // );
         } else {
           // If either is missing or invalid, clear everything to ensure clean state
           if (storedUser && !token) {
@@ -238,6 +244,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         // Update the context state
         setUser(mappedUser);
         setIsLoggedIn(true);
+
+        // Fire-and-forget: warm the IDP library cache for offline use.
+        syncLibraryMasterData().catch(err =>
+          logger.warn('AuthContext: failed to sync library master data on login', err),
+        );
 
         const message = isAdmin
           ? t('auth.userLoggedInSuccessfullyAdmin')

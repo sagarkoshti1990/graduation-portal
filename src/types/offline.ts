@@ -148,7 +148,7 @@ export interface SyncResult {
 }
 
 export interface SyncProgress {
-  stage: 'idle' | 'files' | 'forms' | 'tasks' | 'done';
+  stage: 'idle' | 'files' | 'forms' | 'tasks' | 'idp' | 'done';
   percentage: number;
   current: number;
   total: number;

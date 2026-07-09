@@ -66,6 +66,8 @@ export const PARTICIPANT_KEYS = {
   lastSyncedAt:   (userId: string, id: string) => `participant:${userId}:${id}:lastSyncedAt`,
   /** Keyword→solution mapping built during download — used by offline observation resolver */
   solutions:      (userId: string, id: string) => `participant:${userId}:${id}:solutions`,
+  /** Queued Intervention Plan submission (createProjectPlan/updateProjectPlan payload), pending sync */
+  idpSubmissionPending: (userId: string, id: string) => `participant:${userId}:${id}:idpSubmissionPending`,
 };
 
 // ---------------------------------------------------------------------------
@@ -86,6 +88,17 @@ export const OFFLINE_KEYS = {
   SOLUTIONS: (type: string) => `participants:solutions:${type}`,
   /** Cached project categories/pathways — shared across users (read-only reference data) */
   PROJECT_CATEGORIES: 'participants:projectCategories',
+  /**
+   * Full IDP library category hierarchy (all pathways, fully nested), downloaded
+   * at login — shared across users (read-only reference data).
+   */
+  LIBRARY_CATEGORIES_TREE: 'library:categoriesTree',
+  /**
+   * Full, unfiltered project templates list, downloaded at login — shared
+   * across users (read-only reference data). Filtered locally by category id
+   * to reproduce the online `getTaskDetails` grouping when offline.
+   */
+  PROJECT_TEMPLATES_ALL: 'library:templatesAll',
   /**
    * Sync failure log — scoped per user so each user tracks their own failed syncs.
    */

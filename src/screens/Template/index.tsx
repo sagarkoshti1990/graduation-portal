@@ -15,7 +15,6 @@ import {
 } from '@ui';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Modal from '@components/ui/Modal';
-import { profileStyles } from '@components/ui/Modal/Styles';
 import Select from '@components/ui/Inputs/Select';
 import templateStyles from './styles';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -167,6 +166,15 @@ const DevelopInterventionPlan: React.FC = () => {
     }
   }, [navigation, participantId, user?.userId, route.params?.id]);
 
+  // Offline submission was queued for later sync — there is no newProjectId
+  // yet (nothing was created server-side), so just navigate back. The
+  // "queued" message itself is shown by ProjectComponent before this fires.
+  const handleQueueInterventionPlanOffline = useCallback(() => {
+    setIdpCreated(true);
+    // @ts-ignore
+    navigation.navigate('participant-detail' as never, { id: route.params?.id as never });
+  }, [navigation, route.params?.id]);
+
   const handleChangePathway = useCallback(() => {
     setShowProjectPlayerPreview(false);
     setIsModalOpen(false);
@@ -242,6 +250,7 @@ const DevelopInterventionPlan: React.FC = () => {
     showAddCustomTaskButton: true,
     showSubmitButton: true,
     onSubmitInterventionPlan: handleIdpCreation,
+    onQueueInterventionPlanOffline: handleQueueInterventionPlanOffline,
     onChangePathway: handleChangePathway,
   };
 
@@ -356,7 +365,7 @@ const DevelopInterventionPlan: React.FC = () => {
       setPillarIdsToGetIdp(pillarIdsWithoutCategories);
 
       // If no pillars have child categories, skip modal and directly show project player
-      if (pillarIdsWithCategories.length === 0) {
+      if (pillarIdsWithCategories?.length === 0) {
         setShowProjectPlayerPreview(true);
         return;
       }
@@ -533,7 +542,7 @@ const DevelopInterventionPlan: React.FC = () => {
                           color="$textMutedForeground"
                           mr="$2"
                         >
-                          {pathway?.children.length}{' '}
+                          {pathway?.children?.length}{' '}
                           {t('template.pathwayCard.pillars')}
                         </Text>
                       </HStack>

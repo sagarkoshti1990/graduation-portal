@@ -19,6 +19,10 @@ import Container from '@ui/Container';
 import { LucideIcon, Modal, useAlert } from '@ui';
 import { submitInterventionPlan, updateInterventionPlan } from '../../services/projectPlayerService';
 import { PLAYER_MODE } from '@constants/app.constant';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage from '../../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import { useAuth } from '@contexts/AuthContext';
 
 function getDeletableTaskIds(tasks: any[] = []): string[] {
   return tasks.flatMap(task => {
@@ -42,6 +46,7 @@ const ProjectComponent = React.memo(() => {
   } =
     useProjectContext();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChangePathwayOpen, setIsChangePathwayOpen] = useState(false);
   const [isSubmittingInterventionPlan, setIsSubmittingInterventionPlan] =
@@ -134,16 +139,38 @@ const ProjectComponent = React.memo(() => {
         return;
       }
 
-      if(oldProjectData) {
-        // const playLoad:any = {replacements:templates,replacementReason:"",categoryExternalIds:projectData.categoryExternalIds} 
-        const reqBody = {
-          templates,
-          keywords
-        };
-        
-        const response  = await updateInterventionPlan(oldProjectData._id,reqBody);
+      const isReplace = !!oldProjectData;
+      const reqBody = isReplace
+        ? { templates, keywords }
+        : {
+            templates,
+            userId,
+            entityId: config.profileInfo?.entityId || userId, // Fallback to userId if entityId not available
+            projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
+            baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
+            keywords,
+          };
+
+      // Offline: queue the submission for later sync instead of attempting the
+      // API call — there is no server-side project yet, so there is no
+      // newProjectId to hand back to onSubmitInterventionPlan.
+      if (isNetworkOffline()) {
+        const lcUserId = user?.id ?? '';
+        await offlineStorage.create(PARTICIPANT_KEYS.idpSubmissionPending(lcUserId, userId), {
+          reqBody,
+          isReplace,
+          oldProjectId: oldProjectData?._id,
+          queuedAt: Date.now(),
+        });
+        showAlert('success', t('template.IdpQueuedOffline'));
+        config.onQueueInterventionPlanOffline?.();
+        return;
+      }
+
+      if (isReplace) {
+        const response = await updateInterventionPlan(oldProjectData._id, reqBody);
         if(!response.error) {
-          const newProjectId = response?.data?.projectId          
+          const newProjectId = response?.data?.projectId
           if (config.onSubmitInterventionPlan) {
             config.onSubmitInterventionPlan(newProjectId);
           }
@@ -152,15 +179,6 @@ const ProjectComponent = React.memo(() => {
           showAlert('error',response.error || t('projectPlayer.error.submitFailed'));
         }
       } else {
-        const reqBody = {
-          templates,
-          userId,
-          entityId: config.profileInfo?.entityId || userId, // Fallback to userId if entityId not available
-          projectConfig: { referenceFrom: process.env.GLOBAL_LC_PROGRAM_ID },
-          baseTemplateId: process.env.CERTIFICATE_BASE_TEMPLATE_ID || '',
-          keywords
-        };
-        
         // Call API to submit intervention plan
         const response  = await submitInterventionPlan(reqBody);
         const newProjectId = response?.data?.projectId
@@ -180,7 +198,7 @@ const ProjectComponent = React.memo(() => {
     } finally {
       setIsSubmittingInterventionPlan(false);
     }
-  }, [projectData, oldProjectData, config, addedToPlanTasks, showAlert, t]);
+  }, [projectData, oldProjectData, config, addedToPlanTasks, showAlert, t, user?.id]);
 
   if (!projectData) {
     return null;

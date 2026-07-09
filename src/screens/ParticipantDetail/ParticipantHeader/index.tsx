@@ -46,6 +46,7 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { isParticipantOffline } from '../../../services/offlineStorage';
 import { deleteParticipantOfflineData } from '../../../services/offlineCleanupService';
 import { isOfflineEligible } from '../../../services/offlineCacheUpdateService';
+import { isOnboardingComplete } from '../../../project-player/utils/onboardingCompletionUtils';
 
 const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};
@@ -91,6 +92,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const showSuccess = (message: string) => {
     showAlert('success', message);
   };
+  const [canDevelopPlan, setCanDevelopPlan] = useState(false);
+  
   const offline = isNetworkOffline();
 
   // Update status when participant prop changes
@@ -269,6 +272,20 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const effectiveProgress =
     updatedProgress ?? graduationProgressProp ?? graduationProgress;
 
+console.log("outhello");
+  useEffect(() => {
+    let isMounted = true;
+    console.log("hello")
+    isOnboardingComplete(projectData?.tasks, user?.id ?? '', participantProp?.userId ?? '')
+      .then(complete => {
+        console.log(complete,"complete")
+        if (isMounted) setCanDevelopPlan(complete);
+      })
+      .catch(() => { if (isMounted) setCanDevelopPlan(false); });
+    return () => { isMounted = false; };
+  }, [projectData, user?.id, participantProp?.userId]);
+
+
   useEffect(() => {
     if (solutions?.length && solutions?.length > 0) {
       const endlineSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
@@ -317,9 +334,24 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderSecondButton = () => {
     // Dropout: No second button
-    if ((status === STATUS.NOT_ENROLLED && offline) || isHideSecondButton || status === STATUS.DROPOUT || status === STATUS.NOT_ELIGIBLE || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+    if (isHideSecondButton || status === STATUS.DROPOUT || status === STATUS.NOT_ELIGIBLE || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return null;
     }
+
+    if(status === STATUS.NOT_ENROLLED && offline) {
+      return <Button
+        isDisabled={!canDevelopPlan}
+        onPress={() => {
+          // @ts-ignore
+          navigation.navigate('template', { id: participantProp?.id });
+        }}
+      >
+        <ButtonText>
+          {t('participantDetail.interventionPlan.developPlan')}
+        </ButtonText>
+      </Button>
+    }
+
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
     if (status === STATUS.NOT_ENROLLED && !offline && !canAccessAdmin ) {
       return (

@@ -128,7 +128,7 @@ export const removeMultiple = async (keys: string[]): Promise<void> => {
  */
 export const readAllKeys = async (): Promise<string[]> => {
   try {
-    const keys = await AsyncStorage.getAllKeys();
+    const keys = await SmartStorage.getAllKeys();
     logger.info(`OfflineStorage: Retrieved ${keys.length} keys`);
     return [...keys];
   } catch (error) {
