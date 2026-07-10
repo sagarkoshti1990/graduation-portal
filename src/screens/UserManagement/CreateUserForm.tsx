@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { VStack, HStack, Button, ButtonText, Modal } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
-import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
+import { CREATE_USER_FORM_SCHEMA, FormField } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
 import { createUser, getSitesByProvince } from '../../services/usersService';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
@@ -26,15 +26,18 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   const { roles, provinces, genders, organisations, positions, countryCodes } = useUserManagementFilters({});
   const initialValues = useMemo(() => {
     const vals: Record<string, string> = {};
+    const initializeField = (field: FormField) => {
+      if (field.type === 'group' && field.fields) {
+        field.fields.forEach(initializeField);
+      } else if (field.name) {
+        vals[field.name] = field.defaultValue ?? '';
+      }
+    };
     CREATE_USER_FORM_SCHEMA.forEach(section => {
       section.rows.forEach(row => {
-        row.fields.forEach(field => {
-          vals[field.name] = '';
-        });
+        row.fields.forEach(initializeField);
       });
     });
-    if ('countryCode' in vals) vals.countryCode = '+27';
-    if ('alternativePhoneCode' in vals) vals.alternativePhoneCode = '+27';
     return vals;
   }, []);
 
@@ -60,6 +63,37 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       setIsSubmitting(false);
     }
   }, [isOpen, initialValues]);
+
+  useEffect(() => {
+    if (isOpen && countryCodes) {
+      const formattedCodes = countryCodes.map((c: any) => c.metaInformation?.name || c.name || '');
+      const fallbackCode = formattedCodes.includes('+27') ? '+27' : (formattedCodes[0] || '+27');
+      setValues(prev => {
+        const next = { ...prev };
+        let changed = false;
+
+        if (prev.countryCode && !formattedCodes.includes(prev.countryCode)) {
+          next.countryCode = '';
+          changed = true;
+        }
+        if (!next.countryCode) {
+          next.countryCode = fallbackCode;
+          changed = true;
+        }
+
+        if (prev.alternativePhoneCode && !formattedCodes.includes(prev.alternativePhoneCode)) {
+          next.alternativePhoneCode = '';
+          changed = true;
+        }
+        if (!next.alternativePhoneCode) {
+          next.alternativePhoneCode = fallbackCode;
+          changed = true;
+        }
+
+        return changed ? next : prev;
+      });
+    }
+  }, [isOpen, countryCodes]);
 
   const flags = useMemo(() => {
     const roleId = values.roleId;
