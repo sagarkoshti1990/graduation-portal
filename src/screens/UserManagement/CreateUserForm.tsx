@@ -65,32 +65,34 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   }, [isOpen, initialValues]);
 
   useEffect(() => {
-    if (isOpen && countryCodes) {
+    if (isOpen && countryCodes && countryCodes.length > 0) {
       const formattedCodes = countryCodes.map((c: any) => c.metaInformation?.name || c.name || '');
       const fallbackCode = formattedCodes.includes('+27') ? '+27' : (formattedCodes[0] || '+27');
       setValues(prev => {
-        const next = { ...prev };
-        let changed = false;
-
-        if (prev.countryCode && !formattedCodes.includes(prev.countryCode)) {
-          next.countryCode = '';
-          changed = true;
+        let nextCountryCode = prev.countryCode;
+        if (nextCountryCode && !formattedCodes.includes(nextCountryCode)) {
+          nextCountryCode = '';
         }
-        if (!next.countryCode) {
-          next.countryCode = fallbackCode;
-          changed = true;
+        if (!nextCountryCode) {
+          nextCountryCode = fallbackCode;
         }
 
-        if (prev.alternativePhoneCode && !formattedCodes.includes(prev.alternativePhoneCode)) {
-          next.alternativePhoneCode = '';
-          changed = true;
+        let nextAltPhoneCode = prev.alternativePhoneCode;
+        if (nextAltPhoneCode && !formattedCodes.includes(nextAltPhoneCode)) {
+          nextAltPhoneCode = '';
         }
-        if (!next.alternativePhoneCode) {
-          next.alternativePhoneCode = fallbackCode;
-          changed = true;
+        if (!nextAltPhoneCode) {
+          nextAltPhoneCode = fallbackCode;
         }
 
-        return changed ? next : prev;
+        if (nextCountryCode !== prev.countryCode || nextAltPhoneCode !== prev.alternativePhoneCode) {
+          return {
+            ...prev,
+            countryCode: nextCountryCode,
+            alternativePhoneCode: nextAltPhoneCode,
+          };
+        }
+        return prev;
       });
     }
   }, [isOpen, countryCodes]);
