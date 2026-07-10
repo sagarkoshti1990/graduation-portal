@@ -20,7 +20,7 @@
  *   />
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { VStack, HStack, Text, Box, Input, InputField, Pressable, Textarea, TextareaInput } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -262,7 +262,34 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   autoFocusRef,
   isNested = false,
 }) => {
-  console.log(`[FieldRenderer] Rendering field: "${field.name || field.label.key}" | type: "${field.type}" | isNested: ${isNested}`);
+
+  const rawOptions = field.type === 'select' && field.optionsSource ? (optionsMap[field.optionsSource] ?? []) : [];
+  const options = useMemo(() => rawOptions.map(o => ({ value: o.value, label: o.label })), [rawOptions]);
+
+  useEffect(() => {
+    if (field.type === 'select') {
+      if (options.length > 0) {
+        const optionValues = options.map(o => o.value);
+        let nextValue = value;
+
+        if (nextValue && !optionValues.includes(nextValue)) {
+          nextValue = '';
+        }
+
+        if (!nextValue && field.defaultValue) {
+          if (optionValues.includes(field.defaultValue)) {
+            nextValue = field.defaultValue;
+          } else {
+            nextValue = optionValues[0] || '';
+          }
+        }
+
+        if (nextValue !== value && field.name) {
+          onChange(field.name, nextValue);
+        }
+      }
+    }
+  }, [field.type, field.name, field.defaultValue, options, value, onChange]);
 
   // ── Group ───────────────────────────────────────────────────────────────────
   if (field.type === 'group') {

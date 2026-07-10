@@ -64,39 +64,6 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     }
   }, [isOpen, initialValues]);
 
-  useEffect(() => {
-    if (isOpen && countryCodes && countryCodes.length > 0) {
-      const formattedCodes = countryCodes.map((c: any) => c.metaInformation?.name || c.name || '');
-      const fallbackCode = formattedCodes.includes('+27') ? '+27' : (formattedCodes[0] || '+27');
-      setValues(prev => {
-        let nextCountryCode = prev.countryCode;
-        if (nextCountryCode && !formattedCodes.includes(nextCountryCode)) {
-          nextCountryCode = '';
-        }
-        if (!nextCountryCode) {
-          nextCountryCode = fallbackCode;
-        }
-
-        let nextAltPhoneCode = prev.alternativePhoneCode;
-        if (nextAltPhoneCode && !formattedCodes.includes(nextAltPhoneCode)) {
-          nextAltPhoneCode = '';
-        }
-        if (!nextAltPhoneCode) {
-          nextAltPhoneCode = fallbackCode;
-        }
-
-        if (nextCountryCode !== prev.countryCode || nextAltPhoneCode !== prev.alternativePhoneCode) {
-          return {
-            ...prev,
-            countryCode: nextCountryCode,
-            alternativePhoneCode: nextAltPhoneCode,
-          };
-        }
-        return prev;
-      });
-    }
-  }, [isOpen, countryCodes]);
-
   const flags = useMemo(() => {
     const roleId = values.roleId;
     const selRole = roles.find((r: any) => r.id.toString() === roleId);
@@ -120,6 +87,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
+  console.log("countryCodes", countryCodes);
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues(prev => {
       const next = { ...prev, [name]: value };
