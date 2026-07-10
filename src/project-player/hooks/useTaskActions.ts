@@ -121,6 +121,7 @@ export const useTaskActions = () => {
     updateTask,
     mode,
     setTaskAddedToPlan,
+    setTasksAddedToPlan,
     projectDataRef,
   } = useProjectStable();
   const { user } = useAuth();
@@ -265,11 +266,19 @@ export const useTaskActions = () => {
     [setTaskAddedToPlan],
   );
 
+  const handleAddToPlanBulk = useCallback(
+    (taskIds: string[], added: boolean) => {
+      setTasksAddedToPlan(taskIds, added);
+    },
+    [setTasksAddedToPlan],
+  );
+
   return {
     canEdit,
     handleStatusChange,
     handleFileUpload,
     handleOpenForm,
     handleAddToPlan,
+    handleAddToPlanBulk,
   };
 };

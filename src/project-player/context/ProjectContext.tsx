@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
+  useSyncExternalStore,
 } from 'react';
 import { ProjectData, Task } from '../types/project.types';
 import {
@@ -32,7 +33,61 @@ type ProjectStableContextValue = Omit<
 > & {
   /** Ref to the current projectData. Read in callbacks without subscribing. */
   projectDataRef: React.RefObject<ProjectData | null>;
+  /** Fine-grained per-task subscription store — see AddedToPlanStore below. */
+  addedToPlanStore: AddedToPlanStore;
+  setTasksAddedToPlan: (taskIds: string[], added: boolean) => void;
 };
+
+/**
+ * Per-task subscription store for plan-accept/reject state.
+ *
+ * addedToPlanTasks used to live only in ProjectDataContext, so every task
+ * card in the whole tree (via useTaskStatus -> useProjectData) re-rendered
+ * whenever ANY single task's plan status changed. Accepting/rejecting one
+ * task (or bulk-updating synced sibling tasks) forced the entire task tree —
+ * including tasks inside collapsed accordion sections — to re-layout in a
+ * single commit, which was tripping a Fabric/Yoga native crash
+ * (`YGNodeGetOwner(childYogaNode) == &yogaNode_`, SIGABRT) under the New
+ * Architecture. This store lets each task subscribe to only its own taskId,
+ * so a plan action only re-renders the task(s) that actually changed.
+ */
+interface AddedToPlanStore {
+  getSnapshot: (taskId: string) => boolean | undefined;
+  getAll: () => Record<string, boolean>;
+  subscribe: (listener: () => void) => () => void;
+  set: (taskId: string, added: boolean) => void;
+  setMany: (taskIds: string[], added: boolean) => void;
+  setAll: (next: Record<string, boolean>) => void;
+}
+
+function createAddedToPlanStore(initial: Record<string, boolean>): AddedToPlanStore {
+  let state = initial;
+  const listeners = new Set<() => void>();
+  const notify = () => listeners.forEach(listener => listener());
+
+  return {
+    getSnapshot: taskId => state[taskId],
+    getAll: () => state,
+    subscribe: listener => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    set: (taskId, added) => {
+      state = { ...state, [taskId]: added };
+      notify();
+    },
+    setMany: (taskIds, added) => {
+      const next = { ...state };
+      taskIds.forEach(id => { next[id] = added; });
+      state = next;
+      notify();
+    },
+    setAll: next => {
+      state = next;
+      notify();
+    },
+  };
+}
 
 /**
  * Data context — changes whenever task data or plan state changes.
@@ -215,6 +270,11 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   const [error] = useState<Error | null>(null);
   const [addedToPlanTasks, setAddedToPlanTasks] = useState<Record<string, boolean>>({});
 
+  const addedToPlanStoreRef = useRef<AddedToPlanStore | null>(null);
+  if (addedToPlanStoreRef.current === null) {
+    addedToPlanStoreRef.current = createAddedToPlanStore({});
+  }
+
   const isEditMode = config.mode === MODE.editMode.mode;
 
   useEffect(() => {
@@ -251,6 +311,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     ]);
 
     if (Object.keys(initialTasks).length > 0) {
+      addedToPlanStoreRef.current!.setAll(initialTasks);
       setAddedToPlanTasks(initialTasks);
     }
   }, [projectData, addedToPlanTasks]);
@@ -482,7 +543,20 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
   const setTaskAddedToPlan = useCallback(
     (taskId: string, added: boolean) => {
+      addedToPlanStoreRef.current!.set(taskId, added);
       setAddedToPlanTasks(prev => ({ ...prev, [taskId]: added }));
+    },
+    [],
+  );
+
+  const setTasksAddedToPlan = useCallback(
+    (taskIds: string[], added: boolean) => {
+      addedToPlanStoreRef.current!.setMany(taskIds, added);
+      setAddedToPlanTasks(prev => {
+        const next = { ...prev };
+        taskIds.forEach(id => { next[id] = added; });
+        return next;
+      });
     },
     [],
   );
@@ -502,6 +576,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       saveLocal,
       syncToServer,
       setTaskAddedToPlan,
+      setTasksAddedToPlan,
+      addedToPlanStore: addedToPlanStoreRef.current!,
       onTaskUpdate,
       projectDataRef,
       oldProjectData
@@ -517,6 +593,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       saveLocal,
       syncToServer,
       setTaskAddedToPlan,
+      setTasksAddedToPlan,
       onTaskUpdate,
       oldProjectData
     ],
@@ -555,6 +632,20 @@ export const useProjectStable = (): ProjectStableContextValue => {
 };
 
 /**
+ * Subscribe to a single task's added-to-plan state.
+ * Re-renders only when THIS taskId's entry changes — not on every
+ * accept/reject action elsewhere in the tree. Use in task-level hooks
+ * instead of reading addedToPlanTasks off useProjectData().
+ */
+export const useTaskAddedToPlan = (taskId: string): boolean | undefined => {
+  const { addedToPlanStore } = useProjectStable();
+  return useSyncExternalStore(
+    addedToPlanStore.subscribe,
+    () => addedToPlanStore.getSnapshot(taskId),
+  );
+};
+
+/**
  * Subscribe to data context only (projectData, plan state).
  * Use in list-level components that need to react to task changes.
  */
@@ -587,6 +678,7 @@ export const useProjectContext = (): ProjectContextValue => {
     syncToServer:              stable.syncToServer,
     addedToPlanTasks:          data.addedToPlanTasks,
     setTaskAddedToPlan:        stable.setTaskAddedToPlan,
+    setTasksAddedToPlan:       stable.setTasksAddedToPlan,
     onTaskUpdate:              stable.onTaskUpdate,
   };
 };

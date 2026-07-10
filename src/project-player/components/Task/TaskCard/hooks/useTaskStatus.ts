@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { TASK_TYPE } from '../../../../../constants/app.constant';
-import { useProjectData } from '../../../../context/ProjectContext';
+import { useTaskAddedToPlan } from '../../../../context/ProjectContext';
 import { isTaskCompleted } from '../../shared/helpers';
 import type { Task } from '../../../../types/project.types';
 
@@ -18,25 +18,17 @@ export interface TaskStatusResult {
 }
 
 /**
- * Subscribes to data context for plan state only.
- * Does NOT re-render when projectData changes (task status updates) — only
- * re-renders when addedToPlanTasks changes (plan actions, which are rare).
+ * Subscribes to this task's plan state only (fine-grained external store).
+ * Does NOT re-render when projectData changes (task status updates), nor
+ * when some OTHER task's plan state changes — only when THIS task's added-
+ * to-plan flag changes.
  */
 export function useTaskStatus(task: Task, isOnboardingTask: boolean): TaskStatusResult {
-  // Data: only re-renders when plan state changes, not on task status changes.
-  const { addedToPlanTasks } = useProjectData();
-
   const taskId = task?._id ?? '';
+  const planState = useTaskAddedToPlan(taskId);
 
-  const isAddedToPlan = useMemo(
-    () => addedToPlanTasks[taskId] === true,
-    [addedToPlanTasks, taskId],
-  );
-
-  const isRejected = useMemo(
-    () => addedToPlanTasks[taskId] === false,
-    [addedToPlanTasks, taskId],
-  );
+  const isAddedToPlan = planState === true;
+  const isRejected = planState === false;
 
   const isCompleted = useMemo(() => isTaskCompleted(task?.status), [task?.status]);
 

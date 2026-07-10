@@ -6,13 +6,17 @@ const ProjectAsTaskComponent = memo<ProjectAsTaskComponentProps>(({
   task,
   level = 0,
   showAccordionWrapper,
-  parentIndex
+  parentIndex,
+  isExpanded,
+  onToggleExpand,
 }) => (
   <TaskAccordion
     parentIndex={parentIndex}
     task={task}
     level={level}
     showAccordionWrapper={showAccordionWrapper}
+    isExpanded={isExpanded}
+    onToggleExpand={onToggleExpand}
   />
 ));
 

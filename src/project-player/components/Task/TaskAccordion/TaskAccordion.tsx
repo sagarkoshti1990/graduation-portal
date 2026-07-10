@@ -1,16 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   Box,
   VStack,
   HStack,
   Text,
-  Accordion,
-  AccordionItem,
-  AccordionHeader,
-  AccordionTrigger,
-  AccordionContent,
   Card,
 } from '@gluestack-ui/themed';
+import { Pressable } from '@ui';
 import { LucideIcon } from '@ui/index';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useProjectStable } from '../../../context/ProjectContext';
@@ -70,12 +66,14 @@ function getPillarIcon(pillarName: string): { icon: string; color: string } {
 const TaskAccordion = React.memo<TaskAccordionProps>(({
   task,
   showAccordionWrapper = true,
-  parentIndex
+  parentIndex,
+  isExpanded: isExpandedProp,
+  onToggleExpand,
 }) => {
   const { t } = useLanguage();
   const { mode,config, projectDataRef } = useProjectStable();
   const { isWeb, isMobile } = usePlatform();
-  
+
   const projectContext = useMemo(
     () => ({ mode, config, projectDataRef }),
     [mode, config, projectDataRef],
@@ -91,10 +89,14 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
 
   const pillarIconData = useMemo(() => getPillarIcon(task.name), [task.name]);
 
-  const accordionDefaultValue = useMemo(
-    () => (isSocialProtection ? [task._id] : undefined),
-    [isSocialProtection, task._id],
-  );
+  // showAccordionWrapper=true means this instance owns its own expand/collapse
+  // state (no sibling exclusivity needed). When false, expand state is lifted
+  // to the parent (single-select group across pillars) via isExpanded/onToggleExpand.
+  const [localExpanded, setLocalExpanded] = useState<boolean>(isSocialProtection);
+  const toggleLocalExpanded = useCallback(() => setLocalExpanded(prev => !prev), []);
+
+  const isExpanded = showAccordionWrapper ? localExpanded : !!isExpandedProp;
+  const toggleExpanded = showAccordionWrapper ? toggleLocalExpanded : (onToggleExpand ?? (() => {}));
 
   // For Edit/Read-Only modes: Show as Card (always expanded)
   if (!isPreview) {
@@ -214,160 +216,123 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
     );
   }
 
-  // For Preview mode: Show as Accordion
-  const accordionItem = (
-    <AccordionItem
-      value={task._id}
-      {...taskAccordionStyles.accordionItem}
-      bg={
-        isSocialProtection
-          ? '$socialProtectionAccordionBg'
-          : '$white'
-      }
-      borderColor={
-        isSocialProtection
-          ? '$error200'
-          : taskAccordionStyles.accordionItem.borderColor
-      }
-      borderLeftWidth={isSocialProtection ? 2 : 1}
-      borderRightWidth={isSocialProtection ? 2 : 1}
-      borderTopWidth={isSocialProtection ? 2 : 1}
-      borderBottomWidth={isSocialProtection ? 2 : 1}
-      borderRadius="$2xl"
-    >
-      {/* Accordion Header */}
-      <AccordionHeader>
-        <AccordionTrigger
-          {...taskAccordionStyles.accordionTrigger}
-        >
-          {({ isExpanded }: { isExpanded: boolean }) => (
-            <>
-              <HStack {...taskAccordionStyles.accordionHeaderContent}>
-                <VStack flex={1} space="xs">
-                  <HStack alignItems="center" space="sm" flexWrap="wrap">
-                    <Text
-                      {...TYPOGRAPHY.h4}
-                      color="$textPrimary"
-                      fontWeight="$medium"
-                      sx={
-                        isWeb
-                          ? {
-                              ':hover': {
-                                textDecorationLine: 'underline',
-                                cursor: 'pointer',
-                              },
-                            }
-                          : undefined
-                      }
-                    >
-                      {task.name}
-                    </Text>
-                    <Box {...taskAccordionStyles.taskBadge}>
-                      <Text {...taskAccordionStyles.taskBadgeText}>
-                        {task.tasks?.length || 0} {t('projectPlayer.tasks')}
-                      </Text>
-                    </Box>
-                    {isSocialProtection && (
-                      <HStack {...taskAccordionStyles.actionRequiredBadge}>
-                        <LucideIcon
-                          name="AlertCircle"
-                          size={taskAccordionStyles.warningIconSize}
-                          color={theme.tokens.colors.warningIconColor}
-                        />
-                        <Text {...taskAccordionStyles.actionRequiredText}>
-                          {t(
-                            'participantDetail.interventionPlan.actionRequired',
-                          )}
-                        </Text>
-                      </HStack>
-                    )}
-                  </HStack>
-                </VStack>
-
-                {/* Custom Lucide Icon */}
-                <Box {...taskAccordionStyles.accordionIconContainer}>
-                  <LucideIcon
-                    name={
-                      isExpanded
-                        ? 'ChevronUp'
-                        : 'ChevronDown'
-                    }
-                    size={20}
-                    color={theme.tokens.colors.textSecondary}
-                  />
-                </Box>
-              </HStack>
-            </>
-          )}
-        </AccordionTrigger>
-      </AccordionHeader>
-
-      {/* Accordion Content - Collapsible in preview mode */}
-      <AccordionContent
-        {...taskAccordionStyles.accordionContent}
-      >
-        {/* Info Banner - Always show for Linkage To Additional in Preview Mode */}
-        {isSocialProtection && (
-          <Box {...taskAccordionStyles.infoBanner} display={'none'} $md-display={'flex'}>
-            <HStack {...taskAccordionStyles.infoBannerContent}>
-              <LucideIcon
-                name="Info"
-                size={taskAccordionStyles.infoIconSize}
-                color={theme.tokens.colors.infoIconColor}
-              />
-              <VStack flex={1}>
-                <Text {...taskAccordionStyles.infoBannerTitle}>
-                  {t('projectPlayer.important')}
-                </Text>
-                <Text {...taskAccordionStyles.infoBannerMessage}>
-                  {task?.metaInformation?.warningMessage ||
-                    t('projectPlayer.socialProtectionPreviewInfo')}
-                </Text>
-              </VStack>
-            </HStack>
-          </Box>
-        )}
-
-        <VStack {...taskAccordionStyles.accordionContentStack}>
-          {(task?.children?.length ? task.children : task?.tasks)?.map(
-            (childTask, index, arr) => (
-              <TaskComponent
-                key={childTask?._id}
-                task={childTask}
-                index={index}
-                parentIndex={parentIndex}
-                level={1}
-                isLastTask={index === arr.length - 1}
-                isChildOfProject={true}
-                projectContext={projectContext}
-              />
-            ),
-          )}
-
-          {/* Add Custom Task Button */}
-          <AddCustomTask templateId={task._id} templateName={task.name} />
-          {/* <AddCustomTaskModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            mode="add"
-          /> */}
-        </VStack>
-      </AccordionContent>
-    </AccordionItem>
-  );
-
+  // For Preview mode: plain collapsible Box — no @gluestack-ui/themed Accordion.
+  // (That component, combined with this screen's interactive/conditionally-styled
+  // children, was a candidate trigger for a native Fabric/Yoga crash — RN 0.82,
+  // facebook/react-native#52349 — so this screen no longer uses it at all.)
   return (
     <Box {...taskAccordionStyles.container}>
-      {showAccordionWrapper ? (
-        <Accordion
-          {...taskAccordionStyles.accordion}
-          defaultValue={accordionDefaultValue}
-        >
-          {accordionItem}
-        </Accordion>
-      ) : (
-        accordionItem
-      )}
+      <Box
+        {...taskAccordionStyles.accordionItem}
+        bg={isSocialProtection ? '$socialProtectionAccordionBg' : '$white'}
+        borderColor={isSocialProtection ? '$error200' : taskAccordionStyles.accordionItem.borderColor}
+        borderLeftWidth={isSocialProtection ? 2 : 1}
+        borderRightWidth={isSocialProtection ? 2 : 1}
+        borderTopWidth={isSocialProtection ? 2 : 1}
+        borderBottomWidth={isSocialProtection ? 2 : 1}
+        borderRadius="$2xl"
+        overflow="hidden"
+      >
+        <Pressable onPress={toggleExpanded} {...taskAccordionStyles.accordionTrigger}>
+          <HStack {...taskAccordionStyles.accordionHeaderContent}>
+            <VStack flex={1} space="xs">
+              <HStack alignItems="center" space="sm" flexWrap="wrap">
+                <Text
+                  {...TYPOGRAPHY.h4}
+                  color="$textPrimary"
+                  fontWeight="$medium"
+                  sx={
+                    isWeb
+                      ? {
+                          ':hover': {
+                            textDecorationLine: 'underline',
+                            cursor: 'pointer',
+                          },
+                        }
+                      : undefined
+                  }
+                >
+                  {task.name}
+                </Text>
+                <Box {...taskAccordionStyles.taskBadge}>
+                  <Text {...taskAccordionStyles.taskBadgeText}>
+                    {task.tasks?.length || 0} {t('projectPlayer.tasks')}
+                  </Text>
+                </Box>
+                {isSocialProtection && (
+                  <HStack {...taskAccordionStyles.actionRequiredBadge}>
+                    <LucideIcon
+                      name="AlertCircle"
+                      size={taskAccordionStyles.warningIconSize}
+                      color={theme.tokens.colors.warningIconColor}
+                    />
+                    <Text {...taskAccordionStyles.actionRequiredText}>
+                      {t(
+                        'participantDetail.interventionPlan.actionRequired',
+                      )}
+                    </Text>
+                  </HStack>
+                )}
+              </HStack>
+            </VStack>
+
+            {/* Custom Lucide Icon */}
+            <Box {...taskAccordionStyles.accordionIconContainer}>
+              <LucideIcon
+                name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
+                size={20}
+                color={theme.tokens.colors.textSecondary}
+              />
+            </Box>
+          </HStack>
+        </Pressable>
+
+        {isExpanded && (
+          <Box {...taskAccordionStyles.accordionContent}>
+            {/* Info Banner - Always show for Linkage To Additional in Preview Mode */}
+            {isSocialProtection && (
+              <Box {...taskAccordionStyles.infoBanner} display={'none'} $md-display={'flex'}>
+                <HStack {...taskAccordionStyles.infoBannerContent}>
+                  <LucideIcon
+                    name="Info"
+                    size={taskAccordionStyles.infoIconSize}
+                    color={theme.tokens.colors.infoIconColor}
+                  />
+                  <VStack flex={1}>
+                    <Text {...taskAccordionStyles.infoBannerTitle}>
+                      {t('projectPlayer.important')}
+                    </Text>
+                    <Text {...taskAccordionStyles.infoBannerMessage}>
+                      {task?.metaInformation?.warningMessage ||
+                        t('projectPlayer.socialProtectionPreviewInfo')}
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+            )}
+
+            <VStack {...taskAccordionStyles.accordionContentStack}>
+              {(task?.children?.length ? task.children : task?.tasks)?.map(
+                (childTask, index, arr) => (
+                  <TaskComponent
+                    key={childTask?._id}
+                    task={childTask}
+                    index={index}
+                    parentIndex={parentIndex}
+                    level={1}
+                    isLastTask={index === arr.length - 1}
+                    isChildOfProject={true}
+                    projectContext={projectContext}
+                  />
+                ),
+              )}
+
+              {/* Add Custom Task Button */}
+              <AddCustomTask templateId={task._id} templateName={task.name} />
+            </VStack>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 });

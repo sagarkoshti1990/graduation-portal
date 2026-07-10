@@ -2,22 +2,21 @@ import React, {
   memo,
   useCallback,
   useMemo,
+  useState,
 } from 'react';
 import {
   Box,
   VStack,
   Card,
-  Accordion,
   Button,
   ButtonIcon,
   ButtonText,
 } from '@gluestack-ui/themed';
-import { useProjectContext } from '../../context/ProjectContext';
+import { useProjectContext, useProjectStable } from '../../context/ProjectContext';
 import ProjectInfoCard from './ProjectInfoCard';
 import TaskComponent from './TaskComponent';
 import AddCustomTaskModal from '../Task/AddCustomTaskModal';
 import { projectComponentStyles } from './Styles';
-import { taskAccordionStyles } from '../Task/Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { PLAYER_MODE } from '@constants/app.constant';
@@ -36,12 +35,15 @@ const ProjectContent = memo<ProjectContentProps>(({
   setIsModalOpen,
 }) => {
   const { projectData,oldProjectData, mode, config } = useProjectContext();
+  const { projectDataRef } = useProjectStable();
   const { t } = useLanguage();
   const isPreviewMode = useMemo(() => mode === PLAYER_MODE.PREVIEW, [mode]);
 
+  // Pass the actual ref (not live projectData) so task-level components read
+  // it at action time via .current instead of subscribing to every update.
   const projectContext = useMemo(
-    () => ({ mode, config, projectDataRef:projectData }),
-    [mode, config, projectData],
+    () => ({ mode, config, projectDataRef }),
+    [mode, config, projectDataRef],
   );
 
   const pillars = useMemo(() => {
@@ -71,12 +73,25 @@ const ProjectContent = memo<ProjectContentProps>(({
     [projectData, hasChildren],
   );
 
-  
-  // Stable accordion default so it doesn't re-mount on unrelated renders.
-  const defaultAccordionValue = useMemo(
-    () => (socialProtectionPillarIds.length ? socialProtectionPillarIds : undefined),
-    [socialProtectionPillarIds],
+  // Single-select expand state across pillars (replaces @gluestack-ui/themed
+  // Accordion's type="single" behavior — that component was a candidate
+  // trigger for a native Fabric/Yoga crash on this screen, RN 0.82,
+  // facebook/react-native#52349).
+  const [expandedPillarId, setExpandedPillarId] = useState<string | undefined>(
+    () => socialProtectionPillarIds[0],
   );
+
+  // Stable per-pillar toggle callbacks — only recreated when `pillars` itself
+  // changes, so passing them down doesn't force every pillar to re-render
+  // whenever some other pillar is expanded/collapsed.
+  const toggleHandlersByPillarId = useMemo(() => {
+    const handlers: Record<string, () => void> = {};
+    pillars.forEach((task: any) => {
+      handlers[task._id] = () =>
+        setExpandedPillarId(prev => (prev === task._id ? undefined : task._id));
+    });
+    return handlers;
+  }, [pillars]);
 
   const handleOpenModal = useCallback(() => setIsModalOpen(true), [setIsModalOpen]);
   const handleCloseModal = useCallback(() => setIsModalOpen(false), [setIsModalOpen]);
@@ -113,24 +128,19 @@ const ProjectContent = memo<ProjectContentProps>(({
 
       {isPreviewMode ? (
         <VStack {...projectComponentStyles.pillarContainer}>
-          <Accordion
-            {...taskAccordionStyles.accordionPreview}
-            type="single"
-            isCollapsible={true}
-            defaultValue={defaultAccordionValue}
-          >
-            <VStack {...projectComponentStyles.pillarContainer}>
-              {pillars.map(task => (
-                <TaskComponent
-                  key={task._id}
-                  task={task}
-                  isChildOfProject={true}
-                  showAccordionWrapper={false}
-                  projectContext={projectContext}
-                />
-              ))}
-            </VStack>
-          </Accordion>
+          <VStack {...projectComponentStyles.pillarContainer}>
+            {pillars.map(task => (
+              <TaskComponent
+                key={task._id}
+                task={task}
+                isChildOfProject={true}
+                showAccordionWrapper={false}
+                projectContext={projectContext}
+                isExpanded={expandedPillarId === task._id}
+                onToggleExpand={toggleHandlersByPillarId[task._id]}
+              />
+            ))}
+          </VStack>
         </VStack>
       ) : (
         pillars.map((task,index) => (

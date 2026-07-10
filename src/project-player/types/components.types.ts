@@ -23,6 +23,9 @@ export interface TaskAccordionProps {
   level?: number;
   showAccordionWrapper?: boolean;
   parentIndex?:number
+  /** Only used when showAccordionWrapper is false — the single-select group is owned by the parent. */
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface TaskComponentProps {
@@ -35,6 +38,8 @@ export interface TaskComponentProps {
   index?:number
   parentIndex?:number,
   projectContext?:any
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface UploadComponentProps {
@@ -62,6 +67,8 @@ export interface ProjectAsTaskComponentProps {
   level?: number;
   showAccordionWrapper?: boolean;
   parentIndex?:number
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface ProjectContextValue {
@@ -81,6 +88,7 @@ export interface ProjectContextValue {
   syncToServer: () => Promise<void>;
   addedToPlanTasks: Record<string, boolean>;
   setTaskAddedToPlan: (taskId: string, added: boolean) => void;
+  setTasksAddedToPlan: (taskIds: string[], added: boolean) => void;
   onTaskUpdate?: (task: Task) => void;
 }
 

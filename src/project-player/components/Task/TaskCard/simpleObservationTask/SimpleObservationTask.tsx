@@ -68,7 +68,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   const projectDataRef = proData?.current || proData;
   const route = useRoute();
   const navigation = useNavigation();
-  const { handleStatusChange, handleAddToPlan } = useTaskActions();
+  const { handleStatusChange, handleAddToPlanBulk } = useTaskActions();
   const { isWeb, isMobile } = usePlatform();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -132,9 +132,9 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
           .filter((item: any) => item?.metaInformation?.syncTaskIds?.includes(task._id))
           .map((item: any) => item._id),
       ];
-      taskIdsToUpdate.forEach((taskId: string) => handleAddToPlan(taskId, added));
+      handleAddToPlanBulk(taskIdsToUpdate, added);
     },
-    [handleAddToPlan, task._id, proData],
+    [handleAddToPlanBulk, task._id, proData],
   );
   const handleAcceptTask = useCallback(() => updateAddToPlan(true), [updateAddToPlan]);
   const handleRejectTask = useCallback(() => updateAddToPlan(false), [updateAddToPlan]);
