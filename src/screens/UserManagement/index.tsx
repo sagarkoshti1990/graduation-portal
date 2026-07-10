@@ -961,15 +961,79 @@ const UserManagementScreen = () => {
 
                   <HStack space="lg" justifyContent="space-between" mt="$4">
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.phoneNumber')}</Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.username') || 'Username'}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {selectedUserProfile?.phoneNumber || selectedUserProfile?.phone_number || selectedUserProfile?.phone || '-'}
+                        {(() => {
+                          const val = selectedUserProfile?.username || (selectedUserBase as any)?.username;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
                       </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
                       <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.idNumber')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {selectedUserProfile?.idNumber || selectedUserProfile?.id_number || selectedUserProfile?.id || '-'}
+                        {(() => {
+                          const val = selectedUserProfile?.national_id || selectedUserProfile?.nationalId || selectedUserProfile?.idNumber || selectedUserProfile?.id_number || selectedUserProfile?.id;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.phoneNumber')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const phoneObj = selectedUserProfile?.phone || selectedUserProfile?.phoneNumber || selectedUserProfile?.phone_number || (selectedUserBase as any)?.phone || (selectedUserBase as any)?.phoneNumber || (selectedUserBase as any)?.phone_number;
+                          const phone = typeof phoneObj === 'object' ? phoneObj?.label || phoneObj?.value || phoneObj?.name : phoneObj;
+                          if (!phone) return '-';
+                          const codeObj = selectedUserProfile?.phone_code || selectedUserProfile?.countryCode || (selectedUserBase as any)?.phone_code || (selectedUserBase as any)?.countryCode;
+                          const code = typeof codeObj === 'object' ? codeObj?.value || codeObj?.label : codeObj;
+                          return code ? `+${String(code).replace(/^\+/, '')} ${phone}` : String(phone);
+                        })()}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.alternativePhone') || 'Alt Phone Number'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const phoneObj = selectedUserProfile?.alternative_phone || selectedUserProfile?.alternativePhone || selectedUserProfile?.alternative_phone_number || (selectedUserBase as any)?.alternative_phone || (selectedUserBase as any)?.alternativePhone || (selectedUserBase as any)?.alternative_phone_number;
+                          const phone = typeof phoneObj === 'object' ? phoneObj?.label || phoneObj?.value || phoneObj?.name : phoneObj;
+                          if (!phone) return '-';
+                          const codeObj = selectedUserProfile?.alternative_phone_code || selectedUserProfile?.alternativePhoneCode || (selectedUserBase as any)?.alternative_phone_code || (selectedUserBase as any)?.alternativePhoneCode;
+                          const code = typeof codeObj === 'object' ? codeObj?.label || codeObj?.value : codeObj;
+                          return code ? `+${String(code).replace(/^\+/, '')} ${phone}` : String(phone);
+                        })()}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.dob') || 'Date of Birth'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const val = selectedUserProfile?.dob;
+                          if (!val) return '-';
+                          const str = typeof val === 'object' ? val.label || val.value || val.name : val;
+                          return str ? String(str).replace(/_/g, '-') : '-';
+                        })()}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.gender') || 'Gender'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const val = selectedUserProfile?.gender;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
                       </Text>
                     </VStack>
                   </HStack>
@@ -1014,6 +1078,20 @@ const UserManagementScreen = () => {
                             ? (selectedUserBase as any)?.site
                             : '') ||
                           '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.location') || 'Address'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const val = selectedUserProfile?.address || selectedUserProfile?.location;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
                       </Text>
                     </VStack>
                   </HStack>
@@ -1065,6 +1143,70 @@ const UserManagementScreen = () => {
                   </HStack>
                 </Card>
               </VStack>
+
+              {/* Additional Information - Only for LC/Supervisor/Admin roles */}
+              {(() => {
+                const roleTitle = (selectedUserBase?.user_organizations?.[0]?.roles?.[0]?.role?.title || selectedUserBase?.role || '').toLowerCase();
+                const roleLabel = (selectedUserBase?.user_organizations?.[0]?.roles?.[0]?.role?.label || '').toLowerCase();
+                const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
+                  (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
+                );
+                if (!isSupervisorOrLC) return null;
+
+                return (
+                  <>
+                    <Divider />
+                    <VStack space="sm">
+                      <HStack space="xs" alignItems="center">
+                        <LucideIcon name="FileText" size={16} color="$textMutedForeground" />
+                        <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                          {t('admin.users.profileModal.additionalInformation') || 'Additional Information'}
+                        </Text>
+                      </HStack>
+                      <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                        <HStack space="lg" justifyContent="space-between">
+                          <VStack flex={1} space="xs">
+                            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.employeeId') || 'Employee ID'}</Text>
+                            <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                              {(() => {
+                                const val = selectedUserProfile?.employee_id || selectedUserProfile?.employeeId;
+                                if (!val) return '-';
+                                if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                                return String(val);
+                              })()}
+                            </Text>
+                          </VStack>
+                          <VStack flex={1} space="xs">
+                            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.organizations') || 'Organisation'}</Text>
+                            <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                              {(() => {
+                                const val = selectedUserProfile?.organisation || selectedUserProfile?.organizations;
+                                if (!val) return '-';
+                                if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                                return String(val);
+                              })()}
+                            </Text>
+                          </VStack>
+                        </HStack>
+                        <HStack space="lg" justifyContent="space-between" mt="$4">
+                          <VStack flex={1} space="xs">
+                            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.position') || 'Position'}</Text>
+                            <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                              {(() => {
+                                const val = selectedUserProfile?.position;
+                                if (!val) return '-';
+                                if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                                return String(val);
+                              })()}
+                            </Text>
+                          </VStack>
+                          <VStack flex={1} space="xs" />
+                        </HStack>
+                      </Card>
+                    </VStack>
+                  </>
+                );
+              })()}
             </VStack>
           )}
 
@@ -1332,28 +1474,79 @@ const UserManagementScreen = () => {
 
                   <HStack space="lg" justifyContent="space-between" mt="$4">
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                        {t('admin.users.profileModal.phoneNumber')}
-                      </Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.username') || 'Username'}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {editUserState.userProfile?.phoneNumber ||
-                          editUserState.userProfile?.phone_number ||
-                          editUserState.userProfile?.phone ||
-                          (editUserState.user as any)?.phoneNumber ||
-                          (editUserState.user as any)?.phone_number ||
-                          (editUserState.user as any)?.phone ||
-                          '-'}
+                        {(() => {
+                          const val = editUserState.userProfile?.username || (editUserState.user as any)?.username;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
                       </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                        {t('admin.users.profileModal.idNumber')}
-                      </Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.idNumber')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {editUserState.userProfile?.idNumber ||
-                          editUserState.userProfile?.id_number ||
-                          editUserState.userProfile?.id ||
-                          '-'}
+                        {(() => {
+                          const val = editUserState.userProfile?.national_id || editUserState.userProfile?.nationalId || editUserState.userProfile?.idNumber || editUserState.userProfile?.id_number || editUserState.userProfile?.id;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.phoneNumber')}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const phoneObj = editUserState.userProfile?.phone || editUserState.userProfile?.phoneNumber || editUserState.userProfile?.phone_number || (editUserState.user as any)?.phone || (editUserState.user as any)?.phoneNumber || (editUserState.user as any)?.phone_number;
+                          const phone = typeof phoneObj === 'object' ? phoneObj?.label || phoneObj?.value || phoneObj?.name : phoneObj;
+                          if (!phone) return '-';
+                          const codeObj = editUserState.userProfile?.phone_code || editUserState.userProfile?.countryCode || (editUserState.user as any)?.phone_code || (editUserState.user as any)?.countryCode;
+                          const code = typeof codeObj === 'object' ? codeObj?.value || codeObj?.label : codeObj;
+                          return code ? `+${String(code).replace(/^\+/, '')} ${phone}` : String(phone);
+                        })()}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.alternativePhone') || 'Alt Phone Number'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const phoneObj = editUserState.userProfile?.alternative_phone || editUserState.userProfile?.alternativePhone || editUserState.userProfile?.alternative_phone_number || (editUserState.user as any)?.alternative_phone || (editUserState.user as any)?.alternativePhone || (editUserState.user as any)?.alternative_phone_number;
+                          const phone = typeof phoneObj === 'object' ? phoneObj?.label || phoneObj?.value || phoneObj?.name : phoneObj;
+                          if (!phone) return '-';
+                          const codeObj = editUserState.userProfile?.alternative_phone_code || editUserState.userProfile?.alternativePhoneCode || (editUserState.user as any)?.alternative_phone_code || (editUserState.user as any)?.alternativePhoneCode;
+                          const code = typeof codeObj === 'object' ? codeObj?.value || codeObj?.label : codeObj;
+                          return code ? `+${String(code).replace(/^\+/, '')} ${phone}` : String(phone);
+                        })()}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.dob') || 'Date of Birth'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const val = editUserState.userProfile?.dob;
+                          if (!val) return '-';
+                          const str = typeof val === 'object' ? val.label || val.value || val.name : val;
+                          return str ? String(str).replace(/_/g, '-') : '-';
+                        })()}
+                      </Text>
+                    </VStack>
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.gender') || 'Gender'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const val = editUserState.userProfile?.gender;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
                       </Text>
                     </VStack>
                   </HStack>
@@ -1373,9 +1566,7 @@ const UserManagementScreen = () => {
                 <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
                   <HStack space="lg" justifyContent="space-between">
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                        {t('admin.users.province')}
-                      </Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.province')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
                         {editUserState.userProfile?.province?.label ||
                           (typeof (editUserState.userProfile as any)?.province === 'string'
@@ -1389,9 +1580,7 @@ const UserManagementScreen = () => {
                       </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                        {t('admin.users.profileModal.districtMunicipality') || t('admin.users.site')}
-                      </Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.districtMunicipality') || t('admin.users.site')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
                         {editUserState.userProfile?.site?.label ||
                           (typeof (editUserState.userProfile as any)?.site === 'string'
@@ -1402,6 +1591,20 @@ const UserManagementScreen = () => {
                             ? (editUserState.user as any)?.site
                             : '') ||
                           '-'}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  <HStack space="lg" justifyContent="space-between" mt="$4">
+                    <VStack flex={1} space="xs">
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.location') || 'Address'}</Text>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                        {(() => {
+                          const val = editUserState.userProfile?.address || editUserState.userProfile?.location;
+                          if (!val) return '-';
+                          if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                          return String(val);
+                        })()}
                       </Text>
                     </VStack>
                   </HStack>
@@ -1421,9 +1624,7 @@ const UserManagementScreen = () => {
                 <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
                   <HStack space="lg" justifyContent="space-between">
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                        {t('admin.users.role')}
-                      </Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.role')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
                         {(() => {
                           const roles =
@@ -1431,28 +1632,94 @@ const UserManagementScreen = () => {
                               ?.map((r: any) => r?.role?.label)
                               .filter(Boolean) || [];
 
+                          // Ensure we never render an object as text (prevents React error #31)
                           const profileRole =
                             typeof (editUserState.userProfile as any)?.role === 'string'
                               ? (editUserState.userProfile as any)?.role
                               : (editUserState.userProfile as any)?.role?.label;
 
-                          return roles[0] || profileRole || editUserState.user?.role || '-';
+                          return (
+                            roles[0] ||
+                            profileRole ||
+                            editUserState.user?.role ||
+                            '-'
+                          );
                         })()}
                       </Text>
                     </VStack>
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                        {t('admin.users.profileModal.dateJoined')}
-                      </Text>
+                      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.dateJoined')}</Text>
                       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
-                        {editUserState.userProfile?.createdAt ||
-                          editUserState.userProfile?.created_at ||
-                          '-'}
+                        {editUserState.userProfile?.createdAt || editUserState.userProfile?.created_at || '-'}
                       </Text>
                     </VStack>
                   </HStack>
                 </Card>
               </VStack>
+
+              {/* Additional Information - Only for LC/Supervisor/Admin roles */}
+              {(() => {
+                const roleTitle = (editUserState.user?.user_organizations?.[0]?.roles?.[0]?.role?.title || editUserState.user?.role || '').toLowerCase();
+                const roleLabel = (editUserState.user?.user_organizations?.[0]?.roles?.[0]?.role?.label || '').toLowerCase();
+                const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
+                  (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
+                );
+                if (!isSupervisorOrLC) return null;
+
+                return (
+                  <>
+                    <Divider />
+                    <VStack space="sm">
+                      <HStack space="xs" alignItems="center">
+                        <LucideIcon name="FileText" size={16} color="$textMutedForeground" />
+                        <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$medium">
+                          {t('admin.users.profileModal.additionalInformation') || 'Additional Information'}
+                        </Text>
+                      </HStack>
+                      <Card bg="$white" borderRadius="$lg" p="$4" borderWidth={0} variant="ghost">
+                        <HStack space="lg" justifyContent="space-between">
+                          <VStack flex={1} space="xs">
+                            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.employeeId') || 'Employee ID'}</Text>
+                            <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                              {(() => {
+                                const val = editUserState.userProfile?.employee_id || editUserState.userProfile?.employeeId;
+                                if (!val) return '-';
+                                if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                                return String(val);
+                              })()}
+                            </Text>
+                          </VStack>
+                          <VStack flex={1} space="xs">
+                            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.organizations') || 'Organisation'}</Text>
+                            <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                              {(() => {
+                                const val = editUserState.userProfile?.organisation || editUserState.userProfile?.organizations;
+                                if (!val) return '-';
+                                if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                                return String(val);
+                              })()}
+                            </Text>
+                          </VStack>
+                        </HStack>
+                        <HStack space="lg" justifyContent="space-between" mt="$4">
+                          <VStack flex={1} space="xs">
+                            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">{t('admin.users.profileModal.position') || 'Position'}</Text>
+                            <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                              {(() => {
+                                const val = editUserState.userProfile?.position;
+                                if (!val) return '-';
+                                if (typeof val === 'object') return val.label || val.name || val.value || '-';
+                                return String(val);
+                              })()}
+                            </Text>
+                          </VStack>
+                          <VStack flex={1} space="xs" />
+                        </HStack>
+                      </Card>
+                    </VStack>
+                  </>
+                );
+              })()}
             </VStack>
           )}
 
