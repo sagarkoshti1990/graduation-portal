@@ -20,7 +20,7 @@
  *   />
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { VStack, HStack, Text, Box, Input, InputField, Pressable, Textarea, TextareaInput } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -263,13 +263,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   isNested = false,
 }) => {
 
-  const rawOptions = field.type === 'select' && field.optionsSource ? (optionsMap[field.optionsSource] ?? []) : [];
-  const options = useMemo(() => rawOptions.map(o => ({ value: o.value, label: o.label })), [rawOptions]);
-
   useEffect(() => {
     if (field.type === 'select') {
-      if (options.length > 0) {
-        const optionValues = options.map(o => o.value);
+      const rawOptions = field.optionsSource ? (optionsMap[field.optionsSource] ?? []) : [];
+      if (rawOptions.length > 0) {
+        const optionValues = rawOptions.map((o: any) => o.value);
         let nextValue = value;
 
         if (nextValue && !optionValues.includes(nextValue)) {
@@ -289,7 +287,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         }
       }
     }
-  }, [field.type, field.name, field.defaultValue, options, value, onChange]);
+  }, [field.type, field.name, field.defaultValue, field.optionsSource, optionsMap[field.optionsSource || ''], value, onChange]);
 
   // ── Group ───────────────────────────────────────────────────────────────────
   if (field.type === 'group') {
