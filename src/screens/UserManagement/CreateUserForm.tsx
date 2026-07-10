@@ -87,7 +87,6 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
-  console.log("countryCodes", countryCodes);
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues(prev => {
       const next = { ...prev, [name]: value };
