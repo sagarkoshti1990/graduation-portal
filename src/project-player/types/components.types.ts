@@ -101,6 +101,8 @@ export interface ProjectProviderProps {
   offlineKeyPrefix?: string;
   /** Participant ID (offline registry key) — enables offline cache updates after online task operations. */
   participantId?: string;
+  /** Resumed accept/reject decisions from a pending offline IDP draft, seeded instead of starting empty. */
+  initialAddedToPlanTasks?: Record<string, boolean>;
 }
 
 // ============================================
@@ -127,6 +129,17 @@ export interface ProjectPlayerConfig {
   onChangePathway?: () => void; // Callback for Change Pathway button
   isSubmitDisabled?: boolean; // Disable submit button until conditions are met
   submitWarningMessage?: string; // Warning message to show when submit is disabled
+  /** True while a background offline sync is in flight — used to block Submit to avoid racing the sync engine draining the same queued IDP record. */
+  isOfflineSyncing?: boolean;
+  /**
+   * Live Pathway/Category selection state from Template/index.tsx, captured fresh on every
+   * submit so a queued offline IDP record can be resumed with the exact selections in effect.
+   */
+  idpDraftMeta?: {
+    selectedPathway: string;
+    selectionByPillar: Record<string, any>;
+    pillarIdsToGetIdp: string[];
+  };
   profileInfo?: {
     id: number | string;
     name: string;
@@ -156,6 +169,10 @@ export interface ProjectPlayerData {
   offlineKeyPrefix?: string;
   /** Participant ID (offline registry key) — passed through to ProjectProvider for offline cache updates. */
   participantId?: string;
+  /** Resumed accept/reject decisions from a pending offline IDP draft, seeded into ProjectProvider instead of starting empty. */
+  initialAddedToPlanTasks?: Record<string, boolean>;
+  /** Resumed custom tasks from a pending offline IDP draft, re-injected into their owning pillar by pillarId. */
+  initialCustomTasks?: Array<Task & { pillarId: string }>;
 }
 
 export interface ProjectPlayerProps {

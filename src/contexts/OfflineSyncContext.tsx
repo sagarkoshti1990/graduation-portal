@@ -35,7 +35,7 @@ interface OfflineSyncContextType {
   notifyOfflineDataChanged: () => void;
 }
 
-const DEFAULT_BREAKDOWN: PendingBreakdown = { files: 0, forms: 0, tasks: 0, failed: 0, total: 0 };
+const DEFAULT_BREAKDOWN: PendingBreakdown = { files: 0, forms: 0, tasks: 0, idp: 0, failed: 0, total: 0 };
 
 const OfflineSyncContext = createContext<OfflineSyncContextType>({
   isOffline: false,

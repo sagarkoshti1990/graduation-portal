@@ -156,11 +156,18 @@ export const useProjectLoader = (
               ? taskEntry?.[0]?.tasks ?? []
               : taskEntry?.tasks ?? [];
 
+            // Re-attach custom tasks from a resumed offline IDP draft — matched by the
+            // top-level pillar id they were originally added under, so they survive a
+            // category change within the same pillar.
+            const resumedCustomTasks = (data?.initialCustomTasks ?? []).filter(
+              (customTask: any) => customTask.pillarId === child._id,
+            );
+
             const templateData = taskEntry?.[0]
             categoryExternalIds.push(child.externalId);
             children.push( {
               ...child,
-              tasks,
+              tasks: resumedCustomTasks.length ? [...tasks, ...resumedCustomTasks] : tasks,
               templateData,
               projectKeywords: relation?.keywords || [],
               templateId:templateData?._id,

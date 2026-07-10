@@ -68,7 +68,7 @@ const ProjectComponent = React.memo(() => {
     [deletableTaskIds, addedToPlanTasks],
   );
   
-  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted;
+  const isSubmitDisabled = config.isSubmitDisabled || !allActionsCompleted || !!config.isOfflineSyncing;
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
   const isEditMode =
     mode === 'edit' && config.showAddCustomTaskButton !== false;
@@ -93,18 +93,40 @@ const ProjectComponent = React.memo(() => {
         }>;
       }> = [];
 
-      const excludedTaskIds = Object.entries(addedToPlanTasks)
-        .filter(([, value]) => !value)
-        .map(([taskId]) => taskId);
+      // Intersect with the current tree's deletable task ids so a stale rejection carried
+      // over from a resumed offline draft (recorded against a different category/pillar
+      // instance) can't silently exclude an unrelated task that happens to collide by id.
+      const excludedTaskIds = deletableTaskIds.filter(
+        id => addedToPlanTasks[id] === false,
+      );
       let keywords: string[] = [];
+      // Plain, whitelisted snapshot of every custom task (across all pillars) — stored
+      // alongside the queued submission so a resumed offline draft can re-inject them.
+      // Whitelisted (not a raw Task spread) because web storage goes through
+      // structuredClone, which throws on non-plain values.
+      const draftCustomTasks: Array<Record<string, any>> = [];
       // Process children (templates/pillars)
       if (projectData.children && projectData.children.length > 0) {
         projectData.children.forEach((pillar: any) => {
           // Get custom tasks from this pillar (check both tasks and children properties)
           keywords = [...keywords,...(pillar?.projectKeywords || [])];
           const pillarTasks = pillar.tasks || pillar.children || [];
-          const customTasks = pillarTasks
-            .filter((task: any) => task.isCustomTask === true)
+          const pillarCustomTasks = pillarTasks.filter((task: any) => task.isCustomTask === true);
+          pillarCustomTasks.forEach((task: any) => {
+            draftCustomTasks.push({
+              _id: task._id,
+              name: task.name,
+              description: task.description || '',
+              type: task.type || 'simple',
+              status: task.status,
+              isCustomTask: true,
+              parentId: task.parentId,
+              serviceProvider: task.serviceProvider,
+              externalId: task.externalId,
+              pillarId: pillar._id,
+            });
+          });
+          const customTasks = pillarCustomTasks
             .map((task: any) => ({
               name: task.name,
               description: task.description || '',
@@ -161,16 +183,31 @@ const ProjectComponent = React.memo(() => {
           isReplace,
           oldProjectId: oldProjectData?._id,
           queuedAt: Date.now(),
+          draft: {
+            selectedPathway: config.idpDraftMeta?.selectedPathway ?? '',
+            selectionByPillar: config.idpDraftMeta?.selectionByPillar ?? {},
+            pillarIdsToGetIdp: config.idpDraftMeta?.pillarIdsToGetIdp ?? [],
+            addedToPlanTasks,
+            customTasks: draftCustomTasks,
+          },
         });
         showAlert('success', t('template.IdpQueuedOffline'));
         config.onQueueInterventionPlanOffline?.();
         return;
       }
 
+      // Online: clear any leftover queued draft for this participant so the background
+      // sync engine can't later replay a submission that was just made directly.
+      const clearPendingDraft = () =>
+        offlineStorage
+          .remove(PARTICIPANT_KEYS.idpSubmissionPending(user?.id ?? '', userId))
+          .catch(() => {});
+
       if (isReplace) {
         const response = await updateInterventionPlan(oldProjectData._id, reqBody);
         if(!response.error) {
           const newProjectId = response?.data?.projectId
+          await clearPendingDraft();
           if (config.onSubmitInterventionPlan) {
             config.onSubmitInterventionPlan(newProjectId);
           }
@@ -183,6 +220,7 @@ const ProjectComponent = React.memo(() => {
         const response  = await submitInterventionPlan(reqBody);
         const newProjectId = response?.data?.projectId
         if (!response.error) {
+          await clearPendingDraft();
           showAlert('success', t('template.IdpCreationSuccess'));
           // Call the config callback if provided (this will update status to IN_PROGRESS)
           if (config.onSubmitInterventionPlan) {
@@ -198,7 +236,7 @@ const ProjectComponent = React.memo(() => {
     } finally {
       setIsSubmittingInterventionPlan(false);
     }
-  }, [projectData, oldProjectData, config, addedToPlanTasks, showAlert, t, user?.id]);
+  }, [projectData, oldProjectData, config, addedToPlanTasks, deletableTaskIds, showAlert, t, user?.id]);
 
   if (!projectData) {
     return null;

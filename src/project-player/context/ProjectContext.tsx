@@ -257,6 +257,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   onTaskUpdate,
   offlineKeyPrefix = '',
   participantId = '',
+  initialAddedToPlanTasks = {},
 }) => {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -264,15 +265,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   const [projectData, setProjectData] = useState<ProjectData | null>(
     initialData,
   );
-  
+
   const projectDataRef = useRef<ProjectData | null>(initialData);
   const [isLoading] = useState(false);
   const [error] = useState<Error | null>(null);
-  const [addedToPlanTasks, setAddedToPlanTasks] = useState<Record<string, boolean>>({});
+  const [addedToPlanTasks, setAddedToPlanTasks] = useState<Record<string, boolean>>(initialAddedToPlanTasks);
 
   const addedToPlanStoreRef = useRef<AddedToPlanStore | null>(null);
   if (addedToPlanStoreRef.current === null) {
-    addedToPlanStoreRef.current = createAddedToPlanStore({});
+    addedToPlanStoreRef.current = createAddedToPlanStore(initialAddedToPlanTasks);
   }
 
   const isEditMode = config.mode === MODE.editMode.mode;

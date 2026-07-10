@@ -12,9 +12,8 @@ import {
   InputField,
   Textarea,
   TextareaInput,
-  useToast,
 } from '@gluestack-ui/themed';
-import { LucideIcon, Modal, showSuccessToast, useAlert } from '@ui';
+import { LucideIcon, Modal, useAlert } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Select from '@ui/Inputs/Select';
@@ -36,7 +35,6 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
   mode = 'add',
 }) => {
   const { t } = useLanguage();
-  const toast = useToast();
   const { showAlert } = useAlert();
   const {
     projectData,
@@ -152,9 +150,9 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
           description: instructions,
           serviceProvider: serviceProvider,
           parentId: task?.parentId,
-          pillarName: findParentPillar(task?.parentId || '')?.label,
+          // pillarName: findParentPillar(task?.parentId || '')?.name,
         });
-        showSuccessToast(toast, t('projectPlayer.customTaskUpdateSuccess'));
+        showAlert("success",t('projectPlayer.customTaskUpdateSuccess'))
         handleCloseModal();
       } catch (e) {
         showAlert(
@@ -182,7 +180,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     setIsSubmitting(true);
     try {
       await addTask(pillarIdToUse!, newTask);
-      showSuccessToast(toast, t('projectPlayer.customTaskAddSuccess'));
+      showAlert("success",t('projectPlayer.customTaskAddSuccess'));
       handleCloseModal();
     } catch (e) {
       showAlert(
@@ -201,14 +199,13 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     addTask,
     handleCloseModal,
     findParentPillar,
-    toast,
     t,
     showAlert,
     projectData?.userProfile?.id
   ]);
 
   const parentPillarName =
-    propPillarName || findParentPillar(task?.parentId || '')?.label;
+    propPillarName || findParentPillar(task?.parentId || '')?.name;
 
   const shouldShowDropdown = !isPreviewMode && !isEditMode;
 

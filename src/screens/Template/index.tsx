@@ -37,6 +37,10 @@ import { STATUS, PATHWAY_TAGS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
 import { PageHeader } from '@components/PageHeader';
 import LogVisitModulePopup from '../ParticipantDetail/LogVisitModulePopup';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { Task } from 'src/project-player/types/project.types';
 
 const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
@@ -44,6 +48,7 @@ const DevelopInterventionPlan: React.FC = () => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user, setNavbarData } = useAuth();
+  const { isSyncing } = useOfflineSync();
 
   const participantId = (route.params as { id?: string })?.id || '';
   const existingProjectId = (route.params as { projectId?: string })?.projectId;
@@ -69,6 +74,11 @@ const DevelopInterventionPlan: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [idpCreated, setIdpCreated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Resumed state from a pending offline IDP draft for this participant (if any) — set
+  // once, seeded into the ProjectPlayer preview session instead of starting empty.
+  const [resumedAddedToPlanTasks, setResumedAddedToPlanTasks] = useState<Record<string, boolean>>({});
+  const [resumedCustomTasks, setResumedCustomTasks] = useState<Array<Task & { pillarId: string }>>([]);
 
   /* -------------------- DERIVED -------------------- */
   const participantName = participant?.name || '-';
@@ -252,6 +262,14 @@ const DevelopInterventionPlan: React.FC = () => {
     onSubmitInterventionPlan: handleIdpCreation,
     onQueueInterventionPlanOffline: handleQueueInterventionPlanOffline,
     onChangePathway: handleChangePathway,
+    isOfflineSyncing: isSyncing,
+    // Live selection state, captured fresh on every submit so a queued offline IDP
+    // record can be resumed with the exact Pathway/Category selections in effect.
+    idpDraftMeta: {
+      selectedPathway,
+      selectionByPillar,
+      pillarIdsToGetIdp,
+    },
   };
 
   // Combine pillarIdsToGetIdp with selected subcategory IDs
@@ -271,6 +289,8 @@ const DevelopInterventionPlan: React.FC = () => {
       pillarCategoryRelation: getPillarCategoryRelationships,
       oldProjectId: existingProjectId,
       offlineKeyPrefix: user?.id ?? '',
+      initialAddedToPlanTasks: resumedAddedToPlanTasks,
+      initialCustomTasks: resumedCustomTasks,
     }),
     [
       categoryIdsArray,
@@ -278,6 +298,8 @@ const DevelopInterventionPlan: React.FC = () => {
       getPillarCategoryRelationships,
       participant?.idpProjectId,
       existingProjectId,
+      resumedAddedToPlanTasks,
+      resumedCustomTasks,
       user?.id,
     ],
   );
@@ -291,6 +313,39 @@ const DevelopInterventionPlan: React.FC = () => {
     const data = getParticipantById(participantId);
     setParticipant(data);
   }, [participantId]);
+
+  // Resume a pending offline IDP draft for this participant, if one exists — prefills
+  // the Pathway + Category selections and seeds the Preview session's accept/reject and
+  // custom-task state instead of starting a second, conflicting draft. Only applies to
+  // the plain "create/first submission" flow (existingProjectId is the separate
+  // "replace pathway on an already-synced plan" flow, reached only while online).
+  useEffect(() => {
+    if (!participantId || !user?.id || existingProjectId || isSyncing) return;
+
+    let isMounted = true;
+    (async () => {
+      const pending = await offlineStorage.read<{
+        draft?: {
+          selectedPathway: string;
+          selectionByPillar: Record<string, PillarSelection>;
+          addedToPlanTasks: Record<string, boolean>;
+          customTasks: Array<Task & { pillarId: string }>;
+        };
+      }>(PARTICIPANT_KEYS.idpSubmissionPending(user.id, participantId));
+
+      if (!isMounted || !pending?.draft) return;
+
+      setResumedAddedToPlanTasks(pending.draft.addedToPlanTasks ?? {});
+      setResumedCustomTasks(pending.draft.customTasks ?? []);
+      if (pending.draft.selectedPathway) {
+        handlePathwaySelection(pending.draft.selectedPathway, pending.draft.selectionByPillar ?? {});
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [participantId, user?.id, existingProjectId, isSyncing]);
 
   // Fetch templates & categories (RUNS ONLY ONCE)
   useEffect(() => {
@@ -348,9 +403,15 @@ const DevelopInterventionPlan: React.FC = () => {
     }
   };
 
-  const handlePathwaySelection = async (id: string) => {
+  const handlePathwaySelection = async (
+    id: string,
+    prefillSelection?: Record<string, PillarSelection>,
+  ) => {
     try {
       setSelectedPathway(id);
+      // Reset per-pillar category selections on every pathway pick — unless a resumed
+      // offline draft's prior selections for this exact pathway are being restored.
+      setSelectionByPillar(prefillSelection ?? {});
       const res = await getCategoryList(id);
       const pillars = res?.data ?? [];
       setPillarData(pillars);
@@ -482,6 +543,9 @@ const DevelopInterventionPlan: React.FC = () => {
                 <Pressable
                   key={pathway?._id}
                   {...(templateStyles.pressableCard as any)}
+                  {...(pathway._id === selectedPathway
+                    ? { borderColor: '$primary500', borderWidth: 2 }
+                    : {})}
                   // onPress={handleCategorySelection()}
                   onPress={() => handlePathwaySelection(pathway._id)}
                 >
@@ -497,9 +561,18 @@ const DevelopInterventionPlan: React.FC = () => {
                       />
                     </Box>
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
-                        {pathway.name}
-                      </Text>
+                      <HStack space="sm" alignItems="center">
+                        <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
+                          {pathway.name}
+                        </Text>
+                        {pathway._id === selectedPathway && (
+                          <LucideIcon
+                            name="CircleCheck"
+                            size={18}
+                            color={theme.tokens.colors.primary500}
+                          />
+                        )}
+                      </HStack>
                       <Text
                         {...TYPOGRAPHY.bodySmall}
                         color="$textMutedForeground"

@@ -533,6 +533,7 @@ export interface PendingBreakdown {
   files: number;
   forms: number;
   tasks: number;
+  idp: number;
   failed: number;
   total: number;
 }
@@ -545,16 +546,18 @@ export interface ParticipantPendingEntry {
   files: number;
   forms: number;
   tasks: number;
+  idp: number;
   total: number;
 }
 
 export async function getPendingBreakdown(userId: string, participantIds?: string[]): Promise<PendingBreakdown> {
   const ids = participantIds ?? (await getOfflineParticipantIds(userId));
-  if (ids.length === 0) return { files: 0, forms: 0, tasks: 0, failed: 0, total: 0 };
+  if (ids.length === 0) return { files: 0, forms: 0, tasks: 0, idp: 0, failed: 0, total: 0 };
 
   let files = 0,
     forms = 0,
     tasks = 0,
+    idp = 0,
     failed = 0;
 
   for (const id of ids) {
@@ -570,6 +573,9 @@ export async function getPendingBreakdown(userId: string, participantIds?: strin
         const edits = await offlineStorage.read<any>(key);
         if (edits?.tasks?.length) tasks += edits.tasks.length;
       }
+
+      const pendingIdp = await offlineStorage.read<any>(PARTICIPANT_KEYS.idpSubmissionPending(userId, id));
+      if (pendingIdp) idp += 1;
     } catch { /* non-fatal */ }
   }
 
@@ -578,7 +584,7 @@ export async function getPendingBreakdown(userId: string, participantIds?: strin
     if (syncFailed?.length) failed = syncFailed.length;
   } catch { /* non-fatal */ }
 
-  return { files, forms, tasks, failed, total: files + forms + tasks };
+  return { files, forms, tasks, idp, failed, total: files + forms + tasks + idp };
 }
 
 /**
@@ -594,7 +600,7 @@ export async function getPerParticipantPendingBreakdown(userId: string): Promise
 
   for (const id of ids) {
     try {
-      let files = 0, forms = 0, tasks = 0;
+      let files = 0, forms = 0, tasks = 0, idp = 0;
 
       const filesPending = await offlineStorage.read<any[]>(PARTICIPANT_KEYS.filesPending(userId, id));
       if (filesPending?.length) files = filesPending.length;
@@ -608,7 +614,10 @@ export async function getPerParticipantPendingBreakdown(userId: string): Promise
         if (edits?.tasks?.length) tasks += edits.tasks.length;
       }
 
-      const total = files + forms + tasks;
+      const pendingIdp = await offlineStorage.read<any>(PARTICIPANT_KEYS.idpSubmissionPending(userId, id));
+      if (pendingIdp) idp = 1;
+
+      const total = files + forms + tasks + idp;
       if (total === 0) continue; // skip participants with no pending items
 
       // Read snapshot for display name / external ID
@@ -619,7 +628,7 @@ export async function getPerParticipantPendingBreakdown(userId: string): Promise
         id;
       const externalId = snapshot?.externalId ?? snapshot?.userId ?? id;
 
-      entries.push({ participantId: id, name, externalId, files, forms, tasks, total });
+      entries.push({ participantId: id, name, externalId, files, forms, tasks, idp, total });
     } catch { /* non-fatal — skip this participant */ }
   }
 

@@ -44,6 +44,7 @@ interface ParticipantSyncState {
   completedFiles: number;
   completedForms: number;
   completedTasks: number;
+  completedIdp: number;
 }
 
 const IDLE_STATE: ParticipantSyncState = {
@@ -54,6 +55,7 @@ const IDLE_STATE: ParticipantSyncState = {
   completedFiles: 0,
   completedForms: 0,
   completedTasks: 0,
+  completedIdp: 0,
 };
 
 // ── Dialog types ──────────────────────────────────────────────────────────────
@@ -108,7 +110,7 @@ function applyProgress(
   entry: ParticipantPendingEntry,
   p: SyncProgress,
 ): ParticipantSyncState {
-  let { completedFiles, completedForms, completedTasks } = prev;
+  let { completedFiles, completedForms, completedTasks, completedIdp } = prev;
   if (p.stage === 'files') {
     completedFiles = p.current;
   } else if (p.stage === 'forms') {
@@ -117,10 +119,14 @@ function applyProgress(
   } else if (p.stage === 'tasks') {
     completedForms = entry.forms;
     completedTasks = Math.min(p.current, entry.tasks);
+  } else if (p.stage === 'idp') {
+    completedTasks = entry.tasks;
+    completedIdp = p.current;
   } else if (p.stage === 'done') {
     completedFiles = entry.files;
     completedForms = entry.forms;
     completedTasks = entry.tasks;
+    completedIdp = entry.idp;
   }
   return {
     ...prev,
@@ -128,6 +134,7 @@ function applyProgress(
     completedFiles,
     completedForms,
     completedTasks,
+    completedIdp,
     syncing: p.stage !== 'done',
     done: p.stage === 'done',
   };
@@ -242,6 +249,7 @@ const SyncOverviewModal: React.FC = () => {
             completedFiles: entry.files,
             completedForms: entry.forms,
             completedTasks: entry.tasks,
+            completedIdp: entry.idp,
           },
         }));
 
@@ -1018,19 +1026,21 @@ const SyncOverviewModal: React.FC = () => {
                                   {renderProgressRow(state?.completedFiles ?? 0, entry.files, t('offlineSync.labelFiles'), state?.stage === 'files')}
                                   {renderProgressRow(state?.completedForms ?? 0, entry.forms, t('offlineSync.labelForms'), state?.stage === 'forms')}
                                   {renderProgressRow(state?.completedTasks ?? 0, entry.tasks, t('offlineSync.labelTasks'), state?.stage === 'tasks')}
+                                  {renderProgressRow(state?.completedIdp ?? 0, entry.idp, t('offlineSync.labelIdp'), state?.stage === 'idp')}
                                 </>
                               ) : (
                                 <>
                                   {entry.files > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingFiles', { count: entry.files })}</Text>}
                                   {entry.forms > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingForms', { count: entry.forms })}</Text>}
                                   {entry.tasks > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingTasks', { count: entry.tasks })}</Text>}
+                                  {entry.idp > 0 && <Text fontSize="$xs" color="$textSecondary">{t('offlineSync.pendingIdp')}</Text>}
                                 </>
                               )}
                             </HStack>
 
                             {isSyncing && state?.stage && state.stage !== 'idle' && (
                               <Text fontSize="$xs" color="$primary500">
-                                {state.stage === 'files' ? t('offlineSync.stageFiles') : state.stage === 'forms' ? t('offlineSync.stageForms') : t('offlineSync.stageTasks')}
+                                {state.stage === 'files' ? t('offlineSync.stageFiles') : state.stage === 'forms' ? t('offlineSync.stageForms') : state.stage === 'idp' ? t('offlineSync.stageIdp') : t('offlineSync.stageTasks')}
                               </Text>
                             )}
                             {isDone && <Text fontSize="$xs" color="$success600">{t('offlineSync.syncComplete')}</Text>}
