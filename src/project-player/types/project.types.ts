@@ -28,6 +28,7 @@ export interface ProjectData {
 export interface Task {
   _id: string;
   name: string;
+  label?: string;
   description?: string;
   type: (typeof TASK_TYPE)[keyof typeof TASK_TYPE];
   status?: TaskStatus;
