@@ -597,7 +597,7 @@ const SyncOverviewModal: React.FC = () => {
       return (
         <Modal
           isOpen
-          onClose={() => resolveDialog('cancel')}
+          onClose={() => console.log('cancel')}
           headerTitle={headerTitle}
           size="lg"
           showCloseButton={false}
@@ -727,7 +727,7 @@ const SyncOverviewModal: React.FC = () => {
       return (
         <Modal
           isOpen
-          onClose={() => resolveDialog('cancel')}
+          onClose={() => console.log('cancel')}
           headerTitle={t('offlineSync.observationConflictTitle')}
           size="lg"
           showCloseButton={false}
