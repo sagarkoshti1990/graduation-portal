@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
   HStack,
@@ -87,7 +87,13 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const { isOffline, offlineDataVersion } = useOfflineSync();
   // Single modal state - tracks which modal is open (null = closed)
   const [modalType, setModalType] = useState<
-    'dropout' | 'log-visit' | 'view-log' | 'view-check-ins-Logs' | 'download' | null
+    | 'dropout'
+    | 'dropout-offline-warning'
+    | 'log-visit'
+    | 'view-log'
+    | 'view-check-ins-Logs'
+    | 'download'
+    | null
   >(null);
 
   // Profile modal state for not-eligible participants
@@ -102,6 +108,9 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
   const [dropoutValidationError, setDropoutValidationError] = useState('');
   const [dropoutLoading, setDropoutLoading] = useState(false);
   const [menuItemsWithDownload,setMenuItemsWithDownload] = useState<MenuItemData[]>([]);
+  // Holds the validated dropout payload while the "Offline Data Found" warning
+  // dialog is shown, so it can be resumed after the user confirms removal.
+  const pendingDropoutRef = useRef<{ userEntityId: string; finalReason: string } | null>(null);
 
   // Log visit modal specific states
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
@@ -240,7 +249,49 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     setCustomDropoutReason('');
     setDropoutValidationError('');
     setSelectedSolutionId('');
+    pendingDropoutRef.current = null;
   }, []);
+
+  // Performs the actual dropout API call + success/error handling. Shared by the
+  // plain flow (no offline data) and the post-removal flow (offline data existed
+  // and the user confirmed removal in the warning dialog).
+  const submitDropout = useCallback(
+    async (userEntityId: string, finalReason: string) => {
+      setDropoutLoading(true);
+      try {
+        await updateEntityDetails({
+          userId: `${user?.id}`,
+          entityId: userEntityId,
+          entityUpdates: {
+            status: STATUS.DROPOUT,
+            dropoutReason: finalReason,
+          },
+        });
+
+        showAlert('success', t('actions.dropoutSuccess'));
+
+        // Close modal and reset state
+        setSelectedDropoutReason('');
+        setCustomDropoutReason('');
+        setDropoutValidationError('');
+        setModalType(null);
+
+        // Notify parent list so UI updates immediately (no full page refresh)
+        onDropoutSuccess?.(participant.userId);
+      } catch (error: any) {
+        logger.error('Error marking participant as dropout:', error);
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          t('actions.dropoutError');
+        showAlert('error', errorMessage);
+      } finally {
+        setDropoutLoading(false);
+        pendingDropoutRef.current = null;
+      }
+    },
+    [participant.userId, user?.id, showAlert, t, onDropoutSuccess],
+  );
 
   const handleDropoutConfirm = useCallback(async () => {
     if (!user?.id) {
@@ -292,45 +343,25 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             option => option.value === selectedDropoutReason,
           )?.label || selectedDropoutReason;
 
+    // DROPOUT is not offline-eligible — check for downloaded offline data before
+    // proceeding, using the same detection helper the "Remove Offline" menu
+    // action and the sync UI already rely on.
     setDropoutLoading(true);
+    let hasOfflineData = false;
     try {
-      await updateEntityDetails({
-        userId: `${user?.id}`,
-        entityId: userEntityId,
-        entityUpdates: {
-          status: STATUS.DROPOUT,
-          dropoutReason: finalReason,
-        },
-      });
-
-      showAlert('success', t('actions.dropoutSuccess'));
-
-      // If this participant had offline data, remove it — DROPOUT is not offline-eligible.
-      if (user?.id && participant.userId) {
-        removeOfflineDataIfIneligible(`${user.id}`, participant.userId, STATUS.DROPOUT).catch(() => {});
-      }
-
-      // Close modal and reset state
-      setSelectedDropoutReason('');
-      setCustomDropoutReason('');
-      setDropoutValidationError('');
-      setModalType(null);
-
-      // Notify parent list so UI updates immediately (no full page refresh)
-      onDropoutSuccess?.(participant.userId);
-
-      // Optionally refresh the page or trigger a callback to refresh participants list
-      // You might want to add a callback prop or use navigation to refresh
-    } catch (error: any) {
-      logger.error('Error marking participant as dropout:', error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        t('actions.dropoutError');
-      showAlert('error', errorMessage);
-    } finally {
-      setDropoutLoading(false);
+      hasOfflineData = await isParticipantOffline(`${user.id}`, participant.userId);
+    } catch (err) {
+      logger.warn('Failed to check offline data before dropout:', err);
     }
+
+    if (hasOfflineData) {
+      pendingDropoutRef.current = { userEntityId, finalReason };
+      setDropoutLoading(false);
+      setModalType('dropout-offline-warning');
+      return;
+    }
+
+    await submitDropout(userEntityId, finalReason);
   }, [
     participant,
     user?.id,
@@ -338,8 +369,28 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     t,
     selectedDropoutReason,
     customDropoutReason,
-    onDropoutSuccess,
+    submitDropout,
   ]);
+
+  // Bound to the "Offline Data Found" warning dialog's confirm button. Reuses the
+  // existing removeOfflineDataIfIneligible() helper (same one used elsewhere for
+  // ineligible-status cleanup) — it detects and deletes all participant-related
+  // offline data via the single deleteParticipantOfflineData() source of truth —
+  // then continues the dropout that was paused in handleDropoutConfirm.
+  const handleConfirmRemoveOfflineAndDropout = useCallback(async () => {
+    const pending = pendingDropoutRef.current;
+    if (!pending || !user?.id) return;
+
+    setDropoutLoading(true);
+    try {
+      await removeOfflineDataIfIneligible(`${user.id}`, participant.userId, STATUS.DROPOUT);
+      setBadgeRefreshKey(k => k + 1);
+    } catch (err) {
+      logger.warn('Failed to remove offline data before dropout:', err);
+    }
+
+    await submitDropout(pending.userEntityId, pending.finalReason);
+  }, [participant.userId, user?.id, submitDropout]);
 
   const handleFormSelect = (submission: any) => {
     setModalType('log-visit');
@@ -415,6 +466,10 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             <Text fontSize={'$lg'} fontWeight={'$semibold'}>
               {t('actions.confirmDropout') || 'Confirm Dropout'}
             </Text>
+          ) : modalType === 'dropout-offline-warning' ? (
+            <Text fontSize={'$lg'} fontWeight={'$semibold'}>
+              {t('actions.offlineDataFoundTitle')}
+            </Text>
           ) : modalType === 'log-visit' ? (
             <HStack
               space="md"
@@ -479,22 +534,34 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
               size={24}
               color={theme.tokens.colors.error.light}
             />
+          ) : modalType === 'dropout-offline-warning' ? (
+            <LucideIcon
+              name="AlertTriangle"
+              size={24}
+              color={theme.tokens.colors.error.light}
+            />
           ) : undefined
         }
         size="lg"
-        showCloseButton={modalType !== 'dropout'}
+        showCloseButton={modalType !== 'dropout' && modalType !== 'dropout-offline-warning'}
         cancelButtonText={
-          modalType === 'dropout' ? t('common.cancel') || 'Cancel' : undefined
+          modalType === 'dropout' || modalType === 'dropout-offline-warning'
+            ? t('common.cancel') || 'Cancel'
+            : undefined
         }
         confirmButtonText={
           modalType === 'dropout'
             ? dropoutLoading
               ? t('common.loading') || 'Loading...'
               : t('actions.confirmDropout') || 'Confirm Dropout'
-            : undefined
+            : modalType === 'dropout-offline-warning'
+              ? dropoutLoading
+                ? t('common.loading') || 'Loading...'
+                : t('actions.confirmRemoveOfflineDropout')
+              : undefined
         }
         onCancel={
-          modalType === 'dropout'
+          modalType === 'dropout' || modalType === 'dropout-offline-warning'
             ? dropoutLoading
               ? undefined
               : handleCloseModal
@@ -505,11 +572,15 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             ? dropoutLoading
               ? undefined
               : handleDropoutConfirm
-            : undefined
+            : modalType === 'dropout-offline-warning'
+              ? dropoutLoading
+                ? undefined
+                : handleConfirmRemoveOfflineAndDropout
+              : undefined
         }
         confirmButtonColor={modalType === 'dropout' ? '$primary500' : undefined}
         bodyProps={
-          modalType !== 'dropout'
+          modalType !== 'dropout' && modalType !== 'dropout-offline-warning'
             ? {
                 padding: 0,
                 paddingTop: 0,
@@ -618,6 +689,20 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
                   'This will change the participant\'s status to "Not Enrolled" and log the action in their history.'}
               </Text>
             </VStack>
+          </VStack>
+        )}
+
+        {modalType === 'dropout-offline-warning' && (
+          <VStack space="md">
+            <Text {...TYPOGRAPHY.paragraph} color="$textSecondary" lineHeight="$xl">
+              {t('actions.offlineDataFoundMessage')}
+            </Text>
+            <Text {...TYPOGRAPHY.paragraph} color="$textSecondary" lineHeight="$xl">
+              {t('actions.offlineDataFoundDetail')}
+            </Text>
+            <Text {...TYPOGRAPHY.paragraph} color="$textSecondary" lineHeight="$xl">
+              {t('actions.offlineDataFoundConfirmPrompt')}
+            </Text>
           </VStack>
         )}
 
