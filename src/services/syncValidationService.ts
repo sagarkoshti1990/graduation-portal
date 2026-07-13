@@ -27,6 +27,7 @@ import type { ObservationFormData, DownloadStatus } from '@app-types/offline';
 import { getParticipantsList } from './participantService';
 import { getProjectDetails } from '../project-player/services/projectPlayerService';
 import { getObservationSubmissions } from './solutionService';
+import { CARD_STATUS } from '@constants/app.constant';
 
 // ── Status priority maps ─────────────────────────────────────────────────────
 
@@ -228,15 +229,36 @@ async function fetchProjectOnline(
  * Tries common schema structures; returns 0 if the structure is unrecognised.
  */
 function extractTotalQuestions(schema: any): number {
-  const evidences: any[] = schema?.assessment?.evidences ?? [];
   let total = 0;
-  for (const ev of evidences) {
-    // Some schemas have ev.questions[], others have ev.sections[].questions[]
-    const qs: any[] = ev.questions ?? ev.sections?.flatMap((s: any) => s.questions ?? []) ?? [];
-    total += qs.length;
+
+  const evidences = schema?.assessment?.evidences ?? [];
+
+  for (const evidence of evidences) {
+    const sections = evidence?.sections ?? [];
+
+    for (const section of sections) {
+      const questions = section?.questions ?? [];
+
+      for (const question of questions) {
+        if (question?.responseType === 'pageQuestions') {
+          const pageQuestions = question?.pageQuestions ?? [];
+
+          total += pageQuestions.filter((q: any) => {
+            const visibleIf = q?.visibleIf;
+
+            return (
+              visibleIf === "" ||
+              (Array.isArray(visibleIf) && visibleIf.length === 0)
+            );
+          }).length;
+        }
+      }
+    }
   }
+
   return total;
 }
+
 
 /**
  * Counts answered questions and extracts file references from an answers object.
@@ -245,35 +267,43 @@ function extractTotalQuestions(schema: any): number {
  * object.  File references are detected by the presence of a data URL prefix
  * (`data:`) or a string that looks like an https URL to a hosted file.
  */
-function countAnsweredAndFiles(answers: any): { answered: number; fileNames: string[] } {
-  if (!answers || typeof answers !== 'object') return { answered: 0, fileNames: [] };
+function countAnsweredAndFiles(
+  answers: any
+): { answered: number; fileNames: string[] } {
+  if (!answers || typeof answers !== 'object') {
+    return { answered: 0, fileNames: [] };
+  }
+
   let answered = 0;
   const fileNames: string[] = [];
 
-  function scan(obj: any): void {
-    if (!obj || typeof obj !== 'object') return;
-    for (const [key, val] of Object.entries(obj)) {
-      if (val === null || val === undefined || val === '') continue;
-      if (typeof val === 'string') {
-        answered++;
-        if (val.startsWith('data:')) {
-          const ext = val.match(/^data:([^;]+)/)?.[1]?.split('/')[1] ?? 'bin';
-          fileNames.push(`${key}.${ext}`);
-        } else if (val.startsWith('https://') || val.startsWith('http://')) {
-          const name = val.split('/').pop()?.split('?')[0];
-          if (name) fileNames.push(name);
-        }
-      } else if (typeof val === 'boolean' || typeof val === 'number') {
-        answered++;
-      } else if (Array.isArray(val)) {
-        if (val.length > 0) answered++;
-      } else if (typeof val === 'object') {
-        scan(val);
-      }
-    }
-  }
+  Object.values(answers).forEach((answer: any) => {
+    const value = answer?.value;
 
-  scan(answers);
+    // Count only if value contains actual data
+    const hasValue =
+      value !== null &&
+      value !== undefined &&
+      value !== '' &&
+      (!Array.isArray(value) || value.length > 0);
+
+    if (hasValue) {
+      answered++;
+    }
+
+    // Extract file names
+    (answer?.fileName || []).forEach((file: string) => {
+      if (file.startsWith('data:')) {
+        const ext =
+          file.match(/^data:([^;]+)/)?.[1]?.split('/')[1] ?? 'bin';
+        fileNames.push(`${answer.qid}.${ext}`);
+      } else {
+        const name = file.split('/').pop()?.split('?')[0];
+        if (name) fileNames.push(name);
+      }
+    });
+  });
+
   return { answered, fileNames };
 }
 
@@ -323,7 +353,7 @@ async function buildObservationConflictDetails(
     observationId: formData.observationId,
     submissionNumber: formData.submissionNumber,
     submissionId: formData.submissionId,
-    offlineStatus: formData.status,
+    offlineStatus: editData?.status === "submit" ? CARD_STATUS.COMPLETED : formData.status,
     offlineUpdatedAt: formData.updatedAt,
     onlineStatus,
     onlineUpdatedAt,
@@ -608,23 +638,25 @@ export async function runValidationForParticipant(
 
     if (!onlineSubmission) continue;
 
-    const onlineObsStatus: string = onlineSubmission.status ?? 'notStarted';
+    const onlineObsStatus: string = onlineSubmission.status ?? CARD_STATUS.STARTED;
     const onlineUpdatedAt: string | undefined = onlineSubmission.updatedAt;
-
+console.log(await buildObservationConflictDetails(
+          formData, editData, onlineObsStatus, onlineUpdatedAt, CARD_STATUS.COMPLETED,
+        ),"compairesagar");
     // Rule 1: already completed online → offer removal (no sync allowed)
-    if (onlineObsStatus === 'completed') {
+    if (onlineObsStatus === CARD_STATUS.COMPLETED) {
       plan.formResults.push({
         formId,
         outcome: 'remove',
         submissionId: formData.submissionId,
         conflictDetails: await buildObservationConflictDetails(
-          formData, editData, onlineObsStatus, onlineUpdatedAt, 'completed',
+          formData, editData, onlineObsStatus, onlineUpdatedAt, CARD_STATUS.COMPLETED,
         ),
       });
       continue;
     }
 
-    const offlineObsPri = getPriority(OBSERVATION_STATUS_PRIORITY, formData.status);
+    const offlineObsPri = getPriority(OBSERVATION_STATUS_PRIORITY, editData?.status === "submit" ? CARD_STATUS.COMPLETED : formData.status);
     const onlineObsPri  = getPriority(OBSERVATION_STATUS_PRIORITY, onlineObsStatus);
 
     if (onlineObsPri > offlineObsPri) {

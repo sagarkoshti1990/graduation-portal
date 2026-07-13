@@ -192,59 +192,62 @@ const WebComponentPlayer = React.memo(
     const handleMessage = (event: any) => {
       try {
         const message = JSON.parse(event.nativeEvent.data);
-
-        // Handle progress event
-      if (message.type === 'success') {
-        logger.info('Player initialized successfully:', message.data);
-        setLoading(false);
-      }
-        if (message.type === 'submissionSuccess') {
-        if(afterSubmitCallback) {
-          afterSubmitCallback(message);
+        logger.info('Custom event received from questionnaire-player-main:', {
+          type: event?.type,
+          detail: event.nativeEvent.data,
+        });
+          // Handle progress event
+        if (message.type === 'success') {
+          logger.info('Player initialized successfully:', message.data);
+          setLoading(false);
         }
-      } else if (message.type === 'PROGRESS') {
-        const progressValue = message;
-        // Extract progress value - could be a number or an object with progress data
-        if (typeof progressValue === 'number') {
-          // Direct number value
-          if (_getProgress) {
-            _getProgress(progressValue);
+        if (message.type === 'submissionSuccess') {
+          if(afterSubmitCallback) {
+            afterSubmitCallback(message);
           }
-        } else if (typeof progressValue === 'object' && progressValue !== null) {
-          // Check if it has the expected structure with data.percentage
-          if ((progressValue as any).data?.percentage !== undefined) {
-            // Pass the object structure as expected by Observation component
+        } else if (message.type === 'PROGRESS') {
+          const progressValue = message;
+          // Extract progress value - could be a number or an object with progress data
+          if (typeof progressValue === 'number') {
+            // Direct number value
             if (_getProgress) {
-              _getProgress({
-                data: { percentage: (progressValue as any).data.percentage },
-                type: (progressValue as any).type || event.type,
-              });
+              _getProgress(progressValue);
             }
-          } else {
-            // Check common property names for progress value
-            const value = (progressValue as any).progress ?? 
-                         (progressValue as any).value ?? 
-                         (progressValue as any).percentage ?? 
-                         (progressValue as any).message;
-            
-            if (value !== undefined && typeof value === 'number') {
+          } else if (typeof progressValue === 'object' && progressValue !== null) {
+            // Check if it has the expected structure with data.percentage
+            if ((progressValue as any).data?.percentage !== undefined) {
+              // Pass the object structure as expected by Observation component
               if (_getProgress) {
-                _getProgress(value);
+                _getProgress({
+                  data: { percentage: (progressValue as any).data.percentage },
+                  type: (progressValue as any).type || event.type,
+                });
               }
             } else {
-              // If no numeric value found, pass the entire detail object
-              logger.info('Progress event detail:', progressValue);
-              if (_getProgress) {
-                _getProgress(progressValue as any);
+              // Check common property names for progress value
+              const value = (progressValue as any).progress ?? 
+                          (progressValue as any).value ?? 
+                          (progressValue as any).percentage ?? 
+                          (progressValue as any).message;
+              
+              if (value !== undefined && typeof value === 'number') {
+                if (_getProgress) {
+                  _getProgress(value);
+                }
+              } else {
+                // If no numeric value found, pass the entire detail object
+                logger.info('Progress event detail:', progressValue);
+                if (_getProgress) {
+                  _getProgress(progressValue as any);
+                }
               }
             }
           }
+        } else if (message.type === 'QUESTIONNAIRE_SAVE' || message.type === "QUESTIONNAIRE_SUBMIT") {
+          _getOfflineData(message.data)
+        } else if (message.type === 'TOAST') {
+          _getToast(message.data);
         }
-      } else if (message.type === 'QUESTIONNAIRE_SAVE' || message.type === "QUESTIONNAIRE_SUBMIT") {
-        _getOfflineData(message.data)
-      } else if (message.type === 'TOAST') {
-        _getToast(message.data);
-      }
       } catch (error) {
         logger.error('Error parsing message from WebView:', error);
       }

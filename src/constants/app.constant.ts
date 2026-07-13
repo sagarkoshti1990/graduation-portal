@@ -85,6 +85,7 @@ export const CARD_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
   NOT_STARTED: 'not-started',
+  STARTED: "started",
   IN_PROGRESS: 'started',
   COMPLETED: 'completed',
   GRADUATED: 'graduated',

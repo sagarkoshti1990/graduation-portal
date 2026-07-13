@@ -293,25 +293,39 @@ async function fetchAndStoreProject(userId: string, participantId: string, proje
   logger.info(`DownloadService: Stored project "${projectId}" with ${tasks.length} tasks`);
   return tasks;
 }
-
-const getSubmissionNumber = (
+const getSubmissionInfo = (
   submissions: {
     submissionNumber?: number;
     status?: string;
   }[] = []
-): number => {
-  if (!submissions.length) return 1;
+): {
+  submissionNumber: number;
+  status: string;
+} => {
+  if (!submissions.length) {
+    return {
+      submissionNumber: 1,
+      status: CARD_STATUS.STARTED,
+    };
+  }
 
   const highestSubmission = submissions.reduce((prev, current) =>
-    (current.submissionNumber || 0) >
-    (prev.submissionNumber || 0)
+    (current.submissionNumber || 0) > (prev.submissionNumber || 0)
       ? current
       : prev
   );
 
-  return highestSubmission?.status === CARD_STATUS.COMPLETED
-    ? (highestSubmission.submissionNumber || 0) + 1
-    : highestSubmission.submissionNumber || 1;
+  if (highestSubmission.status === CARD_STATUS.COMPLETED) {
+    return {
+      submissionNumber: (highestSubmission.submissionNumber || 0) + 1,
+      status: CARD_STATUS.STARTED,
+    };
+  }
+
+  return {
+    submissionNumber: highestSubmission.submissionNumber || 1,
+    status: highestSubmission.status || CARD_STATUS.STARTED,
+  };
 };
 
 /**
@@ -360,12 +374,14 @@ async function processObservationForm(
 
   // Step 3: Ensure a submission exists; re-fetch after creation for a fresh evidenceCode
   let submissions: any[] = [];
+  let status: string = ""
   const subsResp = await withRetry(
     () => getObservationSubmissions({ observationId, entityId: entityId! }),
     `submissions:${observationId}`,
   );
   submissions = subsResp?.result ?? [];
   let submissionId: string | undefined = submissions[0]?._id;
+  status = submissions[0]?.status;
 
   if (!submissionId) {
     await withRetry(
@@ -378,12 +394,15 @@ async function processObservationForm(
     );
     submissions = freshResp?.result ?? [];
     submissionId = submissions[0]?._id;
+    status = submissions[0]?.status;
   }
 
   if (!submissionId) throw new Error(`Could not resolve submissionId for observation "${observationId}"`);
   
   if(allowMultipleAssessemts) {
-    submissionNumber = getSubmissionNumber(submissions)
+    const subData = getSubmissionInfo(submissions);
+    submissionNumber = subData?.submissionNumber
+    status = subData?.status
   }
   
   const evidenceCode: string = submissions[0]?.evidencesStatus?.[0]?.code ?? 'OB';
@@ -410,7 +429,7 @@ async function processObservationForm(
     observationId,
     schema,
     data: schema?.submission?.answers ?? assessmentResp?.result?.submission?.answers ?? {},
-    status: 'started',
+    status: status || 'started',
     updatedAt: new Date().toISOString(),
     downloadedAt: Date.now(),
   };
