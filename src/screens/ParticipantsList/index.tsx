@@ -137,6 +137,11 @@ const ParticipantsList: React.FC = () => {
   const statusItems = useMemo<StatusFilterItem[]>(() => {
     // Active
     if (activeFilter === 'active') {
+
+      if(isSelectionMode) {
+        return allStatusItems.filter((item: StatusFilterItem) => ALLOWOFFLINESTATUS.includes(item.key));
+      } 
+
       return allStatusItems.filter((item: StatusFilterItem) => 
         item.key === STATUS.NOT_ONBOARDED ||
         item.key === STATUS.ONBOARDED || 
@@ -151,7 +156,7 @@ const ParticipantsList: React.FC = () => {
         item.key === STATUS.NOT_ELIGIBLE
       );
     }
-  }, [allStatusItems, activeFilter]);
+  }, [allStatusItems, activeFilter, isSelectionMode]);
 
   // Calculate counts for Active and Inactive filters
   const activeInactiveCounts = useMemo(() => {
@@ -405,16 +410,18 @@ const ParticipantsList: React.FC = () => {
                   defaultValue={searchKey}
                 />
               </Box>
-              <Box {...styles.selectContainer}>
-                <Select
-                  options={[
-                    { label: `${t('participants.active')} (${activeInactiveCounts.active})`, value: 'active' },
-                    { label: `${t('participants.inactive')} (${activeInactiveCounts.inactive})`, value: 'inactive' },
-                  ]}
-                  value={activeFilter}
-                  onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
-                />
-              </Box>
+              {!isSelectionMode &&
+                <Box {...styles.selectContainer}>
+                  <Select
+                    options={[
+                      { label: `${t('participants.active')} (${activeInactiveCounts.active})`, value: 'active' },
+                      { label: `${t('participants.inactive')} (${activeInactiveCounts.inactive})`, value: 'inactive' },
+                    ]}
+                    value={activeFilter}
+                    onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
+                  />
+                </Box>
+              }
               {!isOffline && (
                 <Box {...styles.buttonContainer}>
                   <GroupCheckInsButton />

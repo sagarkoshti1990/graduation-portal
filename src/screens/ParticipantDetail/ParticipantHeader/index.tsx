@@ -272,10 +272,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const effectiveProgress =
     updatedProgress ?? graduationProgressProp ?? graduationProgress;
 
-console.log("outhello");
   useEffect(() => {
     let isMounted = true;
-    console.log("hello")
     isOnboardingComplete(projectData?.tasks, user?.id ?? '', participantProp?.userId ?? '')
       .then(complete => {
         console.log(complete,"complete")
