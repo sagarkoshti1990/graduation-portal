@@ -9,6 +9,7 @@ export interface Participant {
   idpProgress?: any;
   status?: StatusType;
   userDetails?: User;
+  onBoardedProjectId?: string;
   idpProjectId?:string;
   certificateId?:string;
   accountUserStatus?: string;

@@ -270,7 +270,7 @@ const ParticipantsList: React.FC = () => {
   const handleRowClick = useCallback(
     (participant: Participant) => {
       if (isSelectionMode) {
-        if (ALLOWOFFLINESTATUS.includes(participant.status as string)) {
+        if (ALLOWOFFLINESTATUS.includes(participant.status as string) && participant?.onBoardedProjectId) {
           toggleSelectParticipant(participant);
         }
         return;
@@ -291,9 +291,10 @@ const ParticipantsList: React.FC = () => {
   // Bulk offline download — participants on the current page eligible for download,
   // mirroring the same ALLOWOFFLINESTATUS gate used by the single-row "Download Offline" action.
   const eligibleOnPage = useMemo(
-    () => participants.filter(p => ALLOWOFFLINESTATUS.includes(p.status as string)),
+    () => participants.filter(p => ALLOWOFFLINESTATUS.includes(p.status as string) && p.onBoardedProjectId),
     [participants],
   );
+
   const selectedOnPageCount = useMemo(
     () => eligibleOnPage.filter(p => selectedParticipants.has(p.userId)).length,
     [eligibleOnPage, selectedParticipants],
@@ -358,7 +359,7 @@ const ParticipantsList: React.FC = () => {
       return {
         ...col,
         render: (participant: Participant) => {
-          const eligible = ALLOWOFFLINESTATUS.includes(participant.status as string);
+          const eligible = ALLOWOFFLINESTATUS.includes(participant.status as string) && participant?.onBoardedProjectId;
           return (
             <HStack space="sm" alignItems="center">
               {eligible ? (
