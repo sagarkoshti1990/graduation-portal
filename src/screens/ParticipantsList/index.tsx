@@ -23,10 +23,10 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import dataService from '../../services/dataService';
 import type { ParticipantOverview } from '@app-types/participant';
-import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { STATUS } from '@constants/app.constant';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
-import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
+import { useAuth } from '@contexts/AuthContext';
 import logger from '@utils/logger';
 import { PageHeader } from '@components/PageHeader';
 import { getTargetedSolutions } from '../../services/solutionService';
@@ -66,7 +66,6 @@ const ParticipantsList: React.FC = () => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user } = useAuth();
-  const isAdminPanelAccess = useIsdminPanalAccess();
 
   // Set document title
   useDocumentTitle(t('lc.pageTitle.participants'));
@@ -234,15 +233,12 @@ const ParticipantsList: React.FC = () => {
 
   const handleRowClick = useCallback(
     (participant: Participant) => {
-      if (!isAdminPanelAccess && participant.userDetails?.status === USER_STATUS.INACTIVE) {
-        return;
-      }
       // @ts-ignore
       navigation.navigate('participant-detail', {
         id: participant.userId,
       });
     },
-    [navigation, isAdminPanelAccess],
+    [navigation],
   );
 
   const handleDropoutSuccess = useCallback((participantId: string) => {
