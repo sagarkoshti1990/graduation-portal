@@ -625,14 +625,14 @@ const SyncOverviewModal: React.FC = () => {
                   </Text>
                   <Text fontSize="$sm" fontWeight="$semibold">{tc?.taskName ?? '—'}</Text>
                 </VStack>
-                {tc?.taskExternalId && (
+                {/* {tc?.taskExternalId && (
                   <VStack space="xs">
                     <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
                       {t('offlineSync.taskConflictExternalId')}
                     </Text>
                     <Text fontSize="$sm">{tc.taskExternalId}</Text>
                   </VStack>
-                )}
+                )} */}
 
                 {/* Status comparison */}
                 <VStack space="xs">
@@ -748,13 +748,21 @@ const SyncOverviewModal: React.FC = () => {
               <VStack space="md" mt="$2">
 
                 {/* Observation info */}
-                <VStack space="xs">
+                <HStack space="md">
+                  <VStack space="xs">
                   <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
                     {t('offlineSync.observationConflictName')}
                   </Text>
                   <Text fontSize="$sm" fontWeight="$semibold">{oc?.observationName ?? '—'}</Text>
                 </VStack>
-                {oc?.observationId && (
+                  <VStack flex={1} space="xs">
+                    <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
+                      {t('offlineSync.observationConflictSubmissionNumber')}
+                    </Text>
+                    <Text fontSize="$sm">{oc?.submissionNumber ?? '—'}</Text>
+                  </VStack>
+                </HStack>
+                {/* {oc?.observationId && (
                   <VStack space="xs">
                     <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
                       {t('offlineSync.observationConflictObsId')}
@@ -762,23 +770,14 @@ const SyncOverviewModal: React.FC = () => {
                     <Text fontSize="$sm">{oc.observationId}</Text>
                   </VStack>
                 )}
-                <HStack space="md">
-                  <VStack flex={1} space="xs">
+                {oc?.submissionId && (
+                  <VStack flex={2} space="xs">
                     <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
-                      {t('offlineSync.observationConflictSubmissionNumber')}
+                      {t('offlineSync.observationConflictSubmissionId')}
                     </Text>
-                    <Text fontSize="$sm">{oc?.submissionNumber ?? '—'}</Text>
+                    <Text fontSize="$sm" numberOfLines={1}>{oc.submissionId}</Text>
                   </VStack>
-                  {oc?.submissionId && (
-                    <VStack flex={2} space="xs">
-                      <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
-                        {t('offlineSync.observationConflictSubmissionId')}
-                      </Text>
-                      <Text fontSize="$sm" numberOfLines={1}>{oc.submissionId}</Text>
-                    </VStack>
-                  )}
-                </HStack>
-
+                )} */}
                 {/* Status comparison */}
                 <VStack space="xs">
                   <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
@@ -826,6 +825,7 @@ const SyncOverviewModal: React.FC = () => {
                 </VStack>
 
                 {/* Evidence comparison */}
+                {!!(oc?.offlineEvidenceCount || oc?.onlineEvidenceCount) &&
                 <VStack space="xs">
                   <Text fontSize="$xs" fontWeight="$semibold" color="$textMutedForeground">
                     {t('offlineSync.observationConflictEvidence')}
@@ -858,7 +858,7 @@ const SyncOverviewModal: React.FC = () => {
                       )}
                     </VStack>
                   </HStack>
-                </VStack>
+                </VStack>}
 
                 {/* Conflict reason */}
                 {oc?.conflictReasons?.length ? (

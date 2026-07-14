@@ -331,6 +331,7 @@ const ParticipantsList: React.FC = () => {
 
   const handleEnterSelectionMode = useCallback(() => {
     setIsSelectionMode(true);
+    setActiveFilter("active")
     setSelectedParticipants(new Map());
   }, []);
 
@@ -427,7 +428,7 @@ const ParticipantsList: React.FC = () => {
                   <GroupCheckInsButton />
                 </Box>
               )}
-              {!isOffline && !isWeb && !isSelectionMode && (
+              {!isOffline && !isWeb && !isSelectionMode && activeFilter !== "inactive" && (
                 <Box {...styles.buttonContainer}>
                   {/* @ts-ignore */}
                   <Button variant="outlineghost" size="sm" onPress={handleEnterSelectionMode}>
