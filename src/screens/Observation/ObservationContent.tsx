@@ -376,7 +376,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [showAlert],
   );
 
-  const handleOfflineData = useCallback(async (data:any)=>{
+  const handleOfflineData = useCallback(async (data:any,type?:string)=>{
     const { answers, endTime, evidenceCode, isSubmitted, startTime, status, files, submissionId } = data || {}
     const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
     if(answers && submissionId && participantKey) {
@@ -442,7 +442,10 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         logger.warn('ObservationContent: failed to save form edits', err);
       }
     }
-  },[participant, solutionId, authUser?.id])
+    if(type === "QUESTIONNAIRE_SUBMIT") {
+      handleBackPress();
+    }
+  },[handleBackPress, participant, solutionId, authUser?.id])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(

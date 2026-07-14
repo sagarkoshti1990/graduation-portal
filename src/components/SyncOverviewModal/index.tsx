@@ -623,12 +623,12 @@ const SyncOverviewModal: React.FC = () => {
               <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
                 <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
                 <Text fontSize="$sm" fontWeight="$medium">{pc?.offlineName ?? '—'}</Text>
-                <Text fontSize="$xs" color="$textMutedForeground" numberOfLines={1}>{pc?.offlineId ?? '—'}</Text>
+                {/* <Text fontSize="$xs" color="$textMutedForeground" numberOfLines={1}>{pc?.offlineId ?? '—'}</Text> */}
               </VStack>
               <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
                 <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
                 <Text fontSize="$sm" fontWeight="$medium">{pc?.onlineName ?? '—'}</Text>
-                <Text fontSize="$xs" color="$textMutedForeground" numberOfLines={1}>{pc?.onlineId ?? '—'}</Text>
+                {/* <Text fontSize="$xs" color="$textMutedForeground" numberOfLines={1}>{pc?.onlineId ?? '—'}</Text> */}
               </VStack>
             </HStack>
           </VStack>

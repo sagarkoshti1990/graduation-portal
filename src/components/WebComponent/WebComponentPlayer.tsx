@@ -244,7 +244,7 @@ const WebComponentPlayer = React.memo(
             }
           }
         } else if (message.type === 'QUESTIONNAIRE_SAVE' || message.type === "QUESTIONNAIRE_SUBMIT") {
-          _getOfflineData(message.data)
+          _getOfflineData(message.data,message.type)
         } else if (message.type === 'TOAST') {
           _getToast(message.data);
         }

@@ -276,7 +276,7 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
           }
         }
       } else if (event.detail.type === 'QUESTIONNAIRE_SAVE' || event.detail.type === "QUESTIONNAIRE_SUBMIT") {
-        _getOfflineData(event.detail.data)
+        _getOfflineData(event.detail.data,event.detail.type)
       } else if (event.detail.type === 'TOAST') {
         _getToast(event.detail.data);
       }
