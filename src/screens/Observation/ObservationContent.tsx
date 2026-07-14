@@ -442,8 +442,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         logger.warn('ObservationContent: failed to save form edits', err);
       }
     }
-    handleBackPress();
-  },[handleBackPress, participant, solutionId, authUser?.id])
+  },[participant, solutionId, authUser?.id])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
