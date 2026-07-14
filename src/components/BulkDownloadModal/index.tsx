@@ -9,6 +9,7 @@ import {
   ButtonText,
   ButtonIcon,
   Spinner,
+  ScrollView,
 } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -75,6 +76,14 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(null);
   const isRunningRef = useRef(false);
   const hadSuccessRef = useRef(false);
+
+  // Auto-scroll: keeps the currently-downloading participant row visible inside
+  // the fixed-height scroll area below, without redesigning the popup itself.
+  const scrollViewRef = useRef<any>(null);
+  // Layout captured per participant row via onLayout — {y, height} relative to
+  // the scroll content, so we know both where the row starts and how tall it is
+  // (a row grows as its module steps render while active).
+  const rowLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
 
   // Build the ONE-TIME shared option list, unfiltered by any single participant's
   // status — every module available to at least one status is offered, since the
@@ -242,6 +251,33 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
     runDownloads(participants.map(p => p.userId));
   }, [runDownloads, participants]);
 
+  // Which module step (if any) is currently loading for the active participant —
+  // used to re-trigger auto-scroll as the active row grows while it downloads.
+  const activeStepKey = useMemo(() => {
+    if (!activeParticipantId) return null;
+    const state = runStates.get(activeParticipantId);
+    if (!state) return null;
+    for (const [key, stepState] of state.stepStates) {
+      if (stepState === 'loading') return key;
+    }
+    return null;
+  }, [activeParticipantId, runStates]);
+
+  // Keep the active participant's row visible as the download progresses. If the
+  // row is short, scroll its top into view; if it has grown taller than the
+  // scroll viewport (many module steps), scroll to its bottom instead so the
+  // most recently started step — where the current activity is — stays visible.
+  useEffect(() => {
+    if (!activeParticipantId || !scrollViewRef.current) return;
+    const layout = rowLayoutsRef.current[activeParticipantId];
+    if (!layout) return;
+    const viewportHeight = 360;
+    const targetY = layout.height > viewportHeight
+      ? layout.y + layout.height - viewportHeight
+      : layout.y;
+    scrollViewRef.current.scrollTo({ y: Math.max(0, targetY), animated: true });
+  }, [activeParticipantId, activeStepKey]);
+
   const completedCount = useMemo(
     () => [...runStates.values()].filter(s => s.phase === 'completed').length,
     [runStates],
@@ -355,19 +391,28 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
               />
             </Box>
 
-            <VStack space="sm" maxHeight={360} overflow="scroll">
-              {participants.map(p => {
-                const state = runStates.get(p.userId);
-                if (!state) return null;
-                return (
-                  <ParticipantRow
-                    key={p.userId}
-                    state={state}
-                    isActive={p.userId === activeParticipantId}
-                  />
-                );
-              })}
-            </VStack>
+            <ScrollView ref={scrollViewRef} maxHeight={360} showsVerticalScrollIndicator>
+              <VStack space="sm">
+                {participants.map(p => {
+                  const state = runStates.get(p.userId);
+                  if (!state) return null;
+                  return (
+                    <Box
+                      key={p.userId}
+                      onLayout={(e: any) => {
+                        const { y, height } = e.nativeEvent.layout;
+                        rowLayoutsRef.current[p.userId] = { y, height };
+                      }}
+                    >
+                      <ParticipantRow
+                        state={state}
+                        isActive={p.userId === activeParticipantId}
+                      />
+                    </Box>
+                  );
+                })}
+              </VStack>
+            </ScrollView>
           </VStack>
         )}
 

@@ -67,7 +67,7 @@ export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth();
   const isdminPanalAccess = useIsdminPanalAccess();
-  const { isOffline } = useOfflineSync();
+  const { isOffline, offlineDataVersion } = useOfflineSync();
   const { t } = useLanguage();
   const { setRefComponent } = useGlobal();
   // Extract the id parameter from the route
@@ -181,6 +181,20 @@ export default function ParticipantDetail() {
       fetchEntityDetails();
     }
   }, [idpCreated, fetchEntityDetails]);
+
+  // Re-fetch when this participant's offline sync completes elsewhere (e.g. the
+  // global SyncOverviewModal, which isn't a navigation route and so never
+  // triggers the useFocusEffect above). Reuses the existing fetchEntityDetails
+  // load mechanism to bring status/offline-derived UI (Remove Offline button,
+  // offline badge, sync status) up to date without a full app reload.
+  const isInitialOfflineVersionRef = useRef(true);
+  useEffect(() => {
+    if (isInitialOfflineVersionRef.current) {
+      isInitialOfflineVersionRef.current = false;
+      return;
+    }
+    fetchEntityDetails();
+  }, [offlineDataVersion, fetchEntityDetails]);
 
   const handleIdpCreated = () => {
     setIdpCreated(true)

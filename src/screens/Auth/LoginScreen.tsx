@@ -324,7 +324,11 @@ const LoginScreen: React.FC = () => {
                   <Spinner color="$white" />
                 ) : (
                   <ButtonText {...loginStyles.buttonText}>
-                    {isAdminMode ? t('login.adminLogin') : t('login.lcLogin')}
+                    {!isWeb
+                      ? t('login.lcLoginNative')
+                      : isAdminMode
+                        ? t('login.adminLogin')
+                        : t('login.lcLogin')}
                   </ButtonText>
                 )}
               </Button>

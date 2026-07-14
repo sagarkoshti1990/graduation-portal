@@ -70,7 +70,7 @@ const ParticipantsList: React.FC = () => {
   const { t } = useLanguage();
   const { isMobile, isWeb } = usePlatform();
   const { user } = useAuth();
-  const { isOffline } = useOfflineSync();
+  const { isOffline, offlineDataVersion } = useOfflineSync();
   const navigation = useNavigation();
   const { showAlert } = useAlert();
 
@@ -211,7 +211,13 @@ const ParticipantsList: React.FC = () => {
       if (pageSize) {
         fetchParticipants();
       }
-    }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline])
+      // offlineDataVersion bumps after a participant's offline sync completes
+      // (SyncOverviewModal's notifyOfflineDataChanged) — that modal is a global
+      // overlay, not a navigation route, so it never re-triggers useFocusEffect
+      // on its own. Re-running this fetch reuses the existing load mechanism to
+      // refresh the list (and any offline-derived indicators) without a full
+      // app reload.
+    }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline, offlineDataVersion])
   );
 
   useEffect(() => {

@@ -13,6 +13,7 @@ import offlineStorage from '../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
 import { ADMIN_ROLES, SUPERVISOR_ROLES, LC_ROLES } from '@constants/ROLES';
+import { isNative } from '@utils/platform';
 import { useLanguage } from './LanguageContext';
 // import { setupTabCloseHandler } from '@utils/tabCloseHandler';
 
@@ -99,6 +100,21 @@ const determineUserRole = (
   // If no matching roles found in organizations, throw unauthorized error
   // Note: Error message will be translated in the login function
   throw new Error(unauthorizedMessage);
+};
+
+/**
+ * Whether this user has at least one LC_ROLES role across their organizations.
+ * Used to gate native-mobile login — Admin/Supervisor continue to use the web app.
+ * Checks the raw org role titles (not the single priority-mapped `role`), so a user who
+ * happens to hold both an admin role and an LC role is still correctly granted access.
+ */
+const hasLcRoleAccess = (userData: any): boolean => {
+  if (!userData?.organizations) return false;
+  return userData.organizations.some(
+    (org: any) =>
+      Array.isArray(org?.roles) &&
+      org.roles.some((role: any) => LC_ROLES.includes(role?.title)),
+  );
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
@@ -228,6 +244,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           logger.warn(
             `${isAdmin ? 'Admin ' : ''}User role not authorized:`,
             message,
+          );
+          return { success: false, message };
+        }
+
+        // The native mobile app is restricted to LC roles only — Admin/Supervisor
+        // continue to use the web app. Reject before any user/session state is set
+        // and before the offline master-data warm-up below, so a blocked login
+        // never gets logged in or initializes offline data/sync.
+        if (isNative && !hasLcRoleAccess(userData)) {
+          const message = t('auth.roleNotAuthorized');
+          logger.warn(
+            `${isAdmin ? 'Admin ' : ''}User role not permitted on native mobile app:`,
+            userData.email || userData.id,
           );
           return { success: false, message };
         }
@@ -379,7 +408,7 @@ export const useIsdminPanalAccess = (): boolean => {
       });
       return hasSupervisorRole;
     }
-    
+
     return false;
   }, [user, currentUserRole]);
 };
