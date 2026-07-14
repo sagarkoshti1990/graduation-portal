@@ -40,6 +40,7 @@ export interface FormField {
   placeholder?: { key?: string; fallback: string };
   /** When present and the flag resolves to false, this field is hidden */
   visibleWhen?: VisibleWhenFlag;
+  disabled?: boolean;
   autoFocus?: boolean;
   icon?: string;
   /** Gluestack zIndex override for dropdowns that must float above siblings */
@@ -65,6 +66,7 @@ export interface FormField {
   validation?: ValidationRule[];
   placeholderWhenReady?: { key: string; fallback: string };
   fields?: FormField[];
+  isReadOnly?: boolean;
 }
 
 export interface FormRow {
@@ -352,7 +354,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       {
         fields: [
           {
-            name: 'address',
+            name: 'location',
             type: 'textarea',
             required: false,
             icon: 'MapPin',

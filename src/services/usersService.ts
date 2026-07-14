@@ -454,7 +454,7 @@ export const deactivateUser = async (ids: Array<string | number>): Promise<any> 
  */
 export const updateOrgAdminUser = async (
   userId: string | number,
-  payload: { name?: string }
+  payload: any
 ): Promise<any> => {
   try {
     const idStr = String(userId);

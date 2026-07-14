@@ -103,6 +103,8 @@ export interface SchemaFormRendererProps {
   flags: FlagsMap;
   /** Global disabled state (e.g. while form is submitting) */
   disabled?: boolean;
+  /** When true, renders all fields as plain read-only text instead of inputs */
+  viewMode?: boolean;
   /** Layout flag — stacks fields vertically on mobile */
   isMobile?: boolean;
   /** Translation function */
@@ -122,6 +124,7 @@ function validateField(
   values: Record<string, string>,
   flags: FlagsMap
 ): string | undefined {
+  if (!field.name) return undefined;
   // Skip invisible fields entirely
   if (field.visibleWhen?.flag && !flags[field.visibleWhen.flag]) {
     return undefined;
@@ -217,7 +220,7 @@ export function validateSchema(
 
       for (const field of row.fields) {
         const err = validateField(field, values, flags);
-        if (err) errors[field.name] = err;
+        if (err && field.name) errors[field.name] = err;
       }
     }
   }
@@ -275,7 +278,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       <HStack
         {...(styles.createUserFormInput as any)}
         isInvalid={!!combinedError}
-        isDisabled={disabled}
+        isDisabled={disabled || field.disabled}
         alignItems="center"
         paddingLeft={0}
         height={40}
@@ -292,7 +295,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               error={subField.name ? errors[subField.name] : undefined}
               errors={errors}
               onChange={onChange}
-              disabled={disabled}
+              disabled={disabled || subField.disabled}
               optionsMap={optionsMap}
               flags={flags}
               values={values}
@@ -338,7 +341,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
 
     // Compute disabled-when condition
-    let isDisabled = disabled;
+    let isDisabled = disabled || field.disabled;
     if (!isDisabled && field.disabledWhen?.empty) {
       const depVal = (values[field.disabledWhen.field] ?? '').trim();
       if (!depVal) isDisabled = true;
@@ -356,10 +359,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           {...(isNested ? {} : styles.createUserFormSelect)}
           options={options}
           value={value}
-          onChange={(val: string) => onChange(field.name, val)}
+          onChange={(val: string, _lbl: string) => onChange(field.name || '', val)}
           placeholder={activePlaceholder}
           disabled={isDisabled}
-          searchable={field.searchable ?? false}
+          isReadOnly={field.isReadOnly}
           {...(isNested ? { borderColor: 'transparent', bg: 'transparent' } : {})}
         />
       </Box>
@@ -377,11 +380,13 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           {...styles.createUserFormInput}
           placeholder={placeholder || 'YYYY-MM-DD'}
           value={displayValue}
-          onChange={(date: string) => onChange(field.name, date.replace(/-/g, '_'))}
+          onChange={(date: string) => onChange(field.name || '', date.replace(/-/g, '_'))}
           maximumDate={
             field.validation?.some(r => r.rule === 'dateNotInFuture') ? new Date() : undefined
           }
           iconSize={20}
+          isDisabled={disabled || field.disabled}
+          isReadOnly={field.isReadOnly}
         />
       </Box>
     );
@@ -389,7 +394,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // ── Password ─────────────────────────────────────────────────────────────────
   if (field.type === 'password') {
-    const group = field.visibilityToggleGroup ?? field.name;
+    const group = field.visibilityToggleGroup ?? field.name ?? '';
     const isVisible = visibilityGroups[group] ?? false;
 
     return (
@@ -397,12 +402,13 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         <Input
           {...styles.createUserFormInput}
           isInvalid={!!error}
-          isDisabled={disabled}
+          isDisabled={disabled || field.disabled}
+          isReadOnly={field.isReadOnly}
         >
           <FastInputField
             placeholder={placeholder}
             value={value}
-            onChangeText={(text: string) => onChange(field.name, text)}
+            onChangeText={(text: string) => onChange(field.name || '', text)}
             secureTextEntry={!isVisible}
             pr="$12"
           />
@@ -410,7 +416,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         {field.toggleVisibility && (
           <Pressable
             onPress={() => toggleVisibilityGroup(group)}
-            disabled={disabled}
+            disabled={disabled || field.disabled}
             style={styles.resetPasswordEyeIconButton}
           >
             <LucideIcon
@@ -432,15 +438,16 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
     return (
       <Textarea
-        {...styles.createUserFormInput}
+        {...(styles.createUserFormInput as any)}
         isInvalid={!!error}
-        isDisabled={disabled}
+        isDisabled={disabled || field.disabled}
+        isReadOnly={field.isReadOnly}
       >
         <FastTextareaInput
           ref={field.autoFocus ? autoFocusRef : undefined}
           placeholder={placeholder}
           value={value}
-          onChangeText={(text: string) => onChange(field.name, text)}
+          onChangeText={(text: string) => onChange(field.name || '', text)}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           maxLength={maxLength}
@@ -459,7 +466,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     <Input
       {...(isNested ? {} : (styles.createUserFormInput as any))}
       isInvalid={!!error}
-      isDisabled={disabled}
+      isDisabled={disabled || field.disabled}
+      isReadOnly={field.isReadOnly}
       alignItems={field.icon ? 'center' : undefined}
       {...(isNested ? {
         borderColor: 'transparent',
@@ -477,7 +485,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         ref={field.autoFocus ? autoFocusRef : undefined}
         placeholder={placeholder}
         value={value}
-        onChangeText={(text: string) => onChange(field.name, text)}
+        onChangeText={(text: string) => onChange(field.name || '', text)}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         maxLength={maxLength}
@@ -496,6 +504,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   optionsMap,
   flags,
   disabled = false,
+  viewMode = false,
   isMobile = false,
   t,
   firstNameRef,
@@ -505,6 +514,58 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
   const toggleVisibilityGroup = (group: string) => {
     setVisibilityGroups(prev => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  /**
+   * Resolve display value for viewMode.
+   * For selects, look up the label from optionsMap.
+   * For groups (e.g. countryCode + phone), concatenate sub-field display values.
+   * For dates, replace underscores with hyphens.
+   */
+  const resolveDisplayValue = (field: FormField): string => {
+    const isOtherValue = (val: any): boolean => {
+      if (typeof val !== 'string') return false;
+      const clean = val.trim().toLowerCase();
+      return clean === 'other' || clean === '+other' || clean === 'other other' || clean === '+other other';
+    };
+
+    if (field.type === 'group' && field.fields) {
+      const parts = field.fields
+        .map(sf => {
+          const subRaw = sf.name ? (values[sf.name] ?? '') : '';
+          if (!subRaw || isOtherValue(subRaw)) return '';
+          const resolved = resolveDisplayValue(sf);
+          if (resolved === '-' || isOtherValue(resolved)) return '';
+          return resolved;
+        })
+        .filter(Boolean);
+      return parts.length > 0 ? parts.join(' ') : '-';
+    }
+
+    const raw = field.name ? (values[field.name] ?? '') : '';
+    if (!raw || isOtherValue(raw)) return '-';
+
+    if (field.type === 'select' && field.optionsSource) {
+      const opts = optionsMap[field.optionsSource] ?? [];
+      const match = opts.find(o => o.value === raw);
+      const label = match?.label || raw;
+      if (!label || isOtherValue(label)) return '-';
+      return label;
+    }
+
+    if (field.type === 'date') {
+      const clean = raw.replace(/_/g, '-');
+      if (/^\d{8}$/.test(clean)) {
+        return clean.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
+      }
+      return clean || '-';
+    }
+
+    if (field.type === 'password') {
+      return '••••••••';
+    }
+
+    return raw || '-';
   };
 
   return (
@@ -545,6 +606,25 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                   const fieldValue = field.name ? (values[field.name] ?? '') : '';
                   const fieldError = field.name ? errors[field.name] : undefined;
 
+                  // ── viewMode: render as plain text ──
+                  if (viewMode) {
+                    if (field.type === 'note') return null;
+
+                    const displayValue = resolveDisplayValue(field);
+
+                    return (
+                      <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
+                        <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                          {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
+                        </Text>
+                        <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+                          {displayValue}
+                        </Text>
+                      </VStack>
+                    );
+                  }
+
+                  // ── Normal form mode ──
                   return (
                     <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
                       {/* Field label */}

@@ -126,7 +126,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       if (values.phoneNumber && values.countryCode) payload.phone_code = values.countryCode.replace('+', '');
       if (values.alternativePhone) payload.alternative_phone = values.alternativePhone;
       if (values.alternativePhone && values.alternativePhoneCode) payload.alternative_phone_code = values.alternativePhoneCode.replace('+', '');
-      if (values.address) payload.address = values.address;
+      if (values.location) payload.location = values.location;
       if (values.nationalId) payload.national_id = Number(values.nationalId);
 
       if (flags.isSupervisorOrLC) {
