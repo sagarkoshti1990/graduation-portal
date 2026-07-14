@@ -447,17 +447,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       .filter((m): m is string => Boolean(m));
   }, [validatedSelectedFiles]);
 
-console.log('validSelectedFiles:', validSelectedFiles);
-console.log('validSelectedFiles.length:', validSelectedFiles.length);
-
-console.log('existingAttachmentsState:', existingAttachmentsState);
-console.log('existingAttachmentsState.length:', existingAttachmentsState.length);
-
-console.log('existingAttachments:', existingAttachments);
-console.log('existingAttachments ?? []:', existingAttachments ?? []);
-console.log('existingAttachments.length:', (existingAttachments ?? []).length);
   const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
-  console.log('hasChanged:', hasChanged);
   const canSubmit = hasChanged && !hasInvalidSelectedFiles;
 
   const addSelectedFiles = useCallback(
