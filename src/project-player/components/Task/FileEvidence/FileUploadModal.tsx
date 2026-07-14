@@ -447,7 +447,18 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       .filter((m): m is string => Boolean(m));
   }, [validatedSelectedFiles]);
 
-  const canSubmit = validSelectedFiles.length > 0 && !hasInvalidSelectedFiles;
+console.log('validSelectedFiles:', validSelectedFiles);
+console.log('validSelectedFiles.length:', validSelectedFiles.length);
+
+console.log('existingAttachmentsState:', existingAttachmentsState);
+console.log('existingAttachmentsState.length:', existingAttachmentsState.length);
+
+console.log('existingAttachments:', existingAttachments);
+console.log('existingAttachments ?? []:', existingAttachments ?? []);
+console.log('existingAttachments.length:', (existingAttachments ?? []).length);
+  const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
+  console.log('hasChanged:', hasChanged);
+  const canSubmit = hasChanged && !hasInvalidSelectedFiles;
 
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
@@ -848,7 +859,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         $hover-bg="$primary600"
       >
         <ButtonText {...fileUploadModalStyles.submitButtonText}>
-          {t('projectPlayer.upload')}
+          {validSelectedFiles.length > 0 ? t('projectPlayer.upload') : t('common.save')}
         </ButtonText>
       </Button>
     </HStack>

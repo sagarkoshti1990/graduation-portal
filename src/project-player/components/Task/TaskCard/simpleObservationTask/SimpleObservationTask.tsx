@@ -236,7 +236,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   }, [isOnboardingTask, task, user?.id, participantId, showError, showSuccess, t]);
 
   const handleUploadConfirm = useCallback(async (files?: any[]) => {
-    if (!files?.length) return;
+    if (files === undefined) return;
     setIsStatusUpdating(true);
     try {
       const newFiles = filterNewFiles(files, task?.attachments);
