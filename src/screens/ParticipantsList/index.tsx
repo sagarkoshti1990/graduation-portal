@@ -450,37 +450,43 @@ const ParticipantsList: React.FC = () => {
             {/* Bulk download selection toolbar — shown while selection mode is active */}
             {isSelectionMode && (
               <HStack {...styles.searchFilterHStack} flexWrap="wrap">
-                <Pressable onPress={toggleSelectAllOnPage}>
-                  <HStack space="xs" alignItems="center">
-                    <Checkbox isChecked={allOnPageSelected} onChange={toggleSelectAllOnPage} value="select-all-on-page">
-                      <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-                        <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-                      </CheckboxIndicator>
-                    </Checkbox>
-                    <Text fontSize="$sm" color="$textPrimary">{t('participants.selectAllOnPage')}</Text>
-                  </HStack>
-                </Pressable>
+                <HStack {...styles.searchFilterHStackSub}>
+                  <Pressable onPress={toggleSelectAllOnPage} p="$2">
+                    <HStack space="xs" alignItems="center">
+                      <Checkbox isChecked={allOnPageSelected} value="select-all-on-page">
+                        <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                          <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+                        </CheckboxIndicator>
+                      </Checkbox>
+                      <Text fontSize="$sm" color="$textPrimary">{t('participants.selectAllOnPage')}</Text>
+                    </HStack>
+                  </Pressable>
 
-                <Text fontSize="$sm" color="$textMutedForeground">
-                  {t('participants.selectedCount', { count: selectedParticipants.size, max: MAX_BULK_OFFLINE_DOWNLOAD })}
-                </Text>
+                  <Text fontSize="$sm" color="$textMutedForeground">
+                    {t('participants.selectedCount', { count: selectedParticipants.size, max: MAX_BULK_OFFLINE_DOWNLOAD })}
+                  </Text>
+                </HStack>
+                <HStack {...styles.searchFilterHStackButton}>
+                  <Button
+                    variant="solid"
+                    isDisabled={selectedParticipants.size === 0}
+                    onPress={() => setIsBulkDownloadModalOpen(true)}
+                    {...styles.searchFilterHStackButtonSub}
+                  >
+                    <ButtonIcon as={LucideIcon} name="Download" mr="$2" />
+                    <ButtonText>
+                      {t('participants.downloadSelected', { count: selectedParticipants.size })}
+                    </ButtonText>
+                  </Button>
 
-                {/* @ts-ignore */}
-                <Button variant="outlineghost" size="sm" onPress={handleCancelSelection}>
-                  <ButtonText>{t('participants.cancelSelection')}</ButtonText>
-                </Button>
-
-                <Button
-                  variant="solid"
-                  size="sm"
-                  isDisabled={selectedParticipants.size === 0}
-                  onPress={() => setIsBulkDownloadModalOpen(true)}
-                >
-                  <ButtonIcon as={LucideIcon} name="Download" mr="$2" />
-                  <ButtonText>
-                    {t('participants.downloadSelected', { count: selectedParticipants.size })}
-                  </ButtonText>
-                </Button>
+                  {/* @ts-ignore */}
+                  <Button variant="outlineghost"
+                    {...styles.searchFilterHStackButtonSub}
+                    onPress={handleCancelSelection}
+                   >
+                    <ButtonText>{t('participants.cancelSelection')}</ButtonText>
+                  </Button>
+                </HStack>
               </HStack>
             )}
 
