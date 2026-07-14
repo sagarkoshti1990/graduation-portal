@@ -343,7 +343,7 @@ export default function ParticipantDetail() {
         {showOnboardingProject === "not_eligible" ? (
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
-          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId || participant?.accountUserStatus === USER_STATUS.INACTIVE)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
           : showOnboardingProject ? (
           <>
             {/* Hide Download Forms card for dropped out participants */}
@@ -359,7 +359,7 @@ export default function ParticipantDetail() {
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
               projectData={projectData}
-              {...(isdminPanalAccess ? {mode:MODE.readOnlyMode?.mode}:{})}
+              {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
         ) : (
@@ -420,7 +420,7 @@ export default function ParticipantDetail() {
                     onIdpCreation={handleIdpCreated}
                     onProgressChange={handleProgressChange}
                     projectData={projectData}
-                    {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
+                    {...((coachId || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>
               )}
@@ -429,7 +429,7 @@ export default function ParticipantDetail() {
                   <AssessmentSurveys
                     participant={participant as ParticipantData}
                     completionPercentage={updatedProgress || 0}
-                    {...(isdminPanalAccess ? {isReadOnly:true, coachId: resolvedCoachId}:{})}
+                    {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {isReadOnly:true, coachId: resolvedCoachId}:{})}
                   />
                 </Box>
               )}
@@ -444,7 +444,7 @@ export default function ParticipantDetail() {
         participantId={participant.userId || ''}
         userId={authUserId || ''}
         onParticipantSaved={handleParticipantAddressSaved}
-        {...(coachId ? {isReadOnly:true}:{})}
+        {...((coachId || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {isReadOnly:true}:{})}
       />
     </Box>
   );
