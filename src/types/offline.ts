@@ -8,7 +8,6 @@
 // ---------------------------------------------------------------------------
 
 export type DownloadModuleKey =
-  | 'onboarding'
   | 'participant'
   | 'project'
   | 'tasks'

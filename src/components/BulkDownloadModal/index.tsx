@@ -30,7 +30,7 @@ import { StepState, StepRow, CheckRow, buildStepKeys, MODULE_LABEL } from '../Do
 
 interface BulkDownloadModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (type?:string) => void;
   /** Participant row objects currently selected in the list (order = selection order). */
   participants: Participant[];
   /** Called once, if at least one participant downloaded successfully, before onClose. */
@@ -83,7 +83,7 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   // each participant when its download actually runs — see runDownloads below.
   useEffect(() => {
     if (!isOpen || participants.length === 0) return;
-    const { selected: sel, options: op } = getAllDefaultSelection();
+    const { selected: sel, options: op } = getAllDefaultSelection(participants);
     setOptions(op);
     setSelected(sel);
     setScreen('select');
@@ -178,7 +178,7 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
         }
         const config = buildDownloadConfig(participantSelected);
 
-        const fixedSteps = buildStepKeys(participantSelected, ctx.needsOnboarding);
+        const fixedSteps = buildStepKeys(participantSelected);
         let combinedSteps: ProgressStep[] = fixedSteps.map(key => ({ key, labelKey: MODULE_LABEL[key] ?? key }));
 
         // Project's own task observations (household forms) are bundled into the
@@ -257,7 +257,7 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
 
   const handleClose = useCallback(() => {
     if (hadSuccessRef.current) onSuccess?.();
-    onClose();
+    onClose("close");
   }, [onClose, onSuccess]);
 
   const runningProgressPct = participants.length > 0

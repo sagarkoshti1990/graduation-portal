@@ -340,10 +340,12 @@ const ParticipantsList: React.FC = () => {
     setSelectedParticipants(new Map());
   }, []);
 
-  const handleBulkDownloadClose = useCallback(() => {
+  const handleBulkDownloadClose = useCallback((type:string) => {
     setIsBulkDownloadModalOpen(false);
-    setIsSelectionMode(false);
-    setSelectedParticipants(new Map());
+    if(type === "close") {
+      setIsSelectionMode(false);
+      setSelectedParticipants(new Map());
+    }
   }, []);
 
   const handleBulkDownloadSuccess = useCallback(() => {

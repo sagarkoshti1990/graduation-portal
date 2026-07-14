@@ -13,7 +13,6 @@ export type StepState = 'pending' | 'loading' | 'completed' | 'failed';
 
 // Maps every DownloadModuleKey to its i18n label key
 export const MODULE_LABEL: Record<DownloadModuleKey, string> = {
-  onboarding:                   'actions.downloadOnboarding',
   participant:                  'actions.downloadParticipant',
   project:                      'actions.downloadProject',
   tasks:                        'actions.downloadProject',
@@ -26,9 +25,7 @@ export const MODULE_LABEL: Record<DownloadModuleKey, string> = {
 };
 
 // Download order matches the pipeline in downloadService.
-// 'onboarding' is always first when present (automatic, not user-selected).
 export const DOWNLOAD_ORDER: DownloadModuleKey[] = [
-  'onboarding',
   'participant',
   'project',
   'observation:logVisit',
@@ -41,11 +38,9 @@ export const DOWNLOAD_ORDER: DownloadModuleKey[] = [
 
 /**
  * Build the ordered step keys that will actually appear in the progress UI.
- * `needsOnboarding` includes the automatic 'onboarding' step (not user-selected).
  */
-export function buildStepKeys(selected: Set<string>, needsOnboarding: boolean): DownloadModuleKey[] {
+export function buildStepKeys(selected: Set<string>): DownloadModuleKey[] {
   return DOWNLOAD_ORDER.filter(key => {
-    if (key === 'onboarding') return needsOnboarding;
     if (key === 'tasks') return false; // always bundled with project, never shown separately
     if (key === 'participant') return selected.has('participant');
     if (key === 'project') return selected.has('project');

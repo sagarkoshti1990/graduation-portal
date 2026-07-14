@@ -114,7 +114,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
     }
 
     // Build ordered step list (includes 'onboarding' when project creation is needed)
-    const steps = buildStepKeys(selected, ctx.needsOnboarding);
+    const steps = buildStepKeys(selected);
     const initialMap = new Map<string, StepState>(steps.map(k => [k, 'pending']));
     stepStatesRef.current = initialMap;
     setActiveSteps(steps);

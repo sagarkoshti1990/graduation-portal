@@ -1,6 +1,7 @@
 import type { DownloadConfig } from '@app-types/offline';
-import { STATUS } from '@constants/app.constant';
+import { ALLOWOFFLINESTATUS, STATUS } from '@constants/app.constant';
 import { ProjectData, Task } from '../project-player/types';
+import { Participant } from '@app-types/screens';
 
 // ---------------------------------------------------------------------------
 // Status-based download option visibility (Section 3.6)
@@ -117,8 +118,8 @@ export function getDownloadOptions(participantStatus: string,project?: ProjectDa
  * A module is included if it is enabled for at least one status. Per-participant
  * availability is resolved later, at download time, via getDownloadOptions(status).
  */
-export function getAllDownloadOptions(): DownloadModuleOption[] {
-  const perStatus = [STATUS.NOT_ONBOARDED, STATUS.IN_PROGRESS, STATUS.COMPLETED].map(status =>
+export function getAllDownloadOptions(status:any[]): DownloadModuleOption[] {
+  const perStatus = status.map(status =>
     getDownloadOptions(status),
   );
 
@@ -136,8 +137,9 @@ export function getAllDownloadOptions(): DownloadModuleOption[] {
  * Default/all-selected set for the bulk popup — every module available to at
  * least one participant status starts checked; the user can deselect any of them.
  */
-export function getAllDefaultSelection(): { selected: Set<string>; options: DownloadModuleOption[] } {
-  const options = getAllDownloadOptions();
+export function getAllDefaultSelection(participants:Participant[]): { selected: Set<string>; options: DownloadModuleOption[] } {
+  const statuses = participants.map(participant => participant.status).filter(status => ALLOWOFFLINESTATUS.includes(status || ""));
+  const options = getAllDownloadOptions(statuses);
   const selected = new Set<string>();
   for (const opt of options) {
     if (opt.recommended && opt.enabled) selected.add(opt.key as string);
