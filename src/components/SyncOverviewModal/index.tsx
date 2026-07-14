@@ -65,6 +65,7 @@ const IDLE_STATE: ParticipantSyncState = {
  *
  *  participant-blocked   → "Participant Progress Updated" (Cancel | Remove Offline Data)
  *  project-blocked       → "Project Already Updated" (Cancel | Skip & Remove)
+ *  project-pathway-conflict → "Project Pathway Conflict" rich comparison (Cancel | Skip & Remove)
  *  task-conflict         → "Task Conflict Detected"  (Cancel | Override & Sync | Skip & Remove)
  *  form-blocked          → "Observation Conflict Detected" rich comparison (Cancel | Skip & Remove)
  *  form-completed        → "Observation Conflict Detected" rich comparison (Cancel | Skip & Remove)
@@ -75,6 +76,7 @@ const IDLE_STATE: ParticipantSyncState = {
 type DialogKind =
   | 'participant-blocked'
   | 'project-blocked'
+  | 'project-pathway-conflict'
   | 'task-conflict'
   | 'form-blocked'
   | 'form-completed'
@@ -98,6 +100,8 @@ interface DialogItem {
   conflictSubType?: 'draft-ahead' | 'status-ahead' | 'timestamp';
   /** Rich comparison data for the 'form-conflict' dialog */
   conflictDetails?: ObservationConflictDetails;
+  /** Offline/online pathway name+id comparison for the 'project-pathway-conflict' dialog */
+  pathwayConflict?: { offlineName: string; offlineId: string; onlineName: string; onlineId: string };
 }
 
 /** What the user chose in a dialog. */
@@ -342,6 +346,24 @@ const SyncOverviewModal: React.FC = () => {
           // 'override' → proceed with all items for this participant
         }
 
+        // ── 2a. Pathway conflicts ──────────────────────────────────────────
+        for (const projectId of plan.pathwayConflictProjectIds) {
+          const decision = await showDialog({
+            id: `project-pathway-conflict-${projectId}`,
+            kind: 'project-pathway-conflict',
+            participantId: entry.participantId,
+            participantName: entry.name,
+            projectId,
+            pathwayConflict: plan.pathwayConflictDetails.get(projectId),
+          });
+          if (decision === 'remove') {
+            await deleteProjectOfflineData(userId, entry.participantId, projectId);
+            await refreshAfterOfflineChange();
+          }
+          // buildSkipSets already adds pathwayConflictProjectIds to skipProjectIds —
+          // this project never syncs this run whether the user cancels or removes.
+        }
+
         // ── 3. Blocked projects ────────────────────────────────────────────
         for (const projectId of plan.blockedProjectIds) {
           const decision = await showDialog({
@@ -556,7 +578,8 @@ const SyncOverviewModal: React.FC = () => {
       </Button>
     );
     const skipRemoveBtn = (
-      <Button variant="solid" size="sm" onPress={() => resolveDialog('remove')}>
+      // @ts-ignore
+      <Button variant="danger" size="sm" onPress={() => resolveDialog('remove')}>
         <ButtonText>{t('offlineSync.skipAndRemove')}</ButtonText>
       </Button>
     );
@@ -582,13 +605,42 @@ const SyncOverviewModal: React.FC = () => {
       headerTitle = t('offlineSync.projectUpdatedTitle');
       message = t('offlineSync.projectUpdatedMessage');
       footer = <HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>;
+    } else if (kind === 'project-pathway-conflict') {
+      const pc = currentDialog.pathwayConflict;
+      return (
+        <Modal
+          isOpen
+          onClose={() => resolveDialog('cancel')}
+          headerTitle={t('offlineSync.pathwayConflictTitle')}
+          size="md"
+          showCloseButton={false}
+          footerContent={<HStack space="md" justifyContent="flex-end">{cancelBtn}{skipRemoveBtn}</HStack>}
+        >
+          <VStack space="sm">
+            <Text fontSize="$sm" fontWeight="$semibold">{participantName}</Text>
+            <Text fontSize="$sm" color="$textSecondary">{t('offlineSync.pathwayConflictMessage')}</Text>
+            <HStack space="md" mt="$2">
+              <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOffline')}</Text>
+                <Text fontSize="$sm" fontWeight="$medium">{pc?.offlineName ?? '—'}</Text>
+                <Text fontSize="$xs" color="$textMutedForeground" numberOfLines={1}>{pc?.offlineId ?? '—'}</Text>
+              </VStack>
+              <VStack flex={1} space="xs" borderWidth={1} borderColor="$borderLight200" borderRadius="$sm" p="$2">
+                <Text fontSize="$xs" color="$textMutedForeground">{t('offlineSync.taskConflictOnline')}</Text>
+                <Text fontSize="$sm" fontWeight="$medium">{pc?.onlineName ?? '—'}</Text>
+                <Text fontSize="$xs" color="$textMutedForeground" numberOfLines={1}>{pc?.onlineId ?? '—'}</Text>
+              </VStack>
+            </HStack>
+          </VStack>
+        </Modal>
+      );
     } else if (kind === 'task-conflict') {
       const tc = currentDialog.taskConflict;
       headerTitle = t('offlineSync.taskConflictTitle');
       footer = (
         <HStack space="sm" justifyContent="flex-end" flexWrap="wrap">
           {cancelBtn}
-          <Button variant="outline" size="sm" onPress={() => resolveDialog('override')}>
+          <Button variant="solid" size="sm" onPress={() => resolveDialog('override')}>
             <ButtonText>{t('offlineSync.overrideAndSync')}</ButtonText>
           </Button>
           {skipRemoveBtn}

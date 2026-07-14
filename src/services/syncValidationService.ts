@@ -141,6 +141,10 @@ export interface ParticipantValidationPlan {
   projectConflict: boolean;
   /** IDs of projects with equal status but timestamp divergence — show conflict dialog. */
   conflictProjectIds: string[];
+  /** IDs of projects whose primary pathway category differs from the online project's. */
+  pathwayConflictProjectIds: string[];
+  /** projectId → offline/online pathway name+id, for the pathway conflict dialog. */
+  pathwayConflictDetails: Map<string, { offlineName: string; offlineId: string; onlineName: string; onlineId: string }>;
   taskResults: TaskValidationResult[];
   formResults: FormValidationResult[];
 }
@@ -165,6 +169,25 @@ export function createSyncValidationCache(): SyncValidationCache {
 
 function getPriority(map: Record<string, number>, status: string | undefined): number {
   return map[status ?? ''] ?? 0;
+}
+
+/**
+ * Extracts the primary pathway category from a project's `categories` array —
+ * the array mixes the top-level pathway with child pillar/category entries
+ * (e.g. `GBL_PATH_EMP` = pathway, `L1_SP_EMP`/`L1_FI_EMP`/... = child pillars).
+ * Mirrors the same `GBL_PATH` convention used in
+ * SimpleObservationTask.tsx's `canChangePathway` check — the only other place
+ * in the codebase that disambiguates a pathway from its sibling categories.
+ * Guarded with Array.isArray so a malformed/legacy cached project (missing or
+ * non-array `categories`) safely yields "no pathway found" instead of throwing.
+ */
+function getPathwayCategory(
+  categories: any[] | undefined,
+): { _id: string; name: string; externalId?: string } | undefined {
+  if (!Array.isArray(categories)) return undefined;
+  return categories.find(
+    (c: any) => typeof c?.externalId === 'string' && c.externalId.includes('GBL_PATH'),
+  );
 }
 
 function hasTimestampConflict(
@@ -453,6 +476,8 @@ export async function runValidationForParticipant(
     blockedProjectIds: [],
     projectConflict: false,
     conflictProjectIds: [],
+    pathwayConflictProjectIds: [],
+    pathwayConflictDetails: new Map(),
     taskResults: [],
     formResults: [],
   };
@@ -504,6 +529,28 @@ export async function runValidationForParticipant(
     ]);
 
     if (!onlineProject || !offlineProject) continue;
+
+    // Pathway mismatch pre-empts status/timestamp/task checks for this project — a
+    // different pathway is a more fundamental conflict, and the `continue` below is
+    // what keeps pathwayConflictProjectIds disjoint from blockedProjectIds/
+    // conflictProjectIds (SyncOverviewModal's Phase 2 relies on that exclusivity to
+    // avoid showing two sequential dialogs for the same project). Only checked when
+    // BOTH sides have a GBL_PATH* category — if a project predates this convention
+    // (or the server ever removes a pathway category entirely, leaving one side with
+    // none), this check is silently skipped and the existing status/timestamp checks
+    // run as before; that's an accepted gap, not a bug.
+    const offlinePathway = getPathwayCategory(offlineProject.categories);
+    const onlinePathway = getPathwayCategory(onlineProject.categories);
+    if (offlinePathway && onlinePathway && offlinePathway._id !== onlinePathway._id) {
+      plan.pathwayConflictProjectIds.push(projectId);
+      plan.pathwayConflictDetails.set(projectId, {
+        offlineName: offlinePathway.name,
+        offlineId: offlinePathway._id,
+        onlineName: onlinePathway.name,
+        onlineId: onlinePathway._id,
+      });
+      continue;
+    }
 
     const offlineProjPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, offlineProject.status);
     const onlineProjPri  = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineProject.status);
@@ -720,6 +767,10 @@ export function buildSkipSets(
   const skipProjectIds = new Set<string>();
 
   for (const projectId of plan.blockedProjectIds) {
+    skipProjectIds.add(projectId);
+  }
+
+  for (const projectId of plan.pathwayConflictProjectIds) {
     skipProjectIds.add(projectId);
   }
 

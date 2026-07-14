@@ -2307,6 +2307,8 @@
     "removeAllOfflineData": "Remove Offline Data",
     "projectUpdatedTitle": "Project Already Updated",
     "projectUpdatedMessage": "This project has already progressed further online. The offline version can no longer be synced. Would you like to remove this project's offline data?",
+    "pathwayConflictTitle": "Project Pathway Conflict",
+    "pathwayConflictMessage": "The selected pathway for this project has changed online since this project was downloaded offline.\n\nYour offline Intervention Plan belongs to a different pathway and cannot be synchronized safely.",
     "taskUpdatedTitle": "Task Already Updated",
     "taskUpdatedMessage": "This task has already progressed further online and cannot be synced from offline data. This task will be skipped during the current sync.",
     "taskObservationUpdatedTitle": "Task Observation Already Updated",

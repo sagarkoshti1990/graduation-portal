@@ -227,6 +227,31 @@ export const theme = {
                 color: "$white !important",
               },
             },
+            danger: {
+              ...gluestackConfig.components.Button.theme.variants.variant.solid,
+              borderRadius: "$xl",
+              gap: "$2",
+              bg: "$red600",
+              ":hover": {
+                bg: "$red700",
+                borderColor: "$borderColor",
+                _text: {
+                  color: "$medium !important",
+                },
+                _icon: {
+                  color: "$medium !important",
+                },
+              },
+              _text: {
+                color: "$white !important",
+                fontWeight: "$medium !important",
+                fontSize: "$sm !important",
+              },
+              _icon: {
+                color: "$white !important",
+                fontWeight: "$medium !important",
+              },
+          },
           },
         },
       },
