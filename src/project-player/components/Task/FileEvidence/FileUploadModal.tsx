@@ -239,7 +239,7 @@ const getAllowedMediaSupport = (allowedTypes: string[]) => {
   return { supportsImage, supportsVideo };
 };
 
-const getComparableFileKey = (file: any): string | null => {
+export const getComparableFileKey = (file: any): string | null => {
   const name = getFileName(file);
   const size = getFileSize(file);
   const mime = getMimeType(file);

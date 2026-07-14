@@ -37,6 +37,7 @@ import {
 import { filterNewFiles, buildOnboardingFileUpdate } from '../utils/taskTransformers';
 import type { Task } from '../../../../types/project.types';
 import MainContent from './MainContent';
+import { getComparableFileKey } from '../../FileEvidence/FileUploadModal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -239,9 +240,14 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     setIsStatusUpdating(true);
     try {
       const newFiles = filterNewFiles(files, task?.attachments);
+      const existingToSend = (task?.attachments ?? []).filter(existing =>
+      files.some(f => getComparableFileKey(f) === getComparableFileKey(existing))
+    );
       const data = await handleStatusChange(
-        { taskId: task._id, parentIndex, index }, TASK_STATUS.COMPLETED, newFiles,
-        uploadConfig.maxFiles === 1 ? [] : (task?.attachments ?? []),
+        { taskId: task._id, parentIndex, index },
+          TASK_STATUS.COMPLETED,
+          newFiles,
+          existingToSend,
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }
