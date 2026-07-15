@@ -49,9 +49,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
   const id = propId || route.params?.id;
   // @ts-ignore
   const solutionId = route.params?.solutionId || '';
-  // @ts-ignore
-  const coachId = route.params?.coachId
-  const authUserId = coachId || user?.id;
+  const authUserId = user?.id;
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [selectedSolution, setSelectedSolution] = useState<string>(solutionId);
@@ -126,8 +124,6 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     return null;
   }
 
-  const resolvedCoachId = coachId || (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
-
   return (
     <Box flex={1} bg="$accent100">
       {/* Header */}
@@ -156,7 +152,6 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         preSelectedSolution={selectedSolution}
         participant={participant as ParticipantData}
         solutions={solutions}
-        coachId={resolvedCoachId}
       />
     </Box>
   );
