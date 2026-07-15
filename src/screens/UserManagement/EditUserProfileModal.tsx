@@ -151,47 +151,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
     };
   }, [roles, genders, provinces, formSites, organisations, positions, countryCodes, profileOptions]);
 
-  // Build edit schema: strip required/validation from non-core fields so existing users
-  // with missing optional fields aren't blocked from saving.
-  // Email and username are disabled — the API does not allow updating them.
-  const editSchema = useMemo(() => {
-    return CREATE_USER_FORM_SCHEMA.map(section => ({
-      ...section,
-      rows: section.rows.map(row => ({
-        ...row,
-        fields: row.fields
-          .filter(field => field.type !== 'note')
-          .map(field => {
-            // For group fields, process sub-fields recursively
-            if (field.type === 'group' && Array.isArray((field as any).fields)) {
-              return {
-                ...field,
-                fields: (field as any).fields.map((subField: any) => {
-                  const isNameField = subField.name === 'name';
-                  return {
-                    ...subField,
-                    isReadOnly: !isNameField,
-                    required: isNameField,
-                    validation: isNameField
-                      ? subField.validation
-                      : (subField.validation || []).filter((v: any) => v.rule !== 'required'),
-                  };
-                }),
-              };
-            }
-            const isNameField = field.name === 'name';
-            return {
-              ...field,
-              isReadOnly: !isNameField,
-              required: isNameField,
-              validation: isNameField
-                ? field.validation
-                : (field.validation || []).filter((v: any) => v.rule !== 'required'),
-            };
-          })
-      })).filter(row => row.fields.length > 0)
-    })).filter(section => section.rows.length > 0);
-  }, []);
+
 
   const handleFieldChange = (name: string, value: string) => {
     setValues(prev => {
@@ -203,7 +163,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    const validationErrs = validateSchema(editSchema, values, flags);
+    const validationErrs = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags, ['name']);
     if (Object.keys(validationErrs).length > 0) {
       setErrors(validationErrs);
       const firstErr = Object.values(validationErrs)[0];
@@ -281,7 +241,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
         ) : (
           <VStack space="lg" alignItems="stretch">
             <SchemaFormRenderer
-              schema={editSchema}
+              schema={CREATE_USER_FORM_SCHEMA}
               values={values}
               errors={errors}
               onFieldChange={handleFieldChange}
@@ -290,6 +250,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
               disabled={isSubmitting}
               isMobile={isMobile}
               t={t}
+              editableFields={['name']}
             />
           </VStack>
         )}

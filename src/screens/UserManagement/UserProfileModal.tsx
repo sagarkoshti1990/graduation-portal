@@ -381,16 +381,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     };
   }, [roles, genders, provinces, formSites, organisations, positions, countryCodes, profileOptions]);
 
-  // Remove the temporary password note row for view profile
-  const viewSchema = useMemo(() => {
-    return CREATE_USER_FORM_SCHEMA.map(section => ({
-      ...section,
-      rows: section.rows.map(row => ({
-        ...row,
-        fields: row.fields.filter(field => field.type !== 'note')
-      })).filter(row => row.fields.length > 0)
-    })).filter(section => section.rows.length > 0);
-  }, []);
+
 
   return (
     <Modal
@@ -445,7 +436,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         ) : (
           <VStack space="lg" alignItems="stretch">
             <SchemaFormRenderer
-              schema={viewSchema}
+              schema={CREATE_USER_FORM_SCHEMA}
               values={values}
               errors={{}}
               onFieldChange={() => {}}

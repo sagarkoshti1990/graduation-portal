@@ -20,7 +20,7 @@
  *   />
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { VStack, HStack, Text, Box, Input, InputField, Pressable, Textarea, TextareaInput } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -111,36 +111,54 @@ export interface SchemaFormRendererProps {
   t: (key: string, fallback?: string) => string;
   /** Optional ref forwarded to the first autoFocus field */
   firstNameRef?: React.RefObject<any>;
+  /** If provided, only fields in this list are editable; others are read-only */
+  editableFields?: string[];
 }
 
 // ─── Validation Engine ────────────────────────────────────────────────────────
 
 /**
- * Runs all validation rules for a single field against the current values.
- * Returns the first error message found, or undefined if the field is valid.
+ * Runs all validation rules for a single field recursively (supporting group fields).
+ * Populates errors object.
  */
 function validateField(
   field: FormField,
   values: Record<string, string>,
-  flags: FlagsMap
-): string | undefined {
-  if (!field.name) return undefined;
+  flags: FlagsMap,
+  errors: Record<string, string>,
+  editableFields?: string[]
+): void {
+  if (field.type === 'group' && Array.isArray(field.fields)) {
+    for (const subField of field.fields) {
+      validateField(subField, values, flags, errors, editableFields);
+    }
+    return;
+  }
+
+  if (!field.name) return;
+
   // Skip invisible fields entirely
   if (field.visibleWhen?.flag && !flags[field.visibleWhen.flag]) {
-    return undefined;
+    return;
+  }
+
+  // If editableFields is specified, and this field is not in the list, skip validation
+  if (editableFields && !editableFields.includes(field.name)) {
+    return;
   }
 
   const raw = values[field.name] ?? '';
   const val = raw.trim();
 
-  if (!field.validation?.length) return undefined;
+  if (!field.validation?.length) return;
 
   for (const rule of field.validation) {
     const err = applyRule(rule, val, values);
-    if (err) return err;
+    if (err) {
+      errors[field.name] = err;
+      return; // Return on first rule error for this field
+    }
   }
-
-  return undefined;
 }
 
 function applyRule(
@@ -209,7 +227,8 @@ function applyRule(
 export function validateSchema(
   schema: FormSection[],
   values: Record<string, string>,
-  flags: FlagsMap
+  flags: FlagsMap,
+  editableFields?: string[]
 ): Record<string, string> {
   const errors: Record<string, string> = {};
 
@@ -219,8 +238,7 @@ export function validateSchema(
       if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag]) continue;
 
       for (const field of row.fields) {
-        const err = validateField(field, values, flags);
-        if (err && field.name) errors[field.name] = err;
+        validateField(field, values, flags, errors, editableFields);
       }
     }
   }
@@ -508,6 +526,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   isMobile = false,
   t,
   firstNameRef,
+  editableFields,
 }) => {
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<Record<string, boolean>>({});
@@ -515,6 +534,46 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   const toggleVisibilityGroup = (group: string) => {
     setVisibilityGroups(prev => ({ ...prev, [group]: !prev[group] }));
   };
+
+  // Dynamically mark fields as read-only / not required if they are not in editableFields
+  const resolvedSchema = useMemo(() => {
+    if (!editableFields) return schema;
+    return schema.map(section => ({
+      ...section,
+      rows: section.rows.map(row => ({
+        ...row,
+        fields: row.fields
+          .filter(field => field.type !== 'note')
+          .map(field => {
+            if (field.type === 'group' && Array.isArray((field as any).fields)) {
+              return {
+                ...field,
+                fields: (field as any).fields.map((subField: any) => {
+                  const isEditable = subField.name && editableFields.includes(subField.name);
+                  return {
+                    ...subField,
+                    isReadOnly: !isEditable,
+                    required: isEditable,
+                    validation: isEditable
+                      ? subField.validation
+                      : (subField.validation || []).filter((v: any) => v.rule !== 'required'),
+                  };
+                }),
+              };
+            }
+            const isEditable = field.name && editableFields.includes(field.name);
+            return {
+              ...field,
+              isReadOnly: !isEditable,
+              required: isEditable,
+              validation: isEditable
+                ? field.validation
+                : (field.validation || []).filter((v: any) => v.rule !== 'required'),
+            };
+          })
+      })).filter(row => row.fields.length > 0)
+    })).filter(section => section.rows.length > 0);
+  }, [schema, editableFields]);
 
   /**
    * Resolve display value for viewMode.
@@ -570,7 +629,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
   return (
     <VStack space="md" width="100%">
-      {schema.map(section => (
+      {resolvedSchema.map(section => (
         <VStack key={section.id} space="sm">
           {/* Section header */}
           <HStack space="xs" alignItems="center">
