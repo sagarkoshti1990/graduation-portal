@@ -37,6 +37,7 @@ import {
 import { filterNewFiles, buildOnboardingFileUpdate } from '../utils/taskTransformers';
 import type { Task } from '../../../../types/project.types';
 import MainContent from './MainContent';
+import { getComparableFileKey } from '../../FileEvidence/FileUploadModal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -217,7 +218,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     if (data?.success) {
       const attachedFiles = data?.data?.attachments?.map((f: any) => f) ?? [];
       const thisDate = new Date().toISOString();
-      if (isOnboardingTask && attachedFiles.length > 0) {
+      if (isOnboardingTask) {
         const updates = buildOnboardingFileUpdate(task, attachedFiles, thisDate);
         if (updates) {
           if (!user?.id || !participantId) { showError(t('projectPlayer.evidenceUploadFailed')); return; }
@@ -235,13 +236,18 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   }, [isOnboardingTask, task, user?.id, participantId, showError, showSuccess, t]);
 
   const handleUploadConfirm = useCallback(async (files?: any[]) => {
-    if (!files?.length) return;
+    if (!files) return;
     setIsStatusUpdating(true);
     try {
       const newFiles = filterNewFiles(files, task?.attachments);
+      const existingToSend = (task?.attachments ?? []).filter(existing =>
+      files.some(f => getComparableFileKey(f) === getComparableFileKey(existing))
+    );
       const data = await handleStatusChange(
-        { taskId: task._id, parentIndex, index }, TASK_STATUS.COMPLETED, newFiles,
-        uploadConfig.maxFiles && uploadConfig.maxFiles > 1 ? task?.attachments : [],
+        { taskId: task._id, parentIndex, index },
+          TASK_STATUS.COMPLETED,
+          newFiles,
+          existingToSend,
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }

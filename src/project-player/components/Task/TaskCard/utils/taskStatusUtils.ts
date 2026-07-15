@@ -77,7 +77,7 @@ export function getUploadConfig(task: Task, isOnboardingTask: boolean) {
   }
 
   return {
-    maxFiles: task?.metaInformation?.maxFiles || maxFiles,
+    maxFiles : task?.metaInformation?.maxFiles || maxFiles,
     allowedFileTypes:
       (task?.metaInformation?.allowedFileTypes as string[] | undefined) || allowedFileTypes,
   };
