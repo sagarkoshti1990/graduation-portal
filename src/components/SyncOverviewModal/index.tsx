@@ -33,6 +33,7 @@ import {
   deleteTaskOfflineData,
 } from '../../services/offlineCleanupService';
 import type { SyncProgress } from '@app-types/offline';
+import offlineStorage from '../../services/offlineStorage';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,59 @@ interface DialogItem {
 
 /** What the user chose in a dialog. */
 type DialogDecision = 'cancel' | 'remove' | 'override' | 'ok';
+
+// ── Sync Summary types ─────────────────────────────────────────────────────────
+
+/** One row of the post-sync report. A metric is omitted from display when it's 0. */
+interface CategorySummary {
+  synced: number;
+  skipped: number;
+  cancelled: number;
+  remaining: number;
+}
+
+function emptyCategorySummary(): CategorySummary {
+  return { synced: 0, skipped: 0, cancelled: 0, remaining: 0 };
+}
+
+/** Aggregate Sync Summary shown once after a batch sync run finishes. */
+interface SyncSummaryData {
+  project: CategorySummary;
+  task: CategorySummary;
+  observation: CategorySummary;
+}
+
+function emptySyncSummary(): SyncSummaryData {
+  return { project: emptyCategorySummary(), task: emptyCategorySummary(), observation: emptyCategorySummary() };
+}
+
+function mergeCategorySummary(target: CategorySummary, source: CategorySummary): void {
+  target.synced += source.synced;
+  target.skipped += source.skipped;
+  target.cancelled += source.cancelled;
+  target.remaining += source.remaining;
+}
+
+function mergeSyncSummary(target: SyncSummaryData, source: SyncSummaryData): void {
+  mergeCategorySummary(target.project, source.project);
+  mergeCategorySummary(target.task, source.task);
+  mergeCategorySummary(target.observation, source.observation);
+}
+
+/**
+ * Folds a participant's would-have-synced counts into Skipped instead — used when
+ * their syncOne() call actually failed over the network, so Phase 2's validation-time
+ * "allowed"/"override" tally doesn't misreport a real failure as a success. Already
+ * skipped/cancelled counts for that same participant are untouched.
+ */
+function demoteSyncedToSkipped(summary: SyncSummaryData): SyncSummaryData {
+  const demote = (c: CategorySummary): CategorySummary => ({
+    ...c,
+    skipped: c.skipped + c.synced,
+    synced: 0,
+  });
+  return { project: demote(summary.project), task: demote(summary.task), observation: demote(summary.observation) };
+}
 
 // ── Progress helper ───────────────────────────────────────────────────────────
 
@@ -185,6 +239,8 @@ const SyncOverviewModal: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [currentDialog, setCurrentDialog] = useState<DialogItem | null>(null);
   const dialogResolverRef = useRef<((d: DialogDecision) => void) | null>(null);
+  // Aggregate report shown once a batch sync run finishes — see syncSelected's Phase 3.
+  const [syncSummary, setSyncSummary] = useState<SyncSummaryData | null>(null);
 
   // ── Load participants ──────────────────────────────────────────────────────
 
@@ -230,7 +286,7 @@ const SyncOverviewModal: React.FC = () => {
   // ── Per-participant sync ───────────────────────────────────────────────────
 
   const syncOne = useCallback(
-    async (entry: ParticipantPendingEntry, skipOptions?: SyncSkipOptions) => {
+    async (entry: ParticipantPendingEntry, skipOptions?: SyncSkipOptions): Promise<boolean> => {
       const { participantId } = entry;
       setSyncStates(prev => ({
         ...prev,
@@ -262,11 +318,13 @@ const SyncOverviewModal: React.FC = () => {
           setParticipants(prev => prev.filter(p => p.participantId !== participantId));
           setSyncStates(prev => { const n = { ...prev }; delete n[participantId]; return n; });
         }, 2000);
+        return true;
       } catch {
         setSyncStates(prev => ({
           ...prev,
           [participantId]: { ...(prev[participantId] ?? IDLE_STATE), syncing: false, error: true },
         }));
+        return false;
       }
     },
     [userId, refreshAfterOfflineChange],
@@ -309,10 +367,16 @@ const SyncOverviewModal: React.FC = () => {
       const overriddenConflictFormIds = new Set<string>();
       //  Tracks tasks the user approved for override-sync despite conflict
       const overriddenConflictTaskIds = new Set<string>();
+      //  Per-participant partial tally, merged into the final summary in Phase 3 once
+      //  each participant's actual syncOne() outcome (success/failure) is known.
+      const partialSummaries = new Map<string, SyncSummaryData>();
 
       for (const entry of toSync) {
         const plan = planMap.get(entry.participantId);
-        if (!plan) continue;
+        if (!plan) continue; // validation itself failed for this participant — not tallied (accepted gap)
+
+        const partial = emptySyncSummary();
+        partialSummaries.set(entry.participantId, partial);
 
         // ── 1. Participant blocked ─────────────────────────────────────────
         if (plan.participantBlocked) {
@@ -327,6 +391,11 @@ const SyncOverviewModal: React.FC = () => {
             await deleteParticipantOfflineData(userId, [entry.participantId]);
             await refreshAfterOfflineChange();
           }
+          // Whole participant bypassed before any per-item loop ran — attribute
+          // everything to Skipped rather than falling through to per-item tallying.
+          partial.project.skipped += plan.allProjectIds.length;
+          partial.task.skipped += plan.taskResults.length;
+          partial.observation.skipped += plan.formResults.length;
           skipParticipantIds.add(entry.participantId);
           continue; // nothing further can sync for this participant
         }
@@ -340,11 +409,30 @@ const SyncOverviewModal: React.FC = () => {
             participantName: entry.name,
           });
           if (decision === 'cancel') {
+            // Same bypass as above, but user-declined rather than auto-blocked.
+            partial.project.cancelled += plan.allProjectIds.length;
+            partial.task.cancelled += plan.taskResults.length;
+            partial.observation.cancelled += plan.formResults.length;
             skipParticipantIds.add(entry.participantId);
             continue;
           }
           // 'override' → proceed with all items for this participant
         }
+
+        // ── Tally the "always known" outcomes — items no dialog choice affects ──
+        partial.project.skipped += plan.blockedProjectIds.length + plan.pathwayConflictProjectIds.length;
+        partial.project.synced += Math.max(
+          0,
+          plan.allProjectIds.length
+            - plan.blockedProjectIds.length
+            - plan.pathwayConflictProjectIds.length
+            - plan.conflictProjectIds.length,
+        );
+        partial.task.synced += plan.taskResults.filter(tr => tr.outcome === 'allowed').length;
+        partial.observation.synced += plan.formResults.filter(f => f.outcome === 'allowed').length;
+        partial.observation.skipped += plan.formResults.filter(
+          f => f.outcome === 'blocked' || f.outcome === 'remove',
+        ).length;
 
         // ── 2a. Pathway conflicts ──────────────────────────────────────────
         for (const projectId of plan.pathwayConflictProjectIds) {
@@ -391,6 +479,9 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'cancel') {
             extraSkipProjectIds.add(projectId);
+            partial.project.cancelled += 1;
+          } else {
+            partial.project.synced += 1;
           }
           // 'override' → proceed with task sync for this project
         }
@@ -409,8 +500,12 @@ const SyncOverviewModal: React.FC = () => {
           if (decision === 'remove') {
             await deleteTaskOfflineData(userId, entry.participantId, task.projectId, task.taskId);
             await refreshAfterOfflineChange();
+            partial.task.skipped += 1;
           } else if (decision === 'override') {
             overriddenConflictTaskIds.add(task.taskId);
+            partial.task.synced += 1;
+          } else {
+            partial.task.cancelled += 1;
           }
           // 'cancel' → task stays in skipTaskIds (added by buildSkipSets)
         }
@@ -462,18 +557,24 @@ const SyncOverviewModal: React.FC = () => {
           });
           if (decision === 'override') {
             overriddenConflictFormIds.add(form.formId);
+            partial.observation.synced += 1;
           } else if (decision === 'remove') {
             await deleteObservationOfflineData(userId, entry.participantId, form.formId);
             await refreshAfterOfflineChange();
+            partial.observation.skipped += 1;
+          } else {
+            partial.observation.cancelled += 1;
           }
           // 'cancel' → form stays in skipFormIds (added by buildSkipSets)
         }
       }
 
       // ── Phase 3: Sync each participant with computed skip options ────────
-      await Promise.all(
-        toSync.map(entry => {
-          if (skipParticipantIds.has(entry.participantId)) return Promise.resolve();
+      const syncOutcomes = await Promise.all(
+        toSync.map(async entry => {
+          if (skipParticipantIds.has(entry.participantId)) {
+            return { participantId: entry.participantId, attempted: false, success: false };
+          }
 
           const plan = planMap.get(entry.participantId);
           let skipOptions: SyncSkipOptions | undefined;
@@ -495,9 +596,56 @@ const SyncOverviewModal: React.FC = () => {
             }
           }
 
-          return syncOne(entry, skipOptions);
+          const success = await syncOne(entry, skipOptions);
+          return { participantId: entry.participantId, attempted: true, success };
         }),
       );
+
+      // ── Build the final Sync Summary ─────────────────────────────────────
+      // Merge each participant's Phase-2 partial tally in: as-is for participants
+      // that were fully bypassed (their partial already reflects that), fully if
+      // their actual syncOne() call succeeded, or with "would-sync" counts
+      // demoted to Skipped if it failed (see demoteSyncedToSkipped doc comment).
+      const summary = emptySyncSummary();
+      for (const entry of toSync) {
+        const partial = partialSummaries.get(entry.participantId);
+        if (!partial) continue; // validation itself failed for this participant — not tallied
+
+        if (skipParticipantIds.has(entry.participantId)) {
+          mergeSyncSummary(summary, partial);
+          continue;
+        }
+
+        const outcome = syncOutcomes.find(o => o.participantId === entry.participantId);
+        mergeSyncSummary(summary, outcome?.success ? partial : demoteSyncedToSkipped(partial));
+      }
+
+      // ── Remaining counts — a fresh post-sync scan across this batch's participants.
+      // Uses the same leaf-counting unit as plan.taskResults (parent + each child counted
+      // individually) so "Remaining" is comparable to "Synced/Skipped/Cancelled" above,
+      // rather than reusing getPerParticipantPendingBreakdown's top-level-only task count.
+      for (const entry of toSync) {
+        try {
+          const keys = await offlineStorage.getParticipantKeys(userId, entry.participantId);
+          const projectEditKeys = keys.filter((k: string) => k.includes(':projectEdits:'));
+          summary.project.remaining += projectEditKeys.length;
+
+          for (const key of projectEditKeys) {
+            const edits = await offlineStorage.read<{ tasks?: any[] }>(key).catch(() => null);
+            for (const task of edits?.tasks ?? []) {
+              summary.task.remaining += 1 + (task?.children?.length ?? 0);
+            }
+          }
+
+          summary.observation.remaining += keys.filter(
+            (k: string) => k.endsWith(':edits') && k.includes(':form:'),
+          ).length;
+        } catch {
+          // non-fatal — this participant just won't contribute to "Remaining"
+        }
+      }
+
+      setSyncSummary(summary);
 
       await refreshAfterOfflineChange();
       await loadParticipants();
@@ -968,6 +1116,67 @@ const SyncOverviewModal: React.FC = () => {
     );
   };
 
+  // ── Sync Summary renderer ─────────────────────────────────────────────────
+  // One informational dialog shown once a batch sync run finishes — a category
+  // section is omitted entirely when every one of its metrics is 0, and an
+  // individual metric row is omitted when it's 0 (per the display rules).
+
+  const renderCategorySummary = (titleKey: string, category: CategorySummary) => {
+    const rows: Array<{ labelKey: string; value: number }> = [
+      { labelKey: 'offlineSync.syncSummarySynced', value: category.synced },
+      { labelKey: 'offlineSync.syncSummarySkipped', value: category.skipped },
+      { labelKey: 'offlineSync.syncSummaryCancelled', value: category.cancelled },
+      { labelKey: 'offlineSync.syncSummaryRemaining', value: category.remaining },
+    ].filter(row => row.value > 0);
+
+    if (rows.length === 0) return null;
+
+    return (
+      <VStack key={titleKey} space="xs">
+        <Text fontSize="$sm" fontWeight="$semibold" color="$textPrimary">{t(titleKey)}</Text>
+        {rows.map(row => (
+          <HStack key={row.labelKey} justifyContent="space-between">
+            <Text fontSize="$xs" color="$textMutedForeground">{t(row.labelKey)}</Text>
+            <Text fontSize="$xs" fontWeight="$medium">{row.value}</Text>
+          </HStack>
+        ))}
+      </VStack>
+    );
+  };
+
+  const renderSyncSummary = () => {
+    if (!syncSummary) return null;
+
+    const sections = [
+      renderCategorySummary('offlineSync.syncSummaryProjectSync', syncSummary.project),
+      renderCategorySummary('offlineSync.syncSummaryTaskSync', syncSummary.task),
+      renderCategorySummary('offlineSync.syncSummaryObservationSync', syncSummary.observation),
+    ].filter(Boolean);
+
+    return (
+      <Modal
+        isOpen
+        onClose={() => setSyncSummary(null)}
+        headerTitle={t('offlineSync.syncSummaryTitle')}
+        size="md"
+        showCloseButton={false}
+        footerContent={
+          <HStack space="md" justifyContent="flex-end">
+            <Button variant="solid" size="sm" onPress={() => setSyncSummary(null)}>
+              <ButtonText>{t('common.close')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <VStack space="md">
+          {sections.length > 0 ? sections : (
+            <Text fontSize="$sm" color="$textMutedForeground">{t('offlineSync.allSynced')}</Text>
+          )}
+        </VStack>
+      </Modal>
+    );
+  };
+
   // ── Main render ────────────────────────────────────────────────────────────
 
   return (
@@ -1148,6 +1357,9 @@ const SyncOverviewModal: React.FC = () => {
 
       {/* Type-specific conflict/block dialog — rendered above the main modal */}
       {renderDialog()}
+
+      {/* Post-sync aggregate report — rendered once a batch sync run finishes */}
+      {renderSyncSummary()}
     </>
   );
 };

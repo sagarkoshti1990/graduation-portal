@@ -329,16 +329,27 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       let updatedTaskObj = task;
       const currentProjectId = current?._id;
 
-      if (onTaskUpdate && updatedTaskObj) {
-        const taskForCallback = updatedTaskObj;
-        setTimeout(() => { if (mountedRef.current) onTaskUpdate(taskForCallback); });
-      }
+      // Fires onTaskUpdate — the central trigger consumers use to refresh their
+      // offline project cache from the server (see refreshOfflineProjectFromServer).
+      // Called only once the relevant branch below has actually succeeded (or,
+      // for the two no-server-call early returns, immediately — there's nothing
+      // to race against). NOT fired eagerly up front: that would let a
+      // server-refresh consumer's GET race the in-flight online update below and
+      // overwrite the offline cache with pre-update data.
+      const fireOnTaskUpdate = () => {
+        if (onTaskUpdate && updatedTaskObj) {
+          const taskForCallback = updatedTaskObj;
+          setTimeout(() => { if (mountedRef.current) onTaskUpdate(taskForCallback); });
+        }
+      };
 
       if (!currentProjectId || !updatedTaskObj) {
+        fireOnTaskUpdate();
         return;
       }
 
       if ((updatedTaskObj as any).isCustomTask && !isEditMode) {
+        fireOnTaskUpdate();
         return;
       }
 
@@ -383,6 +394,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
           payloadTask,
           offlineKeyPrefix,
         );
+        // Nothing to race against offline — safe to fire immediately once persisted locally.
+        fireOnTaskUpdate();
       } else {
         result = await updateTaskAPI(currentProjectId, payloadTask);
         // After online success, keep offline snapshot in sync.
@@ -390,6 +403,9 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         const pid = callerParticipantId || participantId;
         if (!isApiErrorResult(result) && pid && offlineKeyPrefix && project && currentProjectId) {
           updateOfflineProject(offlineKeyPrefix, pid, currentProjectId, project).catch(() => {});
+        }
+        if (!isApiErrorResult(result)) {
+          fireOnTaskUpdate();
         }
       }
 
@@ -418,6 +434,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     const currentProjectId = prev._id;
     const needsApi = !!(pillar.children?.length && currentProjectId);
 
+    // Fires onTaskUpdate only once the relevant branch has actually succeeded (or,
+    // when there's no API call at all, immediately — nothing to race against). Mirrors
+    // updateTask's timing so a server-refresh consumer never races an in-flight update.
+    const fireOnTaskUpdate = () => {
+      if (onTaskUpdate) {
+        setTimeout(() => { if (mountedRef.current) onTaskUpdate(task); });
+      }
+    };
+
     if (needsApi) {
       if (dataService.isNetworkOffline()) {
         // Offline: queue the create for later sync and persist it into the
@@ -440,6 +465,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
           const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
           updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
         }
+        fireOnTaskUpdate();
       } else {
         const result = await updateTaskAPI(currentProjectId, {
           tasks: [
@@ -458,14 +484,17 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
           const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
           updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
         }
+        fireOnTaskUpdate();
       }
+    } else {
+      fireOnTaskUpdate();
     }
 
     setProjectData(p => {
       if (!p) return null;
       return mergeTaskIntoProject(p, pillarId, task);
     });
-  }, [participantId, offlineKeyPrefix]);
+  }, [participantId, offlineKeyPrefix, onTaskUpdate]);
 
   const deleteTask = useCallback(
     async (taskId: string): Promise<void> => {
@@ -482,6 +511,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         parentId &&
         isEditMode
       );
+
+      // Fires onTaskUpdate only once the relevant branch has actually succeeded (or,
+      // when there's no API call at all, immediately — nothing to race against). Mirrors
+      // updateTask's timing so a server-refresh consumer never races an in-flight update.
+      const fireOnTaskUpdate = () => {
+        if (onTaskUpdate) {
+          setTimeout(() => { if (mountedRef.current) onTaskUpdate(deletedTask); });
+        }
+      };
 
       if (needsApi) {
         if (dataService.isNetworkOffline()) {
@@ -505,6 +543,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
             const updatedProject = removeTaskFromProject(prev, taskId);
             updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
           }
+          fireOnTaskUpdate();
         } else {
           const result = await updateTaskAPI(currentProjectId, {
             tasks: [
@@ -523,7 +562,10 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
             const updatedProject = removeTaskFromProject(prev, taskId);
             updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
           }
+          fireOnTaskUpdate();
         }
+      } else {
+        fireOnTaskUpdate();
       }
 
       setProjectData(p => {
@@ -531,7 +573,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         return removeTaskFromProject(p, taskId);
       });
     },
-    [isEditMode, participantId, offlineKeyPrefix],
+    [isEditMode, participantId, offlineKeyPrefix, onTaskUpdate],
   );
 
   const saveLocal = useCallback(() => {

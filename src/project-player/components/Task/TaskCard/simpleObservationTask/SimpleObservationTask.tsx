@@ -297,6 +297,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         existingAttachments={task?.attachments}
         maxFileUploadCount={uploadConfig.maxFiles}
         allowedFileTypes={uploadConfig.allowedFileTypes}
+        maxFileSize={config.maxFileSize}
         onUpload={handleUploadMethodSelect}
         onConfirm={handleUploadConfirm}
       />

@@ -145,6 +145,8 @@ export interface ParticipantValidationPlan {
   pathwayConflictProjectIds: string[];
   /** projectId → offline/online pathway name+id, for the pathway conflict dialog. */
   pathwayConflictDetails: Map<string, { offlineName: string; offlineId: string; onlineName: string; onlineId: string }>;
+  /** Every project id actually validated this run (regardless of outcome) — used by the Sync Summary. */
+  allProjectIds: string[];
   taskResults: TaskValidationResult[];
   formResults: FormValidationResult[];
 }
@@ -478,6 +480,7 @@ export async function runValidationForParticipant(
     conflictProjectIds: [],
     pathwayConflictProjectIds: [],
     pathwayConflictDetails: new Map(),
+    allProjectIds: [],
     taskResults: [],
     formResults: [],
   };
@@ -529,6 +532,12 @@ export async function runValidationForParticipant(
     ]);
 
     if (!onlineProject || !offlineProject) continue;
+
+    // Every project actually validated this run — used by the Sync Summary to derive
+    // "Synced" counts (total minus the skipped/cancelled buckets tracked below). Pushed
+    // here (not before the fetch-failure guard above) so a project whose online/offline
+    // fetch itself failed isn't silently counted as synced.
+    plan.allProjectIds.push(projectId);
 
     // Pathway mismatch pre-empts status/timestamp/task checks for this project — a
     // different pathway is a more fundamental conflict, and the `continue` below is

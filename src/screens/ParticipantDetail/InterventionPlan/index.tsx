@@ -9,13 +9,12 @@ import ProjectPlayer, {
 } from '../../../project-player/index';
 import { ProjectData, Task } from '../../../project-player/types/project.types';
 import { MODE, PROJECT_PLAYER_CONFIGS } from '@constants/PROJECTDATA';
-import { STATUS } from '@constants/app.constant';
+import { MAX_FILE_SIZE, STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
 import { sortTasksWithChildren } from '@utils/helper';
-import offlineStorage from '../../../services/offlineStorage';
-import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { refreshOfflineProjectFromServer } from '../../../services/offlineCacheUpdateService';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   mode,
@@ -54,7 +53,10 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     addedTasks.has(id),
   );
 
-  // Handle task update callback from ProjectPlayer
+  // Handle task update callback from ProjectPlayer — fired only after the
+  // triggering action (task update, custom task create/update/delete) has
+  // actually succeeded (see ProjectContext.tsx's fireOnTaskUpdate), so it's
+  // safe to treat this as "an online action just succeeded" below.
   const handleTaskUpdate = async (task: Task) => {
     if (task.metaInformation?.addedToPlan) {
       setAddedTasks(prev => new Set(prev).add(task._id));
@@ -65,13 +67,15 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         return next;
       });
     }
-    const participantId = (participantProfile as any)?.userId ?? ''
-    const projectId = projectSortData?._id || "";
-    const userId = user?.id || "";
-     const cached = await offlineStorage.read(PARTICIPANT_KEYS.project(userId, participantId, projectId));
-    if(!isOffline && cached){
-      offlineStorage.create(PARTICIPANT_KEYS.project(userId, participantId, projectId), projectSortData).catch(() => {});
-    }
+
+    if (isOffline) return; // nothing to refresh from — the server wasn't touched
+
+    const participantId = (participantProfile as any)?.userId ?? '';
+    const projectId = projectSortData?._id || '';
+    const userId = user?.id || '';
+    if (!participantId || !projectId || !userId) return;
+
+    await refreshOfflineProjectFromServer(userId, participantId, projectId);
   };
 
   // Handle successful IDP creation
@@ -109,6 +113,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       if (!isEditMode) {
         return {
           ...baseConfig,
+          maxFileSize: MAX_FILE_SIZE,
           profileInfo: participantProfile,
           showSubmitButton: true,
           onSubmitInterventionPlan: handleIdpCreationSuccess,
@@ -121,6 +126,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
       return {
         ...baseConfig,
+        maxFileSize: MAX_FILE_SIZE,
         profileInfo: participantProfile,
         showAddCustomTaskButton,
       };
@@ -130,6 +136,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       const showAddCustomTaskButton = status === STATUS.IN_PROGRESS;
       return {
         ...baseConfig,
+        maxFileSize: MAX_FILE_SIZE,
         profileInfo: participantProfile,
         showSubmitButton: true,
         onSubmitInterventionPlan: handleIdpCreationSuccess,

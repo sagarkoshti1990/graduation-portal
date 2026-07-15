@@ -16,6 +16,7 @@ import offlineStorage, { isParticipantOffline } from './offlineStorage';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { ALLOWOFFLINESTATUS } from '@constants/app.constant';
 import { deleteParticipantOfflineData } from './offlineCleanupService';
+import { getProjectDetails } from '../project-player/services/projectPlayerService';
 import logger from '@utils/logger';
 
 // ── Eligibility ───────────────────────────────────────────────────────────────
@@ -76,6 +77,39 @@ export async function updateOfflineProject(
     await offlineStorage.create(key, updatedProject);
   } catch (err) {
     logger.warn('offlineCacheUpdateService: failed to update offline project', err);
+  }
+}
+
+/**
+ * Re-fetches a project via the Project Details API and overwrites the offline
+ * snapshot with the fresh server response — used after an online project
+ * action (task completion, custom task create/update/delete, file upload/
+ * delete) succeeds, so the offline copy never drifts from server truth.
+ *
+ * Skips the network call entirely (not just the write) when there's nothing
+ * to overwrite: not offline-downloaded, or this project was never cached.
+ * The actual write is delegated to `updateOfflineProject`, which re-checks
+ * the same eligibility and stores the response's own `updatedAt` as-is — no
+ * separate timestamp bookkeeping needed.
+ */
+export async function refreshOfflineProjectFromServer(
+  userId: string,
+  participantId: string,
+  projectId: string,
+): Promise<void> {
+  if (!userId || !participantId || !projectId) return;
+  try {
+    const offline = await isParticipantOffline(userId, participantId);
+    if (!offline) return;
+    const exists = await offlineStorage.exists(PARTICIPANT_KEYS.project(userId, participantId, projectId));
+    if (!exists) return;
+
+    const response = await getProjectDetails(projectId, userId);
+    if (response?.data) {
+      await updateOfflineProject(userId, participantId, projectId, response.data);
+    }
+  } catch (err) {
+    logger.warn('offlineCacheUpdateService: failed to refresh offline project from server', err);
   }
 }
 

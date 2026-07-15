@@ -250,6 +250,8 @@ export interface FileUploadModalProps {
    * Supports MIME patterns (e.g. "image/*", "application/pdf") and extensions (e.g. ".doc", ".docx").
    */
   allowedFileTypes?: string[];
+  /** Maximum size (in MB) allowed per file — mirrors ProjectPlayerConfig.maxFileSize. */
+  maxFileSize?: number;
 }
 
 export interface UploadMethodOptionProps {

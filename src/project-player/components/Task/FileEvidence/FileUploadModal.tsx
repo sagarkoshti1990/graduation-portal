@@ -90,7 +90,7 @@ type SelectedFileItem = {
   file: any;
 };
 
-type ValidationErrorCode = 'empty' | 'invalid_type' | 'duplicate' | 'count_exceeded';
+type ValidationErrorCode = 'empty' | 'size_exceeded' | 'invalid_type' | 'duplicate' | 'count_exceeded';
 
 type ValidatedSelectedFileItem = SelectedFileItem & {
   isValid: boolean;
@@ -274,6 +274,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   existingAttachments = [],
   maxFileUploadCount,
   allowedFileTypes,
+  maxFileSize,
 
 }) => {
   const { t } = useLanguage();
@@ -358,6 +359,15 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         };
       }
 
+      if (typeof maxFileSize === 'number' && typeof size === 'number' && size > maxFileSize * 1024 * 1024) {
+        return {
+          ...item,
+          isValid: false,
+          errorCode: 'size_exceeded',
+          errorMessage: t('projectPlayer.fileSizeError', { maxSize: maxFileSize }),
+        };
+      }
+
       const isAllowed = isFileTypeAllowed(file, normalizedAllowedTypes);
       if (!isAllowed) {
         return {
@@ -406,6 +416,8 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     uploadSlots,
     maxUploadCount,
     isSingleMode,
+    maxFileSize,
+    t,
   ]);
 
   const validSelectedFiles = useMemo(
@@ -441,7 +453,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     }
 
     // Keep deterministic order
-    const order: ValidationErrorCode[] = ['count_exceeded', 'invalid_type', 'duplicate', 'empty'];
+    const order: ValidationErrorCode[] = ['count_exceeded', 'invalid_type', 'size_exceeded', 'duplicate', 'empty'];
     return order
       .map(code => issues.get(code))
       .filter((m): m is string => Boolean(m));
@@ -776,7 +788,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           <VStack {...fileUploadModalStyles.fileListStack}>
             {files.map((file: any, index: number) => (
               <Box
-                key={`existing-${file._id || file.name || file.fileName || index}`}
+                key={`existing-${file._id || index}`}
                 {...fileUploadModalStyles.fileItemCard}
               >
                 <HStack {...fileUploadModalStyles.fileItemContent}>
