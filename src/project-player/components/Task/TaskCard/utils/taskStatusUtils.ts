@@ -70,16 +70,14 @@ export function getUploadConfig(task: Task, isOnboardingTask: boolean) {
   let allowedFileTypes: string[] | undefined;
 
   if (isOnboardingTask) {
-    maxFiles = 1;
     if (SLA_CONSENT_TASK_IDS.has(task?.referenceId)) {
+      maxFiles = 1;
       allowedFileTypes = ['pdf'];
     }
-  } else {
-    maxFiles = task?.metaInformation?.maxFiles;
   }
 
   return {
-    maxFiles,
+    maxFiles : task?.metaInformation?.maxFiles || maxFiles,
     allowedFileTypes:
       (task?.metaInformation?.allowedFileTypes as string[] | undefined) || allowedFileTypes,
   };

@@ -849,7 +849,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         $hover-bg="$primary600"
       >
         <ButtonText {...fileUploadModalStyles.submitButtonText}>
-          {validSelectedFiles.length > 0 ? t('projectPlayer.upload') : t('common.save')}
+          {t('projectPlayer.upload')}
         </ButtonText>
       </Button>
     </HStack>
