@@ -303,6 +303,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         allowedFileTypes={uploadConfig.allowedFileTypes}
         onUpload={handleUploadMethodSelect}
         onConfirm={handleUploadConfirm}
+        isConsent={isOnboardingTask}
       />
       <EvidencePreviewModal
         isOpen={showPreviewModal} onClose={handleClosePreviewModal}
