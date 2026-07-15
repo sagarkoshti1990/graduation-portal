@@ -18,7 +18,7 @@ import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
 import fileStorageService from '../../services/fileStorageService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS, ENTITY_TYPE } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_TYPE, MAX_FILE_SIZE } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { findEmbeddedFiles, makeOfflineFileMetadata, removeFileFromAnsers, setAtPath } from '@utils/helper';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
@@ -453,7 +453,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       // @ts-ignore - process.env is injected by webpack DefinePlugin on web
       baseURL: `${process.env.API_BASE_URL}/api`,
       offline: isOffline,
-      fileSizeLimit: 50,
+      fileSizeLimit: MAX_FILE_SIZE,
       userAuthToken: token,
       solutionType: 'observation' as const,
       observationId: observation?.observationId,

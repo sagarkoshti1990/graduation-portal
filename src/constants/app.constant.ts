@@ -11,6 +11,9 @@ export const STATUS = {
   GRADUATED: 'GRADUATED',
 };
 
+export const MAX_FILE_SIZE = 5;
+export const MAX_FILE_COUNT = 5;
+
 export const ALLOWOFFLINESTATUS = [STATUS.NOT_ONBOARDED,STATUS.IN_PROGRESS];
 
 // Maximum number of participants that can be selected at once for bulk offline download.

@@ -151,7 +151,7 @@ export default function ParticipantDetail() {
       }
     }
     // @ts-ignore
-  }, [participantId, authUserId, setNavbarData]);
+  }, [participantId, authUserId, setNavbarData, offlineDataVersion]);
 
   // Re-fetch data when screen comes into focus (e.g., navigating back)
   useFocusEffect(
