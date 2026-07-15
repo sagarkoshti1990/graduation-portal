@@ -21,6 +21,7 @@
 
 import logger from '@utils/logger';
 import { findEmbeddedFiles, setAtPath } from '@utils/helper';
+import { isNetworkOffline } from '@utils/networkStatus';
 import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
 import fileStorageService from './fileStorageService';
 import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '@constants/STORAGE_KEYS';
@@ -183,17 +184,6 @@ async function patchFormAttachmentUrl({
   serverUrl: string,
   sourcePath?: string,
 }): Promise<void> {
-  console.log("sagar",{
-  userId,
-  participantId,
-  submissionId,
-  fieldId,
-  fileName,
-  originalName,
-  storageKey,
-  serverUrl,
-  sourcePath,
-})
   const key = PARTICIPANT_KEYS.formEdits(userId, participantId, submissionId);
   const form = await offlineStorage.read<ObservationFormEdits>(key);
   if (!form?.answers) return;
@@ -246,19 +236,68 @@ async function patchFormAttachmentUrl({
 }
 
 
+/**
+ * Builds the set of task ids (top-level + children) belonging to any project
+ * in `skipProjectIds` — projects blocked/pathway-conflicted/cancelled at the
+ * project level never get individual entries in `skipTaskIds` (their tasks
+ * are never evaluated per-task by validation), so file-level skip needs this
+ * separate resolution to keep their attachments untouched too.
+ */
+async function buildSkippedProjectTaskIds(
+  userId: string,
+  participantId: string,
+  skipProjectIds: Set<string>,
+): Promise<Set<string>> {
+  const result = new Set<string>();
+  if (!skipProjectIds.size) return result;
+
+  for (const projectId of skipProjectIds) {
+    const editKey = PARTICIPANT_KEYS.projectEdits(userId, participantId, projectId);
+    const projectEdits = await offlineStorage.read<{ tasks: any[] }>(editKey).catch(() => null);
+    for (const task of projectEdits?.tasks ?? []) {
+      result.add(task._id);
+      for (const child of task.children ?? []) {
+        result.add(child._id);
+      }
+    }
+  }
+  return result;
+}
+
 async function syncFiles(
   userId: string,
   participantId: string,
   onProgress?: ProgressCallback,
+  skipOptions?: SyncSkipOptions,
 ): Promise<{ synced: number; failed: number }> {
   const pending = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(userId, participantId));
   if (!pending?.length) return { synced: 0, failed: 0 };
 
+  const skippedProjectTaskIds = skipOptions?.skipProjectIds?.size
+    ? await buildSkippedProjectTaskIds(userId, participantId, skipOptions.skipProjectIds)
+    : new Set<string>();
+
   let synced = 0, failed = 0;
-  const syncedNames: string[] = [];
-  
+  // Tracks fully-processed entries by index (not fileName) so a hypothetical
+  // shared fileName between a skipped entry and a synced one can never cause
+  // the skipped entry (and its still-needed blob) to be removed below.
+  const processedIndexes = new Set<number>();
+
   for (let i = 0; i < pending.length; i++) {
-    const { taskId, fieldId, submissionId, originalName, fileName, fileType, storageKey, localFilePath, mimeType, isOnboardingTask, taskReferenceId } = pending[i];
+    // Stop immediately on disconnect — whatever was already uploaded stays
+    // uploaded, everything from here on is left completely untouched.
+    if (isNetworkOffline()) break;
+
+    const { taskId, fieldId, submissionId, solutionId, originalName, fileName, fileType, storageKey, localFilePath, mimeType, isOnboardingTask, taskReferenceId } = pending[i];
+
+    // Leave this file exactly as-is in the pending queue — no upload, no
+    // patch, no removal — when its owning task/observation was excluded by
+    // sync validation (e.g. the user chose Cancel on its conflict dialog).
+    const isSkippedTask = !!taskId && (skipOptions?.skipTaskIds?.has(taskId) || skippedProjectTaskIds.has(taskId));
+    const isSkippedForm = !taskId && !!fieldId && !!submissionId
+      && !!solutionId && !!skipOptions?.skipFormIds?.has(solutionId);
+    if (isSkippedTask || isSkippedForm) continue;
+
     // storageKey is the unique blob key; fall back to legacy key for old entries
     const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
     const uid = taskId || fieldId || "";
@@ -275,7 +314,7 @@ async function syncFiles(
       if (!base64 || !uid) {
         // No content stored (e.g. blob was cleaned up already) — treat as done
         logger.warn(`syncService: no stored blob for "${fileName}" — skipping`);
-        syncedNames.push(fileName);
+        processedIndexes.add(i);
         synced++;
         continue;
       }
@@ -349,7 +388,7 @@ async function syncFiles(
         }
       }
 
-      syncedNames.push(fileName);
+      processedIndexes.add(i);
       synced++;
       onProgress?.(makeProgress('files', i + 1, pending.length));
     } catch (err) {
@@ -358,9 +397,11 @@ async function syncFiles(
     }
   }
 
-  // Remove synced entries from the pending queue
-  if (syncedNames.length > 0) {
-    const remaining = pending.filter(p => !syncedNames.includes(p.fileName));
+  // Remove synced entries from the pending queue — by index, not fileName, so
+  // a skipped entry can never be dropped just because it shares a fileName
+  // with a synced one.
+  if (processedIndexes.size > 0) {
+    const remaining = pending.filter((_, idx) => !processedIndexes.has(idx));
     if (remaining.length === 0) {
       await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(userId, participantId)).catch(() => {});
     } else {
@@ -537,6 +578,9 @@ async function syncFormEdits(
 
   let synced = 0, failed = 0;
   for (let i = 0; i < editKeys.length; i++) {
+    // Stop immediately on disconnect — remaining forms are left untouched.
+    if (isNetworkOffline()) break;
+
     const key = editKeys[i];
     try {
       const {solutionId,...edits} = await offlineStorage.read<any>(key);
@@ -675,6 +719,9 @@ async function syncTaskEdits(
   let synced = 0, failed = 0;
 
   for (const editKey of editKeys) {
+    // Stop immediately on disconnect — remaining projects are left untouched.
+    if (isNetworkOffline()) break;
+
     const projectEdits = await offlineStorage.read<{ tasks: any[] }>(editKey);
     if (!projectEdits?.tasks?.length) continue;
 
@@ -839,25 +886,40 @@ export const startSync = async (
   const errors: string[] = [];
   let syncedCount = 0, failedCount = 0;
 
+  // Once offline, stop entirely — including the trailing bookkeeping block
+  // below (SYNC_FAILED tracking, lastSyncedAt, auto-cleanup) — so nothing
+  // about the interruption itself gets recorded as if the sync had run to
+  // completion. Whatever already synced in an earlier stage stays synced.
+  const stoppedByOffline = (): SyncResult => ({
+    success: false,
+    syncedCount,
+    failedCount,
+    errors: [...errors, 'offline-interrupted'],
+  });
+
   onProgress?.(makeProgress('files', 0, 1));
-  const filesResult = await syncFiles(userId, participantId, onProgress);
+  const filesResult = await syncFiles(userId, participantId, onProgress, skipOptions);
   syncedCount += filesResult.synced;
   failedCount += filesResult.failed;
+  if (isNetworkOffline()) return stoppedByOffline();
 
   onProgress?.(makeProgress('forms', 0, 1));
   const formsResult = await syncFormEdits(userId, participantId, onProgress, skipOptions?.skipFormIds);
   syncedCount += formsResult.synced;
   failedCount += formsResult.failed;
+  if (isNetworkOffline()) return stoppedByOffline();
 
   onProgress?.(makeProgress('tasks', 0, 1));
   const tasksResult = await syncTaskEdits(userId, participantId, onProgress, skipOptions?.skipTaskIds, skipOptions?.skipProjectIds);
   syncedCount += tasksResult.synced;
   failedCount += tasksResult.failed;
+  if (isNetworkOffline()) return stoppedByOffline();
 
   onProgress?.(makeProgress('idp', 0, 1));
   const idpResult = await syncInterventionPlanSubmissions(userId, participantId, onProgress);
   syncedCount += idpResult.synced;
   failedCount += idpResult.failed;
+  if (isNetworkOffline()) return stoppedByOffline();
 
   // Record failures for retry; update per-participant lastSyncedAt on success
   if (failedCount > 0) {

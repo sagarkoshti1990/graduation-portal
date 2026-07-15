@@ -2317,6 +2317,8 @@
     "syncSummarySkipped": "Skipped",
     "syncSummaryCancelled": "Cancelled",
     "syncSummaryRemaining": "Remaining",
+    "syncInterruptedTitle": "Sync Stopped — You're Offline",
+    "syncInterruptedMessage": "The device went offline while syncing. Nothing further was changed — you can try syncing again once you're back online.",
     "taskUpdatedTitle": "Task Already Updated",
     "taskUpdatedMessage": "This task has already progressed further online and cannot be synced from offline data. This task will be skipped during the current sync.",
     "taskObservationUpdatedTitle": "Task Observation Already Updated",

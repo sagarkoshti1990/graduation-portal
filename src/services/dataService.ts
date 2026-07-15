@@ -452,6 +452,17 @@ export async function getEntityDetails(
     },
   );
 }
+/**
+ * Counts pending task edits at leaf level. A parent task with children is
+ * just a wrapper carrying no status/attachments of its own — validation
+ * skips the parent and checks each child individually when children exist
+ * (see syncValidationService.validateOneTask), so each child counts as one
+ * pending item and the parent wrapper is not counted separately. A childless
+ * task counts as one.
+ */
+const countLeafTasks = (tasks: any[]): number =>
+  tasks.reduce((sum, t) => sum + (t?.children?.length ? t.children.length : 1), 0);
+
 export const mergeTasks = (oldData: any, newData: any) => {
   const taskMap = new Map();
 
@@ -571,7 +582,7 @@ export async function getPendingBreakdown(userId: string, participantIds?: strin
       const projectEditKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
       for (const key of projectEditKeys) {
         const edits = await offlineStorage.read<any>(key);
-        if (edits?.tasks?.length) tasks += edits.tasks.length;
+        if (edits?.tasks?.length) tasks += countLeafTasks(edits.tasks);
       }
 
       const pendingIdp = await offlineStorage.read<any>(PARTICIPANT_KEYS.idpSubmissionPending(userId, id));
@@ -611,7 +622,7 @@ export async function getPerParticipantPendingBreakdown(userId: string): Promise
       const projectEditKeys = allKeys.filter((k: string) => k.includes(':projectEdits:'));
       for (const key of projectEditKeys) {
         const edits = await offlineStorage.read<any>(key);
-        if (edits?.tasks?.length) tasks += edits.tasks.length;
+        if (edits?.tasks?.length) tasks += countLeafTasks(edits.tasks);
       }
 
       const pendingIdp = await offlineStorage.read<any>(PARTICIPANT_KEYS.idpSubmissionPending(userId, id));

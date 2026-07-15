@@ -34,6 +34,10 @@ import {
 } from '../../services/offlineCleanupService';
 import type { SyncProgress } from '@app-types/offline';
 import offlineStorage from '../../services/offlineStorage';
+import { isNetworkOffline } from '@utils/networkStatus';
+
+/** Rejection sentinel used by showDialog to signal "sync must stop — went offline". */
+const SYNC_INTERRUPTED_OFFLINE = 'SYNC_INTERRUPTED_OFFLINE';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -241,6 +245,8 @@ const SyncOverviewModal: React.FC = () => {
   const dialogResolverRef = useRef<((d: DialogDecision) => void) | null>(null);
   // Aggregate report shown once a batch sync run finishes — see syncSelected's Phase 3.
   const [syncSummary, setSyncSummary] = useState<SyncSummaryData | null>(null);
+  // Set when a sync run had to stop mid-way because the device went offline.
+  const [syncInterrupted, setSyncInterrupted] = useState(false);
 
   // ── Load participants ──────────────────────────────────────────────────────
 
@@ -270,9 +276,25 @@ const SyncOverviewModal: React.FC = () => {
 
   // ── Sequential dialog queue ────────────────────────────────────────────────
 
+  // Never show — or act on — a dialog once offline. Checked both before the
+  // dialog is created and again inside the resolver, since a dialog can sit
+  // open indefinitely waiting on the user and connectivity can drop while
+  // they're deciding. Uses the live isNetworkOffline() check (not the
+  // isOffline context value, which would be a stale closure read once at
+  // syncSelected's call time) so this reflects connectivity at the moment it
+  // actually matters.
   const showDialog = useCallback((item: DialogItem): Promise<DialogDecision> => {
-    return new Promise(resolve => {
-      dialogResolverRef.current = resolve;
+    if (isNetworkOffline()) {
+      return Promise.reject(new Error(SYNC_INTERRUPTED_OFFLINE));
+    }
+    return new Promise<DialogDecision>((resolve, reject) => {
+      dialogResolverRef.current = (decision: DialogDecision) => {
+        if (isNetworkOffline()) {
+          reject(new Error(SYNC_INTERRUPTED_OFFLINE));
+          return;
+        }
+        resolve(decision);
+      };
       setCurrentDialog(item);
     });
   }, []);
@@ -282,6 +304,16 @@ const SyncOverviewModal: React.FC = () => {
     dialogResolverRef.current = null;
     setCurrentDialog(null);
   }, []);
+
+  // Force-closes a dialog that's already open if connectivity drops while the
+  // user hasn't yet responded to it, rather than waiting for their next tap.
+  // Reuses the existing reactive isOffline context state — no new network
+  // listener needed.
+  useEffect(() => {
+    if (isOffline && currentDialog) {
+      dialogResolverRef.current?.('cancel');
+    }
+  }, [isOffline, currentDialog]);
 
   // ── Per-participant sync ───────────────────────────────────────────────────
 
@@ -314,8 +346,17 @@ const SyncOverviewModal: React.FC = () => {
         }));
 
         await refreshAfterOfflineChange();
-        setTimeout(() => {
-          setParticipants(prev => prev.filter(p => p.participantId !== participantId));
+        setTimeout(async () => {
+          // startSync resolving without throwing doesn't mean everything synced —
+          // Cancelled items are intentionally left pending for retry. Only drop
+          // this participant from the visible list once they truly have nothing
+          // left, otherwise this stale check (2s later) would wrongly overwrite
+          // the accurate list loadParticipants() already set after Phase 3.
+          const stillPending = await getPerParticipantPendingBreakdown(userId);
+          const hasRemainingWork = stillPending.some(p => p.participantId === participantId);
+          if (!hasRemainingWork) {
+            setParticipants(prev => prev.filter(p => p.participantId !== participantId));
+          }
           setSyncStates(prev => { const n = { ...prev }; delete n[participantId]; return n; });
         }, 2000);
         return true;
@@ -352,6 +393,12 @@ const SyncOverviewModal: React.FC = () => {
         toSync.map(p => runValidationForParticipant(p.participantId, userId, validationCache)),
       );
       setIsValidating(false);
+
+      // Covers going offline during the (network-bound) validation calls
+      // above, before any dialog exists or any decision has been acted on.
+      if (isNetworkOffline()) {
+        throw new Error(SYNC_INTERRUPTED_OFFLINE);
+      }
 
       const planMap = new Map<string, ParticipantValidationPlan>();
       planResults.forEach((r, i) => {
@@ -594,6 +641,21 @@ const SyncOverviewModal: React.FC = () => {
             for (const projectId of extraSkipProjectIds) {
               skipOptions.skipProjectIds?.add(projectId);
             }
+
+            // If every task/form conflict for this participant was Cancelled
+            // (or already blocked/skipped) and there's no pending IDP submission
+            // (which always attempts regardless of skip decisions — see
+            // syncInterventionPlanSubmissions), there's genuinely nothing left
+            // to sync. Skip the startSync call — and the "Syncing..." UI state
+            // it drives — entirely, instead of running/showing a no-op sync.
+            const hasTaskWork = plan.taskResults.some(
+              tr => !skipOptions?.skipTaskIds?.has(tr.taskId) && !skipOptions?.skipProjectIds?.has(tr.projectId),
+            );
+            const hasFormWork = plan.formResults.some(f => !skipOptions?.skipFormIds?.has(f.formId));
+            const hasIdpWork = entry.idp > 0;
+            if (!hasTaskWork && !hasFormWork && !hasIdpWork) {
+              return { participantId: entry.participantId, attempted: false, success: false };
+            }
           }
 
           const success = await syncOne(entry, skipOptions);
@@ -621,9 +683,10 @@ const SyncOverviewModal: React.FC = () => {
       }
 
       // ── Remaining counts — a fresh post-sync scan across this batch's participants.
-      // Uses the same leaf-counting unit as plan.taskResults (parent + each child counted
-      // individually) so "Remaining" is comparable to "Synced/Skipped/Cancelled" above,
-      // rather than reusing getPerParticipantPendingBreakdown's top-level-only task count.
+      // Uses the same leaf-counting unit as plan.taskResults: a parent task with
+      // children is only a wrapper (validation skips it and checks each child
+      // individually — see syncValidationService.validateOneTask), so each child
+      // counts as one and the parent wrapper itself is not counted separately.
       for (const entry of toSync) {
         try {
           const keys = await offlineStorage.getParticipantKeys(userId, entry.participantId);
@@ -633,7 +696,7 @@ const SyncOverviewModal: React.FC = () => {
           for (const key of projectEditKeys) {
             const edits = await offlineStorage.read<{ tasks?: any[] }>(key).catch(() => null);
             for (const task of edits?.tasks ?? []) {
-              summary.task.remaining += 1 + (task?.children?.length ?? 0);
+              summary.task.remaining += task?.children?.length ? task.children.length : 1;
             }
           }
 
@@ -649,6 +712,20 @@ const SyncOverviewModal: React.FC = () => {
 
       await refreshAfterOfflineChange();
       await loadParticipants();
+    } catch (err: any) {
+      if (err?.message === SYNC_INTERRUPTED_OFFLINE) {
+        // Stopped mid-way because the device went offline — close whatever
+        // dialog might still be showing and let the user know, without
+        // running Phase 3 or acting on anything further. refreshAfterOfflineChange/
+        // loadParticipants are safe, read-only reflections of whatever DID
+        // complete before the drop, so still run them to keep the UI honest.
+        setCurrentDialog(null);
+        setSyncInterrupted(true);
+        await refreshAfterOfflineChange();
+        await loadParticipants();
+        return;
+      }
+      throw err;
     } finally {
       setBulkSyncing(false);
     }
@@ -1177,6 +1254,33 @@ const SyncOverviewModal: React.FC = () => {
     );
   };
 
+  // ── Sync Interrupted notice ───────────────────────────────────────────────
+  // Shown when a batch sync run had to stop mid-way because the device went
+  // offline — see syncSelected's catch block.
+
+  const renderSyncInterrupted = () => {
+    if (!syncInterrupted) return null;
+
+    return (
+      <Modal
+        isOpen
+        onClose={() => setSyncInterrupted(false)}
+        headerTitle={t('offlineSync.syncInterruptedTitle')}
+        size="md"
+        showCloseButton={false}
+        footerContent={
+          <HStack space="md" justifyContent="flex-end">
+            <Button variant="solid" size="sm" onPress={() => setSyncInterrupted(false)}>
+              <ButtonText>{t('common.close')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <Text fontSize="$sm" color="$textSecondary">{t('offlineSync.syncInterruptedMessage')}</Text>
+      </Modal>
+    );
+  };
+
   // ── Main render ────────────────────────────────────────────────────────────
 
   return (
@@ -1360,6 +1464,9 @@ const SyncOverviewModal: React.FC = () => {
 
       {/* Post-sync aggregate report — rendered once a batch sync run finishes */}
       {renderSyncSummary()}
+
+      {/* Shown when a sync run had to stop mid-way because of connectivity loss */}
+      {renderSyncInterrupted()}
     </>
   );
 };
