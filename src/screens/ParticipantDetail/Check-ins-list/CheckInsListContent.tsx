@@ -60,7 +60,6 @@ interface CheckInsListContentProps {
   _container?:any
   _dataNotFoundCard?:any
   loderHeight?:string
-  coachId?:string
 }
 
 /**
@@ -76,8 +75,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   participant: propParticipant,
   _container,
   _dataNotFoundCard,
-  loderHeight,
-  coachId
+  loderHeight
 }) => {
   type IconMeta = {
     color?: string;
@@ -220,9 +218,10 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         const solutionNameData = solutions.find((sol: any) => sol.solutionId === selectedSolution);
         let filterAnswerValue,userId, entityId: string | null = null;
         setSolutionItem(solutionNameData || null);
+        const resolvedCreatorId = (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
         if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
-          userId = coachId || user?.id;
+          userId = resolvedCreatorId || user?.id;
         } else {
           userId = participant?.userId;
         }
@@ -230,7 +229,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         // Get observation entities to find observationId and entityId
         const observationData = await getObservationEntities({
           solutionId: selectedSolutionData.solutionId || selectedSolutionData.id,
-          profileData: coachId ? {createdBy: coachId} : {},
+          profileData: resolvedCreatorId ? {createdBy: resolvedCreatorId} : {},
         });
         const observationId = observationData?.result?._id;
         if (!observationId) {
@@ -290,8 +289,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         showAlert('error', t('logVisit.errors.userNotFound'));
         return;
       }
+      const resolvedCreatorId = (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
       onNavigateToObservation({
-        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? coachId || user?.id : participant.userId,
+        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? resolvedCreatorId || user?.id : participant.userId,
         entityType:solutionItem?.entityType,
         solutionId: selectedSolution,
         submissionNumber,
