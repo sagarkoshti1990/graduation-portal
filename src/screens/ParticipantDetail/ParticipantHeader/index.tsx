@@ -252,6 +252,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       const endlineSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
       setShouldShowCompletionButton(
         status === STATUS.IN_PROGRESS &&
+        participantProp?.accountUserStatus !== USER_STATUS.INACTIVE &&
         !!participantProp?.idpProjectId &&
         effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
         // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,

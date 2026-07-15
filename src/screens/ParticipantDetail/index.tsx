@@ -340,7 +340,7 @@ export default function ParticipantDetail() {
         {showOnboardingProject === "not_eligible" ? (
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
-          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || isdminPanalAccess)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
           : showOnboardingProject ? (
           <>
             {/* Hide Download Forms card for dropped out participants */}
@@ -356,7 +356,7 @@ export default function ParticipantDetail() {
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
               projectData={projectData}
-              {...(isdminPanalAccess ? {mode:MODE.readOnlyMode?.mode}:{})}
+              {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
         ) : (
@@ -417,7 +417,7 @@ export default function ParticipantDetail() {
                     onIdpCreation={handleIdpCreated}
                     onProgressChange={handleProgressChange}
                     projectData={projectData}
-                    {...(isdminPanalAccess ? {mode:MODE.readOnlyMode?.mode}:{})}
+                    {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>
               )}
@@ -426,7 +426,7 @@ export default function ParticipantDetail() {
                   <AssessmentSurveys
                     participant={participant as ParticipantData}
                     completionPercentage={updatedProgress || 0}
-                    {...(isdminPanalAccess ? {isReadOnly:true}:{})}
+                    {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {isReadOnly:true}:{})}
                   />
                 </Box>
               )}
@@ -441,7 +441,7 @@ export default function ParticipantDetail() {
         participantId={participant.userId || ''}
         userId={authUserId || ''}
         onParticipantSaved={handleParticipantAddressSaved}
-        {...(isdminPanalAccess ? {isReadOnly:true}:{})}
+        {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {isReadOnly:true}:{})}
       />
     </Box>
   );
