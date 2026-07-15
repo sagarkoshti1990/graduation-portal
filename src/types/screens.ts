@@ -87,7 +87,6 @@ export interface ParticipantHeaderProps {
   projectData?: ProjectData | null;
   onParticipantRefresh?: () => Promise<string | undefined> | string | undefined;
   solutions?: any[];
-  coachId?:string;
   isHideSecondButton?: Boolean;
 }
 

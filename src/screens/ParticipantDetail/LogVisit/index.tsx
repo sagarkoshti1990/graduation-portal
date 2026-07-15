@@ -112,11 +112,7 @@ const LogVisit: React.FC = () => {
         subtitle={t('logVisit.selectVisitType', { name: participant?.name || '' })}
         onBackPress={handleBackPress}
         rightSection={<Button variant="outlineghost" onPress={() => {
-          const resolvedCoachId = participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
           const params: any = { id: route.params?.id };
-          if (user?.role?.toLowerCase() === 'supervisor') {
-            params.coachId = resolvedCoachId;
-          }
           // @ts-ignore
           navigation.navigate('check-ins-list', params);
         }}>

@@ -160,8 +160,8 @@ const getAccessPages = (
           path: '/profile-permissions',
           component: ProfilePermissions,
         },
-        { name: 'participant-detail', path: '/participants/:id/coach/:coachId', component: ParticipantDetail },
-        { name: 'check-ins-list', path: '/participants/:id/coach/:coachId/check-ins-list/:solutionId?', component: CheckInsList },
+        { name: 'participant-detail', path: '/participants/:id', component: ParticipantDetail },
+        { name: 'check-ins-list', path: '/participants/:id/check-ins-list/:solutionId?', component: CheckInsList },
         { name: 'observation', path: '/participants/:id/observation/:solutionId/:submissionNumber?', component: Observation },
       ];
     case 'lc':

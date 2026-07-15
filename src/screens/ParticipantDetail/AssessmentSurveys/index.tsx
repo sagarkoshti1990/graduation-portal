@@ -26,7 +26,6 @@ interface AssessmentSurveysProps {
   participant: ParticipantData;
   completionPercentage: number;
   isReadOnly?:boolean;
-  coachId?:string;
 }
 
 const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT, STATUS.NOT_ELIGIBLE];
@@ -38,8 +37,7 @@ const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPO
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   participant,
   completionPercentage = 0,
-  isReadOnly,
-  coachId
+  isReadOnly
 }) => {
   const { t } = useLanguage();
   const canAccessAdmin = useIsdminPanalAccess();
