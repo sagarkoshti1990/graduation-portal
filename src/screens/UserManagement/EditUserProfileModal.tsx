@@ -11,6 +11,25 @@ import { getUserProfile } from '../../services/authenticationService';
 import type { AdminUserManagementData } from '@app-types/Users';
 import { ProfileModalHeader, mapUserToFormValues, extractEntityOption, getEntityId } from './UserProfileModal';
 
+const EDITABLE_FIELDS = [
+  'name',
+  'nationalId',
+  'countryCode',
+  'phoneNumber',
+  'alternativePhoneCode',
+  'alternativePhone',
+  'roleId',
+  'gender',
+  'dob',
+  'employeeId',
+  'organisationId',
+  'positionId',
+  'provinceId',
+  'siteId',
+  'location',
+];
+
+
 interface EditUserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -163,7 +182,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    const validationErrs = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags, ['name']);
+    const validationErrs = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags, EDITABLE_FIELDS);
     if (Object.keys(validationErrs).length > 0) {
       setErrors(validationErrs);
       const firstErr = Object.values(validationErrs)[0];
@@ -173,9 +192,39 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      const roleId = values.roleId;
+      const selectedRole = roles.find((r: any) => r.id.toString() === roleId);
+      const roleTitle = selectedRole?.title || roleId;
+
       const payload: any = {
         name: values.name?.trim(),
+        roles: roleTitle,
       };
+
+      if (values.dob) {
+        payload.dob = values.dob.replace(/[/\-_]/g, '');
+      }
+      if (values.gender) payload.gender = values.gender;
+      if (values.siteId !== undefined) payload.site = values.siteId || null;
+      if (values.provinceId !== undefined) payload.province = values.provinceId || null;
+      if (values.phoneNumber !== undefined) payload.phone = values.phoneNumber || null;
+      if (values.phoneNumber && values.countryCode) {
+        payload.phone_code = values.countryCode.replace('+', '');
+      }
+      if (values.alternativePhone !== undefined) payload.alternative_phone = values.alternativePhone || null;
+      if (values.alternativePhone && values.alternativePhoneCode) {
+        payload.alternative_phone_code = values.alternativePhoneCode.replace('+', '');
+      }
+      if (values.location !== undefined) payload.location = values.location || null;
+      if (values.nationalId !== undefined) {
+        payload.national_id = values.nationalId ? Number(values.nationalId) : null;
+      }
+
+      if (flags.isSupervisorOrLC) {
+        if (values.organisationId !== undefined) payload.organisation = values.organisationId || null;
+        if (values.positionId !== undefined) payload.position = values.positionId || null;
+        if (values.employeeId !== undefined) payload.employee_id = values.employeeId || null;
+      }
 
       await updateOrgAdminUser(user!.id, payload);
       showAlert('success', t('admin.users.edit.success', 'User updated successfully.'));
@@ -250,7 +299,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
               disabled={isSubmitting}
               isMobile={isMobile}
               t={t}
-              editableFields={['name']}
+              editableFields={EDITABLE_FIELDS}
             />
           </VStack>
         )}
