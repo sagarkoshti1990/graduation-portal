@@ -33,11 +33,12 @@ export interface DisabledWhenCondition {
 }
 
 export interface FormField {
-  name: string;
-  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea';
+  name?: string;
+  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea' | 'note' | 'group';
   required: boolean;
   label: { key: string; fallback: string };
   placeholder?: { key?: string; fallback: string };
+  defaultValue?: string;
   /** When present and the flag resolves to false, this field is hidden */
   visibleWhen?: VisibleWhenFlag;
   autoFocus?: boolean;
@@ -64,6 +65,7 @@ export interface FormField {
   visibilityToggleGroup?: string;
   validation?: ValidationRule[];
   placeholderWhenReady?: { key: string; fallback: string };
+  fields?: FormField[];
 }
 
 export interface FormRow {
@@ -103,21 +105,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             ],
           },
           {
-            name: 'username',
-            type: 'text',
-            required: true,
-            label: { key: 'username', fallback: 'Username' },
-            placeholder: { fallback: 'Enter username' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
-              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
-            ],
-          },
-        ],
-      },
-      {
-        fields: [
-          {
             name: 'email',
             type: 'email',
             required: true,
@@ -128,6 +115,21 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'required', message: { key: 'errors.emailRequired', fallback: 'Email address is required' } },
               { rule: 'email', message: { key: 'errors.emailInvalid', fallback: 'Enter a valid email address' } },
+            ],
+          },
+        ],
+      },
+      {
+        fields: [
+          {
+            name: 'username',
+            type: 'text',
+            required: true,
+            label: { key: 'username', fallback: 'Username' },
+            placeholder: { fallback: 'Enter username' },
+            validation: [
+              { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
+              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
             ],
           },
           {
@@ -149,54 +151,64 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       {
         fields: [
           {
-            name: 'countryCode',
-            type: 'select',
-            required: false,
-            label: { key: 'countryCode', fallback: 'Country Code' },
-            placeholder: { fallback: '+27' },
-            optionsSource: 'countryCodes',
-            searchable: true,
-          },
-          {
-            name: 'phoneNumber',
-            type: 'tel',
+            type: 'group',
             required: false,
             label: { key: 'phoneNumber', fallback: 'Phone Number' },
-            placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-            inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
-            validation: [
+            fields: [
               {
-                rule: 'pattern',
-                value: '^[0-9]{10}$',
-                message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                name: 'countryCode',
+                type: 'select',
+                required: false,
+                label: { key: 'countryCode', fallback: 'Country Code' },
+                defaultValue: '+27',
+                optionsSource: 'countryCodes',
+                searchable: true,
+              },
+              {
+                name: 'phoneNumber',
+                type: 'tel',
+                required: false,
+                label: { key: 'phoneNumber', fallback: 'Phone Number' },
+                placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                validation: [
+                  {
+                    rule: 'pattern',
+                    value: '^[0-9]{10}$',
+                    message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                  },
+                ],
               },
             ],
           },
-        ],
-      },
-      {
-        fields: [
           {
-            name: 'alternativePhoneCode',
-            type: 'select',
+            type: 'group',
             required: false,
-            label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
-            placeholder: { fallback: '+27' },
-            optionsSource: 'countryCodes',
-            searchable: true,
-          },
-          {
-            name: 'alternativePhone',
-            type: 'tel',
-            required: false,
-            label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
-            placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
-            inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
-            validation: [
+            label: { key: 'alternativePhone', fallback: 'Alt Phone Number' },
+            fields: [
               {
-                rule: 'pattern',
-                value: '^[0-9]{10}$',
-                message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                name: 'alternativePhoneCode',
+                type: 'select',
+                required: false,
+                label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
+                defaultValue: '+27',
+                optionsSource: 'countryCodes',
+                searchable: true,
+              },
+              {
+                name: 'alternativePhone',
+                type: 'tel',
+                required: false,
+                label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
+                placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                validation: [
+                  {
+                    rule: 'pattern',
+                    value: '^[0-9]{10}$',
+                    message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                  },
+                ],
               },
             ],
           },
@@ -265,46 +277,17 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       },
 
       {
+        visibleWhen: { flag: 'isSupervisorOrLC' },
         fields: [
           {
-            name: 'password',
-            type: 'password',
+            name: 'employeeId',
+            type: 'text',
             required: true,
-            toggleVisibility: true,
-            visibilityToggleGroup: 'userPassword',
-            label: { key: 'password', fallback: 'Password' },
-            placeholder: { fallback: 'Enter password' },
+            visibleWhen: { flag: 'isSupervisorOrLC' },
+            label: { key: 'employeeId', fallback: 'Employee ID' },
+            placeholder: { key: 'employeeIdPlaceholder', fallback: 'Enter Employee ID' },
             validation: [
-              {
-                rule: 'minLength',
-                value: 8,
-                message: {
-                  key: 'errors.passwordMinLength',
-                  fallback: 'Password must be at least 8 characters long',
-                },
-              },
-              {
-                rule: 'pattern',
-                value: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#^()_+\\-=[\\]{};:\'",.<>/?\\\\|`~]).+$',
-                message: {
-                  key: 'errors.passwordInvalid',
-                  fallback:
-                    'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
-                },
-              },
-            ],
-          },
-          {
-            name: 'confirmPassword',
-            type: 'password',
-            required: true,
-            toggleVisibility: true,
-            visibilityToggleGroup: 'userPassword',
-            label: { key: 'confirmPassword', fallback: 'Confirm Password' },
-            placeholder: { fallback: 'Confirm password' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.confirmPasswordRequired', fallback: 'Please confirm the password' } },
-              { rule: 'matchField', value: 'password', message: { key: 'errors.passwordMismatch', fallback: 'Passwords do not match' } },
+              { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
             ],
           },
         ],
@@ -334,22 +317,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               { rule: 'required', message: { key: 'errors.positionRequired', fallback: 'Position is required' } },
             ],
           },
-        ],
-      },
-      {
-        fields: [
-          {
-            name: 'employeeId',
-            type: 'text',
-            required: true,
-            visibleWhen: { flag: 'isSupervisorOrLC' },
-            label: { key: 'employeeId', fallback: 'Employee ID' },
-            placeholder: { key: 'employeeIdPlaceholder', fallback: 'Enter Employee ID' },
-            validation: [
-              { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
-            ],
-          },
-
         ],
       },
     ],
@@ -395,6 +362,20 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
             ],
+          },
+        ],
+      },
+      {
+        fields: [
+          {
+            name: 'tempPasswordNote',
+            type: 'note',
+            required: false,
+            icon: 'Info',
+            label: {
+              key: 'tempPasswordNote',
+              fallback: 'A temporary password will be generated for the account. The user must reset this password before they can log in for the first time.',
+            },
           },
         ],
       },

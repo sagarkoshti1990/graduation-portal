@@ -228,9 +228,9 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
 
   const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
-    const resolvedCoachId = participantProp?.hierarchy?.[0] || participantProp?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+    const params: any = { id: participantId };
     // @ts-ignore
-    navigation.push(link, { id: participantId,coachId: resolvedCoachId });
+    navigation.push(link, params);
   };
 
   const handleCompleteProject = async (solution: any) => {
@@ -289,6 +289,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       const endlineSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
       setShouldShowCompletionButton(
         status === STATUS.IN_PROGRESS &&
+        participantProp?.accountUserStatus !== USER_STATUS.INACTIVE &&
         !!participantProp?.idpProjectId &&
         effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
         // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,

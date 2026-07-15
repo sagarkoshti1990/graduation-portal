@@ -1,7 +1,7 @@
 import React, { useEffect, useState, memo } from 'react';
 import { VStack, Box, ScrollView, Text, Spinner } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useAuth,useIsdminPanalAccess } from '@contexts/AuthContext';
+import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import { assessmentSurveysStyles } from './Styles';
 import { AssessmentCard } from '@components/ObservationCards';
 import type {
@@ -26,7 +26,6 @@ interface AssessmentSurveysProps {
   participant: ParticipantData;
   completionPercentage: number;
   isReadOnly?:boolean;
-  coachId?:string;
 }
 
 const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPOUT, STATUS.NOT_ELIGIBLE];
@@ -38,8 +37,7 @@ const readOnlyAccessStatuses = [STATUS.COMPLETED, STATUS.GRADUATED, STATUS.DROPO
 const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   participant,
   completionPercentage = 0,
-  isReadOnly,
-  coachId
+  isReadOnly
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();

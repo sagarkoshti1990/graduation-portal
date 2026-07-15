@@ -53,7 +53,6 @@ import { useOfflineSync } from '@contexts/OfflineSyncContext';
  */
 type ParticipantDetailRouteParams = {
   id?: string;
-  coachId?:string;
 };
 
 /**
@@ -72,8 +71,7 @@ export default function ParticipantDetail() {
   const { setRefComponent } = useGlobal();
   // Extract the id parameter from the route
   const participantId = route.params?.id;
-  const coachId = route.params?.coachId;
-  const authUserId = coachId || user?.id;
+  const authUserId = user?.id;
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('intervention-plan');
@@ -81,7 +79,7 @@ export default function ParticipantDetail() {
   const [status, setStatus] = useState('');
   const [idpCreated, setIdpCreated] = useState(false);
   const [participant, setParticipant] = useState<User | undefined>();
-  const resolvedCoachId = coachId || participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+  const resolvedCreatorId = participant?.hierarchy?.[0] || participant?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
   const [areAllTasksCompleted, setAreAllTasksCompleted] = useState(false);
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
     undefined,
@@ -246,7 +244,7 @@ export default function ParticipantDetail() {
         type: 'observation',
         'filter[keywords]': keywordsString,
       });    // Verify participant completion conditions and perform certificate/graduation actions
-      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string, isdminPanalAccess ? resolvedCoachId : undefined);
+      const solutionsWithEntityStatus = await getSolutionWithEntityStatus(solutionsData, participant?.id as string, isdminPanalAccess ? resolvedCreatorId : undefined);
 
       if(participant?.status === STATUS.IN_PROGRESS) {
         const checkIns = solutionsWithEntityStatus.find(item => item?.keywords?.includes(INDIVIDUAL_CHECKIN_KEYWORD))
@@ -289,7 +287,7 @@ export default function ParticipantDetail() {
         fetchSolutions();
       }
     }
-  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCoachId]);
+  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCreatorId]);
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
@@ -376,15 +374,14 @@ export default function ParticipantDetail() {
         // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
-        coachId={coachId}
-        isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || coachId))}
+        isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || isdminPanalAccess))}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject === "not_eligible" ? (
           <></>
         ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
-          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || coachId)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
+          <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
           : showOnboardingProject ? (
           <>
             {/* Hide Download Forms card for dropped out participants */}
@@ -401,7 +398,7 @@ export default function ParticipantDetail() {
               onTaskCompletionChange={setAreAllTasksCompleted}
               projectData={projectData}
               projectUnavailableOffline={projectUnavailableOffline}
-              {...(isdminPanalAccess ? {mode:MODE.readOnlyMode?.mode}:{})}
+              {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
         ) : (
@@ -463,7 +460,7 @@ export default function ParticipantDetail() {
                     onProgressChange={handleProgressChange}
                     projectData={projectData}
                     projectUnavailableOffline={projectUnavailableOffline}
-                    {...(coachId ? {mode:MODE.readOnlyMode?.mode}:{})}
+                    {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>
               )}
@@ -472,7 +469,7 @@ export default function ParticipantDetail() {
                   <AssessmentSurveys
                     participant={participant as ParticipantData}
                     completionPercentage={updatedProgress || 0}
-                    {...(isdminPanalAccess ? {isReadOnly:true, coachId: resolvedCoachId}:{})}
+                    {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {isReadOnly:true}:{})}
                   />
                 </Box>
               )}
@@ -487,7 +484,7 @@ export default function ParticipantDetail() {
         participantId={participant.userId || ''}
         userId={authUserId || ''}
         onParticipantSaved={handleParticipantAddressSaved}
-        {...(coachId ? {isReadOnly:true}:{})}
+        {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {isReadOnly:true}:{})}
       />
 
       {/* Non-dismissible modal — shown when offline data exists but the participant

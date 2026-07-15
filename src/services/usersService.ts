@@ -13,13 +13,6 @@ import { ROLE_NAMES } from '@constants/ROLES';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 
-// Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
-declare const process: {
-  env: {
-    [key: string]: string | undefined;
-  };
-} | undefined;
-
 /**
  * Get users list for table view
  * Fetches users based on search and filter parameters
@@ -166,11 +159,13 @@ export const getEntityTypesFromStorage = async (): Promise<Record<string, string
  */
 let _entityTypesBootstrapPromise: Promise<Record<string, string> | null> | null = null;
 
-export const ensureEntityTypes = async (): Promise<Record<string, string> | null> => {
-  // Fast path: already in storage
-  const cached = await getEntityTypesFromStorage();
-  if (cached && Object.keys(cached).length > 0) {
-    return cached;
+export const ensureEntityTypes = async (forceRefresh = false): Promise<Record<string, string> | null> => {
+  // Fast path: already in storage (if not forcing refresh)
+  if (!forceRefresh) {
+    const cached = await getEntityTypesFromStorage();
+    if (cached && Object.keys(cached).length > 0) {
+      return cached;
+    }
   }
 
   // Deduplicate concurrent fetches
@@ -571,6 +566,41 @@ export const getPositionList = async (): Promise<ProvinceEntity[]> => {
     return response.result || [];
   } catch (error) {
     console.error('Error fetching position list:', error);
+    return [];
+  }
+};
+
+/**
+ * Get country codes list - Fetches country codes from entity management service
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getCountryCodesList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    let entityTypes = await ensureEntityTypes();
+    // Find the country code entity type key
+    let countryKey = Object.keys(entityTypes || {}).find(
+      k => k.toLowerCase() === 'country_code'
+    );
+
+    // If key not found, force a refresh from the server to bypass stale localStorage cache
+    if (!countryKey) {
+      entityTypes = await ensureEntityTypes(true);
+      countryKey = Object.keys(entityTypes || {}).find(
+        k => k.toLowerCase() === 'country_code'
+      );
+    }
+
+    const entityTypeId = countryKey ? entityTypes?.[countryKey] : undefined;
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching country codes list:', error);
     return [];
   }
 };

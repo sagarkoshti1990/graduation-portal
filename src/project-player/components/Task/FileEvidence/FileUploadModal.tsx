@@ -239,7 +239,7 @@ const getAllowedMediaSupport = (allowedTypes: string[]) => {
   return { supportsImage, supportsVideo };
 };
 
-const getComparableFileKey = (file: any): string | null => {
+export const getComparableFileKey = (file: any): string | null => {
   const name = getFileName(file);
   const size = getFileSize(file);
   const mime = getMimeType(file);
@@ -459,7 +459,8 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       .filter((m): m is string => Boolean(m));
   }, [validatedSelectedFiles]);
 
-  const canSubmit = validSelectedFiles.length > 0 && !hasInvalidSelectedFiles;
+  const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
+  const canSubmit = hasChanged && !hasInvalidSelectedFiles;
 
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {

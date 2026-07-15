@@ -12,6 +12,8 @@ import {
   getGenderList,
   getOrganisationList,
   getPositionList,
+  getCountryCodesList,
+  ensureEntityTypes,
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
 import { useIsSupervisor } from '../contexts/AuthContext';
@@ -88,6 +90,8 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
   const [organisations, setOrganisations] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [sites, setSites] = useState<SiteEntity[]>([]);
+  const [countryCodes, setCountryCodes] = useState<any[]>([]);
+  const [entityTypesMap, setEntityTypesMap] = useState<Record<string, string> | null>(null);
   const [isFiltersLoading, setIsFiltersLoading] = useState(true);
 
   // Fetch roles and provinces from API on component mount
@@ -121,17 +125,21 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
         setRoles([]);
       }
 
-      // Fetch provinces, genders, organisations, and positions
-      const [provincesData, genderData, organisationData, positionData] = await Promise.all([
+      // Fetch provinces, genders, organisations, positions, and country codes
+      const [provincesData, genderData, organisationData, positionData, countryCodesData, typesMap] = await Promise.all([
         getProvincesList(),
         getGenderList(),
         getOrganisationList(),
         getPositionList(),
+        getCountryCodesList(),
+        ensureEntityTypes(),
       ]);
       setProvinces(provincesData);
       setGenders(genderData);
       setOrganisations(organisationData);
       setPositions(positionData);
+      setCountryCodes(countryCodesData);
+      setEntityTypesMap(typesMap);
       setIsFiltersLoading(false);
     };
 
@@ -250,6 +258,8 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
     organisations,
     positions,
     sites,
+    countryCodes,
+    entityTypesMap,
     isFiltersLoading,
   };
 };
