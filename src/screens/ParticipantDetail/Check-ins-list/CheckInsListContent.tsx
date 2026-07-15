@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -98,6 +98,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   const [participant, setParticipant] = useState<
     ParticipantData | undefined
   >(propParticipant);
+  const resolvedCreatorId = useMemo(() => {
+    return (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+  }, [participant]);
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   
@@ -218,7 +221,6 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         const solutionNameData = solutions.find((sol: any) => sol.solutionId === selectedSolution);
         let filterAnswerValue,userId, entityId: string | null = null;
         setSolutionItem(solutionNameData || null);
-        const resolvedCreatorId = (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
         if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
           userId = resolvedCreatorId || user?.id;
@@ -281,7 +283,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     };
 
     fetchSubmissions();
-  }, [selectedSolution, solutions, participant, user,limit,page,t]);
+  }, [selectedSolution, solutions, participant, user, limit, page, t, resolvedCreatorId]);
 
   const handleViewForm = (submissionNumber: number) => {
     if (onNavigateToObservation && participant?.userId && selectedSolution) {
@@ -289,7 +291,6 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         showAlert('error', t('logVisit.errors.userNotFound'));
         return;
       }
-      const resolvedCreatorId = (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
       onNavigateToObservation({
         id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? resolvedCreatorId || user?.id : participant.userId,
         entityType:solutionItem?.entityType,

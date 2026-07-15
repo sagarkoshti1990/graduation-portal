@@ -76,6 +76,8 @@ const Observation: React.FC = () => {
 
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
+    } else if (typeof window !== 'undefined' && window.history && window.history.length > 1) {
+      window.history.back();
     } else {
       // Fallback: Navigate to participant detail if there's no previous screen
       // @ts-ignore
