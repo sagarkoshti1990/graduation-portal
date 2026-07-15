@@ -262,7 +262,32 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   autoFocusRef,
   isNested = false,
 }) => {
-  console.log(`[FieldRenderer] Rendering field: "${field.name || field.label.key}" | type: "${field.type}" | isNested: ${isNested}`);
+
+  useEffect(() => {
+    if (field.type === 'select') {
+      const rawOptions = field.optionsSource ? (optionsMap[field.optionsSource] ?? []) : [];
+      if (rawOptions.length > 0) {
+        const optionValues = rawOptions.map((o: any) => o.value);
+        let nextValue = value;
+
+        if (nextValue && !optionValues.includes(nextValue)) {
+          nextValue = '';
+        }
+
+        if (!nextValue && field.defaultValue) {
+          if (optionValues.includes(field.defaultValue)) {
+            nextValue = field.defaultValue;
+          } else {
+            nextValue = optionValues[0] || '';
+          }
+        }
+
+        if (nextValue !== value && field.name) {
+          onChange(field.name, nextValue);
+        }
+      }
+    }
+  }, [field.type, field.name, field.defaultValue, field.optionsSource, optionsMap[field.optionsSource || ''], value, onChange]);
 
   // ── Group ───────────────────────────────────────────────────────────────────
   if (field.type === 'group') {
