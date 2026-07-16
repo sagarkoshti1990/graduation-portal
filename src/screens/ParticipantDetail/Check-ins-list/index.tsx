@@ -152,6 +152,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         preSelectedSolution={selectedSolution}
         participant={participant as ParticipantData}
         solutions={solutions}
+        route={route}
       />
     </Box>
   );
