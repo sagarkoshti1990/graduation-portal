@@ -14,7 +14,7 @@ import {
   ButtonText,
   useAlert,
 } from '@ui';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import SearchBar from '@components/SearchBar';
 import DataTable from '@components/DataTable';
 import { getParticipantsColumns } from './ParticipantsTableConfig';
@@ -83,7 +83,11 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
-  const offline = isNetworkOffline();
+  const isOffline = isNetworkOffline();
+  const offline = useMemo(() => ({
+    get: offlineStorage.read,
+    set: offlineStorage.create,
+  }), []);
 
   // Load pageSize from offline storage on mount
   useEffect(() => {
@@ -102,6 +106,28 @@ const ParticipantsList: React.FC = () => {
     };
     loadPageSize();
   }, []);
+
+  // Restore filter and status from offline storage on focus
+  useFocusEffect(
+    useCallback(() => {
+      const restoreFilters = async () => {
+        try {
+          const storedFilter = await offline.get<'active' | 'inactive'>('participants_active_filter');
+          const storedStatus = await offline.get<StatusValue | ''>('participants_active_status');
+          if (storedFilter) {
+            setActiveFilter(storedFilter);
+          }
+          if (storedStatus) {
+            setActiveStatus(storedStatus);
+          }
+          setRefetchKey((k) => k + 1);
+        } catch (error) {
+          logger.error('Error restoring filters from storage:', error);
+        }
+      };
+      restoreFilters();
+    }, [offline])
+  );
 
   // Get status items directly from overview using STATUS constants
   const allStatusItems = useMemo<StatusFilterItem[]>(() => {
@@ -194,16 +220,6 @@ const ParticipantsList: React.FC = () => {
     }
   }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey]);
   
-  // When Active/Inactive filter changes, set default status
-  useEffect(() => {
-    if (activeFilter === 'inactive') {
-      setActiveStatus(STATUS.DROPOUT);
-    } else if (activeFilter === 'active') {
-      // Set default to NOT_ONBOARDED when Active is selected
-      setActiveStatus(STATUS.NOT_ONBOARDED);
-    }
-  }, [activeFilter]);
-
   // Handlers
   const handleSearch = useCallback((text: string) => {
     // Search functionality can be implemented here when needed
@@ -214,7 +230,8 @@ const ParticipantsList: React.FC = () => {
   const handleStatusChange = useCallback((status: StatusValue | '') => {
     setActiveStatus(status);
     setCurrentPage(1); // Reset to first page when status changes
-  }, []);
+    offline.set('participants_active_status', status);
+  }, [offline]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -272,10 +289,17 @@ const ParticipantsList: React.FC = () => {
                     { label: `${t('participants.inactive')} (${activeInactiveCounts.inactive})`, value: 'inactive' },
                   ]}
                   value={activeFilter}
-                  onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
+                  onChange={(value) => {
+                    const nextFilter = value as 'active' | 'inactive';
+                    setActiveFilter(nextFilter);
+                    const nextStatus = nextFilter === 'inactive' ? STATUS.DROPOUT : STATUS.NOT_ONBOARDED;
+                    setActiveStatus(nextStatus);
+                    offline.set('participants_active_filter', nextFilter);
+                    offline.set('participants_active_status', nextStatus);
+                  }}
                 />
               </Box>
-              {!offline && (
+              {!isOffline && (
                 <Box {...styles.buttonContainer}>
                   <GroupCheckInsButton />
                 </Box>
