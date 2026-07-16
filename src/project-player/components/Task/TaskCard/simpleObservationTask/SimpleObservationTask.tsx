@@ -239,10 +239,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     if (!files) return;
     setIsStatusUpdating(true);
     try {
-      const newFiles = filterNewFiles(files, task?.attachments);
-      const existingToSend = (task?.attachments ?? []).filter(existing =>
-      files.some(f => getComparableFileKey(f) === getComparableFileKey(existing))
-    );
+      const {newFiles, existingToSend} = filterNewFiles(files, task?.attachments);
       const data = await handleStatusChange(
         { taskId: task._id, parentIndex, index },
           TASK_STATUS.COMPLETED,
@@ -303,7 +300,6 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         allowedFileTypes={uploadConfig.allowedFileTypes}
         onUpload={handleUploadMethodSelect}
         onConfirm={handleUploadConfirm}
-        isConsent={isOnboardingTask}
       />
       <EvidencePreviewModal
         isOpen={showPreviewModal} onClose={handleClosePreviewModal}
