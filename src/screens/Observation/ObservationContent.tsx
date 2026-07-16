@@ -18,7 +18,7 @@ import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
 import fileStorageService from '../../services/fileStorageService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS, ENTITY_TYPE, MAX_FILE_SIZE } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_TYPE, MAX_FILE_SIZE, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
 import { findEmbeddedFiles, makeOfflineFileMetadata, removeFileFromAnsers, setAtPath } from '@utils/helper';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
@@ -438,6 +438,23 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           answers,endTime,externalId:evidenceCode,isSubmitted,startTime,status,solutionId
         }, authUser?.id ?? '');
         logger.info('ObservationContent: form edits saved for sync');
+
+        // Auto-mark the linked Observation-type project task as completed
+        // when offline — restores prior behavior that was lost when
+        // saveTaskEdit's signature gained projectId/userId params.
+        if (type === 'QUESTIONNAIRE_SUBMIT' && taskId && isNetworkOffline()) {
+          try {
+            await dataService.saveTaskEdit(
+              participantKey,
+              (participant as any)?.onBoardedProjectId ?? '',
+              { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] },
+              authUser?.id ?? '',
+            );
+            logger.info('ObservationContent: task auto-marked completed offline', taskId);
+          } catch (err) {
+            logger.warn('ObservationContent: failed to auto-mark task complete', err);
+          }
+        }
       } catch (err) {
         logger.warn('ObservationContent: failed to save form edits', err);
       }
@@ -445,7 +462,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     if(type === "QUESTIONNAIRE_SUBMIT") {
       handleBackPress();
     }
-  },[handleBackPress, participant, solutionId, authUser?.id])
+  },[handleBackPress, participant, solutionId, taskId, authUser?.id])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(

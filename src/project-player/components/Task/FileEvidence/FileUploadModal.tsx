@@ -348,14 +348,14 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
 
     return selectedFiles.map(item => {
       const file = item.file;
-
+      // banner summary below (errorMessages), not here.
       const size = getFileSize(file);
       if (typeof size === 'number' && size === 0) {
         return {
           ...item,
           isValid: false,
           errorCode: 'empty',
-          errorMessage: 'Empty files cannot be uploaded.',
+          errorMessage: t('projectPlayer.fileEmptyError', { count: 1 }),
         };
       }
 
@@ -364,7 +364,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           ...item,
           isValid: false,
           errorCode: 'size_exceeded',
-          errorMessage: t('projectPlayer.fileSizeError', { maxSize: maxFileSize }),
+          errorMessage: t('projectPlayer.fileMaxSizeError', { count: 1, maxSize: maxFileSize }),
         };
       }
 
@@ -374,7 +374,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           ...item,
           isValid: false,
           errorCode: 'invalid_type',
-          errorMessage: `Unsupported file type. Allowed: ${allowedFileTypesLabel}.`,
+          errorMessage: t('projectPlayer.fileTypeError', { count: 1, allowedTypes: allowedFileTypesLabel }),
         };
       }
 
@@ -384,7 +384,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           ...item,
           isValid: false,
           errorCode: 'duplicate',
-          errorMessage: 'This file was already added.',
+          errorMessage: t('projectPlayer.fileDuplicateError', { count: 1 }),
         };
       }
 
@@ -402,10 +402,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         ...item,
         isValid: false,
         errorCode: 'count_exceeded',
-        errorMessage:
-          typeof maxUploadCount === 'number'
-            ? `Upload limit exceeded. Max ${maxUploadCount} files allowed.`
-            : 'Upload limit exceeded.',
+        errorMessage: t('projectPlayer.fileCountExceededError', { count: 1, maxCount: maxUploadCount }),
       };
     });
   }, [
@@ -442,22 +439,37 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
     isSingleMode,
   ]);
 
+  // One grouped, count-aware message per distinct validation failure (e.g.
+  // "These files exceed the maximum allowed size" when 3 files are too big),
+  // rather than the per-file singular message used on each file's own card.
   const errorMessages = useMemo(() => {
-    const issues = new Map<ValidationErrorCode, string>();
-
+    const countsByCode = new Map<ValidationErrorCode, number>();
     for (const item of validatedSelectedFiles) {
       if (item.isValid || !item.errorCode) continue;
-      if (!issues.has(item.errorCode)) {
-        issues.set(item.errorCode, item.errorMessage || '');
-      }
+      countsByCode.set(item.errorCode, (countsByCode.get(item.errorCode) ?? 0) + 1);
     }
+
+    const buildMessage = (code: ValidationErrorCode, count: number): string => {
+      switch (code) {
+        case 'count_exceeded':
+          return t('projectPlayer.fileCountExceededError', { count, maxCount: maxUploadCount });
+        case 'invalid_type':
+          return t('projectPlayer.fileTypeError', { count, allowedTypes: allowedFileTypesLabel });
+        case 'size_exceeded':
+          return t('projectPlayer.fileMaxSizeError', { count, maxSize: maxFileSize });
+        case 'duplicate':
+          return t('projectPlayer.fileDuplicateError', { count });
+        case 'empty':
+          return t('projectPlayer.fileEmptyError', { count });
+      }
+    };
 
     // Keep deterministic order
     const order: ValidationErrorCode[] = ['count_exceeded', 'invalid_type', 'size_exceeded', 'duplicate', 'empty'];
     return order
-      .map(code => issues.get(code))
-      .filter((m): m is string => Boolean(m));
-  }, [validatedSelectedFiles]);
+      .filter(code => countsByCode.has(code))
+      .map(code => buildMessage(code, countsByCode.get(code)!));
+  }, [validatedSelectedFiles, maxUploadCount, allowedFileTypesLabel, maxFileSize, t]);
 
   const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
   const canSubmit = hasChanged && !hasInvalidSelectedFiles;
@@ -935,11 +947,11 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                   {selectionAttemptError}
                 </Text>
               )}
-              {errorMessages.map((msg, idx) => (
-                <Text key={`${msg}-${idx}`} fontSize="$xs" color="$error700">
-                  {msg}
+              {errorMessages.length > 0 && (
+                <Text fontSize="$xs" fontWeight="$medium" color="$error700">
+                  {t('projectPlayer.fileValidationSummary')}
                 </Text>
-              ))}
+              )}
             </VStack>
           </Box>
         )}
