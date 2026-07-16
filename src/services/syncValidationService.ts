@@ -587,11 +587,20 @@ export async function runValidationForParticipant(
       // only when the task is a child, so the conflict dialog can show context.
       function validateOneTask(editTask: any, parentTaskName?: string): void {
         const onlineTask = onlineTaskMap.get(editTask._id);
-        if (!onlineTask) return;
+        const offlineSnapshotTask = offlineSnapshotTaskMap.get(editTask._id);
+
+        if (!onlineTask) {
+          // No online counterpart — e.g. a custom task created offline
+          // (fresh uuidv4 id, never existed server-side). Nothing to
+          // conflict-check against, so allow it to sync normally rather than
+          // silently dropping it from the plan, which previously left it
+          // permanently "Remaining" with no path to ever sync it.
+          if ((offlineSnapshotTask?.type ?? editTask.type) === 'observation') return;
+          plan.taskResults.push({ taskId: editTask._id, projectId, outcome: 'allowed' });
+          return;
+        }
         // Observation form tasks are handled by the Observation Sync Queue — skip.
         if (onlineTask.type === 'observation') return;
-
-        const offlineSnapshotTask = offlineSnapshotTaskMap.get(editTask._id);
 
         // Rule 1: online task status is ahead of what the user edited offline
         const editStatus = editTask.status ?? offlineSnapshotTask?.status ?? '';
@@ -696,9 +705,7 @@ export async function runValidationForParticipant(
 
     const onlineObsStatus: string = onlineSubmission.status ?? CARD_STATUS.STARTED;
     const onlineUpdatedAt: string | undefined = onlineSubmission.updatedAt;
-console.log(await buildObservationConflictDetails(
-          formData, editData, onlineObsStatus, onlineUpdatedAt, CARD_STATUS.COMPLETED,
-        ),"compairesagar");
+
     // Rule 1: already completed online → offer removal (no sync allowed)
     if (onlineObsStatus === CARD_STATUS.COMPLETED) {
       plan.formResults.push({
@@ -733,10 +740,14 @@ console.log(await buildObservationConflictDetails(
 
     // Rule 4: offline status priority > online → allow sync directly (fall through to 'allowed').
 
-    // Rule 3: same status → check timestamp divergence
-    if (onlineObsPri === offlineObsPri) {
-        continue;
-
+    // Rule 3: same status (e.g. "no changes, just Save Progress") → allow sync
+    // directly. Timestamp-divergence checking here was intentionally disabled
+    // (see the commented-out hasTimestampConflict call below) to fix spurious
+    // "online is ahead" conflicts; this must fall through to 'allowed' below
+    // rather than `continue`, otherwise the form is silently dropped from the
+    // validation plan entirely — never synced, never shown in a dialog, and
+    // left in the pending queue forever (reported as "stuck in Remaining").
+    // if (onlineObsPri === offlineObsPri) {
       // if (hasTimestampConflict(formData.downloadedAt ?? downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
       //   plan.formResults.push({
       //     formId,
@@ -749,7 +760,7 @@ console.log(await buildObservationConflictDetails(
       //   });
       //   continue;
       // }
-    }
+    // }
 
     plan.formResults.push({ formId, outcome: 'allowed' });
   }

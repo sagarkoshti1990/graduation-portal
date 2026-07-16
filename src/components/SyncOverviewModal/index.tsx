@@ -325,7 +325,12 @@ const SyncOverviewModal: React.FC = () => {
         [participantId]: { ...IDLE_STATE, syncing: true, stage: 'idle' },
       }));
       try {
-        await startSync(participantId, userId, (progress: SyncProgress) => {
+        // startSync resolves (rather than throwing) even when some items
+        // failed internally — check its own success/failedCount instead of
+        // assuming a non-throwing resolution means everything synced, so a
+        // silent internal failure is reflected in the UI and in the Sync
+        // Summary's synced/skipped tally (via demoteSyncedToSkipped below).
+        const result = await startSync(participantId, userId, (progress: SyncProgress) => {
           setSyncStates(prev => ({
             ...prev,
             [participantId]: applyProgress(prev[participantId] ?? IDLE_STATE, entry, progress),
@@ -334,15 +339,17 @@ const SyncOverviewModal: React.FC = () => {
 
         setSyncStates(prev => ({
           ...prev,
-          [participantId]: {
-            ...IDLE_STATE,
-            done: true,
-            stage: 'done',
-            completedFiles: entry.files,
-            completedForms: entry.forms,
-            completedTasks: entry.tasks,
-            completedIdp: entry.idp,
-          },
+          [participantId]: result.success
+            ? {
+                ...IDLE_STATE,
+                done: true,
+                stage: 'done',
+                completedFiles: entry.files,
+                completedForms: entry.forms,
+                completedTasks: entry.tasks,
+                completedIdp: entry.idp,
+              }
+            : { ...(prev[participantId] ?? IDLE_STATE), syncing: false, error: true },
         }));
 
         await refreshAfterOfflineChange();
@@ -359,7 +366,7 @@ const SyncOverviewModal: React.FC = () => {
           }
           setSyncStates(prev => { const n = { ...prev }; delete n[participantId]; return n; });
         }, 2000);
-        return true;
+        return result.success;
       } catch {
         setSyncStates(prev => ({
           ...prev,
