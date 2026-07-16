@@ -106,7 +106,6 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
           navigation.navigate(navigationUrl as never, {
             id: userId || '',
             solutionId: card?.solutionId || card?.id,
-            redirect: window.location.pathname + window.location.search,
           });
         }
       })}
