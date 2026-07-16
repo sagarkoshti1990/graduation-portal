@@ -14,7 +14,7 @@ async function isObservationTaskComplete(
   userId: string,
   participantId: string,
 ): Promise<boolean> {
-  if (task.metaInformation?.formCompleted === true) return true;
+  if (task.metaInformation?.formCompleted === true || task?.status === TASK_STATUS?.COMPLETED) return true;
 
   const solutionId =
     task.solutionDetails?._id ??

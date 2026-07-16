@@ -276,7 +276,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     let isMounted = true;
     isOnboardingComplete(projectData?.tasks, user?.id ?? '', participantProp?.userId ?? '')
       .then(complete => {
-        console.log(complete,"complete")
         if (isMounted) setCanDevelopPlan(complete);
       })
       .catch(() => { if (isMounted) setCanDevelopPlan(false); });
