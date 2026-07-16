@@ -447,7 +447,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   }, [validatedSelectedFiles]);
 
   const totalCount = validSelectedFiles.length + existingAttachmentsState.length;
-  const isConsentOrSlaTask = taskName?.toLowerCase() === 'upload consent' || taskName?.toLowerCase() === 'upload sla';
+  const isConsentOrSlaTask = maxFileUploadCount === 1;
   const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
   const canSubmit = hasChanged && !hasInvalidSelectedFiles && (!isConsentOrSlaTask || totalCount > 0);
   const addSelectedFiles = useCallback(
