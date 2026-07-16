@@ -38,7 +38,6 @@ import type { User } from '@contexts/AuthContext';
 import PaginationControls from '@components/DataTable/PaginationControls';
 import { getAnswerData } from '@utils/helper';
 import { CHECK_INS_SUBMISSION_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
-import { useRoute } from '@react-navigation/native';
 
 /**
  * CheckInsListContent Component Props
@@ -63,6 +62,7 @@ interface CheckInsListContentProps {
   _container?:any
   _dataNotFoundCard?:any
   loderHeight?:string
+  route?: any;
 }
 
 /**
@@ -78,14 +78,14 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   participant: propParticipant,
   _container,
   _dataNotFoundCard,
-  loderHeight
+  loderHeight,
+  route
 }) => {
   type IconMeta = {
     color?: string;
     icon?: string;
     iconColor?: string;
   } | null;
-  const route = useRoute();
   const [loading, setLoading] = useState<boolean>(true);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>(propSolutions || []);
   const [selectedSolution, setSelectedSolution] = useState<string>('');
@@ -299,8 +299,8 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         entityType:solutionItem?.entityType,
         solutionId: selectedSolution,
         submissionNumber,
-        returnTo: route.name,
-        returnParams: JSON.stringify({solutionId: selectedSolution,...(route.params || {})}),
+        returnTo: route?.name,
+        returnParams: JSON.stringify({solutionId: selectedSolution,...(route?.params || {})}),
       });
     }
   };
