@@ -18,7 +18,84 @@ import logger from '@utils/logger';
 import offlineStorage from './offlineStorage';
 import { removeOfflineParticipantId } from './offlineStorage';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
-import type { ObservationFormData } from '@app-types/offline';
+import type { ObservationFormData, PendingFile } from '@app-types/offline';
+
+// ── Pending-files matching (shared by deletion below and by sync success) ────
+
+/**
+ * Reads the pending-files queue, splits out entries matching `predicate`, and
+ * rewrites/removes the queue key to hold only the remainder. Does NOT delete
+ * the matched entries' blobs — callers decide whether to do that immediately
+ * or fold the blob keys into their own batched removal (see
+ * deleteObservationOfflineData, which needs the latter to preserve its
+ * existing atomicity).
+ */
+async function extractMatchingPendingFiles(
+  userId: string,
+  participantId: string,
+  predicate: (f: PendingFile) => boolean,
+): Promise<PendingFile[]> {
+  const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
+  const pending = await offlineStorage.read<PendingFile[]>(filesPendingKey).catch(() => null);
+  if (!pending?.length) return [];
+
+  const matched = pending.filter(predicate);
+  if (!matched.length) return [];
+
+  const remaining = pending.filter(f => !predicate(f));
+  if (remaining.length === 0) {
+    await offlineStorage.remove(filesPendingKey).catch(() => {});
+  } else {
+    await offlineStorage.create(filesPendingKey, remaining).catch(() => {});
+  }
+  return matched;
+}
+
+/**
+ * Removes pending files (and their blobs) belonging to any of `taskIds`.
+ * Used both for explicit task/project deletion below and, after this fix,
+ * by syncService.syncTaskEdits once a project's tasks have actually synced
+ * successfully — a Pending File must outlive its own upload until the task
+ * it belongs to has synced, not just until the file itself uploads.
+ */
+export async function removePendingFilesForTasks(
+  userId: string,
+  participantId: string,
+  taskIds: Set<string>,
+): Promise<void> {
+  if (!taskIds.size) return;
+  const matched = await extractMatchingPendingFiles(
+    userId, participantId, f => !!f.taskId && taskIds.has(f.taskId),
+  );
+  await Promise.all(
+    matched.map(f => {
+      const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
+      return offlineStorage.remove(blobKey).catch(() => {});
+    }),
+  );
+}
+
+/**
+ * Removes pending files (and their blobs) belonging to one observation
+ * submission. Used by syncService.syncFormEdits once that form has actually
+ * synced successfully — mirrors removePendingFilesForTasks but matched by
+ * submissionId, since observation PendingFile entries never set `taskId`.
+ */
+export async function removePendingFilesForSubmission(
+  userId: string,
+  participantId: string,
+  submissionId: string,
+): Promise<void> {
+  const matched = await extractMatchingPendingFiles(
+    userId, participantId, f => f.submissionId === submissionId,
+  );
+  await Promise.all(
+    matched.map(f => {
+      const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
+      return offlineStorage.remove(blobKey).catch(() => {});
+    }),
+  );
+}
 
 // ── Participant-level ─────────────────────────────────────────────────────────
 
@@ -93,27 +170,7 @@ export async function deleteProjectOfflineData(
       }
     }
 
-    if (projectTaskIds.size > 0) {
-      const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
-      const pending = await offlineStorage.read<any[]>(filesPendingKey).catch(() => null);
-      if (pending?.length) {
-        const projectFiles = pending.filter((f: any) => f.taskId && projectTaskIds.has(f.taskId));
-        const otherFiles = pending.filter((f: any) => !(f.taskId && projectTaskIds.has(f.taskId)));
-
-        await Promise.all(
-          projectFiles.map(async (f: any) => {
-            const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
-            await offlineStorage.remove(blobKey).catch(() => {});
-          }),
-        );
-
-        if (otherFiles.length === 0) {
-          await offlineStorage.remove(filesPendingKey).catch(() => {});
-        } else {
-          await offlineStorage.create(filesPendingKey, otherFiles).catch(() => {});
-        }
-      }
-    }
+    await removePendingFilesForTasks(userId, participantId, projectTaskIds);
 
     await offlineStorage.removeMultiple([
       PARTICIPANT_KEYS.project(userId, participantId, projectId),
@@ -178,25 +235,7 @@ export async function deleteTaskOfflineData(
     }
 
     // Remove pending file entries and their blobs for this task
-    const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
-    const pending = await offlineStorage.read<any[]>(filesPendingKey).catch(() => null);
-    if (pending?.length) {
-      const taskFiles = pending.filter((f: any) => f.taskId === taskId);
-      const otherFiles = pending.filter((f: any) => f.taskId !== taskId);
-
-      await Promise.all(
-        taskFiles.map(async (f: any) => {
-          const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
-          await offlineStorage.remove(blobKey).catch(() => {});
-        }),
-      );
-
-      if (otherFiles.length === 0) {
-        await offlineStorage.remove(filesPendingKey).catch(() => {});
-      } else {
-        await offlineStorage.create(filesPendingKey, otherFiles).catch(() => {});
-      }
-    }
+    await removePendingFilesForTasks(userId, participantId, new Set([taskId]));
   } catch (err) {
     logger.warn(`offlineCleanupService: failed to delete task "${taskId}" data`, err);
   }
@@ -246,23 +285,16 @@ export async function deleteObservationOfflineData(
     // Remove filesPending entries that belong to this observation. Observation
     // PendingFile entries never set `taskId` — ObservationContent.tsx queues
     // them with `submissionId` directly — so match on that field, not taskId.
+    // extractMatchingPendingFiles already rewrites the filesPending queue to
+    // exclude these; their blob keys are folded into this function's own
+    // keysToRemove batch below (rather than deleted immediately) so this
+    // function's removal stays a single atomic-ish removeMultiple call.
     if (submissionId) {
-      const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
-      const pending = await offlineStorage.read<any[]>(filesPendingKey).catch(() => null);
-      if (pending?.length) {
-        const obsFiles = pending.filter((f: any) => f.submissionId === submissionId);
-        const remaining = pending.filter((f: any) => f.submissionId !== submissionId);
-
-        for (const f of obsFiles) {
-          const blobKey = f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName);
-          keysToRemove.push(blobKey);
-        }
-
-        if (remaining.length === 0) {
-          keysToRemove.push(filesPendingKey);
-        } else {
-          await offlineStorage.create(filesPendingKey, remaining).catch(() => {});
-        }
+      const matched = await extractMatchingPendingFiles(
+        userId, participantId, f => f.submissionId === submissionId,
+      );
+      for (const f of matched) {
+        keysToRemove.push(f.storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, f.fileName));
       }
     }
 

@@ -44,7 +44,11 @@ import {
   buildSkipSets,
   createSyncValidationCache,
 } from './syncValidationService';
-import { deleteParticipantOfflineData } from './offlineCleanupService';
+import {
+  deleteParticipantOfflineData,
+  removePendingFilesForTasks,
+  removePendingFilesForSubmission,
+} from './offlineCleanupService';
 import { updateOfflineParticipantDetails } from './offlineCacheUpdateService';
 import { STATUS } from '@constants/app.constant';
 
@@ -270,7 +274,8 @@ async function syncFiles(
   onProgress?: ProgressCallback,
   skipOptions?: SyncSkipOptions,
 ): Promise<{ synced: number; failed: number }> {
-  const pending = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(userId, participantId));
+  const filesPendingKey = PARTICIPANT_KEYS.filesPending(userId, participantId);
+  const pending = await offlineStorage.read<PendingFile[]>(filesPendingKey);
   if (!pending?.length) return { synced: 0, failed: 0 };
 
   const skippedProjectTaskIds = skipOptions?.skipProjectIds?.size
@@ -278,17 +283,22 @@ async function syncFiles(
     : new Set<string>();
 
   let synced = 0, failed = 0;
-  // Tracks fully-processed entries by index (not fileName) so a hypothetical
-  // shared fileName between a skipped entry and a synced one can never cause
-  // the skipped entry (and its still-needed blob) to be removed below.
-  const processedIndexes = new Set<number>();
+  // Entries are mutated in place (marked `uploaded: true`) rather than
+  // removed from the queue — a Pending File must survive until its owning
+  // task/form has actually synced (see syncTaskEdits/syncFormEdits), not
+  // just until the file itself uploads. `removeIndexes` is only for the
+  // rare degenerate case below where no future sync stage could ever reap
+  // the entry anyway.
+  let mutated = false;
+  const removeIndexes = new Set<number>();
 
   for (let i = 0; i < pending.length; i++) {
     // Stop immediately on disconnect — whatever was already uploaded stays
     // uploaded, everything from here on is left completely untouched.
     if (isNetworkOffline()) break;
 
-    const { taskId, fieldId, submissionId, solutionId, originalName, fileName, fileType, storageKey, localFilePath, mimeType, isOnboardingTask, taskReferenceId } = pending[i];
+    const entry = pending[i];
+    const { taskId, fieldId, submissionId, solutionId, originalName, fileName, fileType, storageKey, localFilePath, mimeType, isOnboardingTask, taskReferenceId, uploaded: isAlreadyUploaded } = entry;
 
     // Leave this file exactly as-is in the pending queue — no upload, no
     // patch, no removal — when its owning task/observation was excluded by
@@ -298,23 +308,42 @@ async function syncFiles(
       && !!solutionId && !!skipOptions?.skipFormIds?.has(solutionId);
     if (isSkippedTask || isSkippedForm) continue;
 
+    // Already uploaded in a prior sync attempt — its owning task/form just
+    // hasn't synced yet. Nothing left to do here; syncTaskEdits/syncFormEdits
+    // will reap this entry once that sync actually succeeds.
+    if (isAlreadyUploaded) continue;
+
     // storageKey is the unique blob key; fall back to legacy key for old entries
     const blobKey = storageKey ?? PARTICIPANT_KEYS.fileBlob(userId, participantId, fileName);
     const uid = taskId || fieldId || "";
+
+    if (!uid) {
+      // Neither taskId nor fieldId — a malformed entry that neither writer
+      // (useTaskActions/ObservationContent) should ever produce. It can never
+      // be matched by removePendingFilesForTasks/ForSubmission later, so
+      // there's nothing to wait for — remove it outright.
+      logger.error(`syncService: pending file "${fileName}" has neither taskId nor fieldId — removing`);
+      removeIndexes.add(i);
+      continue;
+    }
+
     try {
       // localFilePath (native) means the content was written to the
       // filesystem, not AsyncStorage — read it back from there instead.
-      let base64; 
+      let base64;
       if(localFilePath) {
         base64 = await fileStorageService.readBase64FileAtPath(localFilePath).then(b64 => b64 ? `data:${mimeType};base64,${b64}` : null);
       } else {
         base64 = await offlineStorage.read<string>(blobKey);
       }
-      
-      if (!base64 || !uid) {
-        // No content stored (e.g. blob was cleaned up already) — treat as done
-        logger.warn(`syncService: no stored blob for "${fileName}" — skipping`);
-        processedIndexes.add(i);
+
+      if (!base64) {
+        // Blob already gone (e.g. cleaned up some other way) but the owning
+        // task/form is known — nothing left to upload, but keep the entry so
+        // it's still reaped once that task/form syncs.
+        logger.warn(`syncService: no stored blob for "${fileName}" — marking uploaded`);
+        pending[i] = { ...entry, uploaded: true };
+        mutated = true;
         synced++;
         continue;
       }
@@ -386,26 +415,32 @@ async function syncFiles(
         } else {
           await offlineStorage.remove(blobKey).catch(() => {});
         }
-      }
 
-      processedIndexes.add(i);
-      synced++;
-      onProgress?.(makeProgress('files', i + 1, pending.length));
+        // Mark uploaded — NOT removed from the queue. It stays until
+        // syncTaskEdits/syncFormEdits confirms the owning task/form synced.
+        pending[i] = { ...entry, uploaded: true };
+        mutated = true;
+        synced++;
+        onProgress?.(makeProgress('files', i + 1, pending.length));
+      } else {
+        // uploadFiles swallows its own failures and returns no url rather
+        // than rejecting — treat as a real failure and retry next sync;
+        // do NOT mark uploaded or touch the queue.
+        logger.error(`syncService: file upload returned no URL for "${fileName}" (task: ${taskId}) — will retry`);
+        failed++;
+      }
     } catch (err) {
       logger.error(`syncService: file upload failed for "${fileName}" (task: ${taskId})`, err);
       failed++;
     }
   }
 
-  // Remove synced entries from the pending queue — by index, not fileName, so
-  // a skipped entry can never be dropped just because it shares a fileName
-  // with a synced one.
-  if (processedIndexes.size > 0) {
-    const remaining = pending.filter((_, idx) => !processedIndexes.has(idx));
-    if (remaining.length === 0) {
-      await offlineStorage.remove(PARTICIPANT_KEYS.filesPending(userId, participantId)).catch(() => {});
+  if (mutated || removeIndexes.size > 0) {
+    const finalPending = pending.filter((_, idx) => !removeIndexes.has(idx));
+    if (finalPending.length === 0) {
+      await offlineStorage.remove(filesPendingKey).catch(() => {});
     } else {
-      await offlineStorage.create(PARTICIPANT_KEYS.filesPending(userId, participantId), remaining);
+      await offlineStorage.create(filesPendingKey, finalPending).catch(() => {});
     }
   }
 
@@ -628,6 +663,10 @@ async function syncFormEdits(
       // Remove edit queue entry and form snapshot — both are now on the server.
       await offlineStorage.remove(key);
       await offlineStorage.remove(PARTICIPANT_KEYS.form(userId, participantId, formId)).catch(() => {});
+      // Reap pending files for this submission now that the form actually
+      // synced — a Pending File must outlive its own upload until this
+      // point, not just until the file itself was sent (see syncFiles).
+      await removePendingFilesForSubmission(userId, participantId, formData.submissionId);
       synced++;
       onProgress?.(makeProgress('forms', i + 1, editKeys.length));
     } catch (err) {
@@ -763,12 +802,27 @@ async function syncTaskEdits(
       // Send all pending task edits for this project in a single API call.
       // Strip internal bookkeeping fields (_pendingOp) before it hits the API.
       const apiPayload = { ...payload, tasks: stripPendingOpFields(payload.tasks) };
-      await updateTaskAPI(projectId, apiPayload);
+      const response = await updateTaskAPI(projectId, apiPayload);
+      // updateTaskAPI catches its own HTTP errors and resolves with
+      // { error } rather than rejecting — without this check a failed
+      // server update was silently treated as a full success below.
+      if (response?.error) throw new Error(response.error);
       synced += tasksToSync.length;
       onProgress?.(makeProgress('tasks', synced, synced));
       // Merge the uploaded URLs back into the cached project so the local cache
       // reflects the server state without needing a fresh fetch.
       await applyEditsToCachedProject(userId, participantId, projectId, tasksToSync);
+
+      // Reap pending files for exactly the tasks that just synced — a
+      // Pending File must outlive its own upload until this point, not just
+      // until the file itself was sent (see syncFiles).
+      const syncedTaskIds = new Set<string>();
+      for (const t of tasksToSync) {
+        syncedTaskIds.add(t._id);
+        for (const c of t.children ?? []) syncedTaskIds.add(c._id);
+      }
+      await removePendingFilesForTasks(userId, participantId, syncedTaskIds);
+
       // If some tasks were skipped (user chose Cancel), preserve only those tasks
       // so they can be retried next session.  Also handles skipped children: if a
       // parent has skipped children, preserve the parent with only those children.

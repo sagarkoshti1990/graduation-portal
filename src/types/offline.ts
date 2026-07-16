@@ -128,11 +128,22 @@ export interface PendingFile {
    */
   taskReferenceId?: string;
 
-  // for observation files 
+  // for observation files
   submissionId?: string;
   solutionId?: string;
   fieldId?: string;
   mimeType?: string;
+
+  /**
+   * True once the file itself has been uploaded and its URL patched into the
+   * owning offline task/observation edit. The entry is intentionally NOT
+   * removed from the pending-files queue at that point — it stays until the
+   * owning task/form/project has actually synced successfully (see
+   * removePendingFilesForTasks/removePendingFilesForSubmission in
+   * offlineCleanupService.ts), so an interruption between file upload and
+   * business-entity sync never loses the file's queue record.
+   */
+  uploaded?: boolean;
 }
 
 // ---------------------------------------------------------------------------
