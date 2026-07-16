@@ -84,49 +84,47 @@ const ParticipantsList: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
   const isOffline = isNetworkOffline();
-  const offline = useMemo(() => ({
-    get: offlineStorage.read,
-    set: offlineStorage.create,
-  }), []);
+  const [isReady, setIsReady] = useState(false);
 
-  // Load pageSize from offline storage on mount
+  // Load initial settings from offline storage on mount
   useEffect(() => {
-    const loadPageSize = async () => {
+    const loadInitialSettings = async () => {
       try {
-        const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE);
+        const [storedPageSize, storedFilter, storedStatus] = await Promise.all([
+          offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE),
+          offlineStorage.read<'active' | 'inactive'>('participants_active_filter'),
+          offlineStorage.read<StatusValue | ''>('participants_active_status'),
+        ]);
+
         if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
           setPageSize(storedPageSize);
         } else {
           setPageSize(PAGE_SIZE_OPTIONS[0]);
         }
+
+        if (storedFilter) {
+          setActiveFilter(storedFilter);
+        }
+        if (storedStatus) {
+          setActiveStatus(storedStatus);
+        }
       } catch (error) {
-        logger.error('Error loading page size from storage:', error);
+        logger.error('Error loading initial settings:', error);
         setPageSize(PAGE_SIZE_OPTIONS[0]);
+      } finally {
+        setIsReady(true);
       }
     };
-    loadPageSize();
+    loadInitialSettings();
   }, []);
 
-  // Restore filter and status from offline storage on focus
+  // Refresh data on focus (e.g., when returning from detail screen)
   useFocusEffect(
     useCallback(() => {
-      const restoreFilters = async () => {
-        try {
-          const storedFilter = await offline.get<'active' | 'inactive'>('participants_active_filter');
-          const storedStatus = await offline.get<StatusValue | ''>('participants_active_status');
-          if (storedFilter) {
-            setActiveFilter(storedFilter);
-          }
-          if (storedStatus) {
-            setActiveStatus(storedStatus);
-          }
-          setRefetchKey((k) => k + 1);
-        } catch (error) {
-          logger.error('Error restoring filters from storage:', error);
-        }
-      };
-      restoreFilters();
-    }, [offline])
+      if (isReady) {
+        setRefetchKey((k) => k + 1);
+      }
+    }, [isReady])
   );
 
   // Get status items directly from overview using STATUS constants
@@ -189,8 +187,9 @@ const ParticipantsList: React.FC = () => {
   }, [allStatusItems]);
 
   useEffect(() => {
+    if (!isReady || !pageSize) return;
+
     const fetchParticipants = async () => {
-      // Early return if entity ID is not available
       try {
         setIsLoading(true);
         const result = await dataService.getParticipantList({
@@ -215,10 +214,8 @@ const ParticipantsList: React.FC = () => {
         setIsLoading(false);
       }
     };
-    if (pageSize) {
-      fetchParticipants();
-    }
-  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey]);
+    fetchParticipants();
+  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isReady]);
   
   // Handlers
   const handleSearch = useCallback((text: string) => {
@@ -230,8 +227,8 @@ const ParticipantsList: React.FC = () => {
   const handleStatusChange = useCallback((status: StatusValue | '') => {
     setActiveStatus(status);
     setCurrentPage(1); // Reset to first page when status changes
-    offline.set('participants_active_status', status);
-  }, [offline]);
+    offlineStorage.create('participants_active_status', status);
+  }, []);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -294,8 +291,8 @@ const ParticipantsList: React.FC = () => {
                     setActiveFilter(nextFilter);
                     const nextStatus = nextFilter === 'inactive' ? STATUS.DROPOUT : STATUS.NOT_ONBOARDED;
                     setActiveStatus(nextStatus);
-                    offline.set('participants_active_filter', nextFilter);
-                    offline.set('participants_active_status', nextStatus);
+                    offlineStorage.create('participants_active_filter', nextFilter);
+                    offlineStorage.create('participants_active_status', nextStatus);
                   }}
                 />
               </Box>

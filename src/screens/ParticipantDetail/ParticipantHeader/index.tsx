@@ -190,7 +190,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       ]);
 
       if (!(projResult as any)?._id) {
-        setIsEnrolling(false);
         return showAlert('error', t('participantDetail.header.taskStatusUpdateFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
