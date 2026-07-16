@@ -62,7 +62,10 @@ interface CheckInsListContentProps {
   _container?:any
   _dataNotFoundCard?:any
   loderHeight?:string
-  route?: any;
+  route?: {
+    name: string;
+    params?: Record<string, any>;
+  };
 }
 
 /**
