@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { VStack, HStack, Text, Button, ButtonText, Modal, Badge, BadgeText } from '@ui';
 import { LucideIcon } from '@ui/index';
-import { TabButton } from '@components/Tabs';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
@@ -67,7 +66,7 @@ export const mapUserToFormValues = (
      if (fieldName === 'organisationId') {
        keys.push('organisation', 'organization', 'organisations', 'organizations');
      }
-      if (fieldName === 'employeeId') {
+      if (fieldName === 'employee_id' || fieldName === 'employeeId') {
         keys.push('employee_id', 'employeeId', 'emp_id', 'empId');
       }
      if (fieldName === 'address' || fieldName === 'location') {
@@ -123,7 +122,7 @@ export const mapUserToFormValues = (
   const gender = getFieldVal('gender');
   const rawDob = getFieldVal('dob');
   const dob = rawDob ? String(rawDob).replace(/[\-\/]/g, '_') : '';
-  const employeeId = getFieldVal('employeeId');
+  const employee_id = getFieldVal('employee_id');
   const organisationId = getFieldVal('organisationId');
   const positionId = getFieldVal('positionId') || getFieldVal('position');
   const provinceId = getFieldVal('provinceId') || getFieldVal('province');
@@ -142,7 +141,7 @@ export const mapUserToFormValues = (
     roleId,
     gender,
     dob,
-    employeeId,
+    employee_id,
     organisationId,
     positionId,
     provinceId,
@@ -270,14 +269,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 }) => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
-  const [profileTab, setProfileTab] = useState<'DETAILS' | 'ACTIVITY' | 'PERMISSIONS'>('DETAILS');
 
   const { roles, provinces, genders, organisations, positions, countryCodes } = useUserManagementFilters({});
   const [formSites, setFormSites] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen && user?.id) {
-      setProfileTab('DETAILS');
       setProfileLoading(true);
       getUserProfile(user.id)
         .then(profile => {
@@ -381,8 +378,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     };
   }, [roles, genders, provinces, formSites, organisations, positions, countryCodes, profileOptions]);
 
-
-
   return (
     <Modal
       isOpen={isOpen}
@@ -400,39 +395,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       }
     >
       <VStack space="md" width="100%">
-        {/* Tabs */}
-        <HStack bg="$bgSidebar" borderRadius="$lg" p="$1" space="xs">
-          {([
-            { key: 'DETAILS', label: 'admin.users.details' },
-            { key: 'ACTIVITY', label: 'admin.users.activity' },
-            { key: 'PERMISSIONS', label: 'admin.users.permissions' },
-          ] as const).map(tab => (
-            <TabButton
-              key={tab.key}
-              tab={tab}
-              isActive={profileTab === tab.key}
-              onPress={(tabKey) => setProfileTab(tabKey as any)}
-              variant="ButtonTab"
-            />
-          ))}
-        </HStack>
-
         {/* Content */}
         {profileLoading ? (
           <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" py="$4">
             {t('common.loading', 'Loading...')}
           </Text>
-        ) : profileTab !== 'DETAILS' ? (
-          <VStack space="sm" alignItems="center" py="$8">
-            <Text {...TYPOGRAPHY.h4} color="$textForeground">
-              {t('common.comingSoon', 'Coming Soon')}
-            </Text>
-            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-              {profileTab === 'ACTIVITY'
-                ? t('admin.users.profileModal.activityComingSoonDescription', 'Activity logs are coming soon.')
-                : t('admin.users.profileModal.permissionsComingSoonDescription', 'Permission controls are coming soon.')}
-            </Text>
-          </VStack>
         ) : (
           <VStack space="lg" alignItems="stretch">
             <SchemaFormRenderer

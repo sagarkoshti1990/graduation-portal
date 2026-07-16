@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { VStack, HStack, Button, ButtonText, Modal, Text } from '@ui';
 import { useAlert } from '@components/ui';
-import { TabButton } from '@components/Tabs';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
@@ -21,7 +20,7 @@ const EDITABLE_FIELDS = [
   'roleId',
   'gender',
   'dob',
-  'employeeId',
+  'employee_id',
   'organisationId',
   'positionId',
   'provinceId',
@@ -50,7 +49,6 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
   const { showAlert } = useAlert();
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
-  const [editTab, setEditTab] = useState<'DETAILS' | 'ACTIVITY' | 'PERMISSIONS'>('DETAILS');
 
   const { roles, provinces, genders, organisations, positions, countryCodes } = useUserManagementFilters({});
   const [formSites, setFormSites] = useState<any[]>([]);
@@ -61,7 +59,6 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
   useEffect(() => {
     if (isOpen && user?.id) {
-      setEditTab('DETAILS');
       setProfileLoading(true);
       setSelectedUserProfile(null);
       setErrors({});
@@ -174,19 +171,38 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
   const handleFieldChange = (name: string, value: string) => {
     setValues(prev => {
-      const next = { ...prev, [name]: value };
-      if (name === 'provinceId') next.siteId = '';
-      return next;
+      const updated = { ...prev, [name]: value };
+
+      // Clear site if province changes
+      if (name === 'provinceId') {
+        updated.siteId = '';
+        const provId = getEntityId(value);
+        if (provId) {
+          getSitesByProvince({ provinceId: provId, page: 1, limit: 100 })
+            .then(res => setFormSites(res.result?.data || []))
+            .catch(() => setFormSites([]));
+        } else {
+          setFormSites([]);
+        }
+      }
+
+      return updated;
     });
-    setErrors(prev => ({ ...prev, [name]: '' }));
+
+    if (errors[name]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
   };
 
   const handleSubmit = async () => {
-    const validationErrs = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags, EDITABLE_FIELDS);
-    if (Object.keys(validationErrs).length > 0) {
-      setErrors(validationErrs);
-      const firstErr = Object.values(validationErrs)[0];
-      showAlert('error', firstErr);
+    const validationErrors = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags, EDITABLE_FIELDS);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      showAlert('error', t('common.validationError', 'Please correct the errors in the form.'));
       return;
     }
 
@@ -223,7 +239,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
       if (flags.isSupervisorOrLC) {
         if (values.organisationId !== undefined) payload.organisation = values.organisationId || null;
         if (values.positionId !== undefined) payload.position = values.positionId || null;
-        if (values.employeeId !== undefined) payload.employee_id = values.employeeId || null;
+        if (values.employee_id !== undefined) payload.employee_id = values.employee_id || null;
       }
 
       await updateOrgAdminUser(user!.id, payload);
@@ -254,39 +270,11 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
       }
     >
       <VStack space="md" width="100%">
-        {/* Tabs */}
-        <HStack bg="$bgSidebar" borderRadius="$lg" p="$1" space="xs">
-          {([
-            { key: 'DETAILS', label: 'admin.users.details' },
-            { key: 'ACTIVITY', label: 'admin.users.activity' },
-            { key: 'PERMISSIONS', label: 'admin.users.permissions' },
-          ] as const).map(tab => (
-            <TabButton
-              key={tab.key}
-              tab={tab}
-              isActive={editTab === tab.key}
-              onPress={(tabKey) => setEditTab(tabKey as any)}
-              variant="ButtonTab"
-            />
-          ))}
-        </HStack>
-
         {/* Content */}
         {profileLoading ? (
           <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" py="$4">
             {t('common.loading', 'Loading...')}
           </Text>
-        ) : editTab !== 'DETAILS' ? (
-          <VStack space="sm" alignItems="center" py="$8">
-            <Text {...TYPOGRAPHY.h4} color="$textForeground">
-              {t('common.comingSoon', 'Coming Soon')}
-            </Text>
-            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-              {editTab === 'ACTIVITY'
-                ? t('admin.users.profileModal.activityComingSoonDescription', 'Activity logs are coming soon.')
-                : t('admin.users.profileModal.permissionsComingSoonDescription', 'Permission controls are coming soon.')}
-            </Text>
-          </VStack>
         ) : (
           <VStack space="lg" alignItems="stretch">
             <SchemaFormRenderer
@@ -309,7 +297,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
           <Button variant={"outlineghost" as any} onPress={onClose} isDisabled={isSubmitting}>
             <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close', 'Close')}</ButtonText>
           </Button>
-          {editTab === 'DETAILS' && !profileLoading && (
+          {!profileLoading && (
             <Button variant="solid" action="primary" onPress={handleSubmit} isDisabled={isSubmitting}>
               <ButtonText color="$white" {...TYPOGRAPHY.bodySmall}>
                 {isSubmitting ? t('common.submitting', 'Submitting...') : t('admin.users.profileModal.saveChanges', 'Save Changes')}

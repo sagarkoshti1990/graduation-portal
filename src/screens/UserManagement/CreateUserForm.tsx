@@ -29,7 +29,9 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     CREATE_USER_FORM_SCHEMA.forEach(section => {
       section.rows.forEach(row => {
         row.fields.forEach(field => {
-          vals[field.name] = '';
+          if (field.name) {
+            vals[field.name] = '';
+          }
         });
       });
     });
@@ -132,7 +134,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       if (flags.isSupervisorOrLC) {
         if (values.organisationId) payload.organisation = values.organisationId;
         if (values.positionId) payload.position = values.positionId;
-        if (values.employeeId) payload.employee_id = values.employeeId;
+        if (values.employee_id) payload.employee_id = values.employee_id;
       }
 
       await createUser(payload);

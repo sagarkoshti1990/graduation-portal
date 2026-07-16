@@ -281,7 +281,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
         visibleWhen: { flag: 'isSupervisorOrLC' },
         fields: [
           {
-            name: 'employeeId',
+            name: 'employee_id',
             type: 'text',
             required: true,
             visibleWhen: { flag: 'isSupervisorOrLC' },
