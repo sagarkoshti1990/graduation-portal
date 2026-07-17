@@ -1415,8 +1415,8 @@ const SyncOverviewModal: React.FC = () => {
                                 {state.stage === 'files' ? t('offlineSync.stageFiles') : state.stage === 'forms' ? t('offlineSync.stageForms') : state.stage === 'idp' ? t('offlineSync.stageIdp') : t('offlineSync.stageTasks')}
                               </Text>
                             )}
-                            {isDone && <Text fontSize="$xs" color="$success600">{t('offlineSync.syncComplete')}</Text>}
                             {isError && !isSyncing && <Text fontSize="$xs" color="$error500">{t('offlineSync.syncError')}</Text>}
+                            {isDone && <Text fontSize="$xs" color="$success600">{t('offlineSync.syncComplete')}</Text>}
                           </VStack>
                         </HStack>
                       </HStack>

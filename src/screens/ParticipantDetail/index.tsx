@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { HStack, Box, Container, ReadMoreAlert, Text, Modal, Button, ButtonText } from '@ui';
+import { HStack, Box, Container, ReadMoreAlert, Text, Modal, Button, ButtonText, Alert, AlertText, LucideIcon } from '@ui';
+import DownloadConfigModal from '@components/DownloadConfigModal';
 import ParticipantHeader from './ParticipantHeader';
 import { ParticipantProfileModal } from './ParticipantProfileModal';
 import {
@@ -92,6 +93,9 @@ export default function ParticipantDetail() {
   const [challenges,setChallenges] = useState<{successNotes:string|undefined,challengeNotes:string|undefined} | never>();
   const [targetingCriteria,setTargetingCriteria] = useState(false);
   const [showOfflineIneligibleModal, setShowOfflineIneligibleModal] = useState(false);
+  const [hasOfflineData, setHasOfflineData] = useState(false);
+  const [showOfflineInfoModal, setShowOfflineInfoModal] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   // Set document title with participant name
   const pageTitle = participant?.name
     ? `${participant.name} - ${t('lc.pageTitle.participant-detail')}`
@@ -120,8 +124,8 @@ export default function ParticipantDetail() {
         // If online and the participant's status is no longer offline-eligible,
         // check whether stale offline data exists and prompt the user to delete it.
         if (!result.isOffline && !isOfflineEligible(participantData.status) && user?.id && participantData.userId) {
-          const hasOfflineData = await isParticipantOffline(`${user.id}`, participantData.userId);
-          if (hasOfflineData) {
+          const isIneligibleWithOfflineData = await isParticipantOffline(`${user.id}`, participantData.userId);
+          if (isIneligibleWithOfflineData) {
             setShowOfflineIneligibleModal(true);
           }
         }
@@ -150,6 +154,22 @@ export default function ParticipantDetail() {
     }
     // @ts-ignore
   }, [participantId, authUserId, setNavbarData, offlineDataVersion]);
+
+  // Tracks whether this participant has offline data, reusing the same
+  // isParticipantOffline check used elsewhere in this file — drives the
+  // "Offline Data Available" banner below. Re-checks on offlineDataVersion so
+  // it stays current after a download/remove/sync changes offline data.
+  useEffect(() => {
+    let cancelled = false;
+    if (authUserId && participant?.userId) {
+      isParticipantOffline(authUserId, participant.userId).then(result => {
+        if (!cancelled) setHasOfflineData(result);
+      });
+    } else {
+      setHasOfflineData(false);
+    }
+    return () => { cancelled = true; };
+  }, [authUserId, participant?.userId, offlineDataVersion]);
 
   // Re-fetch data when screen comes into focus (e.g., navigating back)
   useFocusEffect(
@@ -375,6 +395,65 @@ export default function ParticipantDetail() {
         onParticipantRefresh={fetchEntityDetails}
         solutions={solutions}
         isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || isdminPanalAccess))}
+      />
+
+      {/* Offline Data Available banner — only while online, for a participant with offline data. */}
+      {!isLoading && hasOfflineData && !isOffline && (
+        <Box px="$4" pt="$4">
+          <Alert
+            borderWidth={1}
+            borderRadius="$xl"
+            p="$3"
+            width="$full"
+            borderColor="$info300"
+            bg="$info50"
+          >
+            <HStack space="sm" alignItems="center" width="$full" justifyContent="space-between">
+              <HStack space="sm" alignItems="center" flex={1} minWidth={0}>
+                <LucideIcon size={18} color="#2563EB" name="Info" />
+                <AlertText flexShrink={1} size="sm" color="$textPrimary">
+                  {t('offlineSync.offlineDataAvailableShort')}
+                </AlertText>
+              </HStack>
+              <Button size="xs" variant="outline" onPress={() => setShowOfflineInfoModal(true)}>
+                <ButtonText fontSize="$xs">{t('offlineSync.learnMore')}</ButtonText>
+              </Button>
+            </HStack>
+          </Alert>
+        </Box>
+      )}
+
+      <Modal
+        isOpen={showOfflineInfoModal}
+        onClose={() => setShowOfflineInfoModal(false)}
+        headerTitle={t('offlineSync.offlineDataAvailableTitle')}
+        size="md"
+        footerContent={
+          <HStack space="md" justifyContent="flex-end">
+            <Button variant="outline" size="sm" onPress={() => setShowOfflineInfoModal(false)}>
+              <ButtonText>{t('common.close')}</ButtonText>
+            </Button>
+            <Button
+              variant="solid"
+              size="sm"
+              onPress={() => {
+                setShowOfflineInfoModal(false);
+                setShowDownloadModal(true);
+              }}
+            >
+              <ButtonText>{t('actions.download')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <Text fontSize="$sm" color="$textSecondary">{t('offlineSync.offlineDataAvailableFull')}</Text>
+      </Modal>
+
+      <DownloadConfigModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        participantId={participant?.userId ?? ''}
+        onSuccess={() => setShowDownloadModal(false)}
       />
 
       <Container px="$4" py="$6" $md-px="$6">
