@@ -38,6 +38,7 @@ export interface FormField {
   required: boolean;
   label: { key: string; fallback: string };
   placeholder?: { key?: string; fallback: string };
+  defaultValue?: string;
   /** When present and the flag resolves to false, this field is hidden */
   visibleWhen?: VisibleWhenFlag;
   disabled?: boolean;
@@ -161,7 +162,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'select',
                 required: false,
                 label: { key: 'countryCode', fallback: 'Country Code' },
-                placeholder: { fallback: '+27' },
+                defaultValue: '+27',
                 optionsSource: 'countryCodes',
                 searchable: true,
               },
@@ -192,7 +193,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'select',
                 required: false,
                 label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
-                placeholder: { fallback: '+27' },
+                defaultValue: '+27',
                 optionsSource: 'countryCodes',
                 searchable: true,
               },

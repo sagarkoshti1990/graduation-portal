@@ -81,6 +81,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const [isCompletingProject, setIsCompletingProject] = useState(false)
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [pathwayAndCategory, setPathwayAndCategory] = useState<string[]>([]);
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
@@ -176,6 +177,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     if (!entityId) return;
 
     try {
+      setIsEnrolling(true);
       const [projResult] = await Promise.all([
         updateTask((participantProp as any)?.onBoardedProjectId, { status: TASK_STATUS.COMPLETED }),
         updateEntityDetails({
@@ -198,16 +200,14 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       }
     } catch (error) {
       showAlert('error', t('common.somethingWentWrong'));
+    } finally {
+      setIsEnrolling(false);
     }
   };
 
   const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
-    const resolvedCoachId = (participantProp as any)?.hierarchy?.[0] || (participantProp as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
     const params: any = { id: participantId };
-    if (user?.role?.toLowerCase() === 'supervisor') {
-      params.coachId = resolvedCoachId;
-    }
     // @ts-ignore
     navigation.push(link, params);
   };
@@ -256,6 +256,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       const endlineSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
       setShouldShowCompletionButton(
         status === STATUS.IN_PROGRESS &&
+        participantProp?.accountUserStatus !== USER_STATUS.INACTIVE &&
         !!participantProp?.idpProjectId &&
         effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
         // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
@@ -307,12 +308,16 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return (
         <Button
           onPress={handleEnrollParticipant}
-          isDisabled={!areAllTasksCompleted}
+          isDisabled={!areAllTasksCompleted || isEnrolling}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
           size="sm"
         >
-          <ButtonIcon as={LucideIcon} name="User" />
+          {isEnrolling ? (
+            <Spinner size="small" color="$white" />
+          ) : (
+            <ButtonIcon as={LucideIcon} name="User" />
+          )}
           <ButtonText {...participantHeaderStyles.solidButtonText}>
             {t('participantDetail.header.enrollParticipant')}
           </ButtonText>

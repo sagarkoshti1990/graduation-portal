@@ -14,7 +14,7 @@ import {
   ButtonText,
   useAlert,
 } from '@ui';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import SearchBar from '@components/SearchBar';
 import DataTable from '@components/DataTable';
 import { getParticipantsColumns } from './ParticipantsTableConfig';
@@ -83,25 +83,49 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
-  const offline = isNetworkOffline();
+  const isOffline = isNetworkOffline();
+  const [isReady, setIsReady] = useState(false);
 
-  // Load pageSize from offline storage on mount
+  // Load initial settings from offline storage on mount
   useEffect(() => {
-    const loadPageSize = async () => {
+    const loadInitialSettings = async () => {
       try {
-        const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE);
+        const [storedPageSize, storedFilter, storedStatus] = await Promise.all([
+          offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE),
+          offlineStorage.read<'active' | 'inactive'>(STORAGE_KEYS.PARTICIPANTS_ACTIVE_FILTER),
+          offlineStorage.read<StatusValue | ''>(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS),
+        ]);
+
         if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
           setPageSize(storedPageSize);
         } else {
           setPageSize(PAGE_SIZE_OPTIONS[0]);
         }
+
+        if (storedFilter) {
+          setActiveFilter(storedFilter);
+        }
+        if (storedStatus) {
+          setActiveStatus(storedStatus);
+        }
       } catch (error) {
-        logger.error('Error loading page size from storage:', error);
+        logger.error('Error loading initial settings:', error);
         setPageSize(PAGE_SIZE_OPTIONS[0]);
+      } finally {
+        setIsReady(true);
       }
     };
-    loadPageSize();
+    loadInitialSettings();
   }, []);
+
+  // Refresh data on focus (e.g., when returning from detail screen)
+  useFocusEffect(
+    useCallback(() => {
+      if (isReady) {
+        setRefetchKey((k) => k + 1);
+      }
+    }, [isReady])
+  );
 
   // Get status items directly from overview using STATUS constants
   const allStatusItems = useMemo<StatusFilterItem[]>(() => {
@@ -163,8 +187,9 @@ const ParticipantsList: React.FC = () => {
   }, [allStatusItems]);
 
   useEffect(() => {
+    if (!isReady || !pageSize) return;
+
     const fetchParticipants = async () => {
-      // Early return if entity ID is not available
       try {
         setIsLoading(true);
         const result = await dataService.getParticipantList({
@@ -189,21 +214,9 @@ const ParticipantsList: React.FC = () => {
         setIsLoading(false);
       }
     };
-    if (pageSize) {
-      fetchParticipants();
-    }
-  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey]);
+    fetchParticipants();
+  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isReady]);
   
-  // When Active/Inactive filter changes, set default status
-  useEffect(() => {
-    if (activeFilter === 'inactive') {
-      setActiveStatus(STATUS.DROPOUT);
-    } else if (activeFilter === 'active') {
-      // Set default to NOT_ONBOARDED when Active is selected
-      setActiveStatus(STATUS.NOT_ONBOARDED);
-    }
-  }, [activeFilter]);
-
   // Handlers
   const handleSearch = useCallback((text: string) => {
     // Search functionality can be implemented here when needed
@@ -214,6 +227,7 @@ const ParticipantsList: React.FC = () => {
   const handleStatusChange = useCallback((status: StatusValue | '') => {
     setActiveStatus(status);
     setCurrentPage(1); // Reset to first page when status changes
+    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS, status);
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
@@ -272,10 +286,17 @@ const ParticipantsList: React.FC = () => {
                     { label: `${t('participants.inactive')} (${activeInactiveCounts.inactive})`, value: 'inactive' },
                   ]}
                   value={activeFilter}
-                  onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
+                  onChange={(value) => {
+                    const nextFilter = value as 'active' | 'inactive';
+                    setActiveFilter(nextFilter);
+                    const nextStatus = nextFilter === 'inactive' ? STATUS.DROPOUT : STATUS.NOT_ONBOARDED;
+                    setActiveStatus(nextStatus);
+                    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_FILTER, nextFilter);
+                    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS, nextStatus);
+                  }}
                 />
               </Box>
-              {!offline && (
+              {!isOffline && (
                 <Box {...styles.buttonContainer}>
                   <GroupCheckInsButton />
                 </Box>

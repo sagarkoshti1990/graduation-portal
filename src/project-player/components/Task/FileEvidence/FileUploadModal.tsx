@@ -239,7 +239,7 @@ const getAllowedMediaSupport = (allowedTypes: string[]) => {
   return { supportsImage, supportsVideo };
 };
 
-const getComparableFileKey = (file: any): string | null => {
+export const getComparableFileKey = (file: any): string | null => {
   const name = getFileName(file);
   const size = getFileSize(file);
   const mime = getMimeType(file);
@@ -274,7 +274,6 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   existingAttachments = [],
   maxFileUploadCount,
   allowedFileTypes,
-
 }) => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform(1024);
@@ -447,8 +446,10 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       .filter((m): m is string => Boolean(m));
   }, [validatedSelectedFiles]);
 
-  const canSubmit = validSelectedFiles.length > 0 && !hasInvalidSelectedFiles;
-
+  const totalCount = validSelectedFiles.length + existingAttachmentsState.length;
+  const isMaxFileUploadCount = maxFileUploadCount === 1;
+  const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
+  const canSubmit = hasChanged && !hasInvalidSelectedFiles && (!isMaxFileUploadCount || totalCount > 0);
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
       if (!filesToAdd || filesToAdd.length === 0) return;

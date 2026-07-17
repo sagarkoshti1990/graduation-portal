@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -54,13 +54,18 @@ interface CheckInsListContentProps {
     solutionId: string;
     submissionNumber: number;
     entityType?: string;
+    returnTo?: string;
+    returnParams?: string;
   }) => void;
   preSelectedSolution?: string;
   participant?: ParticipantData;
   _container?:any
   _dataNotFoundCard?:any
   loderHeight?:string
-  coachId?:string
+  route?: {
+    name: string;
+    params?: Record<string, any>;
+  };
 }
 
 /**
@@ -77,14 +82,13 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   _container,
   _dataNotFoundCard,
   loderHeight,
-  coachId
+  route
 }) => {
   type IconMeta = {
     color?: string;
     icon?: string;
     iconColor?: string;
   } | null;
-
   const [loading, setLoading] = useState<boolean>(true);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>(propSolutions || []);
   const [selectedSolution, setSelectedSolution] = useState<string>('');
@@ -100,6 +104,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   const [participant, setParticipant] = useState<
     ParticipantData | undefined
   >(propParticipant);
+  const resolvedCreatorId = useMemo(() => {
+    return (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+  }, [participant]);
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   
@@ -222,7 +229,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         setSolutionItem(solutionNameData || null);
         if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
-          userId = coachId || user?.id;
+          userId = resolvedCreatorId || user?.id;
         } else {
           userId = participant?.userId;
         }
@@ -230,7 +237,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         // Get observation entities to find observationId and entityId
         const observationData = await getObservationEntities({
           solutionId: selectedSolutionData.solutionId || selectedSolutionData.id,
-          profileData: coachId ? {createdBy: coachId} : {},
+          profileData: resolvedCreatorId ? {createdBy: resolvedCreatorId} : {},
         });
         const observationId = observationData?.result?._id;
         if (!observationId) {
@@ -282,7 +289,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     };
 
     fetchSubmissions();
-  }, [selectedSolution, solutions, participant, user,limit,page,t]);
+  }, [selectedSolution, solutions, participant, user, limit, page, t, resolvedCreatorId]);
 
   const handleViewForm = (submissionNumber: number) => {
     if (onNavigateToObservation && participant?.userId && selectedSolution) {
@@ -291,10 +298,12 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         return;
       }
       onNavigateToObservation({
-        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? coachId || user?.id : participant.userId,
+        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? resolvedCreatorId || user?.id : participant.userId,
         entityType:solutionItem?.entityType,
         solutionId: selectedSolution,
         submissionNumber,
+        returnTo: route?.name,
+        returnParams: JSON.stringify({solutionId: selectedSolution,...(route?.params || {})}),
       });
     }
   };
