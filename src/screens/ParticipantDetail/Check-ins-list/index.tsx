@@ -98,7 +98,17 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
       return;
     }
     if (navigation.canGoBack && navigation.canGoBack()) {
-      navigation.goBack();
+      const state = navigation.getState();
+      const routes = state?.routes || [];
+      const current = routes?.[routes.length - 1];
+      const previous = routes?.[routes.length - 2];
+      const isSameScreen = current?.name === previous?.name;
+      if (isSameScreen && routes.length >= 3) {
+        // @ts-ignore
+        navigation.pop(2);
+      } else {
+        navigation.goBack();
+      }
     } else {
       // Fallback: Navigate to participant detail if there's no previous screen
       // @ts-ignore
