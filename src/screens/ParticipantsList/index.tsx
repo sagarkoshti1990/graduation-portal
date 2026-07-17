@@ -92,8 +92,8 @@ const ParticipantsList: React.FC = () => {
       try {
         const [storedPageSize, storedFilter, storedStatus] = await Promise.all([
           offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE),
-          offlineStorage.read<'active' | 'inactive'>('participants_active_filter'),
-          offlineStorage.read<StatusValue | ''>('participants_active_status'),
+          offlineStorage.read<'active' | 'inactive'>(STORAGE_KEYS.PARTICIPANTS_ACTIVE_FILTER),
+          offlineStorage.read<StatusValue | ''>(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS),
         ]);
 
         if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
@@ -227,7 +227,7 @@ const ParticipantsList: React.FC = () => {
   const handleStatusChange = useCallback((status: StatusValue | '') => {
     setActiveStatus(status);
     setCurrentPage(1); // Reset to first page when status changes
-    offlineStorage.create('participants_active_status', status);
+    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS, status);
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
@@ -291,8 +291,8 @@ const ParticipantsList: React.FC = () => {
                     setActiveFilter(nextFilter);
                     const nextStatus = nextFilter === 'inactive' ? STATUS.DROPOUT : STATUS.NOT_ONBOARDED;
                     setActiveStatus(nextStatus);
-                    offlineStorage.create('participants_active_filter', nextFilter);
-                    offlineStorage.create('participants_active_status', nextStatus);
+                    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_FILTER, nextFilter);
+                    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS, nextStatus);
                   }}
                 />
               </Box>
