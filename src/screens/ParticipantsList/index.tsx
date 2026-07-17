@@ -342,7 +342,8 @@ const ParticipantsList: React.FC = () => {
 
   const handleEnterSelectionMode = useCallback(() => {
     setIsSelectionMode(true);
-    setActiveFilter("active")
+    setActiveFilter("active");
+    setActiveStatus(STATUS.NOT_ONBOARDED);
     setSelectedParticipants(new Map());
   }, []);
 
