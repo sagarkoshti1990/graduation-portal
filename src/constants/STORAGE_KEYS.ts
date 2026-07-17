@@ -25,6 +25,10 @@ export const STORAGE_KEYS = {
   PARTICIPANTS_PAGE_SIZE: 'participants_page_size',
   /** Admin sidebar open/collapsed state */
   ADMIN_SIDEBAR_OPEN: 'admin_sidebar_open',
+  /** Participants List screen active/inactive filter preference */
+  PARTICIPANTS_ACTIVE_FILTER: 'participants_active_filter',
+  /** Participants List screen active status preference */
+  PARTICIPANTS_ACTIVE_STATUS: 'participants_active_status',
 } as const;
 
 // ---------------------------------------------------------------------------

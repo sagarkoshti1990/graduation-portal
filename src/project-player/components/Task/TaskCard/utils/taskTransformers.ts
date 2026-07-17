@@ -1,4 +1,5 @@
 import type { Task } from '../../../../types/project.types';
+import { getComparableFileKey } from '../../FileEvidence/FileUploadModal';
 
 /**
  * Filters the new files selected by the user, removing any that already
@@ -7,22 +8,19 @@ import type { Task } from '../../../../types/project.types';
 export function filterNewFiles(
   selectedFiles: any[],
   existingAttachments: Task['attachments'],
-) {
-  const newFiles: any[] = [];
-  const existingFiles: any[] = [];
-  if (!selectedFiles?.length) return { newFiles, existingFiles };
-  selectedFiles.forEach(file => {
-    const exist = existingAttachments?.find(
-      existing => file?.url && existing?.url,
-    );
-    if (exist) {
-      existingFiles.push(file);
-    } else {
-      newFiles.push(file);
-    }
-  });
+): { newFiles: any[]; existingToSend: any[] } {
+  const files = selectedFiles ?? [];
+  const existing = existingAttachments ?? [];
 
-  return { newFiles, existingFiles };
+  const newFiles = files.filter(
+    file => !existing.some(item => getComparableFileKey(file) === getComparableFileKey(item)),
+  );
+
+  const existingToSend = existing.filter(item =>
+    files.some(file => getComparableFileKey(file) === getComparableFileKey(item)),
+  );
+
+  return { newFiles, existingToSend };
 }
 
 /**

@@ -90,31 +90,52 @@ const ParticipantsList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [refetchKey, setRefetchKey] = useState(0);
-
+  const [isReady, setIsReady] = useState(false);
   // Bulk offline download — selection mode state. Full participant row objects
-  // are kept (not just IDs) so the selection survives page/search/status changes,
-  // mirroring the Map<string, item> pattern already used in UserAvatarCard.
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState<Map<string, Participant>>(new Map());
   const [isBulkDownloadModalOpen, setIsBulkDownloadModalOpen] = useState(false);
 
-  // Load pageSize from isOffline storage on mount
+  // Load initial settings from offline storage on mount
   useEffect(() => {
-    const loadPageSize = async () => {
+    const loadInitialSettings = async () => {
       try {
-        const storedPageSize = await offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE);
+        const [storedPageSize, storedFilter, storedStatus] = await Promise.all([
+          offlineStorage.read<number>(STORAGE_KEYS.PARTICIPANTS_PAGE_SIZE),
+          offlineStorage.read<'active' | 'inactive'>(STORAGE_KEYS.PARTICIPANTS_ACTIVE_FILTER),
+          offlineStorage.read<StatusValue | ''>(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS),
+        ]);
+
         if (storedPageSize && PAGE_SIZE_OPTIONS.includes(storedPageSize)) {
           setPageSize(storedPageSize);
         } else {
           setPageSize(PAGE_SIZE_OPTIONS[0]);
         }
+
+        if (storedFilter) {
+          setActiveFilter(storedFilter);
+        }
+        if (storedStatus) {
+          setActiveStatus(storedStatus);
+        }
       } catch (error) {
-        logger.error('Error loading page size from storage:', error);
+        logger.error('Error loading initial settings:', error);
         setPageSize(PAGE_SIZE_OPTIONS[0]);
+      } finally {
+        setIsReady(true);
       }
     };
-    loadPageSize();
+    loadInitialSettings();
   }, []);
+
+  // Refresh data on focus (e.g., when returning from detail screen)
+  useFocusEffect(
+    useCallback(() => {
+      if (isReady) {
+        setRefetchKey((k) => k + 1);
+      }
+    }, [isReady])
+  );
 
   // Get status items directly from overview using STATUS constants
   const allStatusItems = useMemo<StatusFilterItem[]>(() => {
@@ -180,10 +201,9 @@ const ParticipantsList: React.FC = () => {
     return { active: activeCount, inactive: inactiveCount };
   }, [allStatusItems]);
 
-  useFocusEffect(
-    useCallback(() => {  
-      const fetchParticipants = async () => {
-        // Early return if entity ID is not available
+  useEffect(() => {
+    if (!isReady || !pageSize) return;
+    const fetchParticipants = async () => {
         try {
           setIsLoading(true);
           const result = await dataService.getParticipantList({
@@ -211,28 +231,12 @@ const ParticipantsList: React.FC = () => {
       if (pageSize) {
         fetchParticipants();
       }
-      // offlineDataVersion bumps after a participant's offline sync completes
-      // (SyncOverviewModal's notifyOfflineDataChanged) — that modal is a global
-      // overlay, not a navigation route, so it never re-triggers useFocusEffect
-      // on its own. Re-running this fetch reuses the existing load mechanism to
-      // refresh the list (and any offline-derived indicators) without a full
-      // app reload.
-    }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isOffline, offlineDataVersion])
-  );
+  }, [searchKey, user, activeStatus, currentPage, pageSize, refetchKey, isReady, isOffline, offlineDataVersion]);
+  
 
   useEffect(() => {
     setCurrentPage(1);
   },[isOffline])
-  
-  // When Active/Inactive filter changes, set default status
-  useEffect(() => {
-    if (activeFilter === 'inactive') {
-      setActiveStatus(STATUS.DROPOUT);
-    } else if (activeFilter === 'active') {
-      // Set default to NOT_ONBOARDED when Active is selected
-      setActiveStatus(STATUS.NOT_ONBOARDED);
-    }
-  }, [activeFilter]);
 
   // Handlers
   const handleSearch = useCallback((text: string) => {
@@ -244,6 +248,7 @@ const ParticipantsList: React.FC = () => {
   const handleStatusChange = useCallback((status: StatusValue | '') => {
     setActiveStatus(status);
     setCurrentPage(1); // Reset to first page when status changes
+    offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS, status);
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
@@ -427,7 +432,14 @@ const ParticipantsList: React.FC = () => {
                       { label: `${t('participants.inactive')} (${activeInactiveCounts.inactive})`, value: 'inactive' },
                     ]}
                     value={activeFilter}
-                    onChange={(value) => setActiveFilter(value as 'active' | 'inactive')}
+                    onChange={(value) => {
+                      const nextFilter = value as 'active' | 'inactive';
+                      setActiveFilter(nextFilter);
+                      const nextStatus = nextFilter === 'inactive' ? STATUS.DROPOUT : STATUS.NOT_ONBOARDED;
+                      setActiveStatus(nextStatus);
+                      offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_FILTER, nextFilter);
+                      offlineStorage.create(STORAGE_KEYS.PARTICIPANTS_ACTIVE_STATUS, nextStatus);
+                    }}
                   />
                 </Box>
               }

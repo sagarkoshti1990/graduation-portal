@@ -86,6 +86,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const [isCompletingProject, setIsCompletingProject] = useState(false)
   const [showOfflineDeleteConfirm, setShowOfflineDeleteConfirm] = useState(false)
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [pathwayAndCategory, setPathwayAndCategory] = useState<string[]>([]);
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
@@ -182,6 +183,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     const entityId = (participantProp as User)?.entityId;
     if (!entityId) return;
     try {
+      setIsEnrolling(true);
       const [projResult] = await Promise.all([
         updateTask((participantProp as any)?.onBoardedProjectId, { status: TASK_STATUS.COMPLETED }),
         updateEntityDetails({
@@ -197,6 +199,8 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       if (onStatusUpdate) onStatusUpdate(STATUS.ENROLLED);
     } catch (error) {
       showAlert('error', t('common.somethingWentWrong'));
+    } finally {
+      setIsEnrolling(false);
     }
   };
 
@@ -355,12 +359,16 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       return (
         <Button
           onPress={handleEnrollParticipant}
-          isDisabled={!areAllTasksCompleted}
+          isDisabled={!areAllTasksCompleted || isEnrolling}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
           size="sm"
         >
-          <ButtonIcon as={LucideIcon} name="User" />
+          {isEnrolling ? (
+            <Spinner size="small" color="$white" />
+          ) : (
+            <ButtonIcon as={LucideIcon} name="User" />
+          )}
           <ButtonText {...participantHeaderStyles.solidButtonText}>
             {t('participantDetail.header.enrollParticipant')}
           </ButtonText>
