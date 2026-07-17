@@ -27,7 +27,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import dataService from '../../services/dataService';
 import type { ParticipantOverview } from '@app-types/participant';
-import { STATUS, ALLOWOFFLINESTATUS, MAX_BULK_OFFLINE_DOWNLOAD } from '@constants/app.constant';
+import { STATUS, ALLOWOFFLINESTATUS, MAX_BULK_OFFLINE_DOWNLOAD, USER_STATUS } from '@constants/app.constant';
 import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
@@ -40,6 +40,11 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import BulkDownloadModal from '@components/BulkDownloadModal';
+
+
+const canParticipantOffline = (participant:Participant) => {
+  return ALLOWOFFLINESTATUS.includes(participant.status as string) && participant?.onBoardedProjectId && participant?.userDetails?.status === USER_STATUS.ACTIVE
+}
 
 // Status value type (values of STATUS object) - used for API filter + comparisons
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -286,7 +291,7 @@ const ParticipantsList: React.FC = () => {
   const handleRowClick = useCallback(
     (participant: Participant) => {
       if (isSelectionMode) {
-        if (ALLOWOFFLINESTATUS.includes(participant.status as string) && participant?.onBoardedProjectId) {
+        if (canParticipantOffline(participant)) {
           toggleSelectParticipant(participant);
         }
         return;
@@ -307,7 +312,7 @@ const ParticipantsList: React.FC = () => {
   // Bulk offline download — participants on the current page eligible for download,
   // mirroring the same ALLOWOFFLINESTATUS gate used by the single-row "Download Offline" action.
   const eligibleOnPage = useMemo(
-    () => participants.filter(p => ALLOWOFFLINESTATUS.includes(p.status as string) && p.onBoardedProjectId),
+    () => participants.filter(p => canParticipantOffline(p)),
     [participants],
   );
 
@@ -379,7 +384,7 @@ const ParticipantsList: React.FC = () => {
       return {
         ...col,
         render: (participant: Participant) => {
-          const eligible = ALLOWOFFLINESTATUS.includes(participant.status as string) && participant?.onBoardedProjectId;
+          const eligible = canParticipantOffline(participant);
           return (
             <HStack space="sm" alignItems="center">
               {eligible ? (
