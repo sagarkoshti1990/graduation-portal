@@ -274,7 +274,6 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
   existingAttachments = [],
   maxFileUploadCount,
   allowedFileTypes,
-
 }) => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform(1024);
@@ -447,9 +446,10 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       .filter((m): m is string => Boolean(m));
   }, [validatedSelectedFiles]);
 
+  const totalCount = validSelectedFiles.length + existingAttachmentsState.length;
+  const isMaxFileUploadCount = maxFileUploadCount === 1;
   const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
-  const canSubmit = hasChanged && !hasInvalidSelectedFiles;
-
+  const canSubmit = hasChanged && !hasInvalidSelectedFiles && (!isMaxFileUploadCount || totalCount > 0);
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
       if (!filesToAdd || filesToAdd.length === 0) return;
