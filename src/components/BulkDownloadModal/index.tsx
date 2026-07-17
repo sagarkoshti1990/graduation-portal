@@ -76,6 +76,13 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(null);
   const isRunningRef = useRef(false);
   const hadSuccessRef = useRef(false);
+  // Set by the "Stop Download" button; checked at the top of each loop
+  // iteration in runDownloads so the currently in-flight participant (no
+  // cancellation support exists in downloadService) finishes normally, but
+  // no further participant is started.
+  const stopRequestedRef = useRef(false);
+  const [isStopRequested, setIsStopRequested] = useState(false);
+  const [wasStopped, setWasStopped] = useState(false);
 
   // Auto-scroll: keeps the currently-downloading participant row visible inside
   // the fixed-height scroll area below, without redesigning the popup itself.
@@ -144,9 +151,19 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   const runDownloads = useCallback(async (participantIds: string[]) => {
     if (isRunningRef.current || participantIds.length === 0) return;
     isRunningRef.current = true;
+    stopRequestedRef.current = false;
+    setIsStopRequested(false);
+    setWasStopped(false);
     setScreen('running');
 
     for (const participantId of participantIds) {
+      // Checked before starting each participant (not mid-download — there's
+      // no cancellation support in downloadService) so a Stop click only
+      // ever prevents participants that haven't started yet.
+      if (stopRequestedRef.current) {
+        setWasStopped(true);
+        break;
+      }
       setActiveParticipantId(participantId);
       patchRunState(participantId, { phase: 'downloading', error: undefined });
 
@@ -250,6 +267,11 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   const handleStartDownload = useCallback(() => {
     runDownloads(participants.map(p => p.userId));
   }, [runDownloads, participants]);
+
+  const handleStopDownload = useCallback(() => {
+    stopRequestedRef.current = true;
+    setIsStopRequested(true);
+  }, []);
 
   // Which module step (if any) is currently loading for the active participant —
   // used to re-trigger auto-scroll as the active row grows while it downloads.
@@ -413,6 +435,16 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
                 })}
               </VStack>
             </ScrollView>
+
+            <HStack space="md" justifyContent="flex-end">
+              {/* @ts-ignore */}
+              <Button variant="outlineghost" size="sm" onPress={handleStopDownload} isDisabled={isStopRequested}>
+                <ButtonIcon as={LucideIcon} name="CircleStop" mr="$1" />
+                <ButtonText>
+                  {isStopRequested ? t('actions.bulkDownloadStopping') : t('actions.bulkDownloadStop')}
+                </ButtonText>
+              </Button>
+            </HStack>
           </VStack>
         )}
 
@@ -434,6 +466,12 @@ const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
               <SummaryRow labelKey="actions.bulkDownloadSuccessCount" value={completedCount} color="$success600" />
               {failedEntries.length > 0 && (
                 <SummaryRow labelKey="actions.bulkDownloadFailedCount" value={failedEntries.length} color="$error600" />
+              )}
+              {wasStopped && (participants.length - completedCount - failedEntries.length) > 0 && (
+                <SummaryRow
+                  labelKey="actions.bulkDownloadRemainingCount"
+                  value={participants.length - completedCount - failedEntries.length}
+                />
               )}
             </VStack>
 

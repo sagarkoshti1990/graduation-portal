@@ -2116,6 +2116,9 @@
     "bulkDownloadTotalSelected": "Total Selected",
     "bulkDownloadSuccessCount": "Downloaded Successfully",
     "bulkDownloadFailedCount": "Failed",
+    "bulkDownloadStop": "Stop Download",
+    "bulkDownloadStopping": "Stopping…",
+    "bulkDownloadRemainingCount": "Not Downloaded",
     "reDownloadFailed": "Re-download Failed"
   },
   "logVisit": {

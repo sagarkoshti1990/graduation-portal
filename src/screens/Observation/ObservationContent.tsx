@@ -20,13 +20,14 @@ import fileStorageService from '../../services/fileStorageService';
 import { observationStyles } from './Styles';
 import { CARD_STATUS, ENTITY_TYPE, MAX_FILE_SIZE, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
-import { findEmbeddedFiles, makeOfflineFileMetadata, removeFileFromAnsers, setAtPath } from '@utils/helper';
+import { removeFileFromAnsers } from '@utils/helper';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import type { ObservationFormData, PendingFile } from '@app-types/offline';
 import { isNetworkOffline } from '@utils/networkStatus';
 import { shouldFetchOnline } from '@utils/helper';
+import { updateTaskStatus } from '../../project-player/utils/taskUtils';
 
 interface ObservationData {
   entityId: string;
@@ -440,17 +441,41 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         logger.info('ObservationContent: form edits saved for sync');
 
         // Auto-mark the linked Observation-type project task as completed
-        // when offline — restores prior behavior that was lost when
-        // saveTaskEdit's signature gained projectId/userId params.
+        // when offline. Looks up the task anywhere in the full project tree
+        // (reusing updateTaskStatus's existing recursive search — the same
+        // one ProjectContext.updateTask uses) so this also works when the
+        // task is a nested child, at any depth, not just a top-level task.
         if (type === 'QUESTIONNAIRE_SUBMIT' && taskId && isNetworkOffline()) {
           try {
-            await dataService.saveTaskEdit(
-              participantKey,
-              (participant as any)?.onBoardedProjectId ?? '',
-              { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] },
-              authUser?.id ?? '',
-            );
-            logger.info('ObservationContent: task auto-marked completed offline', taskId);
+            const projectId = (participant as any)?.idpProjectId ?? (participant as any)?.onBoardedProjectId ?? '';
+            if (projectId) {
+              const projectResult = await dataService.getProject<any>(participantKey, projectId, authUser?.id ?? '');
+              const { task: foundTask, parentTaskId } = updateTaskStatus({
+                data: projectResult.data,
+                taskId,
+                updatedData: { status: TASK_STATUS.COMPLETED },
+              });
+              // Only complete tasks the lookup confirms are Observation-type
+              // at whatever level they were found (top-level or nested).
+              if (foundTask?.type === 'observation') {
+                // Nested (child) tasks must be sent wrapped under their
+                // top-level parent — saveTaskEdit's mergeTasks only merges by
+                // matching TOP-LEVEL ids, so a flat entry for a child id would
+                // create a bogus phantom top-level task instead of updating
+                // the real nested one, and would never sync correctly since
+                // it isn't a real project task id online. Mirrors the same
+                // parent-wrapper shape ProjectContext.updateTask builds for
+                // child/custom tasks — this also puts the edit in the same
+                // projectEdits sync queue that flat top-level edits already use.
+                const payloadTask = parentTaskId
+                  ? { tasks: [{ _id: parentTaskId, children: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] }] }
+                  : { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] };
+                await dataService.saveTaskEdit(participantKey, projectId, payloadTask, authUser?.id ?? '');
+                logger.info('ObservationContent: task auto-marked completed offline', taskId);
+              } else {
+                logger.warn(`ObservationContent: linked task "${taskId}" not found or not an observation task — skipping auto-complete`);
+              }
+            }
           } catch (err) {
             logger.warn('ObservationContent: failed to auto-mark task complete', err);
           }
