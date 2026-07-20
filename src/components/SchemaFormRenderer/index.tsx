@@ -111,8 +111,6 @@ export interface SchemaFormRendererProps {
   t: (key: string, fallback?: string) => string;
   /** Optional ref forwarded to the first autoFocus field */
   firstNameRef?: React.RefObject<any>;
-  /** If provided, only fields in this list are editable; others are read-only */
-  editableFields?: string[];
 }
 
 // ─── Validation Engine ────────────────────────────────────────────────────────
@@ -125,12 +123,11 @@ function validateField(
   field: FormField,
   values: Record<string, string>,
   flags: FlagsMap,
-  errors: Record<string, string>,
-  editableFields?: string[]
+  errors: Record<string, string>
 ): void {
   if (field.type === 'group' && Array.isArray(field.fields)) {
     for (const subField of field.fields) {
-      validateField(subField, values, flags, errors, editableFields);
+      validateField(subField, values, flags, errors);
     }
     return;
   }
@@ -142,8 +139,8 @@ function validateField(
     return;
   }
 
-  // If editableFields is specified, and this field is not in the list, skip validation
-  if (editableFields && !editableFields.includes(field.name)) {
+  // Skip read-only fields
+  if (field.isReadOnly) {
     return;
   }
 
@@ -227,8 +224,7 @@ function applyRule(
 export function validateSchema(
   schema: FormSection[],
   values: Record<string, string>,
-  flags: FlagsMap,
-  editableFields?: string[]
+  flags: FlagsMap
 ): Record<string, string> {
   const errors: Record<string, string> = {};
 
@@ -238,7 +234,7 @@ export function validateSchema(
       if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag]) continue;
 
       for (const field of row.fields) {
-        validateField(field, values, flags, errors, editableFields);
+        validateField(field, values, flags, errors);
       }
     }
   }
@@ -551,7 +547,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   isMobile = false,
   t,
   firstNameRef,
-  editableFields,
 }) => {
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<Record<string, boolean>>({});
@@ -560,101 +555,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     setVisibilityGroups(prev => ({ ...prev, [group]: !prev[group] }));
   };
 
-  // Dynamically mark fields as read-only / not required if they are not in editableFields
-  const resolvedSchema = useMemo(() => {
-    if (!editableFields) return schema;
-    return schema.map(section => ({
-      ...section,
-      rows: section.rows.map(row => ({
-        ...row,
-        fields: row.fields
-          .filter(field => field.type !== 'note')
-          .map(field => {
-            if (field.type === 'group' && Array.isArray((field as any).fields)) {
-              return {
-                ...field,
-                fields: (field as any).fields.map((subField: any) => {
-                  const isEditable = subField.name && editableFields.includes(subField.name);
-                  return {
-                    ...subField,
-                    isReadOnly: !isEditable,
-                    required: isEditable,
-                    validation: isEditable
-                      ? subField.validation
-                      : (subField.validation || []).filter((v: any) => v.rule !== 'required'),
-                  };
-                }),
-              };
-            }
-            const isEditable = field.name && editableFields.includes(field.name);
-            return {
-              ...field,
-              isReadOnly: !isEditable,
-              required: isEditable,
-              validation: isEditable
-                ? field.validation
-                : (field.validation || []).filter((v: any) => v.rule !== 'required'),
-            };
-          })
-      })).filter(row => row.fields.length > 0)
-    })).filter(section => section.rows.length > 0);
-  }, [schema, editableFields]);
-
-  /**
-   * Resolve display value for viewMode.
-   * For selects, look up the label from optionsMap.
-   * For groups (e.g. countryCode + phone), concatenate sub-field display values.
-   * For dates, replace underscores with hyphens.
-   */
-  const resolveDisplayValue = (field: FormField): string => {
-    const isOtherValue = (val: any): boolean => {
-      if (typeof val !== 'string') return false;
-      const clean = val.trim().toLowerCase();
-      return clean === 'other' || clean === '+other' || clean === 'other other' || clean === '+other other';
-    };
-
-    if (field.type === 'group' && field.fields) {
-      const parts = field.fields
-        .map(sf => {
-          const subRaw = sf.name ? (values[sf.name] ?? '') : '';
-          if (!subRaw || isOtherValue(subRaw)) return '';
-          const resolved = resolveDisplayValue(sf);
-          if (resolved === '-' || isOtherValue(resolved)) return '';
-          return resolved;
-        })
-        .filter(Boolean);
-      return parts.length > 0 ? parts.join(' ') : '-';
-    }
-
-    const raw = field.name ? (values[field.name] ?? '') : '';
-    if (!raw || isOtherValue(raw)) return '-';
-
-    if (field.type === 'select' && field.optionsSource) {
-      const opts = optionsMap[field.optionsSource] ?? [];
-      const match = opts.find(o => o.value === raw);
-      const label = match?.label || raw;
-      if (!label || isOtherValue(label)) return '-';
-      return label;
-    }
-
-    if (field.type === 'date') {
-      const clean = raw.replace(/_/g, '-');
-      if (/^\d{8}$/.test(clean)) {
-        return clean.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
-      }
-      return clean || '-';
-    }
-
-    if (field.type === 'password') {
-      return '••••••••';
-    }
-
-    return raw || '-';
-  };
-
   return (
     <VStack space="md" width="100%">
-      {resolvedSchema.map(section => (
+      {schema.map(section => (
         <VStack key={section.id} space="sm">
           {/* Section header */}
           <HStack space="xs" alignItems="center">
@@ -672,9 +575,15 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
             }
 
             // Determine which fields in this row are visible
-            const visibleFields = row.fields.filter(
-              f => !f.visibleWhen?.flag || flags[f.visibleWhen.flag]
-            );
+            const visibleFields: FormField[] = [];
+            row.fields.forEach(f => {
+              if (f.visibleWhen?.flag && !flags[f.visibleWhen.flag]) return;
+              if (viewMode && f.type === 'group' && f.fields) {
+                visibleFields.push(...f.fields);
+              } else {
+                visibleFields.push(f);
+              }
+            });
 
             if (visibleFields.length === 0) return null;
 
@@ -694,7 +603,20 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                   if (viewMode) {
                     if (field.type === 'note') return null;
 
-                    const displayValue = resolveDisplayValue(field);
+                    let displayValue = fieldValue || '-';
+                    if (field.optionsSource) {
+                      const opts = optionsMap[field.optionsSource] ?? [];
+                      displayValue = opts.find(o => o.value === fieldValue)?.label || fieldValue || '-';
+                    } else if (field.displayFormat) {
+                      const clean = fieldValue.replace(/_/g, '-');
+                      if (/^\d{8}$/.test(clean)) {
+                        displayValue = clean.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
+                      } else {
+                        displayValue = clean || '-';
+                      }
+                    } else if (field.type === 'password') {
+                      displayValue = '••••••••';
+                    }
 
                     return (
                       <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>

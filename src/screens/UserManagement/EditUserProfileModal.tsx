@@ -10,25 +10,7 @@ import { getUserProfile } from '../../services/authenticationService';
 import type { AdminUserManagementData } from '@app-types/Users';
 import { ProfileModalHeader, mapUserToFormValues, extractEntityOption, getEntityId } from './UserProfileModal';
 
-const EDITABLE_FIELDS = [
-  'name',
-  'email',
-  'username',
-  'nationalId',
-  'countryCode',
-  'phoneNumber',
-  'alternativePhoneCode',
-  'alternativePhone',
-  'roleId',
-  'gender',
-  'dob',
-  'employee_id',
-  'organisationId',
-  'positionId',
-  'provinceId',
-  'siteId',
-  'location',
-];
+
 
 
 interface EditUserProfileModalProps {
@@ -161,7 +143,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    const validationErrors = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags, EDITABLE_FIELDS);
+    const validationErrors = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       showAlert('error', t('common.validationError', 'Please correct the errors in the form.'));
@@ -256,7 +238,6 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
               disabled={isSubmitting}
               isMobile={isMobile}
               t={t}
-              editableFields={EDITABLE_FIELDS}
             />
           </VStack>
         )}
