@@ -8,7 +8,7 @@ import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince, updateOrgAdminUser } from '../../services/usersService';
 import { getUserProfile } from '../../services/authenticationService';
 import type { AdminUserManagementData } from '@app-types/Users';
-import { ProfileModalHeader, mapUserToFormValues, extractEntityOption, getEntityId } from './UserProfileModal';
+import { ProfileModalHeader, mapUserToFormValues, getEntityId } from './UserProfileModal';
 
 
 
@@ -75,34 +75,40 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
     }
   }, [isOpen, user]);
 
+  useEffect(() => {
+    if (roles.length > 0 && values.roleId) {
+      const matchingRole = roles.find((r: any) => r.id.toString() === values.roleId);
+      if (matchingRole) {
+        setValues(prev => ({ ...prev, roleId: matchingRole.title }));
+      }
+    }
+  }, [roles, values.roleId]);
+
   const flags = useMemo(() => {
-    const roleId = values.roleId;
-    const selRole = roles.find((r: any) => r.id.toString() === roleId);
-    const roleTitle = (selRole?.title?.toLowerCase() || '');
-    const roleLabel = (selRole?.label?.toLowerCase() || '');
+    const roleId = values.roleId || '';
 
     const userOrgs = (user as any)?.user_organizations || (selectedUserProfile as any)?.user_organizations || [];
     const directRoles = userOrgs?.[0]?.roles || [];
     const hasDirectRole = directRoles.some((r: any) => {
       const title = (r?.role?.title || '').toLowerCase();
       const label = (r?.role?.label || '').toLowerCase();
-      return ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
+      return ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
         (k: string) => title.includes(k) || label.includes(k)
       );
     });
 
-    const isSupervisorOrLC = hasDirectRole || ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
-      (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
+    const isSupervisorOrLC = hasDirectRole || ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
+      (k: string) => roleId.toLowerCase().includes(k)
     );
     return { isSupervisorOrLC };
-  }, [values.roleId, roles, user, selectedUserProfile]);
+  }, [values.roleId, user, selectedUserProfile]);
 
 
 
   const optionsMap = useMemo(() => ({
     roles: roles
       .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
-      .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
+      .map((r: any) => ({ value: r.title, label: r.label || r.title || '' })),
     genders: genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name })),
     provinces: provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
     sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
@@ -152,45 +158,54 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const roleId = values.roleId;
-      const selectedRole = roles.find((r: any) => r.id.toString() === roleId);
-      const roleTitle = selectedRole?.title || roleId;
-
       const payload: any = {
         name: values.name?.trim(),
-        roles: roleTitle,
+        username: values.username?.trim(),
+        email: values.email?.trim(),
+        roles: values.roleId,
       };
 
-      if (values.email !== undefined) {
-        payload.email = values.email?.trim() || null;
-      }
-      if (values.username !== undefined) {
-        payload.username = values.username?.trim() || null;
-      }
-
-      if (values.dob) {
+      if (values.dob && values.dob.trim()) {
         payload.dob = values.dob.replace(/[/\-_]/g, '');
       }
-      if (values.gender) payload.gender = values.gender;
-      if (values.siteId !== undefined) payload.site = values.siteId || null;
-      if (values.provinceId !== undefined) payload.province = values.provinceId || null;
-      if (values.phoneNumber !== undefined) payload.phone = values.phoneNumber || null;
-      if (values.phoneNumber && values.countryCode) {
-        payload.phone_code = values.countryCode.replace('+', '');
+      if (values.gender && values.gender.trim()) {
+        payload.gender = values.gender;
       }
-      if (values.alternativePhone !== undefined) payload.alternative_phone = values.alternativePhone || null;
-      if (values.alternativePhone && values.alternativePhoneCode) {
-        payload.alternative_phone_code = values.alternativePhoneCode.replace('+', '');
+      if (values.siteId && values.siteId.trim()) {
+        payload.site = values.siteId;
       }
-      if (values.location !== undefined) payload.location = values.location || null;
-      if (values.nationalId !== undefined) {
-        payload.national_id = values.nationalId ? Number(values.nationalId) : null;
+      if (values.provinceId && values.provinceId.trim()) {
+        payload.province = values.provinceId;
+      }
+      if (values.phoneNumber && values.phoneNumber.trim()) {
+        payload.phone = values.phoneNumber.trim();
+        if (values.countryCode) {
+          payload.phone_code = values.countryCode.replace('+', '');
+        }
+      }
+      if (values.alternativePhone && values.alternativePhone.trim()) {
+        payload.alternative_phone = values.alternativePhone.trim();
+        if (values.alternativePhoneCode) {
+          payload.alternative_phone_code = values.alternativePhoneCode.replace('+', '');
+        }
+      }
+      if (values.location && values.location.trim()) {
+        payload.location = values.location;
+      }
+      if (values.nationalId && values.nationalId.trim()) {
+        payload.national_id = Number(values.nationalId);
       }
 
       if (flags.isSupervisorOrLC) {
-        if (values.organisationId !== undefined) payload.organisation = values.organisationId || null;
-        if (values.positionId !== undefined) payload.position = values.positionId || null;
-        if (values.employee_id !== undefined) payload.employee_id = values.employee_id || null;
+        if (values.organisationId && values.organisationId.trim()) {
+          payload.organisation = values.organisationId;
+        }
+        if (values.positionId && values.positionId.trim()) {
+          payload.position = values.positionId;
+        }
+        if (values.employee_id && values.employee_id.trim()) {
+          payload.employee_id = values.employee_id;
+        }
       }
 
       await updateOrgAdminUser(user!.id, payload);
