@@ -84,7 +84,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
     organisations: organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name })),
     positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
-    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
+    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.externalId || c.externalId || '', label: c.metaInformation?.externalId || c.externalId || '' })).sort((a, b) => parseInt(a.value) - parseInt(b.value) || a.value.localeCompare(b.value)),
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
