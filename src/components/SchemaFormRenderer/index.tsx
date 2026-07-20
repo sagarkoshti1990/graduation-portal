@@ -607,16 +607,8 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                     if (field.optionsSource) {
                       const opts = optionsMap[field.optionsSource] ?? [];
                       displayValue = opts.find(o => o.value === fieldValue)?.label || fieldValue || '-';
-                    } else if (field.displayFormat) {
-                      const clean = fieldValue.replace(/_/g, '-');
-                      if (/^\d{8}$/.test(clean)) {
-                        displayValue = clean.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
-                      } else {
-                        displayValue = clean || '-';
-                      }
-                    } else if (field.type === 'password') {
-                      displayValue = '••••••••';
                     }
+                    displayValue = displayValue.replace(/_/g, '-');
 
                     return (
                       <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
