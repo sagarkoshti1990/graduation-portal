@@ -121,7 +121,15 @@ export const mapUserToFormValues = (
   const alternativePhone = getFieldVal('alternativePhone');
   const gender = getFieldVal('gender');
   const rawDob = getFieldVal('dob');
-  const dob = rawDob ? String(rawDob).replace(/[\-\/]/g, '_') : '';
+  let dob = '';
+  if (rawDob) {
+    const cleanDob = String(rawDob).trim();
+    if (/^\d{8}$/.test(cleanDob)) {
+      dob = `${cleanDob.substring(0, 4)}_${cleanDob.substring(4, 6)}_${cleanDob.substring(6, 8)}`;
+    } else {
+      dob = cleanDob.replace(/[\-\/]/g, '_');
+    }
+  }
   const employee_id = getFieldVal('employee_id');
   const organisationId = getFieldVal('organisationId');
   const positionId = getFieldVal('positionId') || getFieldVal('position');

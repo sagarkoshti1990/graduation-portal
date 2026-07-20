@@ -12,6 +12,8 @@ import { ProfileModalHeader, mapUserToFormValues, extractEntityOption, getEntity
 
 const EDITABLE_FIELDS = [
   'name',
+  'email',
+  'username',
   'nationalId',
   'countryCode',
   'phoneNumber',
@@ -115,57 +117,17 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
 
 
-  const profileOptions = useMemo(() => {
-    const opts: Record<string, { value: string; label: string }[]> = {
-      roles: [],
-      genders: [],
-      provinces: [],
-      sites: [],
-      organisations: [],
-      positions: [],
-    };
-    if (selectedUserProfile) {
-      const profile = selectedUserProfile.userDetails || selectedUserProfile;
-      const gOpt = extractEntityOption(profile.gender);
-      if (gOpt) opts.genders.push(gOpt);
-
-      const pOpt = extractEntityOption(profile.province || (user as any)?.province);
-      if (pOpt) opts.provinces.push(pOpt);
-
-      const sOpt = extractEntityOption(profile.site || (user as any)?.site);
-      if (sOpt) opts.sites.push(sOpt);
-
-      const oOpt = extractEntityOption(profile.organisation || profile.organizations);
-      if (oOpt) opts.organisations.push(oOpt);
-
-      const posOpt = extractEntityOption(profile.position);
-      if (posOpt) opts.positions.push(posOpt);
-    }
-    return opts;
-  }, [selectedUserProfile, user]);
-
-  const optionsMap = useMemo(() => {
-    const mergeOptions = (sourceKey: string, fetchedList: { value: string; label: string }[]) => {
-      const profileList = profileOptions[sourceKey] || [];
-      const combined = [...profileList, ...fetchedList];
-      const seen = new Set<string>();
-      return combined.filter(o => {
-        if (!o.value || seen.has(o.value)) return false;
-        seen.add(o.value);
-        return true;
-      });
-    };
-
-    return {
-      roles: mergeOptions('roles', roles.map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' }))),
-      genders: mergeOptions('genders', genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name }))),
-      provinces: mergeOptions('provinces', provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name }))),
-      sites: mergeOptions('sites', formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name }))),
-      organisations: mergeOptions('organisations', organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name }))),
-      positions: mergeOptions('positions', positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name }))),
-      countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
-    };
-  }, [roles, genders, provinces, formSites, organisations, positions, countryCodes, profileOptions]);
+  const optionsMap = useMemo(() => ({
+    roles: roles
+      .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
+      .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
+    genders: genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name })),
+    provinces: provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
+    sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
+    organisations: organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name })),
+    positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
+    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
+  }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
 
 
@@ -216,6 +178,13 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
         name: values.name?.trim(),
         roles: roleTitle,
       };
+
+      if (values.email !== undefined) {
+        payload.email = values.email?.trim() || null;
+      }
+      if (values.username !== undefined) {
+        payload.username = values.username?.trim() || null;
+      }
 
       if (values.dob) {
         payload.dob = values.dob.replace(/[/\-_]/g, '');
