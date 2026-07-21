@@ -75,17 +75,11 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
     }
   }, [isOpen, user]);
 
-  useEffect(() => {
-    if (roles.length > 0 && values.roleId) {
-      const matchingRole = roles.find((r: any) => r.id.toString() === values.roleId);
-      if (matchingRole) {
-        setValues(prev => ({ ...prev, roleId: matchingRole.title }));
-      }
-    }
-  }, [roles, values.roleId]);
-
   const flags = useMemo(() => {
     const roleId = values.roleId || '';
+    const selRole = roles.find((r: any) => r.id.toString() === roleId);
+    const roleTitle = (selRole?.title?.toLowerCase() || '');
+    const roleLabel = (selRole?.label?.toLowerCase() || '');
 
     const userOrgs = (user as any)?.user_organizations || (selectedUserProfile as any)?.user_organizations || [];
     const directRoles = userOrgs?.[0]?.roles || [];
@@ -98,23 +92,23 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
     });
 
     const isSupervisorOrLC = hasDirectRole || ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
-      (k: string) => roleId.toLowerCase().includes(k)
+      (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
     );
     return { isSupervisorOrLC };
-  }, [values.roleId, user, selectedUserProfile]);
+  }, [values.roleId, roles, user, selectedUserProfile]);
 
 
 
   const optionsMap = useMemo(() => ({
     roles: roles
       .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
-      .map((r: any) => ({ value: r.title, label: r.label || r.title || '' })),
+      .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
     genders: genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name })),
     provinces: provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
     sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
     organisations: organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name })),
     positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
-    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
+    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.externalId || c.externalId || '', label: c.metaInformation?.externalId || c.externalId || '' })).sort((a, b) => parseInt(a.value) - parseInt(b.value) || a.value.localeCompare(b.value)),
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
 
@@ -158,15 +152,19 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      const roleId = values.roleId;
+      const selectedRole = roles.find((r: any) => r.id.toString() === roleId);
+      const roleTitle = selectedRole?.title || roleId;
+
       const payload: any = {
         name: values.name?.trim(),
         username: values.username?.trim(),
         email: values.email?.trim(),
-        roles: values.roleId,
+        roles: roleTitle,
       };
 
       if (values.dob && values.dob.trim()) {
-        payload.dob = values.dob.replace(/[/\-_]/g, '');
+        payload.dob = values.dob.replace(/[\/\-]/g, '');
       }
       if (values.gender && values.gender.trim()) {
         payload.gender = values.gender;

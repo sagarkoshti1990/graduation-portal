@@ -28,8 +28,20 @@ export const mapUserToFormValues = (
  ): Record<string, string> => {
    if (!user) return {};
  
-   const roles = (user as any)?.user_organizations?.[0]?.roles || [];
-   const roleId = roles[0]?.role?.id?.toString() || (user as any)?.roleId?.toString() || '';
+   const orgRoles = (user as any)?.user_organizations?.[0]?.roles || 
+                    (user as any)?.user_organizations?.[0]?.organization?.roles || 
+                    (userProfile as any)?.user_organizations?.[0]?.roles || 
+                    (userProfile as any)?.user_organizations?.[0]?.organization?.roles || [];
+   const roleId = orgRoles[0]?.role?.id?.toString() || 
+                  orgRoles[0]?.role?.title || 
+                  orgRoles[0]?.role?.label ||
+                  (user as any)?.roleId?.toString() || 
+                  (user as any)?.role || 
+                  (userProfile as any)?.roleId?.toString() || 
+                  (userProfile as any)?.role?.id?.toString() || 
+                  (userProfile as any)?.role?.title || 
+                  (userProfile as any)?.role || 
+                  '';
  
    const getValueFromObj = (val: any): string | null => {
      if (val == null) return null;
@@ -126,12 +138,40 @@ export const mapUserToFormValues = (
     const cleanDob = String(rawDob).trim();
     if (/^\d{8}$/.test(cleanDob)) {
       dob = `${cleanDob.substring(0, 4)}_${cleanDob.substring(4, 6)}_${cleanDob.substring(6, 8)}`;
+    } else if (/^\d{6}$/.test(cleanDob)) {
+      const d1 = parseInt(cleanDob.substring(0, 2), 10);
+      const d2 = parseInt(cleanDob.substring(2, 4), 10);
+      const d3 = parseInt(cleanDob.substring(4, 6), 10);
+      if (d1 <= 31 && d2 <= 12) {
+        const year = d3 > 50 ? `19${cleanDob.substring(4, 6)}` : `20${cleanDob.substring(4, 6)}`;
+        dob = `${year}_${cleanDob.substring(2, 4)}_${cleanDob.substring(0, 2)}`;
+      } else {
+        const year = d1 > 50 ? `19${cleanDob.substring(0, 2)}` : `20${cleanDob.substring(0, 2)}`;
+        dob = `${year}_${cleanDob.substring(2, 4)}_${cleanDob.substring(4, 6)}`;
+      }
+    } else if (/^\d{4}[\-\/_]\d{2}[\-\/_]\d{2}$/.test(cleanDob)) {
+      dob = cleanDob.replace(/[\-\/]/g, '_');
+    } else if (/^\d{2}[\-\/_]\d{2}[\-\/_]\d{4}$/.test(cleanDob)) {
+      const parts = cleanDob.split(/[\-\/_]/);
+      dob = `${parts[2]}_${parts[1]}_${parts[0]}`;
+    } else if (/^\d{2}[\-\/_]\d{2}[\-\/_]\d{2}$/.test(cleanDob)) {
+      const parts = cleanDob.split(/[\-\/_]/);
+      const yVal = parseInt(parts[2], 10);
+      const year = yVal > 50 ? `19${parts[2]}` : `20${parts[2]}`;
+      dob = `${year}_${parts[1]}_${parts[0]}`;
     } else {
       dob = cleanDob.replace(/[\-\/]/g, '_');
     }
   }
   const employee_id = getFieldVal('employee_id');
-  const organisationId = getFieldVal('organisationId');
+  let organisationId = getFieldVal('organisationId');
+  if (!organisationId) {
+    const userOrgs = (user as any)?.user_organizations || (userProfile as any)?.user_organizations || [];
+    const org = userOrgs?.[0]?.organization || userOrgs?.[0]?.organisation;
+    if (org) {
+      organisationId = org._id || org.id || '';
+    }
+  }
   const positionId = getFieldVal('positionId') || getFieldVal('position');
   const provinceId = getFieldVal('provinceId') || getFieldVal('province');
   const siteId = getFieldVal('siteId') || getFieldVal('site');

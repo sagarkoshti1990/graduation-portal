@@ -608,7 +608,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                       const opts = optionsMap[field.optionsSource] ?? [];
                       displayValue = opts.find(o => o.value === fieldValue)?.label || fieldValue || '-';
                     }
-                    displayValue = displayValue.replace(/_/g, '-');
+                    displayValue = typeof displayValue === 'string' ? displayValue.replace(/_/g, '-') : String(displayValue ?? '-');
 
                     return (
                       <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
