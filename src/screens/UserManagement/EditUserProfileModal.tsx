@@ -9,6 +9,7 @@ import { getSitesByProvince, updateOrgAdminUser } from '../../services/usersServ
 import { getUserProfile } from '../../services/authenticationService';
 import type { AdminUserManagementData } from '@app-types/Users';
 import { ProfileModalHeader, mapUserToFormValues, getEntityId } from './UserProfileModal';
+import { mapFormValuesToPayload, mapFiltersToOptionsMap } from './CreateUserForm';
 
 
 
@@ -75,43 +76,15 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
     }
   }, [isOpen, user]);
 
-  const flags = useMemo(() => {
-    const roleId = values.roleId || '';
-    const selRole = roles.find((r: any) => r.id.toString() === roleId);
-    const roleTitle = (selRole?.title?.toLowerCase() || '');
-    const roleLabel = (selRole?.label?.toLowerCase() || '');
-
-    const userOrgs = (user as any)?.user_organizations || (selectedUserProfile as any)?.user_organizations || [];
-    const directRoles = userOrgs?.[0]?.roles || [];
-    const hasDirectRole = directRoles.some((r: any) => {
-      const title = (r?.role?.title || '').toLowerCase();
-      const label = (r?.role?.label || '').toLowerCase();
-      return ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
-        (k: string) => title.includes(k) || label.includes(k)
-      );
-    });
-
-    const isSupervisorOrLC = hasDirectRole || ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
-      (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
-    );
-    return { isSupervisorOrLC };
-  }, [values.roleId, roles, user, selectedUserProfile]);
-
-
-
-  const optionsMap = useMemo(() => ({
-    roles: roles
-      .filter((r: any) => !['admin', 'brac admin'].includes((r.label || r.title)?.toLowerCase() ?? ''))
-      .map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' })),
-    genders: genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name })),
-    provinces: provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
-    sites: formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name })),
-    organisations: organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name })),
-    positions: positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name })),
-    countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.externalId || c.externalId || '', label: c.metaInformation?.externalId || c.externalId || '' })).sort((a, b) => parseInt(a.value) - parseInt(b.value) || a.value.localeCompare(b.value)),
+  const optionsMap = useMemo(() => mapFiltersToOptionsMap({
+    roles,
+    genders,
+    provinces,
+    sites: formSites,
+    organisations,
+    positions,
+    countryCodes,
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
-
-
 
   const handleFieldChange = (name: string, value: string) => {
     setValues(prev => {
@@ -143,7 +116,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    const validationErrors = validateSchema(CREATE_USER_FORM_SCHEMA, values, flags);
+    const validationErrors = validateSchema(CREATE_USER_FORM_SCHEMA, values, optionsMap);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       showAlert('error', t('common.validationError', 'Please correct the errors in the form.'));
@@ -152,59 +125,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const roleId = values.roleId;
-      const selectedRole = roles.find((r: any) => r.id.toString() === roleId);
-      const roleTitle = selectedRole?.title || roleId;
-
-      const payload: any = {
-        name: values.name?.trim(),
-        username: values.username?.trim(),
-        email: values.email?.trim(),
-        roles: roleTitle,
-      };
-
-      if (values.dob && values.dob.trim()) {
-        payload.dob = values.dob.replace(/[\/\-]/g, '');
-      }
-      if (values.gender && values.gender.trim()) {
-        payload.gender = values.gender;
-      }
-      if (values.siteId && values.siteId.trim()) {
-        payload.site = values.siteId;
-      }
-      if (values.provinceId && values.provinceId.trim()) {
-        payload.province = values.provinceId;
-      }
-      if (values.phoneNumber && values.phoneNumber.trim()) {
-        payload.phone = values.phoneNumber.trim();
-        if (values.countryCode) {
-          payload.phone_code = values.countryCode.replace('+', '');
-        }
-      }
-      if (values.alternativePhone && values.alternativePhone.trim()) {
-        payload.alternative_phone = values.alternativePhone.trim();
-        if (values.alternativePhoneCode) {
-          payload.alternative_phone_code = values.alternativePhoneCode.replace('+', '');
-        }
-      }
-      if (values.location && values.location.trim()) {
-        payload.location = values.location;
-      }
-      if (values.nationalId && values.nationalId.trim()) {
-        payload.national_id = Number(values.nationalId);
-      }
-
-      if (flags.isSupervisorOrLC) {
-        if (values.organisationId && values.organisationId.trim()) {
-          payload.organisation = values.organisationId;
-        }
-        if (values.positionId && values.positionId.trim()) {
-          payload.position = values.positionId;
-        }
-        if (values.employee_id && values.employee_id.trim()) {
-          payload.employee_id = values.employee_id;
-        }
-      }
+      const payload = mapFormValuesToPayload(values, roles);
 
       await updateOrgAdminUser(user!.id, payload);
       showAlert('success', t('admin.users.edit.success', 'User updated successfully.'));
@@ -247,8 +168,8 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
               errors={errors}
               onFieldChange={handleFieldChange}
               optionsMap={optionsMap}
-              flags={flags}
               disabled={isSubmitting}
+              isEditMode={true}
               isMobile={isMobile}
               t={t}
             />

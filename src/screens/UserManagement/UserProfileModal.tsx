@@ -4,9 +4,9 @@ import { LucideIcon } from '@ui/index';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
-import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
-import { getSitesByProvince } from '../../services/usersService';
 import { getUserProfile } from '../../services/authenticationService';
+import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
+import { mapFiltersToOptionsMap } from './CreateUserForm';
 import type { AdminUserManagementData } from '@app-types/Users';
 import { RoleBadge } from './UsersTableConfig';
 
@@ -53,19 +53,19 @@ export const mapUserToFormValues = (
        if (val.value === 'other') {
          return val.label != null ? String(val.label) : '';
        }
-       const res = val.value ?? val.id ?? val._id ?? val.label ?? val.name;
+       const res = val.metaInformation?.name ?? val.name ?? val.label ?? val.value ?? val.id ?? val._id;
        return res != null ? String(res) : '';
      }
      return String(val);
    };
- 
-   const getFieldVal = (fieldName: string): string => {
+
+   const getRawFieldVal = (fieldName: string): any => {
      const keys = [fieldName];
      const snake = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
      const camel = fieldName.replace(/_([a-z])/g, (_, g) => g.toUpperCase());
      if (!keys.includes(snake)) keys.push(snake);
      if (!keys.includes(camel)) keys.push(camel);
- 
+
      if (fieldName === 'countryCode') {
        keys.push('phone_code', 'phoneCode');
      }
@@ -75,128 +75,115 @@ export const mapUserToFormValues = (
      if (fieldName === 'alternativePhone') {
        keys.push('alternative_phone', 'alternativePhone', 'alternate_phone', 'alternatePhone');
      }
-     if (fieldName === 'organisationId') {
-       keys.push('organisation', 'organization', 'organisations', 'organizations');
+     if (fieldName === 'organisationId' || fieldName === 'organisation') {
+       keys.push('organisation', 'organization', 'organisations', 'organizations', 'organisationId');
      }
-      if (fieldName === 'employee_id' || fieldName === 'employeeId') {
-        keys.push('employee_id', 'employeeId', 'emp_id', 'empId');
-      }
+     if (fieldName === 'positionId' || fieldName === 'position') {
+       keys.push('position', 'positionId', 'positions');
+     }
+     if (fieldName === 'provinceId' || fieldName === 'province') {
+       keys.push('province', 'provinceId', 'provinces');
+     }
+     if (fieldName === 'siteId' || fieldName === 'site') {
+       keys.push('site', 'siteId', 'sites');
+     }
+     if (fieldName === 'employee_id' || fieldName === 'employeeId') {
+       keys.push('employee_id', 'employeeId', 'emp_id', 'empId');
+     }
      if (fieldName === 'address' || fieldName === 'location') {
        keys.push('address', 'location');
      }
 
-    const targets = [
-      userProfile?.userDetails,
-      userProfile?.userDetails?.meta,
-      userProfile?.userDetails?.extra,
-      userProfile,
-      userProfile?.meta,
-      userProfile?.extra,
-      userProfile?.custom_entity_text,
-      (user as any)?.userDetails,
-      (user as any)?.userDetails?.meta,
-      (user as any)?.userDetails?.extra,
-      user,
-      (user as any)?.meta,
-      (user as any)?.extra,
-      (user as any)?.custom_entity_text,
-    ];
+     const targets = [
+       userProfile?.userDetails,
+       userProfile?.userDetails?.meta,
+       userProfile?.userDetails?.extra,
+       userProfile,
+       userProfile?.meta,
+       userProfile?.extra,
+       userProfile?.custom_entity_text,
+       (user as any)?.userDetails,
+       (user as any)?.userDetails?.meta,
+       (user as any)?.userDetails?.extra,
+       user,
+       (user as any)?.meta,
+       (user as any)?.extra,
+       (user as any)?.custom_entity_text,
+     ];
 
-    for (const target of targets) {
-      if (!target) continue;
-      for (const key of keys) {
-        if (target[key] !== undefined && target[key] !== null) {
-          const resolved = getValueFromObj(target[key]);
-          if (resolved !== null && resolved !== undefined && resolved !== '') {
-            return resolved;
-          }
-        }
-      }
-    }
-    return '';
-  };
+     for (const target of targets) {
+       if (!target) continue;
+       for (const key of keys) {
+         if (target[key] !== undefined && target[key] !== null && target[key] !== '') {
+           return target[key];
+         }
+       }
+     }
+     return null;
+   };
 
-  const formatPhoneCode = (code: string) => {
-    if (!code) return '+27';
-    const clean = code.trim();
-    if (!clean) return '+27';
-    return clean.startsWith('+') ? clean : `+${clean}`;
-  };
+   const getFieldVal = (fieldName: string): string => {
+     const raw = getRawFieldVal(fieldName);
+     return getValueFromObj(raw) || '';
+   };
 
-  const name = getFieldVal('name') || user.name || '';
-  const email = getFieldVal('email') || user.email || '';
-  const username = getFieldVal('username') || (user as any)?.username || '';
-  const nationalId = getFieldVal('nationalId');
-  const countryCode = formatPhoneCode(getFieldVal('countryCode'));
-  const phoneNumber = getFieldVal('phoneNumber') || getFieldVal('phone');
-  const alternativePhoneCode = formatPhoneCode(getFieldVal('alternativePhoneCode'));
-  const alternativePhone = getFieldVal('alternativePhone');
-  const gender = getFieldVal('gender');
-  const rawDob = getFieldVal('dob');
-  let dob = '';
-  if (rawDob) {
-    const cleanDob = String(rawDob).trim();
-    if (/^\d{8}$/.test(cleanDob)) {
-      dob = `${cleanDob.substring(0, 4)}_${cleanDob.substring(4, 6)}_${cleanDob.substring(6, 8)}`;
-    } else if (/^\d{6}$/.test(cleanDob)) {
-      const d1 = parseInt(cleanDob.substring(0, 2), 10);
-      const d2 = parseInt(cleanDob.substring(2, 4), 10);
-      const d3 = parseInt(cleanDob.substring(4, 6), 10);
-      if (d1 <= 31 && d2 <= 12) {
-        const year = d3 > 50 ? `19${cleanDob.substring(4, 6)}` : `20${cleanDob.substring(4, 6)}`;
-        dob = `${year}_${cleanDob.substring(2, 4)}_${cleanDob.substring(0, 2)}`;
-      } else {
-        const year = d1 > 50 ? `19${cleanDob.substring(0, 2)}` : `20${cleanDob.substring(0, 2)}`;
-        dob = `${year}_${cleanDob.substring(2, 4)}_${cleanDob.substring(4, 6)}`;
-      }
-    } else if (/^\d{4}[\-\/_]\d{2}[\-\/_]\d{2}$/.test(cleanDob)) {
-      dob = cleanDob.replace(/[\-\/]/g, '_');
-    } else if (/^\d{2}[\-\/_]\d{2}[\-\/_]\d{4}$/.test(cleanDob)) {
-      const parts = cleanDob.split(/[\-\/_]/);
-      dob = `${parts[2]}_${parts[1]}_${parts[0]}`;
-    } else if (/^\d{2}[\-\/_]\d{2}[\-\/_]\d{2}$/.test(cleanDob)) {
-      const parts = cleanDob.split(/[\-\/_]/);
-      const yVal = parseInt(parts[2], 10);
-      const year = yVal > 50 ? `19${parts[2]}` : `20${parts[2]}`;
-      dob = `${year}_${parts[1]}_${parts[0]}`;
-    } else {
-      dob = cleanDob.replace(/[\-\/]/g, '_');
-    }
-  }
-  const employee_id = getFieldVal('employee_id');
-  let organisationId = getFieldVal('organisationId');
-  if (!organisationId) {
-    const userOrgs = (user as any)?.user_organizations || (userProfile as any)?.user_organizations || [];
-    const org = userOrgs?.[0]?.organization || userOrgs?.[0]?.organisation;
-    if (org) {
-      organisationId = org._id || org.id || '';
-    }
-  }
-  const positionId = getFieldVal('positionId') || getFieldVal('position');
-  const provinceId = getFieldVal('provinceId') || getFieldVal('province');
-  const siteId = getFieldVal('siteId') || getFieldVal('site');
-  const location = getFieldVal('location') || getFieldVal('address');
+   const getFieldIdVal = (fieldName: string): string => {
+     const raw = getRawFieldVal(fieldName);
+     return getEntityId(raw) || '';
+   };
 
-  return {
-    name,
-    email,
-    username,
-    nationalId,
-    countryCode,
-    phoneNumber,
-    alternativePhoneCode,
-    alternativePhone,
-    roleId,
-    gender,
-    dob,
-    employee_id,
-    organisationId,
-    positionId,
-    provinceId,
-    siteId,
-    location,
-  };
-};
+   const formatPhoneCode = (code: string) => {
+     if (!code) return '+27';
+     const clean = code.trim();
+     if (!clean) return '+27';
+     return clean.startsWith('+') ? clean : `+${clean}`;
+   };
+
+   const name = getFieldVal('name') || user.name || '';
+   const email = getFieldVal('email') || user.email || '';
+   const username = getFieldVal('username') || (user as any)?.username || '';
+   const nationalId = getFieldVal('nationalId');
+   const countryCode = formatPhoneCode(getFieldVal('countryCode'));
+   const phoneNumber = getFieldVal('phoneNumber') || getFieldVal('phone');
+   const alternativePhoneCode = formatPhoneCode(getFieldVal('alternativePhoneCode'));
+   const alternativePhone = getFieldVal('alternativePhone');
+   const gender = getFieldIdVal('gender');
+   const dob = getFieldVal('dob');
+   
+   const employee_id = getFieldVal('employee_id');
+   let organisationId = getFieldIdVal('organisationId');
+   if (!organisationId) {
+     const userOrgs = (user as any)?.user_organizations || (userProfile as any)?.user_organizations || [];
+     const org = userOrgs?.[0]?.organization || userOrgs?.[0]?.organisation;
+     if (org) {
+       organisationId = getEntityId(org);
+     }
+   }
+   const positionId = getFieldIdVal('positionId');
+   const provinceId = getFieldIdVal('provinceId');
+   const siteId = getFieldIdVal('siteId');
+   const location = getFieldVal('location');
+
+   return {
+     name,
+     email,
+     username,
+     nationalId,
+     countryCode,
+     phoneNumber,
+     alternativePhoneCode,
+     alternativePhone,
+     roleId,
+     gender,
+     dob,
+     employee_id,
+     organisationId,
+     positionId,
+     provinceId,
+     siteId,
+     location,
+   };
+ };
 
 export const extractEntityOption = (entityObj: any) => {
   if (!entityObj) return null;
@@ -205,11 +192,14 @@ export const extractEntityOption = (entityObj: any) => {
     entityObj = entityObj[0];
   }
   if (typeof entityObj === 'object') {
-    const val = entityObj._id || entityObj.id || entityObj.value || '';
     const lbl = entityObj.metaInformation?.name || entityObj.name || entityObj.label || '';
-    if (val && lbl) {
-      return { value: String(val), label: String(lbl) };
+    const val = entityObj._id || entityObj.id || entityObj.value || lbl;
+    if (val || lbl) {
+      return { value: String(val || lbl), label: String(lbl || val) };
     }
+  }
+  if (typeof entityObj === 'string') {
+    return { value: entityObj, label: entityObj };
   }
   return null;
 };
@@ -318,23 +308,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
 
-  const { roles, provinces, genders, organisations, positions, countryCodes } = useUserManagementFilters({});
-  const [formSites, setFormSites] = useState<any[]>([]);
-
   useEffect(() => {
     if (isOpen && user?.id) {
       setProfileLoading(true);
       getUserProfile(user.id)
         .then(profile => {
           setSelectedUserProfile(profile);
-          const provId = getEntityId(profile?.province || (user as any)?.province);
-          if (provId) {
-            getSitesByProvince({ provinceId: provId, page: 1, limit: 100 })
-              .then(res => setFormSites(res.result?.data || []))
-              .catch(() => setFormSites([]));
-          } else {
-            setFormSites([]);
-          }
         })
         .catch(err => {
           console.error('Failed to load user profile:', err);
@@ -344,7 +323,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         });
     } else {
       setSelectedUserProfile(null);
-      setFormSites([]);
     }
   }, [isOpen, user]);
 
@@ -352,79 +330,58 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     return mapUserToFormValues(user, selectedUserProfile);
   }, [user, selectedUserProfile]);
 
-  const flags = useMemo(() => {
-    const roleId = values.roleId;
-    const selRole = roles.find((r: any) => r.id.toString() === roleId);
-    const roleTitle = (selRole?.title?.toLowerCase() || '');
-    const roleLabel = (selRole?.label?.toLowerCase() || '');
-
-    const userOrgs = (user as any)?.user_organizations || (selectedUserProfile as any)?.user_organizations || [];
-    const directRoles = userOrgs?.[0]?.roles || [];
-    const hasDirectRole = directRoles.some((r: any) => {
-      const title = (r?.role?.title || '').toLowerCase();
-      const label = (r?.role?.label || '').toLowerCase();
-      return ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
-        (k: string) => title.includes(k) || label.includes(k)
-      );
-    });
-
-    const isSupervisorOrLC = hasDirectRole || ['supervisor', 'org_admin', 'lc', 'linkage champion'].some(
-      (k: string) => roleTitle.includes(k) || roleLabel.includes(k)
-    );
-    return { isSupervisorOrLC };
-  }, [values.roleId, roles, user, selectedUserProfile]);
-
-  const profileOptions = useMemo(() => {
-    const opts: Record<string, { value: string; label: string }[]> = {
-      roles: [],
-      genders: [],
-      provinces: [],
-      sites: [],
-      organisations: [],
-      positions: [],
-    };
-    if (selectedUserProfile) {
-      const profile = selectedUserProfile.userDetails || selectedUserProfile;
-      const gOpt = extractEntityOption(profile.gender);
-      if (gOpt) opts.genders.push(gOpt);
-
-      const pOpt = extractEntityOption(profile.province || (user as any)?.province);
-      if (pOpt) opts.provinces.push(pOpt);
-
-      const sOpt = extractEntityOption(profile.site || (user as any)?.site);
-      if (sOpt) opts.sites.push(sOpt);
-
-      const oOpt = extractEntityOption(profile.organisation || profile.organizations);
-      if (oOpt) opts.organisations.push(oOpt);
-
-      const posOpt = extractEntityOption(profile.position);
-      if (posOpt) opts.positions.push(posOpt);
-    }
-    return opts;
-  }, [selectedUserProfile, user]);
+  const {
+    roles,
+    genders,
+    provinces,
+    sites,
+    organisations,
+    positions,
+    countryCodes,
+  } = useUserManagementFilters({});
 
   const optionsMap = useMemo(() => {
-    const mergeOptions = (sourceKey: string, fetchedList: { value: string; label: string }[]) => {
-      const profileList = profileOptions[sourceKey] || [];
-      const combined = [...profileList, ...fetchedList];
-      const seen = new Set<string>();
-      return combined.filter(o => {
-        if (!o.value || seen.has(o.value)) return false;
-        seen.add(o.value);
-        return true;
-      });
+    const baseMap = mapFiltersToOptionsMap({
+      roles,
+      genders,
+      provinces,
+      sites,
+      organisations,
+      positions,
+      countryCodes,
+    });
+
+    const getSingleOption = (obj: any) => {
+      const opt = extractEntityOption(obj);
+      return opt ? [opt] : [];
     };
 
+    const profile = selectedUserProfile?.userDetails || selectedUserProfile || {};
+    
+    const orgRoles = (user as any)?.user_organizations?.[0]?.roles || 
+                     (user as any)?.user_organizations?.[0]?.organization?.roles || 
+                     (selectedUserProfile as any)?.user_organizations?.[0]?.roles || 
+                     (selectedUserProfile as any)?.user_organizations?.[0]?.organization?.roles || [];
+    const roleLabel = orgRoles[0]?.role?.label || 
+                      orgRoles[0]?.role?.title || 
+                      (user as any)?.role || 
+                      (selectedUserProfile as any)?.role?.label || 
+                      (selectedUserProfile as any)?.role?.title || 
+                      (selectedUserProfile as any)?.role || 
+                      '';
+
+    const roleVal = values.roleId || '';
+
     return {
-      roles: mergeOptions('roles', roles.map((r: any) => ({ value: r.id.toString(), label: r.label || r.title || '' }))),
-      genders: mergeOptions('genders', genders.map((g: any) => ({ value: g._id, label: g.metaInformation?.name || g.name }))),
-      provinces: mergeOptions('provinces', provinces.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name }))),
-      sites: mergeOptions('sites', formSites.map((s: any) => ({ value: s._id, label: s.metaInformation?.name || s.name }))),
-      organisations: mergeOptions('organisations', organisations.map((o: any) => ({ value: o._id, label: o.metaInformation?.name || o.name }))),
-      positions: mergeOptions('positions', positions.map((p: any) => ({ value: p._id, label: p.metaInformation?.name || p.name }))),
-      countryCodes: (countryCodes || []).map((c: any) => ({ value: c.metaInformation?.name || c.name || '', label: c.metaInformation?.name || c.name || '' })),
+      ...baseMap,
+      roles: roleVal && roleLabel ? [{ value: roleVal, label: roleLabel }] : baseMap.roles,
+      genders: baseMap.genders.length ? baseMap.genders : getSingleOption(profile.gender || (user as any)?.gender),
+      provinces: baseMap.provinces.length ? baseMap.provinces : getSingleOption(profile.province || (user as any)?.province),
+      sites: baseMap.sites.length ? baseMap.sites : getSingleOption(profile.site || (user as any)?.site),
+      organisations: baseMap.organisations.length ? baseMap.organisations : getSingleOption(profile.organisation || profile.organizations),
+      positions: baseMap.positions.length ? baseMap.positions : getSingleOption(profile.position),
     };
-  }, [roles, genders, provinces, formSites, organisations, positions, countryCodes, profileOptions]);
+  }, [roles, genders, provinces, sites, organisations, positions, countryCodes, selectedUserProfile, user, values.roleId]);
 
   return (
     <Modal
@@ -456,7 +413,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               errors={{}}
               onFieldChange={() => {}}
               optionsMap={optionsMap}
-              flags={flags}
               viewMode={true}
               isMobile={isMobile}
               t={t}

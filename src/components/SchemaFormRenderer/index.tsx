@@ -27,6 +27,7 @@ import Select from '@components/ui/Inputs/Select';
 import DatePicker from '@components/ui/Inputs/DatePicker';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { styles } from '../../screens/UserManagement/Styles';
+import { FORM_FIELD_TYPES } from '@constants/CREATE_USER_FORM_SCHEMA';
 import type { FormSection, FormField, ValidationRule } from '@constants/CREATE_USER_FORM_SCHEMA';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
@@ -99,12 +100,12 @@ export interface SchemaFormRendererProps {
   onFieldChange: (name: string, value: string) => void;
   /** Resolved options for every optionsSource key referenced in the schema */
   optionsMap: OptionsMap;
-  /** Runtime boolean flags referenced by visibleWhen.flag */
-  flags: FlagsMap;
   /** Global disabled state (e.g. while form is submitting) */
   disabled?: boolean;
   /** When true, renders all fields as plain read-only text instead of inputs */
   viewMode?: boolean;
+  /** When true, marks roleId as non-editable */
+  isEditMode?: boolean;
   /** Layout flag — stacks fields vertically on mobile */
   isMobile?: boolean;
   /** Translation function */
@@ -125,7 +126,7 @@ function validateField(
   flags: FlagsMap,
   errors: Record<string, string>
 ): void {
-  if (field.type === 'group' && Array.isArray(field.fields)) {
+  if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
     for (const subField of field.fields) {
       validateField(subField, values, flags, errors);
     }
@@ -224,14 +225,22 @@ function applyRule(
 export function validateSchema(
   schema: FormSection[],
   values: Record<string, string>,
-  flags: FlagsMap
+  optionsMap: OptionsMap
 ): Record<string, string> {
+  const roleId = values.roleId || '';
+  const selectedRole = optionsMap.roles?.find((r: any) => r.value === roleId);
+  const roleLabel = (selectedRole?.label || '').toLowerCase();
+  const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
+    (k: string) => roleLabel.includes(k)
+  );
+  const flags = { isSupervisorOrLC };
+
   const errors: Record<string, string> = {};
 
   for (const section of schema) {
     for (const row of section.rows) {
       // Skip hidden rows
-      if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag]) continue;
+      if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag as keyof typeof flags]) continue;
 
       for (const field of row.fields) {
         validateField(field, values, flags, errors);
@@ -261,6 +270,7 @@ interface FieldRendererProps {
   /** Forwarded ref for the first autoFocus field */
   autoFocusRef?: React.RefObject<any>;
   isNested?: boolean;
+  isEditMode?: boolean;
 }
 
 const FieldRenderer: React.FC<FieldRendererProps> = ({
@@ -278,7 +288,9 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   toggleVisibilityGroup,
   autoFocusRef,
   isNested = false,
+  isEditMode = false,
 }) => {
+  const isFieldDisabled = disabled || !!field.disabled || (isEditMode && field.name === 'roleId');
 
   useEffect(() => {
     if (field.type === 'select') {
@@ -307,7 +319,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }, [field.type, field.name, field.defaultValue, field.optionsSource, optionsMap[field.optionsSource || ''], value, onChange]);
 
   // ── Group ───────────────────────────────────────────────────────────────────
-  if (field.type === 'group') {
+  if (field.type === FORM_FIELD_TYPES.GROUP) {
     const subFields = field.fields || [];
     if (subFields.length === 0) return null;
 
@@ -334,7 +346,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               error={subField.name ? errors[subField.name] : undefined}
               errors={errors}
               onChange={onChange}
-              disabled={disabled || subField.disabled}
+              disabled={disabled || !!subField.disabled}
               optionsMap={optionsMap}
               flags={flags}
               values={values}
@@ -350,7 +362,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     );
   }
   // ── Note ────────────────────────────────────────────────────────────────────
-  if (field.type === 'note') {
+  if (field.type === FORM_FIELD_TYPES.NOTE) {
     return (
       <HStack
         space="sm"
@@ -375,12 +387,12 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   const placeholder = field.placeholder?.fallback ?? '';
 
   // ── Select ──────────────────────────────────────────────────────────────────
-  if (field.type === 'select') {
+  if (field.type === FORM_FIELD_TYPES.SELECT) {
     const rawOptions = field.optionsSource ? (optionsMap[field.optionsSource] ?? []) : [];
     const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
 
     // Compute disabled-when condition
-    let isDisabled = disabled || field.disabled;
+    let isDisabled = isFieldDisabled;
     if (!isDisabled && field.disabledWhen?.empty) {
       const depVal = (values[field.disabledWhen.field] ?? '').trim();
       if (!depVal) isDisabled = true;
@@ -409,7 +421,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Date ────────────────────────────────────────────────────────────────────
-  if (field.type === 'date') {
+  if (field.type === FORM_FIELD_TYPES.DATE) {
     // Internal display value: stored as YYYY_MM_DD, displayed as YYYY-MM-DD
     const displayValue = value ? value.replace(/_/g, '-') : '';
 
@@ -432,7 +444,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Password ─────────────────────────────────────────────────────────────────
-  if (field.type === 'password') {
+  if (field.type === FORM_FIELD_TYPES.PASSWORD) {
     const group = field.visibilityToggleGroup ?? field.name ?? '';
     const isVisible = visibilityGroups[group] ?? false;
 
@@ -470,7 +482,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Textarea ────────────────────────────────────────────────────────────────
-  if (field.type === 'textarea') {
+  if (field.type === FORM_FIELD_TYPES.TEXTAREA) {
     const keyboardType = (field.inputProps?.keyboardType as any) ?? 'default';
     const autoCapitalize = (field.inputProps?.autoCapitalize as any) ?? 'sentences';
     const maxLength = field.inputProps?.maxLength;
@@ -505,7 +517,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     <Input
       {...(isNested ? {} : (styles.createUserFormInput as any))}
       isInvalid={!!error}
-      isDisabled={disabled || field.disabled}
+      isDisabled={isFieldDisabled}
       isReadOnly={field.isReadOnly}
       alignItems={field.icon ? 'center' : undefined}
       {...(isNested ? {
@@ -541,13 +553,23 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   errors,
   onFieldChange,
   optionsMap,
-  flags,
   disabled = false,
   viewMode = false,
+  isEditMode = false,
   isMobile = false,
   t,
   firstNameRef,
 }) => {
+  const flags = useMemo(() => {
+    const roleId = values.roleId || '';
+    const selectedRole = optionsMap.roles?.find((r: any) => r.value === roleId);
+    const roleLabel = (selectedRole?.label || '').toLowerCase();
+    const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
+      (k: string) => roleLabel.includes(k)
+    );
+    return { isSupervisorOrLC };
+  }, [values.roleId, optionsMap.roles]);
+
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<Record<string, boolean>>({});
 
@@ -578,7 +600,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
             const visibleFields: FormField[] = [];
             row.fields.forEach(f => {
               if (f.visibleWhen?.flag && !flags[f.visibleWhen.flag]) return;
-              if (viewMode && f.type === 'group' && f.fields) {
+              if (viewMode && f.type === FORM_FIELD_TYPES.GROUP && f.fields) {
                 visibleFields.push(...f.fields);
               } else {
                 visibleFields.push(f);
@@ -601,7 +623,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
                   // ── viewMode: render as plain text ──
                   if (viewMode) {
-                    if (field.type === 'note') return null;
+                    if (field.type === FORM_FIELD_TYPES.NOTE) return null;
 
                     let displayValue = fieldValue || '-';
                     if (field.optionsSource) {
@@ -626,7 +648,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                   return (
                     <VStack key={field.name || field.label.key} space="xs" flex={isMultiField ? 1 : undefined} width={!isMultiField ? '100%' : undefined}>
                       {/* Field label */}
-                      {field.type !== 'note' && (
+                      {field.type !== FORM_FIELD_TYPES.NOTE && (
                         <Text {...TYPOGRAPHY.caption} color="$textForeground" fontWeight="$bold">
                           {t(`admin.users.createUser.${field.label.key}`, field.label.fallback)}
                           {field.required ? ' *' : ''}
@@ -648,6 +670,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                         visibilityGroups={visibilityGroups}
                         toggleVisibilityGroup={toggleVisibilityGroup}
                         autoFocusRef={firstNameRef}
+                        isEditMode={isEditMode}
                       />
 
                       {/* Field error */}

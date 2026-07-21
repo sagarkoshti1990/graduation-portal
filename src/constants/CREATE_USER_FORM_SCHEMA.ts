@@ -32,9 +32,23 @@ export interface DisabledWhenCondition {
   empty: boolean;
 }
 
+export const FORM_FIELD_TYPES = {
+  TEXT: 'text',
+  EMAIL: 'email',
+  TEL: 'tel',
+  PASSWORD: 'password',
+  SELECT: 'select',
+  DATE: 'date',
+  TEXTAREA: 'textarea',
+  NOTE: 'note',
+  GROUP: 'group',
+} as const;
+
+export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPES];
+
 export interface FormField {
   name?: string;
-  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea' | 'note' | 'group';
+  type: FormFieldType;
   required: boolean;
   label: { key: string; fallback: string };
   placeholder?: { key?: string; fallback: string };
