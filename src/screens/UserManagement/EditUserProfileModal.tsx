@@ -21,6 +21,7 @@ interface EditUserProfileModalProps {
   user: AdminUserManagementData | null;
   isMobile: boolean;
   t: any;
+  mode?: 'edit' | 'preview';
 }
 
 export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
@@ -30,6 +31,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
   user,
   isMobile,
   t,
+  mode = 'edit',
 }) => {
   const { showAlert } = useAlert();
   const [profileLoading, setProfileLoading] = useState(false);
@@ -169,7 +171,7 @@ export const EditUserProfileModal: React.FC<EditUserProfileModalProps> = ({
               onFieldChange={handleFieldChange}
               optionsMap={optionsMap}
               disabled={isSubmitting}
-              isEditMode={true}
+              mode={mode}
               isMobile={isMobile}
               t={t}
             />

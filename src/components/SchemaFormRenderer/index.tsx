@@ -103,7 +103,7 @@ export interface SchemaFormRendererProps {
   /** Global disabled state (e.g. while form is submitting) */
   disabled?: boolean;
   /** When true, renders all fields as plain read-only text instead of inputs */
-  viewMode?: boolean;
+  mode?: string;
   /** When true, marks roleId as non-editable */
   isEditMode?: boolean;
   /** Layout flag — stacks fields vertically on mobile */
@@ -293,7 +293,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   const isFieldDisabled = disabled || !!field.disabled || (isEditMode && field.name === 'roleId');
 
   useEffect(() => {
-    if (field.type === 'select') {
+    if (field.type === FORM_FIELD_TYPES.SELECT) {
       const rawOptions = field.optionsSource ? (optionsMap[field.optionsSource] ?? []) : [];
       if (rawOptions.length > 0) {
         const optionValues = rawOptions.map((o: any) => o.value);
@@ -554,10 +554,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   onFieldChange,
   optionsMap,
   disabled = false,
-  viewMode = false,
-  isEditMode = false,
   isMobile = false,
   t,
+  mode = "edit",
   firstNameRef,
 }) => {
   const flags = useMemo(() => {
@@ -600,7 +599,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
             const visibleFields: FormField[] = [];
             row.fields.forEach(f => {
               if (f.visibleWhen?.flag && !flags[f.visibleWhen.flag]) return;
-              if (viewMode && f.type === FORM_FIELD_TYPES.GROUP && f.fields) {
+              if (mode === "preview" && f.type === FORM_FIELD_TYPES.GROUP && f.fields) {
                 visibleFields.push(...f.fields);
               } else {
                 visibleFields.push(f);
@@ -622,7 +621,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                   const fieldError = field.name ? errors[field.name] : undefined;
 
                   // ── viewMode: render as plain text ──
-                  if (viewMode) {
+                  if (mode === "preview") {
                     if (field.type === FORM_FIELD_TYPES.NOTE) return null;
 
                     let displayValue = fieldValue || '-';
@@ -670,7 +669,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                         visibilityGroups={visibilityGroups}
                         toggleVisibilityGroup={toggleVisibilityGroup}
                         autoFocusRef={firstNameRef}
-                        isEditMode={isEditMode}
                       />
 
                       {/* Field error */}

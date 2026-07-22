@@ -723,6 +723,7 @@ const UserManagementScreen = () => {
         user={profileUser}
         isMobile={isMobile}
         t={t}
+        mode="preview"
       />
 
       {/* Reset Password Modal */}
@@ -904,6 +905,7 @@ const UserManagementScreen = () => {
         user={editUser}
         isMobile={isMobile}
         t={t}
+        mode="edit"
       />
 
       {/* Create New User Modal */}

@@ -296,6 +296,7 @@ interface UserProfileModalProps {
   user: AdminUserManagementData | null;
   isMobile: boolean;
   t: any;
+  mode?: "edit" | "preview";
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -304,6 +305,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   user,
   isMobile,
   t,
+  mode = "preview",
 }) => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(null);
@@ -429,7 +431,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               errors={{}}
               onFieldChange={() => {}}
               optionsMap={optionsMap}
-              viewMode={true}
+              mode={mode}
               isMobile={isMobile}
               t={t}
             />
