@@ -378,7 +378,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       genders: baseMap.genders.length ? baseMap.genders : getSingleOption(profile.gender || (user as any)?.gender),
       provinces: baseMap.provinces.length ? baseMap.provinces : getSingleOption(profile.province || (user as any)?.province),
       sites: baseMap.sites.length ? baseMap.sites : getSingleOption(profile.site || (user as any)?.site),
-      organisations: baseMap.organisations.length ? baseMap.organisations : getSingleOption(profile.organisation || profile.organizations),
+      organisations:
+      baseMap.organisations.length
+        ? [
+            ...baseMap.organisations,
+            ...getSingleOption(
+              (user as any)?.user_organizations?.[0]?.organization ||
+              (selectedUserProfile as any)?.user_organizations?.[0]?.organization
+            ).filter(
+              (opt: any) =>
+                !baseMap.organisations.some((o: any) => o.value === opt.value)
+            ),
+          ]
+        : getSingleOption(
+            (user as any)?.user_organizations?.[0]?.organization ||
+            (selectedUserProfile as any)?.user_organizations?.[0]?.organization
+          ),
+      // organisations: baseMap.organisations.length ? baseMap.organisations : getSingleOption(profile.organisation || profile.organizations),
       positions: baseMap.positions.length ? baseMap.positions : getSingleOption(profile.position),
     };
   }, [roles, genders, provinces, sites, organisations, positions, countryCodes, selectedUserProfile, user, values.roleId]);
