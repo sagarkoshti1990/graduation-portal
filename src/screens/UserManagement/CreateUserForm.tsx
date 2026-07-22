@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { VStack, HStack, Button, ButtonText, Modal } from '@ui';
+import { VStack, HStack, Button, ButtonText, Modal, Badge, BadgeText, Text, LucideIcon, } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CREATE_USER_FORM_SCHEMA, FormField, FORM_FIELD_TYPES } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
 import { createUser, getSitesByProvince } from '../../services/usersService';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
+import type { AdminUserManagementData } from '@app-types/Users';
 
 interface CreateUserFormProps {
   isOpen: boolean;
@@ -65,13 +66,13 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   }, [isOpen, initialValues]);
 
   const optionsMap = useMemo(() => mapFiltersToOptionsMap({
-    roles,
-    genders,
-    provinces,
-    sites: formSites,
-    organisations,
-    positions,
-    countryCodes,
+        roles,
+        genders,
+        provinces,
+        sites: formSites,
+        organisations,
+        positions,
+        countryCodes,
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
@@ -161,6 +162,119 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   );
 };
 
+interface ProfileModalHeaderProps {
+  selectedUserBase: AdminUserManagementData | null;
+  selectedUserProfile: any | null;
+  isMobile: boolean;
+  t: (key: string, fallback?: string) => string;
+}
+
+export const ProfileModalHeader: React.FC<ProfileModalHeaderProps> = ({
+  selectedUserBase,
+  selectedUserProfile,
+  isMobile,
+  t,
+}) => {
+  const roles =
+    (selectedUserBase as any)?.user_organizations?.[0]?.roles
+      ?.map((r: any) => r?.role?.label)
+      .filter(Boolean) || [];
+
+  const profileRole =
+    typeof (selectedUserProfile as any)?.role === 'string'
+      ? (selectedUserProfile as any)?.role
+      : (selectedUserProfile as any)?.role?.label;
+
+  const roleLabel =
+    roles[0] ||
+    profileRole ||
+    selectedUserBase?.role ||
+    t('admin.users.profileModal.defaultRole', 'User');
+
+  const badges = (
+    <HStack
+      space="sm"
+      alignItems="center"
+      justifyContent="flex-end"
+      flexShrink={0}
+    >
+      <Badge bg="$primary600" borderRadius="$md" px="$2" py="$0.5">
+        <BadgeText color="$white" fontSize="$xs" textTransform="none">
+          {roleLabel}
+        </BadgeText>
+      </Badge>
+
+      <Badge
+        bg={
+          String(
+            selectedUserBase?.status || selectedUserProfile?.status || '',
+          ).toLowerCase() === 'active'
+            ? '$success600'
+            : '$textMutedForeground'
+        }
+        borderRadius="$md"
+        px="$2"
+        py="$0.5"
+      >
+        <BadgeText color="$white" fontSize="$xs" textTransform="none">
+          {String(
+            selectedUserBase?.status || selectedUserProfile?.status || '',
+          ).toLowerCase() === 'active'
+            ? t('admin.filters.active', 'Active')
+            : t('admin.filters.deactivated', 'Deactivated')}
+        </BadgeText>
+      </Badge>
+    </HStack>
+  );
+
+  if (isMobile) {
+    return (
+      <VStack space="sm" flex={1} flexShrink={1}>
+        <VStack space="xs">
+          <Text {...TYPOGRAPHY.h1} color="$textForeground">
+            {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+          </Text>
+          <HStack space="xs" alignItems="center">
+            <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
+            <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+              {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+            </Text>
+          </HStack>
+        </VStack>
+        {badges}
+      </VStack>
+    );
+  }
+
+  return (
+    <HStack
+      alignItems="center"
+      justifyContent="space-between"
+      flex={1}
+      flexShrink={1}
+      pr="$8"
+      gap="$2"
+    >
+      <VStack space="xs" flex={1} flexShrink={1}>
+        <Text {...TYPOGRAPHY.h1} color="$textForeground" numberOfLines={1}>
+          {selectedUserProfile?.name || selectedUserBase?.name || '-'}
+        </Text>
+        <HStack space="xs" alignItems="center">
+          <LucideIcon name="Mail" size={14} color="$textMutedForeground" />
+          <Text
+            {...TYPOGRAPHY.bodySmall}
+            color="$textMutedForeground"
+            numberOfLines={1}
+          >
+            {selectedUserProfile?.email || selectedUserBase?.email || '-'}
+          </Text>
+        </HStack>
+      </VStack>
+      {badges}
+    </HStack>
+  );
+};
+
 export const mapFiltersToOptionsMap = (params: {
   roles: any[];
   genders: any[];
@@ -195,7 +309,7 @@ export const mapFiltersToOptionsMap = (params: {
 
 export const mapFormValuesToPayload = (
   values: Record<string, string>,
-  roles: any[]
+  roles: any[],
 ): any => {
   const roleId = values.roleId;
   const selectedRole = roles.find((r: any) => r.id.toString() === roleId);

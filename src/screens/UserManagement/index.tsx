@@ -15,7 +15,6 @@ import { usePlatform } from '@utils/platform';
 import { styles } from './Styles';
 import { CreateUserForm } from './CreateUserForm';
 import { UserProfileModal } from './UserProfileModal';
-import { EditUserProfileModal } from './EditUserProfileModal';
 import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
 import { getParticipants } from '../../services/assignUsersService';
 import type { 
@@ -129,8 +128,9 @@ const UserManagementScreen = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Modals state
-  const [profileUser, setProfileUser] = useState<AdminUserManagementData | null>(null);
-  const [editUser, setEditUser] = useState<AdminUserManagementData | null>(null);
+  
+  const [selectedUser, setSelectedUser] = useState<AdminUserManagementData | null>(null);
+  const [profileMode, setProfileMode] = useState<'preview' | 'edit'>('preview');
 
   // Reset Password modal state
   const [resetPasswordState, setResetPasswordState] = useState({
@@ -181,21 +181,18 @@ const UserManagementScreen = () => {
     }
   }, [closeDeactivateModal, deactivateState.user, showAlert, t]);
 
-  const openProfileModal = useCallback((user: AdminUserManagementData) => {
-    setProfileUser(user);
-  }, []);
+const openProfileModal = useCallback((user: AdminUserManagementData) => {
+  setProfileMode('preview');
+  setSelectedUser(user);
+}, []);
+const openEditUserModal = useCallback((user: AdminUserManagementData) => {
+  setProfileMode('edit');
+  setSelectedUser(user);
+}, []);
 
-  const closeProfileModal = useCallback(() => {
-    setProfileUser(null);
-  }, []);
-
-  const openEditUserModal = useCallback((user: AdminUserManagementData) => {
-    setEditUser(user);
-  }, []);
-
-  const closeEditUserModal = useCallback(() => {
-    setEditUser(null);
-  }, []);
+const closeProfileModal = useCallback(() => {
+  setSelectedUser(null);
+}, []);
 
   const openResetPasswordModal = useCallback((user: AdminUserManagementData) => {
     setResetPasswordState({
@@ -716,14 +713,18 @@ const UserManagementScreen = () => {
         </VStack>
       </Modal>
 
-      {/* View Profile Modal */}
+      {/* Edit User Modal */}
       <UserProfileModal
-        isOpen={!!profileUser}
+        isOpen={!!selectedUser}
         onClose={closeProfileModal}
-        user={profileUser}
+        onSuccess={() => {
+          closeProfileModal();
+          setRefetchKey(k => k + 1);
+        }}
+        user={selectedUser}
         isMobile={isMobile}
         t={t}
-        mode="preview"
+        mode={profileMode}
       />
 
       {/* Reset Password Modal */}
@@ -894,19 +895,6 @@ const UserManagementScreen = () => {
         </HStack>
       </Modal>
 
-      {/* Edit User Modal */}
-      <EditUserProfileModal
-        isOpen={!!editUser}
-        onClose={closeEditUserModal}
-        onSuccess={() => {
-          closeEditUserModal();
-          setRefetchKey(k => k + 1);
-        }}
-        user={editUser}
-        isMobile={isMobile}
-        t={t}
-        mode="edit"
-      />
 
       {/* Create New User Modal */}
       <CreateUserForm
