@@ -60,6 +60,11 @@
       "createUser": "Crear Usuario",
       "main": "Principal",
       "quickActions": "Acciones Rápidas"
+    },
+    "users": {
+      "profileModal": {
+        "editProfile": "Editar Perfil"
+      }
     }
   },
   "brand": {

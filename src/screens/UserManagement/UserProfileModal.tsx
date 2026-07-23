@@ -3,9 +3,9 @@ import { VStack, HStack, Button, ButtonText, Modal, Text } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
-import SchemaFormRenderer, { validateSchema,} from '@components/SchemaFormRenderer';
+import SchemaFormRenderer, { validateSchema, } from '@components/SchemaFormRenderer';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
-import {getSitesByProvince,updateOrgAdminUser,} from '../../services/usersService';
+import { getSitesByProvince, updateOrgAdminUser, } from '../../services/usersService';
 import { getUserProfile } from '../../services/authenticationService';
 import type { AdminUserManagementData } from '@app-types/Users';
 import { ProfileModalHeader } from './CreateUserForm';
@@ -39,6 +39,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(
     null,
   );
+  const [localMode, setLocalMode] = useState<'edit' | 'preview'>(mode);
+
+  useEffect(() => {
+    setLocalMode(mode);
+  }, [mode, isOpen]);
 
   const { roles, provinces, genders, organisations, positions, countryCodes } =
     useUserManagementFilters({});
@@ -104,13 +109,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         keys.push('phone_code', 'phoneCode');
       }
       if (fieldName === 'alternativePhoneCode') {
-       keys.push('alternative_phone_code', 'alternativePhoneCode', 'alternate_phone_code', 'alternatePhoneCode');
+        keys.push('alternative_phone_code', 'alternativePhoneCode', 'alternate_phone_code', 'alternatePhoneCode');
       }
       if (fieldName === 'alternativePhone') {
-       keys.push('alternative_phone', 'alternativePhone', 'alternate_phone', 'alternatePhone');
+        keys.push('alternative_phone', 'alternativePhone', 'alternate_phone', 'alternatePhone');
       }
       if (fieldName === 'organisationId' || fieldName === 'organisation') {
-       keys.push('organisation', 'organization', 'organisations', 'organizations', 'organisationId');
+        keys.push('organisation', 'organization', 'organisations', 'organizations', 'organisationId');
       }
       if (fieldName === 'positionId' || fieldName === 'position') {
         keys.push('position', 'positionId', 'positions');
@@ -148,7 +153,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       for (const target of targets) {
         if (!target) continue;
         for (const key of keys) {
-         if (target[key] !== undefined && target[key] !== null && target[key] !== '') {
+          if (target[key] !== undefined && target[key] !== null && target[key] !== '') {
             return target[key];
           }
         }
@@ -179,7 +184,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     const nationalId = getFieldVal('nationalId');
     const countryCode = formatPhoneCode(getFieldVal('countryCode'));
     const phoneNumber = getFieldVal('phoneNumber') || getFieldVal('phone');
-   const alternativePhoneCode = formatPhoneCode(getFieldVal('alternativePhoneCode'));
+    const alternativePhoneCode = formatPhoneCode(getFieldVal('alternativePhoneCode'));
     const alternativePhone = getFieldVal('alternativePhone');
     const gender = getFieldIdVal('gender');
     const dob = getFieldVal('dob');
@@ -228,7 +233,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         .then(profile => {
           //console.log('PROFILE API =>', profile);
           setSelectedUserProfile(profile);
-          
+
           const mapped = mapUserToFormValues(user, profile);
           //console.log('MAPPED VALUES =>', mapped);
           setValues(mapped);
@@ -256,6 +261,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       setFormSites([]);
       setErrors({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user]);
 
   const optionsMap = useMemo(
@@ -338,7 +344,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       showAlert(
         'error',
         error?.message ||
-          t('common.somethingWentWrong', 'Something went wrong'),
+        t('common.somethingWentWrong', 'Something went wrong'),
       );
     } finally {
       setIsSubmitting(false);
@@ -361,19 +367,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           t={t}
         />
       }
-      //   headerContent={
-      //   <VStack space="xs">
-      //     <Text {...TYPOGRAPHY.bodySmall}>
-      //       {selectedUserProfile?.firstName || ''}
-      //       {' '}
-      //       {selectedUserProfile?.lastName || ''}
-      //     </Text>
+    //   headerContent={
+    //   <VStack space="xs">
+    //     <Text {...TYPOGRAPHY.bodySmall}>
+    //       {selectedUserProfile?.firstName || ''}
+    //       {' '}
+    //       {selectedUserProfile?.lastName || ''}
+    //     </Text>
 
-      //     <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
-      //       {selectedUserProfile?.email || ''}
-      //     </Text>
-      //   </VStack>
-      // }
+    //     <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+    //       {selectedUserProfile?.email || ''}
+    //     </Text>
+    //   </VStack>
+    // }
     >
       <VStack space="md" width="100%">
         {/* Content */}
@@ -390,7 +396,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               onFieldChange={handleFieldChange}
               optionsMap={optionsMap}
               disabled={isSubmitting}
-              mode={mode}
+              mode={localMode}
               isMobile={isMobile}
               t={t}
             />
@@ -402,7 +408,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <Button variant={'outlineghost' as any} onPress={onClose} isDisabled={isSubmitting}>
             <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close', 'Close')}</ButtonText>
           </Button>
-          {!profileLoading && (
+          {!profileLoading && localMode === "preview" && (
+            <Button
+              variant="solid"
+              action="primary"
+              onPress={() => setLocalMode('edit')}
+            >
+              <ButtonText color="$white" {...TYPOGRAPHY.bodySmall}>
+                {t('admin.users.profileModal.editProfile', 'Edit Profile')}
+              </ButtonText>
+            </Button>
+          )}
+          {!profileLoading && localMode === "edit" && (
             <Button
               variant="solid"
               action="primary"

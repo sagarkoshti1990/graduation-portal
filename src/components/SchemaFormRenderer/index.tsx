@@ -12,7 +12,6 @@
  *     errors={errors}
  *     onFieldChange={handleChange}
  *     optionsMap={optionsMap}
- *     flags={flags}
  *     disabled={isSubmitting}
  *     isMobile={isMobile}
  *     t={t}
@@ -20,7 +19,7 @@
  *   />
  */
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { VStack, HStack, Text, Box, Input, InputField, Pressable, Textarea, TextareaInput } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -88,7 +87,6 @@ FastTextareaInput.displayName = 'SFR_FastTextareaInput';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type OptionsMap = Record<string, { value: string; label: string }[]>;
-export type FlagsMap = Record<string, boolean>;
 
 export interface SchemaFormRendererProps {
   schema: FormSection[];
@@ -104,8 +102,6 @@ export interface SchemaFormRendererProps {
   disabled?: boolean;
   /** When true, renders all fields as plain read-only text instead of inputs */
   mode?: string;
-  /** When true, marks roleId as non-editable */
-  isEditMode?: boolean;
   /** Layout flag — stacks fields vertically on mobile */
   isMobile?: boolean;
   /** Translation function */
@@ -117,18 +113,38 @@ export interface SchemaFormRendererProps {
 // ─── Validation Engine ────────────────────────────────────────────────────────
 
 /**
+ * Helper to check visibility of a field or row based on schema rules.
+ */
+function isVisible(
+  visibleWhen: { flag: string } | undefined,
+  values: Record<string, string>,
+  optionsMap: OptionsMap
+): boolean {
+  if (!visibleWhen?.flag) return true;
+  if (visibleWhen.flag === 'isSupervisorOrLC') {
+    const roleId = values.roleId || '';
+    const selectedRole = optionsMap.roles?.find((r: any) => r.value === roleId);
+    const roleLabel = (selectedRole?.label || '').toLowerCase();
+    return ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
+      (k: string) => roleLabel.includes(k)
+    );
+  }
+  return true;
+}
+
+/**
  * Runs all validation rules for a single field recursively (supporting group fields).
  * Populates errors object.
  */
 function validateField(
   field: FormField,
   values: Record<string, string>,
-  flags: FlagsMap,
+  optionsMap: OptionsMap,
   errors: Record<string, string>
 ): void {
   if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
     for (const subField of field.fields) {
-      validateField(subField, values, flags, errors);
+      validateField(subField, values, optionsMap, errors);
     }
     return;
   }
@@ -136,7 +152,7 @@ function validateField(
   if (!field.name) return;
 
   // Skip invisible fields entirely
-  if (field.visibleWhen?.flag && !flags[field.visibleWhen.flag]) {
+  if (!isVisible(field.visibleWhen, values, optionsMap)) {
     return;
   }
 
@@ -227,23 +243,15 @@ export function validateSchema(
   values: Record<string, string>,
   optionsMap: OptionsMap
 ): Record<string, string> {
-  const roleId = values.roleId || '';
-  const selectedRole = optionsMap.roles?.find((r: any) => r.value === roleId);
-  const roleLabel = (selectedRole?.label || '').toLowerCase();
-  const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
-    (k: string) => roleLabel.includes(k)
-  );
-  const flags = { isSupervisorOrLC };
-
   const errors: Record<string, string> = {};
 
   for (const section of schema) {
     for (const row of section.rows) {
       // Skip hidden rows
-      if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag as keyof typeof flags]) continue;
+      if (!isVisible(row.visibleWhen, values, optionsMap)) continue;
 
       for (const field of row.fields) {
-        validateField(field, values, flags, errors);
+        validateField(field, values, optionsMap, errors);
       }
     }
   }
@@ -261,7 +269,6 @@ interface FieldRendererProps {
   onChange: (name: string, value: string) => void;
   disabled: boolean;
   optionsMap: OptionsMap;
-  flags: FlagsMap;
   values: Record<string, string>;
   t: (key: string, fallback?: string) => string;
   /** Shared visibility state for password toggle groups */
@@ -281,7 +288,6 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   onChange,
   disabled,
   optionsMap,
-  flags,
   values,
   t,
   visibilityGroups,
@@ -348,7 +354,6 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               onChange={onChange}
               disabled={disabled || !!subField.disabled}
               optionsMap={optionsMap}
-              flags={flags}
               values={values}
               t={t}
               visibilityGroups={visibilityGroups}
@@ -559,16 +564,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   mode = "edit",
   firstNameRef,
 }) => {
-  const flags = useMemo(() => {
-    const roleId = values.roleId || '';
-    const selectedRole = optionsMap.roles?.find((r: any) => r.value === roleId);
-    const roleLabel = (selectedRole?.label || '').toLowerCase();
-    const isSupervisorOrLC = ['supervisor', 'org_admin', 'lc', 'linkage champion', 'tenant_admin'].some(
-      (k: string) => roleLabel.includes(k)
-    );
-    return { isSupervisorOrLC };
-  }, [values.roleId, optionsMap.roles]);
-
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<Record<string, boolean>>({});
 
@@ -591,14 +586,14 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
           {/* Section rows */}
           {section.rows.map((row, rowIdx) => {
             // Row-level visibility
-            if (row.visibleWhen?.flag && !flags[row.visibleWhen.flag]) {
+            if (!isVisible(row.visibleWhen, values, optionsMap)) {
               return null;
             }
 
             // Determine which fields in this row are visible
             const visibleFields: FormField[] = [];
             row.fields.forEach(f => {
-              if (f.visibleWhen?.flag && !flags[f.visibleWhen.flag]) return;
+              if (!isVisible(f.visibleWhen, values, optionsMap)) return;
               if (mode === "preview" && f.type === FORM_FIELD_TYPES.GROUP && f.fields) {
                 visibleFields.push(...f.fields);
               } else {
@@ -663,7 +658,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
                         onChange={onFieldChange}
                         disabled={disabled}
                         optionsMap={optionsMap}
-                        flags={flags}
                         values={values}
                         t={t}
                         visibilityGroups={visibilityGroups}
