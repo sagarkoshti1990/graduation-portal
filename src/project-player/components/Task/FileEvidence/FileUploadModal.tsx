@@ -446,22 +446,42 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       .filter((m): m is string => Boolean(m));
   }, [validatedSelectedFiles]);
 
-  const totalCount = validSelectedFiles.length + existingAttachmentsState.length;
-  const isMaxFileUploadCount = maxFileUploadCount === 1;
   const hasChanged = validSelectedFiles.length > 0 || existingAttachmentsState.length !== (existingAttachments ?? []).length;
-  const canSubmit = hasChanged && !hasInvalidSelectedFiles && (!isMaxFileUploadCount || totalCount > 0);
+  const canSubmit = hasChanged && !hasInvalidSelectedFiles;
   const addSelectedFiles = useCallback(
     (method: UploadMethod, filesToAdd: any[]) => {
       if (!filesToAdd || filesToAdd.length === 0) return;
       const incoming = filesToAdd.filter(Boolean);
       if (incoming.length === 0) return;
 
-      // Single-file mode: always replace the current selection.
+      const invalidTypeFiles = incoming.filter(
+        file => !isFileTypeAllowed(file, normalizedAllowedTypes),
+      );
+
+      if (invalidTypeFiles.length > 0) {
+        setSelectionAttemptError(
+          `Unsupported file type. Allowed: ${allowedFileTypesLabel}.`,
+        );
+      }
+
+      const validIncoming = incoming.filter(
+        file =>
+          isFileTypeAllowed(file, normalizedAllowedTypes) &&
+          getFileSize(file) !== 0,
+      );
+
+      if (validIncoming.length === 0) {
+        return;
+      }
+
+      // Single-file mode: always replace the current selection with valid incoming file.
       if (isSingleMode) {
-        const first = incoming[0];
+        const first = validIncoming[0];
         if (!first) return;
 
-        setSelectionAttemptError(null);
+        if (invalidTypeFiles.length === 0) {
+          setSelectionAttemptError(null);
+        }
         setSelectedFiles([
           {
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -484,29 +504,32 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
           return;
         }
 
-        // Let validation handle per-file count_exceeded/duplicate/type rules.
-        setSelectionAttemptError(null);
+        if (invalidTypeFiles.length === 0) {
+          setSelectionAttemptError(null);
+        }
 
-        const newItems: SelectedFileItem[] = incoming.map(file => ({
+        const newItems: SelectedFileItem[] = validIncoming.map(file => ({
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           method,
           file,
         }));
 
         setSelectedFiles(prev => [...prev, ...newItems]);
-        onUpload(method, incoming);
+        onUpload(method, validIncoming);
         return;
       }
 
       // Unlimited mode.
-      setSelectionAttemptError(null);
-      const newItems: SelectedFileItem[] = incoming.map(file => ({
+      if (invalidTypeFiles.length === 0) {
+        setSelectionAttemptError(null);
+      }
+      const newItems: SelectedFileItem[] = validIncoming.map(file => ({
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         method,
         file,
       }));
       setSelectedFiles(prev => [...prev, ...newItems]);
-      onUpload(method, incoming);
+      onUpload(method, validIncoming);
     },
     [
       onUpload,
@@ -514,6 +537,8 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       maxUploadCount,
       existingAttachmentsArray.length,
       validSelectedFiles.length,
+      normalizedAllowedTypes,
+      allowedFileTypesLabel,
     ],
   );
 
@@ -669,6 +694,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       const fileArray = Array.from(files);
       addSelectedFiles(method, fileArray);
     }
+    event.target.value = '';
   };
 
   const handleUploadConsent = () => {
@@ -849,7 +875,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         $hover-bg="$primary600"
       >
         <ButtonText {...fileUploadModalStyles.submitButtonText}>
-          {t('projectPlayer.upload')}
+          {validSelectedFiles.length > 0 ? t('projectPlayer.upload') : t('common.save')}
         </ButtonText>
       </Button>
     </HStack>
