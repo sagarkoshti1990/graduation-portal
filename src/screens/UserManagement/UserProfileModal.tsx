@@ -23,6 +23,7 @@ interface UserProfileModalProps {
   isMobile: boolean;
   t: any;
   mode?: 'edit' | 'preview';
+  onEdit?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -33,17 +34,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isMobile,
   t,
   mode = 'edit',
+  onEdit,
 }) => {
   const { showAlert } = useAlert();
   const [profileLoading, setProfileLoading] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<any | null>(
     null,
   );
-  const [localMode, setLocalMode] = useState<'edit' | 'preview'>(mode);
-
-  useEffect(() => {
-    setLocalMode(mode);
-  }, [mode, isOpen]);
 
   const { roles, provinces, genders, organisations, positions, countryCodes } =
     useUserManagementFilters({});
@@ -261,7 +258,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       setFormSites([]);
       setErrors({});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user]);
 
   const optionsMap = useMemo(
@@ -396,7 +392,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               onFieldChange={handleFieldChange}
               optionsMap={optionsMap}
               disabled={isSubmitting}
-              mode={localMode}
+              mode={mode}
               isMobile={isMobile}
               t={t}
             />
@@ -408,18 +404,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <Button variant={'outlineghost' as any} onPress={onClose} isDisabled={isSubmitting}>
             <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.profileModal.close', 'Close')}</ButtonText>
           </Button>
-          {!profileLoading && localMode === "preview" && (
+          {!profileLoading && mode === "preview" && onEdit && (
             <Button
               variant="solid"
               action="primary"
-              onPress={() => setLocalMode('edit')}
+              onPress={onEdit}
             >
               <ButtonText color="$white" {...TYPOGRAPHY.bodySmall}>
                 {t('admin.users.profileModal.editProfile', 'Edit Profile')}
               </ButtonText>
             </Button>
           )}
-          {!profileLoading && localMode === "edit" && (
+          {!profileLoading && mode === "edit" && (
             <Button
               variant="solid"
               action="primary"
