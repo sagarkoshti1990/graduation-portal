@@ -46,6 +46,7 @@ const AssignUsersScreen = lazyScreen(() => import('../screens/AssignUsers'));
 const AdminDashboard = lazyScreen(() => import('../screens/AdminDashboard'));
 const ProfilePermissions = lazyScreen(() => import('../screens/ProfilePermissions'));
 const ForgotPasswordScreen = lazyScreen(() => import('../screens/Auth/ForgotPasswordScreen'));
+const MentorScreen = lazyScreen(() => import('../screens/Mentor'));
 const spinnerHeight = (isWebPlatform ? '$100vh' : '$full') as any;
 
 // Error Boundary for Navigation
@@ -163,6 +164,10 @@ const getAccessPages = (
         { name: 'participant-detail', path: '/participants/:id', component: ParticipantDetail },
         { name: 'check-ins-list', path: '/participants/:id/check-ins-list/:solutionId?', component: CheckInsList },
         { name: 'observation', path: '/participants/:id/observation/:solutionId/:submissionNumber?', component: Observation },
+      ];
+    case 'mentor':
+      return [
+        { name: 'mentor', component: MentorScreen },
       ];
     case 'lc':
       return [
