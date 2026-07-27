@@ -80,6 +80,11 @@
       "createUser": "إنشاء مستخدم",
       "main": "الرئيسية",
       "quickActions": "إجراءات سريعة"
+    },
+    "users": {
+      "profileModal": {
+        "editProfile": "تعديل الملف الشخصي"
+      }
     }
   },
   "brand": {

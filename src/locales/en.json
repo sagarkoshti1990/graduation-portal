@@ -1328,6 +1328,7 @@
         "dateJoined": "Date Joined",
         "close": "Close",
         "editUser": "Save",
+        "editProfile": "Edit Profile",
         "defaultRole": "Admin",
         "activityComingSoonDescription": "Activity tab will be available soon.",
         "permissionsComingSoonDescription": "Permissions tab will be available soon."

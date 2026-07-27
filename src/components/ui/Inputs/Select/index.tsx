@@ -68,6 +68,7 @@ type SelectProps = {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: string | number;
   disabled?: boolean;
+  isReadOnly?: boolean;
 };
 
 const DROPDOWN_Z = 100000;
@@ -197,6 +198,7 @@ function WebSelect({
   size = 'sm',
   borderRadius = 10,
   disabled = false,
+  isReadOnly = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
@@ -509,9 +511,9 @@ function WebSelect({
         w="$full"
       >
         <Pressable
-          disabled={disabled}
+          disabled={disabled || isReadOnly}
           onPress={() =>
-            !disabled &&
+            !(disabled || isReadOnly) &&
             setOpen(prev => !prev)
           }
         >
@@ -522,7 +524,7 @@ function WebSelect({
             justifyContent="space-between"
             borderWidth={1}
             opacity={
-              disabled ? 0.5 : 1
+              (disabled && !isReadOnly) ? 0.5 : 1
             }
           >
             <Text
@@ -583,6 +585,7 @@ function NativeSelect({
   size = 'sm',
   borderRadius = 10,
   disabled = false,
+  isReadOnly = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
@@ -789,7 +792,7 @@ function NativeSelect({
   }, [open, keyboardY]);
 
   const openDropdown = () => {
-    if (disabled) return;
+    if (disabled || isReadOnly) return;
 
     triggerRef.current?.measureInWindow(
       (
@@ -860,7 +863,7 @@ function NativeSelect({
     <>
       <Box ref={triggerRef}>
         <Pressable
-          disabled={disabled}
+          disabled={disabled || isReadOnly}
           onPress={openDropdown}
         >
           <HStack
@@ -870,7 +873,7 @@ function NativeSelect({
             justifyContent="space-between"
             borderWidth={1}
             opacity={
-              disabled ? 0.5 : 1
+              (disabled && !isReadOnly) ? 0.5 : 1
             }
           >
             <Text

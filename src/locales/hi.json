@@ -63,6 +63,11 @@
       "bulkUploadCSV": "बल्क अपलोड (CSV)",
       "createUser": "उपयोगकर्ता बनाएं"
     },
+    "users": {
+      "profileModal": {
+        "editProfile": "प्रोफ़ाइल संपादित करें"
+      }
+    },
     "filters": {
       "role": "भूमिका",
       "status": "स्थिति",
