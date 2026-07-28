@@ -32,15 +32,30 @@ export interface DisabledWhenCondition {
   empty: boolean;
 }
 
+export const FORM_FIELD_TYPES = {
+  TEXT: 'text',
+  EMAIL: 'email',
+  TEL: 'tel',
+  PASSWORD: 'password',
+  SELECT: 'select',
+  DATE: 'date',
+  TEXTAREA: 'textarea',
+  NOTE: 'note',
+  GROUP: 'group',
+} as const;
+
+export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPES];
+
 export interface FormField {
   name?: string;
-  type: 'text' | 'email' | 'tel' | 'password' | 'select' | 'date' | 'textarea' | 'note' | 'group';
+  type: FormFieldType;
   required: boolean;
   label: { key: string; fallback: string };
   placeholder?: { key?: string; fallback: string };
   defaultValue?: string;
   /** When present and the flag resolves to false, this field is hidden */
   visibleWhen?: VisibleWhenFlag;
+  disabled?: boolean;
   autoFocus?: boolean;
   icon?: string;
   /** Gluestack zIndex override for dropdowns that must float above siblings */
@@ -66,6 +81,7 @@ export interface FormField {
   validation?: ValidationRule[];
   placeholderWhenReady?: { key: string; fallback: string };
   fields?: FormField[];
+  isReadOnly?: boolean;
 }
 
 export interface FormRow {
@@ -280,7 +296,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
         visibleWhen: { flag: 'isSupervisorOrLC' },
         fields: [
           {
-            name: 'employeeId',
+            name: 'employee_id',
             type: 'text',
             required: true,
             visibleWhen: { flag: 'isSupervisorOrLC' },
@@ -353,7 +369,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       {
         fields: [
           {
-            name: 'address',
+            name: 'location',
             type: 'textarea',
             required: false,
             icon: 'MapPin',

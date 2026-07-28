@@ -12,12 +12,12 @@ import { syncLibraryMasterData } from '../services/libraryDataService';
 import offlineStorage from '../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
-import { ADMIN_ROLES, SUPERVISOR_ROLES, LC_ROLES } from '@constants/ROLES';
+import { ADMIN_ROLES, SUPERVISOR_ROLES, LC_ROLES, MENTOR_ROLES } from '@constants/ROLES';
 import { isNative } from '@utils/platform';
 import { useLanguage } from './LanguageContext';
 // import { setupTabCloseHandler } from '@utils/tabCloseHandler';
 
-export type UserRole = 'Admin' | 'Supervisor' | 'LC';
+export type UserRole = 'Admin' | 'Supervisor' | 'LC' | 'Mentor';
 
 export interface User {
   id: string;
@@ -48,10 +48,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * Determines user role based on organizations and roles.
- * Checks admin roles first (priority), then supervisor roles, then LC roles.
+ * Checks admin roles first (priority), then supervisor roles, then mentor roles, then LC roles.
  * Throws error if user doesn't have any authorized role.
  * @param userData - User data from API response
- * @returns UserRole based on role priority (Admin > Supervisor > LC)
+ * @returns UserRole based on role priority (Admin > Supervisor > Mentor > LC)
  * @throws Error if user doesn't have any authorized role
  */
 const determineUserRole = (
@@ -82,6 +82,19 @@ const determineUserRole = (
   if (supervisorOrganizations.length > 0) {
     logger.info('User has supervisor role based on organizations');
     return 'Supervisor';
+  }
+
+  // Check for mentor roles (mentor)
+  const mentorOrganizations = userData.organizations.filter((org: any) => {
+    if (!org?.roles || !Array.isArray(org.roles)) {
+      return false;
+    }
+    return org.roles.some((role: any) => MENTOR_ROLES.includes(role?.title));
+  });
+
+  if (mentorOrganizations.length > 0) {
+    logger.info('User has mentor role based on organizations');
+    return 'Mentor';
   }
 
   // Check for LC roles
