@@ -2383,7 +2383,10 @@
     "taskConflictReasonEvidence": "Online evidence differs from the offline evidence.",
     "taskConflictReasonMultiple": "Multiple differences detected."
   },
-  "supportProvider":{
+  "supportProvider": {
+    "header": {
+      "gblPartnerPlatform": "GBL Partner Platform"
+    },
     "menu": {
       "dashboard": "Dashboard",
       "mySupportOfferings": "My Support Offerings",
@@ -2397,6 +2400,44 @@
       "requests": "Requests",
       "materialsLibrary": "Materials Library",
       "profile": "Profile"
+    },
+    "supportOfferings": {
+      "title": "My Support Offerings",
+      "subtitle": "Manage all published support — training sessions, services, and assets",
+      "createNew": "Create New"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Overview of your impact and activities",
+      "createSupportBtn": "Create Support for Participants"
+    },
+    "createSupport": {
+      "title": "Create New Support",
+      "subtitle": "Choose the type of support you want to create",
+      "changeType": "Change type",
+      "training": {
+        "title": "Create Training Session"
+      },
+      "additionalService": {
+        "title": "Create Additional Service"
+      },
+      "asset": {
+        "title": "Create Asset"
+      },
+      "cards": {
+        "training": {
+          "title": "Trainings & Sessions",
+          "description": "Structured learning sessions with a schedule, objectives, and participant capacity."
+        },
+        "additionalServices": {
+          "title": "Additional Services",
+          "description": "Advisory, legal, healthcare, or specialist services for participants."
+        },
+        "assets": {
+          "title": "Assets",
+          "description": "Cash, in-kind, or voucher support for livelihood activities."
+        }
+      }
     }
   }
 }
