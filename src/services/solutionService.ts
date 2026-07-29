@@ -1,6 +1,9 @@
 import api, { OBSERVATION_RETRY_CONFIG, withRetry } from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 import logger from '@utils/logger';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage from './offlineStorage';
+import { OFFLINE_KEYS, PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 
 /**
@@ -42,6 +45,21 @@ export interface TargetedSolutionsResponse {
 export const getTargetedSolutions = async (
   params: TargetedSolutionsParams,
 ): Promise<AssessmentSurveyCardData[]> => {
+  // Prevent API call when offline — return cached solutions or empty array.
+  if (isNetworkOffline()) {
+    const keyword = params?.["filter[keywords]"];
+    let cached:any = await offlineStorage.read<AssessmentSurveyCardData[]>(
+      PARTICIPANT_KEYS.solutions(params.authUserId ?? '', params.participantId),
+    ).catch(() => null);
+    if(keyword) {
+      const keywords = keyword.split(",");
+      cached = cached?.filter((item:AssessmentSurveyCardData) =>{
+        return item?.keywords?.some(key => keywords.includes(key))
+      })
+    }
+    return cached ?? [];
+  }
+
   try {
     const { type, page, limit, search = '', ...rest } = params;
 
@@ -129,11 +147,14 @@ export const getObservationEntities = async ({
   };
 }): Promise<any> => {
   try {
-    // POST body
-    const data = { ...profileData };
+    const data = { ...profileData,  };
+    let url = `${API_ENDPOINTS.OBSERVATION_ENTITIES}?solutionId=${solutionId}`;
+    if (profileData?.createdBy) {
+      url += `&createdBy=${profileData?.createdBy}`;
+    }
 
     const response = await api.post(
-      `${API_ENDPOINTS.OBSERVATION_ENTITIES}?solutionId=${solutionId}`,
+      url,
       data,
       withRetry(OBSERVATION_RETRY_CONFIG),
     );
@@ -249,16 +270,22 @@ export const getObservationSolution = async ({
   entityId,
   submissionNumber,
   evidenceCode,
+  createdBy
 }: {
   observationId: string;
   entityId: string;
   submissionNumber: number;
   evidenceCode: string;
+  createdBy?: string;
 }): Promise<any> => {
   try {
+    let url = `${API_ENDPOINTS.OBSERVATION_SOLUTION}/${observationId}?entityId=${entityId}&submissionNumber=${submissionNumber}&evidenceCode=${evidenceCode}`;
+    if (createdBy) {
+      url += `&createdBy=${createdBy}`;
+    }
     const response = await api.post(
-      `${API_ENDPOINTS.OBSERVATION_SOLUTION}/${observationId}?entityId=${entityId}&submissionNumber=${submissionNumber}&evidenceCode=${evidenceCode}`,
-      undefined,
+      url,
+      {createdBy},
       withRetry(OBSERVATION_RETRY_CONFIG),
     );
     return response.data;
@@ -276,6 +303,7 @@ export const getObservationSubmissions = async ({
   page,
   limit,
   getAnswers,
+  status
 }: {
   observationId: string;
   entityId: string;
@@ -283,11 +311,16 @@ export const getObservationSubmissions = async ({
   page?: number | null;
   limit?: number | null;
   getAnswers?: boolean | null;
+  status?:string | null
 }): Promise<any> => {
   try {
-    let url = `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}?entityId=${entityId}`;
+    let url = `${API_ENDPOINTS.OBSERVATION_SUBMISSIONS}/${observationId}${entityId ? "?entityId=" + entityId : ""}`;
     if (filterAnswerValue !== undefined && filterAnswerValue !== null && filterAnswerValue !== '') {
       url += `&filterAnswerValue=${encodeURIComponent(filterAnswerValue)}`;
+    }
+    // Only add limit if not null/undefined
+    if (status !== null && status !== undefined) {
+      url += `&status=${status}`;
     }
     // Only add getAnswers if not null/undefined
     if (getAnswers !== null && getAnswers !== undefined) {

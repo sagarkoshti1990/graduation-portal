@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   Card,
   Box,
@@ -36,15 +36,19 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   participantStatus,
   certificate,
   participantAccountUserStatus,
+  isReadOnly,
 }) => {
   const { t } = useLanguage();
+  const route = useRoute();
   const navigation = useNavigation();
   const { name, description, navigationUrl, entity } = card;
   const [iconMeta, setIconMeta] = useState<IconMeta | null>(null);
-  const isReadOnlyParticipant =
-    participantStatus === STATUS.GRADUATED ||
-    participantStatus === STATUS.DROPOUT ||
-    participantAccountUserStatus === USER_STATUS.INACTIVE;
+  let isReadOnlyParticipant = false;
+  if(typeof isReadOnly === "boolean") {
+    isReadOnlyParticipant = isReadOnly;
+  } else {
+    isReadOnlyParticipant = participantStatus === STATUS.GRADUATED || participantStatus === STATUS.DROPOUT || participantStatus === STATUS.NOT_ELIGIBLE || participantAccountUserStatus === USER_STATUS.INACTIVE;
+  }
   const hasSubmittedData = entity?.status === CARD_STATUS.COMPLETED;
   const shouldShowViewButton =
     entity?.status &&
@@ -53,6 +57,7 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
   const shouldShowActionButton = !!entity?.status;
   const canOpenCardFromPressable =
     !entity?.status && !!navigationUrl && !isReadOnlyParticipant;
+    
   const handleCardAction = () => {
     if (!navigationUrl || !userId) {
       logger.log('userId is required');
@@ -76,12 +81,13 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
     if(entity?.allowMultipleAssessemts) {
       submissionNumber = null;
     }
-    
     // @ts-ignore
     navigation.navigate(navigationUrl as never, {
       id: userId || '',
       solutionId: card?.solutionId || card?.id,
       ...(submissionNumber ? {submissionNumber} : {}),
+      returnTo: route.name,
+      returnParams: JSON.stringify(route.params || {}),
     });
   };
 
@@ -173,7 +179,6 @@ export const AssessmentCard: React.FC<AssessmentSurveyCardProps> = ({
                       as={LucideIcon}
                       name="FileText"
                       size={16}
-
                     />
                     <ButtonText
                       {...assessmentSurveyCardStyles.buttonText}

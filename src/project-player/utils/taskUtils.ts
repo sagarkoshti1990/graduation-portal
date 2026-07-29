@@ -1,4 +1,4 @@
-import { Task, TaskStatus } from '../types/project.types';
+import { ProjectData, Task, TaskStatus } from '../types/project.types';
 import { TASK_STATUS } from '../../constants/app.constant';
 
 // Find a task by ID in a nested structure
@@ -110,4 +110,66 @@ export const formatFileSize = (bytes: number) => {
 
   const gb = mb / 1024;
   return `${gb.toFixed(1)} GB`;
+};
+
+interface UpdateTaskParams {
+  data: ProjectData | null;
+  taskId: string;
+  updatedData: Partial<Task>;
+}
+
+export const updateTaskStatus = ({
+  data,
+  taskId,
+  updatedData,
+}: UpdateTaskParams): { project: ProjectData; task: Task | null; parentTaskId?: string } => {
+  let updatedTask: Task | null = null;
+  // The top-level ancestor's id when the match is found nested inside a
+  // children/tasks array, at any depth — undefined when the match is itself
+  // top-level. Regular (non-custom) child tasks from the API don't reliably
+  // carry their own `parentId`, so this is the only way callers can know a
+  // match was nested and build the correctly-wrapped save payload for it.
+  let parentTaskId: string | undefined;
+
+  const updateTaskRecursive = (tasks: Task[], ancestorId?: string): Task[] => {
+    return tasks.map((task) => {
+      // Match found
+      if (task._id === taskId) {
+        updatedTask = {
+          ...task,
+          ...updatedData,
+        };
+        parentTaskId = ancestorId;
+
+        return updatedTask;
+      }
+
+      if (task.children?.length) {
+        return {
+          ...task,
+          children: updateTaskRecursive(task.children, ancestorId ?? task._id),
+        };
+      }
+
+      if (task.tasks?.length) {
+        return {
+          ...task,
+          tasks: updateTaskRecursive(task.tasks, ancestorId ?? task._id),
+        };
+      }
+
+      return task;
+    });
+  };
+
+  const updatedProject = {
+    ...data,
+    tasks: updateTaskRecursive(data?.tasks || []),
+  };
+
+  return {
+    project: updatedProject as ProjectData,
+    task: updatedTask,
+    parentTaskId,
+  };
 };

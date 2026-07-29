@@ -1,14 +1,19 @@
 import React, { memo, useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { Box,  Modal, useAlert } from '@ui';
 import type { ParticipantData } from '@app-types/participant';
+import type { OfflineSolutionEntry } from '@app-types/offline';
 import { FILTER_KEYWORDS, PARTICIPANT_LOG_VISIT_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import CheckInsListContent from './Check-ins-list/CheckInsListContent';
 import ObservationContent from '../Observation/ObservationContent';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { LOG_VISIT_MODULE_POPUP } from '@constants/GET_ANSWER_DATA';
 import { Animated, Easing } from 'react-native';
+import dataService from '../../services/dataService';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 import ExpandableFab from '@components/FlotingButton';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { useAuth } from '@contexts/AuthContext';
 
 type ModulePopupProps = {
   participant: ParticipantData;
@@ -16,6 +21,7 @@ type ModulePopupProps = {
   observationLogsTitle: string;
   noSolutionsMessage: string;
   buttonText?:string;
+  canAccessCoachObservations?:boolean
 };
 export const observationCss = {
   _header: {
@@ -29,14 +35,17 @@ function LogVisitModulePopupComponent({
   solutions,
   observationLogsTitle,
   noSolutionsMessage,
-  buttonText
+  buttonText,
+  canAccessCoachObservations
 }: ModulePopupProps) {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string>('');
   const [selectedSubmissionNumber, setSelectedSubmissionNumber] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [openForm,setOpenForm] = useState(false);
 
-  const { showAlert } = useAlert()
+  const { showAlert } = useAlert();
+  const { user } = useAuth();
+  const lcUserId = user?.id ?? '';
 
   const animatedValue = useRef(new Animated.Value(0)).current;
 
@@ -48,17 +57,36 @@ function LogVisitModulePopupComponent({
     if (!logVisitSolution) {
       const fetchLogVisitSolution = async () => {
         try {
+          // When offline, resolve the log-visit solution from the participant's
+          // downloaded solutions mapping — no API call.
+          if (dataService.isNetworkOffline()) {
+            const participantUserId = participant?.userId || '';
+            if (participantUserId) {
+              const stored = await offlineStorage.read<OfflineSolutionEntry[]>(
+                PARTICIPANT_KEYS.solutions(lcUserId, participantUserId),
+              );
+              const entry = stored?.find(e => e.keyword === 'observation:logVisit');
+              if (entry) {
+                setLogVisitSolution({
+                  solutionId: entry.solutionId,
+                  _id: entry.observationId,
+                  keywords: [PARTICIPANT_LOG_VISIT_KEYWORD],
+                });
+              }
+            }
+            return;
+          }
+
           const solutionsData = await getTargetedSolutions({
             type: 'observation',
             'filter[keywords]': FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(','),
           });
-    
           setLogVisitSolution(solutionsData?.[0]);
         } catch (err) {}
       };
       fetchLogVisitSolution();
     }
-  }, [logVisitSolution, solutions]);
+  }, [logVisitSolution, solutions, participant?.userId, lcUserId]);
 
   useEffect(() => {
     Animated.timing(animatedValue, {
@@ -127,7 +155,7 @@ function LogVisitModulePopupComponent({
     <>
       <ExpandableFab {...(buttonText ? {buttonText,onPress:() => handleOpenLogVisit("openForm")} : {})}
         actions={[
-          ...(participant?.status !== STATUS.DROPOUT && participant?.accountUserStatus !== USER_STATUS.INACTIVE
+          ...(participant?.status !== STATUS.DROPOUT && participant?.status !== STATUS.NOT_ELIGIBLE && participant?.accountUserStatus !== USER_STATUS.INACTIVE
             ? [
                 {
                   label: 'actions.logVisit',
@@ -154,6 +182,8 @@ function LogVisitModulePopupComponent({
         <Box flex={1} minHeight="$64">
           {selectedSubmissionNumber || openForm ? (
             <ObservationContent
+              authUser={user}
+              canAccessCoachObservations={canAccessCoachObservations}
               participant={participant}
               hideElements={hideElements}
               _css={observationCss}
@@ -179,6 +209,7 @@ function LogVisitModulePopupComponent({
               onFormSelect={handleSelectSubmission}
               _container={checkInsContainer}
               _dataNotFoundCard={{variant:"ghost"}}
+              loderHeight={"400px"}
             />
           )}
         </Box>

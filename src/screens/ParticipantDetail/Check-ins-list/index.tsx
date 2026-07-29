@@ -10,6 +10,7 @@ import { useAuth, User } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
 import { AssessmentSurveyCardData } from '@app-types/participant';
 import logger from '@utils/logger';
+import { isWeb } from '@utils/platform';
 
 /**
  * Route parameters type definition for LogVisit screen
@@ -46,7 +47,9 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
 
   // Use prop if provided, otherwise fall back to route params
   const id = propId || route.params?.id;
+  // @ts-ignore
   const solutionId = route.params?.solutionId || '';
+  const authUserId = user?.id;
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [selectedSolution, setSelectedSolution] = useState<string>(solutionId);
@@ -57,9 +60,10 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     const fetchData = async () => {
       try {
         const [response, solutionsData] = await Promise.all([
-          id ? getParticipantsList({ entityId: id, userId: user?.id as string }) : Promise.resolve(undefined),
-          getTargetedSolutions({ type: 'observation' }),
+          id ? getParticipantsList({ entityId: id, userId: authUserId as string }) : Promise.resolve(undefined),
+          getTargetedSolutions({authUserId: authUserId, type: 'observation', participantId: id }),
         ]);
+        
         const { userDetails, ...rest } = response?.result?.data?.[0]
         const participantData = { ...(userDetails || {}), ...rest }
         if (participantData) {
@@ -76,13 +80,13 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
       }
     };
 
-    if (id && user?.id) {
+    if (id && authUserId) {
       fetchData();
     }
     return () => {
       setNavbarData(null);
     };
-  }, [id, setNavbarData, user?.id]);
+  }, [id, setNavbarData, authUserId]);
 
   /**
    * Handle Back Navigation
@@ -95,7 +99,17 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
       return;
     }
     if (navigation.canGoBack && navigation.canGoBack()) {
-      navigation.goBack();
+      const state = navigation.getState();
+      const routes = state?.routes || [];
+      const current = routes?.[routes.length - 1];
+      const previous = routes?.[routes.length - 2];
+      const isSameScreen = current?.name === previous?.name;
+      if (isSameScreen && routes.length >= 3) {
+        // @ts-ignore
+        navigation.pop(2);
+      } else {
+        navigation.goBack();
+      }
     } else {
       // Fallback: Navigate to participant detail if there's no previous screen
       // @ts-ignore
@@ -107,13 +121,14 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
     id: string;
     solutionId: string;
     submissionNumber: number;
+    entityType?: string;
   }) => {
     // @ts-ignore
     navigation.navigate('observation' as never, params);
   };
 
   if (isLoading) {
-    return <Loader message='Loading check-ins list...' />;
+    return <Loader message='Loading check-ins list...' containerProps={{height: isWeb ? ('$calc(100vh - 69px)' as any) : '$full' }} />;
   }
 
   if (!id) {
@@ -148,6 +163,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         preSelectedSolution={selectedSolution}
         participant={participant as ParticipantData}
         solutions={solutions}
+        route={route}
       />
     </Box>
   );

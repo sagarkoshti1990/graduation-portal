@@ -1,10 +1,13 @@
 import axios from 'axios';
 import { PROJECT_PLAYER_CONFIGS } from '../../constants/PROJECTDATA';
-import { ApiResponse } from '../types/components.types';
+import { ApiResponse, NormalizedFile } from '../types/components.types';
 import { API_ENDPOINTS } from './apiEndpoints';
 import { isWeb } from '@utils/platform';
-import { createProjectPlanPayload } from '../types';
+import { createProjectPlanPayload, PathwayReplacementPayload } from '../types';
 import { PROJECT_STATUS } from '@constants/app.constant';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage, { getOfflineParticipantIds } from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS, OFFLINE_KEYS } from '../../constants/STORAGE_KEYS';
 
 export const apiClient = axios.create({
   // Use baseUrl from PROJECT_PLAYER_CONFIGS (which gets from env, with fallback)
@@ -35,16 +38,12 @@ apiClient.interceptors.request.use(async config => {
 apiClient.interceptors.response.use(
   res => res,
   error => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isNetworkOffline()) {
       const redirectUrl =
         PROJECT_PLAYER_CONFIGS.redirectionLinks.unauthorizedRedirectUrl;
 
       if (isWeb) {
         window.location.href = redirectUrl;
-      } else {
-        const routeName = redirectUrl.startsWith('/')
-          ? redirectUrl.slice(1)
-          : redirectUrl;
       }
     }
     return Promise.reject(error);
@@ -68,6 +67,7 @@ export const handleApiError = (error: unknown): ApiResponse<null> => {
 };
 
 export const getProjectTemplatesList = async (): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.get(API_ENDPOINTS.PROJECT_TEMPLATES_LIST);
 
@@ -81,6 +81,7 @@ export const createProjectForEntity = async (
   entityId: string,
   province:string
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(API_ENDPOINTS.CREATE_PROJECT, {
       entityId,
@@ -96,7 +97,22 @@ export const createProjectForEntity = async (
 
 export const getProjectDetails = async (
   projectID: string,
+  userId?: string,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) {
+    // Project cache is keyed by userId + participantId; scan all downloaded participants.
+    const ids = await getOfflineParticipantIds(userId ?? '').catch(() => [] as string[]);
+    for (const participantId of ids) {
+      const project = await offlineStorage
+        .read<any>(PARTICIPANT_KEYS.project(userId ?? '', participantId, projectID))
+        .catch(() => null);
+      if (project && (project._id === projectID || project.id === projectID)) {
+        return { data: project };
+      }
+    }
+    return { data: null, error: 'offline' };
+  }
+
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.PROJECT_DETAILS(projectID),
@@ -112,6 +128,7 @@ export const updateTask = async (
   projectId: string,
   requestBody: any,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_TASK(projectId),
@@ -126,6 +143,7 @@ export const updateTask = async (
 
 
 export const updateProjectInfo = async (projectId: string, programUsersRef: string): Promise<any> => {
+  if (isNetworkOffline()) throw new Error('offline');
   try {
     const response = await apiClient.post(API_ENDPOINTS.UPDATE_PROJECT_INFO(projectId), {
       programUserMappingReference: programUsersRef
@@ -137,6 +155,7 @@ export const updateProjectInfo = async (projectId: string, programUsersRef: stri
 };
 
 export const completeProject = async (projectId: string): Promise<any> => {
+  if (isNetworkOffline()) throw new Error('offline');
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_PROJECT_INFO(projectId),
@@ -151,9 +170,42 @@ export const completeProject = async (projectId: string): Promise<any> => {
     throw new Error(apiError.error ?? 'Failed to complete project');
   }
 };
+/** Depth-first search for a category node by _id anywhere in the cached hierarchy. */
+const findCategoryNode = (nodes: any[], id: string): any | undefined => {
+  for (const node of nodes ?? []) {
+    if (node?._id === id) return node;
+    const found = findCategoryNode(node?.children ?? [], id);
+    if (found) return found;
+  }
+  return undefined;
+};
+
+/**
+ * Parameter-free — returns the full category hierarchy in one call. Only ever
+ * called online (at login, to warm the offline cache); the offline flow reads
+ * the cached tree directly instead of calling this.
+ */
+export const getAllLibraryCategories = async (): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.LIBRARY_CATEGORIES_ALL);
+    return { data: response.data.result };
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const getCategoryList = async (
   parentId: string,
 ): Promise<ApiResponse<any>> => {
+  // Offline master data priority — see getProjectCategoryList in projectService.ts.
+  const tree = await offlineStorage.read<any[]>(OFFLINE_KEYS.LIBRARY_CATEGORIES_TREE).catch(() => null);
+  if (tree) {
+    return { data: tree.filter((item: any) => item.parentId === parentId) };
+  }
+
+  if (isNetworkOffline()) return { data: [] };
+
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_CATEGORY_LIST(parentId),
@@ -167,6 +219,7 @@ export const getCategoryList = async (
 export const getTemplateDetails = async (
   categoryId: string,
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_TEMPLATE(categoryId),
@@ -180,6 +233,21 @@ export const getTemplateDetails = async (
 export const getTaskDetails = async (
   categoryIds: string,
 ): Promise<ApiResponse<any>> => {
+  // Offline master data priority — see getProjectCategoryList in projectService.ts.
+  const templates = await offlineStorage.read<any[]>(OFFLINE_KEYS.PROJECT_TEMPLATES_ALL).catch(() => null);
+  if (templates) {
+    const ids = categoryIds.split(',').map(id => id.trim()).filter(Boolean);
+    const grouped: Record<string, any[]> = {};
+    for (const id of ids) {
+      grouped[id] = templates.filter((template: any) =>
+        template?.categories?.some((c: any) => c?._id === id || c?.externalId === id),
+      );
+    }
+    return { data: grouped };
+  }
+
+  if (isNetworkOffline()) return { data: {} };
+
   try {
     const response = await apiClient.get(
       API_ENDPOINTS.GET_TASK_DETAILS(categoryIds),
@@ -194,9 +262,27 @@ export const getTaskDetails = async (
 export const submitInterventionPlan = async (
   reqBody : createProjectPlanPayload
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.SUBMIT_INTERVENTION_PLAN, reqBody,
+    );
+
+    return { data: response.data.result || response.data };
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+
+export const updateInterventionPlan = async (
+  projectId: string,
+  reqBody : PathwayReplacementPayload
+): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  try {
+    const response = await apiClient.post(
+      API_ENDPOINTS.UPDATE_INTERVENTION_PLAN(projectId), reqBody,
     );
 
     return { data: response.data.result || response.data };
@@ -210,6 +296,7 @@ export const getSolutionDetails = async (
   taskId: string,
   payload: any = {}
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.GET_SOLUTION_DETAILS(solutionId, taskId),
@@ -235,6 +322,7 @@ export const getSolutionDetails = async (
 export const preSignedUrls = async (
   payload: Record<string, { files: string[] }>
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await apiClient.post(
       API_ENDPOINTS.PRE_SIGNED_URLS,
@@ -247,10 +335,46 @@ export const preSignedUrls = async (
 };
 
 
+/**
+ * Upload a file to a presigned S3 PUT URL via XMLHttpRequest.
+ *
+ * Why XHR instead of fetch + Blob on React Native:
+ * - Sending `{ uri, type, name }` as the body routes through the native networking
+ *   layer so the OS reads the file directly — no JS heap pressure.
+ * - Works with both file:// (iOS/Android) and content:// (Android document-picker) URIs.
+ * - Preserves Content-Type so S3 presigned-URL signature validation passes.
+ */
+function uploadViaXHR(uri: string, url: string, contentType: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    // S3 presigned URLs are signed against a specific Content-Type.
+    // A missing or mismatched Content-Type causes SignatureDoesNotMatch errors.
+    xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+    xhr.timeout = 120_000;
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`S3 upload failed — HTTP ${xhr.status}: ${xhr.responseText?.slice(0, 200)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('S3 upload network error'));
+    xhr.ontimeout = () => reject(new Error('S3 upload timed out'));
+
+    // React Native XHR accepts { uri, type, name } as the body.
+    // The native layer resolves file:// and content:// URIs and streams
+    // the bytes directly — the file never loads into the JS heap.
+    (xhr as any).send({ uri, type: contentType, name: 'upload' });
+  });
+}
+
 export const uploadFiles = async (
   id: string,
-  files: File[]
+  files: NormalizedFile[]
 ): Promise<ApiResponse<any>> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
   try {
     const response = await preSignedUrls({
       [id]: {
@@ -259,19 +383,62 @@ export const uploadFiles = async (
     });
     if (response?.data?.[id]) {
       const responceData = await Promise.all(files.map(async (file) => {
-        const presignedUrl = response.data[id].files.find(f => f.file === file.name);
+        const presignedUrl = response.data[id].files.find((f: { file: string; url?: string; payload?: { sourcePath?: string } }) => f.file === file.name);
         if (presignedUrl?.url) {
-         await fetch(presignedUrl.url, { 
-          method: 'PUT',
-          body: file,
-        });
-      }
+          if (isWeb) {
+            // Web: File object carries MIME type; browser sets Content-Type automatically.
+            await fetch(presignedUrl.url, {
+              method: 'PUT',
+              body: (file.file ?? file.originalFile) as File,
+            });
+          } else if (file.uri) {
+            // React Native: XHR native upload handles file:// and content:// URIs.
+            await uploadViaXHR(
+              file.uri,
+              presignedUrl.url,
+              file.type || 'application/octet-stream',
+            );
+          } else if (file.base64) {
+            // React Native sync path: in-memory base64 data, no file URI available.
+            //
+            // Why not fetch(dataUri): React Native on Android uses OkHttp, which
+            //   does not support data: URIs — throws "Network request failed".
+            // Why not new Blob([Uint8Array]): RN BlobManager throws
+            //   "Creating blobs from ArrayBufferView are not supported".
+            // Why xhr.send(bytes.buffer) works: RN's XHR.send() has an explicit
+            //   ArrayBuffer branch — it base64-encodes the buffer in JS, sends
+            //   {type:'base64', data} across the bridge, and the native layer
+            //   (NSURLSession / OkHttp) decodes back to raw bytes for the HTTP body.
+            const rawBase64 = file.base64.includes(',')
+              ? file.base64.split(',')[1]
+              : file.base64;
+            const binary = atob(rawBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            await new Promise<void>((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('PUT', presignedUrl.url);
+              xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+              xhr.timeout = 120_000;
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) resolve();
+                else reject(new Error(`S3 upload failed — HTTP ${xhr.status}: ${xhr.responseText?.slice(0, 200)}`));
+              };
+              xhr.onerror = () => reject(new Error('S3 upload network error'));
+              xhr.ontimeout = () => reject(new Error('S3 upload timed out'));
+              xhr.send(bytes.buffer);
+            });
+          }
+        }
         return {
-          name: file.name,
+          // `name` keeps the original display name for backward compatibility.
+          name: file.originalName ?? file.name,
+          originalName: file.originalName ?? file.name,
+          fileName: file.name,   // unique generated name used for sync matching
           sourcePath: presignedUrl?.payload?.sourcePath,
           type: file?.type,
           url: presignedUrl?.url ? presignedUrl.url.split('?')[0] : undefined,
-          size:file?.size,
+          size: file?.size,
         };
       }));
       return { data: responceData };

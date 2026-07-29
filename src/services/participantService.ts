@@ -8,7 +8,10 @@ import { User } from '@contexts/AuthContext';
 import { getObservationEntities } from './solutionService';
 import { CERTIFICATE_KEYWORD, ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
-import { STATUS,ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD } from '@constants/app.constant';
+import { STATUS, ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THRESHOLD } from '@constants/app.constant';
+import { isNetworkOffline } from '@utils/networkStatus';
+import offlineStorage, { getOfflineParticipantIds } from './offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
 
 /**
  * Get participants list for table view
@@ -18,12 +21,30 @@ import { STATUS,ENTITY_STATUS, PROJECT_STATUS, GRADUATION_READINESS_PROGRESS_THR
  * @returns A promise resolving to the search response from the API
  */
 export const getParticipantsList = async (params: ParticipantSearchParams): Promise<ParticipantSearchResponse> => {
+  // Prevent API call when offline — serve from cached storage instead.
+  if (isNetworkOffline()) {
+    if (params.entityId) {
+      // Single-participant lookup: return details or list-snapshot from cache
+      const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(params.userId, params.entityId)).catch(() => null);
+      const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(params.userId, params.entityId)).catch(() => null);
+      const row = details ?? snapshot ?? null;
+      return { result: { data: row ? [row] : [], count: row ? 1 : 0 } } as unknown as ParticipantSearchResponse;
+    }
+    // Full list: read all downloaded snapshots
+    const ids = await getOfflineParticipantIds(params.userId).catch(() => [] as string[]);
+    const snapshots = await Promise.all(
+      ids.map(id => offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(params.userId, id)).catch(() => null)),
+    );
+    const participants = snapshots.filter(Boolean);
+    return { result: { data: participants, count: participants.length } } as unknown as ParticipantSearchResponse;
+  }
+
   try {
     const {
       userId,
       type = ROLE_NAMES.USER,
       page = 1,
-      limit = 20, 
+      limit = 20,
       search,
       status,
       entityId,
@@ -171,10 +192,16 @@ export const getSitesByProvince = (provinceValue: string): Site[] => {
   return SITES;
 };
 
-export const getEntityDetails = async (userId: string): Promise<any> => {
-  try {
-    const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(userId));
+export const getEntityDetails = async (participantId: string, lcUserId?: string): Promise<any> => {
+  // Prevent API call when offline — return cached entity details.
+  if (isNetworkOffline()) {
+    const details = await offlineStorage.read<any>(PARTICIPANT_KEYS.details(lcUserId ?? '', participantId)).catch(() => null);
+    const snapshot = await offlineStorage.read<any>(PARTICIPANT_KEYS.listSnapshot(lcUserId ?? '', participantId)).catch(() => null);
+    return { data: details ?? snapshot ?? null };
+  }
 
+  try {
+    const response = await api.get(API_ENDPOINTS.GET_ENTITY_DETAILS(participantId));
     return { data: response.data.result };
   } catch (error) {
     throw error;
@@ -417,13 +444,13 @@ export const verifyParticipantCompletionActions = async ({
   }
 };
 
-export const getSolutionWithEntityStatus = async (solutions: any[], participantId: string) => {
+export const getSolutionWithEntityStatus = async (solutions: any[], participantId: string, createdBy?: string) => {
   return Promise.all(
     solutions.map(async (solution) => {
       try {
         const entityResponse = await getObservationEntities({
           solutionId: solution.solutionId,
-          profileData: {},
+          profileData: (createdBy ? {createdBy} : {}),
         });
         // Find the participant entity from the response
         const participantEntity = entityResponse.result?.entities?.find(
@@ -433,6 +460,8 @@ export const getSolutionWithEntityStatus = async (solutions: any[], participantI
         return {
           ...solution,
           entity: participantEntity || null,
+          observationId: entityResponse.result?._id,
+          allowMultipleAssessemts: entityResponse.result?.allowMultipleAssessemts
         };
       } catch (error) {
         logger.error('Failed to fetch entity for solution', {
@@ -446,4 +475,18 @@ export const getSolutionWithEntityStatus = async (solutions: any[], participantI
       }
     })
   );
+}
+
+export const getProjectDetails = async (projectId: string): Promise<any> => {
+  if (!projectId) {
+    logger.warn('getProjectDetails called with empty projectId');
+    return null;
+  }
+  try {
+    const response = await api.post(API_ENDPOINTS.PROJECT_DETAILS(projectId));
+    return response.data.result;
+  } catch (error) {
+    logger.error('Failed to fetch project details', { projectId, error });
+    throw error;
+  }
 }

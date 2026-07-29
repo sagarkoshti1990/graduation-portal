@@ -24,6 +24,7 @@ import {
   ChevronsRight,
   Circle,
   CircleCheck,
+  CircleDot,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -50,6 +51,7 @@ import {
   LayoutDashboard,
   LoaderCircle,
   Link2,
+  ListChecks,
   Lock,
   LogOut,
   Mail,
@@ -64,6 +66,8 @@ import {
   Search,
   Shield,
   ShieldCheck,
+  Square,
+  SquareCheckBig,
   SquarePen,
   Target,
   TrendingDown,
@@ -74,8 +78,13 @@ import {
   UserPlus,
   Users,
   UserX,
+  WifiOff,
+  Wifi,
+  CloudUpload,
   X,
   XCircle,
+  Trash2,
+  MessageSquare
 } from 'lucide-react-native';
 import { theme } from '@config/theme';
 
@@ -118,6 +127,7 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   ChevronsRight,
   Circle,
   CircleCheck,
+  CircleDot,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -144,6 +154,7 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
   LoaderCircle,
   Link2,
+  ListChecks,
   Lock,
   LogOut,
   Mail,
@@ -158,6 +169,8 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   Search,
   Shield,
   ShieldCheck,
+  Square,
+  SquareCheckBig,
   SquarePen,
   Target,
   TrendingDown,
@@ -168,8 +181,13 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   UserPlus,
   Users,
   UserX,
+  WifiOff,
+  Wifi,
+  CloudUpload,
   X,
   XCircle,
+  Trash2,
+  MessageSquare
 };
 
 /**

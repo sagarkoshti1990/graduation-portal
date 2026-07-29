@@ -9,9 +9,12 @@ export interface Participant {
   idpProgress?: any;
   status?: StatusType;
   userDetails?: User;
+  onBoardedProjectId?: string;
   idpProjectId?:string;
   certificateId?:string;
   accountUserStatus?: string;
+  phone_code?: string;
+  phone?: string;
 }
 
 export type StatusCount = {
@@ -50,13 +53,15 @@ export interface TemplateData {
 }
 
 export interface InterventionPlanProps {
-    participantStatus?: StatusType;
-    participantId?: string;
-    participantName?: string;
-    participantProfile?:any;
-    onIdpCreation?: (projectId?: string) => void;
-    onProgressChange?: (progress: number) => void;
-    getProjectData?: (projectData: ProjectData) => void;
+  mode?:string|boolean;
+  projectData?:ProjectData
+  /** True when offline and the project was never downloaded for offline use (no cached data available). */
+  projectUnavailableOffline?: boolean;
+  participantName?: string;
+  participantProfile?:any;
+  onIdpCreation?: (projectId?: string) => void;
+  onProgressChange?: (progress: number) => void;
+  onTaskCompletionChange?: (areAllCompleted: boolean) => void;
 }
 
 export interface TemplateData {
@@ -87,6 +92,7 @@ export interface ParticipantHeaderProps {
   projectData?: ProjectData | null;
   onParticipantRefresh?: () => Promise<string | undefined> | string | undefined;
   solutions?: any[];
+  isHideSecondButton?: Boolean;
 }
 
 export type SubCategory = {
@@ -110,6 +116,7 @@ export type PillarSelection = {
   subCategoryId?: string;
   categoryName?:string;
   subCategoryName?:string;
+  keywords?:string[]
 };
 
 export interface ParticipantProgressCardProps {

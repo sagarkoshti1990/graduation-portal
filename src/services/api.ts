@@ -12,14 +12,15 @@ import offlineStorage from './offlineStorage';
 import { isAndroid } from '@utils/platform'; // isWeb removed as window.localStorage/sessionStorage are no longer used
 import { refreshToken } from './authenticationService';
 import { resetToScreen } from '@utils/navigationRef';
+import { isNetworkOffline } from '@utils/networkStatus';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
   | {
-      env: {
-        [key: string]: string | undefined;
-      };
-    }
+    env: {
+      [key: string]: string | undefined;
+    };
+  }
   | undefined;
 
 const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_TOKEN;
@@ -90,6 +91,8 @@ const isNetworkError = (error: AxiosError) =>
   !error.response && !!error.request;
 
 const isRetryableError = (error: AxiosError) => {
+  if (isNetworkOffline()) return false;
+
   const status = error.response?.status;
 
   if (status === 400 || status === 401 || status === 403) {
@@ -115,13 +118,13 @@ const buildApiError = (
   const network = isNetworkError(error);
   const apiError = new Error(
     responseData?.message ||
-      (timeout
-        ? 'Request timed out. Please try again.'
-        : network
-          ? 'Network error. Please check your connection.'
-          : statusCode
-            ? `Request failed with status ${statusCode}`
-            : error.message || 'Something went wrong while calling the API.'),
+    (timeout
+      ? 'Request timed out. Please try again.'
+      : network
+        ? 'Network error. Please check your connection.'
+        : statusCode
+          ? `Request failed with status ${statusCode}`
+          : error.message || 'Something went wrong while calling the API.'),
   ) as ApiRequestError;
 
   apiError.name = 'ApiRequestError';
@@ -165,6 +168,21 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+
+export const apiPublic: AxiosInstance = axios.create({
+  // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
+  baseURL: process.env.API_BASE_URL || '',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/plain, */*',
+    // @ts-ignore - process.env is injected by webpack DefinePlugin on web
+    // 'internal-access-token': process.env.INTERNAL_ACCESS_TOKEN || '',
+    // @ts-ignore - process.env is injected by webpack DefinePlugin on web
+    ...(!isAndroid ? {} : { origin: process.env.ORIGIN || '' }),
+  },
+});
+
 /**
  * Request Interceptor
  * Adds authentication token to requests and handles other request details
@@ -174,7 +192,6 @@ api.interceptors.request.use(
     try {
       // Skip adding Authorization header for refresh token endpoint
       const isRefreshTokenRequest = config.url?.includes('/account/refresh');
-      
       if (!isRefreshTokenRequest) {
         // Get token from storage (checks both localStorage and sessionStorage on web)
         const token = await getToken();
@@ -196,13 +213,16 @@ api.interceptors.request.use(
       const userData = await offlineStorage.read<any>(STORAGE_KEYS.AUTH_USER);
       const orgCode = userData?.organizations?.[0]?.code;
       if (orgCode && config.headers) {
-        config.headers['organization'] = orgCode;
+        config.headers['orgId'] = orgCode;           // Required by accountCreate & other endpoints
+        config.headers['organization'] = orgCode;    // Keep for backward compatibility
       }
 
-      // Add tenant code header if available (from stored user data)
+      // Add tenant code headers if available (from stored user data)
       const tenantCode = userData?.tenant_code;
       if (tenantCode && config.headers) {
-        config.headers['tenant'] = tenantCode;
+        config.headers['tenantid'] = tenantCode;      // Required by accountCreate
+        config.headers['x-tenant-code'] = tenantCode; // Required by accountCreate
+        config.headers['tenant'] = tenantCode;        // Keep for backward compatibility
       }
       // Log request details (optional - can be removed in production)
       // logger.info(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
@@ -230,8 +250,7 @@ api.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log successful response (optional)
     logger.info(
-      `API Response: ${response.config.method?.toUpperCase()} ${
-        response.config.url
+      `API Response: ${response.config.method?.toUpperCase()} ${response.config.url
       }`,
       {
         status: response.status,
@@ -277,7 +296,7 @@ api.interceptors.response.use(
           try {
             logger.info('Attempting to refresh access token using refresh token');
             logger.info('Refresh token value:', storedRefreshToken.substring(0, 20) + '...');
-            
+
             const refreshResponse = await refreshToken(storedRefreshToken);
             logger.info('Refresh token call completed successfully');
 
@@ -309,12 +328,12 @@ api.interceptors.response.use(
               statusText: refreshError?.response?.statusText,
               url: refreshError?.config?.url,
             });
-            
+
             // Only redirect to logout if refresh token is actually invalid/expired
             // Check if it's a 401 or 403 error (token invalid/expired)
-            const isTokenInvalid = refreshError?.response?.status === 401 || 
-                                   refreshError?.response?.status === 403;
-            
+            const isTokenInvalid = refreshError?.response?.status === 401 ||
+              refreshError?.response?.status === 403;
+
             if (isTokenInvalid) {
               logger.warn(
                 'Refresh token is invalid or expired. Redirecting to logout page.'
@@ -337,8 +356,9 @@ api.interceptors.response.use(
         }
       } catch (storageError) {
         logger.error('Error handling token refresh:', storageError);
-        // Redirect to logout page
-        resetToScreen('logout');
+        if (!isNetworkOffline()) {
+          resetToScreen('logout');
+        }
         return Promise.reject(error);
       }
     }
@@ -374,8 +394,7 @@ api.interceptors.response.use(
       const data = error.response.data as any;
 
       logger.error(
-        `API Error: ${status} - ${error.config?.method?.toUpperCase()} ${
-          error.config?.url
+        `API Error: ${status} - ${error.config?.method?.toUpperCase()} ${error.config?.url
         }`,
         {
           status,

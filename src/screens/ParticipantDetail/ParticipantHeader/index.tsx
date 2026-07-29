@@ -39,8 +39,14 @@ import {
 } from '../../../project-player/services/projectPlayerService';
 import { ENDLINE_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { updateEntityDetails } from '../../../services/participantService';
-import { useAuth } from '@contexts/AuthContext';
+import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import { getProjectCategoryList } from '../../../services/projectService';
+import { isNetworkOffline } from '@utils/networkStatus';
+import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import { isParticipantOffline } from '../../../services/offlineStorage';
+import { deleteParticipantOfflineData } from '../../../services/offlineCleanupService';
+import { isOfflineEligible } from '../../../services/offlineCacheUpdateService';
+import { isOnboardingComplete } from '../../../project-player/utils/onboardingCompletionUtils';
 
 const getCategoryData = (categories: any[], data: any[]) => {
   let categoryData = {};
@@ -66,24 +72,30 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   onStatusUpdate,
   updatedProgress,
   projectData,
-  onParticipantRefresh,
   solutions,
+  isHideSecondButton
 }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { isWeb, isMobile } = usePlatform();
   const { showAlert } = useAlert();
   const { user } = useAuth();
+  const canAccessAdmin = useIsdminPanalAccess();
   const [status, setStatus] = useState(participantProp?.status || '')
   const [graduationProgress, setGraduationProgress] = useState(0)
   const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false)
   const [isCompletingProject, setIsCompletingProject] = useState(false)
+  const [showOfflineDeleteConfirm, setShowOfflineDeleteConfirm] = useState(false)
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [pathwayAndCategory, setPathwayAndCategory] = useState<string[]>([]);
   const [shouldShowCompletionButton, setShouldShowCompletionButton] =
     useState(false)
   const showSuccess = (message: string) => {
     showAlert('success', message);
   };
+  const [canDevelopPlan, setCanDevelopPlan] = useState(false);
+  
+  const offline = isNetworkOffline();
 
   // Update status when participant prop changes
   useEffect(() => {
@@ -157,44 +169,72 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [participantProp?.idpProjectId,projectData]);
 
   const handleBackPress = () => {
-    // @ts-ignore
-    navigation.navigate('participants');
+    const role = user?.role?.toLowerCase();
+    if (role === 'admin' || role === 'supervisor') {
+      // @ts-ignore
+      navigation.navigate('user-management');
+    } else {
+      // @ts-ignore
+      navigation.navigate('participants');
+    }
   };
 
-  const handleEnrollParticipant = async () => {
+  const performEnrollment = async () => {
     const entityId = (participantProp as User)?.entityId;
     if (!entityId) return;
-
     try {
+      setIsEnrolling(true);
       const [projResult] = await Promise.all([
         updateTask((participantProp as any)?.onBoardedProjectId, { status: TASK_STATUS.COMPLETED }),
         updateEntityDetails({
           userId: `${user?.id}`,
-          entityId: (participantProp as User)?.entityId,
-          entityUpdates: {
-            status: STATUS.ENROLLED,
-          },
+          entityId,
+          entityUpdates: { status: STATUS.ENROLLED },
         }),
       ]);
-
       if (!(projResult as any)?._id) {
         return showAlert('error', t('participantDetail.header.taskStatusUpdateFailed'));
       }
       showSuccess(t('projectPlayer.enrolledParticiapantSucess'));
-
-      // Notify parent component about status update
-      if (onStatusUpdate) {
-        onStatusUpdate(STATUS.ENROLLED);
-      }
+      if (onStatusUpdate) onStatusUpdate(STATUS.ENROLLED);
     } catch (error) {
       showAlert('error', t('common.somethingWentWrong'));
+    } finally {
+      setIsEnrolling(false);
     }
   };
 
-  const handleLogVisitPress = () => {
+  const handleEnrollParticipant = async () => {
+    // Enrollment moves the participant to ONBOARDED (= STATUS.ENROLLED), which is not
+    // offline-eligible.  If they currently have offline data, ask the user to confirm
+    // deletion before proceeding.
+    if (!isOfflineEligible(STATUS.ENROLLED) && user?.id) {
+      const pid = (participantProp as any)?.userId || (participantProp as User)?.id;
+      if (pid) {
+        const isDownloaded = await isParticipantOffline(`${user.id}`, pid);
+        if (isDownloaded) {
+          setShowOfflineDeleteConfirm(true);
+          return;
+        }
+      }
+    }
+    await performEnrollment();
+  };
+
+  const handleOfflineDeleteAndEnroll = async () => {
+    setShowOfflineDeleteConfirm(false);
+    const pid = (participantProp as any)?.userId || (participantProp as User)?.id;
+    if (pid && user?.id) {
+      await deleteParticipantOfflineData(`${user.id}`, [pid]).catch(() => {});
+    }
+    await performEnrollment();
+  };
+
+  const handleLogVisitPress = (link:string) => {
     const participantId = (participantProp as User)?.id || (participantProp as any)?.id;
+    const params: any = { id: participantId };
     // @ts-ignore
-    navigation.push('log-visit', { id: participantId });
+    navigation.push(link, params);
   };
 
   const handleCompleteProject = async (solution: any) => {
@@ -237,10 +277,22 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     updatedProgress ?? graduationProgressProp ?? graduationProgress;
 
   useEffect(() => {
+    let isMounted = true;
+    isOnboardingComplete(projectData?.tasks, user?.id ?? '', participantProp?.userId ?? '')
+      .then(complete => {
+        if (isMounted) setCanDevelopPlan(complete);
+      })
+      .catch(() => { if (isMounted) setCanDevelopPlan(false); });
+    return () => { isMounted = false; };
+  }, [projectData, user?.id, participantProp?.userId]);
+
+
+  useEffect(() => {
     if (solutions?.length && solutions?.length > 0) {
       const endlineSolution = solutions?.find((solution: any) => solution.keywords.includes(ENDLINE_KEYWORD));
       setShouldShowCompletionButton(
         status === STATUS.IN_PROGRESS &&
+        participantProp?.accountUserStatus !== USER_STATUS.INACTIVE &&
         !!participantProp?.idpProjectId &&
         effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
         // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
@@ -252,11 +304,11 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [effectiveProgress, participantProp?.idpProjectId, status, solutions?.length]);
 
   const renderStatusBadge = () => {
-    if (status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+    if (status === STATUS.NOT_ELIGIBLE || status === STATUS.DROPOUT || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return (
         <Box {...participantHeaderStyles.statusBadge}>
           <Text {...participantHeaderStyles.statusBadgeText}>
-            {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : t('participantDetail.header.droppedOut')}
+            {participantProp?.accountUserStatus === USER_STATUS.INACTIVE ? t('participantDetail.header.inactiveAccount') : status === STATUS.NOT_ELIGIBLE ? t('participantDetail.header.notEligible') : t('participantDetail.header.droppedOut')}
           </Text>
         </Box>
       );
@@ -284,20 +336,39 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
    */
   const renderSecondButton = () => {
     // Dropout: No second button
-    if (status === STATUS.DROPOUT || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
+    if (isHideSecondButton || status === STATUS.DROPOUT || status === STATUS.NOT_ELIGIBLE || status === STATUS.GRADUATED || participantProp?.accountUserStatus === USER_STATUS.INACTIVE) {
       return null;
     }
+
+    if(status === STATUS.NOT_ENROLLED && offline) {
+      return <Button
+        isDisabled={!canDevelopPlan}
+        onPress={() => {
+          // @ts-ignore
+          navigation.navigate('template', { id: participantProp?.id });
+        }}
+      >
+        <ButtonText>
+          {t('participantDetail.interventionPlan.developPlan')}
+        </ButtonText>
+      </Button>
+    }
+
     // Not Enrolled: Enroll Participant (enabled only if all tasks are completed)
-    if (status === STATUS.NOT_ENROLLED) {
+    if (status === STATUS.NOT_ENROLLED && !offline && !canAccessAdmin ) {
       return (
         <Button
           onPress={handleEnrollParticipant}
-          isDisabled={!areAllTasksCompleted}
+          isDisabled={!areAllTasksCompleted || isEnrolling}
           {...participantHeaderStyles.solidButtonPrimary}
           $md-width="auto"
           size="sm"
         >
-          <ButtonIcon as={LucideIcon} name="User" />
+          {isEnrolling ? (
+            <Spinner size="small" color="$white" />
+          ) : (
+            <ButtonIcon as={LucideIcon} name="User" />
+          )}
           <ButtonText {...participantHeaderStyles.solidButtonText}>
             {t('participantDetail.header.enrollParticipant')}
           </ButtonText>
@@ -305,10 +376,20 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
       );
     }
 
+    if (canAccessAdmin ) {
+      // @ts-ignore
+      return <Button variant="outlineghost" onPress={() => {
+        handleLogVisitPress("check-ins-list")
+      }}>
+        <ButtonIcon as={LucideIcon} name="History" size={16} />
+        <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
+      </Button>
+    }
+
     // Enrolled, In Progress, Completed: Log Visit
     return (
       <Button variant="solid" size="sm"
-        onPress={handleLogVisitPress}
+        onPress={() => handleLogVisitPress('log-visit')}
       >
         <ButtonIcon as={LucideIcon} name="FileText" />
         <ButtonText>{t('participantDetail.header.logVisit')}</ButtonText>
@@ -450,7 +531,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         variant="solid"
         size="sm"
         onPress={() => handleCompleteProject(certificateSolution)}
-        isDisabled={isCompletingProject}
+        isDisabled={isCompletingProject || canAccessAdmin}
       >
         {isCompletingProject ? (
           <Spinner size="small" color="$white" />
@@ -548,6 +629,30 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         </Container>
       </Box>
       {renderCertificateModal()}
+
+      {/* Offline data deletion confirmation — shown before enrolling a participant
+          whose status would become ineligible for offline storage */}
+      <Modal
+        isOpen={showOfflineDeleteConfirm}
+        onClose={() => setShowOfflineDeleteConfirm(false)}
+        headerTitle={t('offlineSync.deleteOfflineDataTitle')}
+        size="md"
+        showCloseButton={false}
+        footerContent={
+          <HStack space="md" justifyContent="flex-end">
+            <Button variant="outline" size="sm" onPress={() => setShowOfflineDeleteConfirm(false)}>
+              <ButtonText>{t('common.cancel')}</ButtonText>
+            </Button>
+            <Button variant="solid" size="sm" onPress={handleOfflineDeleteAndEnroll}>
+              <ButtonText>{t('offlineSync.deleteOfflineDataConfirm')}</ButtonText>
+            </Button>
+          </HStack>
+        }
+      >
+        <Text fontSize="$sm" color="$textSecondary">
+          {t('offlineSync.deleteOfflineDataMessage')}
+        </Text>
+      </Modal>
     </>
   );
 };

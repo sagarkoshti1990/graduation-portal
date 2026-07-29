@@ -19,10 +19,11 @@ interface PlayerConfigProps {
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback: (event?: any) => void | undefined;
-  styleObject?:any
+  styleObject?:any;
+  _getOfflineData?:any;
 }
 
-function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
+export function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
   return Object.entries(cssObj)
     .map(([selector, props]) => {
       const rules = Object.entries(props)
@@ -37,7 +38,7 @@ function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
     .join(' ');
 }
 
-const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }) => {
+const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast,_getOfflineData }) => {
   const playerRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -274,6 +275,8 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
             }
           }
         }
+      } else if (event.detail.type === 'QUESTIONNAIRE_SAVE' || event.detail.type === "QUESTIONNAIRE_SUBMIT") {
+        _getOfflineData(event.detail.data,event.detail.type)
       } else if (event.detail.type === 'TOAST') {
         _getToast(event.detail.data);
       }
@@ -288,7 +291,7 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
         playerElement.removeEventListener('postMessage', handleCustomEvent as EventListener);
       }
     };
-  }, [loading, _getProgress, afterSubmitCallback, _getToast]);
+  }, [loading, _getProgress, afterSubmitCallback, _getToast,_getOfflineData]);
 
   if(loading) {
     return <ActivityIndicator size="large" color="#007AFF" />;

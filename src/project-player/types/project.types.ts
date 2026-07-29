@@ -21,11 +21,14 @@ export interface ProjectData {
   updatedAt: string;
   children?: Task[];
   categories?: any[];
+  userProfile?: any;
+  categoryExternalIds?:string[]
 }
 
 export interface Task {
   _id: string;
   name: string;
+  label?: string;
   description?: string;
   type: (typeof TASK_TYPE)[keyof typeof TASK_TYPE];
   status?: TaskStatus;
@@ -52,11 +55,17 @@ export interface Task {
   noOfEvidenceRequired?: number;
   referenceId?:string
   taskSequence?:string[]
+  submissions?:any[]
 }
 
 export interface Attachment {
   _id: string;
+  /** Original file name exactly as selected by the user — used for display (e.g. "invoice.pdf"). */
   name: string;
+  /** Explicit display name — same as `name` for new uploads; preferred over `name` in UI. */
+  originalName?: string;
+  /** Unique generated file name used for upload, storage, and sync (e.g. "invoice_1751023456789.pdf"). */
+  fileName?: string;
   type: string;
   size: number;
   url?: string;
@@ -130,23 +139,30 @@ export interface RenderModalsProps {
 }
 
 export interface createProjectPlanPayload{
-    templates: Array<{
-      templateId: string;
-      targetTaskName?: string;
-      targetProjectName?: string;
-      customTasks: Array<{
-        name: string;
-        description: string;
-        type: string;
-      }>;
-    }>;
-    userId: string;
-    entityId: string;
-    programName: string;
-    isPrivateProgram: boolean;
-    projectConfig: {
+  templates: Array<{
+    templateId: string;
+    targetTaskName?: string;
+    targetProjectName?: string;
+    customTasks: Array<{
       name: string;
       description: string;
-    };
-    isATargetedSolution: boolean;
-  }
+      type: string;
+    }>;
+  }>;
+  userId: string;
+  entityId: string;
+  programName: string;
+  isPrivateProgram: boolean;
+  projectConfig: {
+    name: string;
+    description: string;
+  };
+  isATargetedSolution: boolean;
+}
+
+export interface PathwayReplacementPayload {
+  // replacements: Replacement[];
+  // replacementReason: string;
+  // categoryExternalIds: string[];
+  templates:any[]
+}

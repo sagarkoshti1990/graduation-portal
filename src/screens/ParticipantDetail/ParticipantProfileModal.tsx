@@ -17,10 +17,12 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { profileStyles } from '@components/ui/Modal/Styles';
 import { theme } from '@config/theme';
 import { getParticipantsList, updateParticipantAddress } from '../../services/participantService';
+import { updateOfflineParticipantDetails } from '../../services/offlineCacheUpdateService';
 import { User } from '@contexts/AuthContext';
 import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { openDownload } from '@utils/helper';
 import { usePlatform } from '@utils/platform';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 type ParticipantProfileModalProps = {
   isOpen: boolean;
@@ -28,6 +30,7 @@ type ParticipantProfileModalProps = {
   participantId:string,
   userId:string,
   onParticipantSaved: (patch: { location: string; email?: string }) => void;
+  isReadOnly?:boolean
 };
 
 function ParticipantProfileModalInner({
@@ -36,10 +39,12 @@ function ParticipantProfileModalInner({
   participantId,
   userId,
   onParticipantSaved,
+  isReadOnly
 }: ParticipantProfileModalProps) {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const { isMobile } = usePlatform();
+  const { isOffline } = useOfflineSync();
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [participant, setParticipant] = useState<User | undefined>();
   const [editedAddress, setEditedAddress] = useState({
@@ -53,10 +58,14 @@ function ParticipantProfileModalInner({
     email?: string;
     form?: string;
   }>({});
-  const canEditProfile =
-    participant?.accountUserStatus !== USER_STATUS.INACTIVE &&
-    participant?.status !== STATUS.DROPOUT;
-
+  
+  let canEditProfile = true;
+  if(typeof isReadOnly === "boolean") {
+    canEditProfile = !isReadOnly;
+  } else {
+    canEditProfile = participant?.accountUserStatus !== USER_STATUS.INACTIVE &&
+    participant?.status !== STATUS.DROPOUT && participant?.status !== STATUS.NOT_ELIGIBLE;
+  }
   useEffect(() => {
     const init = async () => {
       const response = await getParticipantsList({ entityId: participantId, userId })
@@ -165,6 +174,8 @@ function ParticipantProfileModalInner({
       };
       const res = await updateParticipantAddress(reqBody);
       if (res) {
+        // Keep offline address in sync with the server update.
+        updateOfflineParticipantDetails(userId, participantId, { location: street }).catch(() => {});
         onParticipantSaved({
           location: street,
           //  email
@@ -200,6 +211,8 @@ function ParticipantProfileModalInner({
     onParticipantSaved,
     showAlert,
     t,
+    userId,
+    participantId,
   ]);
 
   return (
@@ -224,7 +237,7 @@ function ParticipantProfileModalInner({
       size={isMobile ? 'lg' : 'sm'}
       {...(!isEditingAddress
         ? {
-            footerContent: <RenderFooterContent participant={participant} />,
+            footerContent: !isOffline ? <RenderFooterContent participant={participant} />:<React.Fragment/>,
           }
         : {
             cancelButtonText: t('common.cancel'),
@@ -294,7 +307,7 @@ function ParticipantProfileModalInner({
             <Text {...profileStyles.fieldLabel}>
               {t('common.profileFields.address')}
             </Text>
-            {canEditProfile && !isEditingAddress && (
+            {canEditProfile && !isEditingAddress && !isOffline && (
               <Pressable onPress={handleToggleEdit}>
                 <LucideIcon
                   name={isEditingAddress ? 'X' : 'Pencil'}

@@ -1,4 +1,4 @@
-import api, { saveToken } from './api';
+import api, {apiPublic, saveToken } from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
 import offlineStorage from './offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
@@ -43,7 +43,7 @@ export const refreshToken = async (
     logger.info('Calling refresh token endpoint:', API_ENDPOINTS.REFRESH_TOKEN);
     logger.info('Refresh token (first 20 chars):', refreshTokenValue.substring(0, 20));
     
-    const response = await api.post<RefreshTokenResponse>(
+    const response = await apiPublic.post<RefreshTokenResponse>(
       API_ENDPOINTS.REFRESH_TOKEN,
       {
         refresh_token: refreshTokenValue,

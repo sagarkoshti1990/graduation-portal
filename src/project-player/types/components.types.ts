@@ -22,6 +22,10 @@ export interface TaskAccordionProps {
   task: Task;
   level?: number;
   showAccordionWrapper?: boolean;
+  parentIndex?:number
+  /** Only used when showAccordionWrapper is false — the single-select group is owned by the parent. */
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface TaskComponentProps {
@@ -31,6 +35,11 @@ export interface TaskComponentProps {
   isChildOfProject?: boolean;
   isOnboardingTask?: boolean;
   showAccordionWrapper?: boolean;
+  index?:number
+  parentIndex?:number,
+  projectContext?:any
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface UploadComponentProps {
@@ -57,26 +66,29 @@ export interface ProjectAsTaskComponentProps {
   task: Task;
   level?: number;
   showAccordionWrapper?: boolean;
+  parentIndex?:number
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface ProjectContextValue {
   projectData: ProjectData | null;
+  oldProjectData: ProjectData | null;
   isLoading: boolean;
   error: Error | null;
   mode: 'preview' | 'edit' | 'read-only';
   config: ProjectPlayerConfig; // Full config object
 
   // Actions
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
+  updateTask: (taskId:string, participantId:string ,updates: Partial<Task>) => Promise<void>;
   updateProjectInfo: (updates: Partial<ProjectData>) => void;
   addTask: (pillarId: string, task: Task) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   saveLocal: () => void;
   syncToServer: () => Promise<void>;
-  addedToPlanTaskIds: string[];
+  addedToPlanTasks: Record<string, boolean>;
   setTaskAddedToPlan: (taskId: string, added: boolean) => void;
-  taskPlanActionPerformedIds: string[];
-  setTaskPlanActionPerformed: (taskId: string) => void;
+  setTasksAddedToPlan: (taskIds: string[], added: boolean) => void;
   onTaskUpdate?: (task: Task) => void;
 }
 
@@ -84,7 +96,13 @@ export interface ProjectProviderProps {
   children: React.ReactNode;
   config: ProjectPlayerConfig;
   initialData: ProjectData | null;
+  oldProjectData: ProjectData | null;
   onTaskUpdate?: (task: Task) => void;
+  offlineKeyPrefix?: string;
+  /** Participant ID (offline registry key) — enables offline cache updates after online task operations. */
+  participantId?: string;
+  /** Resumed accept/reject decisions from a pending offline IDP draft, seeded instead of starting empty. */
+  initialAddedToPlanTasks?: Record<string, boolean>;
 }
 
 // ============================================
@@ -107,9 +125,21 @@ export interface ProjectPlayerConfig {
   showAddCustomTaskButton?: boolean; // Config to show/hide AddCustomTask button
   showSubmitButton?: boolean; // Config to show/hide Submit Intervention Plan button
   onSubmitInterventionPlan?: (projectId?: string) => void; // Callback for Submit Intervention Plan button
+  onQueueInterventionPlanOffline?: () => void; // Callback when the submission was queued for later sync (offline)
   onChangePathway?: () => void; // Callback for Change Pathway button
   isSubmitDisabled?: boolean; // Disable submit button until conditions are met
   submitWarningMessage?: string; // Warning message to show when submit is disabled
+  /** True while a background offline sync is in flight — used to block Submit to avoid racing the sync engine draining the same queued IDP record. */
+  isOfflineSyncing?: boolean;
+  /**
+   * Live Pathway/Category selection state from Template/index.tsx, captured fresh on every
+   * submit so a queued offline IDP record can be resumed with the exact selections in effect.
+   */
+  idpDraftMeta?: {
+    selectedPathway: string;
+    selectionByPillar: Record<string, any>;
+    pillarIdsToGetIdp: string[];
+  };
   profileInfo?: {
     id: number | string;
     name: string;
@@ -128,6 +158,7 @@ export interface ProjectPlayerConfig {
 export interface ProjectPlayerData {
   solutionId?: string;
   projectId?: string;
+  oldProjectId?: string;
   entityId?: string;
   userStatus?: string;
   data?: ProjectData;
@@ -135,6 +166,13 @@ export interface ProjectPlayerData {
   selectedPathway?: string;
   pillarCategoryRelation?: any;
   province?:string;
+  offlineKeyPrefix?: string;
+  /** Participant ID (offline registry key) — passed through to ProjectProvider for offline cache updates. */
+  participantId?: string;
+  /** Resumed accept/reject decisions from a pending offline IDP draft, seeded into ProjectProvider instead of starting empty. */
+  initialAddedToPlanTasks?: Record<string, boolean>;
+  /** Resumed custom tasks from a pending offline IDP draft, re-injected into their owning pillar by pillarId. */
+  initialCustomTasks?: Array<Task & { pillarId: string }>;
 }
 
 export interface ProjectPlayerProps {
@@ -183,6 +221,7 @@ export interface EvidenceAttachment {
   uploadedBy?: string;
   uploadedAt?: string;
   size?: number;
+  originalName?:string;
 }
 
 export interface EvidencePreviewModalProps {
@@ -211,6 +250,8 @@ export interface FileUploadModalProps {
    * Supports MIME patterns (e.g. "image/*", "application/pdf") and extensions (e.g. ".doc", ".docx").
    */
   allowedFileTypes?: string[];
+  /** Maximum size (in MB) allowed per file — mirrors ProjectPlayerConfig.maxFileSize. */
+  maxFileSize?: number;
 }
 
 export interface UploadMethodOptionProps {
@@ -221,3 +262,16 @@ export interface UploadMethodOptionProps {
   icon: string;
   onSelect: (method: 'camera' | 'device') => void;
 }
+
+export interface NormalizedFile {
+  /** Unique generated file name used for upload, storage, and sync (e.g. "invoice_1751023456789.pdf"). */
+  name: string;
+  /** Original file name exactly as selected by the user — used only for display (e.g. "invoice.pdf"). */
+  originalName?: string;
+  size: number;
+  type?: string;
+  uri?: string;
+  file?: File;
+  originalFile?: any;
+  base64?: string;
+};

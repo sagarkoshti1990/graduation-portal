@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Container,
   VStack,
   HStack,
   Text,
-  Spinner,
   Card,
   Button,
   ButtonText,
@@ -13,6 +12,7 @@ import {
   useAlert,
   Badge,
   BadgeText,
+  Loader,
 } from '@ui';
 import { LucideIcon } from '@ui';
 import { getParticipantsList } from '../../../services/participantService';
@@ -53,11 +53,19 @@ interface CheckInsListContentProps {
     id: string;
     solutionId: string;
     submissionNumber: number;
+    entityType?: string;
+    returnTo?: string;
+    returnParams?: string;
   }) => void;
   preSelectedSolution?: string;
   participant?: ParticipantData;
   _container?:any
   _dataNotFoundCard?:any
+  loderHeight?:string
+  route?: {
+    name: string;
+    params?: Record<string, any>;
+  };
 }
 
 /**
@@ -72,14 +80,15 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   solutions: propSolutions,
   participant: propParticipant,
   _container,
-  _dataNotFoundCard
+  _dataNotFoundCard,
+  loderHeight,
+  route
 }) => {
   type IconMeta = {
     color?: string;
     icon?: string;
     iconColor?: string;
   } | null;
-
   const [loading, setLoading] = useState<boolean>(true);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>(propSolutions || []);
   const [selectedSolution, setSelectedSolution] = useState<string>('');
@@ -95,6 +104,9 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
   const [participant, setParticipant] = useState<
     ParticipantData | undefined
   >(propParticipant);
+  const resolvedCreatorId = useMemo(() => {
+    return (participant as any)?.hierarchy?.[0] || (participant as any)?.extra?.hierarchy?.find((item: any) => item.level === 0)?.id;
+  }, [participant]);
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   
@@ -143,6 +155,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
           setSolutions(propSolutions);
         } else {
           const data = await getTargetedSolutions({
+            authUserId: user?.id,
             type: 'observation',
           });
           setSolutions(data);
@@ -217,7 +230,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         setSolutionItem(solutionNameData || null);
         if(solutionNameData?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION){
           filterAnswerValue = participant?.entityId
-          userId = user?.id;
+          userId = resolvedCreatorId || user?.id;
         } else {
           userId = participant?.userId;
         }
@@ -225,7 +238,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         // Get observation entities to find observationId and entityId
         const observationData = await getObservationEntities({
           solutionId: selectedSolutionData.solutionId || selectedSolutionData.id,
-          profileData: {},
+          profileData: resolvedCreatorId ? {createdBy: resolvedCreatorId} : {},
         });
         const observationId = observationData?.result?._id;
         if (!observationId) {
@@ -254,6 +267,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         const submissionsData = await getObservationSubmissions({
           observationId,
           entityId,
+          status: "completed",
           filterAnswerValue,
           getAnswers,
           page,
@@ -276,7 +290,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     };
 
     fetchSubmissions();
-  }, [selectedSolution, solutions, participant, user,limit,page,t]);
+  }, [selectedSolution, solutions, participant, user, limit, page, t, resolvedCreatorId]);
 
   const handleViewForm = (submissionNumber: number) => {
     if (onNavigateToObservation && participant?.userId && selectedSolution) {
@@ -285,19 +299,23 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
         return;
       }
       onNavigateToObservation({
-        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? user?.id : participant.userId,
+        id: solutionItem?.entityType === ENTITY_TYPE.LINKAGE_CHAMPION ? resolvedCreatorId || user?.id : participant.userId,
+        entityType:solutionItem?.entityType,
         solutionId: selectedSolution,
         submissionNumber,
+        returnTo: route?.name,
+        returnParams: JSON.stringify({solutionId: selectedSolution,...(route?.params || {})}),
       });
     }
   };
 
   if (loading) {
     return (
-      <Spinner
-        height={isWeb ? ('$calc(100vh - 285px)' as any) : '$full'}
+      <Loader
+        containerProps={{width:"$full", height: loderHeight ? loderHeight : isWeb ? ('$calc(100vh - 146px)' as any) : '$full' }}
         size="large"
         color="$primary500"
+        message='Loading check-ins list...'
       />
     );
   }
@@ -311,40 +329,40 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
     <Container px="$3" py="$4" $md-px="$6" $md-py="$6" {..._container}>
       {/* Submissions List */}
       {selectedSolution ? (
-        <VStack {...logVisitStyles.cardsContainer}>
+        <VStack {...logVisitStyles.cardsContainer} {...(submissionsLoading ? {justifyContent:'center', alignItems:'center'}:{})} >
           {submissionsLoading ? (
-            <Spinner size="large" color="$primary500" />
+            <Loader message='Loading check-ins list...' containerProps={{width:"$full",height: loderHeight ? loderHeight : isWeb ? ('$calc(100vh - 194px)' as any) : '$full' }} />
           ) : submissions.length > 0 ? (
             <VStack flex={1} space="md" width={"$full"}>
-            {submissions.map((submission, index) => (
-              <SubmissionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
-                onFormSelect={() =>
-                  onFormSelect
-                    ? onFormSelect(
-                        submission,
-                        solutionItem?.name || '',
-                      )
-                    : handleViewForm(submission.submissionNumber)
-                }
+              {submissions.map((submission, index) => (
+                <SubmissionCard key={submission._id || index} submission={submission} iconMeta={iconMeta} 
+                  onFormSelect={() =>
+                    onFormSelect
+                      ? onFormSelect(
+                          submission,
+                          solutionItem?.name || '',
+                        )
+                      : handleViewForm(submission.submissionNumber)
+                  }
+                />
+              ))}
+              <PaginationControls
+                currentPage={page}
+                totalPages={Math.ceil(total/limit)}
+                pageSize={limit}
+                totalItems={total}
+                startIndex={limit*(page-1)}
+                endIndex={page*limit}
+                onPageChange={(num) => setPage(num)}
+                onPageSizeChange={(num) => {
+                  setPage(1);
+                  setLimit(num)
+                }}
+                config={{
+                  pageSizeOptions:[5,10,20,30],
+                  showPageSizeSelector:true
+                }}
               />
-            ))}
-            <PaginationControls
-              currentPage={page}
-              totalPages={Math.ceil(total/limit)}
-              pageSize={limit}
-              totalItems={total}
-              startIndex={limit*(page-1)}
-              endIndex={page*limit}
-              onPageChange={(num) => setPage(num)}
-              onPageSizeChange={(num) => {
-                setPage(1);
-                setLimit(num)
-              }}
-              config={{
-                pageSizeOptions:[5,10,20,30],
-                showPageSizeSelector:true
-              }}
-            />
             </VStack>
           ) : (
             !submissionsLoading && (

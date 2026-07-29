@@ -25,7 +25,7 @@ export const theme = {
         light: '#ffffff',
         dark: '#1a1a1a',
       },
-      foreground: 'oklch(0.145 0 0)',
+      foreground: '#0a0a0a',
       mutedForeground: '#717182',
       mutedBorder: '#e0e0e0',
       error: {
@@ -227,6 +227,31 @@ export const theme = {
                 color: "$white !important",
               },
             },
+            danger: {
+              ...gluestackConfig.components.Button.theme.variants.variant.solid,
+              borderRadius: "$xl",
+              gap: "$2",
+              bg: "$red600",
+              ":hover": {
+                bg: "$red700",
+                borderColor: "$borderColor",
+                _text: {
+                  color: "$medium !important",
+                },
+                _icon: {
+                  color: "$medium !important",
+                },
+              },
+              _text: {
+                color: "$white !important",
+                fontWeight: "$medium !important",
+                fontSize: "$sm !important",
+              },
+              _icon: {
+                color: "$white !important",
+                fontWeight: "$medium !important",
+              },
+          },
           },
         },
       },

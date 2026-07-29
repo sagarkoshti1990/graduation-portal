@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo } from "react";
-import { VStack, HStack, Text, Image, Input, InputField, Pressable, Box, LucideIcon } from "@ui";
+import { VStack, HStack, Text, Input, InputField, Pressable, Box, LucideIcon } from "@ui";
 import Select from "../ui/Inputs/Select";
 import DatePicker from "../ui/Inputs/DatePicker";
+import PaginatedSelect from "@components/PaginatedSelect";
 import { filterStyles } from "./Styles";
 import { useLanguage } from "@contexts/LanguageContext";
 import SearchBar from "@components/SearchBar";
@@ -170,14 +171,30 @@ export default function FilterButton({
         setValue((prev: any) => {
           const updated = { ...prev };
           delete updated[item.attr];
+          // Clear any paginated-select fields that depend on this attr
+          (data || []).forEach((d: any) => {
+            if (d.type === 'paginated-select' && d.dependencyAttr === item.attr) {
+              delete updated[d.attr];
+              delete updated[`${d.attr}_label`];
+              delete updated[`${d.attr}_item`];
+            }
+          });
           return updated;
         });
       } else {
         // Otherwise store the selected value (including string "null")
-        setValue((prev: any) => ({
-          ...prev,
-          [item.attr]: v,
-        }));
+        setValue((prev: any) => {
+          const updated = { ...prev, [item.attr]: v };
+          // Clear any paginated-select fields that depend on this attr
+          (data || []).forEach((d: any) => {
+            if (d.type === 'paginated-select' && d.dependencyAttr === item.attr) {
+              delete updated[d.attr];
+              delete updated[`${d.attr}_label`];
+              delete updated[`${d.attr}_item`];
+            }
+          });
+          return updated;
+        });
       }
     };
 
@@ -222,6 +239,55 @@ export default function FilterButton({
               onChangeText={handleInputChange}
             />
           </Input>
+        );
+      }
+
+      // Paginated select — opens a modal with API-driven infinite-scroll list
+      if (item.type === 'paginated-select') {
+        const handlePaginatedChange = (val: string, label: string, fullItem: any) => {
+          setValue((prev: any) => {
+            const updated = { ...prev };
+            if (!val) {
+              delete updated[item.attr];
+              delete updated[`${item.attr}_label`];
+              delete updated[`${item.attr}_item`];
+            } else {
+              updated[item.attr] = val;
+              updated[`${item.attr}_label`] = label;
+              updated[`${item.attr}_item`] = fullItem;
+            }
+            // Clear any paginated-selects that depend on this attr
+            (data || []).forEach((d: any) => {
+              if (d.type === 'paginated-select' && d.dependencyAttr === item.attr) {
+                delete updated[d.attr];
+                delete updated[`${d.attr}_label`];
+                delete updated[`${d.attr}_item`];
+              }
+            });
+            return updated;
+          });
+        };
+
+        return (
+          <PaginatedSelect
+            key={`paginated-${item.attr}`}
+            fetchFn={item.fetchFn}
+            value={value?.[item.attr] || ''}
+            displayValue={value?.[`${item.attr}_label`] || ''}
+            onChange={handlePaginatedChange}
+            placeholder={getPlaceholder()}
+            disabled={item.disabled}
+            size="sm"
+            bg={filterStyles.input.bg}
+            borderColor={filterStyles.input.borderColor}
+            borderRadius={filterStyles.input.borderRadius}
+            modalTitle={getPlaceholder()}
+            pageSize={item.pageSize || 20}
+            showSearch={item.showSearch !== false}
+            labelKey={item.labelKey}
+            valueKey={item.valueKey}
+            dependencyKey={item.dependencyKey}
+          />
         );
       }
 
@@ -288,7 +354,7 @@ export default function FilterButton({
       <HStack {...filterStyles.filterFieldsContainer}>
         {/* Search Bar - Only show if there's a search field in data, placed first */}
         {searchItem && (
-          <Box width="$full" $md-width="20%" flex={1} $md-flex={2}>
+          <Box minWidth="$56" flex={1}>
             <SearchBar
               key={`search-${clearCount}`}
               placeholder={t('admin.filters.searchPlaceholder')}

@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import logger from '@utils/logger';
+import { buildCssFromObject } from './WebComponentPlayer.web';
 
 interface PlayerConfigProps {
   /**
@@ -27,13 +28,13 @@ interface PlayerConfigProps {
   ) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback?: (event?: any) => void;
+  styleObject?:any
 }
 
 const WebComponentPlayer = React.memo(
-  ({ playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast }: PlayerConfigProps) => {
+  ({styleObject={}, playerConfig, getProgress: _getProgress, afterSubmitCallback,getToast: _getToast,_getOfflineData }: PlayerConfigProps) => {
     const [loading, setLoading] = useState(true);
     const webViewRef = useRef<any>(null);
-
     // Native platform: Inject questionnaire-webcomponent into WebView
     useEffect(() => {
       setLoading(true);
@@ -71,7 +72,6 @@ const WebComponentPlayer = React.memo(
             // Inject theme variables
             const createThemeVariables = () => {
               const style = document.createElement('style');
-
               style.innerHTML = \`
                 :root {
                   --primary-color: #A53E54;
@@ -101,8 +101,8 @@ const WebComponentPlayer = React.memo(
                   --colors-backgroundLightSuccess: #EDFCF2;
                   --colors-backgroundLightError: #FEF1F1;
                 }
+                ${buildCssFromObject(styleObject)}
               \`;
-
               document.head.appendChild(style);
             };
 
@@ -192,57 +192,62 @@ const WebComponentPlayer = React.memo(
     const handleMessage = (event: any) => {
       try {
         const message = JSON.parse(event.nativeEvent.data);
-
-        // Handle progress event
-      if (message.type === 'success') {
-        logger.info('Player initialized successfully:', message.data);
-        setLoading(false);
-      }
-        if (message.type === 'submissionSuccess') {
-        if(afterSubmitCallback) {
-          afterSubmitCallback(message);
+        logger.info('Custom event received from questionnaire-player-main:', {
+          type: event?.type,
+          detail: event.nativeEvent.data,
+        });
+          // Handle progress event
+        if (message.type === 'success') {
+          logger.info('Player initialized successfully:', message.data);
+          setLoading(false);
         }
-      } else if (message.type === 'PROGRESS') {
-        const progressValue = message;
-        // Extract progress value - could be a number or an object with progress data
-        if (typeof progressValue === 'number') {
-          // Direct number value
-          if (_getProgress) {
-            _getProgress(progressValue);
+        if (message.type === 'submissionSuccess') {
+          if(afterSubmitCallback) {
+            afterSubmitCallback(message);
           }
-        } else if (typeof progressValue === 'object' && progressValue !== null) {
-          // Check if it has the expected structure with data.percentage
-          if ((progressValue as any).data?.percentage !== undefined) {
-            // Pass the object structure as expected by Observation component
+        } else if (message.type === 'PROGRESS') {
+          const progressValue = message;
+          // Extract progress value - could be a number or an object with progress data
+          if (typeof progressValue === 'number') {
+            // Direct number value
             if (_getProgress) {
-              _getProgress({
-                data: { percentage: (progressValue as any).data.percentage },
-                type: (progressValue as any).type || event.type,
-              });
+              _getProgress(progressValue);
             }
-          } else {
-            // Check common property names for progress value
-            const value = (progressValue as any).progress ?? 
-                         (progressValue as any).value ?? 
-                         (progressValue as any).percentage ?? 
-                         (progressValue as any).message;
-            
-            if (value !== undefined && typeof value === 'number') {
+          } else if (typeof progressValue === 'object' && progressValue !== null) {
+            // Check if it has the expected structure with data.percentage
+            if ((progressValue as any).data?.percentage !== undefined) {
+              // Pass the object structure as expected by Observation component
               if (_getProgress) {
-                _getProgress(value);
+                _getProgress({
+                  data: { percentage: (progressValue as any).data.percentage },
+                  type: (progressValue as any).type || event.type,
+                });
               }
             } else {
-              // If no numeric value found, pass the entire detail object
-              logger.info('Progress event detail:', progressValue);
-              if (_getProgress) {
-                _getProgress(progressValue as any);
+              // Check common property names for progress value
+              const value = (progressValue as any).progress ?? 
+                          (progressValue as any).value ?? 
+                          (progressValue as any).percentage ?? 
+                          (progressValue as any).message;
+              
+              if (value !== undefined && typeof value === 'number') {
+                if (_getProgress) {
+                  _getProgress(value);
+                }
+              } else {
+                // If no numeric value found, pass the entire detail object
+                logger.info('Progress event detail:', progressValue);
+                if (_getProgress) {
+                  _getProgress(progressValue as any);
+                }
               }
             }
           }
+        } else if (message.type === 'QUESTIONNAIRE_SAVE' || message.type === "QUESTIONNAIRE_SUBMIT") {
+          _getOfflineData(message.data,message.type)
+        } else if (message.type === 'TOAST') {
+          _getToast(message.data);
         }
-      } else if (message.type === 'TOAST') {
-        _getToast(message.data);
-      }
       } catch (error) {
         logger.error('Error parsing message from WebView:', error);
       }

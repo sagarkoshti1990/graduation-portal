@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, BadgeText } from '@ui';
-import { STATUS, USER_STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS, USER_STATUS_DISPLAY } from '@constants/app.constant';
 import { STATUS as PARTICIPANT_STATUS } from '@constants/PARTICIPANTS_LIST';
 import { styles } from './Styles';
 
@@ -47,6 +47,7 @@ export const getStatusColors = (statusValue: string): StatusBadgeColors => {
         border: "$success300",
       };
     case STATUS.DROPOUT:
+    case STATUS.NOT_ELIGIBLE:
       return {
         bg: "$error100",
         text: "$error600",
@@ -79,7 +80,7 @@ export const StatusBadge: React.FC<{ status?: string,user?:any }> = ({ status, u
         {...styles.statusBadgeText}
         color={"$error600"}
       >
-        {USER_STATUS[user?.userDetails?.status as keyof typeof USER_STATUS]}
+        {USER_STATUS_DISPLAY[user?.userDetails?.status as keyof typeof USER_STATUS]}
       </BadgeText>
     </Badge>
   }

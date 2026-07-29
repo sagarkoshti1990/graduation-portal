@@ -1,43 +1,51 @@
-import React, { useState, useMemo, useEffect, useCallback,memo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { Box, VStack, Text, Button, ButtonText, LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAuth } from '@contexts/AuthContext';
 import { interventionPlanStyles } from './Styles';
 import ProjectPlayer, {
   ProjectPlayerData,
   ProjectPlayerConfig,
 } from '../../../project-player/index';
-import { Task } from '../../../project-player/types/project.types';
-import { MODE } from '@constants/PROJECTDATA';
-import { STATUS } from '@constants/app.constant';
+import { ProjectData, Task } from '../../../project-player/types/project.types';
+import { MODE, PROJECT_PLAYER_CONFIGS } from '@constants/PROJECTDATA';
+import { MAX_FILE_SIZE, STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
+import { sortTasksWithChildren } from '@utils/helper';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { refreshOfflineProjectFromServer } from '../../../services/offlineCacheUpdateService';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
-  participantStatus,
-  participantId,
+  mode,
+  projectData,
+  projectUnavailableOffline,
   participantProfile,
   onIdpCreation,
   onProgressChange,
-  getProjectData,
+  onTaskCompletionChange,
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const navigation = useNavigation();
+  const { isOffline } = useOfflineSync();
   const [isEditMode] = useState(true);
   const [addedTasks, setAddedTasks] = useState<Set<string>>(new Set());
+  const [projectSortData,setProjectSortData] = useState<ProjectData>();
   // Local state to track if IDP was just created successfully
   const [localStatus, setLocalStatus] = useState<StatusType | undefined>(
-    participantStatus,
+    participantProfile?.status,
   );
-  // State to store the projectId from IDP creation
-  const [projectId, setProjectId] = useState<string | undefined>(undefined);
 
   // Update local status when prop changes
   useEffect(() => {
-    setLocalStatus(participantStatus);
-  }, [participantStatus]);
+    setLocalStatus(participantProfile?.status);
+    if(projectData) {
+      const sortedTasks = sortTasksWithChildren(projectData.tasks);
+      setProjectSortData({...projectData,tasks:sortedTasks});
+    }
+  }, [participantProfile?.status,projectData]);
 
-  // Use local status for rendering logic
-  const currentStatus = localStatus || participantStatus;
 
   // Define required optional tasks IDs needed for submission
   const REQUIRED_OPTIONAL_TASKS = ['subtask-sp-003', 'subtask-sp-004'];
@@ -45,8 +53,11 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     addedTasks.has(id),
   );
 
-  // Handle task update callback from ProjectPlayer
-  const handleTaskUpdate = (task: Task) => {
+  // Handle task update callback from ProjectPlayer — fired only after the
+  // triggering action (task update, custom task create/update/delete) has
+  // actually succeeded (see ProjectContext.tsx's fireOnTaskUpdate), so it's
+  // safe to treat this as "an online action just succeeded" below.
+  const handleTaskUpdate = async (task: Task) => {
     if (task.metaInformation?.addedToPlan) {
       setAddedTasks(prev => new Set(prev).add(task._id));
     } else {
@@ -56,13 +67,19 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         return next;
       });
     }
+
+    if (isOffline) return; // nothing to refresh from — the server wasn't touched
+
+    const participantId = (participantProfile as any)?.userId ?? '';
+    const projectId = projectSortData?._id || '';
+    const userId = user?.id || '';
+    if (!participantId || !projectId || !userId) return;
+
+    await refreshOfflineProjectFromServer(userId, participantId, projectId);
   };
 
   // Handle successful IDP creation
   const handleIdpCreationSuccess = useCallback((newProjectId: string) => {
-    if (newProjectId) {
-      setProjectId(newProjectId);
-    }
     if (onIdpCreation) {
       onIdpCreation(newProjectId);
     }
@@ -71,12 +88,24 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
   // Memoize ProjectPlayer config based on status and edit mode
   const config: ProjectPlayerConfig = useMemo(() => {
-    if (!currentStatus) {
+    if (!localStatus) {
       return MODE.previewMode;
     }
 
-    const status = currentStatus;
+    const status = localStatus;
 
+    if (status === STATUS.NOT_ONBOARDED) {
+      // Determine ProjectPlayer config and data based on participant status
+      const configData = PROJECT_PLAYER_CONFIGS;
+      const selectedMode = MODE.editMode;
+  
+      return {
+        ...configData,
+        ...selectedMode,
+        showAddCustomTaskButton: false,
+        profileInfo: participantProfile,
+      };
+    }
     if (status === STATUS.ENROLLED) {
       const baseConfig = isEditMode ? MODE.editMode : MODE.previewMode;
       const showAddCustomTaskButton =
@@ -84,6 +113,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       if (!isEditMode) {
         return {
           ...baseConfig,
+          maxFileSize: MAX_FILE_SIZE,
           profileInfo: participantProfile,
           showSubmitButton: true,
           onSubmitInterventionPlan: handleIdpCreationSuccess,
@@ -96,6 +126,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
       return {
         ...baseConfig,
+        maxFileSize: MAX_FILE_SIZE,
         profileInfo: participantProfile,
         showAddCustomTaskButton,
       };
@@ -103,16 +134,15 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     else if(status === STATUS.IN_PROGRESS){
        const baseConfig =  MODE.editMode;
       const showAddCustomTaskButton = status === STATUS.IN_PROGRESS;
-      
-        return {
-          ...baseConfig,
-          profileInfo: participantProfile,
-          showSubmitButton: true,
-          onSubmitInterventionPlan: handleIdpCreationSuccess,
-          isSubmitDisabled: !areAllOptionalTasksAdded,
-          showAddCustomTaskButton
-        };
-    
+      return {
+        ...baseConfig,
+        maxFileSize: MAX_FILE_SIZE,
+        profileInfo: participantProfile,
+        showSubmitButton: true,
+        onSubmitInterventionPlan: handleIdpCreationSuccess,
+        isSubmitDisabled: !areAllOptionalTasksAdded,
+        showAddCustomTaskButton
+      };
     }
 
     // Map other statuses to their respective configs
@@ -120,26 +150,62 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       [STATUS.IN_PROGRESS]: MODE.editMode,
       [STATUS.COMPLETED]: MODE.readOnlyMode,
       [STATUS.DROPOUT]: MODE.readOnlyMode,
+      [STATUS.NOT_ELIGIBLE]: MODE.readOnlyMode,
       [STATUS.GRADUATED]: MODE.readOnlyMode,
     };
 
     return statusConfigMap[status];
-  }, [currentStatus, isEditMode, areAllOptionalTasksAdded, t, participantProfile, handleIdpCreationSuccess]);
-
+  }, [localStatus, isEditMode, areAllOptionalTasksAdded, t, participantProfile, handleIdpCreationSuccess]);
+  
+  // Inject fetched project details into data.data so ProjectPlayer uses them directly,
   const projectPlayerData: ProjectPlayerData = useMemo(
     () => ({
-      projectId: projectId || participantProfile?.idpProjectId,
+      projectId: projectSortData?._id,
+      entityId: participantProfile?.entityId,
+      userStatus: participantProfile?.status,
       pillarCategoryRelation: undefined,
+      data: projectSortData ?? undefined,
+      province: participantProfile?.province?.value,
+      offlineKeyPrefix: user?.id ?? '',
+      participantId: (participantProfile as any)?.userId ?? '',
     }),
-    [projectId, participantProfile?.idpProjectId],
+    [ participantProfile?.entityId, participantProfile?.status, participantProfile?.province?.value, projectSortData, user?.id, (participantProfile as any)?.userId],
   );
   
-  if(!config?.mode){
-    console.log('config is not defined',config);
+  // Offline and this project was never downloaded via the Offline Download flow —
+  // there's no cached data to show, so tell the user why instead of rendering an
+  // empty/broken ProjectPlayer.
+  if (!projectData && projectUnavailableOffline) {
+    return (
+      <Box {...interventionPlanStyles.container} mt="$7">
+        <VStack {...interventionPlanStyles.content}>
+          <Box {...interventionPlanStyles.iconContainer}>
+            <LucideIcon
+              name="WifiOff"
+              size={48}
+              color={interventionPlanStyles.iconColor}
+            />
+          </Box>
+          <Text {...interventionPlanStyles.title}>
+            {t('participantDetail.interventionPlan.projectUnavailableOfflineTitle')}
+          </Text>
+          <Text {...interventionPlanStyles.description}>
+            {t('participantDetail.interventionPlan.projectUnavailableOfflineDescription')}
+          </Text>
+        </VStack>
+      </Box>
+    );
+  }
+
+  if(projectData && (!config?.mode || !projectSortData)){
+    if(!config?.mode) {
+      console.log(`config is not defined`,config);
+    }
     return;
   }
+
   // Show empty state for ENROLLED status when player is not shown yet
-  if (currentStatus === STATUS.ENROLLED) {
+  if (localStatus === STATUS.ENROLLED) {
     return (
       <Box {...interventionPlanStyles.container} mt="$7">
         <VStack {...interventionPlanStyles.content}>
@@ -158,8 +224,10 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
           </Text>
           <Button
             {...interventionPlanStyles.button}
+            isDisabled={mode === MODE.readOnlyMode?.mode}
             onPress={() => {
-              navigation.navigate('template', { id: participantId  });
+              // @ts-ignore
+              navigation.navigate('template', { id: participantProfile?.userId  });
             }}
           >
             <ButtonText {...interventionPlanStyles.buttonText}>
@@ -170,37 +238,41 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       </Box>
     );
   }
-
+  
   // Show ProjectPlayer for IN_PROGRESS, COMPLETED, and other statuses
   if (
-    currentStatus === STATUS.IN_PROGRESS ||
-    currentStatus === STATUS.COMPLETED ||
-    currentStatus === STATUS.DROPOUT
+    localStatus === STATUS.NOT_ONBOARDED ||
+    localStatus === STATUS.IN_PROGRESS ||
+    localStatus === STATUS.COMPLETED ||
+    localStatus === STATUS.DROPOUT ||
+    localStatus === STATUS.NOT_ELIGIBLE
   ) {
     return (
       <Box flex={1} mt="$1">
         <ProjectPlayer
-          config={config}
+          config={mode ? {...config,mode} : config}
           data={projectPlayerData}
           onTaskUpdate={handleTaskUpdate}
           onProgressChange={onProgressChange}
-          getProjectData={getProjectData}
+          onTaskCompletionChange={onTaskCompletionChange}
         />
       </Box>
     );
   }
   // Fallback: render ProjectPlayer for any other status
-  return (
-    <Box flex={1} mt="$1">
-      <ProjectPlayer
-        config={config}
-        data={projectPlayerData}
-        onTaskUpdate={handleTaskUpdate}
-        onProgressChange={onProgressChange}
-        getProjectData={getProjectData}
-      />
-    </Box>
-  );
+  return <Text>{t("projectPlayer.failToLoad")}</Text>;
 };
 
-export default memo(InterventionPlan);
+export default memo(
+  InterventionPlan,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.participantProfile?.idpProjectId ===
+        nextProps.participantProfile?.idpProjectId &&
+      prevProps.participantProfile?.status ===
+        nextProps.participantProfile?.status &&
+      prevProps.projectData === nextProps.projectData &&
+      prevProps.projectUnavailableOffline === nextProps.projectUnavailableOffline
+    );
+  },
+);

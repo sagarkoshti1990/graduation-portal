@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useMemo, memo } from 'react';
 import { ProjectProvider, useProjectContext } from './context/ProjectContext';
 import { useProjectLoader } from './hooks/useProjectLoader';
 import ProjectComponent from './components/ProjectComponent';
@@ -22,15 +22,24 @@ const TaskCompletionTracker: React.FC<{
 }> = ({ onTaskCompletionChange, onProgressChange }) => {
   const { projectData } = useProjectContext();
 
+  const onTaskCompletionChangeRef = useRef(onTaskCompletionChange);
+  const onProgressChangeRef = useRef(onProgressChange);
+  useEffect(() => { onTaskCompletionChangeRef.current = onTaskCompletionChange; });
+  useEffect(() => { onProgressChangeRef.current = onProgressChange; });
+
+  const allCompleted = useMemo(
+    () => (projectData?.tasks ? areAllTasksCompleted(projectData.tasks) : false),
+    [projectData?.tasks],
+  );
+
   useEffect(() => {
     if (!projectData) return;
 
-    if (onTaskCompletionChange && projectData?.tasks) {
-      const allCompleted = areAllTasksCompleted(projectData.tasks);
-      onTaskCompletionChange(allCompleted);
+    if (onTaskCompletionChangeRef.current && projectData?.tasks) {
+      onTaskCompletionChangeRef.current(allCompleted);
     }
 
-    if (onProgressChange) {
+    if (onProgressChangeRef.current) {
       const topLevelTasks = projectData.children?.length
         ? projectData.children
         : projectData.tasks || [];
@@ -56,11 +65,11 @@ const TaskCompletionTracker: React.FC<{
           ? Math.round((completedChildTasks / totalChildTasks) * 100)
           : 0;
 
-      onProgressChange(progress);
+      onProgressChangeRef.current(progress);
     }
-  }, [projectData, onTaskCompletionChange, onProgressChange]);
+  }, [projectData, allCompleted]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
@@ -73,15 +82,19 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
 }) => {
   const {
     projectData: loadedProject,
+    oldProjectData,
     isLoading,
     error,
   } = useProjectLoader(config, data ?? {});
 
+  const getProjectDataRef = useRef(getProjectData);
+  useEffect(() => { getProjectDataRef.current = getProjectData; });
+
   useEffect(() => {
-    if (getProjectData && loadedProject) {
-      getProjectData(loadedProject);
+    if (getProjectDataRef.current && loadedProject) {
+      getProjectDataRef.current(loadedProject);
     }
-  }, [getProjectData, loadedProject]);
+  }, [loadedProject]);
 
   if (isLoading) {
     return (
@@ -102,7 +115,11 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
     <ProjectProvider
       config={config}
       initialData={loadedProject}
+      oldProjectData={oldProjectData}
       onTaskUpdate={onTaskUpdate}
+      offlineKeyPrefix={data?.offlineKeyPrefix ?? ''}
+      participantId={data?.participantId ?? ''}
+      initialAddedToPlanTasks={data?.initialAddedToPlanTasks}
     >
       <TaskCompletionTracker
         onTaskCompletionChange={onTaskCompletionChange}
@@ -113,4 +130,4 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
   );
 };
 
-export default ProjectPlayer;
+export default memo(ProjectPlayer);

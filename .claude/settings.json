@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('/home/ttpl-rt-229/MyApp/src/locales/en.json','utf8'\\)\\); console.log\\('valid json'\\)\")",
+      "Bash(echo \"DONE:$?\")",
+      "Bash(git restore *)"
+    ]
+  }
+}

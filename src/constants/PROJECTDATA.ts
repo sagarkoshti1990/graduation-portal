@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './STORAGE_KEYS';
 import { isWeb } from '@utils/platform';
+import { MAX_FILE_SIZE } from './app.constant';
 
 declare const process:
   | {
@@ -42,7 +43,7 @@ export const getAccessToken = async (): Promise<string | null> => {
 };
 
 export const PROJECT_PLAYER_CONFIGS = {
-  maxFileSize: 50,
+  maxFileSize: MAX_FILE_SIZE,
   baseUrl: baseUrl,
   accessToken: getAccessToken,
   language: 'en',

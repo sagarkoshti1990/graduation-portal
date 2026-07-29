@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, useColorMode,  VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import LcHeader from '@components/Header/LcHeader';
@@ -9,6 +9,8 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useDocumentTitle } from '@hooks';
 import logger from '@utils/logger';
 import { useGlobal } from '@contexts/GlobalContext';
+import { Modal, HStack, Text, Button, ButtonText } from '@ui';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 /**
  * LC Layout Component - Enhanced Header Integration
@@ -32,6 +34,8 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   const { t } = useLanguage();
   const navigation = useNavigation();
   const {refComponent} = useGlobal()
+  const { pendingBreakdown } = useOfflineSync();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Set document title for web - memoize to avoid recalculation
   const pageTitle = useMemo(() =>
@@ -45,7 +49,11 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
     logger.log('Menu selected:', key);
 
     if (key === 'logout') {
-      logout();
+      if (pendingBreakdown.total > 0) {
+        setShowLogoutConfirm(true);
+      } else {
+        logout();
+      }
       return;
     }
 
@@ -92,6 +100,25 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
         );
       })()}
       {refComponent?.bottom || ""}
+
+      <Modal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        headerTitle={t('offlineSync.logoutConfirmTitle')}
+        size="sm"
+      >
+        <Text fontSize="$sm" color="$textSecondary" mb="$4">
+          {t('offlineSync.logoutConfirmMessage', { count: pendingBreakdown.total })}
+        </Text>
+        <HStack space="md" justifyContent="flex-end">
+          <Button variant="outline" size="sm" onPress={() => setShowLogoutConfirm(false)}>
+            <ButtonText>{t('common.cancel')}</ButtonText>
+          </Button>
+          <Button variant="solid" size="sm" onPress={() => { setShowLogoutConfirm(false); logout(); }}>
+            <ButtonText>{t('offlineSync.logoutAnyway')}</ButtonText>
+          </Button>
+        </HStack>
+      </Modal>
     </>
   );
 };

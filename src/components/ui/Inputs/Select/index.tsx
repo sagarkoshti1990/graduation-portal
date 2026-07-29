@@ -68,6 +68,7 @@ type SelectProps = {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   borderRadius?: string | number;
   disabled?: boolean;
+  isReadOnly?: boolean;
 };
 
 const DROPDOWN_Z = 100000;
@@ -197,6 +198,7 @@ function WebSelect({
   size = 'sm',
   borderRadius = 10,
   disabled = false,
+  isReadOnly = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
@@ -233,8 +235,6 @@ function WebSelect({
 
   const triggerRef = useRef<any>(null);
 
-  const dropdownRef = useRef<any>(null);
-
   const [open, setOpen] =
     useState(false);
 
@@ -246,40 +246,6 @@ function WebSelect({
       maxHeight:
         DEFAULT_DROPDOWN_MAX_HEIGHT,
     });
-
-  const getDropdownRoot =
-    useCallback(() => {
-      const fromRef = resolveRefToDom(
-        dropdownRef.current,
-      );
-
-      if (fromRef) return fromRef;
-
-      return document.getElementById(
-        `select-list-${listId}`,
-      );
-    }, [listId]);
-
-  const isEventTargetWithinSelect =
-    useCallback(
-      (target: Node | null) => {
-        if (!target) return false;
-
-        const triggerEl =
-          resolveRefToDom(
-            triggerRef.current,
-          );
-
-        const dropdownEl =
-          getDropdownRoot();
-
-        return !!(
-          triggerEl?.contains(target) ||
-          dropdownEl?.contains(target)
-        );
-      },
-      [getDropdownRoot],
-    );
 
   const updatePosition =
     useCallback(() => {
@@ -404,53 +370,6 @@ function WebSelect({
     };
   }, [open, updatePosition]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePointer = (
-      e: MouseEvent | TouchEvent,
-    ) => {
-      const target =
-        e.target as Node | null;
-
-      if (
-        isEventTargetWithinSelect(
-          target,
-        )
-      ) {
-        return;
-      }
-
-      setOpen(false);
-    };
-
-    document.addEventListener(
-      'click',
-      handlePointer,
-      false,
-    );
-
-    document.addEventListener(
-      'touchend',
-      handlePointer,
-      false,
-    );
-
-    return () => {
-      document.removeEventListener(
-        'click',
-        handlePointer,
-        false,
-      );
-
-      document.removeEventListener(
-        'touchend',
-        handlePointer,
-        false,
-      );
-    };
-  }, [open, isEventTargetWithinSelect]);
-
   const emitChange = (
     stringValue: string,
   ) => {
@@ -475,8 +394,23 @@ function WebSelect({
     ) as any;
 
   const dropdown = open ? (
+    <>
+      {/* Full-viewport backdrop: physically intercepts the first outside
+          click/tap so it never reaches whatever is visually underneath —
+          a document-level listener would fire only after the underlying
+          element's own click handler already ran. */}
+      <Pressable
+        onPress={() => setOpen(false)}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: DROPDOWN_Z - 1,
+        }}
+      />
     <Box
-      ref={dropdownRef}
       id={`select-list-${listId}`}
       bg="$white"
       borderWidth={1}
@@ -567,6 +501,7 @@ function WebSelect({
         )}
       </ScrollView>
     </Box>
+    </>
   ) : null;
 
   return (
@@ -576,9 +511,9 @@ function WebSelect({
         w="$full"
       >
         <Pressable
-          disabled={disabled}
+          disabled={disabled || isReadOnly}
           onPress={() =>
-            !disabled &&
+            !(disabled || isReadOnly) &&
             setOpen(prev => !prev)
           }
         >
@@ -589,7 +524,7 @@ function WebSelect({
             justifyContent="space-between"
             borderWidth={1}
             opacity={
-              disabled ? 0.5 : 1
+              (disabled && !isReadOnly) ? 0.5 : 1
             }
           >
             <Text
@@ -650,6 +585,7 @@ function NativeSelect({
   size = 'sm',
   borderRadius = 10,
   disabled = false,
+  isReadOnly = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
@@ -856,7 +792,7 @@ function NativeSelect({
   }, [open, keyboardY]);
 
   const openDropdown = () => {
-    if (disabled) return;
+    if (disabled || isReadOnly) return;
 
     triggerRef.current?.measureInWindow(
       (
@@ -927,7 +863,7 @@ function NativeSelect({
     <>
       <Box ref={triggerRef}>
         <Pressable
-          disabled={disabled}
+          disabled={disabled || isReadOnly}
           onPress={openDropdown}
         >
           <HStack
@@ -937,7 +873,7 @@ function NativeSelect({
             justifyContent="space-between"
             borderWidth={1}
             opacity={
-              disabled ? 0.5 : 1
+              (disabled && !isReadOnly) ? 0.5 : 1
             }
           >
             <Text
@@ -978,6 +914,7 @@ function NativeSelect({
         visible={open}
         transparent
         animationType="none"
+        statusBarTranslucent
         onRequestClose={
           closeDropdown
         }

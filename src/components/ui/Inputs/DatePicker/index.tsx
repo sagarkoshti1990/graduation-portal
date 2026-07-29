@@ -20,6 +20,8 @@ interface DatePickerProps {
   minimumDate?: Date;
   isOpen?: boolean; // Controlled open state
   onOpenChange?: (isOpen: boolean) => void; // Callback when open state changes
+  iconSize?: number; // Size of the calendar icon
+  isReadOnly?: boolean;
   [key: string]: any; // Allow additional props for styling
 }
 
@@ -38,6 +40,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
   minimumDate,
   isOpen: controlledIsOpen,
   onOpenChange,
+  iconSize = 16,
+  isDisabled,
+  disabled,
+  isReadOnly = false,
   ...inputProps
 }) => {
   const { t } = useLanguage();
@@ -203,6 +209,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   // Handle toggle with position calculation
   const handleToggle = () => {
+    if (isDisabled || disabled || isReadOnly) return;
     const newState = !showPicker;
     if (newState && Platform.OS === 'web') {
       // Calculate position before showing
@@ -249,11 +256,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
         ref={inputRef}
         style={datePickerStyles.getContainerBoxStyle(Platform.OS) as any}
       >
-        <Pressable onPress={handleToggle}>
-          <Box {...datePickerStyles.inputContainer} {...inputProps} data-date-input={Platform.OS === 'web'}>
-            <Input pointerEvents="none">
+        <Pressable onPress={handleToggle} disabled={isDisabled || disabled || isReadOnly}>
+          <Box {...datePickerStyles.inputContainer} data-date-input={Platform.OS === 'web'}>
+            <Input pointerEvents="none" isDisabled={isDisabled || disabled} isReadOnly={isReadOnly} {...inputProps}>
               <HStack {...datePickerStyles.inputHStack}>
-                <LucideIcon name="Calendar" size={16} color="$textMutedForeground" />
+                <LucideIcon name="Calendar" size={iconSize} color="$textMutedForeground" />
                 <InputField
                   placeholder={placeholder}
                   value={displayValue}

@@ -54,7 +54,6 @@ interface UserAvatarCardProps {
   };
 }
 
-
 const UserAvatarCard = ({
   title,
   description,
@@ -824,7 +823,6 @@ const UserAvatarCard = ({
        displayLCList?.map((lc: any) => {
          const isSelected = selectedLc?.value === lc.value;
 
-
          return (
            <Pressable
              key={lc.value}
@@ -845,7 +843,6 @@ const UserAvatarCard = ({
                     {getInitials(lc.labelKey || '')}
                   </Text>
                 </Box>
-
 
                <View>
                  <Text {...(AssignUsersStyles.supervisorName as TextProps)}>

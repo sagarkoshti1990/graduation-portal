@@ -10,11 +10,11 @@ import {
   Button,
   ButtonText,
   Container,
-  ButtonIcon,
+  Input,
+  InputField
 } from '@ui';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Modal from '@components/ui/Modal';
-import { profileStyles } from '@components/ui/Modal/Styles';
 import Select from '@components/ui/Inputs/Select';
 import templateStyles from './styles';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -37,6 +37,10 @@ import { STATUS, PATHWAY_TAGS } from '@constants/app.constant';
 import { Category, PillarCategoryMap, PillarSelection, SubCategory } from '@app-types/screens';
 import { PageHeader } from '@components/PageHeader';
 import LogVisitModulePopup from '../ParticipantDetail/LogVisitModulePopup';
+import offlineStorage from '../../services/offlineStorage';
+import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { Task } from 'src/project-player/types/project.types';
 
 const DevelopInterventionPlan: React.FC = () => {
   const navigation = useNavigation();
@@ -44,8 +48,10 @@ const DevelopInterventionPlan: React.FC = () => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { user, setNavbarData } = useAuth();
+  const { isSyncing } = useOfflineSync();
 
   const participantId = (route.params as { id?: string })?.id || '';
+  const existingProjectId = (route.params as { projectId?: string })?.projectId;
 
   /* -------------------- STATE -------------------- */
   const [templates, setTemplates] = useState<any[]>([]);
@@ -67,8 +73,12 @@ const DevelopInterventionPlan: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [idpCreated, setIdpCreated] = useState(false);
-  const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Resumed state from a pending offline IDP draft for this participant (if any) — set
+  // once, seeded into the ProjectPlayer preview session instead of starting empty.
+  const [resumedAddedToPlanTasks, setResumedAddedToPlanTasks] = useState<Record<string, boolean>>({});
+  const [resumedCustomTasks, setResumedCustomTasks] = useState<Array<Task & { pillarId: string }>>([]);
 
   /* -------------------- DERIVED -------------------- */
   const participantName = participant?.name || '-';
@@ -106,14 +116,14 @@ const DevelopInterventionPlan: React.FC = () => {
   //   const selectedCategory = categories.find(c => c.id === pillarCategoryId);
   //   return selectedCategory?.subcategories || [];
   // };
-
   const handleIdpCreation = useCallback(async (newProjectId: any) => {
     // console.log('handleIdpCreation -  Project ID:', newProjectId);
     setIdpCreated(true);
-    if (newProjectId) {
+    if(existingProjectId) {
+      // @ts-ignore
+      navigation.navigate('participant-detail' as never, { id: route.params?.id as never });
+    } else if (newProjectId) {
       // Extract project ID from the response
-      setProjectId(projectId);
-
 
       const response = await getProjectDetails(newProjectId);
       const project = response?.data;
@@ -130,15 +140,15 @@ const DevelopInterventionPlan: React.FC = () => {
       });
 
        // create user program Mapping for the participant
-      await createOrUpdateProgramUserMapping({
-        userId: participantId,
-        programId: process.env.GLOBAL_LC_PROGRAM_ID,
-        metaInformation: {
-          idpProjectId: newProjectId,
-          idpProjectCreatedAt: thisDate,
-        },
-        status: STATUS.IN_PROGRESS
-      });
+      // await createOrUpdateProgramUserMapping({
+      //   userId: participantId,
+      //   programId: process.env.GLOBAL_LC_PROGRAM_ID,
+      //   metaInformation: {
+      //     idpProjectId: newProjectId,
+      //     idpProjectCreatedAt: thisDate,
+      //   },
+      //   status: STATUS.IN_PROGRESS
+      // });
 
       // create user program Mapping for the participant
       await createOrUpdateProgramUserMapping({
@@ -164,7 +174,16 @@ const DevelopInterventionPlan: React.FC = () => {
       // @ts-ignore
       navigation.navigate('participant-detail' as never, { id: route.params?.id as never });
     }
-  }, [navigation, participantId, projectId, user?.userId, route.params?.id]);
+  }, [navigation, participantId, user?.userId, route.params?.id]);
+
+  // Offline submission was queued for later sync — there is no newProjectId
+  // yet (nothing was created server-side), so just navigate back. The
+  // "queued" message itself is shown by ProjectComponent before this fires.
+  const handleQueueInterventionPlanOffline = useCallback(() => {
+    setIdpCreated(true);
+    // @ts-ignore
+    navigation.navigate('participant-detail' as never, { id: route.params?.id as never });
+  }, [navigation, route.params?.id]);
 
   const handleChangePathway = useCallback(() => {
     setShowProjectPlayerPreview(false);
@@ -194,6 +213,7 @@ const DevelopInterventionPlan: React.FC = () => {
         // Check if category is selected
         if (selection.categoryId) {
           return {
+            ...selection,
             pillarId: pillarId,
             pillarName: pillar.name,
             selectedCategoryId: selection.categoryId,
@@ -214,6 +234,7 @@ const DevelopInterventionPlan: React.FC = () => {
           
           if (selectedCategory && !selectedCategory.hasChildren) {
             return {
+              ...selection,
               pillarId: pillarId,
               pillarName: pillar.name,
               selectedCategoryId: selection.categoryId,
@@ -230,7 +251,7 @@ const DevelopInterventionPlan: React.FC = () => {
   // Determine ProjectPlayer config and data based on participant status
 
   const config = PROJECT_PLAYER_CONFIGS;
-  const selectedMode = participant?.status === STATUS.IN_PROGRESS ? MODE.editMode : MODE.previewMode;
+  const selectedMode = participant?.status === STATUS.IN_PROGRESS && !existingProjectId ? MODE.editMode : MODE.previewMode;
 
   const configData = {
     ...config,
@@ -239,7 +260,16 @@ const DevelopInterventionPlan: React.FC = () => {
     showAddCustomTaskButton: true,
     showSubmitButton: true,
     onSubmitInterventionPlan: handleIdpCreation,
+    onQueueInterventionPlanOffline: handleQueueInterventionPlanOffline,
     onChangePathway: handleChangePathway,
+    isOfflineSyncing: isSyncing,
+    // Live selection state, captured fresh on every submit so a queued offline IDP
+    // record can be resumed with the exact Pathway/Category selections in effect.
+    idpDraftMeta: {
+      selectedPathway,
+      selectionByPillar,
+      pillarIdsToGetIdp,
+    },
   };
 
   // Combine pillarIdsToGetIdp with selected subcategory IDs
@@ -247,24 +277,30 @@ const DevelopInterventionPlan: React.FC = () => {
     const selectedSubCategoryIds = Object.values(selectionByPillar)
       .map(selection => selection.subCategoryId || selection.categoryId)
       .filter((id): id is string => Boolean(id)); // Filter out empty strings/undefined
-
     // Combine pillar IDs without categories + selected subcategory IDs
     return [...pillarIdsToGetIdp, ...selectedSubCategoryIds];
   }, [pillarIdsToGetIdp, selectionByPillar]);
 
   const ProjectPlayerConfigData: ProjectPlayerData = useMemo(
     () => ({
-      projectId: projectId || participant?.idpProjectId,
+      projectId: participant?.idpProjectId,
       categoryIds: categoryIdsArray,
       selectedPathway: selectedPathway,
       pillarCategoryRelation: getPillarCategoryRelationships,
+      oldProjectId: existingProjectId,
+      offlineKeyPrefix: user?.id ?? '',
+      initialAddedToPlanTasks: resumedAddedToPlanTasks,
+      initialCustomTasks: resumedCustomTasks,
     }),
     [
       categoryIdsArray,
-      projectId,
       selectedPathway,
       getPillarCategoryRelationships,
-      participant?.idpProjectId
+      participant?.idpProjectId,
+      existingProjectId,
+      resumedAddedToPlanTasks,
+      resumedCustomTasks,
+      user?.id,
     ],
   );
 
@@ -278,6 +314,39 @@ const DevelopInterventionPlan: React.FC = () => {
     setParticipant(data);
   }, [participantId]);
 
+  // Resume a pending offline IDP draft for this participant, if one exists — prefills
+  // the Pathway + Category selections and seeds the Preview session's accept/reject and
+  // custom-task state instead of starting a second, conflicting draft. Only applies to
+  // the plain "create/first submission" flow (existingProjectId is the separate
+  // "replace pathway on an already-synced plan" flow, reached only while online).
+  useEffect(() => {
+    if (!participantId || !user?.id || existingProjectId || isSyncing) return;
+
+    let isMounted = true;
+    (async () => {
+      const pending = await offlineStorage.read<{
+        draft?: {
+          selectedPathway: string;
+          selectionByPillar: Record<string, PillarSelection>;
+          addedToPlanTasks: Record<string, boolean>;
+          customTasks: Array<Task & { pillarId: string }>;
+        };
+      }>(PARTICIPANT_KEYS.idpSubmissionPending(user.id, participantId));
+
+      if (!isMounted || !pending?.draft) return;
+
+      setResumedAddedToPlanTasks(pending.draft.addedToPlanTasks ?? {});
+      setResumedCustomTasks(pending.draft.customTasks ?? []);
+      if (pending.draft.selectedPathway) {
+        handlePathwaySelection(pending.draft.selectedPathway, pending.draft.selectionByPillar ?? {});
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [participantId, user?.id, existingProjectId, isSyncing]);
+
   // Fetch templates & categories (RUNS ONLY ONCE)
   useEffect(() => {
     let isMounted = true;
@@ -286,9 +355,14 @@ const DevelopInterventionPlan: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
+        let categories = [];
+        if(existingProjectId) {
+          const response = await getProjectDetails(existingProjectId);
+          categories = response?.data?.categories || [];
+        }
 
-        const templatesData = await getProjectCategoryList();
-
+        const templatesResponse = await getProjectCategoryList();
+        const templatesData = templatesResponse.filter((item:any) => !categories.find((cat:any) => cat.externalId === item.externalId))
         if (!isMounted) return;
         setTemplates(templatesData || []);
       } catch (err) {
@@ -324,19 +398,20 @@ const DevelopInterventionPlan: React.FC = () => {
 
     if (allPillarsHaveSelections) {
       // Log the pillar-category relationships
-      console.log(
-        'Pillar-Category Relationships:',
-        getPillarCategoryRelationships,
-      );
-
       setIsModalOpen(false);
       setShowProjectPlayerPreview(true);
     }
   };
 
-  const handlePathwaySelection = async (id: string) => {
+  const handlePathwaySelection = async (
+    id: string,
+    prefillSelection?: Record<string, PillarSelection>,
+  ) => {
     try {
       setSelectedPathway(id);
+      // Reset per-pillar category selections on every pathway pick — unless a resumed
+      // offline draft's prior selections for this exact pathway are being restored.
+      setSelectionByPillar(prefillSelection ?? {});
       const res = await getCategoryList(id);
       const pillars = res?.data ?? [];
       setPillarData(pillars);
@@ -351,7 +426,7 @@ const DevelopInterventionPlan: React.FC = () => {
       setPillarIdsToGetIdp(pillarIdsWithoutCategories);
 
       // If no pillars have child categories, skip modal and directly show project player
-      if (pillarIdsWithCategories.length === 0) {
+      if (pillarIdsWithCategories?.length === 0) {
         setShowProjectPlayerPreview(true);
         return;
       }
@@ -413,7 +488,7 @@ const DevelopInterventionPlan: React.FC = () => {
   };
 
   /* -------------------- UI -------------------- */
-  
+
   return (
     <VStack flex={1} {...(templateStyles.container as any)}>
       <PageHeader
@@ -435,11 +510,13 @@ const DevelopInterventionPlan: React.FC = () => {
       >
         <VStack {...(templateStyles.headerContent as any)}>
           <Text {...(TYPOGRAPHY.h4 as any)}>
-            {t('template.pageTitle')}
+            {t(existingProjectId ? "template.updatePageTitle" :'template.pageTitle')}
           </Text>
-          <Text {...(TYPOGRAPHY.bodySmall as any)}>
-            {t('template.pageSubtitle', { name: participantName })}
-          </Text>
+          {!existingProjectId && (
+            <Text {...(TYPOGRAPHY.bodySmall as any)}>
+              {t('template.pageSubtitle', { name: participantName })}
+            </Text>
+          )}
         </VStack>
       </PageHeader>
 
@@ -466,6 +543,9 @@ const DevelopInterventionPlan: React.FC = () => {
                 <Pressable
                   key={pathway?._id}
                   {...(templateStyles.pressableCard as any)}
+                  {...(pathway._id === selectedPathway
+                    ? { borderColor: '$primary500', borderWidth: 2 }
+                    : {})}
                   // onPress={handleCategorySelection()}
                   onPress={() => handlePathwaySelection(pathway._id)}
                 >
@@ -481,9 +561,18 @@ const DevelopInterventionPlan: React.FC = () => {
                       />
                     </Box>
                     <VStack flex={1} space="xs">
-                      <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
-                        {pathway.name}
-                      </Text>
+                      <HStack space="sm" alignItems="center">
+                        <Text {...TYPOGRAPHY.h3} color="$textLight900" fontWeight="$normal">
+                          {pathway.name}
+                        </Text>
+                        {pathway._id === selectedPathway && (
+                          <LucideIcon
+                            name="CircleCheck"
+                            size={18}
+                            color={theme.tokens.colors.primary500}
+                          />
+                        )}
+                      </HStack>
                       <Text
                         {...TYPOGRAPHY.bodySmall}
                         color="$textMutedForeground"
@@ -526,7 +615,7 @@ const DevelopInterventionPlan: React.FC = () => {
                           color="$textMutedForeground"
                           mr="$2"
                         >
-                          {pathway?.children.length}{' '}
+                          {pathway?.children?.length}{' '}
                           {t('template.pathwayCard.pillars')}
                         </Text>
                       </HStack>
@@ -589,15 +678,10 @@ const DevelopInterventionPlan: React.FC = () => {
           </Box>
         }
         footerContent={
-          <Box {...(templateStyles.modalFooter as any)}>
-            <Button
-              {...profileStyles.cancelButton}
-              width="$full"
-              sx={{
-                '@md': {
-                  width: 'auto',
-                },
-              }}
+          <VStack {...(templateStyles.modalFooter as any)}>
+            <Button 
+              // @ts-ignore
+              variant={'outlineghost'}
               onPress={() => setIsModalOpen(false)}
             >
               <ButtonText
@@ -608,14 +692,7 @@ const DevelopInterventionPlan: React.FC = () => {
               </ButtonText>
             </Button>
             <Button
-              {...profileStyles.confirmButton}
               variant={'solid'}
-              width="$full"
-              sx={{
-                '@md': {
-                  width: 'auto',
-                },
-              }}
               onPress={handleConfirm}
               isDisabled={
                 !pillarData
@@ -627,14 +704,11 @@ const DevelopInterventionPlan: React.FC = () => {
                   )
               }
             >
-              <ButtonText
-                color={theme.tokens.colors.modalBackground}
-                {...TYPOGRAPHY.button}
-              >
+              <ButtonText>
                 {t('template.categoryModal.confirmButton')}
               </ButtonText>
             </Button>
-          </Box>
+          </VStack>
         }
       //size={isWeb ? 'md' : 'lg'}
       >
@@ -647,7 +721,7 @@ const DevelopInterventionPlan: React.FC = () => {
               <React.Fragment key={pillar._id}>
                 <VStack gap="$1" mb="$2">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
-                    {t('template.categoryModal.categoryLabel', { pillarName: pillar?.name })}
+                    {t('template.categoryModal.categoryLabel', { pillarName: pillar?.name })} <Text color="$error600">*</Text>
                   </Text>
                   <Box {...(templateStyles.selectWrapper as any)}>
                     <Select
@@ -665,8 +739,8 @@ const DevelopInterventionPlan: React.FC = () => {
                           [pillar._id]: {
                             categoryId: value,
                             categoryName: selectedCategory?.label || '',
-                            subCategoryId: '', // reset
-                            subCategoryName: '', // reset
+                            // subCategoryId: '', // reset
+                            // subCategoryName: '', // reset
                           },
                         }));
                       }}
@@ -678,7 +752,7 @@ const DevelopInterventionPlan: React.FC = () => {
                   </Box>
                 </VStack>
 
-                {/* <VStack gap="$1" mb="$1">
+                {existingProjectId && <VStack gap="$1" mb="$1">
                   <Text {...TYPOGRAPHY.label} color="$textPrimary">
                     {t('template.categoryModal.subCategoryLabel', { pillarName: pillar?.name })}
                   </Text>
@@ -694,7 +768,22 @@ const DevelopInterventionPlan: React.FC = () => {
                     }
                   >
                     <Box {...(templateStyles.selectWrapper as any)}>
-                      <Select
+                      <Input variant="outline" size="md">
+                        <InputField
+                          onChange={(e:any) => {
+                            setSelectionByPillar(prev => ({
+                              ...prev,
+                              [pillar._id]: {
+                                ...(prev?.[pillar._id] || {}),
+                                keywords:[e.target.value]
+                              },
+                            }));
+                          }}
+                          placeholder='Enter Text here'
+                        />
+                      </Input>
+                    
+                      {/* <Select
                         key={`subcategory-${pillar._id}-${selectionByPillar[pillar._id]?.categoryId || 'none'
                           }`}
                         options={getSubCategoriesForPillar(pillar._id).map(
@@ -721,10 +810,10 @@ const DevelopInterventionPlan: React.FC = () => {
                           'template.categoryModal.subCategoryPlaceholder',
                         )}
                         borderColor="$transparent"
-                      />
+                      /> */}
                     </Box>
                   </Box>
-                </VStack> */}
+                </VStack>}
               </React.Fragment>
             ) : null,
           )}
@@ -733,16 +822,18 @@ const DevelopInterventionPlan: React.FC = () => {
             .filter((pillar: any) => pillar?.hasChildCategories)
             .every(
               (pillar: any) =>
-                selectionByPillar[pillar._id]?.categoryId &&
-                selectionByPillar[pillar._id]?.subCategoryId,
+                selectionByPillar[pillar._id]?.categoryId
+                // && selectionByPillar[pillar._id]?.subCategoryId,
             ) && (
               <Box {...(templateStyles.summaryBox as any)}>
                 {pillarData
                   .filter((pillar: any) => pillar?.hasChildCategories)
                   .map((pillar: any) => {
                     const selection = selectionByPillar[pillar._id];
-
-                    if (!selection?.categoryId || !selection?.subCategoryId) {
+                    
+                    if (!selection?.categoryId 
+                      // || !selection?.subCategoryId
+                    ) {
                       return null;
                     }
 
@@ -757,7 +848,8 @@ const DevelopInterventionPlan: React.FC = () => {
                         >
                           {t('template.categoryModal.selectedLabel', {
                             category: selection.categoryName,
-                            subcategory: selection.subCategoryName,
+                            subcategory: selection?.keywords?.join(","),
+                            // subcategory: selection.subCategoryName,
                           })}
                         </Text>
                         <Text

@@ -13,13 +13,6 @@ import { ROLE_NAMES } from '@constants/ROLES';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 
-// Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
-declare const process: {
-  env: {
-    [key: string]: string | undefined;
-  };
-} | undefined;
-
 /**
  * Get users list for table view
  * Fetches users based on search and filter parameters
@@ -33,7 +26,7 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
       tenant_code = process?.env?.TENANT_CODE_NAME || 'brac',
       type = ROLE_NAMES.USER,
       page = 1,
-      limit = 20, 
+      limit = 20,
       search,
       role,
       status,
@@ -63,7 +56,6 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
     }
 
     const endpoint = `${API_ENDPOINTS.USERS_LIST}?${queryParams.toString()}`;
-    
     // Build request body - province/site go in meta
     const requestBody: any = {};
     if (province || site) {
@@ -75,13 +67,11 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
         requestBody.meta.site = site; // Site ID
       }
     }
-    
     // Log the complete API URL with query parameters (for debugging)
     const paramsObj: Record<string, string> = {};
     queryParams.forEach((value, key) => {
       paramsObj[key] = value;
     });
-    
     // POST request to fetch users
     const response = await api.post<UserSearchResponse>(endpoint, requestBody);
     return response.data;
@@ -100,14 +90,12 @@ export const getRolesList = async (
 ): Promise<RolesListResponse> => {
   try {
     const { page = 1, limit = 100 } = params || {};
-    
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
     const endpoint = `${API_ENDPOINTS.USER_ROLES_LIST}?${queryParams.toString()}`;
-    
     // GET request to fetch roles
     const response = await api.get<RolesListResponse>(endpoint);
 
@@ -125,7 +113,6 @@ export const getRolesList = async (
 export const getEntityTypesList = async (): Promise<EntityTypesListResponse> => {
   try {
     const endpoint = API_ENDPOINTS.ENTITY_TYPES_LIST;
-    
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<EntityTypesListResponse>(endpoint);
 
@@ -135,7 +122,6 @@ export const getEntityTypesList = async (): Promise<EntityTypesListResponse> => 
       response.data.result.forEach((entityType) => {
         entityTypesMap[entityType.name] = entityType._id;
       });
-      
       await AsyncStorage.setItem(
         STORAGE_KEYS.ENTITY_TYPES,
         JSON.stringify(entityTypesMap)
@@ -167,6 +153,40 @@ export const getEntityTypesFromStorage = async (): Promise<Record<string, string
 };
 
 /**
+ * Shared bootstrap: ensures entity types are fetched exactly once even when
+ * multiple helpers (provinces, genders, orgs, positions) call concurrently.
+ * Returns the cached entity-type map after populating storage.
+ */
+let _entityTypesBootstrapPromise: Promise<Record<string, string> | null> | null = null;
+
+export const ensureEntityTypes = async (forceRefresh = false): Promise<Record<string, string> | null> => {
+  // Fast path: already in storage (if not forcing refresh)
+  if (!forceRefresh) {
+    const cached = await getEntityTypesFromStorage();
+    if (cached && Object.keys(cached).length > 0) {
+      return cached;
+    }
+  }
+
+  // Deduplicate concurrent fetches
+  if (!_entityTypesBootstrapPromise) {
+    _entityTypesBootstrapPromise = (async () => {
+      try {
+        await getEntityTypesList();
+        return await getEntityTypesFromStorage();
+      } catch (error) {
+        console.error('Error bootstrapping entity types:', error);
+        return null;
+      } finally {
+        _entityTypesBootstrapPromise = null;
+      }
+    })();
+  }
+
+  return _entityTypesBootstrapPromise;
+};
+
+/**
  * Get provinces list by entity type ID - Dynamic province filter from API
  * Uses the province entity type ID to fetch all provinces
  */
@@ -179,7 +199,6 @@ export const getProvincesByEntityType = async (
 }> => {
   try {
     const endpoint = `${API_ENDPOINTS.ENTITIES_BY_TYPE}/${provinceEntityTypeId}`;
-    
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<{
       message: string;
@@ -203,23 +222,12 @@ export const getProvincesByEntityType = async (
  */
 export const getProvincesList = async (): Promise<ProvinceEntity[]> => {
   try {
-    // First, check if entity types are in storage
-    let entityTypes = await getEntityTypesFromStorage();
-    
-    // If not in storage, fetch entity types from API
-    if (!entityTypes || !entityTypes['province']) {
-      await getEntityTypesList();
-      entityTypes = await getEntityTypesFromStorage();
-    }
-
-    // Get province entity type ID
+    const entityTypes = await ensureEntityTypes();
     const provinceEntityTypeId = entityTypes?.['province'];
-    
     if (!provinceEntityTypeId) {
       return [];
     }
 
-    // Fetch provinces using the entity type ID
     const provincesResponse = await getProvincesByEntityType(provinceEntityTypeId);
     return provincesResponse.result || [];
   } catch (error) {
@@ -242,14 +250,12 @@ export const getSitesByEntityType = async (
 }> => {
   try {
     const { page = 1, limit = 100 } = params || {};
-    
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
 
     const endpoint = `${API_ENDPOINTS.ENTITIES_BY_TYPE}/${siteEntityTypeId}?${queryParams.toString()}`;
-    
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<{
       message: string;
@@ -274,7 +280,6 @@ export const getAllSites = async (): Promise<SiteEntity[]> => {
   try {
     // First, check if entity types are in storage
     let entityTypes = await getEntityTypesFromStorage();
-    
     // If not in storage, fetch entity types from API
     if (!entityTypes || !entityTypes['site']) {
       await getEntityTypesList();
@@ -283,7 +288,6 @@ export const getAllSites = async (): Promise<SiteEntity[]> => {
 
     // Get site entity type ID
     const siteEntityTypeId = entityTypes?.['site'];
-    
     if (!siteEntityTypeId) {
       return [];
     }
@@ -320,7 +324,6 @@ export const getSitesByProvince = async (
 }> => {
   try {
     const { provinceId, page = 1, limit = 100 } = params || {};
-    
     // If no province provided, fetch all sites
     if (!provinceId || provinceId === 'all-provinces' || provinceId === 'all-Provinces') {
       const allSites = await getAllSites();
@@ -334,7 +337,6 @@ export const getSitesByProvince = async (
         },
       };
     }
-    
     const queryParams = new URLSearchParams({
       type: 'site',
       page: page.toString(),
@@ -342,7 +344,6 @@ export const getSitesByProvince = async (
     });
 
     const endpoint = `${API_ENDPOINTS.PARTICIPANTS_SUB_ENTITY_LIST}/${provinceId}?${queryParams.toString()}`;
-    
     // GET request - internal-access-token header is added automatically by interceptor for entity-management endpoints
     const response = await api.get<{
       message: string;
@@ -395,7 +396,6 @@ export const resetPassword = async (
 ): Promise<ResetPasswordResponse> => {
   try {
     console.log('Reset password called for user:', params.username);
-    
     // TODO: Replace this with actual API call when endpoint is available
     // Example:
     // const response = await api.post<ResetPasswordResponse>(
@@ -403,7 +403,6 @@ export const resetPassword = async (
     //   params
     // );
     // return response.data;
-    
     // Static response for now
     const staticResponse: ResetPasswordResponse = {
       responseCode: '200',
@@ -414,12 +413,9 @@ export const resetPassword = async (
         updatedAt: new Date().toISOString(),
       },
     };
-    
     console.log('Password reset successful (static response)');
-    
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
     return staticResponse;
   } catch (error: any) {
     console.error('Reset password error:', {
@@ -458,7 +454,7 @@ export const deactivateUser = async (ids: Array<string | number>): Promise<any> 
  */
 export const updateOrgAdminUser = async (
   userId: string | number,
-  payload: { name?: string }
+  payload: any
 ): Promise<any> => {
   try {
     const idStr = String(userId);
@@ -467,5 +463,144 @@ export const updateOrgAdminUser = async (
     return response.data?.result ?? response.data;
   } catch (error: any) {
     throw error;
+  }
+};
+
+/**
+ * Create a new user (Admin/Org Admin)
+ *
+ * API: POST /api/user/v1/admin/createUser
+ */
+export const createUser = async (
+  payload: {
+    name: string;
+    username: string;
+    email: string;
+    roles: string;
+    password: string;
+    dob?: string;
+    national_id?: number;
+    gender?: string;
+    site?: string;
+    province?: string;
+    phone?: string;
+    phone_code?: string;
+    alternative_phone?: string;
+    alternative_phone_code?: string;
+    address?: string;
+    organisation?: string;
+    position?: string;
+    employee_id?: string;
+  }
+): Promise<any> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.CREATE_USER, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+/**
+ * Get gender list - Fetches genders using entity type API
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getGenderList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    const entityTypes = await ensureEntityTypes();
+    const entityTypeId = entityTypes?.['gender'];
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching gender list:', error);
+    return [];
+  }
+};
+
+/**
+ * Get organisation list - Fetches organisations using the same entity type API as provinces
+ * Uses entity type key 'organisation' with the same getProvincesByEntityType endpoint
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getOrganisationList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    const entityTypes = await ensureEntityTypes();
+    const orgKey = Object.keys(entityTypes || {}).find(k => k.toLowerCase().includes('org'));
+    const entityTypeId = orgKey ? entityTypes?.[orgKey] : undefined;
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching organisation list:', error);
+    return [];
+  }
+};
+
+/**
+ * Get position list - Fetches positions using the same entity type API as provinces
+ * Uses entity type key 'position' with the same getProvincesByEntityType endpoint
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getPositionList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    const entityTypes = await ensureEntityTypes();
+    const entityTypeId = entityTypes?.['position'];
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching position list:', error);
+    return [];
+  }
+};
+
+/**
+ * Get country codes list - Fetches country codes from entity management service
+ * 
+ * @returns A promise resolving to an array of entities, or empty array on error
+ */
+export const getCountryCodesList = async (): Promise<ProvinceEntity[]> => {
+  try {
+    let entityTypes = await ensureEntityTypes();
+    // Find the country code entity type key
+    let countryKey = Object.keys(entityTypes || {}).find(
+      k => k.toLowerCase() === 'country_code'
+    );
+
+    // If key not found, force a refresh from the server to bypass stale localStorage cache
+    if (!countryKey) {
+      entityTypes = await ensureEntityTypes(true);
+      countryKey = Object.keys(entityTypes || {}).find(
+        k => k.toLowerCase() === 'country_code'
+      );
+    }
+
+    const entityTypeId = countryKey ? entityTypes?.[countryKey] : undefined;
+
+    if (!entityTypeId) {
+      return [];
+    }
+
+    const response = await getProvincesByEntityType(entityTypeId);
+    return response.result || [];
+  } catch (error) {
+    console.error('Error fetching country codes list:', error);
+    return [];
   }
 };

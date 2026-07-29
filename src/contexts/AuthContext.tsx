@@ -8,14 +8,16 @@ import React, {
 } from 'react';
 import logger from '@utils/logger';
 import { login as loginService } from '../services/authenticationService';
+import { syncLibraryMasterData } from '../services/libraryDataService';
 import offlineStorage from '../services/offlineStorage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getToken, removeToken } from '../services/api';
-import { ADMIN_ROLES, SUPERVISOR_ROLES, LC_ROLES } from '@constants/ROLES';
+import { ADMIN_ROLES, SUPERVISOR_ROLES, LC_ROLES, MENTOR_ROLES } from '@constants/ROLES';
+import { isNative } from '@utils/platform';
 import { useLanguage } from './LanguageContext';
 // import { setupTabCloseHandler } from '@utils/tabCloseHandler';
 
-export type UserRole = 'Admin' | 'Supervisor' | 'LC';
+export type UserRole = 'Admin' | 'Supervisor' | 'LC' | 'Mentor';
 
 export interface User {
   id: string;
@@ -46,10 +48,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * Determines user role based on organizations and roles.
- * Checks admin roles first (priority), then supervisor roles, then LC roles.
+ * Checks admin roles first (priority), then supervisor roles, then mentor roles, then LC roles.
  * Throws error if user doesn't have any authorized role.
  * @param userData - User data from API response
- * @returns UserRole based on role priority (Admin > Supervisor > LC)
+ * @returns UserRole based on role priority (Admin > Supervisor > Mentor > LC)
  * @throws Error if user doesn't have any authorized role
  */
 const determineUserRole = (
@@ -82,6 +84,19 @@ const determineUserRole = (
     return 'Supervisor';
   }
 
+  // Check for mentor roles (mentor)
+  const mentorOrganizations = userData.organizations.filter((org: any) => {
+    if (!org?.roles || !Array.isArray(org.roles)) {
+      return false;
+    }
+    return org.roles.some((role: any) => MENTOR_ROLES.includes(role?.title));
+  });
+
+  if (mentorOrganizations.length > 0) {
+    logger.info('User has mentor role based on organizations');
+    return 'Mentor';
+  }
+
   // Check for LC roles
   const lcOrganizations = userData.organizations.filter((org: any) => {
     if (!org?.roles || !Array.isArray(org.roles)) {
@@ -98,6 +113,21 @@ const determineUserRole = (
   // If no matching roles found in organizations, throw unauthorized error
   // Note: Error message will be translated in the login function
   throw new Error(unauthorizedMessage);
+};
+
+/**
+ * Whether this user has at least one LC_ROLES role across their organizations.
+ * Used to gate native-mobile login — Admin/Supervisor continue to use the web app.
+ * Checks the raw org role titles (not the single priority-mapped `role`), so a user who
+ * happens to hold both an admin role and an LC role is still correctly granted access.
+ */
+const hasLcRoleAccess = (userData: any): boolean => {
+  if (!userData?.organizations) return false;
+  return userData.organizations.some(
+    (org: any) =>
+      Array.isArray(org?.roles) &&
+      org.roles.some((role: any) => LC_ROLES.includes(role?.title)),
+  );
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
@@ -145,6 +175,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             'User session restored from storage:',
             storedUser.email || storedUser.id,
           );
+          // Fire-and-forget: warm the IDP library cache if it hasn't been
+          // downloaded yet (no-op when already cached).
+          // syncLibraryMasterData().catch(err =>
+          //   logger.warn('AuthContext: failed to sync library master data on session restore', err),
+          // );
         } else {
           // If either is missing or invalid, clear everything to ensure clean state
           if (storedUser && !token) {
@@ -226,6 +261,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           return { success: false, message };
         }
 
+        // The native mobile app is restricted to LC roles only — Admin/Supervisor
+        // continue to use the web app. Reject before any user/session state is set
+        // and before the offline master-data warm-up below, so a blocked login
+        // never gets logged in or initializes offline data/sync.
+        if (isNative && !hasLcRoleAccess(userData)) {
+          const message = t('auth.roleNotAuthorized');
+          logger.warn(
+            `${isAdmin ? 'Admin ' : ''}User role not permitted on native mobile app:`,
+            userData.email || userData.id,
+          );
+          return { success: false, message };
+        }
+
         // Map API user data to User interface
         const mappedUser: User = {
           role: determinedRole,
@@ -238,6 +286,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         // Update the context state
         setUser(mappedUser);
         setIsLoggedIn(true);
+
+        // Fire-and-forget: warm the IDP library cache for offline use.
+        syncLibraryMasterData().catch(err =>
+          logger.warn('AuthContext: failed to sync library master data on login', err),
+        );
 
         const message = isAdmin
           ? t('auth.userLoggedInSuccessfullyAdmin')
@@ -321,7 +374,7 @@ export const useIsSupervisor = (): boolean => {
 
   return useMemo(() => {
     // Check mapped role first
-    if (currentUserRole === 'Supervisor' || currentUserRole?.toLowerCase() === 'supervisor') {
+    if (currentUserRole?.toLowerCase() === 'supervisor') {
       return true;
     }
     
@@ -340,6 +393,35 @@ export const useIsSupervisor = (): boolean => {
       return hasSupervisorRole;
     }
     
+    return false;
+  }, [user, currentUserRole]);
+};
+
+export const useIsdminPanalAccess = (): boolean => {
+  const { user } = useAuth();
+  const currentUserRole = user?.role;
+
+  return useMemo(() => {
+    // Check mapped role first
+    if (currentUserRole?.toLowerCase() === 'supervisor') {
+      return true;
+    }
+    
+    // Also check user's actual organizations for supervisor role titles
+    if (user && (user as any).organizations) {
+      const organizations = (user as any).organizations;
+      const hasSupervisorRole = organizations.some((org: any) => {
+        if (!org?.roles || !Array.isArray(org.roles)) {
+          return false;
+        }
+        return org.roles.some((role: any) => {
+          const roleTitle = role?.title?.toLowerCase() || '';
+          return roleTitle === 'admin' || roleTitle === 'tenant_admin' || roleTitle === 'supervisor';
+        });
+      });
+      return hasSupervisorRole;
+    }
+
     return false;
   }, [user, currentUserRole]);
 };

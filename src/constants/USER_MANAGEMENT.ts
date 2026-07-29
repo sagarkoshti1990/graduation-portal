@@ -9,29 +9,53 @@ import {
   getRolesList,
   getProvincesList,
   getSitesByProvince,
+  getGenderList,
+  getOrganisationList,
+  getPositionList,
+  getCountryCodesList,
+  ensureEntityTypes,
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
 import { useIsSupervisor } from '../contexts/AuthContext';
+
+export type PaginatedSelectFetchParams = {
+  page: number;
+  limit: number;
+  search?: string;
+};
+
+export type PaginatedSelectFetchResult = {
+  data: any[];
+  total: number;
+};
 
 // Type definition for filter configuration
 export type FilterConfig = {
   name?: string; // Fallback if nameKey is not provided
   nameKey?: string; // Translation key for the filter name
   attr: string;
-  type: 'search' | 'select';
-  data: Array<
+  type: 'search' | 'select' | 'paginated-select';
+  data?: Array<
     string | { label?: string; labelKey?: string; value: string | null }
   >;
   placeholder?: string; // Fallback if placeholderKey is not provided
   placeholderKey?: string; // Translation key for the placeholder
   disabled?: boolean; // Disable the filter (e.g., district when no province selected)
+  // paginated-select specific props
+  fetchFn?: (params: PaginatedSelectFetchParams) => Promise<PaginatedSelectFetchResult>;
+  dependencyAttr?: string; // Attr of another filter this depends on (auto-cleared when dependency changes)
+  dependencyKey?: string | number | null; // Value that resets the list when changed
+  pageSize?: number;
+  showSearch?: boolean;
+  labelKey?: string; // Field to use as label in fetched items
+  valueKey?: string; // Field to use as value in fetched items
 };
 
 // Status filter configuration - Static filter
 export const StatusFilter: FilterConfig = {
-    nameKey: 'admin.filters.status',
-    attr: 'status',
-    type: 'select',
+  nameKey: 'admin.filters.status',
+  attr: 'status',
+  type: 'select',
   data: [
     { labelKey: 'admin.filters.allStatus', value: 'all-status' },
     { labelKey: 'admin.filters.active', value: 'Active' },
@@ -62,41 +86,61 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
   // State for API data
   const [roles, setRoles] = useState<Role[]>([]);
   const [provinces, setProvinces] = useState<ProvinceEntity[]>([]);
+  const [genders, setGenders] = useState<any[]>([]);
+  const [organisations, setOrganisations] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [sites, setSites] = useState<SiteEntity[]>([]);
+  const [countryCodes, setCountryCodes] = useState<any[]>([]);
+  const [entityTypesMap, setEntityTypesMap] = useState<Record<string, string> | null>(null);
+  const [isFiltersLoading, setIsFiltersLoading] = useState(true);
 
   // Fetch roles and provinces from API on component mount
   useEffect(() => {
     const fetchInitialData = async () => {
+      setIsFiltersLoading(true);
       // Fetch roles
       try {
         const rolesResponse = await getRolesList({ page: 1, limit: 100 });
         const allRoles = rolesResponse.result?.data || [];
         // Filter only ACTIVE roles for the dropdown
         let activeRoles = allRoles.filter((role: Role) => role.status === 'ACTIVE');
-        
+
         // If logged-in user is Supervisor, exclude "BRAC admin" and "Supervisor" roles
         // Check role label (what's displayed in dropdown) to filter out these roles
         if (isSupervisor) {
           activeRoles = activeRoles.filter((role: Role) => {
             const roleLabel = role.label?.toLowerCase() || '';
-            
+
             // Exclude "BRAC admin" and "Supervisor" roles based on label
             // These are the display labels shown in the dropdown
             const isBRACAdmin = roleLabel === 'brac admin' || roleLabel.includes('brac admin');
             const isSupervisorRole = roleLabel === 'supervisor';
-            
+
             return !isBRACAdmin && !isSupervisorRole;
           });
         }
-        
+
         setRoles(activeRoles);
       } catch (error) {
         setRoles([]);
       }
 
-      // Fetch provinces
-      const provincesData = await getProvincesList();
+      // Fetch provinces, genders, organisations, positions, and country codes
+      const [provincesData, genderData, organisationData, positionData, countryCodesData, typesMap] = await Promise.all([
+        getProvincesList(),
+        getGenderList(),
+        getOrganisationList(),
+        getPositionList(),
+        getCountryCodesList(),
+        ensureEntityTypes(),
+      ]);
       setProvinces(provincesData);
+      setGenders(genderData);
+      setOrganisations(organisationData);
+      setPositions(positionData);
+      setCountryCodes(countryCodesData);
+      setEntityTypesMap(typesMap);
+      setIsFiltersLoading(false);
     };
 
     fetchInitialData();
@@ -106,7 +150,7 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
   useEffect(() => {
     const fetchSites = async () => {
       const selectedProvince = filters.province;
-      
+
       // Only fetch sites if a specific province is selected (not "all-provinces")
       if (!selectedProvince || selectedProvince === 'all-provinces') {
         setSites([]);
@@ -154,7 +198,7 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
     // Determine if site filter should be disabled
     const selectedProvince = filters.province;
     const isProvinceSelected = selectedProvince &&
-                               selectedProvince !== 'all-provinces';
+      selectedProvince !== 'all-provinces';
     const shouldDisableSiteFilter = !isProvinceSelected; // Disable until a province is selected
 
     // Build site filter from API sites
@@ -184,15 +228,15 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
         nameKey: 'admin.filters.status',
         attr: 'status',
         type: 'select' as const,
-    data: [
-      { labelKey: 'admin.filters.allStatus', value: 'all-status' },
-      { labelKey: 'admin.filters.active', value: 'Active' },
-      { labelKey: 'admin.filters.deactivated', value: 'Deactivated' },
-    ],
-  },
-  {
-    nameKey: 'admin.filters.province',
-    attr: 'province',
+        data: [
+          { labelKey: 'admin.filters.allStatus', value: 'all-status' },
+          { labelKey: 'admin.filters.active', value: 'Active' },
+          { labelKey: 'admin.filters.deactivated', value: 'Deactivated' },
+        ],
+      },
+      {
+        nameKey: 'admin.filters.province',
+        attr: 'province',
         type: 'select' as const,
         data: provinceFilterOptions,
       },
@@ -210,8 +254,14 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
     filters: filterOptions,
     roles,
     provinces,
+    genders,
+    organisations,
+    positions,
     sites,
+    countryCodes,
+    entityTypesMap,
+    isFiltersLoading,
   };
 };
 
-export const PAGE_SIZE_OPTIONS = [5, 10, 25, 50,100, 200];
+export const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100, 200];

@@ -4,14 +4,18 @@ const DB_NAME = 'ProjectPlayerDB';
 const STORE_NAME = 'projects';
 
 // Initialize IndexedDB (for web)
+let _dbPromise: Promise<IDBDatabase> | null = null;
+
 const initDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
+      _dbPromise = null;
       return reject(new Error('IndexedDB not available in this environment'));
     }
     const request = indexedDB.open(DB_NAME, 1);
 
-    request.onerror = () => reject(request.error);
+    request.onerror = () => { _dbPromise = null; reject(request.error); };
     request.onsuccess = () => resolve(request.result);
 
     request.onupgradeneeded = event => {
@@ -21,6 +25,7 @@ const initDB = (): Promise<IDBDatabase> => {
       }
     };
   });
+  return _dbPromise;
 };
 
 // Storage API

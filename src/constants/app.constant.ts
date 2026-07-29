@@ -1,5 +1,6 @@
 export const STATUS = {
   NOT_ENROLLED: 'NOT_ONBOARDED',
+  NOT_ELIGIBLE:"NOT_ELIGIBLE",
   ENROLLED: 'ONBOARDED',
   NOT_ONBOARDED: 'NOT_ONBOARDED',
   ONBOARDED: 'ONBOARDED',
@@ -10,9 +11,22 @@ export const STATUS = {
   GRADUATED: 'GRADUATED',
 };
 
+export const MAX_FILE_SIZE = 5;
+export const MAX_FILE_COUNT = 5;
+
+export const ALLOWOFFLINESTATUS = [STATUS.NOT_ONBOARDED,STATUS.IN_PROGRESS];
+
+// Maximum number of participants that can be selected at once for bulk offline download.
+export const MAX_BULK_OFFLINE_DOWNLOAD = 10;
+
 export const USER_STATUS = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
+} as const;
+
+export const USER_STATUS_DISPLAY = {
+  ACTIVE: 'Active',
+  INACTIVE: 'Deactivated',
 } as const;
 
 export const ENTITY_STATUS = {
@@ -74,6 +88,7 @@ export const CARD_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
   NOT_STARTED: 'not-started',
+  STARTED: "started",
   IN_PROGRESS: 'started',
   COMPLETED: 'completed',
   GRADUATED: 'graduated',
