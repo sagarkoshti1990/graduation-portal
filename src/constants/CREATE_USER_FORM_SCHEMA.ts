@@ -58,6 +58,10 @@ export const FORM_FIELD_TYPES = {
   GROUP: 'group',
   /** Read-only display of another field's label/value, resolved by name */
   VIEW: 'view',
+  /** Single-select rendered as a row of clickable pill buttons instead of a dropdown */
+  PILLSELECT: 'pillselect',
+  /** File upload trigger */
+  FILE: 'file',
 } as const;
 
 export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPES];
@@ -100,6 +104,10 @@ export interface FormField {
   isReadOnly?: boolean;
   /** Field is rendered only when every condition here evaluates to true (AND logic) */
   visibleIf?: VisibleIfCondition[];
+  /** Small helper text rendered under the field (currently used by `file` fields) */
+  subLabel?: { key?: string; fallback: string };
+  /** Renders an "(optional)" tag next to the label (currently used by `file` fields) */
+  showOptionalTag?: boolean;
 }
 
 export interface FormRow {
@@ -121,6 +129,8 @@ export interface FormSection {
   title?: { key: string; fallback: string };
   /** Alternate to `title` accepted for tab/section nodes */
   label?: { key?: string; fallback: string };
+  /** Larger page-level heading, distinct from the compact card-header `title` */
+  heading?: { key?: string; fallback: string };
   subheading?: { key?: string; fallback: string };
   children?: FormSection[]
   rows?: FormRow[];

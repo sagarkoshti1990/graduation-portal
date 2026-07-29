@@ -44,6 +44,7 @@ import {
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
 import DatePicker from '@components/ui/Inputs/DatePicker';
+import { openFilePicker } from '../../project-player/components/Task/FileEvidence/file-picker';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { styles } from '../../screens/UserManagement/Styles';
 import { FORM_FIELD_TYPES } from '@constants/CREATE_USER_FORM_SCHEMA';
@@ -577,7 +578,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     disabled || !!field.disabled || (isEditMode && field.name === 'roleId');
 
   useEffect(() => {
-    if (field.type === FORM_FIELD_TYPES.SELECT) {
+    if (field.type === FORM_FIELD_TYPES.SELECT || field.type === FORM_FIELD_TYPES.PILLSELECT) {
       const rawOptions = field.optionsSource
         ? optionsMap[field.optionsSource] ?? []
         : [];
@@ -724,6 +725,95 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             : {})}
         />
       </Box>
+    );
+  }
+
+  // ── Pill Select (single-select rendered as a row of pill buttons) ────────────
+  if (field.type === FORM_FIELD_TYPES.PILLSELECT) {
+    const rawOptions = field.optionsSource
+      ? optionsMap[field.optionsSource] ?? []
+      : [];
+    const isDisabled = isFieldDisabled || !!field.isReadOnly;
+
+    return (
+      <HStack space="sm" flexWrap="wrap">
+        {rawOptions.map(option => {
+          const isSelected = option.value === value;
+          return (
+            <Pressable
+              key={option.value}
+              disabled={isDisabled}
+              onPress={() => onChange(field.name || '', option.value)}
+            >
+              <Box
+                px="$3"
+                py="$2"
+                borderRadius="$full"
+                borderWidth={1}
+                borderColor={isSelected ? '$primary500' : '$borderColor'}
+                bg={isSelected ? '$primary500' : 'transparent'}
+                opacity={isDisabled ? 0.5 : 1}
+              >
+                <Text
+                  {...TYPOGRAPHY.bodySmall}
+                  color={isSelected ? '$white' : '$textForeground'}
+                >
+                  {option.label}
+                </Text>
+              </Box>
+            </Pressable>
+          );
+        })}
+      </HStack>
+    );
+  }
+
+  // ── File Upload ───────────────────────────────────────────────────────────────
+  if (field.type === FORM_FIELD_TYPES.FILE) {
+    const isDisabled = isFieldDisabled || !!field.isReadOnly;
+    const subLabelText = field.subLabel
+      ? t(`admin.users.createUser.${field.subLabel.key}`, field.subLabel.fallback)
+      : undefined;
+
+    const handlePick = async () => {
+      if (isDisabled) return;
+      try {
+        const picked = await openFilePicker({ allowMultiSelection: false });
+        const fileName = picked?.[0]?.name;
+        if (fileName) onChange(field.name || '', fileName);
+      } catch {
+        // User cancelled the picker — nothing to persist.
+      }
+    };
+
+    return (
+      <VStack space="xs">
+        <Pressable onPress={handlePick} disabled={isDisabled}>
+          <HStack
+            space="sm"
+            alignItems="center"
+            borderWidth={1}
+            borderStyle="dashed"
+            borderColor="$borderColor"
+            borderRadius="$md"
+            p="$3"
+            opacity={isDisabled ? 0.5 : 1}
+          >
+            <LucideIcon name="Upload" size={18} color="$textMutedForeground" />
+            <Text
+              {...TYPOGRAPHY.bodySmall}
+              color={value ? '$textForeground' : '$textMutedForeground'}
+            >
+              {value || placeholder || t('common.clickToUpload', 'Click to upload')}
+            </Text>
+          </HStack>
+        </Pressable>
+        {!!subLabelText && (
+          <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+            {subLabelText}
+          </Text>
+        )}
+      </VStack>
     );
   }
 
@@ -1007,48 +1097,36 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
 // recursive rendering above, unchanged — this keeps every existing screen
 // (CREATE_USER_FORM_SCHEMA, etc.) byte-for-byte backward compatible.
 
-/** Simple step indicator — deliberately not gluestack's Tabs, since Tabs has no
- * external-control API and the wizard's Previous/Continue buttons must be the
- * single source of truth for which step is active. */
+/**
+ * Step indicator built on the same `@gluestack-ui/themed` Tabs primitives as the
+ * in-page `TabGroupRenderer` above, so clicking a tab behaves like standard tab
+ * navigation. gluestack's `Tabs` has no external-control API (`value` only seeds
+ * its internal state once), so the wizard's Previous/Continue buttons remain the
+ * source of truth: `key={activeTabId}` forces a remount with the right initial
+ * value whenever they change step, while direct clicks call `onSelectStep`
+ * (composed alongside gluestack's own internal switch — both fire on a tap, and
+ * since we don't render TabsTabPanels here, only our own `onSelectStep` matters).
+ */
 const StepHeader: React.FC<{
   tabs: FormSection[];
   activeStepIndex: number;
+  onSelectStep: (index: number) => void;
   t: (key: string, fallback?: string) => string;
-}> = ({ tabs, activeStepIndex, t }) => (
-  <HStack space="lg" alignItems="center" flexWrap="wrap">
-    {tabs.map((tab, index) => {
-      const isActive = index === activeStepIndex;
-      const isComplete = index < activeStepIndex;
-      return (
-        <HStack key={tab.id} space="xs" alignItems="center">
-          <Box
-            width={24}
-            height={24}
-            borderRadius="$full"
-            alignItems="center"
-            justifyContent="center"
-            bg={isActive || isComplete ? '$primary500' : '$backgroundLight200'}
-          >
-            {isComplete ? (
-              <LucideIcon name="Check" size={14} color="$white" />
-            ) : (
-              <Text {...TYPOGRAPHY.caption} color={isActive ? '$white' : '$textMutedForeground'}>
-                {index + 1}
-              </Text>
-            )}
-          </Box>
-          <Text
-            {...TYPOGRAPHY.bodySmall}
-            color={isActive ? '$textForeground' : '$textMutedForeground'}
-            fontWeight={isActive ? '$bold' : '$normal'}
-          >
-            {nodeTitleText(tab, t) ?? tab.id}
-          </Text>
-        </HStack>
-      );
-    })}
-  </HStack>
-);
+}> = ({ tabs, activeStepIndex, onSelectStep, t }) => {
+  const activeTabId = tabs[activeStepIndex]?.id;
+
+  return (
+    <Tabs key={activeTabId} value={activeTabId} width="100%">
+      <TabsTabList>
+        {tabs.map((tab, index) => (
+          <TabsTab key={tab.id} value={tab.id} onPress={() => onSelectStep(index)}>
+            <TabsTabTitle>{nodeTitleText(tab, t) ?? tab.id}</TabsTabTitle>
+          </TabsTab>
+        ))}
+      </TabsTabList>
+    </Tabs>
+  );
+};
 
 const StepFooter: React.FC<{
   isFirstStep: boolean;
@@ -1204,11 +1282,48 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   const [highlightedField, setHighlightedField] = useState<string | null>(null);
 
   const fieldRefsRef = useRef<Record<string, any>>({});
-  const pendingFocusFieldRef = useRef<string | null>(null);
+  const pendingFocusFieldRef = useRef<{ fieldName: string; message: string } | null>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const registerFieldRef = (name: string, node: any) => {
     fieldRefsRef.current[name] = node;
+  };
+
+  // Reveals the standard inline error for exactly this one field, then scrolls,
+  // focuses, and temporarily highlights it. Other invalid fields stay quiet —
+  // Task 2 explicitly asks that the popup, not a wall of inline errors, be the
+  // first thing the user sees after a failed validation.
+  const revealAndFocusField = (name: string, message: string) => {
+    setInternalErrors(prev => ({ ...prev, [name]: message }));
+
+    setHighlightedField(name);
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = setTimeout(() => setHighlightedField(null), 1600);
+
+    setTimeout(() => {
+      const node = fieldRefsRef.current[name];
+      if (node?.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (node?.focus) node.focus();
+    }, 50);
+  };
+
+  // Applies a fresh validation pass without auto-revealing newly-invalid fields:
+  // a field only ever gets an inline message once the user has opened it from the
+  // validation popup (`revealAndFocusField`). Already-revealed fields still track
+  // the live result (cleared once fixed, updated if still invalid).
+  const applyValidationResult = (
+    freshErrors: Record<string, string>,
+    visited: Set<string>,
+  ) => {
+    setInternalErrors(prev => {
+      const next = { ...prev };
+      visited.forEach(name => {
+        if (!(name in next)) return; // never revealed — stays hidden
+        if (freshErrors[name]) next[name] = freshErrors[name];
+        else delete next[name]; // now valid — clear it
+      });
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -1220,18 +1335,12 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   // Runs after navigating to a different step from the validation popup — the target
   // field only mounts once that step's content renders, so this waits a tick for it.
   useEffect(() => {
-    const name = pendingFocusFieldRef.current;
-    if (!name) return;
+    const pending = pendingFocusFieldRef.current;
+    if (!pending) return;
     pendingFocusFieldRef.current = null;
 
     const timer = setTimeout(() => {
-      setHighlightedField(name);
-      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-      highlightTimeoutRef.current = setTimeout(() => setHighlightedField(null), 1600);
-
-      const node = fieldRefsRef.current[name];
-      if (node?.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      if (node?.focus) node.focus();
+      revealAndFocusField(pending.fieldName, pending.message);
     }, 50);
 
     return () => clearTimeout(timer);
@@ -1239,6 +1348,13 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
   const handlePrevious = () => {
     setActiveStepIndex(i => Math.max(0, i - 1));
+  };
+
+  // Direct tab clicks navigate freely (no validation gating) — only the
+  // Continue button validates before advancing. Values/errors/draft state
+  // are untouched since they live outside `activeStepIndex`.
+  const handleSelectStep = (index: number) => {
+    setActiveStepIndex(index);
   };
 
   const handleContinue = () => {
@@ -1253,11 +1369,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
       t,
     );
 
-    setInternalErrors(prev => {
-      const next = { ...prev };
-      visited.forEach(name => delete next[name]);
-      return { ...next, ...stepErrors };
-    });
+    applyValidationResult(stepErrors, visited);
 
     if (stepIssues.length === 0) {
       setActiveStepIndex(i => Math.min(i + 1, rootTabs.length - 1));
@@ -1276,11 +1388,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
       t,
     );
 
-    setInternalErrors(prev => {
-      const next = { ...prev };
-      visited.forEach(name => delete next[name]);
-      return { ...next, ...allErrors };
-    });
+    applyValidationResult(allErrors, visited);
 
     if (allIssues.length === 0) {
       onSubmit?.(values);
@@ -1299,20 +1407,12 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
     if (issue.rootTabIndex !== undefined && issue.rootTabIndex !== safeStepIndex) {
       // Defer scroll/focus/highlight until the new step's fields mount (see effect above).
-      pendingFocusFieldRef.current = issue.fieldName;
+      pendingFocusFieldRef.current = { fieldName: issue.fieldName, message: issue.message };
       setActiveStepIndex(issue.rootTabIndex);
       return;
     }
 
-    setHighlightedField(issue.fieldName);
-    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-    highlightTimeoutRef.current = setTimeout(() => setHighlightedField(null), 1600);
-
-    setTimeout(() => {
-      const node = fieldRefsRef.current[issue.fieldName];
-      if (node?.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      if (node?.focus) node.focus();
-    }, 50);
+    revealAndFocusField(issue.fieldName, issue.message);
   };
 
   const baseCtx: NodeRenderContext = {
@@ -1340,7 +1440,12 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
     return (
       <VStack space="md" width="100%">
-        <StepHeader tabs={rootTabs} activeStepIndex={safeStepIndex} t={t} />
+        <StepHeader
+          tabs={rootTabs}
+          activeStepIndex={safeStepIndex}
+          onSelectStep={handleSelectStep}
+          t={t}
+        />
 
         <RenderNodes nodes={activeTab?.children} ctx={stepCtx} />
 
