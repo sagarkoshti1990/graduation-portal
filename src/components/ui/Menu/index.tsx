@@ -1,66 +1,30 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
-  Menu,
-  MenuItem,
-  MenuItemLabel,
+  Menu as PopupMenu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+  renderers,
+} from 'react-native-popup-menu';
+import {
+  Box,
+  Text,
   Icon,
   ButtonText,
   Button,
-  Box,
-  Text,
+  useColorMode,
 } from '@gluestack-ui/themed';
 import LucideIcon from '@components/ui/LucideIcon';
 import { useLanguage } from '@contexts/LanguageContext';
+import type { MenuItemData, CustomMenuProps } from './types';
 
-/**
- * Menu Component - Enhanced with Icon and Divider Support
- * 
- * - Added `showDividerAfter` property to MenuItemData for visual menu organization
- * - Added icon support: `iconElement` (custom ReactNode), `iconName` (LucideIcon name), `icon` (Gluestack Icon)
- * - Added `iconColor` and `iconSizeValue` for fine-grained icon styling control
- * - Dividers render as disabled MenuItem with Box separator for consistent menu structure
- */
-export interface MenuItemData {
-  key: string;
-  label: string;
-  textValue: string;
-  icon?: any;
-  iconSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-  iconElement?: React.ReactNode; // Custom ReactNode for icon (e.g., React.createElement pattern)
-  iconName?: string; // LucideIcon name (e.g., 'Home', 'User', 'LogOut')
-  iconColor?: string; // Icon color value
-  iconSizeValue?: number; // Icon size in pixels
-  color?: string;
-  showDividerAfter?: boolean; // Render divider after this menu item
-  route?: string; // Navigation route name for menu items that navigate
-  href?: string; // External URL for menu items that open outside the app
-  isComingSoon?: boolean; // Render coming soon badge if true
-}
+export type { MenuItemData, CustomMenuProps } from './types';
 
-export interface CustomMenuProps {
-  items: MenuItemData[];
-  placement?:
-    | 'top'
-    | 'bottom'
-    | 'left'
-    | 'right'
-    | 'top left'
-    | 'top right'
-    | 'bottom left'
-    | 'bottom right'
-    | 'left top'
-    | 'left bottom'
-    | 'right top'
-    | 'right bottom';
-  offset?: number;
-  disabledKeys?: string[];
-  triggerLabel?: string;
-  trigger?: (triggerProps: any) => React.ReactElement;
-  onSelect?: (key: string) => void;
-  menuProps?: any;
-  triggerProps?: any;
-}
+// Native (Android/iOS) implementation, backed by react-native-popup-menu.
+// Gluestack's Menu is unreliable on native (won't reopen after a selection,
+// inconsistent positioning) but works fine on web — see index.web.tsx for
+// the web implementation used there instead.
 
 const DefaultTrigger: React.FC<{ label: string; triggerProps: any }> = ({
   label,
@@ -75,8 +39,6 @@ const DefaultTrigger: React.FC<{ label: string; triggerProps: any }> = ({
 
 export const CustomMenu: React.FC<CustomMenuProps> = ({
   items,
-  placement = 'bottom',
-  offset = 5,
   disabledKeys = [],
   triggerLabel = 'Menu',
   triggerProps = {},
@@ -85,130 +47,148 @@ export const CustomMenu: React.FC<CustomMenuProps> = ({
   ...menuProps
 }) => {
   const { t } = useLanguage();
+  const mode = useColorMode();
+  const isDark = mode === 'dark';
+  const menuRef = React.useRef<any>(null);
+
   const handleMenuItemPress = (key: string) => {
     if (onSelect) {
       onSelect(key);
     }
   };
 
-  const renderTrigger = React.useCallback(
-    (defaultTriggerProps: any) => {
-      // If custom trigger provided, use it
-      if (trigger) {
-        return trigger({
-          ...defaultTriggerProps,
-          ...triggerProps,
-        });
-      }
-      // Otherwise use default trigger
-      return (
-        <DefaultTrigger
-          label={t(triggerLabel)}
-          triggerProps={{ ...defaultTriggerProps, ...triggerProps }}
-        />
-      );
-    },
-    [triggerProps, triggerLabel, t, trigger],
-  );
+  // Gluestack's Pressable/Button always attach their own press responder
+  // (via usePress()), so they win RN's touch-responder negotiation over
+  // MenuTrigger's wrapping touchable — opening must be driven from here,
+  // through the trigger's own onPress, rather than relying on MenuTrigger.
+  const openMenu = () => {
+    menuRef.current?.open();
+  };
+
+  const renderTrigger = () => {
+    const mergedTriggerProps = { ...triggerProps, onPress: openMenu };
+    if (trigger) {
+      return trigger(mergedTriggerProps);
+    }
+    return (
+      <DefaultTrigger label={t(triggerLabel)} triggerProps={mergedTriggerProps} />
+    );
+  };
 
   return (
-    <Menu
-      placement={placement}
-      offset={
-        Platform.OS === 'web'
-          ? offset
-          : -12
-      }
-      crossOffset={
-        Platform.OS === 'web'
-          ? 0
-          : -4
-      }
-      shouldFlip={Platform.OS === 'web'}
-      disabledKeys={disabledKeys}
-      trigger={renderTrigger}
-      {...menuProps}
-    >
-      {items?.map((item: MenuItemData, index: number) => {
-        const isDisabled = item.isComingSoon || disabledKeys.includes(item.key);
-        
-        // Render menu item with icon support (priority: iconElement > iconName > icon)
-        const menuItem = (
-          <MenuItem
-            key={item.key || index.toString()}
-            textValue={item.textValue}
-            onPress={() => {
-              if (!item.isComingSoon) {
-                handleMenuItemPress(item.key);
-              }
-            }}
-            disabled={isDisabled}
-            opacity={item.isComingSoon ? 0.6 : 1}
-          >
-            <Box flexDirection="row" alignItems="center" justifyContent="space-between" flex={1}>
-              <Box flexDirection="row" alignItems="center" flex={1}>
-                {item.iconElement ? (
-                  // Custom ReactNode icon (used in constants for React.createElement pattern)
-                  <Box mr="$2">
-                    {item.iconElement}
-                  </Box>
-                ) : item.iconName ? (
-                  // LucideIcon by name (flexible icon rendering)
-                  <Box mr="$2">
-                    <LucideIcon 
-                      name={item.iconName} 
-                      size={item.iconSizeValue || 16} 
-                      color={item.iconColor} 
-                    />
-                  </Box>
-                ) : item.icon ? (
-                  // Gluestack Icon component
-                  <Icon as={item.icon} size={item.iconSize || 'sm'} me="$2" />
-                ) : null}
-                <MenuItemLabel size="sm" color={item.color}>
-                  {t(item.label)}
-                </MenuItemLabel>
-              </Box>
-              {/* Coming soon badge */}
-              {item.isComingSoon && (
-                <Box
-                  bg="$warning500"
-                  px="$1.5"
-                  py="$0.5"
-                  borderRadius="$xs"
-                  ml="$2"
+    <PopupMenu ref={menuRef} renderer={renderers.ContextMenu} onSelect={handleMenuItemPress} {...menuProps}>
+      <MenuTrigger>{renderTrigger()}</MenuTrigger>
+      <MenuOptions customStyles={{ optionsContainer: styles.optionsContainerReset }}>
+        <Box
+          bg={isDark ? '$backgroundDark900' : '$white'}
+          borderColor={isDark ? '$borderDark700' : '$borderLight200'}
+          style={styles.surface}
+        >
+          {items?.map((item: MenuItemData, index: number) => {
+            const isKeyDisabled = disabledKeys.includes(item.key);
+
+            return (
+              <React.Fragment key={item.key || index.toString()}>
+                <MenuOption
+                  value={item.key}
+                  disabled={isKeyDisabled}
+                  onSelect={item.isComingSoon ? () => {} : undefined}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={item.textValue}
+                  customStyles={{ optionWrapper: styles.optionWrapperReset }}
                 >
-                  <Text fontSize="$2xs" fontWeight="$semibold" color="$white">
-                    {t('common.comingSoon') || 'Coming soon.'}
-                  </Text>
-                </Box>
-              )}
-            </Box>
-          </MenuItem>
-        );
+                  <Box
+                    flexDirection="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    flex={1}
+                    px="$3"
+                    py="$2.5"
+                    opacity={item.isComingSoon ? 0.6 : 1}
+                  >
+                    <Box flexDirection="row" alignItems="center" flex={1}>
+                      {item.iconElement ? (
+                        // Custom ReactNode icon (used in constants for React.createElement pattern)
+                        <Box mr="$2">{item.iconElement}</Box>
+                      ) : item.iconName ? (
+                        // LucideIcon by name (flexible icon rendering)
+                        <Box mr="$2">
+                          <LucideIcon
+                            name={item.iconName}
+                            size={item.iconSizeValue || 16}
+                            color={item.iconColor}
+                          />
+                        </Box>
+                      ) : item.icon ? (
+                        // Gluestack Icon component
+                        <Icon as={item.icon} size={item.iconSize || 'sm'} me="$2" />
+                      ) : null}
+                      <Text size="sm" color={item.color}>
+                        {t(item.label)}
+                      </Text>
+                    </Box>
+                    {/* Coming soon badge */}
+                    {item.isComingSoon && (
+                      <Box
+                        bg="$warning500"
+                        px="$1.5"
+                        py="$0.5"
+                        borderRadius="$xs"
+                        ml="$2"
+                      >
+                        <Text fontSize="$2xs" fontWeight="$semibold" color="$white">
+                          {t('common.comingSoon') || 'Coming soon.'}
+                        </Text>
+                      </Box>
+                    )}
+                  </Box>
+                </MenuOption>
 
-        // Render divider after menu item if showDividerAfter is true
-        // Uses disabled MenuItem wrapper with Box separator for consistent menu structure
-        if (item.showDividerAfter) {
-          return (
-            <React.Fragment key={item.key || index.toString()}>
-              {menuItem}
-              <MenuItem
-                key={item.key ? `${item.key}-separator` : `separator-${index}`}
-                textValue="separator"
-                disabled={true}
-                onPress={() => {}} padding="$0"
-              >
-                <Box height={1} width="100%" bg="$borderLight200" my="$1" />
-              </MenuItem>
-            </React.Fragment>
-          );
-        }
-
-        return menuItem;
-      })}
-    </Menu>
+                {/* Divider after menu item if showDividerAfter is true */}
+                {item.showDividerAfter && (
+                  <Box bg={isDark ? '$borderDark700' : '$borderLight200'} style={styles.divider} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </Box>
+      </MenuOptions>
+    </PopupMenu>
   );
 };
+
+const styles = StyleSheet.create({
+  optionsContainerReset: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    width: undefined,
+    shadowOpacity: 0,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 0,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+  optionWrapperReset: {
+    padding: 0,
+  },
+  surface: {
+    minWidth: 200,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 4,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    zIndex: 9999,
+    elevation: 6,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
+  },
+});
 
 export default CustomMenu;

@@ -12,6 +12,7 @@ import type { Task } from '../project-player/types';
 import {
   getProjectDetails,
   createProjectForEntity,
+  getSolutionDetails,
 } from '../project-player/services/projectPlayerService';
 import {
   getObservationEntities,
@@ -47,11 +48,6 @@ export interface StartDownloadParams {
   participantSnapshot?: any;
   /** Optional callback for real-time per-step progress reporting to the UI. */
   onProgress?: DownloadProgressCallback;
-  /**
-   * Already-set onboarding project ID (participant.onBoardedProjectId).
-   * When provided the project-creation step is skipped entirely.
-   */
-  onBoardedProjectId?: string;
   /**
    * Province value (e.g. participantSnapshot?.province?.value).
    * Required when onboarding project creation is needed.
@@ -99,7 +95,7 @@ async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
 // Status helpers
 // ---------------------------------------------------------------------------
 
-async function initStatus(participantId: string): Promise<void> {
+async function initStatus(userId: string, participantId: string): Promise<void> {
   const status: DownloadStatus = {
     status: 'in_progress',
     completedModules: [],
@@ -107,18 +103,18 @@ async function initStatus(participantId: string): Promise<void> {
     lastStep: 'start',
     startedAt: Date.now(),
   };
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), status);
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), status);
 }
 
-async function patchStatus(participantId: string, patch: Partial<DownloadStatus>): Promise<void> {
-  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), { ...(current ?? {}), ...patch });
+async function patchStatus(userId: string, participantId: string, patch: Partial<DownloadStatus>): Promise<void> {
+  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), { ...(current ?? {}), ...patch });
 }
 
-async function markComplete(participantId: string, module: string): Promise<void> {
-  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+async function markComplete(userId: string, participantId: string, module: string): Promise<void> {
+  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));
   if (!current) return;
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), {
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), {
     ...current,
     completedModules: current.completedModules.includes(module)
       ? current.completedModules
@@ -128,10 +124,10 @@ async function markComplete(participantId: string, module: string): Promise<void
   });
 }
 
-async function markFailed(participantId: string, module: string): Promise<void> {
-  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+async function markFailed(userId: string, participantId: string, module: string): Promise<void> {
+  const current = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));
   if (!current) return;
-  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(participantId), {
+  await offlineStorage.create(PARTICIPANT_KEYS.downloadStatus(userId, participantId), {
     ...current,
     failedModules: current.failedModules.includes(module)
       ? current.failedModules
@@ -170,7 +166,7 @@ async function ensureOnboardingProject({
 }): Promise<string> {
   // Guard: re-read from cache in case a previous download already created the project
   const cachedDetails = await offlineStorage
-    .read<any>(PARTICIPANT_KEYS.details(participantId))
+    .read<any>(PARTICIPANT_KEYS.details(lcUserId, participantId))
     .catch(() => null);
   if (cachedDetails?.onBoardedProjectId) {
     logger.info(`DownloadService: Onboarding project already in cache for "${participantId}" — skipping creation`);
@@ -196,7 +192,7 @@ async function ensureOnboardingProject({
 
   // Re-check cache (concurrent creation guard — e.g. two simultaneous download attempts)
   const recheckDetails = await offlineStorage
-    .read<any>(PARTICIPANT_KEYS.details(participantId))
+    .read<any>(PARTICIPANT_KEYS.details(lcUserId, participantId))
     .catch(() => null);
   if (recheckDetails?.onBoardedProjectId) {
     logger.info(`DownloadService: Concurrent creation detected for "${participantId}" — using existing project`);
@@ -280,42 +276,56 @@ async function fetchAndStoreParticipant(participantId: string, lcUserId: string)
     accountUserStatus: userDetails?.status,
   };
 
-  await offlineStorage.create(PARTICIPANT_KEYS.details(participantId), mappedParticipant);
+  await offlineStorage.create(PARTICIPANT_KEYS.details(lcUserId, participantId), mappedParticipant);
   logger.info(`DownloadService: Stored participant "${participantId}"`);
   return mappedParticipant;
 }
 
-async function fetchAndStoreProject(participantId: string, projectId: string): Promise<Task[]> {
-  const response = await getProjectDetails(projectId);
+async function fetchAndStoreProject(userId: string, participantId: string, projectId: string): Promise<Task[]> {
+  const response = await getProjectDetails(projectId, userId);
   if (!response.data) throw new Error(`Project "${projectId}" returned no data`);
   const project = response.data;
   // Flatten children[].tasks[] for pillar-structured projects; fall back to root tasks[]
   const tasks: Task[] = project.tasks
     ?? (project.children ?? []).flatMap((c: any) => c.tasks ?? []);
   // Store the full project only — tasks are extracted from it when needed (no separate key)
-  await offlineStorage.create(PARTICIPANT_KEYS.project(participantId,projectId), project);
+  await offlineStorage.create(PARTICIPANT_KEYS.project(userId, participantId, projectId), project);
   logger.info(`DownloadService: Stored project "${projectId}" with ${tasks.length} tasks`);
   return tasks;
 }
-
-const getSubmissionNumber = (
+const getSubmissionInfo = (
   submissions: {
     submissionNumber?: number;
     status?: string;
   }[] = []
-): number => {
-  if (!submissions.length) return 1;
+): {
+  submissionNumber: number;
+  status: string;
+} => {
+  if (!submissions.length) {
+    return {
+      submissionNumber: 1,
+      status: CARD_STATUS.STARTED,
+    };
+  }
 
   const highestSubmission = submissions.reduce((prev, current) =>
-    (current.submissionNumber || 0) >
-    (prev.submissionNumber || 0)
+    (current.submissionNumber || 0) > (prev.submissionNumber || 0)
       ? current
       : prev
   );
 
-  return highestSubmission?.status === CARD_STATUS.COMPLETED
-    ? (highestSubmission.submissionNumber || 0) + 1
-    : highestSubmission.submissionNumber || 1;
+  if (highestSubmission.status === CARD_STATUS.COMPLETED) {
+    return {
+      submissionNumber: (highestSubmission.submissionNumber || 0) + 1,
+      status: CARD_STATUS.STARTED,
+    };
+  }
+
+  return {
+    submissionNumber: highestSubmission.submissionNumber || 1,
+    status: highestSubmission.status || CARD_STATUS.STARTED,
+  };
 };
 
 /**
@@ -324,6 +334,7 @@ const getSubmissionNumber = (
  * Shared by the project-task path (HH) and the targeted-solutions path (all others).
  */
 async function processObservationForm(
+  userId: string,
   participantId: string,
   participantName: string,
   solutionId: string,
@@ -363,12 +374,14 @@ async function processObservationForm(
 
   // Step 3: Ensure a submission exists; re-fetch after creation for a fresh evidenceCode
   let submissions: any[] = [];
+  let status: string = ""
   const subsResp = await withRetry(
     () => getObservationSubmissions({ observationId, entityId: entityId! }),
     `submissions:${observationId}`,
   );
   submissions = subsResp?.result ?? [];
   let submissionId: string | undefined = submissions[0]?._id;
+  status = submissions[0]?.status;
 
   if (!submissionId) {
     await withRetry(
@@ -381,12 +394,15 @@ async function processObservationForm(
     );
     submissions = freshResp?.result ?? [];
     submissionId = submissions[0]?._id;
+    status = submissions[0]?.status;
   }
 
   if (!submissionId) throw new Error(`Could not resolve submissionId for observation "${observationId}"`);
   
   if(allowMultipleAssessemts) {
-    submissionNumber = getSubmissionNumber(submissions)
+    const subData = getSubmissionInfo(submissions);
+    submissionNumber = subData?.submissionNumber
+    status = subData?.status
   }
   
   const evidenceCode: string = submissions[0]?.evidencesStatus?.[0]?.code ?? 'OB';
@@ -413,32 +429,58 @@ async function processObservationForm(
     observationId,
     schema,
     data: schema?.submission?.answers ?? assessmentResp?.result?.submission?.answers ?? {},
-    status: 'started',
+    status: status || 'started',
     updatedAt: new Date().toISOString(),
+    downloadedAt: Date.now(),
   };
 
   // Keyed by solutionId — matches what ObservationContent passes to getObservationForm()
-  await offlineStorage.create(PARTICIPANT_KEYS.form(participantId, solutionId), formData);
+  await offlineStorage.create(PARTICIPANT_KEYS.form(userId, participantId, solutionId), formData);
   logger.info(`DownloadService: Stored form for solution "${solutionId}" (obs: "${observationId}")`);
   return { entityId: entityId!, submissionId: submissionId || "", submissionNumber: submissionNumber, observationId, solutionId };
 }
 
 /** Thin wrapper used by the project-task (HH) path to extract solutionId from a task. */
 async function processObservationTask(
+  userId: string,
   participantId: string,
   participantName: string,
   task: Task,
+  projectId: string,
 ): Promise<(ResolvedFormIds & { solutionId: string }) | null> {
-  const solutionId: string | undefined =
-    task.solutionDetails?._id ??
-    task.solutionDetails?.observationId ??
-    task.solutionDetails?.id;
+  // Call getSolutionDetails first to obtain the authoritative solutionId and name.
+  // Response shape: { data: result.solutionDetails } where solutionDetails._id is the solutionId.
+  // Mirrors the UI components (SimpleObservationTask, ReadOnlyTask) which do the same
+  // before navigating to the observation form.
+  let solutionId: string | undefined;
+  let solutionName: string | undefined;
+  try {
+    const detailsResp = await getSolutionDetails(projectId, task._id);
+    // detailsResp.data = response.result.solutionDetails
+    solutionId = detailsResp?.data?._id;
+    solutionName = detailsResp?.data?.name;
+  } catch (err) {
+    logger.warn(`DownloadService: getSolutionDetails failed for task "${task._id}" — falling back to task data`, err);
+  }
+
+  // Fallback: read from the embedded task.solutionDetails when the API call fails or returns no _id
   if (!solutionId) {
-    logger.warn(`DownloadService: No solutionId on task "${task._id}" — skipping`);
+    solutionId =
+      task.solutionDetails?._id ??
+      task.solutionDetails?.observationId ??
+      task.solutionDetails?.id;
+  }
+  if (!solutionName) {
+    solutionName = task?.solutionDetails?.name;
+  }
+
+  if (!solutionId) {
+    logger.warn(`DownloadService: No solutionId resolved for task "${task._id}" — skipping`);
     return null;
   }
-  const resolved = await processObservationForm(participantId, participantName, solutionId);
-  return { ...resolved, solutionId };
+
+  const resolved = await processObservationForm(userId, participantId, participantName, solutionId);
+  return { ...resolved, solutionId, name: solutionName };
 }
 
 /**
@@ -447,6 +489,7 @@ async function processObservationTask(
  * Per-solution failures are logged and skipped so one bad form doesn't fail the whole module.
  */
 async function fetchAndStoreSolutionForms(
+  userId: string,
   participantId: string,
   participantName: string,
   keywords: string[],
@@ -465,7 +508,7 @@ async function fetchAndStoreSolutionForms(
     if (!solution.solutionId) continue;
     try {
       const resolved = await withRetry(
-        () => processObservationForm(participantId, participantName, solution.solutionId),
+        () => processObservationForm(userId, participantId, participantName, solution.solutionId),
         `solutionForm:${solution.solutionId}`,
       );
       results.push({ ...solution,...resolved, keyword: moduleKey });
@@ -494,22 +537,9 @@ const OBSERVATION_SOLUTION_DOWNLOAD_MAP: ObservationModuleSpec[] = [
   { configKey: 'householdProfile', moduleKey: 'observation:householdProfile', keywords: [],                                    useProjectTasks: true  },
   { configKey: 'individualVisit',  moduleKey: 'observation:individualVisit',  keywords: FILTER_KEYWORDS.LOG_VISIT,             useProjectTasks: false },
   { configKey: 'midline',          moduleKey: 'observation:midline',          keywords: FILTER_KEYWORDS.MIDLINE,               useProjectTasks: false },
-  { configKey: 'interventionPlan', moduleKey: 'observation:interventionPlan', keywords: FILTER_KEYWORDS.INTERVENTION_PLAN,     useProjectTasks: false },
-  { configKey: 'endline',          moduleKey: 'observation:endline',          keywords: FILTER_KEYWORDS.ENDLINE,               useProjectTasks: false },
+  // { configKey: 'interventionPlan', moduleKey: 'observation:interventionPlan', keywords: FILTER_KEYWORDS.INTERVENTION_PLAN,     useProjectTasks: false },
+  // { configKey: 'endline',          moduleKey: 'observation:endline',          keywords: FILTER_KEYWORDS.ENDLINE,               useProjectTasks: false },
 ];
-
-// Used only to identify HH tasks within the fetched project task list.
-const OBSERVATION_KEYWORD_MAP: Record<string, string[]> = {
-  'observation:householdProfile': ['household', 'house hold'],
-};
-
-function resolveObservationModuleKey(task: Task): DownloadModuleKey | null {
-  const nameLower = (task.name ?? '').toLowerCase();
-  for (const [key, keywords] of Object.entries(OBSERVATION_KEYWORD_MAP)) {
-    if (keywords.some(kw => nameLower.includes(kw))) return key as DownloadModuleKey;
-  }
-  return null;
-}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -522,7 +552,6 @@ export const startDownload = async ({
   lcUserId,
   participantSnapshot,
   onProgress,
-  onBoardedProjectId,
   province,
   participantEntityId,
 }: StartDownloadParams): Promise<DownloadResult> => {
@@ -531,7 +560,7 @@ export const startDownload = async ({
   try {
     // initStatus is inside the try block so any storage failure is caught and returned
     // as a DownloadResult rather than propagating out of startDownload.
-    await initStatus(participantId);
+    await initStatus(lcUserId, participantId);
 
     // ── Step 0: Resolve project ID — create onboarding project when not yet set ──
     //
@@ -539,7 +568,7 @@ export const startDownload = async ({
     // project created yet.  We create it here (before saving any offline data) so the
     // rest of the pipeline can use a valid project ID.  Dependent offline storage
     // (project data, solutions mapping, etc.) will reference this newly created ID.
-    let resolvedProjectId = projectId ?? onBoardedProjectId;
+    let resolvedProjectId = projectId;
 
     if (!resolvedProjectId) {
       // entityId: try top-level fields, then userDetails, then fall back to participantId
@@ -566,11 +595,11 @@ export const startDownload = async ({
         logger.error(
           `DownloadService: Cannot create onboarding project for "${participantId}" — missing entityId or province`,
         );
-        await patchStatus(participantId, { status: 'failed' });
+        await patchStatus(lcUserId, participantId, { status: 'failed' });
         return {
           success: false,
           status: (await offlineStorage.read<DownloadStatus>(
-            PARTICIPANT_KEYS.downloadStatus(participantId),
+            PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId),
           ))!,
           error: 'Province and entity ID are required to create the onboarding project',
         };
@@ -591,17 +620,17 @@ export const startDownload = async ({
           'onboardingProject',
         );
         createdOnboardingProjectId = resolvedProjectId;
-        await markComplete(participantId, 'onboarding');
+        await markComplete(lcUserId, participantId, 'onboarding');
         onProgress?.('onboarding', 'completed');
       } catch (err: any) {
         logger.error(`DownloadService: Failed to create onboarding project for "${participantId}"`, err);
-        await markFailed(participantId, 'onboarding');
+        await markFailed(lcUserId, participantId, 'onboarding');
         onProgress?.('onboarding', 'failed');
-        await patchStatus(participantId, { status: 'failed' });
+        await patchStatus(lcUserId, participantId, { status: 'failed' });
         return {
           success: false,
           status: (await offlineStorage.read<DownloadStatus>(
-            PARTICIPANT_KEYS.downloadStatus(participantId),
+            PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId),
           ))!,
           error: err?.message ?? 'Failed to create onboarding project',
         };
@@ -612,7 +641,7 @@ export const startDownload = async ({
       onProgress?.('participant', 'loading');
       try {
         await withRetry(() => fetchAndStoreParticipant(participantId, lcUserId), 'participant');
-        await markComplete(participantId, 'participant');
+        await markComplete(lcUserId, participantId, 'participant');
         onProgress?.('participant', 'completed');
       } catch (err) {
         onProgress?.('participant', 'failed');
@@ -622,81 +651,88 @@ export const startDownload = async ({
 
     // Always save the list-row snapshot so offline participant list can render
     if (participantSnapshot) {
-      await offlineStorage.create(PARTICIPANT_KEYS.listSnapshot(participantId), participantSnapshot);
+      await offlineStorage.create(PARTICIPANT_KEYS.listSnapshot(lcUserId, participantId), participantSnapshot);
     }
 
-    // Fetch the project when explicitly selected OR when householdProfile is selected.
-    // HH forms are discovered from project tasks; all other observation modules use the
-    // targeted solutions API and do not require the project task list.
-    const needsProject =
-      downloadConfig.project || downloadConfig.tasks || downloadConfig.observation.householdProfile;
-    let tasks: Task[] = [];
-    if (needsProject) {
-      if (downloadConfig.project) onProgress?.('project', 'loading');
-      try {
-        tasks = await withRetry(
-          () => fetchAndStoreProject(participantId, resolvedProjectId!),
-          'project',
-        );
-        if (downloadConfig.project) {
-          await markComplete(participantId, 'project');
-          onProgress?.('project', 'completed');
-        }
-        if (downloadConfig.tasks) await markComplete(participantId, 'tasks');
-      } catch (err) {
-        if (downloadConfig.project) onProgress?.('project', 'failed');
-        throw err; // project is required for HH and task progress
-      }
-    }
+    // observations matched from the project task list.
+    let solutionEntries: OfflineSolutionEntry[] = [];
 
     const participantName: string =
       participantSnapshot?.name ??
       `${participantSnapshot?.firstName ?? ''} ${participantSnapshot?.lastName ?? ''}`.trim() ??
       participantId;
 
+    // Fetch the project when explicitly selected OR when householdProfile is selected.
+    // HH forms are discovered from project tasks; all other observation modules use the
+    // targeted solutions API and do not require the project task list.
+    const needsProject = downloadConfig.project;
+    let tasks: Task[] = [];
+    if (needsProject) {
+      if (downloadConfig.project) onProgress?.('project', 'loading');
+      try {
+        tasks = await withRetry(
+          () => fetchAndStoreProject(lcUserId, participantId, resolvedProjectId!),
+          'project',
+        );
+        if (downloadConfig.project) {
+          await markComplete(lcUserId, participantId, 'project');
+          onProgress?.('project', 'completed');
+        }
+        // Collect observation tasks from both top-level tasks and their direct children.
+        // Task.children holds sub-tasks one level deep; the flat tasks[] returned by
+        // fetchAndStoreProject only contains top-level entries, so children are invisible
+        // to a simple .filter(). Dedup by _id in case a parent and child both happen to
+        // be observation tasks (avoids double-downloading the same form).
+        const seenTaskIds = new Set<string>();
+        const hhTasks = tasks
+          .flatMap((t: Task) => [t, ...(t.children ?? [])])
+          .filter((t: Task) => {
+            if (t.type?.toLowerCase() !== 'observation') return false;
+            if (seenTaskIds.has(t._id)) return false;
+            seenTaskIds.add(t._id);
+            return true;
+          });
+        for (const task of hhTasks) {
+          const resolved = await processObservationTask(lcUserId, participantId, participantName, task, resolvedProjectId!);
+          if (resolved) {
+            solutionEntries.push({
+              name:resolved.name,
+              keyword: resolved.keywords?.[0],
+              keywords: resolved.keywords,
+              solutionId: resolved.solutionId,
+              submissionId: resolved.submissionId,
+              submissionNumber: resolved.submissionNumber,
+              observationId: resolved.observationId,
+              entityId: resolved.entityId,
+            });
+          }
+        }
+      } catch (err) {
+        if (downloadConfig.project) onProgress?.('project', 'failed');
+        throw err; // project is required for HH and task progress
+      }
+    }
+
     // Process each selected observation module via the unified module map.
-    // HH (householdProfile): matched from the project task list.
     // All others: fetched via the targeted solutions API using their FILTER_KEYWORDS constants.
     // Collect resolved IDs for each form so we can save the solutions mapping at the end.
-    let solutionEntries: OfflineSolutionEntry[] = [];
-
     for (const module of OBSERVATION_SOLUTION_DOWNLOAD_MAP) {
       if (!downloadConfig.observation[module.configKey]) continue;
       onProgress?.(module.moduleKey, 'loading');
       try {
-        if (module.useProjectTasks) {
-          const hhTasks = tasks.filter(
-            (t: Task) => t.type?.toLowerCase() === 'observation' && resolveObservationModuleKey(t) === module.moduleKey,
-          );
-          for (const task of hhTasks) {
-            const resolved = await processObservationTask(participantId, participantName, task);
-            if (resolved) {
-              solutionEntries.push({
-                name:resolved.name,
-                keyword: module.moduleKey,
-                keywords: resolved.keywords,
-                solutionId: resolved.solutionId,
-                submissionId: resolved.submissionId,
-                submissionNumber: resolved.submissionNumber,
-                observationId: resolved.observationId,
-                entityId: resolved.entityId,
-              });
-            }
-          }
-        } else {
-          const resolved = await fetchAndStoreSolutionForms(
-            participantId,
-            participantName,
-            module.keywords,
-            module.moduleKey,
-          );
-          solutionEntries = [...solutionEntries,...resolved];
-        }
-        await markComplete(participantId, module.moduleKey);
+        const resolved = await fetchAndStoreSolutionForms(
+          lcUserId,
+          participantId,
+          participantName,
+          module.keywords,
+          module.moduleKey,
+        );
+        solutionEntries = [...solutionEntries,...resolved];
+        await markComplete(lcUserId, participantId, module.moduleKey);
         onProgress?.(module.moduleKey, 'completed');
       } catch (err) {
         logger.error(`DownloadService: Failed module "${module.moduleKey}"`, err);
-        await markFailed(participantId, module.moduleKey);
+        await markFailed(lcUserId, participantId, module.moduleKey);
         onProgress?.(module.moduleKey, 'failed');
       }
     }
@@ -704,33 +740,33 @@ export const startDownload = async ({
     // Save solutions mapping — must happen AFTER all schemas are downloaded so the
     // mapping and the form data are always in sync.
     if (solutionEntries.length > 0) {
-      await offlineStorage.create(PARTICIPANT_KEYS.solutions(participantId), solutionEntries);
+      await offlineStorage.create(PARTICIPANT_KEYS.solutions(lcUserId, participantId), solutionEntries);
       logger.info(`DownloadService: Saved ${solutionEntries.length} solution entries for "${participantId}"`);
     }
 
-    await addOfflineParticipantId(participantId);
+    await addOfflineParticipantId(lcUserId, participantId);
 
-    const finalStatus = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+    const finalStatus = await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId));
     const resolvedStatus = (finalStatus?.failedModules ?? []).length > 0 ? 'partial' : 'completed';
-    await patchStatus(participantId, { status: resolvedStatus, completedAt: Date.now() });
+    await patchStatus(lcUserId, participantId, { status: resolvedStatus, completedAt: Date.now() });
 
     logger.info(`DownloadService: "${resolvedStatus}" for participant "${participantId}"`);
     return {
       success: true,
-      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId)))!,
+      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId)))!,
       createdOnboardingProjectId,
     };
   } catch (err: any) {
     logger.error(`DownloadService: Fatal error for participant "${participantId}"`, err);
-    await patchStatus(participantId, { status: 'failed' });
+    await patchStatus(lcUserId, participantId, { status: 'failed' });
     return {
       success: false,
-      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId)))!,
+      status: (await offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(lcUserId, participantId)))!,
       error: err?.message ?? 'Unknown error',
       createdOnboardingProjectId,
     };
   }
 };
 
-export const getDownloadStatus = async (participantId: string): Promise<DownloadStatus | null> =>
-  offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(participantId));
+export const getDownloadStatus = async (userId: string, participantId: string): Promise<DownloadStatus | null> =>
+  offlineStorage.read<DownloadStatus>(PARTICIPANT_KEYS.downloadStatus(userId, participantId));

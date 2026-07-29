@@ -46,6 +46,7 @@ export interface ParticipantData extends User {
  */
 export interface AssessmentSurveyCardData {
   id: string;
+  _id?: string;
   solutionId: string;
   name: string; // Translation key
   description: string; // Translation key

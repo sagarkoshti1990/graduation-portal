@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
+  useSyncExternalStore,
 } from 'react';
 import { ProjectData, Task } from '../types/project.types';
 import {
@@ -17,6 +18,7 @@ import { updateTask as updateTaskAPI } from '../services/projectPlayerService';
 import { MODE } from '@constants/PROJECTDATA';
 import dataService from '../../services/dataService';
 import { updateTaskStatus } from '../utils/taskUtils';
+import { updateOfflineProject } from '../../services/offlineCacheUpdateService';
 
 // ─── Context value shapes ──────────────────────────────────────────────────────
 
@@ -31,7 +33,61 @@ type ProjectStableContextValue = Omit<
 > & {
   /** Ref to the current projectData. Read in callbacks without subscribing. */
   projectDataRef: React.RefObject<ProjectData | null>;
+  /** Fine-grained per-task subscription store — see AddedToPlanStore below. */
+  addedToPlanStore: AddedToPlanStore;
+  setTasksAddedToPlan: (taskIds: string[], added: boolean) => void;
 };
+
+/**
+ * Per-task subscription store for plan-accept/reject state.
+ *
+ * addedToPlanTasks used to live only in ProjectDataContext, so every task
+ * card in the whole tree (via useTaskStatus -> useProjectData) re-rendered
+ * whenever ANY single task's plan status changed. Accepting/rejecting one
+ * task (or bulk-updating synced sibling tasks) forced the entire task tree —
+ * including tasks inside collapsed accordion sections — to re-layout in a
+ * single commit, which was tripping a Fabric/Yoga native crash
+ * (`YGNodeGetOwner(childYogaNode) == &yogaNode_`, SIGABRT) under the New
+ * Architecture. This store lets each task subscribe to only its own taskId,
+ * so a plan action only re-renders the task(s) that actually changed.
+ */
+interface AddedToPlanStore {
+  getSnapshot: (taskId: string) => boolean | undefined;
+  getAll: () => Record<string, boolean>;
+  subscribe: (listener: () => void) => () => void;
+  set: (taskId: string, added: boolean) => void;
+  setMany: (taskIds: string[], added: boolean) => void;
+  setAll: (next: Record<string, boolean>) => void;
+}
+
+function createAddedToPlanStore(initial: Record<string, boolean>): AddedToPlanStore {
+  let state = initial;
+  const listeners = new Set<() => void>();
+  const notify = () => listeners.forEach(listener => listener());
+
+  return {
+    getSnapshot: taskId => state[taskId],
+    getAll: () => state,
+    subscribe: listener => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    set: (taskId, added) => {
+      state = { ...state, [taskId]: added };
+      notify();
+    },
+    setMany: (taskIds, added) => {
+      const next = { ...state };
+      taskIds.forEach(id => { next[id] = added; });
+      state = next;
+      notify();
+    },
+    setAll: next => {
+      state = next;
+      notify();
+    },
+  };
+}
 
 /**
  * Data context — changes whenever task data or plan state changes.
@@ -199,6 +255,9 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   initialData,
   oldProjectData,
   onTaskUpdate,
+  offlineKeyPrefix = '',
+  participantId = '',
+  initialAddedToPlanTasks = {},
 }) => {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -206,11 +265,16 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
   const [projectData, setProjectData] = useState<ProjectData | null>(
     initialData,
   );
-  
+
   const projectDataRef = useRef<ProjectData | null>(initialData);
   const [isLoading] = useState(false);
   const [error] = useState<Error | null>(null);
-  const [addedToPlanTasks, setAddedToPlanTasks] = useState<Record<string, boolean>>({});
+  const [addedToPlanTasks, setAddedToPlanTasks] = useState<Record<string, boolean>>(initialAddedToPlanTasks);
+
+  const addedToPlanStoreRef = useRef<AddedToPlanStore | null>(null);
+  if (addedToPlanStoreRef.current === null) {
+    addedToPlanStoreRef.current = createAddedToPlanStore(initialAddedToPlanTasks);
+  }
 
   const isEditMode = config.mode === MODE.editMode.mode;
 
@@ -248,32 +312,44 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     ]);
 
     if (Object.keys(initialTasks).length > 0) {
+      addedToPlanStoreRef.current!.setAll(initialTasks);
       setAddedToPlanTasks(initialTasks);
     }
   }, [projectData, addedToPlanTasks]);
 
   const updateTask = useCallback(
-    async (taskId: string, participantId: string, updates: Partial<Task>): Promise<void> => {
+    async (taskId: string, callerParticipantId: string, updates: Partial<Task>): Promise<void> => {
       const current = projectDataRef.current;
-      const {task,project} = updateTaskStatus({
+      const {task, project} = updateTaskStatus({
         taskId,
         data: current,
         updatedData: updates,
-      })
+      });
       setProjectData(project);
       let updatedTaskObj = task;
       const currentProjectId = current?._id;
 
-      if (onTaskUpdate && updatedTaskObj) {
-        const taskForCallback = updatedTaskObj;
-        setTimeout(() => { if (mountedRef.current) onTaskUpdate(taskForCallback); });
-      }
+      // Fires onTaskUpdate — the central trigger consumers use to refresh their
+      // offline project cache from the server (see refreshOfflineProjectFromServer).
+      // Called only once the relevant branch below has actually succeeded (or,
+      // for the two no-server-call early returns, immediately — there's nothing
+      // to race against). NOT fired eagerly up front: that would let a
+      // server-refresh consumer's GET race the in-flight online update below and
+      // overwrite the offline cache with pre-update data.
+      const fireOnTaskUpdate = () => {
+        if (onTaskUpdate && updatedTaskObj) {
+          const taskForCallback = updatedTaskObj;
+          setTimeout(() => { if (mountedRef.current) onTaskUpdate(taskForCallback); });
+        }
+      };
 
       if (!currentProjectId || !updatedTaskObj) {
+        fireOnTaskUpdate();
         return;
       }
 
       if ((updatedTaskObj as any).isCustomTask && !isEditMode) {
+        fireOnTaskUpdate();
         return;
       }
 
@@ -310,22 +386,34 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
       const isOffline = dataService.isNetworkOffline();
       let result: unknown;
-      
+
       if (isOffline) {
         await dataService.saveTaskEdit(
-          participantId,
+          callerParticipantId,
           currentProjectId,
           payloadTask,
+          offlineKeyPrefix,
         );
+        // Nothing to race against offline — safe to fire immediately once persisted locally.
+        fireOnTaskUpdate();
       } else {
         result = await updateTaskAPI(currentProjectId, payloadTask);
+        // After online success, keep offline snapshot in sync.
+        // Use callerParticipantId when provided, fall back to provider-level participantId.
+        const pid = callerParticipantId || participantId;
+        if (!isApiErrorResult(result) && pid && offlineKeyPrefix && project && currentProjectId) {
+          updateOfflineProject(offlineKeyPrefix, pid, currentProjectId, project).catch(() => {});
+        }
+        if (!isApiErrorResult(result)) {
+          fireOnTaskUpdate();
+        }
       }
 
       if (isApiErrorResult(result)) {
         throw new Error(result.error || 'Failed to update task');
       }
     },
-    [onTaskUpdate, isEditMode],
+    [onTaskUpdate, isEditMode, offlineKeyPrefix, participantId],
   );
 
   const updateProjectInfo = useCallback((updates: Partial<ProjectData>) => {
@@ -346,26 +434,67 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     const currentProjectId = prev._id;
     const needsApi = !!(pillar.children?.length && currentProjectId);
 
-    if (needsApi) {
-      const result = await updateTaskAPI(currentProjectId, {
-        tasks: [
-          {
-            _id: pillarId,
-            name: pillar.name,
-            children: [task],
-          },
-        ],
-      });
-      if (isApiErrorResult(result)) {
-        throw new Error(result.error || 'Failed to add task');
+    // Fires onTaskUpdate only once the relevant branch has actually succeeded (or,
+    // when there's no API call at all, immediately — nothing to race against). Mirrors
+    // updateTask's timing so a server-refresh consumer never races an in-flight update.
+    const fireOnTaskUpdate = () => {
+      if (onTaskUpdate) {
+        setTimeout(() => { if (mountedRef.current) onTaskUpdate(task); });
       }
+    };
+
+    if (needsApi) {
+      if (dataService.isNetworkOffline()) {
+        // Offline: queue the create for later sync and persist it into the
+        // offline snapshot immediately so it survives app restart.
+        await dataService.saveTaskEdit(
+          participantId,
+          currentProjectId,
+          {
+            tasks: [
+              {
+                _id: pillarId,
+                name: pillar.name,
+                children: [{ ...task, _pendingOp: 'create' }],
+              },
+            ],
+          },
+          offlineKeyPrefix,
+        );
+        if (participantId && offlineKeyPrefix) {
+          const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
+          updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+        }
+        fireOnTaskUpdate();
+      } else {
+        const result = await updateTaskAPI(currentProjectId, {
+          tasks: [
+            {
+              _id: pillarId,
+              name: pillar.name,
+              children: [task],
+            },
+          ],
+        });
+        if (isApiErrorResult(result)) {
+          throw new Error(result.error || 'Failed to add task');
+        }
+        // After online success, reflect the new task in the offline snapshot.
+        if (participantId && offlineKeyPrefix && currentProjectId) {
+          const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
+          updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+        }
+        fireOnTaskUpdate();
+      }
+    } else {
+      fireOnTaskUpdate();
     }
 
     setProjectData(p => {
       if (!p) return null;
       return mergeTaskIntoProject(p, pillarId, task);
     });
-  }, []);
+  }, [participantId, offlineKeyPrefix, onTaskUpdate]);
 
   const deleteTask = useCallback(
     async (taskId: string): Promise<void> => {
@@ -383,19 +512,60 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         isEditMode
       );
 
-      if (needsApi) {
-        const result = await updateTaskAPI(currentProjectId, {
-          tasks: [
-            {
-              _id: parentId,
-              name: parentName,
-              children: [{ _id: deletedTask._id, isDeleted: true }],
-            },
-          ],
-        });
-        if (isApiErrorResult(result)) {
-          throw new Error(result.error || 'Failed to delete task');
+      // Fires onTaskUpdate only once the relevant branch has actually succeeded (or,
+      // when there's no API call at all, immediately — nothing to race against). Mirrors
+      // updateTask's timing so a server-refresh consumer never races an in-flight update.
+      const fireOnTaskUpdate = () => {
+        if (onTaskUpdate) {
+          setTimeout(() => { if (mountedRef.current) onTaskUpdate(deletedTask); });
         }
+      };
+
+      if (needsApi) {
+        if (dataService.isNetworkOffline()) {
+          // Offline: queue the delete for later sync and persist the removal
+          // into the offline snapshot immediately so it survives app restart.
+          await dataService.saveTaskEdit(
+            participantId,
+            currentProjectId,
+            {
+              tasks: [
+                {
+                  _id: parentId,
+                  name: parentName,
+                  children: [{ _id: deletedTask._id, isDeleted: true, _pendingOp: 'delete' }],
+                },
+              ],
+            },
+            offlineKeyPrefix,
+          );
+          if (participantId && offlineKeyPrefix) {
+            const updatedProject = removeTaskFromProject(prev, taskId);
+            updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+          }
+          fireOnTaskUpdate();
+        } else {
+          const result = await updateTaskAPI(currentProjectId, {
+            tasks: [
+              {
+                _id: parentId,
+                name: parentName,
+                children: [{ _id: deletedTask._id, isDeleted: true }],
+              },
+            ],
+          });
+          if (isApiErrorResult(result)) {
+            throw new Error(result.error || 'Failed to delete task');
+          }
+          // After online success, reflect the deletion in the offline snapshot.
+          if (participantId && offlineKeyPrefix && currentProjectId) {
+            const updatedProject = removeTaskFromProject(prev, taskId);
+            updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
+          }
+          fireOnTaskUpdate();
+        }
+      } else {
+        fireOnTaskUpdate();
       }
 
       setProjectData(p => {
@@ -403,7 +573,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         return removeTaskFromProject(p, taskId);
       });
     },
-    [isEditMode],
+    [isEditMode, participantId, offlineKeyPrefix, onTaskUpdate],
   );
 
   const saveLocal = useCallback(() => {
@@ -416,7 +586,20 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
   const setTaskAddedToPlan = useCallback(
     (taskId: string, added: boolean) => {
+      addedToPlanStoreRef.current!.set(taskId, added);
       setAddedToPlanTasks(prev => ({ ...prev, [taskId]: added }));
+    },
+    [],
+  );
+
+  const setTasksAddedToPlan = useCallback(
+    (taskIds: string[], added: boolean) => {
+      addedToPlanStoreRef.current!.setMany(taskIds, added);
+      setAddedToPlanTasks(prev => {
+        const next = { ...prev };
+        taskIds.forEach(id => { next[id] = added; });
+        return next;
+      });
     },
     [],
   );
@@ -436,6 +619,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       saveLocal,
       syncToServer,
       setTaskAddedToPlan,
+      setTasksAddedToPlan,
+      addedToPlanStore: addedToPlanStoreRef.current!,
       onTaskUpdate,
       projectDataRef,
       oldProjectData
@@ -451,6 +636,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       saveLocal,
       syncToServer,
       setTaskAddedToPlan,
+      setTasksAddedToPlan,
       onTaskUpdate,
       oldProjectData
     ],
@@ -489,6 +675,20 @@ export const useProjectStable = (): ProjectStableContextValue => {
 };
 
 /**
+ * Subscribe to a single task's added-to-plan state.
+ * Re-renders only when THIS taskId's entry changes — not on every
+ * accept/reject action elsewhere in the tree. Use in task-level hooks
+ * instead of reading addedToPlanTasks off useProjectData().
+ */
+export const useTaskAddedToPlan = (taskId: string): boolean | undefined => {
+  const { addedToPlanStore } = useProjectStable();
+  return useSyncExternalStore(
+    addedToPlanStore.subscribe,
+    () => addedToPlanStore.getSnapshot(taskId),
+  );
+};
+
+/**
  * Subscribe to data context only (projectData, plan state).
  * Use in list-level components that need to react to task changes.
  */
@@ -521,6 +721,7 @@ export const useProjectContext = (): ProjectContextValue => {
     syncToServer:              stable.syncToServer,
     addedToPlanTasks:          data.addedToPlanTasks,
     setTaskAddedToPlan:        stable.setTaskAddedToPlan,
+    setTasksAddedToPlan:       stable.setTasksAddedToPlan,
     onTaskUpdate:              stable.onTaskUpdate,
   };
 };

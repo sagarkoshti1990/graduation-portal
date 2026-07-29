@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { Box, VStack, Text, Button, ButtonText, LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAuth } from '@contexts/AuthContext';
 import { interventionPlanStyles } from './Styles';
 import ProjectPlayer, {
   ProjectPlayerData,
@@ -8,21 +9,26 @@ import ProjectPlayer, {
 } from '../../../project-player/index';
 import { ProjectData, Task } from '../../../project-player/types/project.types';
 import { MODE, PROJECT_PLAYER_CONFIGS } from '@constants/PROJECTDATA';
-import { STATUS } from '@constants/app.constant';
+import { MAX_FILE_SIZE, STATUS } from '@constants/app.constant';
 import type { InterventionPlanProps, StatusType } from '../../../types/screens';
 import { useNavigation } from '@react-navigation/native';
 import { sortTasksWithChildren } from '@utils/helper';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { refreshOfflineProjectFromServer } from '../../../services/offlineCacheUpdateService';
 
 const InterventionPlan: React.FC<InterventionPlanProps> = ({
   mode,
   projectData,
+  projectUnavailableOffline,
   participantProfile,
   onIdpCreation,
   onProgressChange,
   onTaskCompletionChange,
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const navigation = useNavigation();
+  const { isOffline } = useOfflineSync();
   const [isEditMode] = useState(true);
   const [addedTasks, setAddedTasks] = useState<Set<string>>(new Set());
   const [projectSortData,setProjectSortData] = useState<ProjectData>();
@@ -47,8 +53,11 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     addedTasks.has(id),
   );
 
-  // Handle task update callback from ProjectPlayer
-  const handleTaskUpdate = (task: Task) => {
+  // Handle task update callback from ProjectPlayer — fired only after the
+  // triggering action (task update, custom task create/update/delete) has
+  // actually succeeded (see ProjectContext.tsx's fireOnTaskUpdate), so it's
+  // safe to treat this as "an online action just succeeded" below.
+  const handleTaskUpdate = async (task: Task) => {
     if (task.metaInformation?.addedToPlan) {
       setAddedTasks(prev => new Set(prev).add(task._id));
     } else {
@@ -58,6 +67,15 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         return next;
       });
     }
+
+    if (isOffline) return; // nothing to refresh from — the server wasn't touched
+
+    const participantId = (participantProfile as any)?.userId ?? '';
+    const projectId = projectSortData?._id || '';
+    const userId = user?.id || '';
+    if (!participantId || !projectId || !userId) return;
+
+    await refreshOfflineProjectFromServer(userId, participantId, projectId);
   };
 
   // Handle successful IDP creation
@@ -95,6 +113,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       if (!isEditMode) {
         return {
           ...baseConfig,
+          maxFileSize: MAX_FILE_SIZE,
           profileInfo: participantProfile,
           showSubmitButton: true,
           onSubmitInterventionPlan: handleIdpCreationSuccess,
@@ -107,6 +126,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
 
       return {
         ...baseConfig,
+        maxFileSize: MAX_FILE_SIZE,
         profileInfo: participantProfile,
         showAddCustomTaskButton,
       };
@@ -116,6 +136,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       const showAddCustomTaskButton = status === STATUS.IN_PROGRESS;
       return {
         ...baseConfig,
+        maxFileSize: MAX_FILE_SIZE,
         profileInfo: participantProfile,
         showSubmitButton: true,
         onSubmitInterventionPlan: handleIdpCreationSuccess,
@@ -144,11 +165,38 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
       userStatus: participantProfile?.status,
       pillarCategoryRelation: undefined,
       data: projectSortData ?? undefined,
-      province: participantProfile?.province?.value
+      province: participantProfile?.province?.value,
+      offlineKeyPrefix: user?.id ?? '',
+      participantId: (participantProfile as any)?.userId ?? '',
     }),
-    [ participantProfile?.entityId, participantProfile?.status,participantProfile?.province?.value, projectSortData],
+    [ participantProfile?.entityId, participantProfile?.status, participantProfile?.province?.value, projectSortData, user?.id, (participantProfile as any)?.userId],
   );
   
+  // Offline and this project was never downloaded via the Offline Download flow —
+  // there's no cached data to show, so tell the user why instead of rendering an
+  // empty/broken ProjectPlayer.
+  if (!projectData && projectUnavailableOffline) {
+    return (
+      <Box {...interventionPlanStyles.container} mt="$7">
+        <VStack {...interventionPlanStyles.content}>
+          <Box {...interventionPlanStyles.iconContainer}>
+            <LucideIcon
+              name="WifiOff"
+              size={48}
+              color={interventionPlanStyles.iconColor}
+            />
+          </Box>
+          <Text {...interventionPlanStyles.title}>
+            {t('participantDetail.interventionPlan.projectUnavailableOfflineTitle')}
+          </Text>
+          <Text {...interventionPlanStyles.description}>
+            {t('participantDetail.interventionPlan.projectUnavailableOfflineDescription')}
+          </Text>
+        </VStack>
+      </Box>
+    );
+  }
+
   if(projectData && (!config?.mode || !projectSortData)){
     if(!config?.mode) {
       console.log(`config is not defined`,config);
@@ -222,7 +270,9 @@ export default memo(
       prevProps.participantProfile?.idpProjectId ===
         nextProps.participantProfile?.idpProjectId &&
       prevProps.participantProfile?.status ===
-        nextProps.participantProfile?.status
+        nextProps.participantProfile?.status &&
+      prevProps.projectData === nextProps.projectData &&
+      prevProps.projectUnavailableOffline === nextProps.projectUnavailableOffline
     );
   },
 );

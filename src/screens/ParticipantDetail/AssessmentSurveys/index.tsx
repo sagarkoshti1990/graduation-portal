@@ -1,14 +1,14 @@
 import React, { useEffect, useState, memo } from 'react';
 import { VStack, Box, ScrollView, Text, Spinner } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import { assessmentSurveysStyles } from './Styles';
 import { AssessmentCard } from '@components/ObservationCards';
-import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import type {
   AssessmentSurveyCardData,
   ParticipantData,
 } from '@app-types/participant';
-import type { OfflineSolutionEntry, ObservationFormData } from '@app-types/offline';
+import type { ObservationFormData } from '@app-types/offline';
 import { getObservationEntities, getTargetedSolutions } from '../../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
 import logger from '@utils/logger';
@@ -40,6 +40,8 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
   isReadOnly
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const lcUserId = user?.id ?? '';
   const canAccessAdmin = useIsdminPanalAccess();
 
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
@@ -56,10 +58,12 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
         // No API calls are made offline.
         if (isOffline) {
           const storedEntries = await getTargetedSolutions({
+            authUserId: user?.id,
             type: 'observation',
             // @ts-ignore
             'filter[keywords]': (readOnlyAccessStatuses.includes(participant?.status) || (participant?.status === STATUS.IN_PROGRESS && completionPercentage >= GRADUATION_READINESS_PROGRESS_THRESHOLD)) ? FILTER_KEYWORDS.PROGRAM_COMPLETED.join(',') : FILTER_KEYWORDS.ASSESSMENT_SURVEYS.join(','),
-            participantId:participantUserId
+            participantId: participantUserId,
+            userId: lcUserId,
           });
           if (!storedEntries?.length) {
             setSolutions([]);
@@ -68,7 +72,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
           const cards = await Promise.all(
             storedEntries.map(async (entry) => {
               const formData = await offlineStorage.read<ObservationFormData>(
-                PARTICIPANT_KEYS.form(participantUserId, entry.solutionId),
+                PARTICIPANT_KEYS.form(lcUserId, participantUserId, entry.solutionId),
               );
               if (!formData) return null;
               return {
@@ -158,7 +162,7 @@ const AssessmentSurveys: React.FC<AssessmentSurveysProps> = ({
     };
 
     fetchSolutions();
-  }, [participant?.id, participant?.onBoardedProjectId, participant?.status, participant?.accountUserStatus, participant?.idpProgress?.completionPercentage]);
+  }, [participant?.id, participant?.onBoardedProjectId, participant?.status, participant?.accountUserStatus, participant?.idpProgress?.completionPercentage, lcUserId]);
 
   const getdetails = async ({solutionId,id}:{solutionId:string,id:string}) => {
     const observationData = await getObservationEntities({

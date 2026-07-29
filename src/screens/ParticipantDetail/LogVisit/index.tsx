@@ -15,6 +15,7 @@ import logger from '@utils/logger';
 import { isWeb } from '@utils/platform';
 import { useAuth, User } from '@contexts/AuthContext';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
+import { useOfflineSync } from '@contexts/OfflineSyncContext';
 
 /**
  * Route parameters type definition for LogVisit screen
@@ -36,6 +37,7 @@ type LogVisitRouteProp = RouteProp<{
  */
 const LogVisit: React.FC = () => {
   const route = useRoute<LogVisitRouteProp>();
+  const { isOffline } = useOfflineSync()
   const [loading, setLoading] = useState<boolean>(true);
   const [solutions, setSolutions] = useState<AssessmentSurveyCardData[]>([]);
   const [participant, setParticipant] = useState<ParticipantData | User | undefined>(undefined);
@@ -49,6 +51,7 @@ const LogVisit: React.FC = () => {
     const fetchSolutions = async () => {
       try {
         const data = await getTargetedSolutions({
+          authUserId: user?.id,
           type: 'observation',
           // @ts-ignore - filter[keywords] is a valid parameter
           "filter[keywords]": FILTER_KEYWORDS.LOG_VISIT.join(','),
@@ -111,21 +114,41 @@ const LogVisit: React.FC = () => {
         title={t('participantDetail.header.logVisit')}
         subtitle={t('logVisit.selectVisitType', { name: participant?.name || '' })}
         onBackPress={handleBackPress}
-        rightSection={<Button variant="outlineghost" onPress={() => {
-          const params: any = { id: route.params?.id };
-          // @ts-ignore
-          navigation.navigate('check-ins-list', params);
-        }}>
-          <ButtonIcon as={LucideIcon} name="History" size={16} />
-          <ButtonText {...TYPOGRAPHY.bodySmall}>{t('logVisit.viewCheckIns')}</ButtonText>
-        </Button>}
+        {...(!isOffline
+        ? {
+            rightSection: (
+              <Button
+                // @ts-ignore
+                variant="outlineghost"
+                onPress={() => {
+                  const resolvedCoachId =
+                    participant?.hierarchy?.[0] ||
+                    participant?.extra?.hierarchy?.find(
+                      (item: any) => item.level === 0,
+                    )?.id;
+
+                  // @ts-ignore
+                  navigation.navigate('check-ins-list', {
+                    id: route.params?.id,
+                    coachId: resolvedCoachId,
+                  });
+                }}
+              >
+                <ButtonIcon as={LucideIcon} name="History" size={16} />
+                <ButtonText {...TYPOGRAPHY.bodySmall}>
+                  {t('logVisit.viewCheckIns')}
+                </ButtonText>
+              </Button>
+            ),
+          }
+        : {})}
       />
       <Container>
         {/* Cards */}
         <VStack {...logVisitStyles.cardsContainer}>
           {!loading && solutions.length > 0 ? (
             solutions.map(card => (
-              <AssessmentCard key={card.id} card={card} userId={participant?.id || ''} />
+              <AssessmentCard key={card.id || card?._id} card={card} userId={participant?.id || ''} />
             ))
           ) : (
             !loading && (

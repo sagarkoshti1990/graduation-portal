@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Platform } from 'react-native';
 import WebComponentPlayer from '@components/WebComponent/WebComponentPlayer';
 import { Container, Spinner, VStack, Box } from '@ui';
 import { getToken } from '../../services/api';
@@ -11,18 +12,22 @@ import {
   updateObservationEntities,
 } from '../../services/solutionService';
 import { useLanguage } from '@contexts/LanguageContext';
+import { User } from '@contexts/AuthContext';
 import Header from './Header';
 import offlineStorage from '../../services/offlineStorage';
 import dataService from '../../services/dataService';
+import fileStorageService from '../../services/fileStorageService';
 import { observationStyles } from './Styles';
-import { CARD_STATUS, ENTITY_TYPE, TASK_STATUS } from '@constants/app.constant';
+import { CARD_STATUS, ENTITY_TYPE, MAX_FILE_SIZE, TASK_STATUS } from '@constants/app.constant';
 import logger from '@utils/logger';
+import { removeFileFromAnsers } from '@utils/helper';
 import { STATUS } from '@constants/PARTICIPANTS_LIST';
 import { ParticipantData } from '@app-types/participant';
 import { PARTICIPANT_KEYS } from '@constants/STORAGE_KEYS';
-import type { ObservationFormData } from '@app-types/offline';
+import type { ObservationFormData, PendingFile } from '@app-types/offline';
 import { isNetworkOffline } from '@utils/networkStatus';
 import { shouldFetchOnline } from '@utils/helper';
+import { updateTaskStatus } from '../../project-player/utils/taskUtils';
 
 interface ObservationData {
   entityId: string;
@@ -46,6 +51,7 @@ interface ObservationContentProps {
   hideElements?: any;
   _css?: any;
   _webComponent?:any;
+  authUser:User | null;
   canAccessCoachObservations?:boolean
   entityType?: string
 }
@@ -64,11 +70,13 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   userData,
   hideElements,
   _css,
+  authUser,
   canAccessCoachObservations,
   entityType,
   _webComponent
 }) => {
   const { t } = useLanguage();
+  const isOffline = isNetworkOffline();
   const [observation, setObservation] = useState<ObservationData | null>(null);
   const [defaultValuesLocal, setDefaultValuesLocal] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -83,14 +91,10 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
   }, [taskId, participant]);
 
   useEffect(() => {
-    const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
-    if (progress === 100 && !taskAutoCompletedRef.current && dataService.isNetworkOffline() && taskId && participantKey) {
+    if (progress === 100) {
       taskAutoCompletedRef.current = true;
-      dataService.saveTaskEdit(participantKey, { _id: taskId, status: TASK_STATUS.COMPLETED })
-        .then(() => logger.info('ObservationContent: task auto-completed at 100% offline', taskId))
-        .catch(err => logger.warn('ObservationContent: failed to auto-complete task at 100%', err));
     }
-  }, [progress, taskId, participant]);
+  }, [progress]);
 
   // Use ref to store progress callback to avoid prop changes causing rerenders
   const progressCallbackRef =
@@ -212,15 +216,16 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       setToken(tokenData);
 
       // ── OFFLINE PATH: read only from local storage, no API calls ──────────
-      if (dataService.isNetworkOffline()) {
+      if (isOffline) {
         if (!participantKey || !solutionId) {
           showAlert('error', t('offlineSync.dataUnavailable'));
           setLoadingOff();
           return;
         }
         const formData = await offlineStorage.read<ObservationFormData>(
-          PARTICIPANT_KEYS.form(participantKey, solutionId),
+          PARTICIPANT_KEYS.form(authUser?.id ?? '', participantKey, solutionId),
         );
+        
         if (formData) {
           const defaultValues = userData
             ? buildDefaultValuesFromObservation(formData.schema, userData)
@@ -228,7 +233,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
           setDefaultValuesLocal(defaultValues);
           setMockData(formData.schema);
           setObservation({ entityId: formData.entityId, observationId: solutionId });
-          setSubmission({ _id: formData.submissionId, submissionNumber: formData.submissionNumber });
+          setSubmission({ _id: formData.submissionId, submissionNumber: formData.submissionNumber, status: formData.status });
           setLoadingOff();
           return;
         }
@@ -372,42 +377,125 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
     [showAlert],
   );
 
-  const handleOfflineData = useCallback(async (data:any)=>{
-    const {answers,endTime,evidenceCode,isSubmitted,startTime,status,submissionId} = data || {}
+  const handleOfflineData = useCallback(async (data:any,type?:string)=>{
+    const { answers, endTime, evidenceCode, isSubmitted, startTime, status, files, submissionId } = data || {}
     const participantKey = participant?.userId || (participant as any)?._id || (participant as any)?.id;
     if(answers && submissionId && participantKey) {
       try {
+        Object.values(answers).forEach((answer: any) => {
+          const fileName = removeFileFromAnsers(answer.fileName)
+          const { value } = removeFileFromAnsers(answer.value)
+          answer.fileName = fileName.value 
+          answer.value = value
+        });
+        
+        // Save files to storage and add them to the pending files list.
+        if(files?.length > 0) { 
+          let existing = await offlineStorage.read<PendingFile[]>(PARTICIPANT_KEYS.filesPending(authUser?.id || "", participantKey)) ?? [];
+          const existingTaskFileKeys = new Set(
+            existing.map(p => `${p.submissionId}:${p.originalName ?? p.fileName}`),
+          );
+
+          const newFiles: PendingFile[] = [];
+          for (const file of files) {
+            if (existingTaskFileKeys.has(`${file?.submissionId}:${file.originalName}`)) continue;
+            const newFileName = file.storedFile?.key || file.name;
+
+            // Android's per-row SQLite limit can be exceeded by a single
+            // embedded photo/video, so on native the base64 is written to a
+            // private file instead of AsyncStorage; only the local path is
+            // kept in the pending-file metadata. Web is unchanged — it keeps
+            // storing the base64 via offlineStorage (IndexedDB).
+            let localFilePath: string | undefined;
+            let mimeType: string | undefined;
+            if (file?.storedFile?.data) {
+              if (Platform.OS !== 'web') {
+                const saved = await fileStorageService.saveBase64File(newFileName, file.storedFile.data);
+                localFilePath = saved?.localPath;
+                mimeType = saved?.mimeType
+              } else {
+                await offlineStorage.create(newFileName, file.storedFile.data);
+              }
+            }
+            newFiles.push({
+              submissionId,
+              solutionId,
+              fieldId: file?.submissionId,
+              originalName: file?.originalName,
+              fileName: file?.name,
+              fileType: mimeType ?? file?.type ?? '',
+              storageKey: newFileName,
+              ...(localFilePath ? { localFilePath, mimeType } : {}),
+            });
+          }
+          
+          await offlineStorage.create(
+            PARTICIPANT_KEYS.filesPending(authUser?.id || "", participantKey),
+            [...existing, ...newFiles],
+          );
+        }
+
         await dataService.saveFormEdits(participantKey, submissionId, {
           answers,endTime,externalId:evidenceCode,isSubmitted,startTime,status,solutionId
-        });
+        }, authUser?.id ?? '');
         logger.info('ObservationContent: form edits saved for sync');
+
+        // Auto-mark the linked Observation-type project task as completed
+        // when offline. Looks up the task anywhere in the full project tree
+        // (reusing updateTaskStatus's existing recursive search — the same
+        // one ProjectContext.updateTask uses) so this also works when the
+        // task is a nested child, at any depth, not just a top-level task.
+        if (type === 'QUESTIONNAIRE_SUBMIT' && taskId && isNetworkOffline()) {
+          try {
+            const projectId = (participant as any)?.idpProjectId ?? (participant as any)?.onBoardedProjectId ?? '';
+            if (projectId) {
+              const projectResult = await dataService.getProject<any>(participantKey, projectId, authUser?.id ?? '');
+              const { task: foundTask, parentTaskId } = updateTaskStatus({
+                data: projectResult.data,
+                taskId,
+                updatedData: { status: TASK_STATUS.COMPLETED },
+              });
+              // Only complete tasks the lookup confirms are Observation-type
+              // at whatever level they were found (top-level or nested).
+              if (foundTask?.type === 'observation') {
+                // Nested (child) tasks must be sent wrapped under their
+                // top-level parent — saveTaskEdit's mergeTasks only merges by
+                // matching TOP-LEVEL ids, so a flat entry for a child id would
+                // create a bogus phantom top-level task instead of updating
+                // the real nested one, and would never sync correctly since
+                // it isn't a real project task id online. Mirrors the same
+                // parent-wrapper shape ProjectContext.updateTask builds for
+                // child/custom tasks — this also puts the edit in the same
+                // projectEdits sync queue that flat top-level edits already use.
+                const payloadTask = parentTaskId
+                  ? { tasks: [{ _id: parentTaskId, children: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] }] }
+                  : { tasks: [{ _id: taskId, status: TASK_STATUS.COMPLETED }] };
+                await dataService.saveTaskEdit(participantKey, projectId, payloadTask, authUser?.id ?? '');
+                logger.info('ObservationContent: task auto-marked completed offline', taskId);
+              } else {
+                logger.warn(`ObservationContent: linked task "${taskId}" not found or not an observation task — skipping auto-complete`);
+              }
+            }
+          } catch (err) {
+            logger.warn('ObservationContent: failed to auto-mark task complete', err);
+          }
+        }
       } catch (err) {
         logger.warn('ObservationContent: failed to save form edits', err);
       }
-
-      // Auto-mark the linked task as completed when offline
-      if (taskId) {
-        try {
-          await dataService.saveTaskEdit(participantKey,submissionId, {
-            _id: taskId,
-            status: TASK_STATUS.COMPLETED,
-          });
-          logger.info('ObservationContent: task auto-marked completed offline', taskId);
-        } catch (err) {
-          logger.warn('ObservationContent: failed to auto-mark task complete', err);
-        }
-      }
     }
-    handleBackPress();
-  },[handleBackPress,participant,solutionId,taskId])
+    if(type === "QUESTIONNAIRE_SUBMIT") {
+      handleBackPress();
+    }
+  },[handleBackPress, participant, solutionId, taskId, authUser?.id])
 
   // Memoize playerConfig to prevent WebComponentPlayer rerenders
   const playerConfigMemoized = React.useMemo(
     () => ({
       // @ts-ignore - process.env is injected by webpack DefinePlugin on web
       baseURL: `${process.env.API_BASE_URL}/api`,
-      offline: isNetworkOffline(),
-      fileSizeLimit: 50,
+      offline: isOffline,
+      fileSizeLimit: MAX_FILE_SIZE,
       userAuthToken: token,
       solutionType: 'observation' as const,
       observationId: observation?.observationId,
@@ -426,7 +514,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
       usePageQuestionsGrid: true,
       showPrivacyPopup: false,
       showToast: false,
-      saveProgressStorageType: isNetworkOffline() ? "local" : "server",
+      saveProgressStorageType: isOffline ? "local" : "server",
       showNextTabButton: true,
       dynamicEntityTyperequireDynamicAnswers:{
         lableMapping:{
@@ -434,7 +522,7 @@ const ObservationContent: React.FC<ObservationContentProps> = ({
         }
       }
     }),
-    [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal],
+    [token, observation?.observationId, observation?.entityId, mockData, submissionNumber, defaultValuesLocal, isOffline],
   );
 
   // Bridge: save form edits into offlineStorage when web component reports a save/submit.

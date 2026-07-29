@@ -1,46 +1,55 @@
-// Web implementation — uses navigator.onLine and window events.
-// Metro loads this file for web builds; native builds use networkStatus.native.ts.
+import NetInfo from '@react-native-community/netinfo';
 
 type NetworkListener = (isOffline: boolean) => void;
 const _listeners = new Set<NetworkListener>();
 
-let _isOffline: boolean =
-  typeof window !== 'undefined' ? !window.navigator.onLine : false;
+// Start as online; corrected within milliseconds by the eager fetch below.
+let _isOffline = false;
 
-function _notify(offline: boolean): void {
-  if (_isOffline === offline) return;
-  _isOffline = offline;
-  _listeners.forEach(fn => { try { fn(offline); } catch { /* non-fatal */ } });
-}
+// Listen for network changes
+NetInfo.addEventListener(state => {
+  const offline =
+    !state.isConnected || state.isInternetReachable === false;
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('online',  () => _notify(false));
-  window.addEventListener('offline', () => _notify(true));
-}
+  if (_isOffline !== offline) {
+    _isOffline = offline;
+    _listeners.forEach(listener => listener(offline));
+  }
+});
+
+// Get initial state
+NetInfo.fetch().then(state => {
+  _isOffline =
+    !state.isConnected || state.isInternetReachable === false;
+});
 
 /**
- * Synchronous offline check. Safe to call anywhere without `await`.
- * Backed by navigator.onLine and window online/offline events on web.
+ * Returns the cached offline status.
  */
 export const isNetworkOffline = (): boolean => _isOffline;
 
 /**
- * Fresh check — re-reads navigator.onLine directly.
- * Updates the cache as a side-effect.
+ * Performs a fresh network check.
  */
 export const checkNetworkOffline = async (): Promise<boolean> => {
-  if (typeof window !== 'undefined') {
-    _notify(!window.navigator.onLine);
-  }
+  const state = await NetInfo.fetch();
+
+  _isOffline =
+    !state.isConnected || state.isInternetReachable === false;
+
   return _isOffline;
 };
 
 /**
- * Subscribe to network state transitions (online↔offline).
- * Returns an unsubscribe function.
- * Read `isNetworkOffline()` for the current value at subscribe time.
+ * Subscribe to offline/online changes.
  */
-export function addNetworkListener(fn: NetworkListener): () => void {
-  _listeners.add(fn);
-  return () => _listeners.delete(fn);
-}
+export const addNetworkListener = (
+  listener: NetworkListener
+): (() => void) => {
+  _listeners.add(listener);
+
+  // Emit current state immediately
+  listener(_isOffline);
+
+  return () => _listeners.delete(listener);
+};

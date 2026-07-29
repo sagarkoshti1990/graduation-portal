@@ -19,7 +19,8 @@ interface PlayerConfigProps {
   getProgress: (progress: number | { data: { percentage: number }; type: string }) => void;
   getToast: (toast: { message: string; toastType: string }) => void;
   afterSubmitCallback: (event?: any) => void | undefined;
-  styleObject?:any
+  styleObject?:any;
+  _getOfflineData?:any;
 }
 
 export function buildCssFromObject(cssObj: Record<string, Record<string, string>>) {
@@ -275,7 +276,7 @@ const WebComponentPlayer: React.FC<PlayerConfigProps> = ({styleObject = {}, play
           }
         }
       } else if (event.detail.type === 'QUESTIONNAIRE_SAVE' || event.detail.type === "QUESTIONNAIRE_SUBMIT") {
-        _getOfflineData(event.detail.data)
+        _getOfflineData(event.detail.data,event.detail.type)
       } else if (event.detail.type === 'TOAST') {
         _getToast(event.detail.data);
       }

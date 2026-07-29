@@ -208,7 +208,7 @@ const TargetingCriteriaCard = ({
               setButtonLoader('notEligible');
             }}
             // @ts-ignore
-            isDisabled={buttonLoader}
+            isDisabled={!!buttonLoader}
           >
             {buttonLoader === 'notEligible' && (
               <ButtonSpinner />
@@ -224,7 +224,7 @@ const TargetingCriteriaCard = ({
               await handleSubmit();
             }}
             // @ts-ignore
-            isDisabled={!isAllSelected || buttonLoader}
+            isDisabled={!isAllSelected || !!buttonLoader}
           >
             {buttonLoader === 'proceed' && (
               <ButtonSpinner />

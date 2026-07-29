@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import TaskCard from '../Task/TaskCard';
 import ProjectAsTaskComponent from './ProjectAsTaskComponent';
 import { TaskComponentProps } from '../../types/components.types';
+import { useTaskAddedToPlan } from '../../context/ProjectContext';
 
 /**
  * Uses useProjectStable() instead of useProjectContext() so this component
@@ -25,8 +26,18 @@ const TaskComponent = memo<TaskComponentProps>(
     showAccordionWrapper,
     index,
     parentIndex,
-    projectContext
+    projectContext,
+    isExpanded,
+    onToggleExpand,
   }) => {
+    // Accepting/rejecting this task (isDeletable) flips its plan status,
+    // which restyles its card in place. That in-place Fabric update has been
+    // observed to trip a native Yoga/Fabric assertion crash (RN 0.82, open
+    // upstream bug — no fix available). Keying on the plan status forces a
+    // full unmount+remount of the leaf TaskCard instead, sidestepping the
+    // in-place shadow-node update path that crashes.
+    const planState = useTaskAddedToPlan(task?._id ?? '');
+
     if (
       task?.tasks ||
       (task?.children && task.children.length > 0)
@@ -37,6 +48,8 @@ const TaskComponent = memo<TaskComponentProps>(
           parentIndex={parentIndex}
           level={level}
           showAccordionWrapper={showAccordionWrapper}
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
         />
       );
     }
@@ -45,6 +58,7 @@ const TaskComponent = memo<TaskComponentProps>(
 
     return (
       <TaskCard
+        key={`${task._id}-${planState}`}
         parentIndex={parentIndex}
         index={index}
         task={task}
@@ -59,7 +73,9 @@ const TaskComponent = memo<TaskComponentProps>(
     prev.task === next.task &&
     prev.isLastTask === next.isLastTask &&
     prev.isChildOfProject === next.isChildOfProject &&
-    prev.showAccordionWrapper === next.showAccordionWrapper,
+    prev.showAccordionWrapper === next.showAccordionWrapper &&
+    prev.isExpanded === next.isExpanded &&
+    prev.onToggleExpand === next.onToggleExpand,
 );
 
 TaskComponent.displayName = 'TaskComponent';

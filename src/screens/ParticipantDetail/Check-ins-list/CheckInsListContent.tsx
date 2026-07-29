@@ -155,6 +155,7 @@ const CheckInsListContent: React.FC<CheckInsListContentProps> = ({
           setSolutions(propSolutions);
         } else {
           const data = await getTargetedSolutions({
+            authUserId: user?.id,
             type: 'observation',
           });
           setSolutions(data);

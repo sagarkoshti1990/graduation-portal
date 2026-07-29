@@ -69,7 +69,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   const projectDataRef = proData?.current || proData;
   const route = useRoute();
   const navigation = useNavigation();
-  const { handleStatusChange, handleAddToPlan } = useTaskActions();
+  const { handleStatusChange, handleAddToPlanBulk } = useTaskActions();
   const { isWeb, isMobile } = usePlatform();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -133,9 +133,9 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
           .filter((item: any) => item?.metaInformation?.syncTaskIds?.includes(task._id))
           .map((item: any) => item._id),
       ];
-      taskIdsToUpdate.forEach((taskId: string) => handleAddToPlan(taskId, added));
+      handleAddToPlanBulk(taskIdsToUpdate, added);
     },
-    [handleAddToPlan, task._id, proData],
+    [handleAddToPlanBulk, task._id, proData],
   );
   const handleAcceptTask = useCallback(() => updateAddToPlan(true), [updateAddToPlan]);
   const handleRejectTask = useCallback(() => updateAddToPlan(false), [updateAddToPlan]);
@@ -242,14 +242,14 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
       const {newFiles, existingToSend} = filterNewFiles(files, task?.attachments);
       const targetStatus = isOnboardingTask ? (files.length > 0 ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO) : TASK_STATUS.COMPLETED;
       const data = await handleStatusChange(
-        { taskId: task._id, parentIndex, index },
+        { taskId: task._id, parentIndex, index, referenceId: task.referenceId, isOnboardingTask },
           targetStatus,
           newFiles,
-          existingToSend,
+        (uploadConfig.maxFiles === undefined || (uploadConfig.maxFiles && uploadConfig.maxFiles > 1)) ? existingToSend : [],
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }
-  }, [task._id, parentIndex, index, task?.attachments, handleStatusChange, uploadConfig.maxFiles, updateEntityFile, isOnboardingTask]);
+  }, [task._id, task.referenceId, parentIndex, index, task?.attachments, isOnboardingTask, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
 
   const handleCloseUploadModal = useCallback(() => setShowUploadModal(false), []);
   const handleClosePreviewModal = useCallback(() => setShowPreviewModal(false), []);
@@ -299,6 +299,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         existingAttachments={task?.attachments}
         maxFileUploadCount={uploadConfig.maxFiles}
         allowedFileTypes={uploadConfig.allowedFileTypes}
+        maxFileSize={config.maxFileSize}
         onUpload={handleUploadMethodSelect}
         onConfirm={handleUploadConfirm}
       />
@@ -321,11 +322,13 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
             return false;
           });
         }}
-        cancelButtonText={t('projectPlayer.changeIt')}
-        onCancel={() =>
-          // @ts-ignore
-          navigation.navigate('template', { id: projectDataRef?.userProfile?.id, projectId: projectDataRef?._id })
-        }
+        {...(!isNetworkOffline() ? {
+          cancelButtonText:t('projectPlayer.changeIt'),
+          onCancel: () => {
+            // @ts-ignore
+            navigation.navigate('template', { id: projectDataRef?.userProfile?.id, projectId: projectDataRef?._id })
+          }
+        } : {})}
       >
         <Text>{t('projectPlayer.confirmPathwaySelectionSubtitle', { pathwayName: showConfirmModal?.name })}</Text>
       </Modal>

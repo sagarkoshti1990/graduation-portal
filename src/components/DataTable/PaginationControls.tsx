@@ -126,7 +126,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <LucideIcon
             name="ChevronLeft"
             size={20}
-            color={currentPage === 1 ? theme.tokens.colors.mutedForeground : theme.tokens.colors.foreground}
+            color={currentPage === 1 ? "$mutedForeground" : "$foreground"}
           />
         </Pressable>
         
@@ -175,7 +175,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <LucideIcon
             name="ChevronRight"
             size={20}
-            color={currentPage === totalPages ? theme.tokens.colors.mutedForeground : theme.tokens.colors.foreground}
+            color={currentPage === totalPages ? "$mutedForeground" : "$foreground"}
           />
         </Pressable>
         
@@ -189,7 +189,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <LucideIcon
             name="ChevronsRight"
             size={20}
-            color={currentPage === totalPages ? theme.tokens.colors.mutedForeground : theme.tokens.colors.foreground}
+            color={currentPage === totalPages ? "$mutedForeground" : "$foreground"}
           />
         </Pressable>
         </HStack>

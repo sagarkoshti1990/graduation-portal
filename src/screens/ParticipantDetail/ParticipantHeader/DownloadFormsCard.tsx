@@ -17,7 +17,7 @@ type FormItem = {
 type Props = {
   consent?: FormItem;
   sla?: FormItem;
-  mode?: 'edit' | 'read-only';
+  mode?: 'edit' | 'read-only' | "hide";
 };
 
 const DownloadFormsCard: React.FC<Props> = ({ consent, sla, mode }) => {
@@ -29,6 +29,8 @@ const DownloadFormsCard: React.FC<Props> = ({ consent, sla, mode }) => {
   const isDesktop = width >= 768;
 
   const rowLayout = isWeb && isDesktop;
+
+  if(mode === "hide") return <></>;
 
   return (
     <Box

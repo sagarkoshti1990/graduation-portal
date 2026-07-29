@@ -9,86 +9,35 @@ import {
   ButtonText,
   ButtonIcon,
   Spinner,
-  Pressable,
 } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useAuth } from '@contexts/AuthContext';
+import { useAuth, User } from '@contexts/AuthContext';
 import {
-  getDownloadOptions,
   getDefaultSelection,
   buildDownloadConfig,
+  resolveDownloadContext,
+  DownloadModuleOption,
 } from '@utils/downloadOptions';
 import { startDownload } from '../../services/downloadService';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import { STATUS } from '@constants/app.constant';
 import type { DownloadStatus, DownloadModuleKey } from '@app-types/offline';
+import dataService from '../../services/dataService';
+import { ProjectData } from '../../project-player/types';
+import { StepState, StepRow, CheckRow, buildStepKeys, MODULE_LABEL } from './shared';
 
 interface DownloadConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
   participantId: string;
-  projectId?: string;
-  participantStatus: string;
-  participantData?: any;
-  onBoardedProjectId?: string;
   onSuccess?: () => void;
-}
-
-// Maps every DownloadModuleKey to its i18n label key
-const MODULE_LABEL: Record<DownloadModuleKey, string> = {
-  onboarding:                   'actions.downloadOnboarding',
-  participant:                  'actions.downloadParticipant',
-  project:                      'actions.downloadProject',
-  tasks:                        'actions.downloadProject',
-  'observation:logVisit':       'actions.downloadLogVisit',
-  'observation:householdProfile':'actions.downloadHouseholdProfile',
-  'observation:individualVisit':'actions.downloadIndividualVisit',
-  'observation:midline':        'actions.downloadMidline',
-  'observation:interventionPlan':'actions.downloadInterventionPlan',
-  'observation:endline':        'actions.downloadEndline',
-};
-
-// Download order matches the pipeline in downloadService.
-// 'onboarding' is always first when present (automatic, not user-selected).
-const DOWNLOAD_ORDER: DownloadModuleKey[] = [
-  'onboarding',
-  'participant',
-  'project',
-  'observation:logVisit',
-  'observation:householdProfile',
-  'observation:individualVisit',
-  'observation:midline',
-  'observation:interventionPlan',
-  'observation:endline',
-];
-
-type StepState = 'pending' | 'loading' | 'completed' | 'failed';
-
-/**
- * Build the ordered step keys that will actually appear in the progress UI.
- * `needsOnboarding` includes the automatic 'onboarding' step (not user-selected).
- */
-function buildStepKeys(selected: Set<string>, needsOnboarding: boolean): DownloadModuleKey[] {
-  return DOWNLOAD_ORDER.filter(key => {
-    if (key === 'onboarding') return needsOnboarding;
-    if (key === 'tasks') return false; // always bundled with project, never shown separately
-    if (key === 'participant') return selected.has('participant');
-    if (key === 'project') return selected.has('project');
-    // Observation keys: selected set uses short keys like 'logVisit'
-    const short = key.replace('observation:', '');
-    return selected.has(short);
-  });
 }
 
 const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   isOpen,
   onClose,
   participantId,
-  projectId,
-  participantStatus,
-  participantData,
-  onBoardedProjectId,
   onSuccess,
 }) => {
   const { t } = useLanguage();
@@ -98,6 +47,8 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null);
+  const [options,setOptions] = useState<DownloadModuleOption[] | null>(null);
+  const [participant, setParticipant] = useState<User | undefined>();
 
   // Per-step progress state
   const [stepStates, setStepStates] = useState<Map<string, StepState>>(new Map());
@@ -105,10 +56,9 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   // Use a ref for the callback so it doesn't cause re-render loops
   const stepStatesRef = useRef<Map<string, StepState>>(new Map());
 
-  const options = getDownloadOptions(participantStatus);
   // Onboarding project is missing when participant is NOT_ONBOARDED and no project ID was set yet.
   // The download service will create it automatically — we only need to show the extra step in the UI.
-  const needsOnboarding = participantStatus === STATUS.NOT_ONBOARDED && !onBoardedProjectId;
+  const needsOnboarding = participant ? resolveDownloadContext(participant).needsOnboarding : false;
 
   const downloadDone = downloadStatus !== null;
   const downloadPartial = downloadDone && (downloadStatus!.failedModules ?? []).length > 0;
@@ -120,15 +70,29 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   const progressPct = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
 
   useEffect(() => {
-    if (isOpen) {
-      setSelected(getDefaultSelection(participantStatus));
+    const init = async () => {
+      const result = await dataService.getParticipantDetails(participantId, user?.id || "");
+      const participantData = result.data as any;
+      const resolvedProjectId = (participantData.status === STATUS.NOT_ONBOARDED && participantData.onBoardedProjectId) ? participantData.onBoardedProjectId : participantData?.idpProjectId;
+      let project;
+      if(resolvedProjectId) {
+        const resultProject = await dataService.getProject<ProjectData>(participantData.id, resolvedProjectId, user?.id ?? '')
+        project = resultProject?.data;
+      }
+      setParticipant(participantData);
+      const { selected:sel, options:op } = getDefaultSelection(participantData.status,project || undefined);
+      setOptions(op);
+      setSelected(sel);
       setDownloadError(null);
       setDownloadStatus(null);
       setStepStates(new Map());
       stepStatesRef.current = new Map();
       setActiveSteps([]);
     }
-  }, [isOpen, participantStatus]);
+    if (isOpen) {
+      init();
+    }
+  }, [isOpen, participantId, user?._id]);
 
   const toggleKey = useCallback((key: string) => {
     setSelected(prev => {
@@ -140,24 +104,17 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
   }, []);
 
   const handleDownload = useCallback(async () => {
+    if (!participant) return;
+    const ctx = resolveDownloadContext(participant);
+
     // For IN_PROGRESS, an IDP project ID is always required.
-    if (participantStatus === STATUS.IN_PROGRESS && !projectId) {
+    if (ctx.missingProject) {
       setDownloadError(t('actions.downloadNoProject'));
       return;
     }
 
-    // Resolve the project ID passed to the service.
-    // For NOT_ONBOARDED without an onBoardedProjectId, pass undefined — the service
-    // will create the onboarding project automatically in Step 0.
-    const resolvedProjectId =
-      participantStatus === STATUS.IN_PROGRESS
-        ? projectId
-        : participantStatus === STATUS.NOT_ONBOARDED
-        ? (onBoardedProjectId || undefined)
-        : undefined;
-
     // Build ordered step list (includes 'onboarding' when project creation is needed)
-    const steps = buildStepKeys(selected, needsOnboarding);
+    const steps = buildStepKeys(selected);
     const initialMap = new Map<string, StepState>(steps.map(k => [k, 'pending']));
     stepStatesRef.current = initialMap;
     setActiveSteps(steps);
@@ -169,38 +126,18 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       stepStatesRef.current = new Map(stepStatesRef.current).set(key, state);
       setStepStates(new Map(stepStatesRef.current));
     };
-
     try {
       const config = buildDownloadConfig(selected);
 
-      // province lives in userDetails in raw list rows (e.g. userDetails.province.value),
-      // but may be at the top level after flattening or as a plain string.
-      const rawProvince =
-        participantData?.province ??
-        participantData?.userDetails?.province;
-      const resolvedProvince: string | undefined =
-        typeof rawProvince === 'string'
-          ? rawProvince
-          : rawProvince?.value ?? rawProvince?.label;
-
-      // entityId may be at the top level, entity_id, inside userDetails, or equal to userId
-      // (fetchAndStoreParticipant filters the list API with entityId = participantId, confirming they are the same)
-      const resolvedEntityId: string | undefined =
-        participantData?.entityId ??
-        (participantData as any)?.entity_id ??
-        participantData?.userDetails?.entityId ??
-        participantData?.userId;
-
       const result = await startDownload({
         participantId,
-        projectId: resolvedProjectId,
+        projectId: ctx.resolvedProjectId,
         downloadConfig: config,
         lcUserId: user?.id ?? '',
-        participantSnapshot: participantData,
+        participantSnapshot: participant,
         onProgress,
-        onBoardedProjectId: onBoardedProjectId,
-        province: resolvedProvince,
-        participantEntityId: resolvedEntityId,
+        province: ctx.resolvedProvince,
+        participantEntityId: ctx.resolvedEntityId,
       });
 
       setDownloadStatus(result.status);
@@ -216,7 +153,7 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
     } finally {
       setIsDownloading(false);
     }
-  }, [needsOnboarding, projectId, onBoardedProjectId, selected, participantId, participantData, participantStatus, t, refreshPending, onSuccess, user?.id]);
+  }, [selected, participant, participantId, t, refreshPending, onSuccess, user?.id]);
 
   // Build the result rows for the completed state — dedup 'tasks' (bundled under project)
   const resultRows: Array<{ key: string; label: string; state: 'success' | 'failed' }> = [];
@@ -234,23 +171,23 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
       });
     }
   }
-
+  
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {}}
       headerTitle={t('actions.downloadOffline')}
       headerIcon={<LucideIcon name="Download" size={20} color="$primary500" />}
       size="md"
-      showCloseButton={!isDownloading}
+      showCloseButton={false}
     >
       <VStack space="lg">
         {/* Informational banner when the onboarding project will be created automatically */}
         {needsOnboarding && !isDownloading && !downloadDone && (
-          <HStack space="sm" alignItems="flex-start" bg="$info100" p="$3" borderRadius="$md">
-            <LucideIcon name="Info" size={16} color="$info600" />
-            <Text fontSize="$sm" color="$info800" flex={1}>
-              {t('actions.downloadWillCreateOnboarding')}
+          <HStack space="sm" alignItems="flex-start" bg="$warning100" p="$3" borderRadius="$md">
+            <LucideIcon name="Info" size={16} color="$warning700" />
+            <Text fontSize="$sm" color="$warning700" flex={1}>
+              {t('actions.TARGETING_CRITERIA_NOT_COMPLETED')}
             </Text>
           </HStack>
         )}
@@ -278,9 +215,9 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
 
             {/* Per-step list */}
             <VStack space="xs">
-              {activeSteps.map(key => {
+              {activeSteps?.map(key => {
                 const state = stepStates.get(key) ?? 'pending';
-                return <StepRow key={key} labelKey={MODULE_LABEL[key] ?? key} state={state} />;
+                return <StepRow key={key} labelKey={MODULE_LABEL[key] ?? key} state={state} hideIcon={true} />;
               })}
             </VStack>
           </VStack>
@@ -339,39 +276,81 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
               {t('actions.downloadHint')}
             </Text>
 
-            <VStack space="sm">
-              {options.map(opt => {
+            <VStack space="md">
+             {options?.map(opt => {
                 if (!opt.enabled) return null;
+
                 const isNested = !!opt.nested;
 
                 if (isNested) {
-                  const enabledNested = (opt.nested ?? []).filter(n => n.enabled);
+                  const enabledNested: any[] = [];
+                  let childrenRequired = false;
+
+                  (opt.nested ?? []).forEach((item: any) => {
+                    if (item.enabled) {
+                      enabledNested.push(item);
+                    }
+
+                    if (item.required) {
+                      childrenRequired = true;
+                    }
+                  });
+
                   if (enabledNested.length === 0) return null;
+                  
                   return (
-                    <VStack key={opt.key} space="xs">
-                      <Text fontSize="$sm" fontWeight="$semibold" color="$textPrimary">
-                        {t(opt.labelKey)}
-                      </Text>
-                      {enabledNested.map(nested => (
-                        <CheckRow
-                          key={nested.key}
-                          labelKey={nested.labelKey}
-                          checked={selected.has(nested.key)}
-                          onToggle={() => toggleKey(nested.key)}
-                          disabled={isDownloading}
-                          indented
-                        />
-                      ))}
+                    <VStack key={opt.key} space="sm">
+                      {childrenRequired ? (
+                        <VStack space="sm">
+                          <CheckRow
+                            labelKey={opt.labelKey}
+                            checked={selected.has(opt.key as string)}
+                            onToggle={() => toggleKey(opt.key as string)}
+                            disabled={isDownloading}
+                          />
+
+                          <VStack space="sm" pl="$5">
+                            {enabledNested.map(nested => (
+                              <HStack key={nested.key} space="sm" alignItems="flex-start">
+                                <LucideIcon name={selected.has(opt.key as string) ? "CheckCircle" : "CircleDot"} color={selected.has(opt.key as string) ? "$primary500" :"$textMuted"} size={16}/>
+                                <Text flex={1} fontSize="$sm" color="$textPrimary">
+                                  {t(nested.labelKey)}
+                                </Text>
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </VStack>
+                      ) : (
+                        <VStack space="sm">
+                          <Text
+                            fontSize="$sm"
+                            color="$textPrimary"
+                          >
+                            {t(opt.labelKey)}
+                          </Text>
+
+                          {enabledNested.map(nested => (
+                            <CheckRow
+                              key={nested.key}
+                              labelKey={nested.labelKey}
+                              checked={selected.has(nested.key)}
+                              onToggle={() => toggleKey(nested.key)}
+                              disabled={isDownloading}
+                              indented
+                            />
+                          ))}
+                        </VStack>
+                      )}
                     </VStack>
                   );
                 }
 
                 return (
                   <CheckRow
-                    key={opt.key as string}
+                    key={opt.key}
                     labelKey={opt.labelKey}
-                    checked={selected.has(opt.key as string)}
-                    onToggle={() => toggleKey(opt.key as string)}
+                    checked={selected.has(opt.key)}
+                    onToggle={() => toggleKey(opt.key)}
                     disabled={isDownloading}
                   />
                 );
@@ -386,9 +365,11 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
             )}
 
             <HStack space="md" justifyContent="flex-end">
-              <Button variant="outline" size="sm" onPress={onClose} isDisabled={isDownloading}>
+              {/* @ts-ignore */}
+              <Button variant="outlineghost" size="sm" onPress={onClose} isDisabled={isDownloading}>
                 <ButtonText>{t('common.cancel')}</ButtonText>
               </Button>
+              {!needsOnboarding &&
               <Button
                 variant="solid"
                 size="sm"
@@ -403,84 +384,12 @@ const DownloadConfigModal: React.FC<DownloadConfigModalProps> = ({
                 <ButtonText>
                   {isDownloading ? t('common.loading') : t('actions.download')}
                 </ButtonText>
-              </Button>
+              </Button>}
             </HStack>
           </>
         )}
       </VStack>
     </Modal>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Step row — shows PENDING / LOADING / COMPLETED / FAILED state per module
-// ---------------------------------------------------------------------------
-
-interface StepRowProps {
-  labelKey: string;
-  state: StepState;
-}
-
-const StepRow: React.FC<StepRowProps> = ({ labelKey, state }) => {
-  const { t } = useLanguage();
-
-  const icon = state === 'completed'
-    ? <LucideIcon name="CircleCheck" size={16} color="$success600" />
-    : state === 'failed'
-    ? <LucideIcon name="XCircle" size={16} color="$error500" />
-    : state === 'loading'
-    ? <Spinner size="small" color="$primary500" />
-    : <Box width={16} height={16} borderRadius="$full" borderWidth={1} borderColor="$borderLight300" />;
-
-  const textColor = state === 'completed'
-    ? '$textPrimary'
-    : state === 'failed'
-    ? '$error600'
-    : state === 'loading'
-    ? '$primary600'
-    : '$textMutedForeground';
-
-  return (
-    <HStack space="sm" alignItems="center" py="$0.5">
-      {icon}
-      <Text fontSize="$sm" color={textColor} flex={1}>
-        {t(labelKey)}
-      </Text>
-    </HStack>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Small checkbox row
-// ---------------------------------------------------------------------------
-interface CheckRowProps {
-  labelKey: string;
-  checked: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-  indented?: boolean;
-}
-
-const CheckRow: React.FC<CheckRowProps> = ({ labelKey, checked, onToggle, disabled, indented }) => {
-  const { t } = useLanguage();
-  return (
-    <Pressable onPress={disabled ? undefined : onToggle} opacity={disabled ? 0.5 : 1}>
-      <HStack space="sm" alignItems="center" pl={indented ? '$4' : '$0'}>
-        <Box
-          width={18}
-          height={18}
-          borderRadius="$sm"
-          borderWidth={2}
-          borderColor={checked ? '$primary500' : '$borderLight300'}
-          backgroundColor={checked ? '$primary500' : 'transparent'}
-          alignItems="center"
-          justifyContent="center"
-        >
-          {checked && <LucideIcon name="Check" size={12} color="white" />}
-        </Box>
-        <Text fontSize="$sm" color="$textPrimary">{t(labelKey)}</Text>
-      </HStack>
-    </Pressable>
   );
 };
 

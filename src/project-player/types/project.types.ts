@@ -28,6 +28,7 @@ export interface ProjectData {
 export interface Task {
   _id: string;
   name: string;
+  label?: string;
   description?: string;
   type: (typeof TASK_TYPE)[keyof typeof TASK_TYPE];
   status?: TaskStatus;
@@ -54,11 +55,17 @@ export interface Task {
   noOfEvidenceRequired?: number;
   referenceId?:string
   taskSequence?:string[]
+  submissions?:any[]
 }
 
 export interface Attachment {
   _id: string;
+  /** Original file name exactly as selected by the user — used for display (e.g. "invoice.pdf"). */
   name: string;
+  /** Explicit display name — same as `name` for new uploads; preferred over `name` in UI. */
+  originalName?: string;
+  /** Unique generated file name used for upload, storage, and sync (e.g. "invoice_1751023456789.pdf"). */
+  fileName?: string;
   type: string;
   size: number;
   url?: string;

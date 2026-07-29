@@ -61,8 +61,9 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
       try {
         const [response, solutionsData] = await Promise.all([
           id ? getParticipantsList({ entityId: id, userId: authUserId as string }) : Promise.resolve(undefined),
-          getTargetedSolutions({ type: 'observation' }),
+          getTargetedSolutions({authUserId: authUserId, type: 'observation', participantId: id }),
         ]);
+        
         const { userDetails, ...rest } = response?.result?.data?.[0]
         const participantData = { ...(userDetails || {}), ...rest }
         if (participantData) {

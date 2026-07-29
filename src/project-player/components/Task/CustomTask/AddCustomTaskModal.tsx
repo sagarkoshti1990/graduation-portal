@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Button,
   ButtonText,
@@ -10,9 +12,8 @@ import {
   InputField,
   Textarea,
   TextareaInput,
-  useToast,
 } from '@gluestack-ui/themed';
-import { LucideIcon, Modal, showSuccessToast, useAlert } from '@ui';
+import { LucideIcon, Modal, useAlert } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Select from '@ui/Inputs/Select';
@@ -25,6 +26,139 @@ import { theme } from '@config/theme';
 import { usePlatform } from '@utils/platform';
 import { SERVICE_PROVIDER_LIST } from '@constants/PROFILE_MENU_OPTIONS';
 
+// The Pillar select (rendered above Task Name) and the Instructions/Service
+// Provider fields (rendered below Task Name) are heavy, non-memoized
+// dropdown/portal components (`@ui/Inputs/Select`). Typing a single character
+// into Task Name previously re-rendered all of them too via the shared
+// `formData` object, which was slow enough to make the controlled Task Name
+// TextInput drop keystrokes. Split out and memoized so a Task Name keystroke
+// (which doesn't change any of these props) bails out of re-rendering them.
+const PillarField = React.memo(function PillarField({
+  t,
+  pillars,
+  shouldShowDropdown,
+  selectedPillar,
+  parentPillarName,
+  propPillarId,
+  onPillarChange,
+}: {
+  t: (key: string) => string;
+  pillars: Array<{ label: string; value: string }>;
+  shouldShowDropdown: boolean;
+  selectedPillar?: string;
+  parentPillarName?: string;
+  propPillarId?: string;
+  onPillarChange: (value: string) => void;
+}) {
+  return (
+    <VStack {...addCustomTaskModalStyles.fieldStack}>
+      {/* Label */}
+      <Text {...TYPOGRAPHY.label} color="$textPrimary" fontWeight="$medium">
+        {shouldShowDropdown && (
+          <>
+            {t('projectPlayer.selectPillar')}
+            <Text color="$error500">*</Text>
+          </>
+        )}
+      </Text>
+
+      {shouldShowDropdown ? (
+        <Select
+          options={pillars}
+          value={
+            selectedPillar ??
+            (parentPillarName
+              ? {
+                  label: parentPillarName,
+                  value: propPillarId,
+                }
+              : undefined)
+          }
+          onChange={onPillarChange}
+          placeholder={t('projectPlayer.selectPillarPlaceholder')}
+          {...addCustomTaskModalStyles.select}
+        />
+      ) : (
+        <HStack space="xs">
+          <Text
+            {...TYPOGRAPHY.paragraph}
+            color="$textPrimary"
+            fontWeight="$medium"
+          >
+            {t('projectPlayer.pillar')}:
+          </Text>
+          <Text {...TYPOGRAPHY.paragraph} color="$textPrimary">
+            {parentPillarName}
+          </Text>
+        </HStack>
+      )}
+    </VStack>
+  );
+});
+
+const TrailingFields = React.memo(function TrailingFields({
+  t,
+  fieldKey,
+  instructionsDefaultValue,
+  onInstructionsChangeText,
+  serviceProvider,
+  onServiceProviderChange,
+}: {
+  t: (key: string) => string;
+  fieldKey: string;
+  instructionsDefaultValue: string;
+  onInstructionsChangeText: (value: string) => void;
+  serviceProvider: string;
+  onServiceProviderChange: (value: string) => void;
+}) {
+  return (
+    <>
+      {/* Instructions */}
+      <VStack {...addCustomTaskModalStyles.fieldStack}>
+        <Text {...TYPOGRAPHY.label} color="$textPrimary" fontWeight="$medium">
+          {t('projectPlayer.instructions')}
+        </Text>
+        <Textarea {...addCustomTaskModalStyles.textarea} key={fieldKey}>
+          <TextareaInput
+            placeholder={t('projectPlayer.instructionsPlaceholder')}
+            defaultValue={instructionsDefaultValue}
+            onChangeText={onInstructionsChangeText}
+            placeholderTextColor="$textMuted"
+          />
+        </Textarea>
+      </VStack>
+
+      {/* Service Provider Selection (Optional) */}
+      <VStack {...addCustomTaskModalStyles.serviceProviderSection}>
+        <HStack {...addCustomTaskModalStyles.serviceProviderHeader}>
+          <LucideIcon
+            name="Building2"
+            size={16}
+            color={theme.tokens.colors.primary500}
+          />
+          <Text
+            {...TYPOGRAPHY.label}
+            color="$textPrimary"
+            fontWeight="$medium"
+          >
+            {t('projectPlayer.serviceProviderSelection')}
+          </Text>
+        </HStack>
+        <Text {...TYPOGRAPHY.bodySmall} color="$textSecondary">
+          {t('projectPlayer.serviceProvider')}
+        </Text>
+        <Select
+          options={SERVICE_PROVIDER_LIST}
+          value={serviceProvider}
+          onChange={onServiceProviderChange}
+          placeholder={t('projectPlayer.selectServiceProvider')}
+          {...addCustomTaskModalStyles.select}
+        />
+      </VStack>
+    </>
+  );
+});
+
 export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
   isOpen,
   onClose,
@@ -34,7 +168,6 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
   mode = 'add',
 }) => {
   const { t } = useLanguage();
-  const toast = useToast();
   const { showAlert } = useAlert();
   const {
     projectData,
@@ -46,34 +179,65 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state - merged into single object
+  // Form state — only the two dropdowns now. Task Name and Instructions are
   const [formData, setFormData] = useState({
-    selectedPillar: undefined,
-    taskName: '',
-    instructions: '',
+    selectedPillar: undefined as string | undefined,
     serviceProvider: '',
   });
+
+  // this is the only reset hook).
+  const [formInstanceKey, setFormInstanceKey] = useState(0);
 
   const isEditMode = mode === 'edit' && !!task;
   const isPreviewMode = playerMode === 'preview';
 
-  // Helper to update form field
+  // refs (no re-render) so handleSubmit can read the latest value.
+  const taskNameRef = useRef('');
+  const instructionsRef = useRef('');
+  // update for every other keystroke because the value didn't change.
+  const [hasTaskName, setHasTaskName] = useState(false);
+  // THIS render, before any effect from this render has had a chance to fire.
+  const lastFieldKeyRef = useRef<string | null>(null);
+
+  const handleTaskNameChangeText = useCallback((value: string) => {
+    taskNameRef.current = value;
+    setHasTaskName(!!value.trim());
+  }, []);
+  const handleInstructionsChangeText = useCallback((value: string) => {
+    instructionsRef.current = value;
+  }, []);
+
+  // modal closes (formInstanceKey bump) or is aimed at a different task/pillar.
+  const fieldKey = `${formInstanceKey}-${isEditMode ? task?._id ?? '' : propPillarId ?? ''}`;
+
+  // change" render-time pattern.
+  if (lastFieldKeyRef.current !== fieldKey) {
+    lastFieldKeyRef.current = fieldKey;
+    const initialTaskName = isEditMode && task ? task.name : '';
+    const initialInstructions = isEditMode && task ? task.description || '' : '';
+    taskNameRef.current = initialTaskName;
+    instructionsRef.current = initialInstructions;
+    const nonEmpty = !!initialTaskName.trim();
+    if (hasTaskName !== nonEmpty) {
+      setHasTaskName(nonEmpty);
+    }
+  }
+
+  // Helper to update a dropdown field
   const updateFormField = useCallback(
     (field: keyof typeof formData, value: string) => {
       setFormData(prev => ({ ...prev, [field]: value }));
     },
     [],
   );
-
-  // Helper to reset form
-  const resetForm = useCallback(() => {
-    setFormData({
-      selectedPillar: '',
-      taskName: '',
-      instructions: '',
-      serviceProvider: '',
-    });
-  }, []);
+  const handlePillarChange = useCallback(
+    (value: string) => updateFormField('selectedPillar', value),
+    [updateFormField],
+  );
+  const handleServiceProviderChange = useCallback(
+    (value: string) => updateFormField('serviceProvider', value),
+    [updateFormField],
+  );
 
   // Get all pillars (project type tasks) for the dropdown - memoized
   const pillars = useMemo(() => {
@@ -96,53 +260,46 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     },
     [pillars],
   );
-  // Populate form when editing or set pillar when adding
+  // Populate the two dropdowns when editing, set pillar when adding, or reset
   useEffect(() => {
     if (isEditMode && task) {
       // Edit mode: populate with existing task data
       const parentPillar = findParentPillar(task._id);
       setFormData({
         selectedPillar: parentPillar?._id || '',
-        taskName: task.name,
-        instructions: task.description || '',
         serviceProvider: task.serviceProvider || '',
       });
     } else if (propPillarId) {
       // Add mode: set pillar if provided, reset other fields
       setFormData({
         selectedPillar: propPillarId,
-        taskName: '',
-        instructions: '',
         serviceProvider: '',
       });
     } else {
       // Reset everything if no pillar provided
-      resetForm();
+      setFormData({ selectedPillar: '', serviceProvider: '' });
     }
-  }, [isEditMode, task, propPillarId, findParentPillar, resetForm]);
+  }, [isEditMode, task, propPillarId, findParentPillar, formInstanceKey]);
 
   const handleCloseModal = useCallback(() => {
     if (isSubmitting) return;
-    // Reset form when closing (preserve pillar if provided in add mode)
-    if (!propPillarId && !isEditMode) {
-      resetForm();
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        taskName: '',
-        instructions: '',
-        serviceProvider: '',
-      }));
-    }
+    // this same modal instance is reopened for the same task/pillar.
+    setFormInstanceKey(k => k + 1);
     onClose();
-  }, [isSubmitting, propPillarId, isEditMode, resetForm, onClose]);
+  }, [isSubmitting, onClose]);
 
   const handleSubmit = useCallback(async () => {
-    const { taskName, instructions, serviceProvider, selectedPillar } =
-      formData;
+    // from state — they were never written to formData while typing.
+    const taskName = taskNameRef.current;
+    const instructions = instructionsRef.current;
+    const { serviceProvider, selectedPillar } = formData;
     const pillarIdToUse = propPillarId || selectedPillar;
 
     if (isEditMode && task) {
+      // Update is always clickable (not gated on change detection) — apply the
+      // same "name required" validation that used to disable the button here instead.
+      if (!taskName.trim()) return;
+
       setIsSubmitting(true);
       try {
         await updateTask(task._id,projectData?.userProfile?.id , {
@@ -150,9 +307,9 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
           description: instructions,
           serviceProvider: serviceProvider,
           parentId: task?.parentId,
-          pillarName: findParentPillar(task?.parentId || '')?.label,
+          // pillarName: findParentPillar(task?.parentId || '')?.name,
         });
-        showSuccessToast(toast, t('projectPlayer.customTaskUpdateSuccess'));
+        showAlert("success",t('projectPlayer.customTaskUpdateSuccess'))
         handleCloseModal();
       } catch (e) {
         showAlert(
@@ -166,11 +323,11 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     }
 
     const newTask: Task = {
-      _id: crypto.randomUUID(),
+      _id: uuidv4(),
       name: taskName,
       description: instructions,
       type: 'simple',
-      externalId: crypto.randomUUID(),
+      externalId: uuidv4(),
       status: TASK_STATUS.TO_DO,
       isCustomTask: true,
       serviceProvider: serviceProvider || undefined,
@@ -180,7 +337,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     setIsSubmitting(true);
     try {
       await addTask(pillarIdToUse!, newTask);
-      showSuccessToast(toast, t('projectPlayer.customTaskAddSuccess'));
+      showAlert("success",t('projectPlayer.customTaskAddSuccess'));
       handleCloseModal();
     } catch (e) {
       showAlert(
@@ -198,8 +355,7 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     updateTask,
     addTask,
     handleCloseModal,
-    findParentPillar,
-    toast,
+    // findParentPillar,
     t,
     showAlert,
     projectData?.userProfile?.id
@@ -214,9 +370,14 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
   const isFormValid = useMemo(
     () =>
       (isPreviewMode || propPillarId || formData.selectedPillar || parentPillarName) &&
-      formData.taskName.trim(),
-    [isPreviewMode, propPillarId, formData.selectedPillar, formData.taskName, parentPillarName],
+      hasTaskName,
+    [isPreviewMode, propPillarId, formData.selectedPillar, parentPillarName, hasTaskName],
   );
+
+  // Update (edit mode) is always clickable — invalid input is caught inside
+  // handleSubmit instead of disabling the button. Add mode keeps the existing
+  // disable-until-valid behavior.
+  const isSubmitDisabled = isEditMode ? isSubmitting : !isFormValid || isSubmitting;
 
   return (
     <Modal
@@ -258,8 +419,8 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
           <Button
             {...addCustomTaskModalStyles.submitButton}
             onPress={handleSubmit}
-            isDisabled={!isFormValid || isSubmitting}
-            opacity={!isFormValid || isSubmitting ? 0.5 : 1}
+            isDisabled={isSubmitDisabled}
+            opacity={isSubmitDisabled ? 0.5 : 1}
             width={isMobile ? '100%' : 'auto'}
           >
             <HStack {...addCustomTaskModalStyles.submitButtonContent}>
@@ -287,107 +448,39 @@ export const AddCustomTaskModal: React.FC<AddCustomTaskModalProps> = ({
     >
       {/* Modal Body - Form Fields */}
       <VStack {...addCustomTaskModalStyles.formStack}>
-        {/* Select Pillar */}
-        <VStack {...addCustomTaskModalStyles.fieldStack}>
-          {/* Label */}
-          <Text {...TYPOGRAPHY.label} color="$textPrimary" fontWeight="$medium">
-            {shouldShowDropdown && (
-              <>
-                {t('projectPlayer.selectPillar')}
-                <Text color="$error500">*</Text>
-              </>
-            )}
-          </Text>
-
-          {shouldShowDropdown ? (
-            <Select
-              options={pillars}
-              value={
-                formData.selectedPillar ??
-                (parentPillarName
-                  ? {
-                      label: parentPillarName,
-                      value: propPillarId,
-                    }
-                  : undefined)
-              }
-              onChange={value => updateFormField('selectedPillar', value)}
-              placeholder={t('projectPlayer.selectPillarPlaceholder')}
-              {...addCustomTaskModalStyles.select}
-            />
-          ) : (
-            <HStack space="xs">
-              <Text
-                {...TYPOGRAPHY.paragraph}
-                color="$textPrimary"
-                fontWeight="$medium"
-              >
-                {t('projectPlayer.pillar')}:
-              </Text>
-              <Text {...TYPOGRAPHY.paragraph} color="$textPrimary">
-                {parentPillarName}
-              </Text>
-            </HStack>
-          )}
-        </VStack>
+        <PillarField
+          t={t}
+          pillars={pillars}
+          shouldShowDropdown={shouldShowDropdown}
+          selectedPillar={formData.selectedPillar}
+          parentPillarName={parentPillarName}
+          propPillarId={propPillarId}
+          onPillarChange={handlePillarChange}
+        />
 
         {/* Task Name */}
         <VStack {...addCustomTaskModalStyles.fieldStack}>
           <Text {...TYPOGRAPHY.label} color="$textPrimary" fontWeight="$medium">
             {t('projectPlayer.taskName')} <Text color="$error500">*</Text>
           </Text>
-          <Input {...addCustomTaskModalStyles.input}>
+          <Input {...addCustomTaskModalStyles.input} key={fieldKey}>
             <InputField
               placeholder={t('projectPlayer.taskNamePlaceholder')}
-              value={formData.taskName}
-              onChangeText={value => updateFormField('taskName', value)}
+              defaultValue={taskNameRef.current}
+              onChangeText={handleTaskNameChangeText}
               placeholderTextColor="$textMuted"
             />
           </Input>
         </VStack>
 
-        {/* Instructions */}
-        <VStack {...addCustomTaskModalStyles.fieldStack}>
-          <Text {...TYPOGRAPHY.label} color="$textPrimary" fontWeight="$medium">
-            {t('projectPlayer.instructions')}
-          </Text>
-          <Textarea {...addCustomTaskModalStyles.textarea}>
-            <TextareaInput
-              placeholder={t('projectPlayer.instructionsPlaceholder')}
-              value={formData.instructions}
-              onChangeText={value => updateFormField('instructions', value)}
-              placeholderTextColor="$textMuted"
-            />
-          </Textarea>
-        </VStack>
-
-        {/* Service Provider Selection (Optional) */}
-        <VStack {...addCustomTaskModalStyles.serviceProviderSection}>
-          <HStack {...addCustomTaskModalStyles.serviceProviderHeader}>
-            <LucideIcon
-              name="Building2"
-              size={16}
-              color={theme.tokens.colors.primary500}
-            />
-            <Text
-              {...TYPOGRAPHY.label}
-              color="$textPrimary"
-              fontWeight="$medium"
-            >
-              {t('projectPlayer.serviceProviderSelection')}
-            </Text>
-          </HStack>
-          <Text {...TYPOGRAPHY.bodySmall} color="$textSecondary">
-            {t('projectPlayer.serviceProvider')}
-          </Text>
-          <Select
-            options={SERVICE_PROVIDER_LIST}
-            value={formData.serviceProvider}
-            onChange={value => updateFormField('serviceProvider', value)}
-            placeholder={t('projectPlayer.selectServiceProvider')}
-            {...addCustomTaskModalStyles.select}
-          />
-        </VStack>
+        <TrailingFields
+          t={t}
+          fieldKey={fieldKey}
+          instructionsDefaultValue={instructionsRef.current}
+          onInstructionsChangeText={handleInstructionsChangeText}
+          serviceProvider={formData.serviceProvider}
+          onServiceProviderChange={handleServiceProviderChange}
+        />
       </VStack>
     </Modal>
   );

@@ -34,56 +34,83 @@ export const STORAGE_KEYS = {
 // ---------------------------------------------------------------------------
 // Offline participant data keys
 // All keys under participant:* are routed to IndexedDB on web.
+//
+// Key format: participant:{userId}:{participantId}:{dataType}
+// The userId prefix isolates data between different logged-in users on the
+// same device. This prevents one user from seeing another user's offline data.
 // ---------------------------------------------------------------------------
 
 export const PARTICIPANT_KEYS = {
   /** Download status for the participant */
-  downloadStatus: (id: string) => `participant:${id}:downloadStatus`,
+  downloadStatus: (userId: string, id: string) => `participant:${userId}:${id}:downloadStatus`,
   /** Full entity details from GET_ENTITY_DETAILS API */
-  details:        (id: string) => `participant:${id}:details`,
+  details:        (userId: string, id: string) => `participant:${userId}:${id}:details`,
   /** List-row snapshot saved at download time (shape = ParticipantData) */
-  listSnapshot:   (id: string) => `participant:${id}:listSnapshot`,
+  listSnapshot:   (userId: string, id: string) => `participant:${userId}:${id}:listSnapshot`,
   /** Project data */
-  project:        (id: string,projectId:string) => `participant:${id}:project:${projectId}`,
+  project:        (userId: string, id: string, projectId: string) => `participant:${userId}:${id}:project:${projectId}`,
   /** Pending task-status edits */
-  projectEdits:   (id: string,projectId:string) => `participant:${id}:projectEdits:${projectId}`,
+  projectEdits:   (userId: string, id: string, projectId: string) => `participant:${userId}:${id}:projectEdits:${projectId}`,
   /** Observation form schema + submission snapshot */
-  form:      (participantId: string, formId: string) => `participant:${participantId}:form:${formId}`,
+  form:      (userId: string, participantId: string, formId: string) => `participant:${userId}:${participantId}:form:${formId}`,
   /** Pending form edits saved before sync */
-  formEdits: (participantId: string, formId: string) => `participant:${participantId}:form:${formId}:edits`,
+  formEdits: (userId: string, participantId: string, formId: string) => `participant:${userId}:${participantId}:form:${formId}:edits`,
   /**
    * Pending file upload queue.
    * Stores PendingFile[] — structured entries that carry taskId so syncService
    * knows which task each file belongs to.
    */
-  filesPending:   (id: string) => `participant:${id}:filesPending`,
+  filesPending:   (userId: string, id: string) => `participant:${userId}:${id}:filesPending`,
   /**
    * Stored file content (base64 data-URL) for a single pending file.
-   * Keyed by participantId + fileName; removed after successful upload.
+   * Keyed by userId + participantId + fileName; removed after successful upload.
    */
-  fileBlob: (participantId: string, fileName: string) => `participant:${participantId}:file:${encodeURIComponent(fileName)}`,
+  fileBlob: (userId: string, participantId: string, fileName: string) => `participant:${userId}:${participantId}:file:${encodeURIComponent(fileName)}`,
   /** Timestamp (ms) of the last successful sync for this participant */
-  lastSyncedAt:   (id: string) => `participant:${id}:lastSyncedAt`,
+  lastSyncedAt:   (userId: string, id: string) => `participant:${userId}:${id}:lastSyncedAt`,
   /** Keyword→solution mapping built during download — used by offline observation resolver */
-  solutions:      (id: string) => `participant:${id}:solutions`,
+  solutions:      (userId: string, id: string) => `participant:${userId}:${id}:solutions`,
+  /** Queued Intervention Plan submission (createProjectPlan/updateProjectPlan payload), pending sync */
+  idpSubmissionPending: (userId: string, id: string) => `participant:${userId}:${id}:idpSubmissionPending`,
 };
 
 // ---------------------------------------------------------------------------
 // Global offline keys (participants list, sync state)
 // All keys under participants:* and sync:* are routed to IndexedDB on web.
+//
+// Registry and sync-state keys are user-specific to prevent one user's
+// downloaded participants / pending queue from leaking into another user's session.
 // ---------------------------------------------------------------------------
 
 export const OFFLINE_KEYS = {
-  /** Array of participant IDs that have been downloaded for offline use */
-  OFFLINE_PARTICIPANT_IDS: 'participants:offline:ids',
-  /** Cached targeted solutions per type — participants:solutions:{type} */
+  /**
+   * Array of participant IDs that have been downloaded for offline use.
+   * Scoped per user so each LC only sees their own downloaded participants.
+   */
+  OFFLINE_PARTICIPANT_IDS: (userId: string) => `participants:offline:ids:${userId}`,
+  /** Cached targeted solutions per type — shared across users (read-only reference data) */
   SOLUTIONS: (type: string) => `participants:solutions:${type}`,
-  /** Cached project categories/pathways */
+  /** Cached project categories/pathways — shared across users (read-only reference data) */
   PROJECT_CATEGORIES: 'participants:projectCategories',
-  /** Sync failure log */
-  SYNC_FAILED: 'sync:failed',
-  /** Last sync timestamp */
-  SYNC_LAST: 'sync:lastSync',
+  /**
+   * Full IDP library category hierarchy (all pathways, fully nested), downloaded
+   * at login — shared across users (read-only reference data).
+   */
+  LIBRARY_CATEGORIES_TREE: 'library:categoriesTree',
+  /**
+   * Full, unfiltered project templates list, downloaded at login — shared
+   * across users (read-only reference data). Filtered locally by category id
+   * to reproduce the online `getTaskDetails` grouping when offline.
+   */
+  PROJECT_TEMPLATES_ALL: 'library:templatesAll',
+  /**
+   * Sync failure log — scoped per user so each user tracks their own failed syncs.
+   */
+  SYNC_FAILED: (userId: string) => `sync:failed:${userId}`,
+  /**
+   * Last sync timestamp — scoped per user.
+   */
+  SYNC_LAST: (userId: string) => `sync:lastSync:${userId}`,
 };
 
 // ---------------------------------------------------------------------------
@@ -107,10 +134,10 @@ export const OFFLINE_API_CONFIG = {
 
   PARTICIPANT_DETAILS: {
     supported: true as const,
-    /** cacheKey(participantId) → 'participant:{id}:details' */
-    cacheKey: (id: string) => PARTICIPANT_KEYS.details(id),
+    /** cacheKey(userId, participantId) → 'participant:{userId}:{id}:details' */
+    cacheKey: (userId: string, id: string) => PARTICIPANT_KEYS.details(userId, id),
     /** Fallback key when details key has no data */
-    fallbackCacheKey: (id: string) => PARTICIPANT_KEYS.listSnapshot(id),
+    fallbackCacheKey: (userId: string, id: string) => PARTICIPANT_KEYS.listSnapshot(userId, id),
   },
 
   PROJECT: {
@@ -119,9 +146,9 @@ export const OFFLINE_API_CONFIG = {
 
   OBSERVATION_FORM: {
     supported: true as const,
-    /** cacheKey(participantId, formId) → 'participant:{id}:form:{formId}' */
-    cacheKey: (participantId: string, formId: string) =>
-      PARTICIPANT_KEYS.form(participantId, formId),
+    /** cacheKey(userId, participantId, formId) → 'participant:{userId}:{participantId}:form:{formId}' */
+    cacheKey: (userId: string, participantId: string, formId: string) =>
+      PARTICIPANT_KEYS.form(userId, participantId, formId),
   },
 
   TARGETED_SOLUTIONS: {
@@ -137,8 +164,8 @@ export const OFFLINE_API_CONFIG = {
 
   ENTITY_DETAILS: {
     supported: true as const,
-    cacheKey: (id: string) => PARTICIPANT_KEYS.details(id),
-    fallbackCacheKey: (id: string) => PARTICIPANT_KEYS.listSnapshot(id),
+    cacheKey: (userId: string, id: string) => PARTICIPANT_KEYS.details(userId, id),
+    fallbackCacheKey: (userId: string, id: string) => PARTICIPANT_KEYS.listSnapshot(userId, id),
   },
 
   // ── NOT offline-supported (online-only) ───────────────────────────────────

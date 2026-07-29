@@ -43,11 +43,37 @@ export const styles = {
   searchFilterHStack: {
     space: 'md' as const,
     width: '$full' as const,
-    alignItems: 'center' as const,
     flexDirection: 'column' as const,
     $md:{
       flexDirection: 'row' as const,
+      alignItems: 'center' as const,
     }
+  },
+
+  searchFilterHStackSub: {
+    space: 'md' as const,
+    flexWrap:"wrap",
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    $md:{
+      width: '$auto' as const,
+    },
+    $sm:{
+      width: '$full' as const,
+    },
+    $xs:{
+      width: '$full' as const,
+    }
+  },
+
+  searchFilterHStackButton : {
+    space: 'md' as const,
+  },
+
+  searchFilterHStackButtonSub : {
+    size:"sm" as const,
+    flex: 1 as const,
+    $web:{ sx: { flex: "auto" }}
   },
 
   // Search bar container

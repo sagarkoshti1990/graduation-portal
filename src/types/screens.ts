@@ -9,9 +9,12 @@ export interface Participant {
   idpProgress?: any;
   status?: StatusType;
   userDetails?: User;
+  onBoardedProjectId?: string;
   idpProjectId?:string;
   certificateId?:string;
   accountUserStatus?: string;
+  phone_code?: string;
+  phone?: string;
 }
 
 export type StatusCount = {
@@ -52,6 +55,8 @@ export interface TemplateData {
 export interface InterventionPlanProps {
   mode?:string|boolean;
   projectData?:ProjectData
+  /** True when offline and the project was never downloaded for offline use (no cached data available). */
+  projectUnavailableOffline?: boolean;
   participantName?: string;
   participantProfile?:any;
   onIdpCreation?: (projectId?: string) => void;

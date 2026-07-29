@@ -111,7 +111,7 @@ const MainContent = memo<MainContentProps>(({
       t={t}
     />
   );
-
+  
   const taskInfo = (
     <TaskInfo
       task={task}
@@ -174,16 +174,18 @@ const MainContent = memo<MainContentProps>(({
       ? ([taskCardStyles.webTextWrap, onboardingDescStyle] as any)
       : onboardingDescStyle;
 
+    const uploadProviewButton = task.attachments && task.attachments.length > 0 ? <Button variant={'outlineghost' as any} px="$2" height="$6" onPress={handleOpenPreviewModal}>
+      <ButtonIcon as={LucideIcon} name="Paperclip" size={taskCardStyles.fileCountIcon.size} />
+      <ButtonText {...taskCardStyles.fileCountText}>
+        {task.attachments.length}{' '}
+        {task.attachments.length === 1 ? t('projectPlayer.file') : t('projectPlayer.files')}
+      </ButtonText>
+    </Button> : <></>;
+
     // In read-only mode ActionButton returns null for non-observation tasks,
     // so surface the file-preview button here instead when files exist.
-    const onboardingActions = isReadOnly && !isObservationTask && task.attachments && task.attachments.length > 0 ? (
-      <Button variant={'outlineghost' as any} px="$2" height="$6" onPress={handleOpenPreviewModal}>
-        <ButtonIcon as={LucideIcon} name="Paperclip" size={taskCardStyles.fileCountIcon.size} />
-        <ButtonText {...taskCardStyles.fileCountText}>
-          {task.attachments.length}{' '}
-          {task.attachments.length === 1 ? t('projectPlayer.file') : t('projectPlayer.files')}
-        </ButtonText>
-      </Button>
+    const onboardingActions = isReadOnly && !isObservationTask ? (
+      <></>
     ) : actionButton;
 
     return (
@@ -198,6 +200,7 @@ const MainContent = memo<MainContentProps>(({
                 {!!task?.description && (
                   <Text {...TYPOGRAPHY.bodySmall} {...taskCardStyles.onboardingDescriptionText} {...onboardingDescStyle} style={descStyle}>{task.description}</Text>
                 )}
+                {uploadProviewButton}
               </VStack>
             </HStack>
             <Box><HStack space="xs" alignItems="center">{onboardingActions}{extraActions}</HStack></Box>
@@ -210,6 +213,7 @@ const MainContent = memo<MainContentProps>(({
               {!!task?.description && (
                 <Text {...TYPOGRAPHY.bodySmall} {...taskCardStyles.onboardingDescriptionText} {...onboardingDescStyle} style={descStyle}>{task.description}</Text>
               )}
+              {uploadProviewButton}
             </VStack>
             <Box {...taskCardStyles.onboardingDesktopButtonBox}>
               <HStack space="xs" alignItems="center">{onboardingActions}{extraActions}</HStack>

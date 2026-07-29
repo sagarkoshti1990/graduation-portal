@@ -191,7 +191,7 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
         $web-overflow="break-word"
         width="$full"
       >
-        {`${participant.userDetails?.phone_code || ""}${participant.userDetails?.phone || ""}`}
+        {`${participant.userDetails?.phone_code || participant?.phone_code || ""}${participant.userDetails?.phone || participant?.phone || ""}`}
       </Text>
     ),
     mobileConfig: {

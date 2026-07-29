@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import { Box, Button, ButtonIcon, ButtonText, HStack, Pressable } from '@ui';
 import { LucideIcon } from '@ui/index';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
@@ -13,6 +13,46 @@ export interface ActionButtonProps {
   buttonLabel?: string; uploadText: string; isCompleted?: boolean; isSyncTaskId?: boolean;
 }
 
+interface AcceptRejectButtonProps {
+  variant: 'accept' | 'reject';
+  isLocked: boolean;
+  isActive: boolean;
+  onPress: () => void;
+}
+
+// Plain onHoverIn/onHoverOut + local state, like every other Pressable in the
+// app — no function-as-children render prop (that pattern was unique to this
+// component and a candidate trigger for a native Fabric crash on this screen).
+const AcceptRejectButton = memo<AcceptRejectButtonProps>(({ variant, isLocked, isActive, onPress }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const handleHoverIn = useCallback(() => setIsHovered(true), []);
+  const handleHoverOut = useCallback(() => setIsHovered(false), []);
+
+  const isAccept = variant === 'accept';
+  const bg = isAccept
+    ? (isActive ? '$tickButtonActiveBg' : isHovered ? '$success100' : 'transparent')
+    : ((isHovered || isActive) ? '$error100' : 'transparent');
+  const borderColor = isAccept ? (isActive ? '$tickButtonActiveBg' : '$success500') : '$error500';
+  const iconColor = isAccept ? (isActive ? '$white' : '$success500') : '$error500';
+
+  return (
+    <Pressable
+      onPress={isLocked ? undefined : onPress}
+      disabled={isLocked}
+      onHoverIn={handleHoverIn}
+      onHoverOut={handleHoverOut}
+      onPressIn={handleHoverIn}
+      onPressOut={handleHoverOut}
+    >
+      <Box bg={bg} padding="$2" borderRadius="$lg" borderWidth={1} borderColor={borderColor}
+        $web-cursor={isLocked ? 'not-allowed' : 'pointer'}>
+        <LucideIcon name={isAccept ? 'Check' : 'X'} size={16} color={iconColor} strokeWidth={3} />
+      </Box>
+    </Pressable>
+  );
+});
+AcceptRejectButton.displayName = 'AcceptRejectButton';
+
 const ActionButton = memo<ActionButtonProps>(({
   showActionButton, isPreview, isOptional, isAddedToPlan, isRejected,
   isReadOnly, isStatusUpdating, isWeb, showAsCard, isOnboardingTask, isEdit, isObservationTask,
@@ -25,32 +65,8 @@ const ActionButton = memo<ActionButtonProps>(({
     const isLocked = !!isSyncTaskId;
     return (
       <HStack space="xs" alignItems="center" opacity={isLocked ? 0.45 : 1}>
-        <Pressable onPress={isLocked ? undefined : handleAcceptTask} disabled={isLocked}>
-          {(state: any) => {
-            const isHovered = !isLocked && (state?.hovered || state?.pressed || false);
-            return (
-              <Box bg={isAddedToPlan ? '$tickButtonActiveBg' : isHovered ? '$success100' : 'transparent'}
-                padding="$2" borderRadius="$lg" borderWidth={1}
-                borderColor={isAddedToPlan ? '$tickButtonActiveBg' : '$success500'}
-                $web-cursor={isLocked ? 'not-allowed' : 'pointer'}>
-                <LucideIcon name="Check" size={16} color={isAddedToPlan ? '$white' : '$success500'} strokeWidth={3} />
-              </Box>
-            );
-          }}
-        </Pressable>
-        <Pressable onPress={isLocked ? undefined : handleRejectTask} disabled={isLocked}>
-          {(state: any) => {
-            const isHovered = !isLocked && (state?.hovered || state?.pressed || false);
-            return (
-              <Box bg={isHovered || isRejected ? '$error100' : 'transparent'}
-                padding="$2" borderRadius="$lg" borderWidth={1}
-                borderColor="$error500"
-                $web-cursor={isLocked ? 'not-allowed' : 'pointer'}>
-                <LucideIcon name="X" size={16} color="$error500" strokeWidth={3} />
-              </Box>
-            );
-          }}
-        </Pressable>
+        <AcceptRejectButton variant="accept" isLocked={isLocked} isActive={isAddedToPlan} onPress={handleAcceptTask} />
+        <AcceptRejectButton variant="reject" isLocked={isLocked} isActive={isRejected} onPress={handleRejectTask} />
       </HStack>
     );
   }

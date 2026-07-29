@@ -113,7 +113,7 @@ const UploadComponent: React.FC<UploadComponentProps> = ({
               borderRadius="$sm"
             >
               <Text fontSize="$sm" flex={1}>
-                {attachment.name}
+                {attachment.originalName ?? attachment.name}
               </Text>
               <Text fontSize="$xs" color="$textLight500">
                 {(attachment.size / 1024).toFixed(1)} KB
