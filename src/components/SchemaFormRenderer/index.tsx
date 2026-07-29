@@ -37,6 +37,9 @@ import {
   TabsTabPanels,
   TabsTabPanel,
   TabsTabTitle,
+  Button,
+  ButtonText,
+  Modal,
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -150,6 +153,16 @@ export interface SchemaFormRendererProps {
   t: (key: string, fallback?: string) => string;
   /** Optional ref forwarded to the first autoFocus field */
   firstNameRef?: React.RefObject<any>;
+  /**
+   * Called after whole-form validation passes when the user clicks Submit.
+   * Only relevant for multi-step schemas (root schema made entirely of 2+ `tab` nodes) —
+   * single/no-tab schemas keep managing their own submit button externally, unchanged.
+   */
+  onSubmit?: (values: Record<string, string>) => void | Promise<void>;
+  /** Called when the user clicks Save Draft (multi-step schemas only); no validation is run first */
+  onSaveDraft?: (values: Record<string, string>) => void | Promise<void>;
+  /** Disables the Previous/Continue/Save Draft/Submit footer buttons while a request is in flight */
+  isSubmitting?: boolean;
 }
 
 // ─── Validation Engine ────────────────────────────────────────────────────────
@@ -249,6 +262,27 @@ function collectFieldsByName(
 }
 
 /**
+ * Returns the first validation-rule error message for a field's current value,
+ * or undefined when it currently passes (or has no rules). Does not consider
+ * visibility/read-only/view-type — callers apply those skip conditions first.
+ */
+function getFieldError(
+  field: FormField,
+  values: Record<string, string>,
+): string | undefined {
+  if (!field.name || !field.validation?.length) return undefined;
+
+  const val = (values[field.name] ?? '').trim();
+
+  for (const rule of field.validation) {
+    const err = applyRule(rule, val, values);
+    if (err) return err;
+  }
+
+  return undefined;
+}
+
+/**
  * Runs all validation rules for a single field recursively (supporting group fields).
  * Populates errors object.
  */
@@ -281,17 +315,9 @@ function validateField(
     return;
   }
 
-  const raw = values[field.name] ?? '';
-  const val = raw.trim();
-
-  if (!field.validation?.length) return;
-
-  for (const rule of field.validation) {
-    const err = applyRule(rule, val, values);
-    if (err) {
-      errors[field.name] = err;
-      return; // Return on first rule error for this field
-    }
+  const err = getFieldError(field, values);
+  if (err && field.name) {
+    errors[field.name] = err;
   }
 }
 
@@ -385,6 +411,129 @@ function validateNodes(
 
     if (node.children) validateNodes(node.children, values, optionsMap, errors);
   });
+}
+
+// ─── Validation Issues (multi-step Continue/Submit + validation popup) ────────
+//
+// Mirrors `validateNodes`/`validateField` above (same skip conditions, same
+// `getFieldError`), but additionally records WHERE each invalid field lives
+// (which step tab, which section) so the validation popup can group and
+// navigate to it, and which root-level tab it belongs to for step navigation.
+
+export interface ValidationIssue {
+  fieldName: string;
+  fieldLabel: string;
+  message: string;
+  tabTitle?: string;
+  sectionTitle?: string;
+  /** Index into the root schema's tab nodes — used to jump back to the right step */
+  rootTabIndex?: number;
+}
+
+interface ValidationAncestry {
+  tabTitle?: string;
+  sectionTitle?: string;
+  rootTabIndex?: number;
+}
+
+function collectFieldIssues(
+  field: FormField,
+  values: Record<string, string>,
+  optionsMap: OptionsMap,
+  t: (key: string, fallback?: string) => string,
+  ancestry: ValidationAncestry,
+  errors: Record<string, string>,
+  issues: ValidationIssue[],
+  visited: Set<string>,
+): void {
+  if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
+    field.fields.forEach(subField =>
+      collectFieldIssues(subField, values, optionsMap, t, ancestry, errors, issues, visited),
+    );
+    return;
+  }
+
+  if (!field.name) return;
+  if (!isVisible(field.visibleWhen, values, optionsMap)) return;
+  if (!isVisibleIf(field.visibleIf, values)) return;
+  if (field.isReadOnly || field.type === FORM_FIELD_TYPES.VIEW) return;
+
+  visited.add(field.name);
+
+  const err = getFieldError(field, values);
+  if (!err) return;
+
+  errors[field.name] = err;
+  issues.push({
+    fieldName: field.name,
+    fieldLabel: field.label
+      ? t(`admin.users.createUser.${field.label.key}`, field.label.fallback)
+      : field.name,
+    message: err,
+    tabTitle: ancestry.tabTitle,
+    sectionTitle: ancestry.sectionTitle,
+    rootTabIndex: ancestry.rootTabIndex,
+  });
+}
+
+/** Recurses through the given nodes, collecting an errors map, a rich issues list, and every field name checked. */
+function collectValidationIssues(
+  nodes: FormSection[] | undefined,
+  values: Record<string, string>,
+  optionsMap: OptionsMap,
+  t: (key: string, fallback?: string) => string,
+  errors: Record<string, string>,
+  issues: ValidationIssue[],
+  visited: Set<string>,
+  ancestry: ValidationAncestry = {},
+): void {
+  nodes?.forEach(node => {
+    let nextAncestry = ancestry;
+    if (node.type === 'tab') {
+      nextAncestry = { ...ancestry, tabTitle: nodeTitleText(node, t) ?? node.id };
+    } else {
+      const title = nodeTitleText(node, t);
+      if (title) nextAncestry = { ...ancestry, sectionTitle: title };
+    }
+
+    node.rows?.forEach(row => {
+      if (!isVisible(row.visibleWhen, values, optionsMap)) return;
+      row.fields.forEach(field =>
+        collectFieldIssues(field, values, optionsMap, t, nextAncestry, errors, issues, visited),
+      );
+    });
+
+    if (node.children) {
+      collectValidationIssues(node.children, values, optionsMap, t, errors, issues, visited, nextAncestry);
+    }
+  });
+}
+
+/**
+ * Validates the given root-level nodes (pass the whole schema for Submit, or a single
+ * tab's node for Continue), tagging each issue with its root-level tab index for step
+ * navigation. `visited` lists every field name that was checked, valid or not — callers
+ * use it to clear stale errors for fields that were re-checked and are now valid.
+ */
+function collectValidationForRoots(
+  rootNodes: FormSection[],
+  schema: FormSection[],
+  values: Record<string, string>,
+  optionsMap: OptionsMap,
+  t: (key: string, fallback?: string) => string,
+): { errors: Record<string, string>; issues: ValidationIssue[]; visited: Set<string> } {
+  const errors: Record<string, string> = {};
+  const issues: ValidationIssue[] = [];
+  const visited = new Set<string>();
+
+  rootNodes.forEach(node => {
+    const rootTabIndex = schema.indexOf(node);
+    const ancestry: ValidationAncestry =
+      node.type === 'tab' && rootTabIndex !== -1 ? { rootTabIndex } : {};
+    collectValidationIssues([node], values, optionsMap, t, errors, issues, visited, ancestry);
+  });
+
+  return { errors, issues, visited };
 }
 
 // ─── Field Renderers ──────────────────────────────────────────────────────────
@@ -737,6 +886,10 @@ interface NodeRenderContext {
   toggleVisibilityGroup: (group: string) => void;
   firstNameRef?: React.RefObject<any>;
   fieldsByName: Record<string, FormField>;
+  /** Registers a field's rendered container node, keyed by field name — used to scroll/focus/highlight it from the validation popup */
+  registerFieldRef?: (name: string, node: any) => void;
+  /** Name of the field to temporarily highlight (set after navigating from the validation popup) */
+  highlightedField?: string | null;
 }
 
 function nodeTitleText(
@@ -839,26 +992,171 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
           </VStack>
         )}
 
-        {!!node.rows?.length && (
-          <RenderRow
-            rows={node.rows}
-            values={ctx.values}
-            errors={ctx.errors}
-            optionsMap={ctx.optionsMap}
-            mode={ctx.mode}
-            t={ctx.t}
-            onFieldChange={ctx.onFieldChange}
-            disabled={ctx.disabled}
-            visibilityGroups={ctx.visibilityGroups}
-            toggleVisibilityGroup={ctx.toggleVisibilityGroup}
-            firstNameRef={ctx.firstNameRef}
-            fieldsByName={ctx.fieldsByName}
-          />
-        )}
+        {!!node.rows?.length && <RenderRow rows={node.rows} {...ctx} />}
 
         {!!node.children?.length && <RenderNodes nodes={node.children} ctx={ctx} />}
       </VStack>
     </Card>
+  );
+};
+
+// ─── Multi-Step Navigation (Previous / Continue / Save Draft / Submit) ────────
+//
+// Engages only when the ENTIRE root schema is made of 2+ `tab` nodes (a genuine
+// step wizard). Mixed/single-tab/no-tab schemas fall through to the plain
+// recursive rendering above, unchanged — this keeps every existing screen
+// (CREATE_USER_FORM_SCHEMA, etc.) byte-for-byte backward compatible.
+
+/** Simple step indicator — deliberately not gluestack's Tabs, since Tabs has no
+ * external-control API and the wizard's Previous/Continue buttons must be the
+ * single source of truth for which step is active. */
+const StepHeader: React.FC<{
+  tabs: FormSection[];
+  activeStepIndex: number;
+  t: (key: string, fallback?: string) => string;
+}> = ({ tabs, activeStepIndex, t }) => (
+  <HStack space="lg" alignItems="center" flexWrap="wrap">
+    {tabs.map((tab, index) => {
+      const isActive = index === activeStepIndex;
+      const isComplete = index < activeStepIndex;
+      return (
+        <HStack key={tab.id} space="xs" alignItems="center">
+          <Box
+            width={24}
+            height={24}
+            borderRadius="$full"
+            alignItems="center"
+            justifyContent="center"
+            bg={isActive || isComplete ? '$primary500' : '$backgroundLight200'}
+          >
+            {isComplete ? (
+              <LucideIcon name="Check" size={14} color="$white" />
+            ) : (
+              <Text {...TYPOGRAPHY.caption} color={isActive ? '$white' : '$textMutedForeground'}>
+                {index + 1}
+              </Text>
+            )}
+          </Box>
+          <Text
+            {...TYPOGRAPHY.bodySmall}
+            color={isActive ? '$textForeground' : '$textMutedForeground'}
+            fontWeight={isActive ? '$bold' : '$normal'}
+          >
+            {nodeTitleText(tab, t) ?? tab.id}
+          </Text>
+        </HStack>
+      );
+    })}
+  </HStack>
+);
+
+const StepFooter: React.FC<{
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  disabled?: boolean;
+  onPrevious: () => void;
+  onContinue: () => void;
+  onSaveDraft?: () => void;
+  onSubmit: () => void;
+  t: (key: string, fallback?: string) => string;
+}> = ({ isFirstStep, isLastStep, disabled, onPrevious, onContinue, onSaveDraft, onSubmit, t }) => (
+  <HStack space="sm" justifyContent="space-between" width="100%" flexWrap="wrap">
+    <Button variant="outline" onPress={onPrevious} isDisabled={isFirstStep || disabled}>
+      <ButtonText>{t('common.previous', 'Previous')}</ButtonText>
+    </Button>
+    <HStack space="sm">
+      {!!onSaveDraft && (
+        <Button variant="outline" onPress={onSaveDraft} isDisabled={disabled}>
+          <ButtonText>{t('common.saveDraft', 'Save Draft')}</ButtonText>
+        </Button>
+      )}
+      {!isLastStep && (
+        <Button onPress={onContinue} isDisabled={disabled}>
+          <ButtonText>{t('common.continue', 'Continue')}</ButtonText>
+        </Button>
+      )}
+      {isLastStep && (
+        <Button onPress={onSubmit} isDisabled={disabled}>
+          <ButtonText>{t('common.submit', 'Submit')}</ButtonText>
+        </Button>
+      )}
+    </HStack>
+  </HStack>
+);
+
+/**
+ * Centralized validation popup — lists every invalid field grouped by
+ * step (tab) then section, matching the existing inline error text
+ * (no custom validation style is introduced). Clicking an item lets the
+ * caller navigate to, scroll to, and focus/highlight that field.
+ */
+const ValidationPopup: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  issues: ValidationIssue[];
+  onSelectIssue: (issue: ValidationIssue) => void;
+  t: (key: string, fallback?: string) => string;
+}> = ({ isOpen, onClose, issues, onSelectIssue, t }) => {
+  const groups = useMemo(() => {
+    const byTab = new Map<string, Map<string, ValidationIssue[]>>();
+    issues.forEach(issue => {
+      const tabKey = issue.tabTitle ?? '';
+      const sectionKey = issue.sectionTitle ?? '';
+      if (!byTab.has(tabKey)) byTab.set(tabKey, new Map());
+      const bySection = byTab.get(tabKey)!;
+      if (!bySection.has(sectionKey)) bySection.set(sectionKey, []);
+      bySection.get(sectionKey)!.push(issue);
+    });
+    return Array.from(byTab.entries()).map(([tabTitle, bySection]) => ({
+      tabTitle,
+      sections: Array.from(bySection.entries()).map(([sectionTitle, sectionIssues]) => ({
+        sectionTitle,
+        issues: sectionIssues,
+      })),
+    }));
+  }, [issues]);
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      headerTitle={t('common.validationErrors', 'Validation Errors')}
+    >
+      <VStack space="md">
+        {groups.map(group => (
+          <VStack key={group.tabTitle || 'untitled-tab'} space="sm">
+            {!!group.tabTitle && (
+              <Text {...TYPOGRAPHY.label} color="$textForeground">
+                {group.tabTitle}
+              </Text>
+            )}
+            {group.sections.map(section => (
+              <VStack
+                key={section.sectionTitle || 'untitled-section'}
+                space="xs"
+                pl={group.tabTitle ? '$4' : undefined}
+              >
+                {!!section.sectionTitle && (
+                  <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                    {section.sectionTitle}
+                  </Text>
+                )}
+                <VStack space="xs" pl="$2">
+                  {section.issues.map(issue => (
+                    <Pressable key={issue.fieldName} onPress={() => onSelectIssue(issue)}>
+                      <Text {...TYPOGRAPHY.bodySmall} color="$error600">
+                        {issue.fieldLabel} — {issue.message}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </VStack>
+              </VStack>
+            ))}
+          </VStack>
+        ))}
+      </VStack>
+    </Modal>
   );
 };
 
@@ -877,6 +1175,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   t,
   mode = 'edit',
   firstNameRef,
+  onSubmit,
+  onSaveDraft,
+  isSubmitting = false,
 }) => {
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<
@@ -890,7 +1191,131 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   // Flat name → field-definition lookup, used to resolve `view` fields by name.
   const fieldsByName = useMemo(() => collectFieldsByName(schema), [schema]);
 
-  const ctx: NodeRenderContext = {
+  // ── Multi-step wizard state (only used when the root schema is 2+ `tab` nodes) ──
+  const rootTabs = useMemo(() => schema.filter(node => node.type === 'tab'), [schema]);
+  const isMultiStep = rootTabs.length > 1 && rootTabs.length === schema.length;
+
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const safeStepIndex = Math.min(activeStepIndex, Math.max(rootTabs.length - 1, 0));
+
+  const [internalErrors, setInternalErrors] = useState<Record<string, string>>({});
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [popupIssues, setPopupIssues] = useState<ValidationIssue[]>([]);
+  const [highlightedField, setHighlightedField] = useState<string | null>(null);
+
+  const fieldRefsRef = useRef<Record<string, any>>({});
+  const pendingFocusFieldRef = useRef<string | null>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const registerFieldRef = (name: string, node: any) => {
+    fieldRefsRef.current[name] = node;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    };
+  }, []);
+
+  // Runs after navigating to a different step from the validation popup — the target
+  // field only mounts once that step's content renders, so this waits a tick for it.
+  useEffect(() => {
+    const name = pendingFocusFieldRef.current;
+    if (!name) return;
+    pendingFocusFieldRef.current = null;
+
+    const timer = setTimeout(() => {
+      setHighlightedField(name);
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = setTimeout(() => setHighlightedField(null), 1600);
+
+      const node = fieldRefsRef.current[name];
+      if (node?.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (node?.focus) node.focus();
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [safeStepIndex]);
+
+  const handlePrevious = () => {
+    setActiveStepIndex(i => Math.max(0, i - 1));
+  };
+
+  const handleContinue = () => {
+    const currentTab = rootTabs[safeStepIndex];
+    if (!currentTab) return;
+
+    const { errors: stepErrors, issues: stepIssues, visited } = collectValidationForRoots(
+      [currentTab],
+      schema,
+      values,
+      optionsMap,
+      t,
+    );
+
+    setInternalErrors(prev => {
+      const next = { ...prev };
+      visited.forEach(name => delete next[name]);
+      return { ...next, ...stepErrors };
+    });
+
+    if (stepIssues.length === 0) {
+      setActiveStepIndex(i => Math.min(i + 1, rootTabs.length - 1));
+    } else {
+      setPopupIssues(stepIssues);
+      setIsPopupOpen(true);
+    }
+  };
+
+  const handleSubmit = () => {
+    const { errors: allErrors, issues: allIssues, visited } = collectValidationForRoots(
+      schema,
+      schema,
+      values,
+      optionsMap,
+      t,
+    );
+
+    setInternalErrors(prev => {
+      const next = { ...prev };
+      visited.forEach(name => delete next[name]);
+      return { ...next, ...allErrors };
+    });
+
+    if (allIssues.length === 0) {
+      onSubmit?.(values);
+    } else {
+      setPopupIssues(allIssues);
+      setIsPopupOpen(true);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    onSaveDraft?.(values);
+  };
+
+  const handleSelectIssue = (issue: ValidationIssue) => {
+    setIsPopupOpen(false);
+
+    if (issue.rootTabIndex !== undefined && issue.rootTabIndex !== safeStepIndex) {
+      // Defer scroll/focus/highlight until the new step's fields mount (see effect above).
+      pendingFocusFieldRef.current = issue.fieldName;
+      setActiveStepIndex(issue.rootTabIndex);
+      return;
+    }
+
+    setHighlightedField(issue.fieldName);
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = setTimeout(() => setHighlightedField(null), 1600);
+
+    setTimeout(() => {
+      const node = fieldRefsRef.current[issue.fieldName];
+      if (node?.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (node?.focus) node.focus();
+    }, 50);
+  };
+
+  const baseCtx: NodeRenderContext = {
     values,
     errors,
     optionsMap,
@@ -904,9 +1329,46 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     fieldsByName,
   };
 
+  if (isMultiStep) {
+    const activeTab = rootTabs[safeStepIndex];
+    const stepCtx: NodeRenderContext = {
+      ...baseCtx,
+      errors: { ...errors, ...internalErrors },
+      registerFieldRef,
+      highlightedField,
+    };
+
+    return (
+      <VStack space="md" width="100%">
+        <StepHeader tabs={rootTabs} activeStepIndex={safeStepIndex} t={t} />
+
+        <RenderNodes nodes={activeTab?.children} ctx={stepCtx} />
+
+        <StepFooter
+          isFirstStep={safeStepIndex === 0}
+          isLastStep={safeStepIndex === rootTabs.length - 1}
+          disabled={disabled || isSubmitting}
+          onPrevious={handlePrevious}
+          onContinue={handleContinue}
+          onSaveDraft={onSaveDraft ? handleSaveDraft : undefined}
+          onSubmit={handleSubmit}
+          t={t}
+        />
+
+        <ValidationPopup
+          isOpen={isPopupOpen}
+          onClose={() => setIsPopupOpen(false)}
+          issues={popupIssues}
+          onSelectIssue={handleSelectIssue}
+          t={t}
+        />
+      </VStack>
+    );
+  }
+
   return (
     <VStack space="md" width="100%">
-      <RenderNodes nodes={schema} ctx={ctx} />
+      <RenderNodes nodes={schema} ctx={baseCtx} />
     </VStack>
   );
 };
@@ -914,20 +1376,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 export default SchemaFormRenderer;
 
 export const RenderRow = memo(
-  ({
-    rows,
-    values = {},
-    errors = {},
-    optionsMap = {},
-    mode,
-    t,
-    onFieldChange,
-    disabled,
-    visibilityGroups,
-    toggleVisibilityGroup,
-    firstNameRef,
-    fieldsByName,
-  }: any) => {
+  ({ rows, values = {}, optionsMap = {}, mode, ...rest }: any) => {
     const renderedRows = useMemo(() => {
       return rows?.map((row: any, index: number) => {
         if (!isVisible(row.visibleWhen, values, optionsMap)) {
@@ -964,33 +1413,13 @@ export const RenderRow = memo(
             fields={visibleFields}
             isMobile={false}
             values={values}
-            errors={errors}
             optionsMap={optionsMap}
             mode={mode}
-            t={t}
-            onFieldChange={onFieldChange}
-            disabled={disabled}
-            visibilityGroups={visibilityGroups}
-            toggleVisibilityGroup={toggleVisibilityGroup}
-            firstNameRef={firstNameRef}
-            fieldsByName={fieldsByName}
+            {...rest}
           />
         );
       });
-    }, [
-      rows,
-      values,
-      errors,
-      optionsMap,
-      mode,
-      t,
-      onFieldChange,
-      disabled,
-      visibilityGroups,
-      toggleVisibilityGroup,
-      firstNameRef,
-      fieldsByName,
-    ]);
+    }, [rows, values, optionsMap, mode, rest]);
 
     return <>{renderedRows}</>;
   },
@@ -1014,6 +1443,10 @@ interface FieldType {
   isEditMode?: boolean;
   /** Flat name → field-definition lookup, used to resolve `view` fields */
   fieldsByName?: Record<string, FormField>;
+  /** Registers a field's rendered container node, keyed by field name */
+  registerFieldRef?: (name: string, node: any) => void;
+  /** Name of the field to temporarily highlight (navigated to from the validation popup) */
+  highlightedField?: string | null;
 }
 
 const RowRenderer = memo(
@@ -1111,12 +1544,18 @@ const FieldContainer = memo(
     toggleVisibilityGroup,
     firstNameRef,
     fieldsByName = {},
+    registerFieldRef,
+    highlightedField,
     onFieldChange = (...e) => {
       console.log(e);
     },
   }: FieldType) => {
     const value = field.name ? values[field.name] ?? '' : '';
     const error = field.name ? errors[field.name] : undefined;
+    const isHighlighted = !!field.name && highlightedField === field.name;
+    const containerRef = (node: any) => {
+      if (field.name) registerFieldRef?.(field.name, node);
+    };
 
     if (field.type === FORM_FIELD_TYPES.VIEW) {
       return (
@@ -1153,6 +1592,7 @@ const FieldContainer = memo(
 
       return (
         <VStack
+          ref={containerRef}
           space="xs"
           flex={isMultiField ? 1 : undefined}
           width={!isMultiField ? '100%' : undefined}
@@ -1173,9 +1613,13 @@ const FieldContainer = memo(
 
     return (
       <VStack
+        ref={containerRef}
         space="xs"
         flex={isMultiField ? 1 : undefined}
         width={!isMultiField ? '100%' : undefined}
+        p={isHighlighted ? '$2' : undefined}
+        borderRadius={isHighlighted ? '$md' : undefined}
+        bg={isHighlighted ? '$warning100' : undefined}
       >
         {field.type !== FORM_FIELD_TYPES.NOTE && (
           <Text
