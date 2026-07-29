@@ -2382,5 +2382,21 @@
     "taskConflictReasonTimestamp": "Online task was updated after the offline download.",
     "taskConflictReasonEvidence": "Online evidence differs from the offline evidence.",
     "taskConflictReasonMultiple": "Multiple differences detected."
+  },
+  "supportProvider":{
+    "menu": {
+      "dashboard": "Dashboard",
+      "mySupportOfferings": "My Support Offerings",
+      "requests": "Requests",
+      "materialsLibrary": "Materials Library",
+      "profile": "Profile"
+    },
+    "pageTitle": {
+      "dashboard": "Dashboard",
+      "mySupportOfferings": "My Support Offerings",
+      "requests": "Requests",
+      "materialsLibrary": "Materials Library",
+      "profile": "Profile"
+    }
   }
 }

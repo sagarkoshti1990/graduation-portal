@@ -13,8 +13,10 @@ export interface PageHeaderProps {
   backButtonText?: string;
   /** Main title text */
   title?: string;
+  _title?: any;
   /** Subtitle text displayed below the title */
   subtitle?: string;
+  _subtitle?: any;
   /** Callback function when back button is pressed */
   onBackPress?: () => void;
   /** Right section content */
@@ -41,7 +43,9 @@ export interface PageHeaderProps {
  */
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
+  _title,
   subtitle,
+  _subtitle,
   onBackPress,
   backButtonText,
   rightSection,
@@ -67,12 +71,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             }
             <VStack {...pageHeaderStyles.textSection}>
               {title && (
-                <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground">
+                <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground" {..._title}>
                   {title}
                 </Text>
               )}
               {subtitle && (
-                <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+                <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground"  {..._subtitle}>
                   {subtitle}
                 </Text>
               )}

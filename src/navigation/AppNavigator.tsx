@@ -46,7 +46,18 @@ const AssignUsersScreen = lazyScreen(() => import('../screens/AssignUsers'));
 const AdminDashboard = lazyScreen(() => import('../screens/AdminDashboard'));
 const ProfilePermissions = lazyScreen(() => import('../screens/ProfilePermissions'));
 const ForgotPasswordScreen = lazyScreen(() => import('../screens/Auth/ForgotPasswordScreen'));
-// const MentorScreen = lazyScreen(() => import('../screens/Mentor'));
+
+// Service provider UI components
+const SPDashboardScreen = lazyScreen(() => import('../screens/ServiceProvider/Dashboard'));
+const SPSupportOfferingsScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings'));
+const SPSupportOfferingsCreateScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create'));
+const SPCreateTrainingSessionScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create/TrainingSession'));
+const SPCreateAdditionalServiceScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create/AdditionalService'));
+const SPCreateAssetScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create/Asset'));
+const SPSupportRequestsScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportRequests'));
+const SPMaterialsScreen = lazyScreen(() => import('../screens/ServiceProvider/MaterialsLibrary'));
+const SPProfileScreen = lazyScreen(() => import('../screens/ServiceProvider/Profile'));
+
 const spinnerHeight = (isWebPlatform ? '$100vh' : '$full') as any;
 
 // Error Boundary for Navigation
@@ -167,7 +178,16 @@ const getAccessPages = (
       ];
     case 'mentor':
       return [
-        // { name: 'mentor', component: MentorScreen },
+        { name: 'dashboard1', path: "/", component: SPDashboardScreen },
+        { name: 'dashboard', path: "/dashboard", component: SPDashboardScreen },
+        { name: 'opportunities', path: "/opportunities", component: SPSupportOfferingsScreen },
+        { name: 'create-opportunity', path: "/opportunities/create", component: SPSupportOfferingsCreateScreen },
+        { name: 'create-training-session', path: "/opportunities/create-training-session", component: SPCreateTrainingSessionScreen },
+        { name: 'create-additional-service', path: "/opportunities/create-additional-service", component: SPCreateAdditionalServiceScreen },
+        { name: 'create-asset', path: "/opportunities/create-asset", component: SPCreateAssetScreen },
+        { name: 'requests', path: "/requests", component: SPSupportRequestsScreen },
+        { name: 'materials', path: "/materials", component: SPMaterialsScreen },
+        { name: 'profile', path: "/profile", component: SPProfileScreen },
       ];
     case 'lc':
       return [
