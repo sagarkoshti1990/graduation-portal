@@ -32,6 +32,20 @@ export interface DisabledWhenCondition {
   empty: boolean;
 }
 
+/** Comparison operator supported by a field's `visibleIf` conditions. */
+export type VisibleIfOperator = '===' | '!=' | '>' | '<' | '>=' | '<=';
+
+/**
+ * A single condition evaluated against another field's current value.
+ * A field is rendered only when every condition in its `visibleIf` array is true.
+ */
+export interface VisibleIfCondition {
+  /** Name of the field whose current value is being compared */
+  name: string;
+  operator: VisibleIfOperator;
+  value: any;
+}
+
 export const FORM_FIELD_TYPES = {
   TEXT: 'text',
   EMAIL: 'email',
@@ -42,6 +56,8 @@ export const FORM_FIELD_TYPES = {
   TEXTAREA: 'textarea',
   NOTE: 'note',
   GROUP: 'group',
+  /** Read-only display of another field's label/value, resolved by name */
+  VIEW: 'view',
 } as const;
 
 export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPES];
@@ -49,8 +65,8 @@ export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPE
 export interface FormField {
   name?: string;
   type: FormFieldType;
-  required: boolean;
   label: { key: string; fallback: string };
+  required?: boolean;
   placeholder?: { key?: string; fallback: string };
   defaultValue?: string;
   /** When present and the flag resolves to false, this field is hidden */
@@ -82,26 +98,39 @@ export interface FormField {
   placeholderWhenReady?: { key: string; fallback: string };
   fields?: FormField[];
   isReadOnly?: boolean;
+  /** Field is rendered only when every condition here evaluates to true (AND logic) */
+  visibleIf?: VisibleIfCondition[];
 }
 
 export interface FormRow {
+  id?: string;
   fields: FormField[];
   /** If set, the entire row is hidden unless the named flag is truthy */
   visibleWhen?: VisibleWhenFlag;
 }
 
+/**
+ * A schema node — used for tabs, sections, and (nested) rows.
+ * Any node with `children` is rendered recursively, to unlimited depth.
+ */
 export interface FormSection {
   id: string;
+  type: string;
   /** Lucide icon name */
-  icon: string;
-  title: { key: string; fallback: string };
-  rows: FormRow[];
+  icon?: string;
+  title?: { key: string; fallback: string };
+  /** Alternate to `title` accepted for tab/section nodes */
+  label?: { key?: string; fallback: string };
+  subheading?: { key?: string; fallback: string };
+  children?: FormSection[]
+  rows?: FormRow[];
 }
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   {
+    type:"section",
     id: 'personalInformation',
     icon: 'User',
     title: { key: 'personalInformation', fallback: 'Personal Information' },
@@ -234,6 +263,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
+    type:"section",
     id: 'roleAndPermissions',
     icon: 'Shield',
     title: { key: 'roleAndPermissions', fallback: 'Role & Permissions' },
@@ -258,6 +288,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
+    type:"section",
     id: 'additionalInformation',
     icon: 'FileText',
     title: { key: 'additionalInformation', fallback: 'Additional Information' },
@@ -339,6 +370,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
+    type:"section",
     id: 'geographicAssignment',
     icon: 'MapPin',
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },
