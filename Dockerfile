@@ -7,6 +7,9 @@ RUN yarn install
 
 COPY . .
 
+# Build at image build time
+RUN yarn build:web
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
