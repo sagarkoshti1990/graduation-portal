@@ -29,7 +29,7 @@ const PILLAR_SESSION_TYPES: Record<string, string[]> = {
   ],
 };
 
-
+// conflicts
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
@@ -196,8 +196,8 @@ const App = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title="Create Training Session"
-        backButtonText="Chnage type"
+        title={t('supportProvider.createSupport.training.title', 'Create Training Session')}
+        backButtonText={t('supportProvider.createSupport.changeType', 'Change type')}
         onNavigateBack={() => navigation.goBack()}
       />
       <Container {...styles.container}>
