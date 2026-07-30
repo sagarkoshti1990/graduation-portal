@@ -1285,6 +1285,7 @@
       "province": "Province",
       "district": "District",
       "searchPlaceholder": "Search by name",
+      "searchOfferingsPlaceholder": "Search by Offerings...",
       "searchParticipantsPlaceholder": "Search participants",
       "allRoles": "All Roles",
       "admin": "Admin",

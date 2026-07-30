@@ -86,7 +86,8 @@ import {
   X,
   XCircle,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Copy
 } from 'lucide-react-native';
 import { theme } from '@config/theme';
 
@@ -191,7 +192,8 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   X,
   XCircle,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Copy
 };
 
 /**
