@@ -42,9 +42,28 @@ export type VisibleIfOperator = '===' | '!=' | '>' | '<' | '>=' | '<=';
 export interface VisibleIfCondition {
   /** Name of the field whose current value is being compared */
   name: string;
-  operator: VisibleIfOperator;
-  value: any;
+  operator?: VisibleIfOperator;
+  value?: any;
 }
+
+/** Severity of a `hint` object — drives its default icon/colors when `icon` isn't set */
+export type HintSeverity = 'info' | 'warning' | 'danger' | 'success';
+
+export interface HintBullet {
+  key?: string;
+  fallback: string;
+}
+
+export interface HintObject {
+  type?: HintSeverity;
+  /** Lucide icon name; falls back to a default icon for `type` when omitted */
+  icon?: string;
+  title?: { key?: string; fallback: string };
+  bullets?: HintBullet[];
+}
+
+/** A simple helper string, or a richer info/warning/danger/success banner */
+export type Hint = string | HintObject;
 
 export const FORM_FIELD_TYPES = {
   TEXT: 'text',
@@ -108,6 +127,10 @@ export interface FormField {
   subLabel?: { key?: string; fallback: string };
   /** Renders an "(optional)" tag next to the label (currently used by `file` fields) */
   showOptionalTag?: boolean;
+  /** Rendered below the label, above the input, using the standard helper-text typography */
+  subTitle?: { key?: string; fallback: string };
+  /** Informational message rendered above the input — simple string or a severity banner */
+  hint?: Hint;
 }
 
 export interface FormRow {
@@ -130,8 +153,9 @@ export interface FormSection {
   /** Alternate to `title` accepted for tab/section nodes */
   label?: { key?: string; fallback: string };
   /** Larger page-level heading, distinct from the compact card-header `title` */
-  heading?: { key?: string; fallback: string };
-  subheading?: { key?: string; fallback: string };
+  subTitle?: { key?: string; fallback: string };
+  /** Informational message rendered below the title/subTitle — simple string or a severity banner */
+  hint?: Hint;
   children?: FormSection[]
   rows?: FormRow[];
 }

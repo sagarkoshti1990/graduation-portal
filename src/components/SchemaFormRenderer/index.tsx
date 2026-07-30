@@ -40,6 +40,8 @@ import {
   Button,
   ButtonText,
   Modal,
+  Progress,
+  ProgressFilledTrack,
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -53,6 +55,7 @@ import type {
   FormField,
   ValidationRule,
   VisibleIfCondition,
+  Hint,
 } from '@constants/CREATE_USER_FORM_SCHEMA';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
@@ -148,8 +151,6 @@ export interface SchemaFormRendererProps {
   disabled?: boolean;
   /** When true, renders all fields as plain read-only text instead of inputs */
   mode?: string;
-  /** Layout flag — stacks fields vertically on mobile */
-  isMobile?: boolean;
   /** Translation function */
   t: (key: string, fallback?: string) => string;
   /** Optional ref forwarded to the first autoFocus field */
@@ -535,6 +536,54 @@ function collectValidationForRoots(
   });
 
   return { errors, issues, visited };
+}
+
+// ─── Required-Field Progress (current step / active tab) ──────────────────────
+//
+// Counts only visible, required, editable fields — mirrors the same skip
+// conditions as validation (isVisible/isVisibleIf/isReadOnly/VIEW), so a field
+// that wouldn't be validated also doesn't count toward progress.
+
+function countRequiredFieldProgress(
+  field: FormField,
+  values: Record<string, string>,
+  optionsMap: OptionsMap,
+  counts: { total: number; completed: number },
+): void {
+  if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
+    field.fields.forEach(subField => countRequiredFieldProgress(subField, values, optionsMap, counts));
+    return;
+  }
+
+  if (!field.name || !field.required) return;
+  if (!isVisible(field.visibleWhen, values, optionsMap)) return;
+  if (!isVisibleIf(field.visibleIf, values)) return;
+  if (field.isReadOnly || field.type === FORM_FIELD_TYPES.VIEW) return;
+
+  counts.total += 1;
+  if ((values[field.name] ?? '').trim()) counts.completed += 1;
+}
+
+/** Recurses through the given nodes — pass the whole schema for whole-form progress. */
+function computeRequiredFieldProgress(
+  nodes: FormSection[] | undefined,
+  values: Record<string, string>,
+  optionsMap: OptionsMap,
+): { total: number; completed: number } {
+  const counts = { total: 0, completed: 0 };
+
+  function visitNodes(list: FormSection[] | undefined) {
+    list?.forEach(node => {
+      node.rows?.forEach(row => {
+        if (!isVisible(row.visibleWhen, values, optionsMap)) return;
+        row.fields.forEach(field => countRequiredFieldProgress(field, values, optionsMap, counts));
+      });
+      if (node.children) visitNodes(node.children);
+    });
+  }
+
+  visitNodes(nodes);
+  return counts;
 }
 
 // ─── Field Renderers ──────────────────────────────────────────────────────────
@@ -1022,43 +1071,90 @@ const RenderNodes: React.FC<{ nodes?: FormSection[]; ctx: NodeRenderContext }> =
   return <>{items}</>;
 };
 
-/** Single Tab Rule: one tab renders its children directly, no TabList/navigation chrome. */
+/**
+ * Single Tab Rule: one tab renders its children directly, no TabList/navigation chrome.
+ * For 2+ tabs, `activeTabId` is local UI state used only to drive active-tab styling
+ * (`$primary500` text/icon/bottom-border, per the design system) — gluestack's own
+ * internal switching still governs which `TabsTabPanel` is visible; both are set from
+ * the same click so they never disagree.
+ */
 const TabGroupRenderer: React.FC<{ tabs: FormSection[]; ctx: NodeRenderContext }> = ({
   tabs,
   ctx,
 }) => {
+  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
+
   if (tabs.length <= 1) {
     return <RenderNodes nodes={tabs[0]?.children} ctx={ctx} />;
   }
 
   return (
     <Tabs value={tabs[0].id} width="100%">
-      <TabsTabList>
-        {tabs.map(tab => (
-          <TabsTab key={tab.id} value={tab.id}>
-            <TabsTabTitle>{nodeTitleText(tab, ctx.t) ?? tab.id}</TabsTabTitle>
-          </TabsTab>
-        ))}
+      <TabsTabList borderBottomWidth={1} borderBottomColor="$borderColor" flexWrap="wrap">
+        {tabs.map(tab => {
+          const isActive = tab.id === activeTabId;
+          return (
+            <TabsTab
+              key={tab.id}
+              value={tab.id}
+              onPress={() => setActiveTabId(tab.id)}
+              paddingHorizontal="$6"
+              paddingVertical="$3"
+              borderBottomWidth={3}
+              borderBottomColor={isActive ? '$primary500' : 'transparent'}
+              mb={-1}
+            >
+              <HStack space="xs" alignItems="center">
+                {!!tab.icon && (
+                  <LucideIcon
+                    name={tab.icon as any}
+                    size={16}
+                    color={isActive ? '$primary500' : '$textMutedForeground'}
+                  />
+                )}
+                <TabsTabTitle
+                  {...TYPOGRAPHY.label}
+                  color={isActive ? '$primary500' : '$textMutedForeground'}
+                >
+                  {nodeTitleText(tab, ctx.t) ?? tab.id}
+                </TabsTabTitle>
+              </HStack>
+            </TabsTab>
+          );
+        })}
       </TabsTabList>
       <TabsTabPanels>
-        {tabs.map(tab => (
-          <TabsTabPanel key={tab.id} value={tab.id}>
-            <RenderNodes nodes={tab.children} ctx={ctx} />
-          </TabsTabPanel>
-        ))}
+        {tabs.map(tab => {
+          const subTitleText = tab.subTitle
+            ? ctx.t(`admin.users.createUser.${tab.subTitle.key}`, tab.subTitle.fallback)
+            : undefined;
+          return (
+            <TabsTabPanel key={tab.id} value={tab.id}>
+              <VStack space="md">
+                {!!subTitleText && (
+                  <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                    {subTitleText}
+                  </Text>
+                )}
+                {!!tab.hint && <HintDisplay hint={tab.hint} t={ctx.t} />}
+                <RenderNodes nodes={tab.children} ctx={ctx} />
+              </VStack>
+            </TabsTabPanel>
+          );
+        })}
       </TabsTabPanels>
     </Tabs>
   );
 };
 
-/** Renders a "section" node: an @ui Card header (icon/title/subheading) plus its rows and children. */
+/** Renders a "section" node: an @ui Card header (icon/title/subTitle/hint) plus its rows and children. */
 const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
   node,
   ctx,
 }) => {
   const titleText = nodeTitleText(node, ctx.t);
-  const subheadingText = node.subheading
-    ? ctx.t(`admin.users.createUser.${node.subheading.key}`, node.subheading.fallback)
+  const subTitleText = node.subTitle
+    ? ctx.t(`admin.users.createUser.${node.subTitle.key}`, node.subTitle.fallback)
     : undefined;
 
   return (
@@ -1074,9 +1170,9 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
                 {titleText}
               </Text>
             </HStack>
-            {!!subheadingText && (
+            {!!subTitleText && (
               <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                {subheadingText}
+                {subTitleText}
               </Text>
             )}
           </VStack>
@@ -1085,6 +1181,8 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
         {!!node.rows?.length && <RenderRow rows={node.rows} {...ctx} />}
 
         {!!node.children?.length && <RenderNodes nodes={node.children} ctx={ctx} />}
+
+        {!!node.hint && <HintDisplay hint={node.hint} t={ctx.t} />}
       </VStack>
     </Card>
   );
@@ -1116,15 +1214,68 @@ const StepHeader: React.FC<{
   const activeTabId = tabs[activeStepIndex]?.id;
 
   return (
-    <Tabs key={activeTabId} value={activeTabId} width="100%">
-      <TabsTabList>
-        {tabs.map((tab, index) => (
-          <TabsTab key={tab.id} value={tab.id} onPress={() => onSelectStep(index)}>
-            <TabsTabTitle>{nodeTitleText(tab, t) ?? tab.id}</TabsTabTitle>
-          </TabsTab>
-        ))}
+    <Tabs key={activeTabId} value={activeTabId} width="100%" borderBottomWidth={1} borderBottomColor="$borderColor">
+      <TabsTabList  flexWrap="wrap" borderRadius={0}>
+        {tabs.map((tab, index) => {
+          const isActive = index === activeStepIndex;
+          return (
+            <TabsTab
+              key={tab.id}
+              value={tab.id}
+              onPress={() => onSelectStep(index)}
+              paddingHorizontal="$6"
+              paddingVertical="$3"
+              borderBottomWidth={3}
+              borderBottomColor={isActive ? '$primary500' : 'transparent'}
+              mb={-1}
+              borderRadius={0}
+            >
+              <HStack space="xs" alignItems="center">
+                {!!tab.icon && (
+                  <LucideIcon
+                    name={tab.icon as any}
+                    size={16}
+                    color={isActive ? '$primary500' : '$textMutedForeground'}
+                  />
+                )}
+                <TabsTabTitle
+                  {...TYPOGRAPHY.label}
+                  color={isActive ? '$primary500' : '$textMutedForeground'}
+                >
+                  {nodeTitleText(tab, t) ?? tab.id}
+                </TabsTabTitle>
+              </HStack>
+            </TabsTab>
+          );
+        })}
       </TabsTabList>
     </Tabs>
+  );
+};
+
+/** Required-fields-only completion for the active step, via the same gluestack Progress primitives already used elsewhere in the app (e.g. TasksOverviewCard). */
+const StepProgress: React.FC<{
+  total: number;
+  completed: number;
+  t: (key: string, fallback?: string) => string;
+}> = ({ total, completed, t }) => {
+  const percent = total > 0 ? (completed / total) * 100 : 100;
+  const displayPercent = Math.round(percent * 10) / 10;
+
+  return (
+    <VStack space="xs" width="100%">
+      <HStack justifyContent="space-between" alignItems="center">
+        <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+          {t('common.progress', 'Progress')}
+        </Text>
+        <Text {...TYPOGRAPHY.bodySmall} color="$primary500" fontWeight="$bold">
+          {displayPercent}%
+        </Text>
+      </HStack>
+      <Progress value={percent} w="$full" h="$1.5" bg="$progressBarBackground">
+        <ProgressFilledTrack bg="$primary500" />
+      </Progress>
+    </VStack>
   );
 };
 
@@ -1249,7 +1400,6 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   },
   optionsMap = {},
   disabled = false,
-  isMobile = false,
   t,
   mode = 'edit',
   firstNameRef,
@@ -1438,14 +1588,36 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
       highlightedField,
     };
 
+    const stepSubTitleText = activeTab?.subTitle
+      ? t(`admin.users.createUser.${activeTab.subTitle.key}`, activeTab.subTitle.fallback)
+      : undefined;
+
+    // Whole-form progress (every tab/section/nested node), not just the active step —
+    // recalculated on every render, cheap tree walk, always reflects the latest `values`.
+    const { total: requiredTotal, completed: requiredCompleted } = computeRequiredFieldProgress(
+      schema,
+      values,
+      optionsMap,
+    );
+
     return (
       <VStack space="md" width="100%">
+        <StepProgress total={requiredTotal} completed={requiredCompleted} t={t} />
+
         <StepHeader
           tabs={rootTabs}
           activeStepIndex={safeStepIndex}
           onSelectStep={handleSelectStep}
           t={t}
         />
+
+        {!!stepSubTitleText && (
+          <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+            {stepSubTitleText}
+          </Text>
+        )}
+
+        {!!activeTab?.hint && <HintDisplay hint={activeTab.hint} t={t} />}
 
         <RenderNodes nodes={activeTab?.children} ctx={stepCtx} />
 
@@ -1582,6 +1754,98 @@ const RowRenderer = memo(
   },
 );
 
+// ─── Hint (simple helper string, or an info/warning/danger/success banner) ────
+
+const HINT_TYPE_CONFIG: Record<
+  string,
+  { bg: string; borderColor: string; textColor: string; icon: string, iconColor?: string, bulletTextColor?:string }
+> = {
+  info: { bg: '$blue50', borderColor: '$blue200', bulletTextColor: '$blue800', textColor: '$blue900',iconColor:"$blue600", icon: 'Info' },
+  warning: {
+    bg: '$warning100',
+    borderColor: '$warning700',
+    textColor: '$warning700',
+    icon: 'AlertTriangle',
+  },
+  danger: { bg: '$error100', borderColor: '$error700', textColor: '$error700', icon: 'XCircle' },
+  success: {
+    bg: '$success100',
+    borderColor: '$success700',
+    textColor: '$success700',
+    icon: 'CheckCircle',
+  },
+};
+
+const HintDisplay: React.FC<{
+  hint: Hint;
+  t: (key: string, fallback?: string) => string;
+}> = ({ hint, t }) => {
+  if (typeof hint === 'string') {
+    return (
+      <HStack
+        space="sm"
+        alignItems="flex-start"
+        bg="$backgroundLight100"
+        p="$3"
+        borderRadius="$md"
+        borderWidth={1}
+        borderColor="$borderColor"
+        width="100%"
+      >
+        <Box mt={2}>
+          <LucideIcon name="Info" size={16} color="$primary500" />
+        </Box>
+        <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" flex={1}>
+          {hint}
+        </Text>
+      </HStack>
+    );
+  }
+
+  const config = HINT_TYPE_CONFIG[hint.type ?? 'info'] ?? HINT_TYPE_CONFIG.info;
+  const iconName = hint.icon ?? config.icon;
+  const titleText = hint.title
+    ? t(`admin.users.createUser.${hint.title.key}`, hint.title.fallback)
+    : undefined;
+
+  return (
+    <VStack
+      space="xs"
+      bg={config.bg}
+      borderWidth={1}
+      borderColor={config.borderColor}
+      borderRadius="$xl"
+      p="$3"
+      width="100%"
+    >
+      <HStack space="sm" alignItems="flex-start">
+        <Box mt={2}>
+          <LucideIcon name={iconName as any} size={16} color={config?.iconColor || config.textColor} />
+        </Box>
+        <VStack space="xs" flex={1}>
+          {!!titleText && (
+            <Text {...TYPOGRAPHY.bodySmall} color={config.textColor} fontWeight="$medium">
+              {titleText}
+            </Text>
+          )}
+          {!!hint.bullets?.length && (
+            <VStack space="xs">
+              {hint.bullets.map((bullet, index) => (
+                <HStack key={bullet.key ?? index} space="xs" alignItems="flex-start">
+                  <Text color={config?.bulletTextColor || config.textColor}>{'•'}</Text>
+                  <Text {...TYPOGRAPHY.bodySmall} color={config?.bulletTextColor || config.textColor} flex={1}>
+                    {t(`admin.users.createUser.${bullet.key}`, bullet.fallback)}
+                  </Text>
+                </HStack>
+              ))}
+            </VStack>
+          )}
+        </VStack>
+      </HStack>
+    </VStack>
+  );
+};
+
 // ─── View Field (read-only display of another field's label/value) ───────────
 
 interface ViewFieldDisplayProps {
@@ -1709,6 +1973,12 @@ const FieldContainer = memo(
             )}
           </Text>
 
+          {!!field.subTitle && (
+            <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+              {t(`admin.users.createUser.${field.subTitle.key}`, field.subTitle.fallback)}
+            </Text>
+          )}
+
           <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
             {displayValue}
           </Text>
@@ -1727,17 +1997,25 @@ const FieldContainer = memo(
         bg={isHighlighted ? '$warning100' : undefined}
       >
         {field.type !== FORM_FIELD_TYPES.NOTE && (
-          <Text
-            {...TYPOGRAPHY.caption}
-            color="$textForeground"
-            fontWeight="$bold"
-          >
-            {t(
-              `admin.users.createUser.${field.label.key}`,
-              field.label.fallback,
+          <>
+            <Text
+              {...TYPOGRAPHY.caption}
+              color="$textForeground"
+              fontWeight="$bold"
+            >
+              {t(
+                `admin.users.createUser.${field.label.key}`,
+                field.label.fallback,
+              )}
+              {field.required && ' *'}
+            </Text>
+            {!!field.subTitle && (
+              <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+                {t(`admin.users.createUser.${field.subTitle.key}`, field.subTitle.fallback)}
+              </Text>
             )}
-            {field.required && ' *'}
-          </Text>
+            {!!field.hint && <HintDisplay hint={field.hint} t={t} />}
+          </>
         )}
 
         <FieldRenderer
