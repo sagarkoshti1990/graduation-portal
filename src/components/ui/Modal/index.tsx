@@ -202,6 +202,7 @@ const Modal: React.FC<ModalProps> = ({
           {...bodyProps}
         >
           <ScrollView
+            flex={1}
             showsVerticalScrollIndicator={true}
             contentContainerStyle={{ flexGrow: 1 }}
           >
