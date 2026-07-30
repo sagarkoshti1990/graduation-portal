@@ -14,13 +14,20 @@ interface FilterButtonProps {
   showClearButton?: boolean; // Show clear button (default: true)
   rightContent?: React.ReactNode; // Custom right content (overrides default clear button)
   disabled?: boolean; // Disable filter (e.g., district when no province selected)
+  hideTitleHeader?: boolean; // Hide top Filter title & icon header row
+  _container?: any; // Custom container styling overrides
+  _input?: any; // Custom input field styling overrides
 }
 
 export default function FilterButton({
   data,
   onFilterChange,
   showClearButton = true,
-  rightContent
+  rightContent,
+  hideTitleHeader = false,
+  _container,
+  _input,
+
   // disabled prop is passed via data items - Used for district filter when no province selected
 }: FilterButtonProps) {
   const { t } = useLanguage();
@@ -317,6 +324,7 @@ export default function FilterButton({
           }
           disabled={item.disabled} // Disable filter when dependent filter not selected (e.g., district)
           {...filterStyles.input}
+          {..._input}
         />
       );
     };
@@ -337,18 +345,20 @@ export default function FilterButton({
   };
 
   return (
-    <VStack {...filterStyles.container}>
+    <VStack {...filterStyles.container} {..._container}>
       {/* Title Row with User Count and Clear Button */}
-      <HStack {...filterStyles.titleContainer}>
-        {/* Left: Filter Icon + Title */}
-        <HStack alignItems="center">
-          <LucideIcon name="Filter" size={16} color="$mutedForeground" />
-          <Text {...filterStyles.titleText}>{t('common.filters')}</Text>
-        </HStack>
+      {!hideTitleHeader && (
+        <HStack {...filterStyles.titleContainer}>
+          {/* Left: Filter Icon + Title */}
+          <HStack alignItems="center">
+            <LucideIcon name="Filter" size={16} color="$mutedForeground" />
+            <Text {...filterStyles.titleText}>{t('common.filters')}</Text>
+          </HStack>
 
-        {/* Right: Configurable content (User Count + Clear Button or custom) */}
-        {renderRightContent()}
-      </HStack>
+          {/* Right: Configurable content (User Count + Clear Button or custom) */}
+          {renderRightContent()}
+        </HStack>
+      )}
 
       {/* Filters Row - Includes search bar if present */}
       <HStack {...filterStyles.filterFieldsContainer}>

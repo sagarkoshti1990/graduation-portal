@@ -12,6 +12,9 @@ export const TabButton: React.FC<TabButtonProps> = ({
   isActive,
   onPress,
   variant = 'default',
+  _text,
+  _container,
+  iconSize,
 }) => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
@@ -40,15 +43,16 @@ export const TabButton: React.FC<TabButtonProps> = ({
     <Pressable
       onPress={() => !isDisabled && onPress(key)}
       {...containerStyles}
+      {..._container}
       opacity={isDisabled ? 0.5 : 1}
     >
       {icon ? (
         <HStack alignItems="center" justifyContent="center" gap="$2" p="$1">
-          <LucideIcon name={icon} size={20} color={iconColor} />
-          <Text {...textStyles}>{displayText}</Text>
+          <LucideIcon name={icon} size={iconSize || 20} color={iconColor} />
+          <Text {...textStyles} {..._text}>{displayText}</Text>
         </HStack>
       ) : (
-        <Text {...textStyles}>{displayText}</Text>
+        <Text {...textStyles} {..._text}>{displayText}</Text>
       )}
     </Pressable>
   );
