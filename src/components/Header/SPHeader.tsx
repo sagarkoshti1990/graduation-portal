@@ -45,9 +45,7 @@ const SPHeader: React.FC<SPHeaderProps> = ({
   const { user, isLoggedIn } = useAuth();
   
   const orgName = useMemo(() => {
-
-
-  return user?.organizations?.[0]?.name || '';
+    return user?.organizations?.[0]?.name || '';
 }, [user]);
   const renderMenuTrigger = useCallback(
     (triggerProps: any) => (
