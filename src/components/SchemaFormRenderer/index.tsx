@@ -2207,9 +2207,9 @@ const FieldContainer = memo(
         {field.type !== FORM_FIELD_TYPES.NOTE && (
           <>
             <Text
-              {...TYPOGRAPHY.caption}
+              {...TYPOGRAPHY.bodySmall}
               color="$textForeground"
-              fontWeight="$bold"
+              fontWeight="$medium"
             >
               {t(
                 `admin.users.createUser.${field.label.key}`,
