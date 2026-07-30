@@ -3,6 +3,7 @@ import { Box, Text, Pressable, LucideIcon } from '@ui';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
 import { FeatureCardProps } from '@app-types/components';
+import styles from '../../styles';
 
 const getIconBgColor = (color: string): string => {
   switch (color) {
@@ -40,10 +41,7 @@ export const SupportCard: React.FC<FeatureCardProps> = ({ card }) => {
       alignItems="center"
       justifyContent="center"
       onPress={() => navigationUrl && navigation.navigate(navigationUrl as never)}
-      style={{
-        cursor: 'pointer',
-        transition: 'all 0.2s ease-in-out',
-      } as any}
+      style={styles.pressable as any}
     >
       {/* Icon Circle */}
       <Box

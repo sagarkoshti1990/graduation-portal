@@ -8,4 +8,8 @@ export default {
     fontSize: 24,
     fontWeight: '700',
   },
+  pressable: {
+    cursor: 'pointer',
+    transition: 'all 0.2s ease-in-out',
+  },
 };

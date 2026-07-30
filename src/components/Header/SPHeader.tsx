@@ -2,8 +2,11 @@ import React, { useCallback, useMemo } from 'react';
 import {
   Avatar,
   AvatarFallbackText,
+  Badge,
+  BellIcon,
   Box,
   HStack,
+  Icon,
   Pressable,
   Text,
   VStack,
@@ -42,21 +45,10 @@ const SPHeader: React.FC<SPHeaderProps> = ({
   const { user, isLoggedIn } = useAuth();
   
   const orgName = useMemo(() => {
-    const userOrgs = user?.user_organizations;
-    if (userOrgs && userOrgs.length > 0) {
-      const org = userOrgs[0]?.organization || userOrgs[0]?.organisation;
-      if (org) {
-        return org.name || org.title || org.label || '';
-      }
-    }
-    const orgs = user?.organizations;
-    if (orgs && orgs.length > 0) {
-      const org = orgs[0];
-      return org?.name || org?.title || org?.label || '';
-    }
-    return '';
-  }, [user]);
 
+
+  return user?.organizations?.[0]?.name || '';
+}, [user]);
   const renderMenuTrigger = useCallback(
     (triggerProps: any) => (
       <Pressable
@@ -165,33 +157,11 @@ const SPHeader: React.FC<SPHeaderProps> = ({
               {orgName}
             </Text>
           ) : null}
-          <Pressable position="relative" p="$2">
-            <LucideIcon
-              name="Bell"
-              size={20}
-              color={isDark ? '$textDark900' : '$white'}
-            />
-            <Box
-              position="absolute"
-              top={2}
-              right={2}
-              bg="$error600"
-              rounded="$full"
-              minWidth={16}
-              height={16}
-              justifyContent="center"
-              alignItems="center"
-              px="$1"
-            >
-              <Text
-                fontSize={9}
-                color="$white"
-                fontWeight="$bold"
-                lineHeight={10}
-              >
-                3
-              </Text>
-            </Box>
+          <Pressable position="relative">
+            <Icon as={BellIcon} {...stylesHeader.notificationIcon} color="$white" />
+            <Badge {...stylesHeader.notificationBadge}>
+              <Text {...stylesHeader.notificationBadgeText}>3</Text>
+            </Badge>
           </Pressable>
         </HStack>
       </HStack>
