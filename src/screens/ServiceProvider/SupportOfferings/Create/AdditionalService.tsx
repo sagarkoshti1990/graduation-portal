@@ -4,15 +4,17 @@ import styles from '../styles';
 import Test from '../components/Test';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
+import { useLanguage } from '@contexts/LanguageContext';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
+  const { t } = useLanguage();
   
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title="Create Additional Service"
-        backButtonText="Chnage type"
+        title={t('supportProvider.createSupport.additionalService.title', 'Create Additional Service')}
+        backButtonText={t('supportProvider.createSupport.changeType', 'Change type')}
         onNavigateBack={() => navigation.goBack()}
       />
       <Container {...styles.container}>
