@@ -25,23 +25,8 @@ export const SupportCard: React.FC<FeatureCardProps> = ({ card }) => {
 
   return (
     <Pressable
-      flex={1}
-      minWidth={280}
-      bg="$white"
-      p="$8"
-      borderRadius="$2xl"
-      borderWidth={2}
-      borderColor="$borderLight100"
-      $hover-borderColor="$primary500"
-      $hover-shadowColor="$shadowColor"
-      shadowOffset={{ width: 0, height: 4 }}
-      shadowOpacity={0.05}
-      shadowRadius={10}
-      elevation={2}
-      alignItems="center"
-      justifyContent="center"
+      {...styles.pressable}
       onPress={() => navigationUrl && navigation.navigate(navigationUrl as never)}
-      style={styles.pressable as any}
     >
       {/* Icon Circle */}
       <Box
