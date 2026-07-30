@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Container, VStack } from '@ui';
+import { Card, Container, VStack } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
@@ -201,13 +201,15 @@ const App = (): React.JSX.Element => {
         onNavigateBack={() => navigation.goBack()}
       />
       <Container {...styles.container}>
-        <SchemaFormRenderer
-          schema={TRAINING_FORM_SCHEMA}
-          optionsMap={optionsMap}
-          values={values}
-          t={t}
-          onFieldChange={handleFieldChange}
-        />
+        <Card borderRadius={"$2xl"} bg="$white">
+          <SchemaFormRenderer
+            schema={TRAINING_FORM_SCHEMA}
+            optionsMap={optionsMap}
+            values={values}
+            t={t}
+            onFieldChange={handleFieldChange}
+          />
+        </Card>
       </Container>
     </VStack>
   );

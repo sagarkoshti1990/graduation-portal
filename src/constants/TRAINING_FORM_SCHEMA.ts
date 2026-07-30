@@ -14,10 +14,13 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
       {
         type: 'section',
         id: 'trainingDetails',
-        icon: 'FileText',
         title: {
           key: 'trainingDetails',
-          fallback: 'Training Details',
+          fallback: 'Training Session Details',
+        },
+        subTitle: {
+          key: 'trainingDetails',
+          fallback: 'Fields marked * are required',
         },
         rows: [
           {
@@ -297,10 +300,13 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
       {
         type: 'section',
         id: 'scheduleDetails',
-        icon: 'Calendar',
         title: {
           key: 'scheduleDetails',
-          fallback: 'Date & Time',
+          fallback: 'Schedule & Format',
+        },
+        subTitle: {
+          key: 'scheduleDetails',
+          fallback: 'Set when and how the session will be delivered',
         },
         rows: [
           {
@@ -450,8 +456,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             },
             {
               key: 'supportProvider.trainingSession.step3.infoBullet2',
-              fallback:
-                'Coaches can submit requests on behalf of participants',
+              fallback: 'Coaches can submit requests on behalf of participants',
             },
             {
               key: 'supportProvider.trainingSession.step3.infoBullet3',
@@ -471,14 +476,6 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             rows: [
               {
                 fields: [
-                  {
-                    type: 'view',
-                    name: 'pillar',
-                    label: {
-                      key: 'supportProvider.trainingSession.step3.pillarLabel',
-                      fallback: 'Pillar',
-                    },
-                  },
                   {
                     type: 'view',
                     name: 'recurringSession',
@@ -509,6 +506,10 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Start',
                     },
                   },
+                ],
+              },
+              {
+                fields: [
                   {
                     type: 'view',
                     name: 'endDate',
@@ -517,6 +518,10 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'End',
                     },
                   },
+                ],
+              },
+              {
+                fields: [
                   {
                     type: 'view',
                     name: 'formatType',

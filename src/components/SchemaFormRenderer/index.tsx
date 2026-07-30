@@ -231,7 +231,9 @@ function isVisibleIf(
   values: Record<string, string>,
 ): boolean {
   if (!visibleIf?.length) return true;
-  return visibleIf.every(condition => evaluateVisibleIfCondition(condition, values));
+  return visibleIf.every(condition =>
+    evaluateVisibleIfCondition(condition, values),
+  );
 }
 
 /** Recursively walks a field (and its group sub-fields) into a flat name → field map. */
@@ -408,7 +410,9 @@ function validateNodes(
       // Skip hidden rows
       if (!isVisible(row.visibleWhen, values, optionsMap)) return;
 
-      row.fields.forEach(field => validateField(field, values, optionsMap, errors));
+      row.fields.forEach(field =>
+        validateField(field, values, optionsMap, errors),
+      );
     });
 
     if (node.children) validateNodes(node.children, values, optionsMap, errors);
@@ -450,7 +454,16 @@ function collectFieldIssues(
 ): void {
   if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
     field.fields.forEach(subField =>
-      collectFieldIssues(subField, values, optionsMap, t, ancestry, errors, issues, visited),
+      collectFieldIssues(
+        subField,
+        values,
+        optionsMap,
+        t,
+        ancestry,
+        errors,
+        issues,
+        visited,
+      ),
     );
     return;
   }
@@ -492,7 +505,10 @@ function collectValidationIssues(
   nodes?.forEach(node => {
     let nextAncestry = ancestry;
     if (node.type === 'tab') {
-      nextAncestry = { ...ancestry, tabTitle: nodeTitleText(node, t) ?? node.id };
+      nextAncestry = {
+        ...ancestry,
+        tabTitle: nodeTitleText(node, t) ?? node.id,
+      };
     } else {
       const title = nodeTitleText(node, t);
       if (title) nextAncestry = { ...ancestry, sectionTitle: title };
@@ -501,12 +517,30 @@ function collectValidationIssues(
     node.rows?.forEach(row => {
       if (!isVisible(row.visibleWhen, values, optionsMap)) return;
       row.fields.forEach(field =>
-        collectFieldIssues(field, values, optionsMap, t, nextAncestry, errors, issues, visited),
+        collectFieldIssues(
+          field,
+          values,
+          optionsMap,
+          t,
+          nextAncestry,
+          errors,
+          issues,
+          visited,
+        ),
       );
     });
 
     if (node.children) {
-      collectValidationIssues(node.children, values, optionsMap, t, errors, issues, visited, nextAncestry);
+      collectValidationIssues(
+        node.children,
+        values,
+        optionsMap,
+        t,
+        errors,
+        issues,
+        visited,
+        nextAncestry,
+      );
     }
   });
 }
@@ -523,7 +557,11 @@ function collectValidationForRoots(
   values: Record<string, string>,
   optionsMap: OptionsMap,
   t: (key: string, fallback?: string) => string,
-): { errors: Record<string, string>; issues: ValidationIssue[]; visited: Set<string> } {
+): {
+  errors: Record<string, string>;
+  issues: ValidationIssue[];
+  visited: Set<string>;
+} {
   const errors: Record<string, string> = {};
   const issues: ValidationIssue[] = [];
   const visited = new Set<string>();
@@ -532,7 +570,16 @@ function collectValidationForRoots(
     const rootTabIndex = schema.indexOf(node);
     const ancestry: ValidationAncestry =
       node.type === 'tab' && rootTabIndex !== -1 ? { rootTabIndex } : {};
-    collectValidationIssues([node], values, optionsMap, t, errors, issues, visited, ancestry);
+    collectValidationIssues(
+      [node],
+      values,
+      optionsMap,
+      t,
+      errors,
+      issues,
+      visited,
+      ancestry,
+    );
   });
 
   return { errors, issues, visited };
@@ -551,7 +598,9 @@ function countRequiredFieldProgress(
   counts: { total: number; completed: number },
 ): void {
   if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
-    field.fields.forEach(subField => countRequiredFieldProgress(subField, values, optionsMap, counts));
+    field.fields.forEach(subField =>
+      countRequiredFieldProgress(subField, values, optionsMap, counts),
+    );
     return;
   }
 
@@ -576,7 +625,9 @@ function computeRequiredFieldProgress(
     list?.forEach(node => {
       node.rows?.forEach(row => {
         if (!isVisible(row.visibleWhen, values, optionsMap)) return;
-        row.fields.forEach(field => countRequiredFieldProgress(field, values, optionsMap, counts));
+        row.fields.forEach(field =>
+          countRequiredFieldProgress(field, values, optionsMap, counts),
+        );
       });
       if (node.children) visitNodes(node.children);
     });
@@ -627,7 +678,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     disabled || !!field.disabled || (isEditMode && field.name === 'roleId');
 
   useEffect(() => {
-    if (field.type === FORM_FIELD_TYPES.SELECT || field.type === FORM_FIELD_TYPES.PILLSELECT) {
+    if (
+      field.type === FORM_FIELD_TYPES.SELECT ||
+      field.type === FORM_FIELD_TYPES.PILLSELECT
+    ) {
       const rawOptions = field.optionsSource
         ? optionsMap[field.optionsSource] ?? []
         : [];
@@ -821,7 +875,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   if (field.type === FORM_FIELD_TYPES.FILE) {
     const isDisabled = isFieldDisabled || !!field.isReadOnly;
     const subLabelText = field.subLabel
-      ? t(`admin.users.createUser.${field.subLabel.key}`, field.subLabel.fallback)
+      ? t(
+          `admin.users.createUser.${field.subLabel.key}`,
+          field.subLabel.fallback,
+        )
       : undefined;
 
     const handlePick = async () => {
@@ -853,7 +910,9 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               {...TYPOGRAPHY.bodySmall}
               color={value ? '$textForeground' : '$textMutedForeground'}
             >
-              {value || placeholder || t('common.clickToUpload', 'Click to upload')}
+              {value ||
+                placeholder ||
+                t('common.clickToUpload', 'Click to upload')}
             </Text>
           </HStack>
         </Pressable>
@@ -1041,10 +1100,10 @@ function nodeTitleText(
 }
 
 /** Renders a sibling list of nodes, grouping consecutive `tab` nodes into one Tabs system. */
-const RenderNodes: React.FC<{ nodes?: FormSection[]; ctx: NodeRenderContext }> = ({
-  nodes,
-  ctx,
-}) => {
+const RenderNodes: React.FC<{
+  nodes?: FormSection[];
+  ctx: NodeRenderContext;
+}> = ({ nodes, ctx }) => {
   if (!nodes?.length) return null;
 
   const items: React.ReactNode[] = [];
@@ -1059,7 +1118,11 @@ const RenderNodes: React.FC<{ nodes?: FormSection[]; ctx: NodeRenderContext }> =
         i += 1;
       }
       items.push(
-        <TabGroupRenderer key={`tabgroup-${tabGroup[0].id}`} tabs={tabGroup} ctx={ctx} />,
+        <TabGroupRenderer
+          key={`tabgroup-${tabGroup[0].id}`}
+          tabs={tabGroup}
+          ctx={ctx}
+        />,
       );
       continue;
     }
@@ -1078,10 +1141,10 @@ const RenderNodes: React.FC<{ nodes?: FormSection[]; ctx: NodeRenderContext }> =
  * internal switching still governs which `TabsTabPanel` is visible; both are set from
  * the same click so they never disagree.
  */
-const TabGroupRenderer: React.FC<{ tabs: FormSection[]; ctx: NodeRenderContext }> = ({
-  tabs,
-  ctx,
-}) => {
+const TabGroupRenderer: React.FC<{
+  tabs: FormSection[];
+  ctx: NodeRenderContext;
+}> = ({ tabs, ctx }) => {
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
 
   if (tabs.length <= 1) {
@@ -1090,7 +1153,11 @@ const TabGroupRenderer: React.FC<{ tabs: FormSection[]; ctx: NodeRenderContext }
 
   return (
     <Tabs value={tabs[0].id} width="100%">
-      <TabsTabList borderBottomWidth={1} borderBottomColor="$borderColor" flexWrap="wrap">
+      <TabsTabList
+        borderBottomWidth={1}
+        borderBottomColor="$borderColor"
+        flexWrap="wrap"
+      >
         {tabs.map(tab => {
           const isActive = tab.id === activeTabId;
           return (
@@ -1126,7 +1193,10 @@ const TabGroupRenderer: React.FC<{ tabs: FormSection[]; ctx: NodeRenderContext }
       <TabsTabPanels>
         {tabs.map(tab => {
           const subTitleText = tab.subTitle
-            ? ctx.t(`admin.users.createUser.${tab.subTitle.key}`, tab.subTitle.fallback)
+            ? ctx.t(
+                `admin.users.createUser.${tab.subTitle.key}`,
+                tab.subTitle.fallback,
+              )
             : undefined;
           return (
             <TabsTabPanel key={tab.id} value={tab.id}>
@@ -1154,19 +1224,33 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
 }) => {
   const titleText = nodeTitleText(node, ctx.t);
   const subTitleText = node.subTitle
-    ? ctx.t(`admin.users.createUser.${node.subTitle.key}`, node.subTitle.fallback)
+    ? ctx.t(
+        `admin.users.createUser.${node.subTitle.key}`,
+        node.subTitle.fallback,
+      )
     : undefined;
 
   return (
-    <Card variant="outline" borderRadius="$lg" borderWidth={1} borderColor="$borderColor" p="$4" width="100%">
-      <VStack space="sm">
+    <Card
+      variant="outline"
+      borderRadius="$lg"
+      borderWidth={1}
+      borderColor="$borderColor"
+      p="$6"
+      width="100%"
+    >
+      <VStack space={subTitleText ? 'xl' : 'sm'}>
         {!!titleText && (
           <VStack space="xs">
             <HStack space="xs" alignItems="center">
               {!!node.icon && (
-                <LucideIcon name={node.icon as any} size={16} color="$textMutedForeground" />
+                <LucideIcon
+                  name={node.icon as any}
+                  size={16}
+                  color="$textMutedForeground"
+                />
               )}
-              <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" fontWeight="$normal">
+              <Text {...TYPOGRAPHY.h2} color="$blueGray900" fontWeight="$bold">
                 {titleText}
               </Text>
             </HStack>
@@ -1180,7 +1264,9 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
 
         {!!node.rows?.length && <RenderRow rows={node.rows} {...ctx} />}
 
-        {!!node.children?.length && <RenderNodes nodes={node.children} ctx={ctx} />}
+        {!!node.children?.length && (
+          <RenderNodes nodes={node.children} ctx={ctx} />
+        )}
 
         {!!node.hint && <HintDisplay hint={node.hint} t={ctx.t} />}
       </VStack>
@@ -1214,8 +1300,14 @@ const StepHeader: React.FC<{
   const activeTabId = tabs[activeStepIndex]?.id;
 
   return (
-    <Tabs key={activeTabId} value={activeTabId} width="100%" borderBottomWidth={1} borderBottomColor="$borderColor">
-      <TabsTabList  flexWrap="wrap" borderRadius={0}>
+    <Tabs
+      key={activeTabId}
+      value={activeTabId}
+      width="100%"
+      borderBottomWidth={1}
+      borderBottomColor="$borderColor"
+    >
+      <TabsTabList flexWrap="wrap" borderRadius={0}>
         {tabs.map((tab, index) => {
           const isActive = index === activeStepIndex;
           return (
@@ -1239,7 +1331,8 @@ const StepHeader: React.FC<{
                   />
                 )}
                 <TabsTabTitle
-                  {...TYPOGRAPHY.label}
+                  {...TYPOGRAPHY.bodySmall}
+                  fontWeight={isActive ? '$medium' : '$normal'}
                   color={isActive ? '$primary500' : '$textMutedForeground'}
                 >
                   {nodeTitleText(tab, t) ?? tab.id}
@@ -1263,7 +1356,13 @@ const StepProgress: React.FC<{
   const displayPercent = Math.round(percent * 10) / 10;
 
   return (
-    <VStack space="xs" width="100%">
+    <VStack
+      space="xs"
+      width="100%"
+      borderBottomWidth={1}
+      borderBottomColor="$borderColor"
+      pb="$3"
+    >
       <HStack justifyContent="space-between" alignItems="center">
         <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
           {t('common.progress', 'Progress')}
@@ -1288,9 +1387,27 @@ const StepFooter: React.FC<{
   onSaveDraft?: () => void;
   onSubmit: () => void;
   t: (key: string, fallback?: string) => string;
-}> = ({ isFirstStep, isLastStep, disabled, onPrevious, onContinue, onSaveDraft, onSubmit, t }) => (
-  <HStack space="sm" justifyContent="space-between" width="100%" flexWrap="wrap">
-    <Button variant="outline" onPress={onPrevious} isDisabled={isFirstStep || disabled}>
+}> = ({
+  isFirstStep,
+  isLastStep,
+  disabled,
+  onPrevious,
+  onContinue,
+  onSaveDraft,
+  onSubmit,
+  t,
+}) => (
+  <HStack
+    space="sm"
+    justifyContent="space-between"
+    width="100%"
+    flexWrap="wrap"
+  >
+    <Button
+      variant="outline"
+      onPress={onPrevious}
+      isDisabled={isFirstStep || disabled}
+    >
       <ButtonText>{t('common.previous', 'Previous')}</ButtonText>
     </Button>
     <HStack space="sm">
@@ -1338,10 +1455,12 @@ const ValidationPopup: React.FC<{
     });
     return Array.from(byTab.entries()).map(([tabTitle, bySection]) => ({
       tabTitle,
-      sections: Array.from(bySection.entries()).map(([sectionTitle, sectionIssues]) => ({
-        sectionTitle,
-        issues: sectionIssues,
-      })),
+      sections: Array.from(bySection.entries()).map(
+        ([sectionTitle, sectionIssues]) => ({
+          sectionTitle,
+          issues: sectionIssues,
+        }),
+      ),
     }));
   }, [issues]);
 
@@ -1373,10 +1492,28 @@ const ValidationPopup: React.FC<{
                 )}
                 <VStack space="xs" pl="$2">
                   {section.issues.map(issue => (
-                    <Pressable key={issue.fieldName} onPress={() => onSelectIssue(issue)}>
-                      <Text {...TYPOGRAPHY.bodySmall} color="$error600">
-                        {issue.fieldLabel} — {issue.message}
+                    <Pressable
+                      key={issue.fieldName}
+                      onPress={() => onSelectIssue(issue)}
+                      display="flex"
+                      flexDirection="row"
+                      justifyContent="space-between"
+                      alignItems='center'
+                    >
+                      <Text
+                        {...TYPOGRAPHY.bodySmall}
+                        color="$blue600"
+                        textDecorationLine="underline"
+                        cursor="pointer"
+                      >
+                        {issue.fieldLabel}
+                        {/* — {issue.message} */}
                       </Text>
+                      <LucideIcon
+                        name={'ChevronRight' as any}
+                        size={16}
+                        color={'$blue600'}
+                      />
                     </Pressable>
                   ))}
                 </VStack>
@@ -1420,20 +1557,33 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   const fieldsByName = useMemo(() => collectFieldsByName(schema), [schema]);
 
   // ── Multi-step wizard state (only used when the root schema is 2+ `tab` nodes) ──
-  const rootTabs = useMemo(() => schema.filter(node => node.type === 'tab'), [schema]);
+  const rootTabs = useMemo(
+    () => schema.filter(node => node.type === 'tab'),
+    [schema],
+  );
   const isMultiStep = rootTabs.length > 1 && rootTabs.length === schema.length;
 
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const safeStepIndex = Math.min(activeStepIndex, Math.max(rootTabs.length - 1, 0));
+  const safeStepIndex = Math.min(
+    activeStepIndex,
+    Math.max(rootTabs.length - 1, 0),
+  );
 
-  const [internalErrors, setInternalErrors] = useState<Record<string, string>>({});
+  const [internalErrors, setInternalErrors] = useState<Record<string, string>>(
+    {},
+  );
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupIssues, setPopupIssues] = useState<ValidationIssue[]>([]);
   const [highlightedField, setHighlightedField] = useState<string | null>(null);
 
   const fieldRefsRef = useRef<Record<string, any>>({});
-  const pendingFocusFieldRef = useRef<{ fieldName: string; message: string } | null>(null);
-  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFocusFieldRef = useRef<{
+    fieldName: string;
+    message: string;
+  } | null>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const registerFieldRef = (name: string, node: any) => {
     fieldRefsRef.current[name] = node;
@@ -1448,11 +1598,15 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
     setHighlightedField(name);
     if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-    highlightTimeoutRef.current = setTimeout(() => setHighlightedField(null), 1600);
+    highlightTimeoutRef.current = setTimeout(
+      () => setHighlightedField(null),
+      1600,
+    );
 
     setTimeout(() => {
       const node = fieldRefsRef.current[name];
-      if (node?.scrollIntoView) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (node?.scrollIntoView)
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
       if (node?.focus) node.focus();
     }, 50);
   };
@@ -1478,7 +1632,8 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
   useEffect(() => {
     return () => {
-      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+      if (highlightTimeoutRef.current)
+        clearTimeout(highlightTimeoutRef.current);
     };
   }, []);
 
@@ -1511,13 +1666,11 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     const currentTab = rootTabs[safeStepIndex];
     if (!currentTab) return;
 
-    const { errors: stepErrors, issues: stepIssues, visited } = collectValidationForRoots(
-      [currentTab],
-      schema,
-      values,
-      optionsMap,
-      t,
-    );
+    const {
+      errors: stepErrors,
+      issues: stepIssues,
+      visited,
+    } = collectValidationForRoots([currentTab], schema, values, optionsMap, t);
 
     applyValidationResult(stepErrors, visited);
 
@@ -1530,13 +1683,11 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   };
 
   const handleSubmit = () => {
-    const { errors: allErrors, issues: allIssues, visited } = collectValidationForRoots(
-      schema,
-      schema,
-      values,
-      optionsMap,
-      t,
-    );
+    const {
+      errors: allErrors,
+      issues: allIssues,
+      visited,
+    } = collectValidationForRoots(schema, schema, values, optionsMap, t);
 
     applyValidationResult(allErrors, visited);
 
@@ -1555,9 +1706,15 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   const handleSelectIssue = (issue: ValidationIssue) => {
     setIsPopupOpen(false);
 
-    if (issue.rootTabIndex !== undefined && issue.rootTabIndex !== safeStepIndex) {
+    if (
+      issue.rootTabIndex !== undefined &&
+      issue.rootTabIndex !== safeStepIndex
+    ) {
       // Defer scroll/focus/highlight until the new step's fields mount (see effect above).
-      pendingFocusFieldRef.current = { fieldName: issue.fieldName, message: issue.message };
+      pendingFocusFieldRef.current = {
+        fieldName: issue.fieldName,
+        message: issue.message,
+      };
       setActiveStepIndex(issue.rootTabIndex);
       return;
     }
@@ -1589,27 +1746,33 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     };
 
     const stepSubTitleText = activeTab?.subTitle
-      ? t(`admin.users.createUser.${activeTab.subTitle.key}`, activeTab.subTitle.fallback)
+      ? t(
+          `admin.users.createUser.${activeTab.subTitle.key}`,
+          activeTab.subTitle.fallback,
+        )
       : undefined;
 
     // Whole-form progress (every tab/section/nested node), not just the active step —
     // recalculated on every render, cheap tree walk, always reflects the latest `values`.
-    const { total: requiredTotal, completed: requiredCompleted } = computeRequiredFieldProgress(
-      schema,
-      values,
-      optionsMap,
-    );
+    const { total: requiredTotal, completed: requiredCompleted } =
+      computeRequiredFieldProgress(schema, values, optionsMap);
 
     return (
       <VStack space="md" width="100%">
-        <StepProgress total={requiredTotal} completed={requiredCompleted} t={t} />
+        <VStack width="100%">
+          <StepProgress
+            total={requiredTotal}
+            completed={requiredCompleted}
+            t={t}
+          />
 
-        <StepHeader
-          tabs={rootTabs}
-          activeStepIndex={safeStepIndex}
-          onSelectStep={handleSelectStep}
-          t={t}
-        />
+          <StepHeader
+            tabs={rootTabs}
+            activeStepIndex={safeStepIndex}
+            onSelectStep={handleSelectStep}
+            t={t}
+          />
+        </VStack>
 
         {!!stepSubTitleText && (
           <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
@@ -1758,16 +1921,35 @@ const RowRenderer = memo(
 
 const HINT_TYPE_CONFIG: Record<
   string,
-  { bg: string; borderColor: string; textColor: string; icon: string, iconColor?: string, bulletTextColor?:string }
+  {
+    bg: string;
+    borderColor: string;
+    textColor: string;
+    icon: string;
+    iconColor?: string;
+    bulletTextColor?: string;
+  }
 > = {
-  info: { bg: '$blue50', borderColor: '$blue200', bulletTextColor: '$blue800', textColor: '$blue900',iconColor:"$blue600", icon: 'Info' },
+  info: {
+    bg: '$blue50',
+    borderColor: '$blue200',
+    bulletTextColor: '$blue800',
+    textColor: '$blue900',
+    iconColor: '$blue600',
+    icon: 'Info',
+  },
   warning: {
     bg: '$warning100',
     borderColor: '$warning700',
     textColor: '$warning700',
     icon: 'AlertTriangle',
   },
-  danger: { bg: '$error100', borderColor: '$error700', textColor: '$error700', icon: 'XCircle' },
+  danger: {
+    bg: '$error100',
+    borderColor: '$error700',
+    textColor: '$error700',
+    icon: 'XCircle',
+  },
   success: {
     bg: '$success100',
     borderColor: '$success700',
@@ -1820,20 +2002,38 @@ const HintDisplay: React.FC<{
     >
       <HStack space="sm" alignItems="flex-start">
         <Box mt={2}>
-          <LucideIcon name={iconName as any} size={16} color={config?.iconColor || config.textColor} />
+          <LucideIcon
+            name={iconName as any}
+            size={16}
+            color={config?.iconColor || config.textColor}
+          />
         </Box>
         <VStack space="xs" flex={1}>
           {!!titleText && (
-            <Text {...TYPOGRAPHY.bodySmall} color={config.textColor} fontWeight="$medium">
+            <Text
+              {...TYPOGRAPHY.bodySmall}
+              color={config.textColor}
+              fontWeight="$medium"
+            >
               {titleText}
             </Text>
           )}
           {!!hint.bullets?.length && (
             <VStack space="xs">
               {hint.bullets.map((bullet, index) => (
-                <HStack key={bullet.key ?? index} space="xs" alignItems="flex-start">
-                  <Text color={config?.bulletTextColor || config.textColor}>{'•'}</Text>
-                  <Text {...TYPOGRAPHY.bodySmall} color={config?.bulletTextColor || config.textColor} flex={1}>
+                <HStack
+                  key={bullet.key ?? index}
+                  space="xs"
+                  alignItems="flex-start"
+                >
+                  <Text color={config?.bulletTextColor || config.textColor}>
+                    {'•'}
+                  </Text>
+                  <Text
+                    {...TYPOGRAPHY.bodySmall}
+                    color={config?.bulletTextColor || config.textColor}
+                    flex={1}
+                  >
                     {t(`admin.users.createUser.${bullet.key}`, bullet.fallback)}
                   </Text>
                 </HStack>
@@ -1868,7 +2068,10 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
   const targetField = field.name ? fieldsByName[field.name] : undefined;
 
   const label = targetField?.label
-    ? t(`admin.users.createUser.${targetField.label.key}`, targetField.label.fallback)
+    ? t(
+        `admin.users.createUser.${targetField.label.key}`,
+        targetField.label.fallback,
+      )
     : field.name ?? '-';
 
   let rawValue = field.name ? values[field.name] : undefined;
@@ -1878,7 +2081,9 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
 
   let displayValue: string = rawValue || '-';
   if (targetField?.optionsSource) {
-    const option = optionsMap[targetField.optionsSource]?.find(o => o.value === rawValue);
+    const option = optionsMap[targetField.optionsSource]?.find(
+      o => o.value === rawValue,
+    );
     displayValue = option?.label || rawValue || '-';
   }
   displayValue = displayValue.replace(/_/g, '-');
@@ -1975,7 +2180,10 @@ const FieldContainer = memo(
 
           {!!field.subTitle && (
             <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-              {t(`admin.users.createUser.${field.subTitle.key}`, field.subTitle.fallback)}
+              {t(
+                `admin.users.createUser.${field.subTitle.key}`,
+                field.subTitle.fallback,
+              )}
             </Text>
           )}
 
@@ -2007,11 +2215,14 @@ const FieldContainer = memo(
                 `admin.users.createUser.${field.label.key}`,
                 field.label.fallback,
               )}
-              {field.required && ' *'}
+              {field.required && <Text color="$red500"> *</Text>}
             </Text>
             {!!field.subTitle && (
               <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
-                {t(`admin.users.createUser.${field.subTitle.key}`, field.subTitle.fallback)}
+                {t(
+                  `admin.users.createUser.${field.subTitle.key}`,
+                  field.subTitle.fallback,
+                )}
               </Text>
             )}
             {!!field.hint && <HintDisplay hint={field.hint} t={t} />}
