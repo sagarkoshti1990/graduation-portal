@@ -36,6 +36,9 @@ export interface TabButtonProps {
   isActive: boolean;
   onPress: (tabKey: string) => void;
   variant?: 'default' | 'ButtonTab'; // Variant to control styling
+  _text?: any;
+  _container?: any;
+  iconSize?: number;
 }
 
 export interface MobileConfig {

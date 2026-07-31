@@ -2495,6 +2495,96 @@
           "description": "Cash, in-kind, or voucher support for livelihood activities."
         }
       }
+    },
+    "supportRequests": {
+      "buttonTexts": {
+        "cancel": "Cancel",
+        "sendRequest": "Send Request",
+        "confirmDecline": "Confirm Decline",
+        "confirmSchedule": "Confirm & Schedule",
+        "requestInfo": "Request Info",
+        "decline": "Decline",
+        "acceptSchedule": "Accept & Schedule",
+        "acceptRequest": "Accept Request",
+        "viewFullDetails": "View Full Details"
+      },
+      "titles": {
+        "header": "Support Requests",
+        "subheader": "Review and respond to requests from Coaches",
+        "viewDetails": "View Details",
+        "requestDetails": "Request Details",
+        "requestInfo": "Request More Information",
+        "decline": "Decline Request",
+        "acceptSchedule": "Accept & Schedule Training",
+        "coachInformation": "Coach Information"
+      },
+      "declineReasons": {
+        "capacity": "Capacity / Resource Constraints",
+        "outsideScope": "Outside Scope of Service",
+        "scheduleConflict": "Schedule Conflict",
+        "other": "Other / Custom Reason"
+      },
+      "durationOptions": {
+        "1hour": "1 hour",
+        "1_5hours": "1.5 hours",
+        "2hours": "2 hours",
+        "3hours": "3 hours",
+        "fullDay": "Full Day (4+ hours)"
+      },
+      "labels": {
+        "request": "Request:",
+        "coach": "Coach:",
+        "yourQuestion": "Your Question or Request",
+        "selectReason": "Select Reason",
+        "reasonDetails": "Reason Details",
+        "date": "Date",
+        "time": "Time",
+        "duration": "Duration",
+        "locationVenue": "Location / Venue",
+        "meetingLink": "Meeting Link (if online)",
+        "notesForCoach": "Notes for Coach (optional)",
+        "participants": "Participants",
+        "requestedDate": "Requested Date",
+        "preferredDate": "Preferred Date",
+        "preferredTime": "Preferred Time",
+        "preferredLocation": "Preferred Location",
+        "province": "Province",
+        "category": "Category",
+        "requestJustification": "Request Justification",
+        "participantDetails": "Participant Details",
+        "specialRequirements": "Special Requirements"
+      },
+      "placeholders": {
+        "requestInfo": "What additional information do you need from the Coach?",
+        "declineReason": "Choose a preset reason or write your own",
+        "declineDetails": "Provide additional context or details for the Coach...",
+        "location": "e.g. Online via Zoom or BRAC Hub Room 1",
+        "meetingLink": "https://...",
+        "notes": "Any additional information or instructions...",
+        "search": "Search requests..."
+      },
+      "hints": {
+        "requestInfo": "The Coach will receive this message and can respond with the requested information",
+        "decline": "This feedback will be shared with the Coach"
+      },
+      "fallbacks": {
+        "date": "03/25/2024",
+        "time": "09:00 AM",
+        "location": "Online via Zoom",
+        "meetingLink": "https://meet.example.com/sp-session",
+        "notAvailable": "N/A"
+      },
+      "cardBadges": {
+        "overdue": "Overdue",
+        "days": "days"
+      },
+      "tabs": {
+        "sessions": "Sessions & Trainings",
+        "additional_services": "Additional Services",
+        "assets": "Assets",
+        "pending": "Pending",
+        "overdue": "Overdue"
+      }
     }
   }
 }
