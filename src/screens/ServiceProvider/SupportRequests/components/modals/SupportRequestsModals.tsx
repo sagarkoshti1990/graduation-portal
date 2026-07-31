@@ -33,13 +33,11 @@ export default function SupportRequestsModals({
 }: SupportRequestsModalsProps): React.JSX.Element {
   const handleRequestInfoSubmit = async (message: string) => {
     try {
-      console.log('[SupportRequestsModals] Submitting Request Info for ID:', selectedItem?.id, 'Message:', message);
       if (selectedItem?.id) {
-        const res = await requestMoreInfoForSupportRequest({
+        await requestMoreInfoForSupportRequest({
           requestId: selectedItem.id,
           message,
         });
-        console.log('[SupportRequestsModals] Request Info Response:', res);
         onClose();
         onSuccess?.();
       }
@@ -50,14 +48,12 @@ export default function SupportRequestsModals({
 
   const handleDeclineSubmit = async (reason: string, details: string) => {
     try {
-      console.log('[SupportRequestsModals] Submitting Decline for ID:', selectedItem?.id, 'Reason:', reason, 'Details:', details);
       if (selectedItem?.id) {
-        const res = await declineSupportRequest({
+        await declineSupportRequest({
           requestId: selectedItem.id,
           reason,
           details,
         });
-        console.log('[SupportRequestsModals] Decline Response:', res);
         onClose();
         onSuccess?.();
       }
@@ -68,13 +64,11 @@ export default function SupportRequestsModals({
 
   const handleAcceptScheduleSubmit = async (data: any) => {
     try {
-      console.log('[SupportRequestsModals] Submitting Accept & Schedule for ID:', selectedItem?.id, 'Payload:', data);
       if (selectedItem?.id) {
-        const res = await acceptAndScheduleSupportRequest({
+        await acceptAndScheduleSupportRequest({
           requestId: selectedItem.id,
           ...data,
         });
-        console.log('[SupportRequestsModals] Accept & Schedule Response:', res);
         onClose();
         onSuccess?.();
       }

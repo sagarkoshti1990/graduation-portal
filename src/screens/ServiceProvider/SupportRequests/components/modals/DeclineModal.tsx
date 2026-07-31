@@ -73,14 +73,14 @@ export default function DeclineModal({
           <Pressable
             onPress={handleClose}
             borderWidth={1}
-            borderColor="#E2E8F0"
+            borderColor="$gray200"
             bg="$white"
             px="$4"
             py="$2.5"
             borderRadius="$lg"
-            sx={{ ':active': { bg: '#F8FAFC' } }}
+            sx={{ ':active': { bg: '$gray50' } }}
           >
-            <Text fontSize="$sm" fontWeight="$bold" color="#334155">
+            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
               {SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL}
             </Text>
           </Pressable>
@@ -88,7 +88,7 @@ export default function DeclineModal({
           {/* Confirm Decline Button */}
           <Pressable
             onPress={handleSubmit}
-            bg="#DC2626"
+            bg="$red600"
             px="$5"
             py="$2.5"
             borderRadius="$lg"
@@ -107,27 +107,27 @@ export default function DeclineModal({
       <VStack space="md" width="100%" py="$2">
         {/* Light Orange Summary Box */}
         <Box
-          bg="#FFF7ED"
+          bg="$orange50"
           borderWidth={1}
-          borderColor="#FFEDD5"
+          borderColor="$orange100"
           p="$4"
           borderRadius="$xl"
         >
           <VStack space="xs">
             <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="#9A3412">
+              <Text fontSize="$sm" fontWeight="$bold" color="$orange800">
                 {SUPPORT_REQUEST_LABELS.REQUEST}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="#C2410C">
+              <Text fontSize="$sm" fontWeight="$medium" color="$orange600">
                 {requestTitle}
               </Text>
             </HStack>
 
             <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="#9A3412">
+              <Text fontSize="$sm" fontWeight="$bold" color="$orange800">
                 {SUPPORT_REQUEST_LABELS.COACH}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="#C2410C">
+              <Text fontSize="$sm" fontWeight="$medium" color="$orange600">
                 {coachName}
               </Text>
             </HStack>
@@ -140,7 +140,7 @@ export default function DeclineModal({
             <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
               {SUPPORT_REQUEST_LABELS.SELECT_REASON}
             </Text>
-            <Text fontSize="$sm" fontWeight="$bold" color="#DC2626">
+            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
               *
             </Text>
           </HStack>
@@ -151,23 +151,23 @@ export default function DeclineModal({
           >
             <SelectTrigger
               borderWidth={1}
-              borderColor="#CBD5E1"
+              borderColor="$gray200"
               borderRadius="$lg"
               bg="$white"
               px="$3"
               py="$2.5"
               justifyContent="space-between"
               alignItems="center"
-              $focus-borderColor="#DC2626"
+              $focus-borderColor="$red600"
             >
               <SelectInput
                 placeholder={SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_REASON}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor="$gray300"
                 fontSize="$sm"
                 color="$textDark900"
               />
               <SelectIcon mr="$1">
-                <LucideIcon name="ChevronDown" size={18} color="#64748B" />
+                <LucideIcon name="ChevronDown" size={18} color="$gray300" />
               </SelectIcon>
             </SelectTrigger>
             <SelectPortal>
@@ -193,24 +193,24 @@ export default function DeclineModal({
 
           <Textarea
             borderWidth={1}
-            borderColor="#CBD5E1"
+            borderColor="$gray200"
             borderRadius="$lg"
             bg="$white"
             h={100}
             p="$1"
-            $focus-borderColor="#DC2626"
+            $focus-borderColor="$red600"
           >
             <TextareaInput
               value={reasonDetails}
               onChangeText={setReasonDetails}
               placeholder={SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_DETAILS}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor="$gray300"
               fontSize="$sm"
               color="$textDark900"
             />
           </Textarea>
 
-          <Text fontSize="$xs" color="#64748B" mt="$1">
+          <Text fontSize="$xs" color="$gray400" mt="$1">
             {SUPPORT_REQUEST_HINTS.DECLINE}
           </Text>
         </VStack>

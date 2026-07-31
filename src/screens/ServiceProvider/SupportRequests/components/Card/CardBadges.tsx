@@ -1,5 +1,9 @@
 import React from 'react';
 import { VStack, HStack, Box, Text, LucideIcon } from '@ui';
+import cardStyles from '../../styles';
+import {
+  SUPPORT_REQUEST_CARDBADGES,
+} from '../../constants/supportRequests.constants';
 
 interface CardBadgesProps {
   overdueDays?: number;
@@ -10,32 +14,18 @@ export const CardBadges: React.FC<CardBadgesProps> = ({ overdueDays, status = 'P
   return (
     <VStack space="xs" alignItems="flex-end">
       {/* Overdue Red Badge */}
-      <Box
-        bg="#FEF2F2"
-        borderColor="#FCA5A5"
-        borderWidth={1}
-        px="$3"
-        py="$1"
-        borderRadius="$full"
-      >
+      <Box {...cardStyles.overdueBadge}>
         <HStack space="xs" alignItems="center">
-          <LucideIcon name="AlertCircle" size={12} color="#DC2626" />
-          <Text fontSize="$xs" color="#DC2626" fontWeight="$medium">
-            Overdue ({overdueDays || 7}+ days)
+          <LucideIcon name="AlertCircle" size={12} color="$red600" />
+          <Text fontSize="$xs" color="$red600" fontWeight="$medium">
+            {SUPPORT_REQUEST_CARDBADGES.OVERDUE} ({overdueDays || 7} {SUPPORT_REQUEST_CARDBADGES.DAYS})
           </Text>
         </HStack>
       </Box>
 
       {/* Status Yellow Badge */}
-      <Box
-        bg="#FEFCE8"
-        borderColor="#FEF08A"
-        borderWidth={1}
-        px="$3"
-        py="$1"
-        borderRadius="$full"
-      >
-        <Text fontSize="$xs" color="#CA8A04" fontWeight="$bold">
+      <Box {...cardStyles.pendingBadge}>
+        <Text fontSize="$xs" color="$amber600" fontWeight="$bold">
           {status}
         </Text>
       </Box>

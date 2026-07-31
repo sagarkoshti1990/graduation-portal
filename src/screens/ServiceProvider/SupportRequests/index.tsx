@@ -49,7 +49,6 @@ const App = (): React.JSX.Element => {
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
-        console.log('[SupportRequests Screen] Fetching Provinces & Sites from API...');
         const provincesData = await getProvincesList();
         if (provincesData && provincesData.length > 0) {
           const dynamicProvinces = [
@@ -60,7 +59,6 @@ const App = (): React.JSX.Element => {
               // value: p._id || p.id || p.value || p.name?.toLowerCase(),
             })),
           ];
-          console.log('[SupportRequests Screen] Dynamic Provinces loaded:', dynamicProvinces.length);
           setProvinceOptions(dynamicProvinces);
         }
       } catch (err) {
@@ -89,7 +87,6 @@ const App = (): React.JSX.Element => {
               value: s.name?.toLowerCase() || s._id || s.id || s.value,
             })),
           ];
-          console.log('[SupportRequests Screen] Dynamic Sites loaded:', dynamicSites.length);
           setSiteOptions(dynamicSites);
         }
       } catch (err) {
@@ -122,7 +119,6 @@ const App = (): React.JSX.Element => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        console.log('[SupportRequests Screen] Fetching data for tab:', activeTab, 'with filters:', filters);
         const res = await getSupportRequests({
           tab: activeTab as any,
           province: filters.province,
@@ -130,7 +126,6 @@ const App = (): React.JSX.Element => {
           search: filters.search,
         });
         if (res?.data) {
-          console.log('[SupportRequests Screen] Successfully loaded data count:', res.data.length, res.data);
           setRequestsData(res.data);
         }
         if (res?.counts) {
@@ -144,18 +139,15 @@ const App = (): React.JSX.Element => {
   }, [activeTab, filters]);
 
   const handleFilterChange = (newFilters: Record<string, any>) => {
-    console.log('[SupportRequests Screen] Filter Changed:', newFilters);
     setFilters(newFilters);
   };
 
   const handleOpenModal = (type: SupportRequestModalType, item?: any) => {
-    console.log('[SupportRequests Screen] Opening Modal:', type, 'Item:', item);
     if (item) setSelectedItem(item);
     setActiveModal(type);
   };
 
   const handleCloseModal = () => {
-    console.log('[SupportRequests Screen] Closing Modal');
     setActiveModal(null);
   };
 
@@ -184,12 +176,12 @@ const App = (): React.JSX.Element => {
         subTitle={SUPPORT_REQUEST_TITLES.SUBHEADER}
         rightSection={
           <HStack space="xs" alignItems="center">
-            <Box bg="#EA580C" px="$3" py="$0.5" borderRadius="$full">
+            <Box {...styles.pendingHeaderBadge}>
               <Text color="$white" fontSize="$xs" fontWeight="$bold">
                 {tabCounts.pendingTotal ?? 11} Pending
               </Text>
             </Box>
-            <Box bg="#DC2626" px="$3" py="$0.5" borderRadius="$full">
+            <Box {...styles.overdueHeaderBadge}>
               <Text color="$white" fontSize="$xs" fontWeight="$bold">
                 {tabCounts.overdueTotal ?? 11} Overdue
               </Text>
@@ -200,12 +192,7 @@ const App = (): React.JSX.Element => {
       <Container {...styles.container}>
         <VStack space="md" width="100%">
           {/* Tabs Navigation */}
-          <HStack
-            borderBottomWidth={1}
-            borderBottomColor="$borderLight200"
-            alignItems="center"
-            space="sm"
-          >
+          <HStack {...styles.tabsHeader}>
             {tabs.map((tab) => (
               <TabButton
                 key={tab.key}
@@ -224,15 +211,7 @@ const App = (): React.JSX.Element => {
             onFilterChange={handleFilterChange}
             showClearButton={false}
             hideTitleHeader={true}
-            _container={{
-              borderWidth: 0,
-              bg: 'transparent',
-              p: 0,
-              mt: 0,
-              mb: '$2',
-              shadowColor: 'transparent',
-              elevation: 0,
-            }}
+            _container={styles.filterContainer}
             _input={{ size: 'sm' }}
           />
           {activeTab === 'sessions' && (

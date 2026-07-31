@@ -60,21 +60,21 @@ export default function ViewDetailsModal({
           <HStack space="xs" alignItems="center">
             {/* Status Badge */}
             <Box
-              bg="#FEFCE8"
-              borderColor="#FEF08A"
+              bg="$yellow100"
+              borderColor="$yellow200"
               borderWidth={1}
               px="$3"
               py="$0.5"
               borderRadius="$full"
             >
-              <Text fontSize="$xs" color="#CA8A04" fontWeight="$bold">
+              <Text fontSize="$xs" color="$yellow500" fontWeight="$bold">
                 {status}
               </Text>
             </Box>
 
             {/* Category/Type Tag Badge */}
-            <Box bg="#F1F5F9" px="$3" py="$0.5" borderRadius="$full">
-              <Text fontSize="$xs" color="#475569" fontWeight="$medium">
+            <Box bg="$gray100" px="$3" py="$0.5" borderRadius="$full">
+              <Text fontSize="$xs" color="$gray700" fontWeight="$medium">
                 {categoryTag}
               </Text>
             </Box>
@@ -90,16 +90,16 @@ export default function ViewDetailsModal({
               onRequestInfo?.();
             }}
             borderWidth={1}
-            borderColor="#E2E8F0"
+            borderColor="$gray200"
             bg="$white"
             px="$4"
             py="$2"
             borderRadius="$lg"
-            sx={{ ':active': { bg: '#F8FAFC' } }}
+            sx={{ ':active': { bg: '$gray50' } }}
           >
             <HStack space="md" alignItems="center">
-              <LucideIcon name="MessageSquare" size={14} color="#334155" />
-              <Text fontSize="$sm" fontWeight="$bold" color="#334155">
+              <LucideIcon name="MessageSquare" size={14} color="$textDark900" />
+              <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
                 {SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO}
               </Text>
             </HStack>
@@ -112,16 +112,16 @@ export default function ViewDetailsModal({
               onDecline?.();
             }}
             borderWidth={1}
-            borderColor="#FECDD3"
+            borderColor="$red100"
             bg="$white"
             px="$4"
             py="$2"
             borderRadius="$lg"
-            sx={{ ':active': { bg: '#FEF2F2' } }}
+            sx={{ ':active': { bg: '$red50' } }}
           >
             <HStack space="md" alignItems="center">
-              <LucideIcon name="X" size={14} color="#E11D48" />
-              <Text fontSize="$sm" fontWeight="$bold" color="#E11D48">
+              <LucideIcon name="X" size={14} color="$red600" />
+              <Text fontSize="$sm" fontWeight="$bold" color="$red600">
                 {SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE}
               </Text>
             </HStack>
@@ -133,16 +133,16 @@ export default function ViewDetailsModal({
               onClose();
               onAcceptRequest?.();
             }}
-            bg="#00a63e"
+            bg="$success600"
             px="$4.5"
             py="$2"
             borderRadius="$lg"
-            shadowColor="#15803D"
+            shadowColor="$pillarLivelihoods"
             shadowOffset={{ width: 0, height: 2 }}
             shadowOpacity={0.25}
             shadowRadius={6}
             elevation={2}
-            sx={{ ':active': { bg: '#15803D' } }}
+            sx={{ ':active': { bg: '$pillarLivelihoods' } }}
           >
             <HStack space="md" alignItems="center">
               <LucideIcon name="CheckCircle" size={16} color="$white" />
@@ -160,7 +160,7 @@ export default function ViewDetailsModal({
           <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
             Coach Information
           </Text>
-          <Box bg="#F8FAFC" p="$4" borderRadius="$xl">
+          <Box bg="$bgSidebar" p="$4" borderRadius="$xl">
             <VStack space="sm">
               <HStack space="sm" alignItems="center">
                 <LucideIcon name="User" size={16} color="$textDark500" />
@@ -178,8 +178,8 @@ export default function ViewDetailsModal({
 
               {email && (
                 <HStack space="sm" alignItems="center">
-                  <LucideIcon name="Mail" size={16} color="#2563EB" />
-                  <Text fontSize="$sm" color="#2563EB">
+                  <LucideIcon name="Mail" size={16} color="$blue600" />
+                  <Text fontSize="$sm" color="$blue600">
                     {email}
                   </Text>
                 </HStack>
@@ -187,8 +187,8 @@ export default function ViewDetailsModal({
 
               {phone && (
                 <HStack space="sm" alignItems="center">
-                  <LucideIcon name="Phone" size={16} color="#2563EB" />
-                  <Text fontSize="$sm" color="#2563EB">
+                  <LucideIcon name="Phone" size={16} color="$blue600" />
+                  <Text fontSize="$sm" color="$blue600">
                     {phone}
                   </Text>
                 </HStack>
@@ -207,7 +207,7 @@ export default function ViewDetailsModal({
               /* Training & Sessions or Extended Details Grid */
               <>
                 <HStack space="sm" width="100%">
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Participants
                     </Text>
@@ -216,7 +216,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Preferred Date
                     </Text>
@@ -227,7 +227,7 @@ export default function ViewDetailsModal({
                 </HStack>
 
                 <HStack space="sm" width="100%">
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Preferred Time
                     </Text>
@@ -236,7 +236,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Preferred Location
                     </Text>
@@ -247,7 +247,7 @@ export default function ViewDetailsModal({
                 </HStack>
 
                 <HStack space="sm" width="100%">
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Province
                     </Text>
@@ -256,7 +256,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Category
                     </Text>
@@ -270,7 +270,7 @@ export default function ViewDetailsModal({
               /* Standard Service / Asset Grid (3 fields) */
               <>
                 <HStack space="sm" width="100%">
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Participants
                     </Text>
@@ -279,7 +279,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" flex={1}>
+                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
                     <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                       Province
                     </Text>
@@ -289,7 +289,7 @@ export default function ViewDetailsModal({
                   </Box>
                 </HStack>
 
-                <Box bg="#F8FAFC" p="$3.5" borderRadius="$lg" width="100%">
+                <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" width="100%">
                   <Text fontSize="$xs" color="$textDark500" mb="$0.5">
                     Category
                   </Text>
@@ -308,7 +308,7 @@ export default function ViewDetailsModal({
             <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
               Request Justification
             </Text>
-            <Box bg="#F8FAFC" p="$4" borderRadius="$lg">
+            <Box bg="$bgSidebar" p="$4" borderRadius="$lg">
               <Text fontSize="$sm" color="$textDark700" lineHeight="$md">
                 {justification}
               </Text>
@@ -322,7 +322,7 @@ export default function ViewDetailsModal({
             <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
               Participant Details
             </Text>
-            <Box bg="#F8FAFC" p="$4" borderRadius="$lg">
+            <Box bg="$bgSidebar" p="$4" borderRadius="$lg">
               <Text fontSize="$sm" color="$textDark700" lineHeight="$md">
                 {participantDetails}
               </Text>
@@ -337,15 +337,15 @@ export default function ViewDetailsModal({
               Special Requirements
             </Text>
             <Box
-              bg="#FFFBEB"
+              bg="$optionalTaskYellowBg"
               borderWidth={1}
-              borderColor="#FDE68A"
+              borderColor="$optionalTaskYellowBorder"
               p="$3.5"
               borderRadius="$lg"
             >
               <HStack space="sm" alignItems="center">
-                <LucideIcon name="AlertCircle" size={18} color="#D97706" />
-                <Text fontSize="$sm" fontWeight="$medium" color="#D97706">
+                <LucideIcon name="AlertCircle" size={18} color="$warning500" />
+                <Text fontSize="$sm" fontWeight="$medium" color="$warning500">
                   {specialRequirements}
                 </Text>
               </HStack>

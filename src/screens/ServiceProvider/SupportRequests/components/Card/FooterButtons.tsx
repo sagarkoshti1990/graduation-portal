@@ -2,6 +2,7 @@ import React from 'react';
 import { HStack, Text, Pressable } from '@gluestack-ui/themed';
 import LucideIcon from '@components/ui/LucideIcon';
 import { SUPPORT_REQUEST_BUTTON_TEXTS } from '../../constants/supportRequests.constants';
+import cardStyles from '../../styles';
 
 export interface ActionButtonsProps {
   onViewFullDetails?: () => void;
@@ -38,17 +39,11 @@ export default function ActionButtons({
         {/* Request Info Button */}
         <Pressable
           onPress={() => onRequestInfo?.()}
-          borderWidth={1}
-          borderColor="#E2E8F0"
-          bg="$white"
-          px="$4"
-          py="$2"
-          borderRadius="$lg"
-          sx={{ ':active': { bg: '#F8FAFC' } }}
+          {...cardStyles.requestInfoBtn}
         >
           <HStack space="md" alignItems="center">
-            <LucideIcon name="MessageSquare" size={14} color="#334155" />
-            <Text fontSize="$sm" fontWeight="$bold" color="#334155">
+            <LucideIcon name="MessageSquare" size={14} color="$textDark700" />
+            <Text fontSize="$sm" fontWeight="$bold" color="$textDark700">
               {SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO}
             </Text>
           </HStack>
@@ -57,17 +52,11 @@ export default function ActionButtons({
         {/* Decline Button */}
         <Pressable
           onPress={() => onDecline?.()}
-          borderWidth={1}
-          borderColor="#FECDD3"
-          bg="$white"
-          px="$4"
-          py="$2"
-          borderRadius="$lg"
-          sx={{ ':active': { bg: '#FEF2F2' } }}
+          {...cardStyles.declineBtn}
         >
           <HStack space="md" alignItems="center">
-            <LucideIcon name="X" size={14} color="#E11D48" />
-            <Text fontSize="$sm" fontWeight="$bold" color="#E11D48">
+            <LucideIcon name="X" size={14} color="$red600" />
+            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
               {SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE}
             </Text>
           </HStack>
@@ -76,16 +65,7 @@ export default function ActionButtons({
         {/* Accept & Schedule Button */}
         <Pressable
           onPress={() => onAcceptAndSchedule?.()}
-          bg="#00a63e"
-          px="$4.5"
-          py="$2"
-          borderRadius="$lg"
-          shadowColor="#15803D"
-          shadowOffset={{ width: 0, height: 2 }}
-          shadowOpacity={0.25}
-          shadowRadius={6}
-          elevation={2}
-          sx={{ ':active': { bg: '#15803D' } }}
+          {...cardStyles.acceptBtn}
         >
           <HStack space="md" alignItems="center">
             <LucideIcon name="CheckCircle" size={16} color="$white" />

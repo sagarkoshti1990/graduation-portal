@@ -88,7 +88,6 @@ export const getSupportRequests = async (
 
   // Mock Data fallback & filtering logic
   const { tab = 'sessions', province, site, search } = params || {};
-  console.log('[ServiceProviderService] getSupportRequests invoked with params:', params);
 
   const allCategories = supportRequestsMock as Record<string, SupportRequestItem[]>;
   let list: SupportRequestItem[] = allCategories[tab] || [];
@@ -128,7 +127,6 @@ export const getSupportRequests = async (
     overdueTotal: 11,
   };
 
-  console.log(`[ServiceProviderService] Returning ${list.length} items for tab: ${tab}`);
   return {
     success: true,
     data: list,

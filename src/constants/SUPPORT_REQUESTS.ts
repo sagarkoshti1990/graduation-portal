@@ -13,7 +13,8 @@ export const SUPPORT_REQUEST_BUTTON_TEXTS = {
 export const SUPPORT_REQUEST_TITLES = {
   HEADER: 'Support Requests',
   SUBHEADER: 'Review and respond to requests from Coaches',
-  VIEW_DETAILS: 'Request Details',
+  VIEW_DETAILS: 'View Details',
+  REQUEST_DETAILS: 'Request Details',
   REQUEST_INFO: 'Request More Information',
   DECLINE: 'Decline Request',
   ACCEPT_SCHEDULE: 'Accept & Schedule Training',
@@ -47,6 +48,7 @@ export const SUPPORT_REQUEST_LABELS = {
   MEETING_LINK: 'Meeting Link (if online)',
   NOTES_FOR_COACH: 'Notes for Coach (optional)',
   PARTICIPANTS: 'Participants',
+  REQUESTED_DATE: 'Requested Date',
   PREFERRED_DATE: 'Preferred Date',
   PREFERRED_TIME: 'Preferred Time',
   PREFERRED_LOCATION: 'Preferred Location',
@@ -78,4 +80,9 @@ export const SUPPORT_REQUEST_FALLBACKS = {
   LOCATION: 'Online via Zoom',
   MEETING_LINK: 'https://meet.example.com/sp-session',
   NOT_AVAILABLE: 'N/A',
+} as const;
+
+export const SUPPORT_REQUEST_CARDBADGES = {
+  OVERDUE: 'Overdue',
+  DAYS: 'days'
 } as const;

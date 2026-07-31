@@ -53,14 +53,14 @@ export default function RequestInfoModal({
           <Pressable
             onPress={handleClose}
             borderWidth={1}
-            borderColor="#E2E8F0"
+            borderColor="$gray200"
             bg="$white"
             px="$4"
             py="$2.5"
             borderRadius="$lg"
-            sx={{ ':active': { bg: '#F8FAFC' } }}
+            sx={{ ':active': { bg: '$gray50' } }}
           >
-            <Text fontSize="$sm" fontWeight="$bold" color="#334155">
+            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
               {SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL}
             </Text>
           </Pressable>
@@ -68,7 +68,7 @@ export default function RequestInfoModal({
           {/* Send Request Button */}
           <Pressable
             onPress={handleSubmit}
-            bg="#800020"
+            bg="$red900"
             px="$5"
             py="$2.5"
             borderRadius="$lg"
@@ -87,27 +87,27 @@ export default function RequestInfoModal({
       <VStack space="md" width="100%" py="$2">
         {/* Light Blue Summary Box */}
         <Box
-          bg="#EFF6FF"
+          bg="$blue50"
           borderWidth={1}
-          borderColor="#BFDBFE"
+          borderColor="$blue200"
           p="$4"
           borderRadius="$xl"
         >
           <VStack space="xs">
             <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="#1E3A8A">
+              <Text fontSize="$sm" fontWeight="$bold" color="$blue700">
                 {SUPPORT_REQUEST_LABELS.REQUEST}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="#1E40AF">
+              <Text fontSize="$sm" fontWeight="$medium" color="$blue500">
                 {requestTitle}
               </Text>
             </HStack>
 
             <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="#1E3A8A">
+              <Text fontSize="$sm" fontWeight="$bold" color="$blue700">
                 {SUPPORT_REQUEST_LABELS.COACH}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="#1E40AF">
+              <Text fontSize="$sm" fontWeight="$medium" color="$blue500">
                 {coachName}
               </Text>
             </HStack>
@@ -120,7 +120,7 @@ export default function RequestInfoModal({
             <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
               {SUPPORT_REQUEST_LABELS.YOUR_QUESTION}
             </Text>
-            <Text fontSize="$sm" fontWeight="$bold" color="#DC2626">
+            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
               *
             </Text>
           </HStack>
@@ -128,24 +128,24 @@ export default function RequestInfoModal({
           {/* Multiline Text Input */}
           <Textarea
             borderWidth={1}
-            borderColor="#CBD5E1"
+            borderColor="$gray200"
             borderRadius="$lg"
             bg="$white"
             h={110}
             p="$1"
-            $focus-borderColor="#800020"
+            $focus-borderColor="$red600"
           >
             <TextareaInput
               value={message}
               onChangeText={setMessage}
               placeholder={SUPPORT_REQUEST_PLACEHOLDERS.REQUEST_INFO}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor="$gray300"
               fontSize="$sm"
               color="$textDark900"
             />
           </Textarea>
 
-          <Text fontSize="$xs" color="#64748B" mt="$1">
+          <Text fontSize="$xs" color="$gray300" mt="$1">
             {SUPPORT_REQUEST_HINTS.REQUEST_INFO}
           </Text>
         </VStack>

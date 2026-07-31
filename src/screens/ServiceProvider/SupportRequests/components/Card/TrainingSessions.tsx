@@ -10,6 +10,7 @@ import LucideIcon from '@components/ui/LucideIcon';
 // import ActionButtons from "../Buttons/ActionButtons";
 import ActionButtons from "./FooterButtons";
 import CardBadges from "./CardBadges";
+import cardStyles from '../../styles';
 
 // ---------- Types ----------
 
@@ -46,24 +47,14 @@ function Card({
 }: CardProps) {
   return (
     <Box
-      bg="$white"
-      borderRadius="$2xl"
-      borderWidth={1}
-      borderColor="$borderLight200"
-      p="$5"
-      shadowColor="$black"
-      shadowOffset={{ width: 0, height: 4 }}
-      shadowOpacity={0.06}
-      shadowRadius={12}
-      elevation={3}
-      width="100%"
+      {...cardStyles.cardContainer}
     >
       {/* Top Header Row */}
       <HStack justifyContent="space-between" alignItems="flex-start" mb="$4">
         {/* Left Side: Title & Sub-metadata */}
         <VStack space="xs" flex={1} mr="$3">
           <HStack space="sm" alignItems="center">
-            <LucideIcon name="GraduationCap" size={19} color="#2563EB" />
+            <LucideIcon name="GraduationCap" size={19} color="$blue600" />
             <Text fontSize="$md" fontWeight="$bold" color="$textDark900">
               {item.title}
             </Text>
@@ -99,7 +90,7 @@ function Card({
       </HStack>
 
       {/* Middle Light-Gray Detail Box */}
-      <Box bg="#F8FAFC" borderRadius="$lg" px="$5" py="$4" mb="$4">
+      <Box {...cardStyles.detailBox}>
         <HStack alignItems="center">
           {/* Left Column */}
           <VStack space="sm" flex={1}>
