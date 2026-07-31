@@ -8,10 +8,11 @@ import AssetsCard from './components/Card/Assests';
 import { TabButton } from '@components/Tabs';
 import FilterButton from '@components/Filter';
 import SupportRequestsModals, { SupportRequestModalType } from './components/modals/SupportRequestsModals';
-import { SUPPORT_REQUEST_TITLES } from '@constants/SUPPORT_REQUESTS';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getSupportRequests } from '../../../services/serviceProvider';
 import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
+
+const BASE_PATH = 'supportProvider.supportRequests';
 
 const DEFAULT_PROVINCE_OPTIONS = [
   { label: 'All Provinces', value: 'all-provinces' },
@@ -154,17 +155,17 @@ const App = (): React.JSX.Element => {
   const tabs = [
     {
       key: 'sessions',
-      label: `Sessions & Trainings (${tabCounts.sessions ?? 0})`,
+      label: `${t(`${BASE_PATH}.tabs.sessions`)} (${tabCounts.sessions ?? 0})`,
       icon: 'Package',
     },
     {
       key: 'additional_services',
-      label: `Additional Services (${tabCounts.additional_services ?? 0})`,
+      label: `${t(`${BASE_PATH}.tabs.additional_services`)} (${tabCounts.additional_services ?? 0})`,
       icon: 'Package',
     },
     {
       key: 'assets',
-      label: `Assets (${tabCounts.assets ?? 0})`,
+      label: `${t(`${BASE_PATH}.tabs.assets`)} (${tabCounts.assets ?? 0})`,
       icon: 'Package',
     },
   ];
@@ -172,26 +173,25 @@ const App = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title={t(SUPPORT_REQUEST_TITLES.HEADER)}
-        subTitle={t(SUPPORT_REQUEST_TITLES.SUBHEADER)}
+        title={t(`${BASE_PATH}.titles.header`)}
+        subTitle={t(`${BASE_PATH}.titles.subheader`)}
         rightSection={
           <HStack {...styles.labelRow}>
             <Box {...styles.pendingHeaderBadge}>
               <Text {...styles.headerBadgeText}>
-                {tabCounts.pendingTotal ?? 11} Pending
+                {tabCounts.pendingTotal ?? 0} {t(`${BASE_PATH}.tabs.pending`)}
               </Text>
             </Box>
             <Box {...styles.overdueHeaderBadge}>
               <Text {...styles.headerBadgeText}>
-                {tabCounts.overdueTotal ?? 11} Overdue
+                {tabCounts.overdueTotal ?? 0} {t(`${BASE_PATH}.tabs.overdue`)}
               </Text>
             </Box>
           </HStack>
         }
       />
-      <Container {...styles.container}>
-        <VStack {...styles.screenVStack}>
-          {/* Tabs Navigation */}
+      <Box {...styles.subbox} flex={1}>
+        <Container {...styles.container} py="$0">
           <HStack {...styles.tabsHeader}>
             {tabs.map((tab) => (
               <TabButton
@@ -204,8 +204,11 @@ const App = (): React.JSX.Element => {
               />
             ))}
           </HStack>
-
-          {/* Filter Bar without card border, placed directly under tabs */}
+        </Container>
+      </Box>
+      <Box {...styles.subbox} flex={1}>
+        {/* Filter Bar without card border, placed directly under tabs */}
+        <Container {...styles.container} py="$0">
           <FilterButton
             data={filterOptions}
             onFilterChange={handleFilterChange}
@@ -214,6 +217,12 @@ const App = (): React.JSX.Element => {
             _container={styles.filterContainer}
             _input={styles.filterInputProps}
           />
+        </Container>
+      </Box>
+      <Container {...styles.container}>
+        <VStack {...styles.screenVStack}>
+          {/* Tabs Navigation */}
+
           {activeTab === 'sessions' && (
             <TrainingSessionsCard
               items={requestsData}

@@ -1,9 +1,10 @@
 import React from 'react';
 import { HStack, Text, Pressable } from '@gluestack-ui/themed';
 import LucideIcon from '@components/ui/LucideIcon';
-import { SUPPORT_REQUEST_BUTTON_TEXTS } from '@constants/SUPPORT_REQUESTS';
 import cardStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
 
 export interface ActionButtonsProps {
   onViewFullDetails?: () => void;
@@ -18,7 +19,7 @@ export default function ActionButtons({
   onRequestInfo,
   onDecline,
   onAcceptAndSchedule,
-  acceptLabel = SUPPORT_REQUEST_BUTTON_TEXTS.ACCEPT_SCHEDULE,
+  acceptLabel = `${BASE_PATH}.buttonTexts.acceptSchedule`,
 }: ActionButtonsProps): React.JSX.Element {
   const { t } = useLanguage();
   return (
@@ -31,7 +32,7 @@ export default function ActionButtons({
         <HStack {...cardStyles.buttonRowMd}>
           <LucideIcon name="Eye" {...cardStyles.iconDetails} />
           <Text {...cardStyles.textDetails}>
-            {t(SUPPORT_REQUEST_BUTTON_TEXTS.VIEW_FULL_DETAILS)}
+            {t(`${BASE_PATH}.buttonTexts.viewFullDetails`)}
           </Text>
         </HStack>
       </Pressable>
@@ -46,7 +47,7 @@ export default function ActionButtons({
           <HStack {...cardStyles.buttonRowMd}>
             <LucideIcon name="MessageSquare" {...cardStyles.iconRequestInfo} />
             <Text {...cardStyles.textRequestInfo}>
-              {t(SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO)}
+              {t(`${BASE_PATH}.buttonTexts.requestInfo`)}
             </Text>
           </HStack>
         </Pressable>
@@ -59,7 +60,7 @@ export default function ActionButtons({
           <HStack {...cardStyles.buttonRowMd}>
             <LucideIcon name="X" {...cardStyles.iconDecline} />
             <Text {...cardStyles.textDecline}>
-              {t(SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE)}
+              {t(`${BASE_PATH}.buttonTexts.decline`)}
             </Text>
           </HStack>
         </Pressable>

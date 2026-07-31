@@ -2,9 +2,10 @@ import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
-import { SUPPORT_REQUEST_BUTTON_TEXTS, SUPPORT_REQUEST_TITLES, SUPPORT_REQUEST_LABELS } from '@constants/SUPPORT_REQUESTS';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
 
 export interface ViewDetailsModalProps {
   isOpen: boolean;
@@ -28,27 +29,27 @@ export default function ViewDetailsModal({
   if (!isOpen || !item) return <></>;
 
   const hasPreferredInfo =
-    item.type === 'Training' ||
-    !!item.preferredDate ||
-    !!item.preferredTime ||
-    !!item.preferredLocation;
+    item?.type === 'Training' ||
+    !!item?.preferredDate ||
+    !!item?.preferredTime ||
+    !!item?.preferredLocation;
 
-  const title = item.title;
-  const status = item.status || 'Pending';
-  const categoryTag = item.type || (hasPreferredInfo ? 'Training' : 'Service/Asset');
+  const title = item?.title || '';
+  const status = item?.status || 'Pending';
+  const categoryTag = item?.type || (hasPreferredInfo ? 'Training' : 'Service/Asset');
 
-  const coachName = item.coach;
-  const hubName = item.hub;
-  const email = item.email;
-  const phone = item.phone;
+  const coachName = item?.coach;
+  const hubName = item?.hub;
+  const email = item?.email;
+  const phone = item?.phone;
 
-  const participantsCount = `${item.participants} participants`;
-  const province = item.province || item.location;
-  const category = item.category;
+  const participantsCount = `${item?.participants ?? 0} participants`;
+  const province = item?.province || item?.location;
+  const category = item?.category;
 
-  const justification = item.justification;
-  const participantDetails = item.participantDetails;
-  const specialRequirements = item.specialRequirements;
+  const justification = item?.justification;
+  const participantDetails = item?.participantDetails;
+  const specialRequirements = item?.specialRequirements;
 
   return (
     <Modal
@@ -90,7 +91,7 @@ export default function ViewDetailsModal({
             <HStack {...modalStyles.buttonRowMd}>
               <LucideIcon name="MessageSquare" {...modalStyles.iconDetails} />
               <Text {...modalStyles.textBtnRequestInfo}>
-                {t(SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO)}
+                {t(`${BASE_PATH}.buttonTexts.requestInfo`)}
               </Text>
             </HStack>
           </Pressable>
@@ -106,7 +107,7 @@ export default function ViewDetailsModal({
             <HStack {...modalStyles.buttonRowMd}>
               <LucideIcon name="X" {...modalStyles.iconDecline} />
               <Text {...modalStyles.textDecline}>
-                {t(SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE)}
+                {t(`${BASE_PATH}.buttonTexts.decline`)}
               </Text>
             </HStack>
           </Pressable>
@@ -122,7 +123,7 @@ export default function ViewDetailsModal({
             <HStack {...modalStyles.buttonRowMd}>
               <LucideIcon name="CheckCircle" {...modalStyles.iconAccept} />
               <Text {...modalStyles.textAccept}>
-                {t(SUPPORT_REQUEST_BUTTON_TEXTS.ACCEPT_REQUEST)}
+                {t(`${BASE_PATH}.buttonTexts.acceptRequest`)}
               </Text>
             </HStack>
           </Pressable>
@@ -133,7 +134,7 @@ export default function ViewDetailsModal({
         {/* Coach Information */}
         <VStack {...modalStyles.modalColFullWidth}>
           <Text {...modalStyles.sectionHeadingText}>
-            {t(SUPPORT_REQUEST_TITLES.COACH_INFORMATION)}
+            {t(`${BASE_PATH}.titles.coachInformation`)}
           </Text>
           <Box {...modalStyles.coachInfoBox}>
             <VStack {...modalStyles.coachInfoVStack}>
@@ -175,7 +176,7 @@ export default function ViewDetailsModal({
         {/* Request Details */}
         <VStack {...modalStyles.modalColFullWidth}>
           <Text {...modalStyles.sectionHeadingText}>
-            {t(SUPPORT_REQUEST_TITLES.REQUEST_DETAILS)}
+            {t(`${BASE_PATH}.titles.requestDetails`)}
           </Text>
           <VStack {...modalStyles.coachInfoVStack}>
             {hasPreferredInfo ? (
@@ -184,7 +185,7 @@ export default function ViewDetailsModal({
                 <HStack {...modalStyles.modalRowFullWidth}>
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PARTICIPANTS)}
+                      {t(`${BASE_PATH}.labels.participants`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
                       {participantsCount}
@@ -193,10 +194,10 @@ export default function ViewDetailsModal({
 
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PREFERRED_DATE)}
+                      {t(`${BASE_PATH}.labels.preferredDate`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
-                      {item.preferredDate || 'N/A'}
+                      {item?.preferredDate || 'N/A'}
                     </Text>
                   </Box>
                 </HStack>
@@ -204,19 +205,19 @@ export default function ViewDetailsModal({
                 <HStack {...modalStyles.modalRowFullWidth}>
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PREFERRED_TIME)}
+                      {t(`${BASE_PATH}.labels.preferredTime`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
-                      {item.preferredTime || 'N/A'}
+                      {item?.preferredTime || 'N/A'}
                     </Text>
                   </Box>
 
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PREFERRED_LOCATION)}
+                      {t(`${BASE_PATH}.labels.preferredLocation`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
-                      {item.preferredLocation || 'N/A'}
+                      {item?.preferredLocation || 'N/A'}
                     </Text>
                   </Box>
                 </HStack>
@@ -224,7 +225,7 @@ export default function ViewDetailsModal({
                 <HStack {...modalStyles.modalRowFullWidth}>
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PROVINCE)}
+                      {t(`${BASE_PATH}.labels.province`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
                       {province}
@@ -233,7 +234,7 @@ export default function ViewDetailsModal({
 
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.CATEGORY)}
+                      {t(`${BASE_PATH}.labels.category`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
                       {category}
@@ -247,7 +248,7 @@ export default function ViewDetailsModal({
                 <HStack {...modalStyles.modalRowFullWidth}>
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PARTICIPANTS)}
+                      {t(`${BASE_PATH}.labels.participants`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
                       {participantsCount}
@@ -256,7 +257,7 @@ export default function ViewDetailsModal({
 
                   <Box {...modalStyles.gridCardBox}>
                     <Text {...modalStyles.gridCardLabel}>
-                      {t(SUPPORT_REQUEST_LABELS.PROVINCE)}
+                      {t(`${BASE_PATH}.labels.province`)}
                     </Text>
                     <Text {...modalStyles.gridCardValue}>
                       {province}
@@ -266,7 +267,7 @@ export default function ViewDetailsModal({
 
                 <Box {...modalStyles.gridCardBoxFullWidth}>
                   <Text {...modalStyles.gridCardLabel}>
-                    {t(SUPPORT_REQUEST_LABELS.CATEGORY)}
+                    {t(`${BASE_PATH}.labels.category`)}
                   </Text>
                   <Text {...modalStyles.gridCardValue}>
                     {category}
@@ -281,7 +282,7 @@ export default function ViewDetailsModal({
         {justification && (
           <VStack {...modalStyles.modalColFullWidth}>
             <Text {...modalStyles.sectionHeadingText}>
-              {t(SUPPORT_REQUEST_LABELS.REQUEST_JUSTIFICATION)}
+              {t(`${BASE_PATH}.labels.requestJustification`)}
             </Text>
             <Box {...modalStyles.justificationBox}>
               <Text {...modalStyles.justificationText}>
@@ -295,7 +296,7 @@ export default function ViewDetailsModal({
         {participantDetails && (
           <VStack {...modalStyles.modalColFullWidth}>
             <Text {...modalStyles.sectionHeadingText}>
-              {t(SUPPORT_REQUEST_LABELS.PARTICIPANT_DETAILS)}
+              {t(`${BASE_PATH}.labels.participantDetails`)}
             </Text>
             <Box {...modalStyles.justificationBox}>
               <Text {...modalStyles.justificationText}>
@@ -309,7 +310,7 @@ export default function ViewDetailsModal({
         {specialRequirements && (
           <VStack {...modalStyles.modalColFullWidth}>
             <Text {...modalStyles.sectionHeadingText}>
-              {t(SUPPORT_REQUEST_LABELS.SPECIAL_REQUIREMENTS)}
+              {t(`${BASE_PATH}.labels.specialRequirements`)}
             </Text>
             <Box {...modalStyles.specialReqBox}>
               <HStack {...modalStyles.coachInfoRow}>

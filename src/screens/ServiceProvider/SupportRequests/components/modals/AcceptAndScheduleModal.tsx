@@ -21,15 +21,17 @@ import {
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
 import modalStyles from '../../styles';
-import {
-  SUPPORT_REQUEST_BUTTON_TEXTS,
-  SUPPORT_REQUEST_TITLES,
-  SUPPORT_REQUEST_LABELS,
-  SUPPORT_REQUEST_PLACEHOLDERS,
-  SUPPORT_REQUEST_FALLBACKS,
-  DURATION_OPTIONS,
-} from '@constants/SUPPORT_REQUESTS';
 import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
+
+const DURATION_OPTIONS = [
+  { label: `${BASE_PATH}.durationOptions.1hour`, value: '1_hour' },
+  { label: `${BASE_PATH}.durationOptions.1_5hours`, value: '1.5_hours' },
+  { label: `${BASE_PATH}.durationOptions.2hours`, value: '2_hours' },
+  { label: `${BASE_PATH}.durationOptions.3hours`, value: '3_hours' },
+  { label: `${BASE_PATH}.durationOptions.fullDay`, value: 'full_day' },
+];
 
 export interface AcceptAndScheduleModalProps {
   isOpen: boolean;
@@ -61,29 +63,29 @@ export default function AcceptAndScheduleModal({
 
   useEffect(() => {
     if (item) {
-      setDate(item.preferredDate || SUPPORT_REQUEST_FALLBACKS.DATE);
+      setDate(item?.preferredDate || t(`${BASE_PATH}.fallbacks.date`));
       setTime(
-        item.preferredTime
+        item?.preferredTime
           ? `${item.preferredTime} AM`
-          : SUPPORT_REQUEST_FALLBACKS.TIME,
+          : t(`${BASE_PATH}.fallbacks.time`),
       );
       setLocation(
-        item.preferredLocation ||
-          item.location ||
-          SUPPORT_REQUEST_FALLBACKS.LOCATION,
+        item?.preferredLocation ||
+          item?.location ||
+          t(`${BASE_PATH}.fallbacks.location`),
       );
-      setMeetingLink(SUPPORT_REQUEST_FALLBACKS.MEETING_LINK);
+      setMeetingLink(t(`${BASE_PATH}.fallbacks.meetingLink`));
     }
-  }, [item]);
+  }, [item, t]);
 
   if (!isOpen) return <></>;
 
-  const coachName = item?.coach || 'Coach';
+  const coachName = item?.coach || '';
   const participants = item?.participants || 0;
   const requestedDate =
     item?.requestedDate ||
     item?.preferredDate ||
-    SUPPORT_REQUEST_FALLBACKS.DATE;
+    t(`${BASE_PATH}.fallbacks.date`);
 
   const handleSubmit = () => {
     onSubmit?.({
@@ -102,7 +104,7 @@ export default function AcceptAndScheduleModal({
       isOpen={isOpen}
       onClose={onClose}
       {...modalStyles.modalPropsLg}
-      headerTitle={t(SUPPORT_REQUEST_TITLES.ACCEPT_SCHEDULE)}
+      headerTitle={t(`${BASE_PATH}.titles.acceptSchedule`)}
       footerContent={
         <HStack {...modalStyles.modalFooterRow}>
           {/* Cancel Button */}
@@ -111,7 +113,7 @@ export default function AcceptAndScheduleModal({
             {...modalStyles.modalCancelBtn}
           >
             <Text {...modalStyles.modalCancelText}>
-              {t(SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL)}
+              {t(`${BASE_PATH}.buttonTexts.cancel`)}
             </Text>
           </Pressable>
 
@@ -123,7 +125,7 @@ export default function AcceptAndScheduleModal({
             <HStack {...modalStyles.modalConfirmRow}>
               <LucideIcon name="CheckCircle" {...modalStyles.iconConfirmCheck} />
               <Text {...modalStyles.modalConfirmText}>
-                {t(SUPPORT_REQUEST_BUTTON_TEXTS.CONFIRM_SCHEDULE)}
+                {t(`${BASE_PATH}.buttonTexts.confirmSchedule`)}
               </Text>
             </HStack>
           </Pressable>
@@ -137,17 +139,17 @@ export default function AcceptAndScheduleModal({
             <HStack {...modalStyles.summaryTitleRow}>
               <LucideIcon name="Info" {...modalStyles.iconSummaryInfo} />
               <Text {...modalStyles.summaryTitleText}>
-                {t(SUPPORT_REQUEST_TITLES.REQUEST_DETAILS)}
+                {t(`${BASE_PATH}.titles.requestDetails`)}
               </Text>
             </HStack>
             <Text {...modalStyles.summaryDetailText}>
-              • {t(SUPPORT_REQUEST_LABELS.COACH)}: {coachName}
+              • {t(`${BASE_PATH}.labels.coach`)}: {coachName}
             </Text>
             <Text {...modalStyles.summaryDetailText}>
-              • {t(SUPPORT_REQUEST_LABELS.PARTICIPANTS)}: {participants}
+              • {t(`${BASE_PATH}.labels.participants`)}: {participants}
             </Text>
             <Text {...modalStyles.summaryDetailText}>
-              • {t(SUPPORT_REQUEST_LABELS.REQUESTED_DATE)}: {requestedDate}
+              • {t(`${BASE_PATH}.labels.requestedDate`)}: {requestedDate}
             </Text>
           </VStack>
         </Box>
@@ -158,7 +160,7 @@ export default function AcceptAndScheduleModal({
           <VStack {...modalStyles.modalColFlex1}>
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.labelText}>
-                {t(SUPPORT_REQUEST_LABELS.DATE)}
+                {t(`${BASE_PATH}.labels.date`)}
               </Text>
               <Text {...modalStyles.requiredAsterisk}>
                 *
@@ -179,7 +181,7 @@ export default function AcceptAndScheduleModal({
           <VStack {...modalStyles.modalColFlex1}>
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.labelText}>
-                {t(SUPPORT_REQUEST_LABELS.TIME)}
+                {t(`${BASE_PATH}.labels.time`)}
               </Text>
               <Text {...modalStyles.requiredAsterisk}>
                 *
@@ -201,7 +203,7 @@ export default function AcceptAndScheduleModal({
         <VStack {...modalStyles.modalColFullWidth}>
           <HStack {...modalStyles.labelRow}>
             <Text {...modalStyles.labelText}>
-              {t(SUPPORT_REQUEST_LABELS.DURATION)}
+              {t(`${BASE_PATH}.labels.duration`)}
             </Text>
             <Text {...modalStyles.requiredAsterisk}>
               *
@@ -229,14 +231,14 @@ export default function AcceptAndScheduleModal({
         {/* Location / Venue Input */}
         <VStack {...modalStyles.modalColFullWidth}>
           <Text {...modalStyles.labelText}>
-            {t(SUPPORT_REQUEST_LABELS.LOCATION_VENUE)}
+            {t(`${BASE_PATH}.labels.locationVenue`)}
           </Text>
 
           <Input {...modalStyles.inputStyle}>
             <InputField
               value={location}
               onChangeText={setLocation}
-              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.LOCATION)}
+              placeholder={t(`${BASE_PATH}.placeholders.location`)}
               {...modalStyles.modalInputPlaceholder}
             />
           </Input>
@@ -245,14 +247,14 @@ export default function AcceptAndScheduleModal({
         {/* Meeting Link Input */}
         <VStack {...modalStyles.modalColFullWidth}>
           <Text {...modalStyles.labelText}>
-            {t(SUPPORT_REQUEST_LABELS.MEETING_LINK)}
+            {t(`${BASE_PATH}.labels.meetingLink`)}
           </Text>
 
           <Input {...modalStyles.inputStyle}>
             <InputField
               value={meetingLink}
               onChangeText={setMeetingLink}
-              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.MEETING_LINK)}
+              placeholder={t(`${BASE_PATH}.placeholders.meetingLink`)}
               {...modalStyles.modalInputPlaceholder}
             />
           </Input>
@@ -261,14 +263,14 @@ export default function AcceptAndScheduleModal({
         {/* Notes for Coach */}
         <VStack {...modalStyles.modalColFullWidth}>
           <Text {...modalStyles.labelText}>
-            {t(SUPPORT_REQUEST_LABELS.NOTES_FOR_COACH)}
+            {t(`${BASE_PATH}.labels.notesForCoach`)}
           </Text>
 
           <Textarea {...modalStyles.textareaStyle}>
             <TextareaInput
               value={notes}
               onChangeText={setNotes}
-              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.NOTES)}
+              placeholder={t(`${BASE_PATH}.placeholders.notes`)}
               {...modalStyles.modalInputPlaceholder}
             />
           </Textarea>

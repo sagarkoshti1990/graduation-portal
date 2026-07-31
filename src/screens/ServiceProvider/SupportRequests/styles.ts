@@ -120,9 +120,12 @@ export default {
     elevation: 2,
     sx: { ':active': { bg: '$green700' } },
   } as const,
-  tabsHeader: {
+  subbox:{
+    bg:"$white",
     borderBottomWidth: 1,
     borderBottomColor: '$borderLight200',
+  },
+  tabsHeader: {
     alignItems: 'center',
     space: 'sm',
   } as const,
@@ -131,7 +134,8 @@ export default {
     bg: 'transparent',
     p: 0,
     mt: 0,
-    mb: '$2',
+    mb: '$0',
+    py:"$3",
     shadowColor: 'transparent',
     elevation: 0,
   } as const,

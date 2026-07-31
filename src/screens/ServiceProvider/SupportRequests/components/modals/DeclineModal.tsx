@@ -18,16 +18,17 @@ import {
 } from '@gluestack-ui/themed';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
-import {
-  SUPPORT_REQUEST_BUTTON_TEXTS,
-  SUPPORT_REQUEST_TITLES,
-  SUPPORT_REQUEST_LABELS,
-  SUPPORT_REQUEST_PLACEHOLDERS,
-  SUPPORT_REQUEST_HINTS,
-  DECLINE_REASON_OPTIONS,
-} from '@constants/SUPPORT_REQUESTS';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
+
+const DECLINE_REASON_OPTIONS = [
+  { label: `${BASE_PATH}.declineReasons.capacity`, value: 'capacity' },
+  { label: `${BASE_PATH}.declineReasons.outsideScope`, value: 'outside_scope' },
+  { label: `${BASE_PATH}.declineReasons.scheduleConflict`, value: 'schedule_conflict' },
+  { label: `${BASE_PATH}.declineReasons.other`, value: 'other' },
+];
 
 export interface DeclineModalProps {
   isOpen: boolean;
@@ -69,7 +70,7 @@ export default function DeclineModal({
       isOpen={isOpen}
       onClose={handleClose}
       {...modalStyles.modalPropsMd}
-      headerTitle={t(SUPPORT_REQUEST_TITLES.DECLINE)}
+      headerTitle={t(`${BASE_PATH}.titles.decline`)}
       footerContent={
         <HStack {...modalStyles.modalFooterRow}>
           {/* Cancel Button */}
@@ -78,7 +79,7 @@ export default function DeclineModal({
             {...modalStyles.declineCancelBtn}
           >
             <Text {...modalStyles.declineModalCancelText}>
-              {t(SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL)}
+              {t(`${BASE_PATH}.buttonTexts.cancel`)}
             </Text>
           </Pressable>
 
@@ -90,7 +91,7 @@ export default function DeclineModal({
             <HStack {...modalStyles.modalConfirmRow}>
               <LucideIcon name="X" {...modalStyles.iconDeclineConfirm} />
               <Text {...modalStyles.modalConfirmText}>
-                {t(SUPPORT_REQUEST_BUTTON_TEXTS.CONFIRM_DECLINE)}
+                {t(`${BASE_PATH}.buttonTexts.confirmDecline`)}
               </Text>
             </HStack>
           </Pressable>
@@ -103,7 +104,7 @@ export default function DeclineModal({
           <VStack {...modalStyles.summaryVStack}>
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.declineSummaryTitleText}>
-                {t(SUPPORT_REQUEST_LABELS.REQUEST)}
+                {t(`${BASE_PATH}.labels.request`)}
               </Text>
               <Text {...modalStyles.declineSummaryValueText}>
                 {requestTitle}
@@ -112,7 +113,7 @@ export default function DeclineModal({
 
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.declineSummaryTitleText}>
-                {t(SUPPORT_REQUEST_LABELS.COACH)}
+                {t(`${BASE_PATH}.labels.coach`)}
               </Text>
               <Text {...modalStyles.declineSummaryValueText}>
                 {coachName}
@@ -125,7 +126,7 @@ export default function DeclineModal({
         <VStack {...modalStyles.modalColFullWidth}>
           <HStack {...modalStyles.labelRow}>
             <Text {...modalStyles.labelText}>
-              {t(SUPPORT_REQUEST_LABELS.SELECT_REASON)}
+              {t(`${BASE_PATH}.labels.selectReason`)}
             </Text>
             <Text {...modalStyles.requiredAsterisk}>
               *
@@ -138,7 +139,7 @@ export default function DeclineModal({
           >
             <SelectTrigger {...modalStyles.declineSelectTrigger}>
               <SelectInput
-                placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_REASON)}
+                placeholder={t(`${BASE_PATH}.placeholders.declineReason`)}
                 {...modalStyles.declineSelectInputPlaceholder}
               />
               <SelectIcon {...modalStyles.selectIconStyle}>
@@ -163,20 +164,20 @@ export default function DeclineModal({
         {/* Reason Details Input */}
         <VStack {...modalStyles.modalColFullWidth}>
           <Text {...modalStyles.labelText}>
-            {t(SUPPORT_REQUEST_LABELS.REASON_DETAILS)}
+            {t(`${BASE_PATH}.labels.reasonDetails`)}
           </Text>
 
           <Textarea {...modalStyles.declineTextarea}>
             <TextareaInput
               value={reasonDetails}
               onChangeText={setReasonDetails}
-              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_DETAILS)}
+              placeholder={t(`${BASE_PATH}.placeholders.declineDetails`)}
               {...modalStyles.declineSelectInputPlaceholder}
             />
           </Textarea>
 
           <Text {...modalStyles.declineHintText}>
-            {t(SUPPORT_REQUEST_HINTS.DECLINE)}
+            {t(`${BASE_PATH}.hints.decline`)}
           </Text>
         </VStack>
       </VStack>

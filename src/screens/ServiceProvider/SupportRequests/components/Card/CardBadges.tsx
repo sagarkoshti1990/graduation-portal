@@ -1,8 +1,9 @@
 import React from 'react';
 import { VStack, HStack, Box, Text, LucideIcon } from '@ui';
 import cardStyles from '../../styles';
-import { SUPPORT_REQUEST_CARDBADGES } from '@constants/SUPPORT_REQUESTS';
 import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
 
 interface CardBadgesProps {
   overdueDays?: number;
@@ -18,7 +19,7 @@ export const CardBadges: React.FC<CardBadgesProps> = ({ overdueDays, status = 'P
         <HStack {...cardStyles.badgeRow}>
           <LucideIcon name="AlertCircle" {...cardStyles.badgeIconOverdue} />
           <Text {...cardStyles.badgeTextOverdue}>
-            {t(SUPPORT_REQUEST_CARDBADGES.OVERDUE)} ({overdueDays || 7} {t(SUPPORT_REQUEST_CARDBADGES.DAYS)})
+            {t(`${BASE_PATH}.cardBadges.overdue`)} ({overdueDays || 7} {t(`${BASE_PATH}.cardBadges.days`)})
           </Text>
         </HStack>
       </Box>

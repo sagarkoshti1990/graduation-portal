@@ -2,15 +2,10 @@ import React, { useState } from 'react';
 import { Box, HStack, VStack, Text, Pressable, Textarea, TextareaInput } from '@gluestack-ui/themed';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
-import {
-  SUPPORT_REQUEST_BUTTON_TEXTS,
-  SUPPORT_REQUEST_TITLES,
-  SUPPORT_REQUEST_LABELS,
-  SUPPORT_REQUEST_PLACEHOLDERS,
-  SUPPORT_REQUEST_HINTS,
-} from '@constants/SUPPORT_REQUESTS';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
 
 export interface RequestInfoModalProps {
   isOpen: boolean;
@@ -49,7 +44,7 @@ export default function RequestInfoModal({
       isOpen={isOpen}
       onClose={handleClose}
       {...modalStyles.modalPropsMd}
-      headerTitle={t(SUPPORT_REQUEST_TITLES.REQUEST_INFO)}
+      headerTitle={t(`${BASE_PATH}.titles.requestInfo`)}
       footerContent={
         <HStack {...modalStyles.modalFooterRow}>
           {/* Cancel Button */}
@@ -58,7 +53,7 @@ export default function RequestInfoModal({
             {...modalStyles.declineCancelBtn}
           >
             <Text {...modalStyles.declineModalCancelText}>
-              {t(SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL)}
+              {t(`${BASE_PATH}.buttonTexts.cancel`)}
             </Text>
           </Pressable>
 
@@ -70,7 +65,7 @@ export default function RequestInfoModal({
             <HStack {...modalStyles.modalConfirmRow}>
               <LucideIcon name="MessageSquare" {...modalStyles.iconDeclineConfirm} />
               <Text {...modalStyles.modalConfirmText}>
-                {t(SUPPORT_REQUEST_BUTTON_TEXTS.SEND_REQUEST)}
+                {t(`${BASE_PATH}.buttonTexts.sendRequest`)}
               </Text>
             </HStack>
           </Pressable>
@@ -83,7 +78,7 @@ export default function RequestInfoModal({
           <VStack {...modalStyles.summaryVStack}>
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.requestInfoSummaryTitleText}>
-                {t(SUPPORT_REQUEST_LABELS.REQUEST)}
+                {t(`${BASE_PATH}.labels.request`)}
               </Text>
               <Text {...modalStyles.requestInfoSummaryValueText}>
                 {requestTitle}
@@ -92,7 +87,7 @@ export default function RequestInfoModal({
 
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.requestInfoSummaryTitleText}>
-                {t(SUPPORT_REQUEST_LABELS.COACH)}
+                {t(`${BASE_PATH}.labels.coach`)}
               </Text>
               <Text {...modalStyles.requestInfoSummaryValueText}>
                 {coachName}
@@ -105,7 +100,7 @@ export default function RequestInfoModal({
         <VStack {...modalStyles.modalColFullWidth}>
           <HStack {...modalStyles.labelRow}>
             <Text {...modalStyles.labelText}>
-              {t(SUPPORT_REQUEST_LABELS.YOUR_QUESTION)}
+              {t(`${BASE_PATH}.labels.yourQuestion`)}
             </Text>
             <Text {...modalStyles.requiredAsterisk}>
               *
@@ -117,13 +112,13 @@ export default function RequestInfoModal({
             <TextareaInput
               value={message}
               onChangeText={setMessage}
-              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.REQUEST_INFO)}
+              placeholder={t(`${BASE_PATH}.placeholders.requestInfo`)}
               {...modalStyles.declineSelectInputPlaceholder}
             />
           </Textarea>
 
           <Text {...modalStyles.requestInfoHintText}>
-            {t(SUPPORT_REQUEST_HINTS.REQUEST_INFO)}
+            {t(`${BASE_PATH}.hints.requestInfo`)}
           </Text>
         </VStack>
       </VStack>

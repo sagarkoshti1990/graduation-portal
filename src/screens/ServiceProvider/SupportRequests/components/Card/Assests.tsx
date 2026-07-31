@@ -11,6 +11,9 @@ import LucideIcon from '@components/ui/LucideIcon';
 import ActionButtons from "./FooterButtons";
 import CardBadges from "./CardBadges";
 import cardStyles from '../../styles';
+import { useLanguage } from '@contexts/LanguageContext';
+
+const BASE_PATH = 'supportProvider.supportRequests';
 
 // ---------- Types ----------
 
@@ -43,6 +46,7 @@ function Card({
   onDecline,
   onAcceptAndSchedule,
 }: CardProps) {
+  const { t } = useLanguage();
   return (
     <Box
       {...cardStyles.cardContainer}
@@ -54,7 +58,7 @@ function Card({
           <HStack {...cardStyles.cardTitleRow}>
             <LucideIcon name="Box" {...cardStyles.iconAssetsTitle} />
             <Text {...cardStyles.cardTitleText}>
-              {item.title}
+              {item?.title}
             </Text>
           </HStack>
 
@@ -63,28 +67,28 @@ function Card({
             <HStack {...cardStyles.cardSubMetaItem}>
               <LucideIcon name="Users" {...cardStyles.iconSubMeta} />
               <Text {...cardStyles.cardSubMetaText}>
-                {item.coach}
+                {item?.coach}
               </Text>
             </HStack>
 
             <HStack {...cardStyles.cardSubMetaItem}>
               <LucideIcon name="Building2" {...cardStyles.iconSubMeta} />
               <Text {...cardStyles.cardSubMetaText}>
-                {item.hub}
+                {item?.hub}
               </Text>
             </HStack>
 
             <HStack {...cardStyles.cardSubMetaItem}>
               <LucideIcon name="Calendar" {...cardStyles.iconSubMeta} />
               <Text {...cardStyles.cardSubMetaText}>
-                Requested {item.requestedDate}
+                {t(`${BASE_PATH}.labels.requestedDate`)} {item?.requestedDate}
               </Text>
             </HStack>
           </HStack>
         </VStack>
 
         {/* Right Side: Badges */}
-        <CardBadges overdueDays={item.overdueDays} status={item.status} />
+        <CardBadges overdueDays={item?.overdueDays} status={item?.status} />
       </HStack>
 
       {/* Middle Light-Gray Detail Box */}
@@ -95,7 +99,7 @@ function Card({
             <HStack {...cardStyles.cardSubMetaItem}>
               <LucideIcon name="Users" {...cardStyles.iconDetailBold} />
               <Text {...cardStyles.cardDetailBoldText}>
-                {item.participants} participants
+                {item?.participants} {t(`${BASE_PATH}.labels.participants`).toLowerCase()}
               </Text>
             </HStack>
           </VStack>
@@ -105,7 +109,7 @@ function Card({
             <HStack {...cardStyles.cardSubMetaItem}>
               <LucideIcon name="MapPin" {...cardStyles.iconDetailText} />
               <Text {...cardStyles.cardDetailText}>
-                {item.location}
+                {item?.location}
               </Text>
             </HStack>
           </VStack>
