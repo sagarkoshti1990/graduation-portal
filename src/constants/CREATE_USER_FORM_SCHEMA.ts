@@ -32,6 +32,39 @@ export interface DisabledWhenCondition {
   empty: boolean;
 }
 
+/** Comparison operator supported by a field's `visibleIf` conditions. */
+export type VisibleIfOperator = '===' | '!=' | '>' | '<' | '>=' | '<=';
+
+/**
+ * A single condition evaluated against another field's current value.
+ * A field is rendered only when every condition in its `visibleIf` array is true.
+ */
+export interface VisibleIfCondition {
+  /** Name of the field whose current value is being compared */
+  name: string;
+  operator?: VisibleIfOperator;
+  value?: any;
+}
+
+/** Severity of a `hint` object — drives its default icon/colors when `icon` isn't set */
+export type HintSeverity = 'info' | 'warning' | 'danger' | 'success';
+
+export interface HintBullet {
+  key?: string;
+  fallback: string;
+}
+
+export interface HintObject {
+  type?: HintSeverity;
+  /** Lucide icon name; falls back to a default icon for `type` when omitted */
+  icon?: string;
+  title?: { key?: string; fallback: string };
+  bullets?: HintBullet[];
+}
+
+/** A simple helper string, or a richer info/warning/danger/success banner */
+export type Hint = string | HintObject;
+
 export const FORM_FIELD_TYPES = {
   TEXT: 'text',
   EMAIL: 'email',
@@ -42,6 +75,12 @@ export const FORM_FIELD_TYPES = {
   TEXTAREA: 'textarea',
   NOTE: 'note',
   GROUP: 'group',
+  /** Read-only display of another field's label/value, resolved by name */
+  VIEW: 'view',
+  /** Single-select rendered as a row of clickable pill buttons instead of a dropdown */
+  PILLSELECT: 'pillselect',
+  /** File upload trigger */
+  FILE: 'file',
 } as const;
 
 export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPES];
@@ -49,8 +88,8 @@ export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPE
 export interface FormField {
   name?: string;
   type: FormFieldType;
-  required: boolean;
   label: { key: string; fallback: string };
+  required?: boolean;
   placeholder?: { key?: string; fallback: string };
   defaultValue?: string;
   /** When present and the flag resolves to false, this field is hidden */
@@ -82,26 +121,50 @@ export interface FormField {
   placeholderWhenReady?: { key: string; fallback: string };
   fields?: FormField[];
   isReadOnly?: boolean;
+  /** Field is rendered only when every condition here evaluates to true (AND logic) */
+  visibleIf?: VisibleIfCondition[];
+  /** Small helper text rendered under the field (currently used by `file` fields) */
+  subLabel?: { key?: string; fallback: string };
+  /** Renders an "(optional)" tag next to the label (currently used by `file` fields) */
+  showOptionalTag?: boolean;
+  /** Rendered below the label, above the input, using the standard helper-text typography */
+  subTitle?: { key?: string; fallback: string };
+  /** Informational message rendered above the input — simple string or a severity banner */
+  hint?: Hint;
 }
 
 export interface FormRow {
+  id?: string;
   fields: FormField[];
   /** If set, the entire row is hidden unless the named flag is truthy */
   visibleWhen?: VisibleWhenFlag;
 }
 
+/**
+ * A schema node — used for tabs, sections, and (nested) rows.
+ * Any node with `children` is rendered recursively, to unlimited depth.
+ */
 export interface FormSection {
   id: string;
+  type: string;
   /** Lucide icon name */
-  icon: string;
-  title: { key: string; fallback: string };
-  rows: FormRow[];
+  icon?: string;
+  title?: { key: string; fallback: string };
+  /** Alternate to `title` accepted for tab/section nodes */
+  label?: { key?: string; fallback: string };
+  /** Larger page-level heading, distinct from the compact card-header `title` */
+  subTitle?: { key?: string; fallback: string };
+  /** Informational message rendered below the title/subTitle — simple string or a severity banner */
+  hint?: Hint;
+  children?: FormSection[]
+  rows?: FormRow[];
 }
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   {
+    type:"section",
     id: 'personalInformation',
     icon: 'User',
     title: { key: 'personalInformation', fallback: 'Personal Information' },
@@ -234,6 +297,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
+    type:"section",
     id: 'roleAndPermissions',
     icon: 'Shield',
     title: { key: 'roleAndPermissions', fallback: 'Role & Permissions' },
@@ -258,6 +322,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
+    type:"section",
     id: 'additionalInformation',
     icon: 'FileText',
     title: { key: 'additionalInformation', fallback: 'Additional Information' },
@@ -339,6 +404,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
+    type:"section",
     id: 'geographicAssignment',
     icon: 'MapPin',
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },

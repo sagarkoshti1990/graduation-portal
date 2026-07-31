@@ -3,6 +3,7 @@ import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, VSt
 import styles from './styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { TabButton } from '@components/Tabs';
 import FilterButton from '@components/Filter';
 import TrainingCard from './components/Cards/TrainingCard';
@@ -23,6 +24,7 @@ const DEFAULT_SITE_OPTIONS = [
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('sessions');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
@@ -156,12 +158,14 @@ const App = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title="My Support Offerings"
-        subTitle="Manage all published support — training sessions, services, and assets"
+        title={t('supportProvider.supportOfferings.title')}
+        subTitle={t('supportProvider.supportOfferings.subtitle')}
         rightSection={
-          <Button onPress={() => navigation.navigate('create-opportunity' as never)}>
-            <ButtonIcon as={LucideIcon} name="Plus" />
-            <ButtonText>Create New</ButtonText>
+          <Button
+            onPress={() => navigation.navigate('create-opportunity' as never)}
+          >
+            <ButtonIcon as={LucideIcon} name={'Plus'} />
+            <ButtonText>{t('supportProvider.supportOfferings.createNew')}</ButtonText>
           </Button>
         }
       />

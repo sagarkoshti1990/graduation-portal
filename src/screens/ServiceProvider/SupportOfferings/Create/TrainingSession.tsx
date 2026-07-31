@@ -1,22 +1,215 @@
-import React from 'react';
-import { Container, VStack } from '@ui';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Card, Container, VStack } from '@ui';
 import styles from '../styles';
-import Test from '../components/Test';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
+import SchemaFormRenderer from '@components/SchemaFormRenderer';
+import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
+import { useLanguage } from '@contexts/LanguageContext';
+import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
+import { getSitesByProvince } from '../../../../services/usersService';
 
+
+const PILLAR_SESSION_TYPES: Record<string, string[]> = {
+  'Social Empowerment': [
+    'Personal Mastery Training',
+    'Parenting Skills Training',
+    'GBV Awareness Session',
+    'Substance Abuse Awareness Session',
+  ],
+  'Financial Inclusion': ['Financial Literacy Training'],
+  Livelihoods: [
+    'Generate Your Business Idea Training',
+    'Start Your Business Training',
+    'Diversification Strategy',
+    'Market Growth Strategy',
+    'Livelihood Specific Training',
+    'Job Readiness Training',
+    'Technical/Vocational Training',
+  ],
+};
+
+// conflicts
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
-  
+  const { t } = useLanguage();
+  const { provinces: dynamicProvinces } = useUserManagementFilters({});
+  const [dynamicSites, setDynamicSites] = useState<any[]>([]);
+  const [values, setValues] = useState<any>({});
+
+  const handleFieldChange = useCallback((name: string, value: string) => {
+    setValues(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'province') next.site = '';
+      if (name === 'pillar') {
+        next.sessionType = '';
+        next.sessionTitle = '';
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!values.province) {
+      setDynamicSites([]);
+      return;
+    }
+    getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 })
+      .then(res => setDynamicSites(res.result?.data || []))
+      .catch(() => setDynamicSites([]));
+  }, [values.province]);
+
+  const optionsMap = useMemo(() => {
+    const provinceOpts =
+      dynamicProvinces && dynamicProvinces.length > 0
+        ? dynamicProvinces.map((p: any) => ({
+            value: p._id || p.id || p.name,
+            label: p.name || p.label,
+          }))
+        : [];
+
+    const siteOpts = dynamicSites
+      ? dynamicSites.map((s: any) => ({
+          value: s._id || s.id || s.name,
+          label: s.name || s.label,
+        }))
+      : [];
+
+    const selectedPillar = values.pillar;
+    const sessionTypeOpts =
+      selectedPillar && selectedPillar !== 'Others'
+        ? (PILLAR_SESSION_TYPES[selectedPillar] || []).map(v => ({
+            value: v,
+            label: v,
+          }))
+        : [];
+
+    return {
+      provinces: provinceOpts,
+      sites: siteOpts,
+      pillars: [
+        {
+          value: 'Social Empowerment',
+          label:
+            t(
+              'supportProvider.trainingSession.step1.pillars.socialEmpowerment',
+            ) || 'Social Empowerment',
+        },
+        {
+          value: 'Financial Inclusion',
+          label:
+            t(
+              'supportProvider.trainingSession.step1.pillars.financialInclusion',
+            ) || 'Financial Inclusion',
+        },
+        {
+          value: 'Livelihoods',
+          label:
+            t('supportProvider.trainingSession.step1.pillars.livelihoods') ||
+            'Livelihoods',
+        },
+        {
+          value: 'Others',
+          label:
+            t('supportProvider.trainingSession.step1.pillars.others') ||
+            'Others',
+        },
+      ],
+      sessionTypes: sessionTypeOpts,
+      targetAudienceOptions: [
+        {
+          value: 'Coach',
+          label:
+            t(
+              'supportProvider.trainingSession.step1.targetAudienceOptions.coach',
+            ) || 'Coach',
+        },
+        {
+          value: 'Participant',
+          label:
+            t(
+              'supportProvider.trainingSession.step1.targetAudienceOptions.participant',
+            ) || 'Participant',
+        },
+        {
+          value: 'Both',
+          label:
+            t(
+              'supportProvider.trainingSession.step1.targetAudienceOptions.both',
+            ) || 'Both',
+        },
+      ],
+      certificateOptions: [
+        {
+          value: 'Yes',
+          label:
+            t('supportProvider.trainingSession.step1.certificateOptions.yes') ||
+            'Yes',
+        },
+        {
+          value: 'No',
+          label:
+            t('supportProvider.trainingSession.step1.certificateOptions.no') ||
+            'No',
+        },
+      ],
+      recurringOptions: [
+        {
+          value: 'Yes',
+          label:
+            t('supportProvider.trainingSession.step1.recurringToggle') ||
+            'Yes — recurring session',
+        },
+        {
+          value: 'No',
+          label:
+            t('supportProvider.trainingSession.step1.recurringToggleNo') ||
+            'No — one-off session',
+        },
+      ],
+      formatOptions: [
+        {
+          value: 'Offline',
+          label:
+            t('supportProvider.trainingSession.step2.typeOptions.offline') ||
+            'Offline',
+          icon: 'MapPin',
+        },
+        {
+          value: 'Online',
+          label:
+            t('supportProvider.trainingSession.step2.typeOptions.online') ||
+            'Online',
+          icon: 'Video',
+        },
+        {
+          value: 'Hybrid',
+          label:
+            t('supportProvider.trainingSession.step2.typeOptions.hybrid') ||
+            'Hybrid',
+          icon: 'Users',
+        },
+      ],
+    };
+  }, [dynamicProvinces, dynamicSites, values.pillar, t]);
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title="Create Training Session"
-        backButtonText="Chnage type"
+        title={t('supportProvider.createSupport.training.title', 'Create Training Session')}
+        backButtonText={t('supportProvider.createSupport.changeType', 'Change type')}
         onNavigateBack={() => navigation.goBack()}
       />
       <Container {...styles.container}>
-        <Test />
+        <Card borderRadius={"$2xl"} bg="$white">
+          <SchemaFormRenderer
+            schema={TRAINING_FORM_SCHEMA}
+            optionsMap={optionsMap}
+            values={values}
+            t={t}
+            onFieldChange={handleFieldChange}
+          />
+        </Card>
       </Container>
     </VStack>
   );
