@@ -3,6 +3,7 @@ import { Container, VStack } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
+import Test from '../components/Test';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -15,7 +16,7 @@ const App = (): React.JSX.Element => {
         onNavigateBack={() => navigation.goBack()}
       />
       <Container {...styles.container}>
-        <VStack />
+        <Test />
       </Container>
     </VStack>
   );
