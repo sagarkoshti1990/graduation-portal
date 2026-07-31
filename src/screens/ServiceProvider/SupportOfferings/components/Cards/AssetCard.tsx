@@ -62,6 +62,13 @@ const Card: React.FC<CardProps> = ({ item }) => {
                 </BadgeText>
               </HStack>
             </Badge>
+            {item.type ? (
+              <Badge {...styles.inKindBadgeContainer}>
+                <BadgeText {...styles.inKindBadgeText}>
+                  {item.type}
+                </BadgeText>
+              </Badge>
+            ) : null}
           </HStack>
 
           {/* Row 2: Description */}
@@ -73,40 +80,38 @@ const Card: React.FC<CardProps> = ({ item }) => {
 
           {/* Row 3: Metadata */}
           <HStack {...styles.metaRowHStack}>
-            <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="Layers" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {item.type}
-              </Text>
-            </HStack>
+            {item.sector ? (
+              <HStack {...styles.metaItemHStack}>
+                <LucideIcon name="Package" {...styles.cardMetaIconProps} />
+                <Text {...styles.cardMetaSmText}>
+                  {item.sector}
+                </Text>
+              </HStack>
+            ) : null}
 
-            <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="Briefcase" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {t('supportProvider.supportOfferings.cards.sector', { sector: item.sector })}
+            {item.value ? (
+              <Text {...styles.cardValueBoldSmText}>
+                {item.value}
               </Text>
-            </HStack>
+            ) : null}
 
-            <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="Coins" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {t('supportProvider.supportOfferings.cards.value', { value: item.value })}
-              </Text>
-            </HStack>
+            {item.location ? (
+              <HStack {...styles.metaItemHStack}>
+                <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
+                <Text {...styles.cardMetaSmText}>
+                  {item.location}
+                </Text>
+              </HStack>
+            ) : null}
 
-            <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {t('supportProvider.supportOfferings.cards.locationLabel', { location: item.location })}
-              </Text>
-            </HStack>
-
-            <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="Users" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {item.requests}
-              </Text>
-            </HStack>
+            {item.requests ? (
+              <HStack {...styles.metaItemHStack}>
+                <LucideIcon name="Users" {...styles.cardMetaIconProps} />
+                <Text {...styles.cardMetaSmText}>
+                  {item.requests}
+                </Text>
+              </HStack>
+            ) : null}
           </HStack>
         </VStack>
 

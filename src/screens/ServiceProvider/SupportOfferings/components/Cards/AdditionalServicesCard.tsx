@@ -73,28 +73,21 @@ const Card: React.FC<CardProps> = ({ item }) => {
           <HStack {...styles.metaRowHStack}>
             <HStack {...styles.metaItemHStack}>
               <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {item.location}
+              <Text {...styles.cardMetaSmText}>
+                {item.location}{item.hubOffice ? ` • ${item.hubOffice}` : ''}
               </Text>
             </HStack>
 
             <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="Navigation" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
-                {t('supportProvider.supportOfferings.cards.hub', { hub: item.hubOffice })}
-              </Text>
-            </HStack>
-
-            <HStack {...styles.metaItemHStack}>
-              <LucideIcon name="Building" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
+              <LucideIcon name="Building2" {...styles.cardMetaIconProps} />
+              <Text {...styles.cardMetaSmText}>
                 {item.site}
               </Text>
             </HStack>
 
             <HStack {...styles.metaItemHStack}>
               <LucideIcon name="Users" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaText}>
+              <Text {...styles.cardMetaSmText}>
                 {item.requests}
               </Text>
             </HStack>

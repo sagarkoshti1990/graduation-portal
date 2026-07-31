@@ -112,11 +112,24 @@ export default {
     width: '100%' as const,
   } as const,
   cardRightActionStack: {
-    space: 'xs' as const,
+    space: 'sm' as const,
     width: '100%' as const,
     '$md-width': 160,
     justifyContent: 'center' as const,
     alignSelf: 'stretch' as const,
+  } as const,
+  inKindBadgeContainer: {
+    bg: '$success50' as const,
+    borderWidth: 0,
+    px: '$2' as const,
+    py: '$0.5' as const,
+    borderRadius: '$full' as const,
+  } as const,
+  inKindBadgeText: {
+    fontSize: '$xs' as const,
+    color: '$success600' as const,
+    fontWeight: '$semibold' as const,
+    textTransform: 'none' as const,
   } as const,
   viewRequestsBtn: {
     borderWidth: 1,

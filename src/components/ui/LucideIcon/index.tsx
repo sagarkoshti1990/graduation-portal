@@ -116,6 +116,7 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   BookOpen,
   Bell,
   Briefcase,
+  Building: Building2,
   Building2,
   Calendar,
   Camera,
