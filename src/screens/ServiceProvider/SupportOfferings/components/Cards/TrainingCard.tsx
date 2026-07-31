@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   HStack,
@@ -11,104 +11,13 @@ import {
   Divider,
   useAlert,
 } from '@ui';
+import { useLanguage } from '@contexts/LanguageContext';
 import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
-
-// ---------- Types ----------
-
-interface MaterialItem {
-  name: string;
-  info: string;
-}
-
-interface TrainingSessionItem {
-  id: number;
-  title: string;
-  status: 'Upcoming' | 'In progress' | 'Completed';
-  date: string;
-  time: string;
-  format: string;
-  participants: string;
-  requestedBy: string;
-  province: string;
-  siteKey: string;
-  hasCopyButton: boolean;
-  
-  // Expanded fields
-  location: string;
-  expectedParticipants: number;
-  confirmedPresent: string;
-  notes: string;
-  materials: MaterialItem[];
-}
-
-// ---------- JSON array data ----------
-
-const mockTrainings: TrainingSessionItem[] = [
-  {
-    id: 1,
-    title: 'Financial Literacy Workshop',
-    status: 'Upcoming',
-    date: '25 Apr 2026',
-    time: '09:00 - 12:00',
-    format: 'In-person',
-    participants: '25 participants',
-    requestedBy: 'Sipho Mkhize (Johannesburg Youth Development) • Gauteng',
-    province: 'Gauteng',
-    siteKey: 'joburg-center',
-    hasCopyButton: true,
-    location: 'Community Centre, Soweto, Johannesburg',
-    expectedParticipants: 25,
-    confirmedPresent: 'Not confirmed',
-    notes: 'Participants are youth aged 18-24, mixed literacy levels. Requested focus on budgeting and savings.',
-    materials: [
-      {
-        name: 'Financial Literacy Workbook.pdf',
-        info: 'PDF • 2.4 MB • Uploaded 2026/04/15',
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Business Plan Development Training',
-    status: 'In progress',
-    date: '18 Apr 2026',
-    time: '14:00 - 17:00',
-    format: 'Hybrid',
-    participants: '--',
-    requestedBy: 'Thandiwe Ndlovu (Cape Town Enterprise Support) • Western Cape',
-    province: 'Western Cape',
-    siteKey: 'ct-office',
-    hasCopyButton: false,
-    location: 'Cape Town Civic Centre, Cape Town',
-    expectedParticipants: 30,
-    confirmedPresent: '12 present',
-    notes: 'Focus on business plan templates, cost projection sheets, and compliance rules.',
-    materials: [],
-  },
-  {
-    id: 3,
-    title: 'Digital Marketing Basics',
-    status: 'Completed',
-    date: '10 Apr 2026',
-    time: '09:00 - 13:00',
-    format: 'Virtual',
-    participants: '6 participants',
-    requestedBy: 'Mpho Khumalo (KZN Skills Initiative) • KwaZulu-Natal',
-    province: 'KwaZulu-Natal',
-    siteKey: 'kzn-hub',
-    hasCopyButton: true,
-    location: 'Online via Microsoft Teams',
-    expectedParticipants: 10,
-    confirmedPresent: '6 present',
-    notes: 'Overview of social media platforms, SEO basics, and simple content creation calendars.',
-    materials: [
-      {
-        name: 'Digital Marketing Guide.pdf',
-        info: 'PDF • 1.8 MB • Uploaded 2026/04/10',
-      },
-    ],
-  },
-];
+import type { ProvinceEntity, SiteEntity } from '@app-types/Users';
+import { getTrainingSessions, completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
+import type { MaterialItem, TrainingSessionItem } from '../../../../../constants/SUPPORT_OFFERINGS_MOCK';
+import SessionCompleteModal from '../modals/SessionCompleteModal';
+import styles from '../../styles';
 
 // ---------- Card ----------
 
@@ -116,44 +25,67 @@ interface CardProps {
   item: TrainingSessionItem;
 }
 
-const Card: React.FC<CardProps> = ({ item }) => {
+const Card: React.FC<CardProps> = ({ item: initialItem }) => {
+  const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const [item, setItem] = useState<TrainingSessionItem>(initialItem);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [files, setFiles] = useState<MaterialItem[]>(item.materials);
+  const [files, setFiles] = useState<MaterialItem[]>(initialItem.materials || []);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+
+  useEffect(() => {
+    setItem(initialItem);
+    setFiles(initialItem.materials || []);
+  }, [initialItem]);
 
   const getStatusColors = (status: string) => {
     switch (status) {
       case 'Upcoming':
-        return { bg: '$blue50', border: '$blue200', text: '$blue600', icon: 'Clock' };
+        return { bg: '$blue50', border: 'transparent', text: '$blue600', icon: 'Clock' };
       case 'In progress':
-        return { bg: '$observationTaskBg', border: '$warningIconColor', text: '$warningIconColor', icon: 'Clock' };
+        return { bg: '$observationTaskBg', border: 'transparent', text: '$warningIconColor', icon: 'AlertCircle' };
       case 'Completed':
       default:
-        return { bg: '$success50', border: '$success300', text: '$success600', icon: 'CheckCircle' };
+        return { bg: '$success50', border: 'transparent', text: '$success600', icon: 'CheckCircle' };
     }
   };
 
   const statusColors = getStatusColors(item.status);
 
   const handleCopySession = () => {
-    showAlert('success', 'Session copied successfully!');
+    showAlert('success', t('supportProvider.supportOfferings.cards.alerts.sessionCopied'));
+  };
+
+  const handleConfirmSessionComplete = async (presentCount: number) => {
+    try {
+      await completeTrainingSession(item.id, { presentCount });
+      setItem((prev) => ({
+        ...prev,
+        status: 'Completed',
+        confirmedPresent: `${presentCount}`,
+        completionNotes: prev.completionNotes || t('supportProvider.supportOfferings.cards.alerts.sessionCompleted'),
+      }));
+      showAlert('success', t('supportProvider.supportOfferings.cards.alerts.sessionCompleted'));
+    } catch (error) {
+      console.error('Error completing session via API:', error);
+      showAlert('error', 'Failed to complete session. Please try again.');
+    }
   };
 
   const handleUploadPress = async () => {
     try {
       const selectedFiles = await openFilePicker({
         allowMultiSelection: true,
-        type: ['application/pdf', 'image/*'],
+        type: ['application/pdf', 'image/*', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
       });
-      
+
       if (!selectedFiles || selectedFiles.length === 0) return;
-      
-      const newMaterials: MaterialItem[] = selectedFiles.map(file => {
+
+      const newMaterials: MaterialItem[] = selectedFiles.map((file) => {
         const name = file.name || file.fileName || 'Untitled File';
         const sizeBytes = file.size || file.fileSize || 0;
-        const sizeStr = sizeBytes > 0 
-          ? `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB` 
-          : 'Unknown size';
+        const sizeStr =
+          sizeBytes > 0 ? `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB` : 'Unknown size';
         const ext = name.split('.').pop()?.toUpperCase() || 'FILE';
         const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '/');
 
@@ -163,104 +95,80 @@ const Card: React.FC<CardProps> = ({ item }) => {
         };
       });
 
-      setFiles(prev => [...prev, ...newMaterials]);
-      showAlert('success', 'Material uploaded successfully!');
+      setFiles((prev) => [...prev, ...newMaterials]);
+      showAlert('success', t('supportProvider.supportOfferings.cards.alerts.materialUploaded'));
     } catch (err) {
-      // User cancelled picker or error occurred, do nothing
+      // User cancelled picker or error occurred
     }
   };
 
   return (
-    <Box
-      width="100%"
-      bg="$white"
-      borderRadius="$2xl"
-      borderWidth={1}
-      borderColor="$borderColor"
-      overflow="hidden"
-      shadowColor="$black"
-      shadowOffset={{ width: 0, height: 2 }}
-      shadowOpacity={0.04}
-      shadowRadius={8}
-      elevation={2}
-    >
-      {/* Accordion Header (Trigger) - Always White background, no hover bg changes */}
+    <Box {...styles.cardContainer} {...styles.cardAccordionContainer}>
+      {/* Accordion Header (Trigger) */}
       <Pressable
         onPress={() => setIsExpanded(!isExpanded)}
-        px="$5"
-        py="$5"
-        width="100%"
-        sx={{
-          ':hover': {
-            backgroundColor: '$white',
-          },
-        }}
+        {...styles.cardHeaderPressable}
       >
-        <VStack space="md" width="100%">
+        <VStack {...styles.cardFullVStack}>
           {/* Row 1: Title + Badge & Chevron */}
-          <HStack justifyContent="space-between" alignItems="center" width="100%">
-            <HStack space="sm" alignItems="center" flex={1}>
-              <Text fontSize="$md" fontWeight="$semibold" color="$textForegroundColor">
+          <HStack {...styles.headerTopHStack}>
+            <HStack {...styles.headerTitleBadgeHStack}>
+              <Text {...styles.cardHeaderTitleText}>
                 {item.title}
               </Text>
-              <Badge
-                bg={statusColors.bg}
-                borderColor={statusColors.border}
-                borderWidth={1}
-                px="$2.5"
-                py="$0.5"
-                borderRadius="$full"
-              >
-                <HStack space="xs" alignItems="center">
-                  <LucideIcon name={statusColors.icon} size={12} color={statusColors.text} />
-                  <BadgeText fontSize="$xs" color={statusColors.text} fontWeight="$semibold">
+              <Badge {...styles.badgeContainer(statusColors.bg)}>
+                <HStack {...styles.badgeContentHStack}>
+                  <LucideIcon name={statusColors.icon} {...styles.badgeIconProps(statusColors.text)} />
+                  <BadgeText {...styles.badgeText(statusColors.text)}>
                     {item.status}
                   </BadgeText>
                 </HStack>
               </Badge>
             </HStack>
             <LucideIcon
-              name={isExpanded ? "ChevronUp" : "ChevronDown"}
-              size={18}
-              color="$textMuted"
+              name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
+              {...styles.cardChevronIconProps}
             />
           </HStack>
 
           {/* Row 2: Metadata */}
-          <HStack space="xl" alignItems="center" flexWrap="wrap" width="100%">
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Calendar" size={14} color="$textSecondary" />
-              <Text fontSize="$sm" color="$textSecondary">
+          <HStack {...styles.headerMetaHStack}>
+            <HStack {...styles.metaItemHStack}>
+              <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
+              <Text {...styles.cardMetaSmText}>
                 {item.date}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Clock" size={14} color="$textSecondary" />
-              <Text fontSize="$sm" color="$textSecondary">
+            <HStack {...styles.metaItemHStack}>
+              <LucideIcon name="Clock" {...styles.cardMetaIconProps} />
+              <Text {...styles.cardMetaSmText}>
                 {item.time}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="MapPin" size={14} color="$textSecondary" />
-              <Text fontSize="$sm" color="$textSecondary">
+            <HStack {...styles.metaItemHStack}>
+              <LucideIcon
+                name={item.format === 'Virtual' ? 'Video' : 'MapPin'}
+                {...styles.cardMetaIconProps}
+              />
+              <Text {...styles.cardMetaSmText}>
                 {item.format}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Users" size={14} color="$textSecondary" />
-              <Text fontSize="$sm" color="$textSecondary">
+            <HStack {...styles.metaItemHStack}>
+              <LucideIcon name="Users" {...styles.cardMetaIconProps} />
+              <Text {...styles.cardMetaSmText}>
                 {item.participants}
               </Text>
             </HStack>
           </HStack>
 
           {/* Row 3: Requested by & Copy Button */}
-          <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap" space="sm" width="100%">
-            <Text fontSize="$sm" color="$textSecondary" flex={1} minWidth={200}>
-              Requested by: {item.requestedBy}
+          <HStack {...styles.requestedByRowHStack}>
+            <Text {...styles.cardRequestedByText}>
+              {t('supportProvider.supportOfferings.cards.requestedBy', { name: item.requestedBy })}
             </Text>
 
             {item.hasCopyButton && (
@@ -273,26 +181,16 @@ const Card: React.FC<CardProps> = ({ item }) => {
                 {({ hovered }: any) => {
                   const isHovered = hovered || false;
                   return (
-                    <Box
-                      borderWidth={1}
-                      borderColor={isHovered ? "$primary500" : "$primary600"}
-                      bg={isHovered ? "$primary500" : "transparent"}
-                      px="$4"
-                      py="$2"
-                      borderRadius="$lg"
-                    >
-                      <HStack space="xs" alignItems="center">
-                        <LucideIcon 
-                          name="Copy" 
-                          size={14} 
-                          color={isHovered ? "$white" : "$primary500"} 
+                    <Box {...styles.copySessionBox(isHovered)}>
+                      <HStack {...styles.badgeContentHStack}>
+                        <LucideIcon
+                          name="Copy"
+                          {...(isHovered ? styles.cardWhiteIconProps : styles.cardCopyIconProps)}
                         />
-                        <Text 
-                          fontSize="$sm" 
-                          fontWeight="$normal" 
-                          color={isHovered ? "$white" : "$primary500"}
+                        <Text
+                          {...(isHovered ? styles.cardBtnWhiteText : styles.cardBtnPrimaryText)}
                         >
-                          Copy Session
+                          {t('supportProvider.supportOfferings.cards.copySession')}
                         </Text>
                       </HStack>
                     </Box>
@@ -304,110 +202,129 @@ const Card: React.FC<CardProps> = ({ item }) => {
         </VStack>
       </Pressable>
 
-      {/* Accordion Content with light grey background */}
+      {/* Accordion Content */}
       {isExpanded && (
-        <VStack width="100%" bg="$hoverBackground">
-          <Divider bg="$borderColor" />
-          
-          <VStack px="$5" pb="$5" pt="$4" space="lg" width="100%">
-            {/* Section 1: Location */}
-            <VStack space="xs" width="100%">
-              <Text fontSize="$sm" fontWeight="$bold" color="$textForegroundColor">
-                Location
-              </Text>
-              <HStack space="xs" alignItems="center" flexWrap="wrap" width="100%">
-                <LucideIcon name="MapPin" size={14} color="$textSecondary" />
-                <Text fontSize="$sm" color="$textPrimary" flex={1}>
-                  {item.location}
-                </Text>
-              </HStack>
-            </VStack>
+        <VStack {...styles.expandedContentVStack}>
+          <Divider {...styles.dividerStyle} />
 
-            {/* Section 2: Attendance - Styled as White Card with Border */}
-            <VStack space="xs" width="100%">
-              <Text fontSize="$sm" fontWeight="$bold" color="$textForegroundColor">
-                Attendance
+          <VStack {...styles.expandedInnerVStack}>
+            {/* Location / Virtual Link */}
+            {(item.virtualLink || item.location) && (
+              <VStack {...styles.sectionVStack}>
+                <Text {...styles.cardSectionTitleText}>
+                  {item.virtualLink && item.status === 'Completed'
+                    ? t('supportProvider.supportOfferings.cards.virtualLink')
+                    : t('supportProvider.supportOfferings.cards.location')}
+                </Text>
+                <VStack {...styles.sectionVStack}>
+                  {item.virtualLink && (
+                    <HStack {...styles.virtualLinkHStack}>
+                      <LucideIcon name="Video" {...styles.cardPrimaryIconProps} />
+                      <Text
+                        as="a"
+                        href={item.virtualLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        {...styles.cardPrimaryLinkText}
+                      >
+                        {item.virtualLink}
+                      </Text>
+                    </HStack>
+                  )}
+                  {item.location && (
+                    <HStack {...styles.virtualLinkHStack}>
+                      <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
+                      <Text {...styles.cardMetaSmText}>
+                        {item.location}
+                      </Text>
+                    </HStack>
+                  )}
+                </VStack>
+              </VStack>
+            )}
+
+            {/* Attendance */}
+            <VStack {...styles.sectionVStack}>
+              <Text {...styles.cardSectionTitleText}>
+                {t('supportProvider.supportOfferings.cards.attendance')}
               </Text>
-              <Box bg="$white" borderWidth={1} borderColor="$borderColor" p="$4" borderRadius="$lg" width="100%">
-                <HStack space="xl" flexWrap="wrap" width="100%">
-                  <VStack space="xs" flex={1} minWidth={120}>
-                    <Text fontSize="$xs" color="$textSecondary">
-                      Expected Participants
+              <Box {...styles.attendanceBox}>
+                <HStack {...styles.attendanceRowHStack}>
+                  <VStack {...styles.attendanceItemVStack}>
+                    <Text {...styles.cardMetaText}>
+                      {t('supportProvider.supportOfferings.cards.expectedParticipants')}
                     </Text>
-                    <Text fontSize="$md" fontWeight="$bold" color="$textPrimary">
+                    <Text {...styles.cardValueBoldText}>
                       {item.expectedParticipants}
                     </Text>
                   </VStack>
-                  <VStack space="xs" flex={1} minWidth={120}>
-                    <Text fontSize="$xs" color="$textSecondary">
-                      Confirmed Present
+                  <VStack {...styles.attendanceItemVStack}>
+                    <Text {...styles.cardMetaText}>
+                      {t('supportProvider.supportOfferings.cards.confirmedPresent')}
                     </Text>
-                    <Text fontSize="$sm" color="$textSecondary">
-                      {item.confirmedPresent}
-                    </Text>
+                    {item.status === 'Completed' && item.confirmedPresent ? (
+                      <HStack {...styles.badgeContentHStack}>
+                        <Text {...styles.cardSuccessBoldText}>
+                          {item.confirmedPresent}
+                        </Text>
+                        <LucideIcon name="CheckCircle" {...styles.cardSuccessIconProps} />
+                      </HStack>
+                    ) : (
+                      <Text {...styles.cardMetaSmText}>
+                        {item.confirmedPresent ||
+                          (item.status === 'In progress'
+                            ? '--'
+                            : t('supportProvider.supportOfferings.cards.notConfirmed'))}
+                      </Text>
+                    )}
                   </VStack>
                 </HStack>
               </Box>
             </VStack>
 
-            {/* Section 3: Session Materials */}
-            <VStack space="sm" width="100%">
-              <HStack justifyContent="space-between" alignItems="center" width="100%">
-                <Text fontSize="$sm" fontWeight="$bold" color="$textForegroundColor">
-                  Session Materials
+            {/* Session Materials */}
+            <VStack {...styles.sectionSmVStack}>
+              <HStack {...styles.materialsHeaderHStack}>
+                <Text {...styles.cardSectionTitleText}>
+                  {t('supportProvider.supportOfferings.cards.sessionMaterials')}
                 </Text>
-                <Pressable
-                  borderWidth={1}
-                  borderColor="$borderColor"
-                  bg="$white"
-                  px="$3"
-                  py="$1.5"
-                  borderRadius="$lg"
-                  onPress={handleUploadPress}
-                  sx={{
-                    ':hover': { backgroundColor: '$hoverBackground' }
-                  }}
-                >
-                  <HStack space="xs" alignItems="center">
-                    <LucideIcon name="Upload" size={14} color="$textSecondary" />
-                    <Text fontSize="$xs" fontWeight="$bold" color="$textSecondary">
-                      Upload Material
-                    </Text>
-                  </HStack>
-                </Pressable>
+                {item.status !== 'Completed' && (
+                  <Pressable
+                    {...styles.uploadMaterialBtn}
+                    onPress={handleUploadPress}
+                  >
+                    <HStack {...styles.badgeContentHStack}>
+                      <LucideIcon name="Upload" {...styles.cardMetaIconProps} />
+                      <Text {...styles.cardMetaText} fontWeight="$bold">
+                        {t('supportProvider.supportOfferings.cards.uploadMaterial')}
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                )}
               </HStack>
 
-              {/* Files list - File cards styled in White with Border */}
-              <VStack space="xs" width="100%">
+              <VStack {...styles.sectionVStack}>
                 {files.map((file, idx) => (
                   <Box
                     key={idx}
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    borderRadius="$lg"
-                    p="$3"
-                    bg="$white"
-                    width="100%"
+                    {...styles.materialFileCard}
                   >
-                    <HStack justifyContent="space-between" alignItems="center" space="sm" width="100%">
-                      <HStack space="sm" alignItems="center" flex={1}>
-                        <Box bg="$primary100" p="$2" borderRadius="$md">
-                          <LucideIcon name="FileText" size={16} color="$primary500" />
+                    <HStack {...styles.fileCardOuterHStack}>
+                      <HStack {...styles.fileCardInnerHStack}>
+                        <Box {...styles.fileIconBox}>
+                          <LucideIcon name="FileText" {...styles.cardFileTextIconProps} />
                         </Box>
-                        <VStack flex={1}>
-                          <Text fontSize="$sm" fontWeight="$bold" color="$textPrimary" numberOfLines={1} ellipsizeMode="tail">
+                        <VStack {...styles.fileTextVStack}>
+                          <Text {...styles.cardValueBoldSmText} numberOfLines={1} ellipsizeMode="tail">
                             {file.name}
                           </Text>
-                          <Text fontSize="$xs" color="$textSecondary">
+                          <Text {...styles.cardMetaText}>
                             {file.info}
                           </Text>
                         </VStack>
                       </HStack>
-                      <Pressable
-                        onPress={() => showAlert('info', `Downloading ${file.name}...`)}
-                        p="$1"
-                      >
-                        <LucideIcon name="Download" size={16} color="$textSecondary" />
+                      <Pressable onPress={() => showAlert('info', t('supportProvider.supportOfferings.cards.alerts.downloading', { name: file.name }))} {...styles.iconPressablePadding}>
+                        <LucideIcon name="Download" {...styles.cardMetaIconProps} />
                       </Pressable>
                     </HStack>
                   </Box>
@@ -415,30 +332,90 @@ const Card: React.FC<CardProps> = ({ item }) => {
               </VStack>
             </VStack>
 
-            {/* Section 4: Session Notes - Styled as White Card with Border */}
-            <VStack space="xs" width="100%">
-              <Text fontSize="$sm" fontWeight="$bold" color="$textForegroundColor">
-                Session Notes
-              </Text>
-              <Box bg="$white" borderWidth={1} borderColor="$borderColor" p="$4" borderRadius="$lg" width="100%">
-                <Text fontSize="$sm" color="$textSecondary" lineHeight="$md">
-                  {item.notes}
+            {/* Session Notes / Completion Notes */}
+            {(item.status === 'Completed' ? (item.completionNotes || item.notes) : item.notes) && (
+              <VStack {...styles.sectionVStack}>
+                <Text {...styles.cardSectionTitleText}>
+                  {item.status === 'Completed'
+                    ? t('supportProvider.supportOfferings.cards.completionNotes')
+                    : t('supportProvider.supportOfferings.cards.sessionNotes')}
                 </Text>
-              </Box>
-            </VStack>
+                <Box {...styles.notesBox}>
+                  <Text {...styles.cardDescriptionText}>
+                    {item.status === 'Completed' ? (item.completionNotes || item.notes) : item.notes}
+                  </Text>
+                </Box>
+              </VStack>
+            )}
+
+            {/* Session Complete Button (In progress only) */}
+            {item.status === 'In progress' && (
+              <HStack {...styles.sessionCompleteHStack}>
+                <Pressable
+                  {...styles.sessionCompleteBtn}
+                  onPress={() => setIsCompleteModalOpen(true)}
+                >
+                  <HStack {...styles.badgeContentHStack}>
+                    <LucideIcon name="CheckCircle" {...styles.cardWhiteIconProps} />
+                    <Text {...styles.cardBtnWhiteSemiboldText}>
+                      {t('supportProvider.supportOfferings.cards.sessionComplete')}
+                    </Text>
+                  </HStack>
+                </Pressable>
+              </HStack>
+            )}
           </VStack>
         </VStack>
       )}
+
+      {/* Session Complete Modal */}
+      <SessionCompleteModal
+        isOpen={isCompleteModalOpen}
+        onClose={() => setIsCompleteModalOpen(false)}
+        sessionTitle={item.title}
+        expectedParticipantsCount={item.expectedParticipants}
+        initialParticipants={item.participantList}
+        onConfirmComplete={handleConfirmSessionComplete}
+      />
     </Box>
   );
 };
 
 // ---------- ListCard ----------
 
-export default function TrainingCard(): React.ReactElement {
+interface TrainingCardProps {
+  searchQuery?: string;
+  statusFilter?: string;
+  provinceFilter?: string;
+  siteFilter?: string;
+  provincesList?: ProvinceEntity[];
+  sitesList?: SiteEntity[];
+}
+
+export default function TrainingCard({
+  searchQuery,
+  statusFilter,
+  provinceFilter,
+  siteFilter,
+  provincesList = [],
+  sitesList = [],
+}: TrainingCardProps): React.ReactElement {
+  const [trainings, setTrainings] = useState<TrainingSessionItem[]>([]);
+
+  useEffect(() => {
+    getTrainingSessions({
+      searchQuery,
+      statusFilter,
+      provinceFilter,
+      siteFilter,
+      provincesList,
+      sitesList,
+    }).then(setTrainings);
+  }, [searchQuery, statusFilter, provinceFilter, siteFilter, provincesList, sitesList]);
+
   return (
-    <VStack space="md" width="100%">
-      {mockTrainings.map((item) => (
+    <VStack {...styles.listContainer}>
+      {trainings.map((item) => (
         <Card key={item.id} item={item} />
       ))}
     </VStack>

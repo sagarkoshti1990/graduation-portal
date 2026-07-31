@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, VStack } from '@ui';
 import styles from './styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
@@ -8,76 +8,149 @@ import FilterButton from '@components/Filter';
 import TrainingCard from './components/Cards/TrainingCard';
 import AdditionalServicesCard from './components/Cards/AdditionalServicesCard';
 import AssetCard from './components/Cards/AssetCard';
+import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
+import { getTrainingSessions, getAdditionalServices, getAssets } from '../../../services/SupportOfferingsServices/supportOfferingsService';
+import type { ProvinceEntity, SiteEntity } from '@app-types/Users';
+import { STATUS_OPTIONS } from '../../../constants/SUPPORT_OFFERINGS_MOCK';
 
-const filterOptions = [
-  {
-    type: 'search',
-    attr: 'search',
-    placeholderKey: 'admin.filters.searchOfferingsPlaceholder',
-  },
-  {
-    type: 'select',
-    attr: 'status',
-    placeholder: 'All Statuses',
-    data: [
-      { label: 'All Statuses', value: 'all-statuses' },
-      { label: 'Pending', value: 'Pending' },
-      { label: 'Accepted', value: 'Accepted' },
-      { label: 'Rejected', value: 'Rejected' },
-    ],
-  },
-  {
-    type: 'select',
-    attr: 'province',
-    placeholder: 'All Provinces',
-    data: [
-      { label: 'All Provinces', value: 'all-provinces' },
-      { label: 'Gauteng', value: 'Gauteng' },
-      { label: 'Western Cape', value: 'Western Cape' },
-      { label: 'KwaZulu-Natal', value: 'KwaZulu-Natal' },
-      { label: 'Limpopo', value: 'Limpopo' },
-    ],
-  },
-  {
-    type: 'select',
-    attr: 'site',
-    placeholder: 'All Sites',
-    data: [
-      { label: 'All Sites', value: 'all-sites' },
-      { label: 'Tshwane Community Hub', value: 'tshwane-hub' },
-      { label: 'Cape Town Enterprise Office', value: 'ct-office' },
-      { label: 'Johannesburg Civic Center', value: 'joburg-center' },
-      { label: 'BRAC Gauteng Hub', value: 'gauteng-hub' },
-      { label: 'BRAC KwaZulu-Natal Hub', value: 'kzn-hub' },
-    ],
-  },
+const DEFAULT_PROVINCE_OPTIONS = [
+  { label: 'All Provinces', value: 'all-provinces' },
 ];
 
-const TABS = [
-  {
-    key: 'sessions',
-    label: 'Trainings & Sessions (6)',
-    icon: 'GraduationCap',
-  },
-  {
-    key: 'additional_services',
-    label: 'Additional Services (3)',
-    icon: 'Briefcase',
-  },
-  {
-    key: 'assets',
-    label: 'Assets (4)',
-    icon: 'Box',
-  },
+const DEFAULT_SITE_OPTIONS = [
+  { label: 'All Sites', value: 'all-sites' },
 ];
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('sessions');
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
+  const [sitesList, setSitesList] = useState<SiteEntity[]>([]);
 
-  const handleFilterChange = (newFilters: Record<string, any>) => {
-    setFilters(newFilters);
+  const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
+  const [siteOptions, setSiteOptions] = useState(DEFAULT_SITE_OPTIONS);
+
+  const [counts, setCounts] = useState({
+    sessions: 0,
+    additional_services: 0,
+    assets: 0,
+  });
+
+  // Fetch counts dynamically for each tab category
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [sessionsData, servicesData, assetsData] = await Promise.all([
+          getTrainingSessions({}),
+          getAdditionalServices({}),
+          getAssets({}),
+        ]);
+
+        setCounts({
+          sessions: sessionsData.length,
+          additional_services: servicesData.length,
+          assets: assetsData.length,
+        });
+      } catch (err) {
+        console.error('Error fetching tab counts:', err);
+      }
+    };
+    fetchCounts();
+  }, []);
+
+  const tabs = [
+    { key: 'sessions', label: `Trainings & Sessions (${counts.sessions})`, icon: 'GraduationCap' },
+    { key: 'additional_services', label: `Additional Services (${counts.additional_services})`, icon: 'Briefcase' },
+    { key: 'assets', label: `Assets (${counts.assets})`, icon: 'Box' },
+  ];
+
+  // Fetch dynamic provinces from API
+  useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        const provincesData = await getProvincesList();
+        if (provincesData && provincesData.length > 0) {
+          setProvincesList(provincesData);
+          const dynamicProvinces = [
+            { label: 'All Provinces', value: 'all-provinces' },
+            ...provincesData.map((p: any) => ({
+              label: p.name || p.title || p.label,
+              value: p.name?.toLowerCase()
+              // we can use it for api
+              // value: p._id || p.id || p.value || p.name?.toLowerCase(),
+            })),
+          ];
+          setProvinceOptions(dynamicProvinces);
+        }
+      } catch (err) {
+        console.error('Error fetching dynamic provinces:', err);
+      }
+    };
+    fetchFilterData();
+  }, []);
+
+  // Fetch dynamic sites based on selected province filter
+  useEffect(() => {
+    const fetchSitesData = async () => {
+      try {
+        const selectedProv = filters.province;
+        const selectedProvinceObj = provincesList.find(
+          (p: any) => p.name?.toLowerCase() === selectedProv?.toLowerCase() || p._id === selectedProv
+        );
+        const provinceIdParam = selectedProvinceObj ? selectedProvinceObj._id : (selectedProv && selectedProv !== 'all-provinces' ? selectedProv : undefined);
+
+        const res = await getSitesByProvince({
+          provinceId: provinceIdParam,
+          page: 1,
+          limit: 100,
+        });
+        const fetchedSites = res?.result?.data || [];
+        setSitesList(fetchedSites);
+        const dynamicSites = [
+          { label: 'All Sites', value: 'all-sites' },
+          ...(fetchedSites || []).map((s: any) => ({
+            label: s.name || s.title || s.label,
+            value: s.name?.toLowerCase() || s._id,
+          })),
+        ];
+        setSiteOptions(dynamicSites);
+      } catch (err) {
+        console.error('Error fetching dynamic sites:', err);
+      }
+    };
+    fetchSitesData();
+  }, [filters.province, provincesList]);
+
+  const filterOptions = [
+    { type: 'search', attr: 'search', placeholderKey: 'admin.filters.searchOfferingsPlaceholder' },
+    {
+      type: 'select',
+      attr: 'status',
+      placeholder: 'All Statuses',
+      data: STATUS_OPTIONS,
+    },
+    {
+      type: 'select',
+      attr: 'province',
+      placeholder: 'All Provinces',
+      data: provinceOptions,
+    },
+    {
+      type: 'select',
+      attr: 'site',
+      placeholder: 'All Sites',
+      data: siteOptions,
+    },
+  ];
+
+  const cardProps = {
+    searchQuery: filters.search,
+    statusFilter: filters.status,
+    provinceFilter: filters.province,
+    siteFilter: filters.site,
+    provincesList: provincesList,
+    sitesList: sitesList,
   };
 
   return (
@@ -86,30 +159,21 @@ const App = (): React.JSX.Element => {
         title="My Support Offerings"
         subTitle="Manage all published support — training sessions, services, and assets"
         rightSection={
-          <Button
-            onPress={() => navigation.navigate('create-opportunity' as never)}
-          >
-            <ButtonIcon as={LucideIcon} name={'Plus'} />
+          <Button onPress={() => navigation.navigate('create-opportunity' as never)}>
+            <ButtonIcon as={LucideIcon} name="Plus" />
             <ButtonText>Create New</ButtonText>
           </Button>
         }
       />
-      <Box
-        bg="$white"
-        borderBottomWidth={1}
-        borderBottomColor="$borderLight100"
-      >
+      <Box {...styles.tabBarBox}>
         <Container>
-          <HStack
-            alignItems="center"
-            space="sm"
-          >
-            {TABS.map((tab) => (
+          <HStack alignItems="center" space="sm">
+            {tabs.map((tab) => (
               <TabButton
                 key={tab.key}
                 tab={tab}
                 isActive={activeTab === tab.key}
-                onPress={(key) => setActiveTab(key)}
+                onPress={setActiveTab}
               />
             ))}
           </HStack>
@@ -117,16 +181,16 @@ const App = (): React.JSX.Element => {
       </Box>
 
       <Container {...styles.container}>
-        <VStack space="lg" width="100%">
+        <VStack {...styles.contentContainer}>
           <FilterButton
             data={filterOptions}
-            onFilterChange={handleFilterChange}
+            onFilterChange={setFilters}
             showClearButton={false}
           />
 
-          {activeTab === 'sessions' && <TrainingCard />}
-          {activeTab === 'additional_services' && <AdditionalServicesCard />}
-          {activeTab === 'assets' && <AssetCard />}
+          {activeTab === 'sessions' && <TrainingCard {...cardProps} />}
+          {activeTab === 'additional_services' && <AdditionalServicesCard {...cardProps} />}
+          {activeTab === 'assets' && <AssetCard {...cardProps} />}
         </VStack>
       </Container>
     </VStack>

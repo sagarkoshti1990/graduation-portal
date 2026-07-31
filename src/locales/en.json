@@ -2398,6 +2398,64 @@
       "requests": "Requests",
       "materialsLibrary": "Materials Library",
       "profile": "Profile"
+    },
+    "supportOfferings": {
+      "tabs": {
+        "trainingsAndSessions": "Trainings & Sessions ({{count}})",
+        "additionalServices": "Additional Services ({{count}})",
+        "assets": "Assets ({{count}})"
+      },
+      "filters": {
+        "allStatuses": "All Statuses",
+        "allProvinces": "All Provinces",
+        "allSites": "All Sites"
+      },
+      "statusOptions": {
+        "allStatuses": "All Statuses",
+        "pending": "Pending",
+        "upcoming": "Upcoming",
+        "inProgress": "In progress",
+        "completed": "Completed"
+      },
+      "cards": {
+        "requestedBy": "Requested by: {{name}}",
+        "copySession": "Copy Session",
+        "copyOffering": "Copy Offering",
+        "viewRequests": "View Requests",
+        "complete": "Complete",
+        "sessionComplete": "Session Complete",
+        "virtualLink": "Virtual Link",
+        "location": "Location",
+        "attendance": "Attendance",
+        "expectedParticipants": "Expected Participants",
+        "confirmedPresent": "Confirmed Present",
+        "notConfirmed": "Not confirmed",
+        "sessionMaterials": "Session Materials",
+        "uploadMaterial": "Upload Material",
+        "sessionNotes": "Session Notes",
+        "completionNotes": "Completion Notes",
+        "sector": "Sector: {{sector}}",
+        "value": "Value: {{value}}",
+        "locationLabel": "Location: {{location}}",
+        "hub": "Hub: {{hub}}",
+        "alerts": {
+          "sessionCopied": "Session copied successfully!",
+          "sessionCompleted": "Session marked as completed successfully!",
+          "materialUploaded": "Material uploaded successfully!",
+          "downloading": "Downloading {{name}}...",
+          "navigatingRequests": "Navigating to support requests...",
+          "offeringCopied": "Offering copied successfully!",
+          "offeringCompleted": "Offering marked as complete!"
+        }
+      },
+      "modal": {
+        "headerTitle": "Confirm Attendance",
+        "markedPresentCount": "{{count}} of {{total}} participants marked present",
+        "markAll": "Mark all",
+        "clearAll": "Clear all",
+        "skipAndMarkComplete": "Skip & Mark Complete",
+        "confirmAndComplete": "Confirm & Complete"
+      }
     }
   }
 }
