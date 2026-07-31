@@ -1,0 +1,291 @@
+{
+  "mockTrainings": [
+    {
+      "id": 1,
+      "title": "Financial Literacy Workshop",
+      "status": "Upcoming",
+      "date": "25 Apr 2026",
+      "time": "09:00 - 12:00",
+      "format": "In-person",
+      "participants": "25 participants",
+      "requestedBy": "Sipho Mkhize (Johannesburg Youth Development) • Gauteng",
+      "province": "Gauteng",
+      "siteKey": "joburg-center",
+      "hasCopyButton": true,
+      "location": "Community Centre, Soweto, Johannesburg",
+      "expectedParticipants": 25,
+      "confirmedPresent": "Not confirmed",
+      "notes": "Participants are youth aged 18-24, mixed literacy levels. Requested focus on budgeting and savings.",
+      "materials": [
+        {
+          "name": "Financial Literacy Workbook.pdf",
+          "info": "PDF • 2.4 MB • Uploaded 2026/04/15"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Business Plan Development Training",
+      "status": "In progress",
+      "date": "18 Apr 2026",
+      "time": "14:00 - 17:00",
+      "format": "Hybrid",
+      "participants": "--",
+      "requestedBy": "Thandiwe Ndlovu (Cape Town Enterprise Support) • Western Cape",
+      "province": "Western Cape",
+      "siteKey": "ct-office",
+      "hasCopyButton": false,
+      "virtualLink": "https://meet.example.com/business-plan-training",
+      "location": "Western Cape Skills Hub, Cape Town",
+      "expectedParticipants": 30,
+      "confirmedPresent": "--",
+      "notes": "Mix of in-person and remote participants. Virtual attendees need breakout room access.",
+      "materials": [
+        {
+          "name": "Business Plan Template.xlsx",
+          "info": "XLSX • 1.8 MB • Uploaded 2026/04/10"
+        },
+        {
+          "name": "Session Slides.pptx",
+          "info": "PPTX • 5.2 MB • Uploaded 2026/04/17"
+        }
+      ],
+      "participantList": [
+        { "id": "1", "name": "Participant 1", "lcName": "LC: Thandiwe Ndlovu", "isPresent": false },
+        { "id": "2", "name": "Participant 2", "lcName": "LC: Thandiwe Ndlovu", "isPresent": false },
+        { "id": "3", "name": "Participant 3", "lcName": "LC: Thandiwe Ndlovu", "isPresent": false },
+        { "id": "4", "name": "Participant 4", "lcName": "LC: Thandiwe Ndlovu", "isPresent": false },
+        { "id": "5", "name": "Participant 5", "lcName": "LC: Thandiwe Ndlovu", "isPresent": false },
+        { "id": "6", "name": "Participant 6", "lcName": "LC: Thandiwe Ndlovu", "isPresent": false }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Digital Marketing Basics",
+      "status": "Completed",
+      "date": "10 Apr 2026",
+      "time": "09:00 - 13:00",
+      "format": "Virtual",
+      "participants": "6 participants",
+      "requestedBy": "Mpho Khumalo (KZN Skills Initiative) • KwaZulu-Natal",
+      "province": "KwaZulu-Natal",
+      "siteKey": "kzn-hub",
+      "hasCopyButton": true,
+      "virtualLink": "https://meet.example.com/digital-marketing",
+      "expectedParticipants": 20,
+      "confirmedPresent": "6",
+      "completionNotes": "Session went well. All participants actively engaged. Requested follow-up session on advanced topics.",
+      "materials": [
+        {
+          "name": "Digital Marketing Guide.pdf",
+          "info": "PDF • 3.1 MB • Uploaded 2026/04/05"
+        },
+        {
+          "name": "Social Media Templates.zip",
+          "info": "ZIP • 12.5 MB • Uploaded 2026/04/05"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Advanced Bookkeeping & Tax Compliance",
+      "status": "Upcoming",
+      "date": "31 July 2026",
+      "time": "08:00 - 20:00",
+      "format": "In-person",
+      "participants": "18 participants",
+      "requestedBy": "Lindiwe Dlamini (Durban SMME Hub) • KwaZulu-Natal",
+      "province": "KwaZulu-Natal",
+      "siteKey": "kzn-hub",
+      "hasCopyButton": true,
+      "location": "Durban City Hall Conference Room, Durban",
+      "expectedParticipants": 20,
+      "confirmedPresent": "Not confirmed",
+      "notes": "Comprehensive session covering VAT registration, SARS filing, and daily ledger management.",
+      "materials": []
+    },
+    {
+      "id": 5,
+      "title": "Supply Chain & Procurement Essentials",
+      "status": "Upcoming",
+      "date": "12 May 2027",
+      "time": "09:00 - 11:30",
+      "format": "Virtual",
+      "participants": "15 participants",
+      "requestedBy": "Kagiso Molefe (Pretoria Business Incubator) • Gauteng",
+      "province": "Gauteng",
+      "siteKey": "tshwane-hub",
+      "hasCopyButton": false,
+      "virtualLink": "https://meet.example.com/supply-chain-essentials",
+      "expectedParticipants": 15,
+      "confirmedPresent": "Not confirmed",
+      "notes": "Covers vendor onboarding, tender documentation, and contract negotiations.",
+      "materials": []
+    },
+    {
+      "id": 6,
+      "title": "Vocational Sewing & Garment Tailoring",
+      "status": "Upcoming",
+      "date": "15 Aug 2027",
+      "time": "10:00 - 13:00",
+      "format": "In-person",
+      "participants": "18 participants",
+      "requestedBy": "Sarah Dlamini (Limpopo Enterprise Support) • Limpopo",
+      "province": "Limpopo",
+      "siteKey": "joburg-center",
+      "hasCopyButton": true,
+      "location": "Limpopo Textile Training Hub, Polokwane",
+      "expectedParticipants": 18,
+      "confirmedPresent": "Not confirmed",
+      "notes": "Hands-on practical session covering pattern drafting, machine maintenance, and garment construction.",
+      "materials": []
+    }
+  ],
+  "mockServices": [
+    {
+      "id": 1,
+      "title": "Legal Advisory — Labour Law",
+      "status": "Upcoming",
+      "description": "On-site legal advisory sessions covering labour law, employee rights, and basic contract literacy.",
+      "location": "Gauteng",
+      "hubOffice": "Tshwane",
+      "site": "Tshwane Community Hub",
+      "requests": "4 requests received",
+      "actionType": "copy",
+      "province": "Gauteng",
+      "siteKey": "tshwane-hub"
+    },
+    {
+      "id": 2,
+      "title": "CIPC Business Formalisation & Registration",
+      "status": "In progress",
+      "description": "Direct assistance registering informal businesses with CIPC and tax authorities.",
+      "location": "Western Cape",
+      "hubOffice": "Cape Town",
+      "site": "Cape Town Enterprise Office",
+      "requests": "6 requests received",
+      "actionType": "complete",
+      "province": "Western Cape",
+      "siteKey": "ct-office"
+    },
+    {
+      "id": 3,
+      "title": "Emergency Municipal Indigent Support Package",
+      "status": "Completed",
+      "description": "Help vulnerable households apply for municipal utility rebates and indigent grants.",
+      "location": "Gauteng",
+      "hubOffice": "Johannesburg",
+      "site": "Johannesburg Civic Center",
+      "requests": "9 requests received",
+      "actionType": "copy",
+      "province": "Gauteng",
+      "siteKey": "joburg-center"
+    },
+    {
+      "id": 4,
+      "title": "Financial Audit & Risk Assessment Support",
+      "status": "Upcoming",
+      "description": "1-on-1 financial health checks and risk audit consulting for growing small enterprises.",
+      "location": "KwaZulu-Natal",
+      "hubOffice": "Durban",
+      "site": "Durban Central Hub",
+      "requests": "3 requests received",
+      "actionType": "copy",
+      "province": "KwaZulu-Natal",
+      "siteKey": "kzn-hub"
+    },
+    {
+      "id": 5,
+      "title": "Intellectual Property & Trademark Registration",
+      "status": "In progress",
+      "description": "Guidance on brand protection, copyright registration, and patent filings for tech startups.",
+      "location": "Gauteng",
+      "hubOffice": "Johannesburg",
+      "site": "Johannesburg Innovation Center",
+      "requests": "7 requests received",
+      "actionType": "complete",
+      "province": "Gauteng",
+      "siteKey": "joburg-center"
+    }
+  ],
+  "mockAssets": [
+    {
+      "id": 1,
+      "title": "Sewing Machine Provision",
+      "status": "Upcoming",
+      "type": "In-kind",
+      "description": "",
+      "sector": "Manufacturing",
+      "value": "R 3 500",
+      "location": "Limpopo",
+      "requests": "0 requests received",
+      "province": "Limpopo",
+      "siteKey": "joburg-center"
+    },
+    {
+      "id": 2,
+      "title": "Industrial Sewing Machine Allocation",
+      "status": "Accepted",
+      "type": "In-kind",
+      "description": "Industrial sewing machines for textile entrepreneurs in the Limpopo region.",
+      "sector": "Manufacturing",
+      "value": "R 35 000",
+      "location": "Limpopo",
+      "requests": "6 requests received",
+      "province": "Limpopo",
+      "siteKey": "ct-office"
+    },
+    {
+      "id": 3,
+      "title": "Agricultural Seedlings & Toolkit Package",
+      "status": "Pending",
+      "type": "In-kind",
+      "description": "High-yield vegetable seedlings and manual farming tools for smallholder farmers.",
+      "sector": "Agriculture",
+      "value": "R 22 000",
+      "location": "Limpopo",
+      "requests": "12 requests received",
+      "province": "Limpopo",
+      "siteKey": "kzn-hub"
+    },
+    {
+      "id": 4,
+      "title": "Laptop Lending Kit for Digital Entrepreneurs",
+      "status": "Rejected",
+      "type": "In-kind",
+      "description": "Refurbished laptops on 3-month loan for youth completing software & web design courses.",
+      "sector": "Technology and ICT",
+      "value": "R 48 000",
+      "location": "Western Cape",
+      "requests": "10 requests received",
+      "province": "Western Cape",
+      "siteKey": "ct-office"
+    },
+    {
+      "id": 5,
+      "title": "Solar Power Generator Units (5kW)",
+      "status": "Pending",
+      "type": "In-kind",
+      "description": "Portable solar generators provided to rural micro-businesses affected by power outages.",
+      "sector": "Renewable Energy",
+      "value": "R 65 000",
+      "location": "Mpumalanga",
+      "requests": "8 requests received",
+      "province": "Mpumalanga",
+      "siteKey": "tshwane-hub"
+    },
+    {
+      "id": 6,
+      "title": "Woodworking CNC Router Tooling Suite",
+      "status": "Accepted",
+      "type": "In-kind",
+      "description": "Precision carpentry tools and CNC equipment for local furniture manufacturers.",
+      "sector": "Manufacturing",
+      "value": "R 92 000",
+      "location": "Gauteng",
+      "requests": "5 requests received",
+      "province": "Gauteng",
+      "siteKey": "joburg-center"
+    }
+  ]
+}

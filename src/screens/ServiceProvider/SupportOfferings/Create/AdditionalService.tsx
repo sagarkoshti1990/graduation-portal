@@ -1,10 +1,10 @@
 import React from 'react';
 import { Container, VStack } from '@ui';
 import styles from '../styles';
-import Test from '../components/Test';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
+import Test from '../components/Test';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();

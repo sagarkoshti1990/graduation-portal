@@ -36,4 +36,5 @@ export const API_ENDPOINTS = {
   UPDATE_ENTITY:`${prefix}/project/v1/programUsers/updateEntityProfile`,
   GENERATE_CERTIFICATE: (projectId: string) => `${prefix}/project/v1/userProjects/update/${projectId}`,
   PROJECT_DETAILS: (projectId: string) => `${prefix}/project/v1/userProjects/details/${projectId}`,
+  SUPPORT_OFFERINGS_COMPLETE_SESSION: (sessionId: string) => `${prefix}/user/v1/support-offerings/sessions/${sessionId}/complete`,
 };

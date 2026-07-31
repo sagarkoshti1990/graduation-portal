@@ -357,7 +357,11 @@ export default function FilterButton({
           <Box minWidth="$56" flex={1}>
             <SearchBar
               key={`search-${clearCount}`}
-              placeholder={t('admin.filters.searchPlaceholder')}
+              placeholder={
+                searchItem.placeholderKey
+                  ? t(searchItem.placeholderKey)
+                  : (searchItem.placeholder || t('admin.filters.searchPlaceholder'))
+              }
               onSearch={handleSearch}
               debounceMs={500}
               defaultValue={searchKey}
