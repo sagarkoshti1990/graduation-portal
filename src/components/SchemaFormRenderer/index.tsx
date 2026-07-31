@@ -847,23 +847,22 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               key={option.value}
               disabled={isDisabled}
               onPress={() => onChange(field.name || '', option.value)}
+              flex={1}
+              px="$3"
+              py="$2.5"
+              borderRadius="$2xl"
+              borderWidth={1}
+              borderColor={isSelected ? '$primary500' : '$borderColor'}
+              bg={isSelected ? '$bgPrimary/5' : 'transparent'}
+              opacity={isDisabled ? 0.5 : 1}
             >
-              <Box
-                px="$3"
-                py="$2"
-                borderRadius="$full"
-                borderWidth={1}
-                borderColor={isSelected ? '$primary500' : '$borderColor'}
-                bg={isSelected ? '$primary500' : 'transparent'}
-                opacity={isDisabled ? 0.5 : 1}
+              <Text
+                {...TYPOGRAPHY.bodySmall}
+                color={isSelected ? '$primary500' : '$textForeground'}
+                textAlign='center'
               >
-                <Text
-                  {...TYPOGRAPHY.bodySmall}
-                  color={isSelected ? '$white' : '$textForeground'}
-                >
-                  {option.label}
-                </Text>
-              </Box>
+                {option.label}
+              </Text>
             </Pressable>
           );
         })}
@@ -1353,7 +1352,7 @@ const StepProgress: React.FC<{
   t: (key: string, fallback?: string) => string;
 }> = ({ total, completed, t }) => {
   const percent = total > 0 ? (completed / total) * 100 : 100;
-  const displayPercent = Math.round(percent * 10) / 10;
+  const displayPercent = Math.ceil(percent * 10) / 10;
 
   return (
     <VStack
@@ -1498,7 +1497,7 @@ const ValidationPopup: React.FC<{
                       display="flex"
                       flexDirection="row"
                       justifyContent="space-between"
-                      alignItems='center'
+                      alignItems="center"
                     >
                       <Text
                         {...TYPOGRAPHY.bodySmall}

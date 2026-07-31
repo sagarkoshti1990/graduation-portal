@@ -74,6 +74,7 @@ export const FORM_FIELD_TYPES = {
   DATE: 'date',
   TEXTAREA: 'textarea',
   NOTE: 'note',
+  Time: 'time',
   GROUP: 'group',
   /** Read-only display of another field's label/value, resolved by name */
   VIEW: 'view',

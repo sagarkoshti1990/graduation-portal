@@ -90,108 +90,75 @@ const App = (): React.JSX.Element => {
       pillars: [
         {
           value: 'Social Empowerment',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.pillars.socialEmpowerment',
-            ) || 'Social Empowerment',
+          label:'Social Empowerment',
         },
         {
           value: 'Financial Inclusion',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.pillars.financialInclusion',
-            ) || 'Financial Inclusion',
+          label: 'Financial Inclusion',
         },
         {
           value: 'Livelihoods',
-          label:
-            t('supportProvider.trainingSession.step1.pillars.livelihoods') ||
-            'Livelihoods',
+          label: 'Livelihoods',
         },
         {
           value: 'Others',
-          label:
-            t('supportProvider.trainingSession.step1.pillars.others') ||
-            'Others',
+          label: 'Others',
         },
       ],
       sessionTypes: sessionTypeOpts,
       targetAudienceOptions: [
         {
           value: 'Coach',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.targetAudienceOptions.coach',
-            ) || 'Coach',
+          label: 'Coach',
         },
         {
           value: 'Participant',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.targetAudienceOptions.participant',
-            ) || 'Participant',
+          label: 'Participant',
         },
         {
           value: 'Both',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.targetAudienceOptions.both',
-            ) || 'Both',
+          label: 'Both',
         },
       ],
       certificateOptions: [
         {
           value: 'Yes',
-          label:
-            t('supportProvider.trainingSession.step1.certificateOptions.yes') ||
-            'Yes',
+          label: 'Yes',
         },
         {
           value: 'No',
-          label:
-            t('supportProvider.trainingSession.step1.certificateOptions.no') ||
-            'No',
+          label: 'No',
         },
       ],
       recurringOptions: [
         {
           value: 'Yes',
-          label:
-            t('supportProvider.trainingSession.step1.recurringToggle') ||
-            'Yes — recurring session',
+          label: 'Yes — recurring session',
         },
         {
           value: 'No',
-          label:
-            t('supportProvider.trainingSession.step1.recurringToggleNo') ||
-            'No — one-off session',
+          label: 'No — one-off session',
         },
       ],
       formatOptions: [
         {
           value: 'Offline',
-          label:
-            t('supportProvider.trainingSession.step2.typeOptions.offline') ||
-            'Offline',
+          label: 'Offline',
           icon: 'MapPin',
         },
         {
           value: 'Online',
-          label:
-            t('supportProvider.trainingSession.step2.typeOptions.online') ||
-            'Online',
+          label: 'Online',
           icon: 'Video',
         },
         {
           value: 'Hybrid',
-          label:
-            t('supportProvider.trainingSession.step2.typeOptions.hybrid') ||
-            'Hybrid',
+          label: 'Hybrid',
           icon: 'Users',
         },
       ],
     };
-  }, [dynamicProvinces, dynamicSites, values.pillar, t]);
+  }, [dynamicProvinces, dynamicSites, values.pillar]);
 
   return (
     <VStack flex={1}>
