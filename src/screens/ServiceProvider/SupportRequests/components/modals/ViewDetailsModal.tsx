@@ -2,7 +2,9 @@ import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
-import { SUPPORT_REQUEST_BUTTON_TEXTS } from '../../constants/supportRequests.constants';
+import { SUPPORT_REQUEST_BUTTON_TEXTS, SUPPORT_REQUEST_TITLES, SUPPORT_REQUEST_LABELS } from '@constants/SUPPORT_REQUESTS';
+import modalStyles from '../../styles';
+import { useLanguage } from '@contexts/LanguageContext';
 
 export interface ViewDetailsModalProps {
   isOpen: boolean;
@@ -21,6 +23,8 @@ export default function ViewDetailsModal({
   onDecline,
   onAcceptRequest,
 }: ViewDetailsModalProps): React.JSX.Element {
+  const { t } = useLanguage();
+
   if (!isOpen || !item) return <></>;
 
   const hasPreferredInfo =
@@ -50,31 +54,23 @@ export default function ViewDetailsModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="lg"
-      maxWidth={780}
+      {...modalStyles.viewDetailsModalProps}
       headerContent={
-        <VStack space="xs" flex={1}>
-          <Text fontSize="$xl" fontWeight="$bold" color="$textDark900">
+        <VStack {...modalStyles.modalColFlex1}>
+          <Text {...modalStyles.viewDetailsTitleText}>
             {title}
           </Text>
-          <HStack space="xs" alignItems="center">
+          <HStack {...modalStyles.labelRow}>
             {/* Status Badge */}
-            <Box
-              bg="$yellow100"
-              borderColor="$yellow200"
-              borderWidth={1}
-              px="$3"
-              py="$0.5"
-              borderRadius="$full"
-            >
-              <Text fontSize="$xs" color="$yellow500" fontWeight="$bold">
+            <Box {...modalStyles.statusBadgePending}>
+              <Text {...modalStyles.statusTextPending}>
                 {status}
               </Text>
             </Box>
 
             {/* Category/Type Tag Badge */}
-            <Box bg="$gray100" px="$3" py="$0.5" borderRadius="$full">
-              <Text fontSize="$xs" color="$gray700" fontWeight="$medium">
+            <Box {...modalStyles.categoryBadge}>
+              <Text {...modalStyles.categoryText}>
                 {categoryTag}
               </Text>
             </Box>
@@ -82,25 +78,19 @@ export default function ViewDetailsModal({
         </VStack>
       }
       footerContent={
-        <HStack space="sm" width="$full" justifyContent="flex-end" alignItems="center">
+        <HStack {...modalStyles.modalFooterRow}>
           {/* Request Info Button */}
           <Pressable
             onPress={() => {
               onClose();
               onRequestInfo?.();
             }}
-            borderWidth={1}
-            borderColor="$gray200"
-            bg="$white"
-            px="$4"
-            py="$2"
-            borderRadius="$lg"
-            sx={{ ':active': { bg: '$gray50' } }}
+            {...modalStyles.btnViewDetailsRequestInfo}
           >
-            <HStack space="md" alignItems="center">
-              <LucideIcon name="MessageSquare" size={14} color="$textDark900" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-                {SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO}
+            <HStack {...modalStyles.buttonRowMd}>
+              <LucideIcon name="MessageSquare" {...modalStyles.iconDetails} />
+              <Text {...modalStyles.textBtnRequestInfo}>
+                {t(SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO)}
               </Text>
             </HStack>
           </Pressable>
@@ -111,18 +101,12 @@ export default function ViewDetailsModal({
               onClose();
               onDecline?.();
             }}
-            borderWidth={1}
-            borderColor="$red100"
-            bg="$white"
-            px="$4"
-            py="$2"
-            borderRadius="$lg"
-            sx={{ ':active': { bg: '$red50' } }}
+            {...modalStyles.btnViewDetailsDecline}
           >
-            <HStack space="md" alignItems="center">
-              <LucideIcon name="X" size={14} color="$red600" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$red600">
-                {SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE}
+            <HStack {...modalStyles.buttonRowMd}>
+              <LucideIcon name="X" {...modalStyles.iconDecline} />
+              <Text {...modalStyles.textDecline}>
+                {t(SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE)}
               </Text>
             </HStack>
           </Pressable>
@@ -133,62 +117,53 @@ export default function ViewDetailsModal({
               onClose();
               onAcceptRequest?.();
             }}
-            bg="$success600"
-            px="$4.5"
-            py="$2"
-            borderRadius="$lg"
-            shadowColor="$pillarLivelihoods"
-            shadowOffset={{ width: 0, height: 2 }}
-            shadowOpacity={0.25}
-            shadowRadius={6}
-            elevation={2}
-            sx={{ ':active': { bg: '$pillarLivelihoods' } }}
+            {...modalStyles.btnViewDetailsAccept}
           >
-            <HStack space="md" alignItems="center">
-              <LucideIcon name="CheckCircle" size={16} color="$white" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$white">
-                {SUPPORT_REQUEST_BUTTON_TEXTS.ACCEPT_REQUEST}
+            <HStack {...modalStyles.buttonRowMd}>
+              <LucideIcon name="CheckCircle" {...modalStyles.iconAccept} />
+              <Text {...modalStyles.textAccept}>
+                {t(SUPPORT_REQUEST_BUTTON_TEXTS.ACCEPT_REQUEST)}
               </Text>
             </HStack>
           </Pressable>
         </HStack>
       }
     >
-      <VStack space="lg" width="100%" py="$2">
+      <VStack {...modalStyles.viewDetailsBodyVStack}>
         {/* Coach Information */}
-        <VStack space="xs">
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
-            Coach Information
+        <VStack {...modalStyles.modalColFullWidth}>
+          <Text {...modalStyles.sectionHeadingText}>
+            {t(SUPPORT_REQUEST_TITLES.COACH_INFORMATION)}
           </Text>
-          <Box bg="$bgSidebar" p="$4" borderRadius="$xl">
-            <VStack space="sm">
-              <HStack space="sm" alignItems="center">
-                <LucideIcon name="User" size={16} color="$textDark500" />
-                <Text fontSize="$sm" fontWeight="$bold" color="$textDark800">
+          <Box {...modalStyles.coachInfoBox}>
+            <VStack {...modalStyles.coachInfoVStack}>
+              <HStack {...modalStyles.coachInfoRow}>
+                <LucideIcon name="User" {...modalStyles.iconCoachMeta} />
+                <Text {...modalStyles.textCoachName}>
                   {coachName}
                 </Text>
               </HStack>
 
-              <HStack space="sm" alignItems="center">
-                <LucideIcon name="Building2" size={16} color="$textDark500" />
-                <Text fontSize="$sm" color="$textDark600">
+              <HStack {...modalStyles.coachInfoRow}>
+                <LucideIcon name="Building2" {...modalStyles.iconCoachMeta} />
+                <Text {...modalStyles.textHubName}>
                   {hubName}
                 </Text>
               </HStack>
 
               {email && (
-                <HStack space="sm" alignItems="center">
-                  <LucideIcon name="Mail" size={16} color="$blue600" />
-                  <Text fontSize="$sm" color="$blue600">
+                <HStack {...modalStyles.coachInfoRow}>
+                  <LucideIcon name="Mail" {...modalStyles.iconContact} />
+                  <Text {...modalStyles.textContact}>
                     {email}
                   </Text>
                 </HStack>
               )}
 
               {phone && (
-                <HStack space="sm" alignItems="center">
-                  <LucideIcon name="Phone" size={16} color="$blue600" />
-                  <Text fontSize="$sm" color="$blue600">
+                <HStack {...modalStyles.coachInfoRow}>
+                  <LucideIcon name="Phone" {...modalStyles.iconContact} />
+                  <Text {...modalStyles.textContact}>
                     {phone}
                   </Text>
                 </HStack>
@@ -198,69 +173,69 @@ export default function ViewDetailsModal({
         </VStack>
 
         {/* Request Details */}
-        <VStack space="xs">
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
-            Request Details
+        <VStack {...modalStyles.modalColFullWidth}>
+          <Text {...modalStyles.sectionHeadingText}>
+            {t(SUPPORT_REQUEST_TITLES.REQUEST_DETAILS)}
           </Text>
-          <VStack space="sm">
+          <VStack {...modalStyles.coachInfoVStack}>
             {hasPreferredInfo ? (
               /* Training & Sessions or Extended Details Grid */
               <>
-                <HStack space="sm" width="100%">
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Participants
+                <HStack {...modalStyles.modalRowFullWidth}>
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PARTICIPANTS)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {participantsCount}
                     </Text>
                   </Box>
 
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Preferred Date
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PREFERRED_DATE)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {item.preferredDate || 'N/A'}
                     </Text>
                   </Box>
                 </HStack>
 
-                <HStack space="sm" width="100%">
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Preferred Time
+                <HStack {...modalStyles.modalRowFullWidth}>
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PREFERRED_TIME)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {item.preferredTime || 'N/A'}
                     </Text>
                   </Box>
 
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Preferred Location
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PREFERRED_LOCATION)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {item.preferredLocation || 'N/A'}
                     </Text>
                   </Box>
                 </HStack>
 
-                <HStack space="sm" width="100%">
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Province
+                <HStack {...modalStyles.modalRowFullWidth}>
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PROVINCE)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {province}
                     </Text>
                   </Box>
 
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Category
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.CATEGORY)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {category}
                     </Text>
                   </Box>
@@ -269,31 +244,31 @@ export default function ViewDetailsModal({
             ) : (
               /* Standard Service / Asset Grid (3 fields) */
               <>
-                <HStack space="sm" width="100%">
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Participants
+                <HStack {...modalStyles.modalRowFullWidth}>
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PARTICIPANTS)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {participantsCount}
                     </Text>
                   </Box>
 
-                  <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" flex={1}>
-                    <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                      Province
+                  <Box {...modalStyles.gridCardBox}>
+                    <Text {...modalStyles.gridCardLabel}>
+                      {t(SUPPORT_REQUEST_LABELS.PROVINCE)}
                     </Text>
-                    <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                    <Text {...modalStyles.gridCardValue}>
                       {province}
                     </Text>
                   </Box>
                 </HStack>
 
-                <Box bg="$bgSidebar" p="$3.5" borderRadius="$lg" width="100%">
-                  <Text fontSize="$xs" color="$textDark500" mb="$0.5">
-                    Category
+                <Box {...modalStyles.gridCardBoxFullWidth}>
+                  <Text {...modalStyles.gridCardLabel}>
+                    {t(SUPPORT_REQUEST_LABELS.CATEGORY)}
                   </Text>
-                  <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
+                  <Text {...modalStyles.gridCardValue}>
                     {category}
                   </Text>
                 </Box>
@@ -304,12 +279,12 @@ export default function ViewDetailsModal({
 
         {/* Request Justification */}
         {justification && (
-          <VStack space="xs">
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
-              Request Justification
+          <VStack {...modalStyles.modalColFullWidth}>
+            <Text {...modalStyles.sectionHeadingText}>
+              {t(SUPPORT_REQUEST_LABELS.REQUEST_JUSTIFICATION)}
             </Text>
-            <Box bg="$bgSidebar" p="$4" borderRadius="$lg">
-              <Text fontSize="$sm" color="$textDark700" lineHeight="$md">
+            <Box {...modalStyles.justificationBox}>
+              <Text {...modalStyles.justificationText}>
                 {justification}
               </Text>
             </Box>
@@ -318,12 +293,12 @@ export default function ViewDetailsModal({
 
         {/* Participant Details */}
         {participantDetails && (
-          <VStack space="xs">
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
-              Participant Details
+          <VStack {...modalStyles.modalColFullWidth}>
+            <Text {...modalStyles.sectionHeadingText}>
+              {t(SUPPORT_REQUEST_LABELS.PARTICIPANT_DETAILS)}
             </Text>
-            <Box bg="$bgSidebar" p="$4" borderRadius="$lg">
-              <Text fontSize="$sm" color="$textDark700" lineHeight="$md">
+            <Box {...modalStyles.justificationBox}>
+              <Text {...modalStyles.justificationText}>
                 {participantDetails}
               </Text>
             </Box>
@@ -332,20 +307,14 @@ export default function ViewDetailsModal({
 
         {/* Special Requirements */}
         {specialRequirements && (
-          <VStack space="xs">
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900" mb="$1">
-              Special Requirements
+          <VStack {...modalStyles.modalColFullWidth}>
+            <Text {...modalStyles.sectionHeadingText}>
+              {t(SUPPORT_REQUEST_LABELS.SPECIAL_REQUIREMENTS)}
             </Text>
-            <Box
-              bg="$optionalTaskYellowBg"
-              borderWidth={1}
-              borderColor="$optionalTaskYellowBorder"
-              p="$3.5"
-              borderRadius="$lg"
-            >
-              <HStack space="sm" alignItems="center">
-                <LucideIcon name="AlertCircle" size={18} color="$warning500" />
-                <Text fontSize="$sm" fontWeight="$medium" color="$warning500">
+            <Box {...modalStyles.specialReqBox}>
+              <HStack {...modalStyles.coachInfoRow}>
+                <LucideIcon name="AlertCircle" {...modalStyles.iconSpecialReq} />
+                <Text {...modalStyles.textSpecialReq}>
                   {specialRequirements}
                 </Text>
               </HStack>

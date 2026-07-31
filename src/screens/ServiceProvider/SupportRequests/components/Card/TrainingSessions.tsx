@@ -50,35 +50,35 @@ function Card({
       {...cardStyles.cardContainer}
     >
       {/* Top Header Row */}
-      <HStack justifyContent="space-between" alignItems="flex-start" mb="$4">
+      <HStack {...cardStyles.cardHeaderRow}>
         {/* Left Side: Title & Sub-metadata */}
-        <VStack space="xs" flex={1} mr="$3">
-          <HStack space="sm" alignItems="center">
-            <LucideIcon name="GraduationCap" size={19} color="$blue600" />
-            <Text fontSize="$md" fontWeight="$bold" color="$textDark900">
+        <VStack {...cardStyles.cardTitleCol}>
+          <HStack {...cardStyles.cardTitleRow}>
+            <LucideIcon name="GraduationCap" {...cardStyles.iconTrainingSessionsTitle} />
+            <Text {...cardStyles.cardTitleText}>
               {item.title}
             </Text>
           </HStack>
 
           {/* Sub Metadata Row */}
-          <HStack space="lg" alignItems="center" flexWrap="wrap" mt="$0.5">
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Users" size={14} color="$textDark500" />
-              <Text fontSize="$xs" color="$textDark600">
+          <HStack {...cardStyles.cardSubMetaRow}>
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="Users" {...cardStyles.iconSubMeta} />
+              <Text {...cardStyles.cardSubMetaText}>
                 {item.coach}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Building2" size={14} color="$textDark500" />
-              <Text fontSize="$xs" color="$textDark600">
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="Building2" {...cardStyles.iconSubMeta} />
+              <Text {...cardStyles.cardSubMetaText}>
                 {item.hub}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Calendar" size={14} color="$textDark500" />
-              <Text fontSize="$xs" color="$textDark600">
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="Calendar" {...cardStyles.iconSubMeta} />
+              <Text {...cardStyles.cardSubMetaText}>
                 Requested {item.requestedDate}
               </Text>
             </HStack>
@@ -91,36 +91,36 @@ function Card({
 
       {/* Middle Light-Gray Detail Box */}
       <Box {...cardStyles.detailBox}>
-        <HStack alignItems="center">
+        <HStack {...cardStyles.cardDetailRow}>
           {/* Left Column */}
-          <VStack space="sm" flex={1}>
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Users" size={15} color="$textDark600" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$textDark800">
+          <VStack {...cardStyles.cardDetailCol}>
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="Users" {...cardStyles.iconDetailBold} />
+              <Text {...cardStyles.cardDetailBoldText}>
                 {item.participants} participants
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Clock" size={15} color="$textDark500" />
-              <Text fontSize="$sm" color="$textDark600">
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="Clock" {...cardStyles.iconDetailText} />
+              <Text {...cardStyles.cardSubMetaText}>
                 {item.preferredTime}
               </Text>
             </HStack>
           </VStack>
 
           {/* Right Column */}
-          <VStack space="sm" flex={1}>
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Calendar" size={15} color="$textDark500" />
-              <Text fontSize="$sm" color="$textDark700">
+          <VStack {...cardStyles.cardDetailCol}>
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="Calendar" {...cardStyles.iconDetailText} />
+              <Text {...cardStyles.cardDetailText}>
                 Preferred: {item.preferredDate}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="MapPin" size={15} color="$textDark500" />
-              <Text fontSize="$sm" color="$textDark700">
+            <HStack {...cardStyles.cardSubMetaItem}>
+              <LucideIcon name="MapPin" {...cardStyles.iconDetailText} />
+              <Text {...cardStyles.cardDetailText}>
                 {item.location}
               </Text>
             </HStack>
@@ -157,7 +157,7 @@ export default function TrainingSessionsCard({
   const displayItems = items;
 
   return (
-    <VStack space="md" width="100%">
+    <VStack {...cardStyles.cardListContainer}>
       {displayItems.map((item) => (
         <Card
           key={item.id}

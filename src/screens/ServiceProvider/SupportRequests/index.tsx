@@ -9,6 +9,7 @@ import { TabButton } from '@components/Tabs';
 import FilterButton from '@components/Filter';
 import SupportRequestsModals, { SupportRequestModalType } from './components/modals/SupportRequestsModals';
 import { SUPPORT_REQUEST_TITLES } from '@constants/SUPPORT_REQUESTS';
+import { useLanguage } from '@contexts/LanguageContext';
 import { getSupportRequests } from '../../../services/serviceProvider';
 import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
 
@@ -20,9 +21,8 @@ const DEFAULT_SITE_OPTIONS = [
   { label: 'All Sites', value: 'all-sites' },
 ];
 
-
-
 const App = (): React.JSX.Element => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('sessions');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [requestsData, setRequestsData] = useState<any[]>([]);
@@ -172,17 +172,17 @@ const App = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title={SUPPORT_REQUEST_TITLES.HEADER}
-        subTitle={SUPPORT_REQUEST_TITLES.SUBHEADER}
+        title={t(SUPPORT_REQUEST_TITLES.HEADER)}
+        subTitle={t(SUPPORT_REQUEST_TITLES.SUBHEADER)}
         rightSection={
-          <HStack space="xs" alignItems="center">
+          <HStack {...styles.labelRow}>
             <Box {...styles.pendingHeaderBadge}>
-              <Text color="$white" fontSize="$xs" fontWeight="$bold">
+              <Text {...styles.headerBadgeText}>
                 {tabCounts.pendingTotal ?? 11} Pending
               </Text>
             </Box>
             <Box {...styles.overdueHeaderBadge}>
-              <Text color="$white" fontSize="$xs" fontWeight="$bold">
+              <Text {...styles.headerBadgeText}>
                 {tabCounts.overdueTotal ?? 11} Overdue
               </Text>
             </Box>
@@ -190,7 +190,7 @@ const App = (): React.JSX.Element => {
         }
       />
       <Container {...styles.container}>
-        <VStack space="md" width="100%">
+        <VStack {...styles.screenVStack}>
           {/* Tabs Navigation */}
           <HStack {...styles.tabsHeader}>
             {tabs.map((tab) => (
@@ -199,7 +199,7 @@ const App = (): React.JSX.Element => {
                 tab={tab}
                 isActive={activeTab === tab.key}
                 onPress={(key) => setActiveTab(key)}
-                _text={{ fontSize: '$sm' }}
+                _text={styles.tabTextProps}
                 iconSize={16}
               />
             ))}
@@ -212,7 +212,7 @@ const App = (): React.JSX.Element => {
             showClearButton={false}
             hideTitleHeader={true}
             _container={styles.filterContainer}
-            _input={{ size: 'sm' }}
+            _input={styles.filterInputProps}
           />
           {activeTab === 'sessions' && (
             <TrainingSessionsCard

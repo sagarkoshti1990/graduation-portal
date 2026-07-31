@@ -89,7 +89,7 @@ export const getSupportRequests = async (
   // Mock Data fallback & filtering logic
   const { tab = 'sessions', province, site, search } = params || {};
 
-  const allCategories = supportRequestsMock as Record<string, SupportRequestItem[]>;
+  const allCategories = (supportRequestsMock as unknown) as Record<string, SupportRequestItem[]>;
   let list: SupportRequestItem[] = allCategories[tab] || [];
 
   if (province && province !== 'all-provinces') {

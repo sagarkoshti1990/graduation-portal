@@ -8,7 +8,9 @@ import {
   SUPPORT_REQUEST_LABELS,
   SUPPORT_REQUEST_PLACEHOLDERS,
   SUPPORT_REQUEST_HINTS,
-} from '../../constants/supportRequests.constants';
+} from '@constants/SUPPORT_REQUESTS';
+import modalStyles from '../../styles';
+import { useLanguage } from '@contexts/LanguageContext';
 
 export interface RequestInfoModalProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ export default function RequestInfoModal({
   item,
   onSubmit,
 }: RequestInfoModalProps): React.JSX.Element {
+  const { t } = useLanguage();
   const [message, setMessage] = useState('');
 
   if (!isOpen) return <></>;
@@ -45,69 +48,53 @@ export default function RequestInfoModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      size="md"
-      headerTitle={SUPPORT_REQUEST_TITLES.REQUEST_INFO}
+      {...modalStyles.modalPropsMd}
+      headerTitle={t(SUPPORT_REQUEST_TITLES.REQUEST_INFO)}
       footerContent={
-        <HStack space="sm" width="$full" justifyContent="flex-end" alignItems="center">
+        <HStack {...modalStyles.modalFooterRow}>
           {/* Cancel Button */}
           <Pressable
             onPress={handleClose}
-            borderWidth={1}
-            borderColor="$gray200"
-            bg="$white"
-            px="$4"
-            py="$2.5"
-            borderRadius="$lg"
-            sx={{ ':active': { bg: '$gray50' } }}
+            {...modalStyles.declineCancelBtn}
           >
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-              {SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL}
+            <Text {...modalStyles.declineModalCancelText}>
+              {t(SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL)}
             </Text>
           </Pressable>
 
           {/* Send Request Button */}
           <Pressable
             onPress={handleSubmit}
-            bg="$red900"
-            px="$5"
-            py="$2.5"
-            borderRadius="$lg"
-            sx={{ ':active': { opacity: 0.85 } }}
+            {...modalStyles.requestInfoBtnSend}
           >
-            <HStack space="sm" alignItems="center">
-              <LucideIcon name="MessageSquare" size={15} color="$white" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$white">
-                {SUPPORT_REQUEST_BUTTON_TEXTS.SEND_REQUEST}
+            <HStack {...modalStyles.modalConfirmRow}>
+              <LucideIcon name="MessageSquare" {...modalStyles.iconDeclineConfirm} />
+              <Text {...modalStyles.modalConfirmText}>
+                {t(SUPPORT_REQUEST_BUTTON_TEXTS.SEND_REQUEST)}
               </Text>
             </HStack>
           </Pressable>
         </HStack>
       }
     >
-      <VStack space="md" width="100%" py="$2">
+      <VStack {...modalStyles.modalBodyVStack}>
         {/* Light Blue Summary Box */}
-        <Box
-          bg="$blue50"
-          borderWidth={1}
-          borderColor="$blue200"
-          p="$4"
-          borderRadius="$xl"
-        >
-          <VStack space="xs">
-            <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="$blue700">
-                {SUPPORT_REQUEST_LABELS.REQUEST}
+        <Box {...modalStyles.requestInfoSummaryBox}>
+          <VStack {...modalStyles.summaryVStack}>
+            <HStack {...modalStyles.labelRow}>
+              <Text {...modalStyles.requestInfoSummaryTitleText}>
+                {t(SUPPORT_REQUEST_LABELS.REQUEST)}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="$blue500">
+              <Text {...modalStyles.requestInfoSummaryValueText}>
                 {requestTitle}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="$blue700">
-                {SUPPORT_REQUEST_LABELS.COACH}
+            <HStack {...modalStyles.labelRow}>
+              <Text {...modalStyles.requestInfoSummaryTitleText}>
+                {t(SUPPORT_REQUEST_LABELS.COACH)}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="$blue500">
+              <Text {...modalStyles.requestInfoSummaryValueText}>
                 {coachName}
               </Text>
             </HStack>
@@ -115,38 +102,28 @@ export default function RequestInfoModal({
         </Box>
 
         {/* Input Form Section */}
-        <VStack space="xs">
-          <HStack space="xs" alignItems="center">
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-              {SUPPORT_REQUEST_LABELS.YOUR_QUESTION}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <HStack {...modalStyles.labelRow}>
+            <Text {...modalStyles.labelText}>
+              {t(SUPPORT_REQUEST_LABELS.YOUR_QUESTION)}
             </Text>
-            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
+            <Text {...modalStyles.requiredAsterisk}>
               *
             </Text>
           </HStack>
 
           {/* Multiline Text Input */}
-          <Textarea
-            borderWidth={1}
-            borderColor="$gray200"
-            borderRadius="$lg"
-            bg="$white"
-            h={110}
-            p="$1"
-            $focus-borderColor="$red600"
-          >
+          <Textarea {...modalStyles.declineTextarea}>
             <TextareaInput
               value={message}
               onChangeText={setMessage}
-              placeholder={SUPPORT_REQUEST_PLACEHOLDERS.REQUEST_INFO}
-              placeholderTextColor="$gray300"
-              fontSize="$sm"
-              color="$textDark900"
+              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.REQUEST_INFO)}
+              {...modalStyles.declineSelectInputPlaceholder}
             />
           </Textarea>
 
-          <Text fontSize="$xs" color="$gray300" mt="$1">
-            {SUPPORT_REQUEST_HINTS.REQUEST_INFO}
+          <Text {...modalStyles.requestInfoHintText}>
+            {t(SUPPORT_REQUEST_HINTS.REQUEST_INFO)}
           </Text>
         </VStack>
       </VStack>

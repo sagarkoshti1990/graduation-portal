@@ -1,8 +1,9 @@
 import React from 'react';
 import { HStack, Text, Pressable } from '@gluestack-ui/themed';
 import LucideIcon from '@components/ui/LucideIcon';
-import { SUPPORT_REQUEST_BUTTON_TEXTS } from '../../constants/supportRequests.constants';
+import { SUPPORT_REQUEST_BUTTON_TEXTS } from '@constants/SUPPORT_REQUESTS';
 import cardStyles from '../../styles';
+import { useLanguage } from '@contexts/LanguageContext';
 
 export interface ActionButtonsProps {
   onViewFullDetails?: () => void;
@@ -19,32 +20,33 @@ export default function ActionButtons({
   onAcceptAndSchedule,
   acceptLabel = SUPPORT_REQUEST_BUTTON_TEXTS.ACCEPT_SCHEDULE,
 }: ActionButtonsProps): React.JSX.Element {
+  const { t } = useLanguage();
   return (
-    <HStack justifyContent="space-between" alignItems="center">
+    <HStack {...cardStyles.footerRow}>
       {/* Left Action: View Full Details */}
       <Pressable
         onPress={() => onViewFullDetails?.()}
-        sx={{ ':active': { opacity: 0.6 } }}
+        {...cardStyles.buttonPressableDetails}
       >
-        <HStack space="md" alignItems="center">
-          <LucideIcon name="Eye" size={16} color="$textDark800" />
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-            {SUPPORT_REQUEST_BUTTON_TEXTS.VIEW_FULL_DETAILS}
+        <HStack {...cardStyles.buttonRowMd}>
+          <LucideIcon name="Eye" {...cardStyles.iconDetails} />
+          <Text {...cardStyles.textDetails}>
+            {t(SUPPORT_REQUEST_BUTTON_TEXTS.VIEW_FULL_DETAILS)}
           </Text>
         </HStack>
       </Pressable>
 
       {/* Right Action Buttons */}
-      <HStack space="sm" alignItems="center">
+      <HStack {...cardStyles.rightActionGroup}>
         {/* Request Info Button */}
         <Pressable
           onPress={() => onRequestInfo?.()}
           {...cardStyles.requestInfoBtn}
         >
-          <HStack space="md" alignItems="center">
-            <LucideIcon name="MessageSquare" size={14} color="$textDark700" />
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark700">
-              {SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO}
+          <HStack {...cardStyles.buttonRowMd}>
+            <LucideIcon name="MessageSquare" {...cardStyles.iconRequestInfo} />
+            <Text {...cardStyles.textRequestInfo}>
+              {t(SUPPORT_REQUEST_BUTTON_TEXTS.REQUEST_INFO)}
             </Text>
           </HStack>
         </Pressable>
@@ -54,10 +56,10 @@ export default function ActionButtons({
           onPress={() => onDecline?.()}
           {...cardStyles.declineBtn}
         >
-          <HStack space="md" alignItems="center">
-            <LucideIcon name="X" size={14} color="$red600" />
-            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
-              {SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE}
+          <HStack {...cardStyles.buttonRowMd}>
+            <LucideIcon name="X" {...cardStyles.iconDecline} />
+            <Text {...cardStyles.textDecline}>
+              {t(SUPPORT_REQUEST_BUTTON_TEXTS.DECLINE)}
             </Text>
           </HStack>
         </Pressable>
@@ -67,10 +69,10 @@ export default function ActionButtons({
           onPress={() => onAcceptAndSchedule?.()}
           {...cardStyles.acceptBtn}
         >
-          <HStack space="md" alignItems="center">
-            <LucideIcon name="CheckCircle" size={16} color="$white" />
-            <Text fontSize="$sm" fontWeight="$bold" color="$white">
-              {acceptLabel}
+          <HStack {...cardStyles.buttonRowMd}>
+            <LucideIcon name="CheckCircle" {...cardStyles.iconAccept} />
+            <Text {...cardStyles.textAccept}>
+              {acceptLabel.startsWith('supportProvider.') ? t(acceptLabel) : acceptLabel}
             </Text>
           </HStack>
         </Pressable>

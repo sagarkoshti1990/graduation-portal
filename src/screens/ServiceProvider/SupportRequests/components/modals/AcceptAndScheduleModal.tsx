@@ -28,7 +28,8 @@ import {
   SUPPORT_REQUEST_PLACEHOLDERS,
   SUPPORT_REQUEST_FALLBACKS,
   DURATION_OPTIONS,
-} from '../../constants/supportRequests.constants';
+} from '@constants/SUPPORT_REQUESTS';
+import { useLanguage } from '@contexts/LanguageContext';
 
 export interface AcceptAndScheduleModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export default function AcceptAndScheduleModal({
   item,
   onSubmit,
 }: AcceptAndScheduleModalProps): React.JSX.Element {
+  const { t } = useLanguage();
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [duration, setDuration] = useState<string>(DURATION_OPTIONS[2].value);
@@ -99,18 +101,17 @@ export default function AcceptAndScheduleModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="lg"
-      maxWidth={680}
-      headerTitle={SUPPORT_REQUEST_TITLES.ACCEPT_SCHEDULE}
+      {...modalStyles.modalPropsLg}
+      headerTitle={t(SUPPORT_REQUEST_TITLES.ACCEPT_SCHEDULE)}
       footerContent={
-        <HStack space="sm" width="$full" justifyContent="flex-end" alignItems="center">
+        <HStack {...modalStyles.modalFooterRow}>
           {/* Cancel Button */}
           <Pressable
             onPress={onClose}
             {...modalStyles.modalCancelBtn}
           >
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark700">
-              {SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL}
+            <Text {...modalStyles.modalCancelText}>
+              {t(SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL)}
             </Text>
           </Pressable>
 
@@ -119,47 +120,47 @@ export default function AcceptAndScheduleModal({
             onPress={handleSubmit}
             {...modalStyles.modalConfirmBtn}
           >
-            <HStack space="sm" alignItems="center">
-              <LucideIcon name="CheckCircle" size={16} color="$white" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$white">
-                {SUPPORT_REQUEST_BUTTON_TEXTS.CONFIRM_SCHEDULE}
+            <HStack {...modalStyles.modalConfirmRow}>
+              <LucideIcon name="CheckCircle" {...modalStyles.iconConfirmCheck} />
+              <Text {...modalStyles.modalConfirmText}>
+                {t(SUPPORT_REQUEST_BUTTON_TEXTS.CONFIRM_SCHEDULE)}
               </Text>
             </HStack>
           </Pressable>
         </HStack>
       }
     >
-      <VStack space="md" width="100%" py="$2">
+      <VStack {...modalStyles.modalBodyVStack}>
         {/* Light Blue Summary Box */}
         <Box {...modalStyles.summaryBox}>
-          <VStack space="xs">
-            <HStack space="xs" alignItems="center" mb="$1">
-              <LucideIcon name="Info" size={16} color="$blue800" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$blue900">
-                {SUPPORT_REQUEST_TITLES.REQUEST_DETAILS}
+          <VStack {...modalStyles.summaryVStack}>
+            <HStack {...modalStyles.summaryTitleRow}>
+              <LucideIcon name="Info" {...modalStyles.iconSummaryInfo} />
+              <Text {...modalStyles.summaryTitleText}>
+                {t(SUPPORT_REQUEST_TITLES.REQUEST_DETAILS)}
               </Text>
             </HStack>
-            <Text fontSize="$sm" color="$blue800" ml="$6">
-              • {SUPPORT_REQUEST_LABELS.COACH}: {coachName}
+            <Text {...modalStyles.summaryDetailText}>
+              • {t(SUPPORT_REQUEST_LABELS.COACH)}: {coachName}
             </Text>
-            <Text fontSize="$sm" color="$blue800" ml="$6">
-              • {SUPPORT_REQUEST_LABELS.PARTICIPANTS}: {participants}
+            <Text {...modalStyles.summaryDetailText}>
+              • {t(SUPPORT_REQUEST_LABELS.PARTICIPANTS)}: {participants}
             </Text>
-            <Text fontSize="$sm" color="$blue800" ml="$6">
-              • {SUPPORT_REQUEST_LABELS.REQUESTED_DATE}: {requestedDate}
+            <Text {...modalStyles.summaryDetailText}>
+              • {t(SUPPORT_REQUEST_LABELS.REQUESTED_DATE)}: {requestedDate}
             </Text>
           </VStack>
         </Box>
 
         {/* Date & Time Row */}
-        <HStack space="sm" width="100%">
+        <HStack {...modalStyles.modalRowFullWidth}>
           {/* Date Input */}
-          <VStack space="xs" flex={1}>
-            <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-                {SUPPORT_REQUEST_LABELS.DATE}
+          <VStack {...modalStyles.modalColFlex1}>
+            <HStack {...modalStyles.labelRow}>
+              <Text {...modalStyles.labelText}>
+                {t(SUPPORT_REQUEST_LABELS.DATE)}
               </Text>
-              <Text fontSize="$sm" fontWeight="$bold" color="$red600">
+              <Text {...modalStyles.requiredAsterisk}>
                 *
               </Text>
             </HStack>
@@ -168,20 +169,19 @@ export default function AcceptAndScheduleModal({
               <InputField
                 value={date}
                 onChangeText={setDate}
-                fontSize="$sm"
-                color="$textDark900"
+                {...modalStyles.modalInputField}
               />
-              <LucideIcon name="Calendar" size={16} color="$textDark500" />
+              <LucideIcon name="Calendar" {...modalStyles.iconInputCalendar} />
             </Input>
           </VStack>
 
           {/* Time Input */}
-          <VStack space="xs" flex={1}>
-            <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-                {SUPPORT_REQUEST_LABELS.TIME}
+          <VStack {...modalStyles.modalColFlex1}>
+            <HStack {...modalStyles.labelRow}>
+              <Text {...modalStyles.labelText}>
+                {t(SUPPORT_REQUEST_LABELS.TIME)}
               </Text>
-              <Text fontSize="$sm" fontWeight="$bold" color="$red600">
+              <Text {...modalStyles.requiredAsterisk}>
                 *
               </Text>
             </HStack>
@@ -190,42 +190,36 @@ export default function AcceptAndScheduleModal({
               <InputField
                 value={time}
                 onChangeText={setTime}
-                fontSize="$sm"
-                color="$textDark900"
+                {...modalStyles.modalInputField}
               />
-              <LucideIcon name="Clock" size={16} color="$textDark500" />
+              <LucideIcon name="Clock" {...modalStyles.iconInputClock} />
             </Input>
           </VStack>
         </HStack>
 
         {/* Duration Select */}
-        <VStack space="xs">
-          <HStack space="xs" alignItems="center">
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-              {SUPPORT_REQUEST_LABELS.DURATION}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <HStack {...modalStyles.labelRow}>
+            <Text {...modalStyles.labelText}>
+              {t(SUPPORT_REQUEST_LABELS.DURATION)}
             </Text>
-            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
+            <Text {...modalStyles.requiredAsterisk}>
               *
             </Text>
           </HStack>
 
           <Select selectedValue={duration} onValueChange={setDuration}>
-            <SelectTrigger
-              {...modalStyles.inputStyle}
-              justifyContent="space-between"
-              alignItems="center"
-              py="$2.5"
-            >
-              <SelectInput fontSize="$sm" color="$textDark900" />
-              <SelectIcon mr="$1">
-                <LucideIcon name="ChevronDown" size={18} color="$textDark500" />
+            <SelectTrigger {...modalStyles.selectTriggerStyle}>
+              <SelectInput {...modalStyles.modalInputField} />
+              <SelectIcon {...modalStyles.selectIconStyle}>
+                <LucideIcon name="ChevronDown" {...modalStyles.iconSelectChevron} />
               </SelectIcon>
             </SelectTrigger>
             <SelectPortal>
               <SelectBackdrop />
               <SelectContent>
                 {DURATION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} label={opt.label} value={opt.value} />
+                  <SelectItem key={opt.value} label={t(opt.label)} value={opt.value} />
                 ))}
               </SelectContent>
             </SelectPortal>
@@ -233,55 +227,49 @@ export default function AcceptAndScheduleModal({
         </VStack>
 
         {/* Location / Venue Input */}
-        <VStack space="xs">
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-            {SUPPORT_REQUEST_LABELS.LOCATION_VENUE}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <Text {...modalStyles.labelText}>
+            {t(SUPPORT_REQUEST_LABELS.LOCATION_VENUE)}
           </Text>
 
           <Input {...modalStyles.inputStyle}>
             <InputField
               value={location}
               onChangeText={setLocation}
-              placeholder={SUPPORT_REQUEST_PLACEHOLDERS.LOCATION}
-              placeholderTextColor="$textDark400"
-              fontSize="$sm"
-              color="$textDark900"
+              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.LOCATION)}
+              {...modalStyles.modalInputPlaceholder}
             />
           </Input>
         </VStack>
 
         {/* Meeting Link Input */}
-        <VStack space="xs">
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-            {SUPPORT_REQUEST_LABELS.MEETING_LINK}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <Text {...modalStyles.labelText}>
+            {t(SUPPORT_REQUEST_LABELS.MEETING_LINK)}
           </Text>
 
           <Input {...modalStyles.inputStyle}>
             <InputField
               value={meetingLink}
               onChangeText={setMeetingLink}
-              placeholder={SUPPORT_REQUEST_PLACEHOLDERS.MEETING_LINK}
-              placeholderTextColor="$textDark400"
-              fontSize="$sm"
-              color="$textDark900"
+              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.MEETING_LINK)}
+              {...modalStyles.modalInputPlaceholder}
             />
           </Input>
         </VStack>
 
         {/* Notes for Coach */}
-        <VStack space="xs">
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-            {SUPPORT_REQUEST_LABELS.NOTES_FOR_COACH}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <Text {...modalStyles.labelText}>
+            {t(SUPPORT_REQUEST_LABELS.NOTES_FOR_COACH)}
           </Text>
 
           <Textarea {...modalStyles.textareaStyle}>
             <TextareaInput
               value={notes}
               onChangeText={setNotes}
-              placeholder={SUPPORT_REQUEST_PLACEHOLDERS.NOTES}
-              placeholderTextColor="$textDark400"
-              fontSize="$sm"
-              color="$textDark900"
+              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.NOTES)}
+              {...modalStyles.modalInputPlaceholder}
             />
           </Textarea>
         </VStack>

@@ -25,7 +25,9 @@ import {
   SUPPORT_REQUEST_PLACEHOLDERS,
   SUPPORT_REQUEST_HINTS,
   DECLINE_REASON_OPTIONS,
-} from '../../constants/supportRequests.constants';
+} from '@constants/SUPPORT_REQUESTS';
+import modalStyles from '../../styles';
+import { useLanguage } from '@contexts/LanguageContext';
 
 export interface DeclineModalProps {
   isOpen: boolean;
@@ -40,6 +42,7 @@ export default function DeclineModal({
   item,
   onSubmit,
 }: DeclineModalProps): React.JSX.Element {
+  const { t } = useLanguage();
   const [selectedReason, setSelectedReason] = useState('');
   const [reasonDetails, setReasonDetails] = useState('');
 
@@ -65,69 +68,53 @@ export default function DeclineModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      size="md"
-      headerTitle={SUPPORT_REQUEST_TITLES.DECLINE}
+      {...modalStyles.modalPropsMd}
+      headerTitle={t(SUPPORT_REQUEST_TITLES.DECLINE)}
       footerContent={
-        <HStack space="sm" width="$full" justifyContent="flex-end" alignItems="center">
+        <HStack {...modalStyles.modalFooterRow}>
           {/* Cancel Button */}
           <Pressable
             onPress={handleClose}
-            borderWidth={1}
-            borderColor="$gray200"
-            bg="$white"
-            px="$4"
-            py="$2.5"
-            borderRadius="$lg"
-            sx={{ ':active': { bg: '$gray50' } }}
+            {...modalStyles.declineCancelBtn}
           >
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-              {SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL}
+            <Text {...modalStyles.declineModalCancelText}>
+              {t(SUPPORT_REQUEST_BUTTON_TEXTS.CANCEL)}
             </Text>
           </Pressable>
 
           {/* Confirm Decline Button */}
           <Pressable
             onPress={handleSubmit}
-            bg="$red600"
-            px="$5"
-            py="$2.5"
-            borderRadius="$lg"
-            sx={{ ':active': { opacity: 0.85 } }}
+            {...modalStyles.declineConfirmBtn}
           >
-            <HStack space="sm" alignItems="center">
-              <LucideIcon name="X" size={15} color="$white" />
-              <Text fontSize="$sm" fontWeight="$bold" color="$white">
-                {SUPPORT_REQUEST_BUTTON_TEXTS.CONFIRM_DECLINE}
+            <HStack {...modalStyles.modalConfirmRow}>
+              <LucideIcon name="X" {...modalStyles.iconDeclineConfirm} />
+              <Text {...modalStyles.modalConfirmText}>
+                {t(SUPPORT_REQUEST_BUTTON_TEXTS.CONFIRM_DECLINE)}
               </Text>
             </HStack>
           </Pressable>
         </HStack>
       }
     >
-      <VStack space="md" width="100%" py="$2">
+      <VStack {...modalStyles.modalBodyVStack}>
         {/* Light Orange Summary Box */}
-        <Box
-          bg="$orange50"
-          borderWidth={1}
-          borderColor="$orange100"
-          p="$4"
-          borderRadius="$xl"
-        >
-          <VStack space="xs">
-            <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="$orange800">
-                {SUPPORT_REQUEST_LABELS.REQUEST}
+        <Box {...modalStyles.declineSummaryBox}>
+          <VStack {...modalStyles.summaryVStack}>
+            <HStack {...modalStyles.labelRow}>
+              <Text {...modalStyles.declineSummaryTitleText}>
+                {t(SUPPORT_REQUEST_LABELS.REQUEST)}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="$orange600">
+              <Text {...modalStyles.declineSummaryValueText}>
                 {requestTitle}
               </Text>
             </HStack>
 
-            <HStack space="xs" alignItems="center">
-              <Text fontSize="$sm" fontWeight="$bold" color="$orange800">
-                {SUPPORT_REQUEST_LABELS.COACH}
+            <HStack {...modalStyles.labelRow}>
+              <Text {...modalStyles.declineSummaryTitleText}>
+                {t(SUPPORT_REQUEST_LABELS.COACH)}
               </Text>
-              <Text fontSize="$sm" fontWeight="$medium" color="$orange600">
+              <Text {...modalStyles.declineSummaryValueText}>
                 {coachName}
               </Text>
             </HStack>
@@ -135,12 +122,12 @@ export default function DeclineModal({
         </Box>
 
         {/* Select Reason Dropdown */}
-        <VStack space="xs">
-          <HStack space="xs" alignItems="center">
-            <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-              {SUPPORT_REQUEST_LABELS.SELECT_REASON}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <HStack {...modalStyles.labelRow}>
+            <Text {...modalStyles.labelText}>
+              {t(SUPPORT_REQUEST_LABELS.SELECT_REASON)}
             </Text>
-            <Text fontSize="$sm" fontWeight="$bold" color="$red600">
+            <Text {...modalStyles.requiredAsterisk}>
               *
             </Text>
           </HStack>
@@ -149,25 +136,13 @@ export default function DeclineModal({
             selectedValue={selectedReason}
             onValueChange={setSelectedReason}
           >
-            <SelectTrigger
-              borderWidth={1}
-              borderColor="$gray200"
-              borderRadius="$lg"
-              bg="$white"
-              px="$3"
-              py="$2.5"
-              justifyContent="space-between"
-              alignItems="center"
-              $focus-borderColor="$red600"
-            >
+            <SelectTrigger {...modalStyles.declineSelectTrigger}>
               <SelectInput
-                placeholder={SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_REASON}
-                placeholderTextColor="$gray300"
-                fontSize="$sm"
-                color="$textDark900"
+                placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_REASON)}
+                {...modalStyles.declineSelectInputPlaceholder}
               />
-              <SelectIcon mr="$1">
-                <LucideIcon name="ChevronDown" size={18} color="$gray300" />
+              <SelectIcon {...modalStyles.selectIconStyle}>
+                <LucideIcon name="ChevronDown" {...modalStyles.iconDeclineChevron} />
               </SelectIcon>
             </SelectTrigger>
             <SelectPortal>
@@ -176,7 +151,7 @@ export default function DeclineModal({
                 {DECLINE_REASON_OPTIONS.map((reason) => (
                   <SelectItem
                     key={reason.value}
-                    label={reason.label}
+                    label={t(reason.label)}
                     value={reason.value}
                   />
                 ))}
@@ -186,32 +161,22 @@ export default function DeclineModal({
         </VStack>
 
         {/* Reason Details Input */}
-        <VStack space="xs">
-          <Text fontSize="$sm" fontWeight="$bold" color="$textDark900">
-            {SUPPORT_REQUEST_LABELS.REASON_DETAILS}
+        <VStack {...modalStyles.modalColFullWidth}>
+          <Text {...modalStyles.labelText}>
+            {t(SUPPORT_REQUEST_LABELS.REASON_DETAILS)}
           </Text>
 
-          <Textarea
-            borderWidth={1}
-            borderColor="$gray200"
-            borderRadius="$lg"
-            bg="$white"
-            h={100}
-            p="$1"
-            $focus-borderColor="$red600"
-          >
+          <Textarea {...modalStyles.declineTextarea}>
             <TextareaInput
               value={reasonDetails}
               onChangeText={setReasonDetails}
-              placeholder={SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_DETAILS}
-              placeholderTextColor="$gray300"
-              fontSize="$sm"
-              color="$textDark900"
+              placeholder={t(SUPPORT_REQUEST_PLACEHOLDERS.DECLINE_DETAILS)}
+              {...modalStyles.declineSelectInputPlaceholder}
             />
           </Textarea>
 
-          <Text fontSize="$xs" color="$gray400" mt="$1">
-            {SUPPORT_REQUEST_HINTS.DECLINE}
+          <Text {...modalStyles.declineHintText}>
+            {t(SUPPORT_REQUEST_HINTS.DECLINE)}
           </Text>
         </VStack>
       </VStack>
