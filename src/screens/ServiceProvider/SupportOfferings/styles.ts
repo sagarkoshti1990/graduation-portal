@@ -257,12 +257,12 @@ export default {
   } as const,
   cardValueBoldText: {
     fontSize: '$md' as const,
-    fontWeight: '$bold' as const,
+    fontWeight: '$sm' as const,
     color: '$textPrimary' as const,
   } as const,
   cardValueBoldSmText: {
     fontSize: '$sm' as const,
-    fontWeight: '$bold' as const,
+    fontWeight: '$sm' as const,
     color: '$textPrimary' as const,
   } as const,
   cardSuccessBoldText: {
