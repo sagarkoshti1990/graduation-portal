@@ -53,4 +53,31 @@ export const tabButtonStyles = {
   }),
  
   buttonTabIconColor: theme.tokens.colors.textForeground,
+
+  badgeContainer: (isActive: boolean) => ({
+    w: 20,
+    h: 20,
+    borderRadius: 10,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    bg: isActive ? '$red800' : '#FFF3E0',
+    ml: '$1',
+  }),
+
+  badgeText: (isActive: boolean) => ({
+    fontSize: 11,
+    fontWeight: '$bold' as const,
+    color: isActive ? '$white' : '#D97706',
+  }),
+
+  tabRow: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: '$2',
+    p: '$1',
+  } as const,
+
+  pressableOpacity: (isDisabled: boolean) => ({
+    opacity: isDisabled ? 0.5 : 1,
+  }),
 } as const;

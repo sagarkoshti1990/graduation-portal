@@ -44,8 +44,17 @@ export default {
     py: '$1',
     borderRadius: '$full',
   } as const,
-  requestInfoBtn: {
+  declinedBadge: {
+    bg: '$coolGray100',
     borderWidth: 1,
+    borderColor: '$coolGray300',
+    px: '$3',
+    py: '$1',
+    borderRadius: '$full',
+    alignSelf: 'flex-end',
+  } as const,
+  requestInfoBtn: {
+    borderWidth: 0.5,
     borderColor: '$borderLight200',
     bg: '$white',
     px: '$4',
@@ -185,6 +194,10 @@ export default {
   footerRow: {
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '$borderLight200',
+    pt: '$3',
+    mt: '$1',
   } as const,
   rightActionGroup: {
     space: 'sm',
@@ -218,8 +231,8 @@ export default {
     '$focus-borderColor': '$red600',
   } as const,
   declineCancelBtn: {
-    borderWidth: 1,
-    borderColor: '$gray200',
+    borderWidth: 0.5,
+    borderColor: '$borderLight200',
     bg: '$white',
     px: '$4',
     py: '$2.5',
@@ -300,6 +313,11 @@ export default {
     fontSize: '$xs',
     color: '$amber600',
     fontWeight: '$bold',
+  } as const,
+  badgeTextDeclined: {
+    color: '$coolGray700',
+    fontSize: '$xs',
+    fontWeight: '$semibold',
   } as const,
   buttonPressableDetails: {
     sx: { ':active': { opacity: 0.6 } },
@@ -515,7 +533,7 @@ export default {
   } as const,
   requestInfoHintText: {
     fontSize: '$xs',
-    color: '$gray300',
+    color: '$black',
     mt: '$1',
   } as const,
   modalPropsMd: {
@@ -580,8 +598,8 @@ export default {
     sx: { ':active': { bg: '$pillarLivelihoods' } },
   } as const,
   btnViewDetailsRequestInfo: {
-    borderWidth: 1,
-    borderColor: '$gray200',
+    borderWidth: 0.5,
+    borderColor: '$borderLight200',
     bg: '$white',
     px: '$4',
     py: '$2',
@@ -606,14 +624,19 @@ export default {
   } as const,
   coachInfoBox: {
     bg: '$bgSidebar',
-    p: '$4',
     borderRadius: '$xl',
   } as const,
   coachInfoVStack: {
-    space: 'sm',
+    space: 'xs',
+  } as const,
+  coachInfoVStack1: {
+    bg:'$red100',
+    borderRadius: '$lg',
+    p: '$3',
   } as const,
   coachInfoRow: {
     space: 'sm',
+    mb: '$2',
     alignItems: 'center',
   } as const,
   iconCoachMeta: {
