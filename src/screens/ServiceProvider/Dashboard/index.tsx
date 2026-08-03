@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, ButtonIcon, ButtonText, Container, LucideIcon, VStack } from '@ui';
 import styles from './styles';
-import Test from './components/Test';
+import DashboardContent from './components/DashboardContent';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -25,7 +25,7 @@ const App = (): React.JSX.Element => {
         }
       />
       <Container {...styles.container}>
-        <Test />
+        <DashboardContent />
       </Container>
     </VStack>
   );
