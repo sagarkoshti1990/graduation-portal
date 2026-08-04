@@ -8,6 +8,43 @@ import {
   FilterParams,
 } from '../../constants/SUPPORT_OFFERINGS_MOCK';
 
+let cachedSessions: TrainingSessionItem[] | null = null;
+
+const getCachedSessions = (): TrainingSessionItem[] => {
+  if (cachedSessions) return cachedSessions;
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const stored = window.localStorage.getItem('saved_training_sessions');
+    if (stored) {
+      try {
+        cachedSessions = JSON.parse(stored);
+        return cachedSessions!;
+      } catch (e) {}
+    }
+  }
+
+  cachedSessions = [...supportOfferingsData.mockTrainings] as TrainingSessionItem[];
+  return cachedSessions;
+};
+
+const saveCachedSessions = (sessions: TrainingSessionItem[]) => {
+  cachedSessions = sessions;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem('saved_training_sessions', JSON.stringify(sessions));
+  }
+};
+
+const formatDateString = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
 /**
  * Helper to dynamically compute status based on session date vs current date
  */
@@ -54,13 +91,17 @@ export const getTrainingSessions = async (params: FilterParams): Promise<Trainin
     console.warn('Backend API endpoint unavailable, using local mock dataset for Training Sessions:', error);
   }
 
-  const { searchQuery, statusFilter, provinceFilter, siteFilter, provincesList = [], sitesList = [] } = params || {};
+  const { searchQuery, statusFilter, provinceFilter, siteFilter, draftStatusFilter, provincesList = [], sitesList = [] } = params || {};
 
-  const rawTrainings = (supportOfferingsData.mockTrainings || []) as TrainingSessionItem[];
-  let list = rawTrainings.map((item) => ({
-    ...item,
-    status: item.date ? getDynamicStatusFromDate(item.date) : item.status,
-  }));
+  let list = getCachedSessions().map((item) => {
+    if (item.status === 'Draft') {
+      return item;
+    }
+    return {
+      ...item,
+      status: item.date ? getDynamicStatusFromDate(item.date) : item.status,
+    };
+  });
 
   if (searchQuery && searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase().trim();
@@ -96,6 +137,12 @@ export const getTrainingSessions = async (params: FilterParams): Promise<Trainin
 
   if (statusFilter && statusFilter !== 'all-statuses') {
     list = list.filter((item) => item.status === statusFilter);
+  }
+
+  if (draftStatusFilter === 'Draft') {
+    list = list.filter((item) => item.status === 'Draft');
+  } else if (draftStatusFilter === 'Published') {
+    list = list.filter((item) => item.status !== 'Draft');
   }
 
   return list;
@@ -236,4 +283,55 @@ export const completeTrainingSession = async (
     console.warn('Backend API endpoint unavailable for completeTrainingSession, returning fallback response:', error);
     return { success: true, sessionId, presentCount: data.presentCount };
   }
+};
+
+/**
+ * Save / Update a Training Session (Draft or Published)
+ */
+export const saveTrainingSession = async (
+  values: any,
+  isDraft: boolean
+): Promise<TrainingSessionItem> => {
+  const sessions = getCachedSessions();
+  const id = values.id ? Number(values.id) : Date.now();
+
+  const updatedSession: TrainingSessionItem = {
+    id,
+    title: values.sessionTitle || values.sessionType || 'Untitled Session',
+    status: isDraft ? 'Draft' : 'Upcoming',
+    date: values.startDate ? formatDateString(values.startDate) : '',
+    time: values.startTime && values.endTime ? `${values.startTime} - ${values.endTime}` : '',
+    format: values.formatType || 'Offline',
+    participants: values.maxCapacity ? `${values.maxCapacity} participants` : '--',
+    requestedBy: values.requestedBy || 'Self-Created',
+    province: values.province || '',
+    siteKey: values.site || '',
+    hasCopyButton: !isDraft,
+    location: values.venueLocation || '',
+    expectedParticipants: values.maxCapacity ? Number(values.maxCapacity) : 0,
+    confirmedPresent: isDraft ? '' : 'Not confirmed',
+    notes: values.description || '',
+    materials: [],
+    ...values, // Preserve raw values so we can edit/load them later
+  };
+
+  const existingIndex = sessions.findIndex((s) => s.id === id);
+  if (existingIndex > -1) {
+    sessions[existingIndex] = updatedSession;
+  } else {
+    sessions.push(updatedSession);
+  }
+
+  saveCachedSessions(sessions);
+  return updatedSession;
+};
+
+/**
+ * Get a single training session by ID
+ */
+export const getTrainingSessionById = async (
+  id: number
+): Promise<TrainingSessionItem | undefined> => {
+  const sessions = getCachedSessions();
+  return sessions.find((s) => s.id === id);
 };

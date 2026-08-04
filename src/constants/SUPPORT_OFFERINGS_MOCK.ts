@@ -68,6 +68,7 @@ export interface FilterParams {
   statusFilter?: string;
   provinceFilter?: string;
   siteFilter?: string;
+  draftStatusFilter?: string;
   provincesList?: ProvinceEntity[];
   sitesList?: SiteEntity[];
 }
