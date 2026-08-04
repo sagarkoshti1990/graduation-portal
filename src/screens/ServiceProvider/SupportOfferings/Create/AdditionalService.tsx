@@ -8,8 +8,6 @@ import { ADDITIONAL_SERVICES_FORM_SCHEMA } from '@constants/ADDITIONAL_SERVICES_
 import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince } from '../../../../services/usersService';
-import { styles as umStyles } from '../../../../screens/UserManagement/Styles';
-import { additionalServicesStyles } from './additionalServicesStyles';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -19,20 +17,6 @@ const App = (): React.JSX.Element => {
   const { provinces: dynamicProvinces } = useUserManagementFilters({});
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const [values, setValues] = useState<any>({});
-
-  // Dynamically swap User Management styles with Additional Services specific styles
-  useEffect(() => {
-    const originalInput = (umStyles as any).createUserFormInput;
-    const originalSelect = (umStyles as any).createUserFormSelect;
-
-    (umStyles as any).createUserFormInput = additionalServicesStyles.input;
-    (umStyles as any).createUserFormSelect = additionalServicesStyles.select;
-
-    return () => {
-      (umStyles as any).createUserFormInput = originalInput;
-      (umStyles as any).createUserFormSelect = originalSelect;
-    };
-  }, []);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues((prev: any) => {
@@ -96,38 +80,6 @@ const App = (): React.JSX.Element => {
     };
   }, [dynamicProvinces, dynamicSites, t]);
 
-  const handleSubmit = useCallback(async (formValues: any) => {
-    try {
-      console.log('Creating additional service with payload:', formValues);
-      showAlert(
-        'success',
-        t(
-          'supportProvider.additionalServicesForm.successMessage',
-          'Additional service created successfully!',
-        ),
-      );
-      navigation.goBack();
-    } catch (err: any) {
-      showAlert('error', err?.message || t('common.somethingWentWrong'));
-    }
-  }, [navigation, showAlert, t]);
-
-  const handleSaveDraft = useCallback(async (formValues: any) => {
-    try {
-      console.log('Saving draft with payload:', formValues);
-      showAlert(
-        'success',
-        t(
-          'supportProvider.additionalServicesForm.draftSuccessMessage',
-          'Draft saved successfully!',
-        ),
-      );
-      navigation.goBack();
-    } catch (err: any) {
-      showAlert('error', err?.message || t('common.somethingWentWrong'));
-    }
-  }, [navigation, showAlert, t]);
-
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -143,8 +95,6 @@ const App = (): React.JSX.Element => {
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
-            onSubmit={handleSubmit}
-            onSaveDraft={handleSaveDraft}
           />
         </Card>
       </Container>

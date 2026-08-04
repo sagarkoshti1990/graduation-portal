@@ -9,8 +9,6 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince } from '../../../../services/usersService';
 import { getProjectCategoryList } from '../../../../services/projectService';
-import { styles as umStyles } from '../../../../screens/UserManagement/Styles';
-import { assetStyles } from './assetStyles';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -21,20 +19,6 @@ const App = (): React.JSX.Element => {
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const [livelihoodCats, setLivelihoodCats] = useState<any[]>([]);
   const [values, setValues] = useState<any>({});
-
-  // Dynamically swap User Management styles with Asset specific styles
-  useEffect(() => {
-    const originalInput = (umStyles as any).createUserFormInput;
-    const originalSelect = (umStyles as any).createUserFormSelect;
-
-    (umStyles as any).createUserFormInput = assetStyles.input;
-    (umStyles as any).createUserFormSelect = assetStyles.select;
-
-    return () => {
-      (umStyles as any).createUserFormInput = originalInput;
-      (umStyles as any).createUserFormSelect = originalSelect;
-    };
-  }, []);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues((prev: any) => {
@@ -172,38 +156,6 @@ const App = (): React.JSX.Element => {
     };
   }, [dynamicProvinces, dynamicSites, livelihoodCats, t]);
 
-  const handleSubmit = useCallback(async (formValues: any) => {
-    try {
-      console.log('Creating asset with payload:', formValues);
-      showAlert(
-        'success',
-        t(
-          'supportProvider.assetForm.successMessage',
-          'Asset created successfully!',
-        ),
-      );
-      navigation.goBack();
-    } catch (err: any) {
-      showAlert('error', err?.message || t('common.somethingWentWrong'));
-    }
-  }, [navigation, showAlert, t]);
-
-  const handleSaveDraft = useCallback(async (formValues: any) => {
-    try {
-      console.log('Saving draft with payload:', formValues);
-      showAlert(
-        'success',
-        t(
-          'supportProvider.assetForm.draftSuccessMessage',
-          'Draft saved successfully!',
-        ),
-      );
-      navigation.goBack();
-    } catch (err: any) {
-      showAlert('error', err?.message || t('common.somethingWentWrong'));
-    }
-  }, [navigation, showAlert, t]);
-
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -219,8 +171,6 @@ const App = (): React.JSX.Element => {
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
-            onSubmit={handleSubmit}
-            onSaveDraft={handleSaveDraft}
           />
         </Card>
       </Container>
