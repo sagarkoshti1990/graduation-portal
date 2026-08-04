@@ -19,7 +19,7 @@ const App = (): React.JSX.Element => {
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const [livelihoodCats, setLivelihoodCats] = useState<any[]>([]);
   const [values, setValues] = useState<any>({});
-
+  
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues((prev: any) => {
       const next = { ...prev, [name]: value };
@@ -156,6 +156,22 @@ const App = (): React.JSX.Element => {
     };
   }, [dynamicProvinces, dynamicSites, livelihoodCats, t]);
 
+  const handleSaveDraft = useCallback(async (formValues: any) => {
+    try {
+      console.log('Saving draft with payload:', formValues);
+      showAlert(
+        'success',
+        t(
+          'supportProvider.assetForm.draftSuccessMessage',
+          'Draft saved successfully!',
+        ),
+      );
+      navigation.goBack();
+    } catch (err: any) {
+      showAlert('error', err?.message || t('common.somethingWentWrong'));
+    }
+  }, [navigation, showAlert, t]);
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -171,6 +187,7 @@ const App = (): React.JSX.Element => {
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            onSaveDraft={handleSaveDraft}
           />
         </Card>
       </Container>

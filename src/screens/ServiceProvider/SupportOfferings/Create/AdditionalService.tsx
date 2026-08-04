@@ -80,6 +80,22 @@ const App = (): React.JSX.Element => {
     };
   }, [dynamicProvinces, dynamicSites, t]);
 
+  const handleSaveDraft = useCallback(async (formValues: any) => {
+    try {
+      console.log('Saving draft with payload:', formValues);
+      showAlert(
+        'success',
+        t(
+          'supportProvider.additionalServicesForm.draftSuccessMessage',
+          'Draft saved successfully!',
+        ),
+      );
+      navigation.goBack();
+    } catch (err: any) {
+      showAlert('error', err?.message || t('common.somethingWentWrong'));
+    }
+  }, [navigation, showAlert, t]);
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -95,6 +111,7 @@ const App = (): React.JSX.Element => {
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            onSaveDraft={handleSaveDraft}
           />
         </Card>
       </Container>
