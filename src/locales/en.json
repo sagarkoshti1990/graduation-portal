@@ -2585,6 +2585,101 @@
         "pending": "Pending",
         "overdue": "Overdue"
       }
+    },
+    "additionalServicesForm": {
+      "categories": {
+        "specialAttention": "Special Attention",
+        "immediateAttention": "Immediate Attention",
+        "other": "Other"
+      },
+      "step1": {
+        "servicesCategory": "Services Category",
+        "servicesTitle": "Services Title",
+        "servicesTitlePlaceholder": "Name of this service...",
+        "servicesDescription": "Services Description",
+        "servicesDescriptionPlaceholder": "Describe what this service provides and who it benefits...",
+        "startDate": "Start Date",
+        "startTime": "Start Time",
+        "endDate": "End Date",
+        "endTime": "End Time",
+        "serviceLocation": "Location where service is provided (optional)",
+        "serviceLocationPlaceholder": "e.g. Community Centre, Area 4",
+        "eligibilityCriteria": "Eligibility Criteria (optional)",
+        "eligibilityCriteriaPlaceholder": "e.g. Youth aged 18-35 only"
+      }
+    },
+    "trainingSession": {
+      "tabs": {
+        "sessionDetails": "Session Details",
+        "scheduleFormat": "Schedule & Format",
+        "review": "Review & Publish"
+      },
+      "step1": {
+        "title": "Training Session Details",
+        "subTitle": "Fields marked * are required",
+        "pillar": "Pillar",
+        "pillars": {
+          "socialEmpowerment": "Social Empowerment",
+          "financialInclusion": "Financial Inclusion",
+          "livelihoods": "Livelihoods",
+          "others": "Others"
+        },
+        "sessionType": "Training / Session Type",
+        "sessionTypePlaceholder": "Select session type",
+        "sessionTitle": "Training / Session Title",
+        "sessionTitlePlaceholder": "Describe this session...",
+        "description": "Training / Session Description",
+        "descriptionPlaceholder": "Describe what this session covers and what participants will learn...",
+        "learningObjectives": "Learning Objectives (optional)",
+        "learningObjectivesPlaceholder": "List the key learning outcomes, one per line...",
+        "targetAudience": "Target Audience",
+        "targetAudienceOptions": {
+          "coach": "Coach",
+          "participant": "Participant",
+          "both": "Both"
+        },
+        "certificateProvided": "Certificate Provided",
+        "certificateOptions": {
+          "yes": "Yes",
+          "no": "No"
+        },
+        "maxCapacity": "Maximum Capacity",
+        "maxCapacityPlaceholder": "e.g. 20",
+        "recurringSession": "Recurring Session",
+        "recurringToggle": "Yes — recurring session",
+        "recurringToggleNo": "No — one-off session",
+        "resourceContent": "Resource Content",
+        "resourceUploadSub": "Upload PDF or DOC training materials",
+        "uploadPrompt": "Click to upload PDF / DOC"
+      },
+      "step2": {
+        "title": "Schedule & Format",
+        "subTitle": "Set when and how the session will be delivered",
+        "startDate": "Start Date",
+        "startTime": "Start Time",
+        "endDate": "End Date",
+        "endTime": "End Time",
+        "venueLocation": "Venue Location",
+        "venueLocationPlaceholder": "Venue name and address...",
+        "type": "Type",
+        "typeOptions": {
+          "offline": "Offline",
+          "online": "Online",
+          "hybrid": "Hybrid"
+        }
+      },
+      "step3": {
+        "sessionDetailsTitle": "Session Details",
+        "infoTitle": "Before you publish:",
+        "infoBullet1": "This support will be visible to all Coaches in the GBL network",
+        "infoBullet2": "Coaches can submit requests on behalf of participants",
+        "infoBullet3": "You'll receive notifications when requests are submitted",
+        "recurringLabel": "Recurring",
+        "scheduleTitle": "Schedule",
+        "startLabel": "Start",
+        "endLabel": "End",
+        "formatLabel": "Format"
+      }
     }
   }
 }

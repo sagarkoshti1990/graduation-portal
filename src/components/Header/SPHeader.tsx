@@ -148,8 +148,8 @@ const SPHeader: React.FC<SPHeaderProps> = ({
         <HStack alignItems="center" space="md">
           {orgName ? (
             <Text
-              fontSize="$md"
-              fontWeight="$semibold"
+              fontSize="$sm"
+              fontWeight="$medium"
               color="$white"
             >
               {orgName}

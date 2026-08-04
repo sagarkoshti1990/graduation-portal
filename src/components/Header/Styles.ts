@@ -67,7 +67,7 @@ export const stylesHeader = {
     position: 'absolute' as const,
     top: 0,
     right: 0,
-    bg: '$error600' as const,
+    bg: '$orange500' as const,
     rounded: '$full' as const,
     minWidth: 20,
     height: 20,
@@ -75,9 +75,9 @@ export const stylesHeader = {
     alignItems: 'center' as const,
   },
   notificationBadgeText: {
-    fontSize: '$2xs' as const,
+    fontSize: '$xs' as const,
     color: '$white' as const,
-    fontWeight: '$bold' as const,
+    fontWeight: '$medium' as const,
   },
   userMenuTrigger: {
     flexDirection: 'row' as const,
@@ -114,7 +114,7 @@ export const stylesHeader = {
   },
   notificationIcon: {
     color: '$textLight900' as const,
-    size: 'xl' as const,
+    size: 'md' as const,
     p: '$3' as const,
   },
   headerIcon: {
