@@ -57,6 +57,14 @@
     "serverError500": "Something went wrong. Try again.",
     "somethingWentWrong": "Something went wrong. Try again."
   },
+  "datePicker": {
+    "today": "Today",
+    "now": "Now",
+    "done": "Done",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "selectDateTime": "Select date & time"
+  },
   "projectPlayer": {
     "onboarding": "Onboarding the",
     "participant": "Participant",

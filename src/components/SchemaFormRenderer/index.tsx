@@ -925,7 +925,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Date ────────────────────────────────────────────────────────────────────
-  if (field.type === FORM_FIELD_TYPES.DATE) {
+  if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time) {
     // Internal display value: stored as YYYY_MM_DD, displayed as YYYY-MM-DD
     const displayValue = value ? value.replace(/_/g, '-') : '';
 
@@ -933,6 +933,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       <Box zIndex={field.zIndex ?? 999}>
         <DatePicker
           {...styles.createUserFormInput}
+          mode={field.type}
           placeholder={placeholder || 'YYYY-MM-DD'}
           value={displayValue}
           onChange={(date: string) =>
