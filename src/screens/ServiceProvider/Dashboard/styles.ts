@@ -3,9 +3,339 @@ export default {
     px: '$4',
     py: '$6',
     '$md-px': '$6',
+    pb: '$12',
   },
-  title: {
-    fontSize: 24,
+  cardDashboardWrapper: {
+    bg: '$white',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e4e4e4ff',
+    shadowColor: '$black',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+    p: 24,
+  },
+  cardLeftWrapper: {
+    bg: '$white',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e4e4e4ff',
+    shadowColor: '$black',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+    p: 20, // $5
+    flex: 1.6,
+    minWidth: 320,
+  },
+  cardRightWrapper: {
+    bg: '$white',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e4e4e4ff',
+    shadowColor: '$black',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+    p: 20, // $5
+    flex: 1,
+    minWidth: 300,
+  },
+  sectionTitle: {
+    color: '$textPrimary',
     fontWeight: '700',
+    fontSize: 18,
   },
-};
+  sectionSubTitle: {
+    fontSize: 14,
+    color: '$textSecondary',
+    mt: 2,
+  },
+  kpiCardContainer: {
+    bg: '$white',
+    p: '$2',
+    flex: 1,
+    minWidth: 260,
+  },
+  iconCircleOrange: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    bg: '$orange100',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCircleBlue: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    bg: '$blue100',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCircleGreen: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    bg: '$success100',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kpiHeaderOrange: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '$orange700',
+    letterSpacing: 0.5,
+  },
+  kpiHeaderBlue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '$blue600',
+    letterSpacing: 0.5,
+  },
+  kpiHeaderGreen: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '$success600',
+    letterSpacing: 0.5,
+  },
+  kpiSubHeader: {
+    fontSize: 13,
+    color: '$textSecondary',
+  },
+  kpiValueLarge: {
+    fontSize: 38,
+    fontWeight: '800',
+    color: '$textPrimary',
+    lineHeight: 44,
+  },
+  kpiUnitText: {
+    fontSize: 15,
+    color: '$gray600',
+    fontWeight: '500',
+  },
+  kpiMetaText: {
+    fontSize: 14,
+    color: '$gray600',
+    mb: 4,
+  },
+  kpiValueBoldText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '$textPrimary',
+  },
+  kpiValueBlueBoldText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '$blue600',
+  },
+  kpiValueGreenBoldText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '$success600',
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    bg: '$blue50',
+    overflow: 'hidden',
+    width: '100%',
+    mt: '$4',
+  },
+  progressBarOrange: {
+    height: '100%',
+    bg: '$orange600',
+    borderRadius: 3,
+    width: '100%',
+  },
+  progressBarBlue: {
+    height: '100%',
+    bg: '$blue600',
+    borderRadius: 3,
+  },
+  progressBarGreen: {
+    height: '100%',
+    bg: '$success600',
+    borderRadius: 3,
+  },
+  kpiPctTextBlue: {
+    fontSize: 13,
+    color: '$blue600',
+    fontWeight: '600',
+    mt: '$2',
+  },
+  kpiPctTextGreen: {
+    fontSize: 13,
+    color: '$success600',
+    fontWeight: '600',
+    mt: '$2',
+  },
+  badgeGreen: {
+    bg: '$success100',
+    px: '$2',
+    py: '$0.5',
+    borderRadius: 99,
+  },
+  badgeGreenText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '$success600',
+  },
+  badgeCount: {
+    bg: '$blue100',
+    px: '$2',
+    py: '$0.5',
+    borderRadius: 99,
+  },
+  badgeCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '$blue600',
+  },
+  sessionCard: {
+    bg: '$bgSidebar',
+    p: '$3',
+    borderRadius: '$lg',
+    borderWidth: 1,
+    borderColor: '$accent200',
+  },
+  sessionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '$textForegroundColor',
+    mb: '$1',
+  },
+  sessionMeta: {
+    fontSize: 12,
+    color: '$textMutedForeground',
+  },
+  viewAllBtn: {
+    variant: 'link',
+    bg: 'transparent',
+    alignSelf: 'flex-start',
+    p: '$0',
+    mt: '$4',
+  },
+  viewAllBtnText: {
+    color: '$blue600',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Added consolidated styles to remove inline props
+  rootContainer: {
+    space: 'xl',
+    width: '100%',
+  },
+  overviewVStack: {
+    space: 'lg',
+  },
+  titleVStack: {
+    space: 'xs',
+  },
+  headerHStack: {
+    alignItems: 'center',
+    space: 'sm',
+  },
+  sectionTitleIcon: {
+    size: 20,
+    color: '$primary500',
+  },
+  kpiRow: {
+    space: 'xl',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  kpiHeaderRow: {
+    space: 'sm',
+    alignItems: 'center',
+    mb: '$4',
+  },
+  kpiIconOrange: {
+    size: 20,
+    color: '$orange600',
+  },
+  kpiIconBlue: {
+    size: 20,
+    color: '$blue600',
+  },
+  kpiIconGreen: {
+    size: 20,
+    color: '$success600',
+  },
+  kpiTextVStack: {
+    space: 'xs',
+  },
+  kpiValueRow: {
+    alignItems: 'baseline',
+    space: 'xs',
+    mb: '$3',
+  },
+  kpiHeaderGreenRow: {
+    alignItems: 'center',
+    space: 'xs',
+  },
+  contentRow: {
+    space: 'lg',
+    flexWrap: 'wrap',
+    width: '100%',
+    p: '$4',
+  },
+  chartVStack: {
+    space: 'md',
+  },
+  chartHeaderRow: {
+    alignItems: 'center',
+    space: 'xs',
+  },
+  headerIcon: {
+    size: 18,
+    color: '$primary500',
+  },
+  legendVStack: {
+    space: 'sm',
+    mt: '$2',
+  },
+  legendRow: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  legendLabelRow: {
+    space: 'xs',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 99,
+  },
+  legendLabelText: {
+    fontSize: '$sm',
+    color: '$textMutedForeground',
+  },
+  legendValueText: {
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+    color: '$textForeground',
+  },
+  upcomingVStack: {
+    space: 'md',
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  upcomingHeaderRow: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  upcomingListVStack: {
+    space: 'sm',
+  },
+  sessionIcon: {
+    size: 12,
+    color: '$textSecondary',
+  },
+} as const;
