@@ -147,7 +147,7 @@ const App = (): React.JSX.Element => {
     {
       type: 'select',
       attr: 'draftStatus',
-      placeholder: 'All Drafts',
+      placeholder: 'Publish Status',
       data: [
         { label: 'Published', value: 'Published' },
         { label: 'Drafts', value: 'Draft' },

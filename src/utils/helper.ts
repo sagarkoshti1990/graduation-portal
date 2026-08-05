@@ -521,3 +521,18 @@ export function shouldFetchOnline(
 
   return false;
 }
+
+/**
+ * Format a date string to "DD Mon YYYY" format.
+ * e.g. "2024-08-05" → "05 Aug 2024"
+ */
+export const formatDateString = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};

@@ -8,42 +8,8 @@ import {
   FilterParams,
 } from '../../constants/SUPPORT_OFFERINGS_MOCK';
 
-let cachedSessions: TrainingSessionItem[] | null = null;
 
-const getCachedSessions = (): TrainingSessionItem[] => {
-  if (cachedSessions) return cachedSessions;
-
-  if (typeof window !== 'undefined' && window.localStorage) {
-    const stored = window.localStorage.getItem('saved_training_sessions');
-    if (stored) {
-      try {
-        cachedSessions = JSON.parse(stored);
-        return cachedSessions!;
-      } catch (e) {}
-    }
-  }
-
-  cachedSessions = [...supportOfferingsData.mockTrainings] as TrainingSessionItem[];
-  return cachedSessions;
-};
-
-const saveCachedSessions = (sessions: TrainingSessionItem[]) => {
-  cachedSessions = sessions;
-  if (typeof window !== 'undefined' && window.localStorage) {
-    window.localStorage.setItem('saved_training_sessions', JSON.stringify(sessions));
-  }
-};
-
-const formatDateString = (dateStr: string): string => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const day = String(date.getDate()).padStart(2, '0');
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
-};
+const sessions: TrainingSessionItem[] = [...supportOfferingsData.mockTrainings] as TrainingSessionItem[];
 
 /**
  * Helper to dynamically compute status based on session date vs current date
@@ -93,7 +59,7 @@ export const getTrainingSessions = async (params: FilterParams): Promise<Trainin
 
   const { searchQuery, statusFilter, provinceFilter, siteFilter, draftStatusFilter, provincesList = [], sitesList = [] } = params || {};
 
-  let list = getCachedSessions().map((item) => {
+  let list = sessions.map((item) => {
     if (item.status === 'Draft') {
       return item;
     }
@@ -291,39 +257,20 @@ export const completeTrainingSession = async (
 export const saveTrainingSession = async (
   values: any,
   isDraft: boolean
-): Promise<TrainingSessionItem> => {
-  const sessions = getCachedSessions();
+): Promise<{ success: boolean }> => {
   const id = values.id ? Number(values.id) : Date.now();
-
-  const updatedSession: TrainingSessionItem = {
+  const session: TrainingSessionItem = {
+    ...values,
     id,
-    title: values.sessionTitle || values.sessionType || 'Untitled Session',
     status: isDraft ? 'Draft' : 'Upcoming',
-    date: values.startDate ? formatDateString(values.startDate) : '',
-    time: values.startTime && values.endTime ? `${values.startTime} - ${values.endTime}` : '',
-    format: values.formatType || 'Offline',
-    participants: values.maxCapacity ? `${values.maxCapacity} participants` : '--',
-    requestedBy: values.requestedBy || 'Self-Created',
-    province: values.province || '',
-    siteKey: values.site || '',
-    hasCopyButton: !isDraft,
-    location: values.venueLocation || '',
-    expectedParticipants: values.maxCapacity ? Number(values.maxCapacity) : 0,
-    confirmedPresent: isDraft ? '' : 'Not confirmed',
-    notes: values.description || '',
-    materials: [],
-    ...values, // Preserve raw values so we can edit/load them later
   };
-
   const existingIndex = sessions.findIndex((s) => s.id === id);
   if (existingIndex > -1) {
-    sessions[existingIndex] = updatedSession;
+    sessions[existingIndex] = session;
   } else {
-    sessions.push(updatedSession);
+    sessions.push(session);
   }
-
-  saveCachedSessions(sessions);
-  return updatedSession;
+  return { success: true };
 };
 
 /**
@@ -332,6 +279,5 @@ export const saveTrainingSession = async (
 export const getTrainingSessionById = async (
   id: number
 ): Promise<TrainingSessionItem | undefined> => {
-  const sessions = getCachedSessions();
   return sessions.find((s) => s.id === id);
 };
