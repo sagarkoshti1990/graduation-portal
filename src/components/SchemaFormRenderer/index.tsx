@@ -19,7 +19,7 @@
  *   />
  */
 
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   VStack,
   HStack,
@@ -811,7 +811,7 @@ const PillOptionsRow: React.FC<{
   isDisabled: boolean;
   /** pillmultiselect only — shows a checked/unchecked checkbox beside each pill's label. */
   isMulti?: boolean;
-}> = ({ options, isSelected, onToggle, isDisabled, isMulti = false }) => (
+}> = memo(({ options, isSelected, onToggle, isDisabled, isMulti = false }) => (
   <HStack space="sm" flexWrap="wrap">
     {options.map(option => {
       const selected = isSelected(option.value);
@@ -849,7 +849,7 @@ const PillOptionsRow: React.FC<{
       );
     })}
   </HStack>
-);
+));
 
 const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -1368,7 +1368,7 @@ function nodeTitleText(
 const RenderNodes: React.FC<{
   nodes?: FormSection[];
   ctx: NodeRenderContext;
-}> = ({ nodes, ctx }) => {
+}> = memo(({ nodes, ctx }) => {
   if (!nodes?.length) return null;
 
   const items: React.ReactNode[] = [];
@@ -1397,7 +1397,7 @@ const RenderNodes: React.FC<{
   }
 
   return <>{items}</>;
-};
+});
 
 /**
  * Single Tab Rule: one tab renders its children directly, no TabList/navigation chrome.
@@ -1409,7 +1409,7 @@ const RenderNodes: React.FC<{
 const TabGroupRenderer: React.FC<{
   tabs: FormSection[];
   ctx: NodeRenderContext;
-}> = ({ tabs, ctx }) => {
+}> = memo(({ tabs, ctx }) => {
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
 
   if (tabs.length <= 1) {
@@ -1480,10 +1480,10 @@ const TabGroupRenderer: React.FC<{
       </TabsTabPanels>
     </Tabs>
   );
-};
+});
 
 /** Renders a "section" node: an @ui Card header (icon/title/subTitle/hint) plus its rows and children. */
-const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
+const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = memo(({
   node,
   ctx,
 }) => {
@@ -1548,7 +1548,7 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
       </VStack>
     </Card>
   );
-};
+});
 
 // ─── Multi-Step Navigation (Previous / Continue / Save Draft / Submit) ────────
 //
@@ -1572,7 +1572,7 @@ const StepHeader: React.FC<{
   activeStepIndex: number;
   onSelectStep: (index: number) => void;
   t: (key: string, fallback?: string) => string;
-}> = ({ tabs, activeStepIndex, onSelectStep, t }) => {
+}> = memo(({ tabs, activeStepIndex, onSelectStep, t }) => {
   const activeTabId = tabs[activeStepIndex]?.id;
 
   return (
@@ -1620,14 +1620,14 @@ const StepHeader: React.FC<{
       </TabsTabList>
     </Tabs>
   );
-};
+});
 
 /** Required-fields-only completion for the active step, via the same gluestack Progress primitives already used elsewhere in the app (e.g. TasksOverviewCard). */
 const StepProgress: React.FC<{
   total: number;
   completed: number;
   t: (key: string, fallback?: string) => string;
-}> = ({ total, completed, t }) => {
+}> = memo(({ total, completed, t }) => {
   const percent = total > 0 ? (completed / total) * 100 : 100;
   const displayPercent = Math.ceil((percent * 10) / 10);
   
@@ -1652,7 +1652,7 @@ const StepProgress: React.FC<{
       </Progress>
     </VStack>
   );
-};
+});
 
 const StepFooter: React.FC<{
   isFirstStep: boolean;
@@ -1675,7 +1675,7 @@ const StepFooter: React.FC<{
   continueButtonProps?: any;
   saveDraftButtonProps?: any;
   submitButtonProps?: any;
-}> = ({
+}> = memo(({
   isFirstStep,
   isLastStep,
   disabled,
@@ -1740,7 +1740,7 @@ const StepFooter: React.FC<{
       )}
     </HStack>
   </HStack>
-);
+));
 
 /**
  * Centralized validation popup — lists every invalid field grouped by
@@ -1754,7 +1754,7 @@ const ValidationPopup: React.FC<{
   issues: ValidationIssue[];
   onSelectIssue: (issue: ValidationIssue) => void;
   t: (key: string, fallback?: string) => string;
-}> = ({ isOpen, onClose, issues, onSelectIssue, t }) => {
+}> = memo(({ isOpen, onClose, issues, onSelectIssue, t }) => {
   const groups = useMemo(() => {
     const byTab = new Map<string, Map<string, ValidationIssue[]>>();
     issues.forEach(issue => {
@@ -1836,15 +1836,30 @@ const ValidationPopup: React.FC<{
       </VStack>
     </Modal>
   );
-};
+});
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+/**
+ * Returns a permanently-stable function identity that always calls through to
+ * the latest `fn` passed in. Lets callbacks that close over fast-changing state
+ * (like `values`, which gets a new reference every keystroke) be handed to
+ * memoized children without defeating their memoization — the child's props
+ * see the same function reference across renders, while the call itself still
+ * runs against current data. Standard "latest ref" pattern, not a new
+ * architecture.
+ */
+function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
+  ref.current = fn;
+  return useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
+}
 
 const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   schema,
   values = {},
   errors = {},
-  onFieldChange = (...e) => {
+  onFieldChange: onFieldChangeProp = (...e) => {
     console.log(e);
   },
   optionsMap = {},
@@ -1870,14 +1885,21 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   saveDraftButtonProps,
   submitButtonProps,
 }) => {
+  // Caller-supplied `onFieldChange` can't be assumed referentially stable —
+  // wrap it once so every child that receives it keeps the same identity
+  // across renders (required for the memoization below to do anything).
+  const onFieldChange = useStableCallback(onFieldChangeProp);
+
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<
     Record<string, boolean>
   >({});
 
-  const toggleVisibilityGroup = (group: string) => {
+  // Only closes over the stable `setVisibilityGroups` dispatcher, so a plain
+  // useCallback([]) is enough — no latest-ref wrapper needed.
+  const toggleVisibilityGroup = useCallback((group: string) => {
     setVisibilityGroups(prev => ({ ...prev, [group]: !prev[group] }));
-  };
+  }, []);
 
   // Flat name → field-definition lookup, used to resolve `view` fields by name.
   const fieldsByName = useMemo(() => collectFieldsByName(schema), [schema]);
@@ -1911,9 +1933,11 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     null,
   );
 
-  const registerFieldRef = (name: string, node: any) => {
+  // Only closes over the stable `fieldRefsRef` ref, so a plain useCallback([])
+  // is enough here too.
+  const registerFieldRef = useCallback((name: string, node: any) => {
     fieldRefsRef.current[name] = node;
-  };
+  }, []);
 
   // Reveals the standard inline error for exactly this one field, then scrolls,
   // focuses, and temporarily highlights it. Other invalid fields stay quiet —
@@ -1977,18 +2001,24 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     return () => clearTimeout(timer);
   }, [safeStepIndex]);
 
-  const handlePrevious = () => {
+  // Only closes over the stable `setActiveStepIndex` dispatcher.
+  const handlePrevious = useCallback(() => {
     setActiveStepIndex(i => Math.max(0, i - 1));
-  };
+  }, []);
 
   // Direct tab clicks navigate freely (no validation gating) — only the
   // Continue button validates before advancing. Values/errors/draft state
   // are untouched since they live outside `activeStepIndex`.
-  const handleSelectStep = (index: number) => {
+  // Only closes over the stable `setActiveStepIndex` dispatcher.
+  const handleSelectStep = useCallback((index: number) => {
     setActiveStepIndex(index);
-  };
+  }, []);
 
-  const handleContinue = () => {
+  // The rest of these close over `values`/`schema`/`optionsMap`/`t`/`rootTabs`/
+  // etc., which legitimately change across renders — useStableCallback keeps
+  // their prop identity stable for memoized children while still always
+  // running against the latest closure.
+  const handleContinue = useStableCallback(() => {
     const currentTab = rootTabs[safeStepIndex];
     if (!currentTab) return;
 
@@ -2006,9 +2036,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
       setPopupIssues(stepIssues);
       setIsPopupOpen(true);
     }
-  };
+  });
 
-  const handleSubmit = async () => {
+  const handleSubmit = useStableCallback(async () => {
     const {
       errors: allErrors,
       issues: allIssues,
@@ -2046,13 +2076,13 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     }
 
     onSubmit?.(resolvedValues);
-  };
+  });
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = useStableCallback(() => {
     onSaveDraft?.(values);
-  };
+  });
 
-  const handleSelectIssue = (issue: ValidationIssue) => {
+  const handleSelectIssue = useStableCallback((issue: ValidationIssue) => {
     setIsPopupOpen(false);
 
     if (
@@ -2069,43 +2099,74 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     }
 
     revealAndFocusField(issue.fieldName, issue.message);
-  };
+  });
 
-  const baseCtx: NodeRenderContext = {
-    values,
-    errors,
-    optionsMap,
-    mode,
-    t,
-    onFieldChange,
-    disabled,
-    visibilityGroups,
-    toggleVisibilityGroup,
-    firstNameRef,
-    fieldsByName,
-    globalInputProps: _input,
-  };
+  // Only closes over the stable `setIsPopupOpen` dispatcher.
+  const handleClosePopup = useCallback(() => setIsPopupOpen(false), []);
 
-  if (isMultiStep) {
-    const activeTab = rootTabs[safeStepIndex];
-    const stepCtx: NodeRenderContext = {
+  // Memoized so its reference only changes when one of these actually
+  // changes — e.g. toggling the validation popup touches none of them, so
+  // memoized descendants (RenderNodes/SectionNode/TabGroupRenderer/...) see
+  // the same `ctx` prop and skip re-rendering entirely.
+  const baseCtx: NodeRenderContext = useMemo(
+    () => ({
+      values,
+      errors,
+      optionsMap,
+      mode,
+      t,
+      onFieldChange,
+      disabled,
+      visibilityGroups,
+      toggleVisibilityGroup,
+      firstNameRef,
+      fieldsByName,
+      globalInputProps: _input,
+    }),
+    [
+      values,
+      errors,
+      optionsMap,
+      mode,
+      t,
+      onFieldChange,
+      disabled,
+      visibilityGroups,
+      toggleVisibilityGroup,
+      firstNameRef,
+      fieldsByName,
+      _input,
+    ],
+  );
+
+  const activeTab = rootTabs[safeStepIndex];
+
+  const stepCtx: NodeRenderContext = useMemo(
+    () => ({
       ...baseCtx,
       errors: { ...errors, ...internalErrors },
       registerFieldRef,
       highlightedField,
-    };
+    }),
+    [baseCtx, errors, internalErrors, registerFieldRef, highlightedField],
+  );
 
+  // Whole-form progress (every tab/section/nested node), not just the active step.
+  // Memoized so it isn't recomputed on renders unrelated to values/optionsMap
+  // (e.g. popup toggling) — it still recomputes on every keystroke, same as
+  // before, since `values` itself changes reference every keystroke.
+  const { total: requiredTotal, completed: requiredCompleted } = useMemo(
+    () => computeRequiredFieldProgress(schema, values, optionsMap),
+    [schema, values, optionsMap],
+  );
+
+  if (isMultiStep) {
     const stepSubTitleText = activeTab?.subTitle
       ? t(
           `admin.users.createUser.${activeTab.subTitle.key}`,
           activeTab.subTitle.fallback,
         )
       : undefined;
-
-    // Whole-form progress (every tab/section/nested node), not just the active step —
-    // recalculated on every render, cheap tree walk, always reflects the latest `values`.
-    const { total: requiredTotal, completed: requiredCompleted } =
-      computeRequiredFieldProgress(schema, values, optionsMap);
 
     return (
       <VStack space="md" width="100%">
@@ -2159,7 +2220,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
         <ValidationPopup
           isOpen={isPopupOpen}
-          onClose={() => setIsPopupOpen(false)}
+          onClose={handleClosePopup}
           issues={popupIssues}
           onSelectIssue={handleSelectIssue}
           t={t}
@@ -2179,49 +2240,53 @@ export default SchemaFormRenderer;
 
 export const RenderRow = memo(
   ({ rows, values = {}, optionsMap = {}, mode, ...rest }: any) => {
-    const renderedRows = useMemo(() => {
-      return rows?.map((row: any, index: number) => {
-        if (!isVisible(row.visibleWhen, values, optionsMap)) {
-          return null;
+    // Not wrapped in useMemo: the previous version keyed its cache on `rest`
+    // (an object-rest-spread — a new object every render), so the cache never
+    // actually hit and this recomputed every render anyway. The computation
+    // itself is a cheap flatMap over a handful of rows/fields, and `values`/
+    // `optionsMap` already change reference every keystroke regardless — the
+    // real memoization payoff for this file lives in FieldContainer, below.
+    const renderedRows = rows?.map((row: any, index: number) => {
+      if (!isVisible(row.visibleWhen, values, optionsMap)) {
+        return null;
+      }
+
+      const visibleFields = row.fields.flatMap((field: any) => {
+        if (!isVisible(field.visibleWhen, values, optionsMap)) {
+          return [];
         }
 
-        const visibleFields = row.fields.flatMap((field: any) => {
-          if (!isVisible(field.visibleWhen, values, optionsMap)) {
-            return [];
-          }
-
-          if (!isVisibleIf(field.visibleIf, values)) {
-            return [];
-          }
-
-          if (
-            mode === 'preview' &&
-            field.type === FORM_FIELD_TYPES.GROUP &&
-            field.fields
-          ) {
-            return field.fields;
-          }
-
-          return [field];
-        });
-
-        if (!visibleFields.length) {
-          return null;
+        if (!isVisibleIf(field.visibleIf, values)) {
+          return [];
         }
 
-        return (
-          <RowRenderer
-            key={row.id ?? index}
-            fields={visibleFields}
-            isMobile={false}
-            values={values}
-            optionsMap={optionsMap}
-            mode={mode}
-            {...rest}
-          />
-        );
+        if (
+          mode === 'preview' &&
+          field.type === FORM_FIELD_TYPES.GROUP &&
+          field.fields
+        ) {
+          return field.fields;
+        }
+
+        return [field];
       });
-    }, [rows, values, optionsMap, mode, rest]);
+
+      if (!visibleFields.length) {
+        return null;
+      }
+
+      return (
+        <RowRenderer
+          key={row.id ?? index}
+          fields={visibleFields}
+          isMobile={false}
+          values={values}
+          optionsMap={optionsMap}
+          mode={mode}
+          {...rest}
+        />
+      );
+    });
 
     return <>{renderedRows}</>;
   },
@@ -2325,7 +2390,7 @@ const HINT_TYPE_CONFIG: Record<
 const HintDisplay: React.FC<{
   hint: Hint;
   t: (key: string, fallback?: string) => string;
-}> = ({ hint, t }) => {
+}> = memo(({ hint, t }) => {
   if (typeof hint === 'string') {
     return (
       <HStack
@@ -2408,7 +2473,7 @@ const HintDisplay: React.FC<{
       </HStack>
     </VStack>
   );
-};
+});
 
 /**
  * Formats a stored field value for read-only display (preview mode, `view`
@@ -2454,7 +2519,7 @@ interface ViewFieldDisplayProps {
   fieldsByName: Record<string, FormField>;
 }
 
-const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
+const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
   field,
   values,
   optionsMap,
@@ -2496,7 +2561,126 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
       </Text>
     </VStack>
   );
-};
+});
+
+// ─── FieldContainer's fine-grained re-render gate ─────────────────────────────
+//
+// `values`/`errors` always get a new object reference on every keystroke (this
+// component is fully controlled), so no comparison based on their identity can
+// ever skip a re-render. Instead, for a given field, we compare only the
+// specific `values`/`errors`/`optionsMap` KEYS that field actually reads —
+// its own name, plus (for GROUP) every sub-field's name, plus whatever
+// `disabledWhen`/`dependsOn`/`optionsSource` it references.
+//
+// Deliberately excluded: `visibleIf`/`visibleWhen`. Visibility is resolved one
+// level up, in `RenderRow`, before a `<FieldContainer>` element is even
+// constructed — when a field becomes visible/invisible, React mounts/unmounts
+// it by key, and a memo comparator is never invoked for a mount/unmount.
+interface FieldStructuralDeps {
+  valueKeys: string[];
+  errorKeys: string[];
+  optionsKeys: string[];
+}
+
+const fieldStructuralDepsCache = new WeakMap<FormField, FieldStructuralDeps>();
+
+function extractStructuralDeps(field: FormField): FieldStructuralDeps {
+  const cached = fieldStructuralDepsCache.get(field);
+  if (cached) return cached;
+
+  const valueKeys = new Set<string>();
+  const errorKeys = new Set<string>();
+  const optionsKeys = new Set<string>();
+
+  const walk = (f: FormField) => {
+    if (f.name) {
+      valueKeys.add(f.name);
+      errorKeys.add(f.name);
+    }
+    if (f.optionsSource) optionsKeys.add(f.optionsSource);
+    if (f.disabledWhen?.field) valueKeys.add(f.disabledWhen.field);
+    if (f.dependsOn) valueKeys.add(f.dependsOn);
+    if (f.type === FORM_FIELD_TYPES.GROUP && Array.isArray(f.fields)) {
+      f.fields.forEach(walk);
+    }
+  };
+  walk(field);
+
+  const deps: FieldStructuralDeps = {
+    valueKeys: Array.from(valueKeys),
+    errorKeys: Array.from(errorKeys),
+    optionsKeys: Array.from(optionsKeys),
+  };
+  fieldStructuralDepsCache.set(field, deps);
+  return deps;
+}
+
+// `view` fields display another field's value by name — resolved fresh every
+// comparison (a couple of property lookups, not worth caching) since it
+// depends on `fieldsByName`, which isn't part of the cache key above.
+function extraViewOptionsKey(
+  field: FormField,
+  fieldsByName: Record<string, FormField>,
+): string | undefined {
+  if (field.type === FORM_FIELD_TYPES.VIEW && field.name) {
+    return fieldsByName[field.name]?.optionsSource;
+  }
+  return undefined;
+}
+
+function shallowEqualObjects(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every(key => a[key] === b[key]);
+}
+
+function fieldContainerPropsAreEqual(prev: FieldType, next: FieldType): boolean {
+  if (prev.field !== next.field) return false;
+  if (prev.mode !== next.mode) return false;
+  if (prev.disabled !== next.disabled) return false;
+  if (prev.isMultiField !== next.isMultiField) return false;
+  if (prev.t !== next.t) return false;
+  if (prev.visibilityGroups !== next.visibilityGroups) return false;
+  if (prev.toggleVisibilityGroup !== next.toggleVisibilityGroup) return false;
+  if (prev.firstNameRef !== next.firstNameRef) return false;
+  if (prev.fieldsByName !== next.fieldsByName) return false;
+  if (prev.registerFieldRef !== next.registerFieldRef) return false;
+  if (prev.onFieldChange !== next.onFieldChange) return false;
+  if (!shallowEqualObjects(prev.globalInputProps, next.globalInputProps)) return false;
+
+  const prevHighlighted = !!next.field.name && prev.highlightedField === next.field.name;
+  const nextHighlighted = !!next.field.name && next.highlightedField === next.field.name;
+  if (prevHighlighted !== nextHighlighted) return false;
+
+  const prevValues = prev.values ?? {};
+  const nextValues = next.values ?? {};
+  const prevErrors = prev.errors ?? {};
+  const nextErrors = next.errors ?? {};
+  const prevOptionsMap = prev.optionsMap ?? {};
+  const nextOptionsMap = next.optionsMap ?? {};
+
+  const deps = extractStructuralDeps(next.field);
+
+  for (const key of deps.valueKeys) {
+    if (prevValues[key] !== nextValues[key]) return false;
+  }
+  for (const key of deps.errorKeys) {
+    if (prevErrors[key] !== nextErrors[key]) return false;
+  }
+  for (const key of deps.optionsKeys) {
+    if (prevOptionsMap[key] !== nextOptionsMap[key]) return false;
+  }
+
+  const viewOptionsKey = extraViewOptionsKey(next.field, next.fieldsByName ?? {});
+  if (viewOptionsKey && prevOptionsMap[viewOptionsKey] !== nextOptionsMap[viewOptionsKey]) {
+    return false;
+  }
+
+  return true;
+}
 
 const FieldContainer = memo(
   ({
@@ -2645,4 +2829,5 @@ const FieldContainer = memo(
       </VStack>
     );
   },
+  fieldContainerPropsAreEqual,
 );

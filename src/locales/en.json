@@ -2405,10 +2405,15 @@
     },
     "pageTitle": {
       "dashboard": "Dashboard",
-      "mySupportOfferings": "My Support Offerings",
-      "requests": "Requests",
-      "materialsLibrary": "Materials Library",
-      "profile": "Profile"
+      "dashboard1": "Dashboard",
+      "opportunities": "My Support Offerings",
+      "create-opportunity": "Create New Support",
+      "create-training-session": "Create Training Session",
+      "create-additional-service": "Create Additional Service",
+      "create-asset": "Create Asset",
+      "requests": "Support Requests",
+      "materials": "Template & Resource Library",
+      "profile": "Organisation Profile"
     },
     "supportOfferings": {
       "title": "My Support Offerings",
