@@ -1,0 +1,122 @@
+[
+  {
+    "id": "1",
+    "title": "Financial Literacy Workbook",
+    "description": "Comprehensive participant workbook covering personal budgeting, savings goals, and banking fundamentals.",
+    "category": "Financial Literacy",
+    "format": "PDF Document",
+    "fileName": "financial-literacy-workbook.pdf",
+    "fileSize": "2.4 MB",
+    "associatedOffering": "Financial Literacy Workshop",
+    "uploadDate": "10/04/2026",
+    "downloads": 68
+  },
+  {
+    "id": "2",
+    "title": "Business Plan Template",
+    "description": "Editable spreadsheet template for formulating cash flow projections, market analysis, and business models.",
+    "category": "Business Management",
+    "format": "Templates & Decks",
+    "fileName": "business-plan-template.xlsx",
+    "fileSize": "1.8 MB",
+    "associatedOffering": "Business Plan Development Training",
+    "uploadDate": "12/04/2026",
+    "downloads": 54
+  },
+  {
+    "id": "3",
+    "title": "Industrial Sewing Machine Manual",
+    "description": "Complete operating, safety, and routine maintenance guide for industrial sewing machinery.",
+    "category": "Asset & Equipment Support",
+    "format": "PDF Document",
+    "fileName": "sewing-machine-manual.pdf",
+    "fileSize": "3.6 MB",
+    "associatedOffering": "Sewing Equipment Provision",
+    "uploadDate": "14/04/2026",
+    "downloads": 32
+  },
+  {
+    "id": "4",
+    "title": "Banking Basics Video Guide",
+    "description": "Short instructional video demonstrating how to open a business bank account and set up mobile banking.",
+    "category": "Financial Literacy",
+    "format": "Video Guide",
+    "fileName": "banking-basics-guide.mp4",
+    "fileSize": "125 MB",
+    "associatedOffering": "Financial Literacy Workshop",
+    "uploadDate": "15/04/2026",
+    "downloads": 41
+  },
+  {
+    "id": "5",
+    "title": "Cash Flow Management Presentation",
+    "description": "Slide deck for coaching sessions explaining cash inflows, outflows, and maintaining working capital.",
+    "category": "Financial Literacy",
+    "format": "Templates & Decks",
+    "fileName": "cash-flow-presentation.pptx",
+    "fileSize": "4.2 MB",
+    "associatedOffering": "Financial Literacy Workshop",
+    "uploadDate": "17/04/2026",
+    "downloads": 45
+  },
+  {
+    "id": "6",
+    "title": "Labour Law & Employment Contracts Pack",
+    "description": "Standard templates and compliance guidelines for hiring and managing employees in micro-enterprises.",
+    "category": "Legal & Compliance",
+    "format": "PDF Document",
+    "fileName": "labour-law-pack.zip",
+    "fileSize": "5.1 MB",
+    "associatedOffering": "Legal Advisory – Employment Contracts",
+    "uploadDate": "18/04/2026",
+    "downloads": 29
+  },
+  {
+    "id": "7",
+    "title": "Social Media Marketing Calendar",
+    "description": "Content planner template to organize weekly promotions, customer engagement posts, and WhatsApp marketing.",
+    "category": "Business Management",
+    "format": "Templates & Decks",
+    "fileName": "marketing-calendar.xlsx",
+    "fileSize": "740 KB",
+    "associatedOffering": "Business Plan Development Training",
+    "uploadDate": "19/04/2026",
+    "downloads": 47
+  },
+  {
+    "id": "8",
+    "title": "Agricultural Toolkits Safety Guide",
+    "description": "Safety guidelines and proper storage recommendations for farming and crop cultivation equipment.",
+    "category": "Asset & Equipment Support",
+    "format": "PDF Document",
+    "fileName": "agri-safety-guide.pdf",
+    "fileSize": "1.9 MB",
+    "associatedOffering": "Poultry Farming Starter Kits",
+    "uploadDate": "20/04/2026",
+    "downloads": 26
+  },
+  {
+    "id": "9",
+    "title": "Micro-Enterprise Income & Expense Ledger",
+    "description": "Simple accounting log sheet designed for daily income and expenditure tracking.",
+    "category": "Financial Literacy",
+    "format": "Templates & Decks",
+    "fileName": "income-expense-ledger.xlsx",
+    "fileSize": "920 KB",
+    "associatedOffering": "Financial Literacy Workshop",
+    "uploadDate": "21/04/2026",
+    "downloads": 51
+  },
+  {
+    "id": "10",
+    "title": "Equipment Handover & Acceptance Form",
+    "description": "Standardized receipt form signed upon delivery and handover of physical assets and toolkits.",
+    "category": "Asset & Equipment Support",
+    "format": "PDF Document",
+    "fileName": "equipment-handover-form.pdf",
+    "fileSize": "450 KB",
+    "associatedOffering": "Sewing Equipment Provision",
+    "uploadDate": "22/04/2026",
+    "downloads": 33
+  }
+]
