@@ -255,21 +255,9 @@ export const completeTrainingSession = async (
  * Save / Update a Training Session (Draft or Published)
  */
 export const saveTrainingSession = async (
-  values: any,
-  isDraft: boolean
+  _values: any,
+  _isDraft: boolean
 ): Promise<{ success: boolean }> => {
-  const id = values.id ? Number(values.id) : Date.now();
-  const session: TrainingSessionItem = {
-    ...values,
-    id,
-    status: isDraft ? 'Draft' : 'Upcoming',
-  };
-  const existingIndex = sessions.findIndex((s) => s.id === id);
-  if (existingIndex > -1) {
-    sessions[existingIndex] = session;
-  } else {
-    sessions.push(session);
-  }
   return { success: true };
 };
 
