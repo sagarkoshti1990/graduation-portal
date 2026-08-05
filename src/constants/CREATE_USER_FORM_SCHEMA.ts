@@ -17,9 +17,14 @@ export interface ValidationRule {
     | 'maxLength'
     | 'pattern'
     | 'matchField'
-    | 'dateNotInFuture';
-  /** Numeric or string payload depending on rule (e.g. minLength value, pattern string, field name) */
-  value?: number | string;
+    | 'dateNotInFuture'
+    | 'fileType'
+    | 'fileCount';
+  /**
+   * Numeric/string payload depending on rule (minLength value, pattern string,
+   * field name); `fileType` takes a string array of allowed MIME types.
+   */
+  value?: number | string | string[];
   message: { key: string; fallback: string };
 }
 
@@ -133,6 +138,8 @@ export interface FormField {
   subLabel?: { key?: string; fallback: string };
   /** Renders an "(optional)" tag next to the label (currently used by `file` fields) */
   showOptionalTag?: boolean;
+  /** `file` fields only: allow selecting/storing more than one file (stored as an array). Default/undefined = single file, unchanged from before. */
+  multiple?: boolean;
   /** Rendered below the label, above the input, using the standard helper-text typography */
   subTitle?: { key?: string; fallback: string };
   /** Informational message rendered above the input — simple string or a severity banner */

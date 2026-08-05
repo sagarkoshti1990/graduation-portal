@@ -91,13 +91,10 @@ const App = (): React.JSX.Element => {
       : [];
 
     const selectedPillar = values.pillar;
-    const sessionTypeOpts =
-      selectedPillar && selectedPillar !== 'Others'
-        ? (PILLAR_SESSION_TYPES[selectedPillar] || []).map(v => ({
-            value: v,
-            label: v,
-          }))
-        : [];
+    const sessionTypeOpts = (PILLAR_SESSION_TYPES[selectedPillar] || []).map(v => ({
+      value: v,
+      label: v,
+    }));
 
     return {
       provinces: provinceOpts,
@@ -115,12 +112,8 @@ const App = (): React.JSX.Element => {
           value: 'Livelihoods',
           label: 'Livelihoods',
         },
-        {
-          value: 'Others',
-          label: 'Others',
-        },
       ],
-      sessionTypes: sessionTypeOpts,
+      sessionTypes: [...sessionTypeOpts,...[{value:"other",label:"Other"}]],
       targetAudienceOptions: [
         {
           value: 'Coach',
@@ -180,15 +173,16 @@ const App = (): React.JSX.Element => {
       const response = await saveTrainingSession(formValues, isDraft);
 
       if (response.success) {
+        setValues(formValues);
         showAlert('success', response.message);
-        navigation.navigate('opportunities');
+        // navigation.navigate('opportunities');
       }
     } catch (error) {
       console.error('Error saving training session:', error);
       showAlert('error', 'Something went wrong.');
     }
   };
-
+  
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -207,10 +201,6 @@ const App = (): React.JSX.Element => {
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             uploadService={async (file) => {
-              // Reuses the same signed-URL-then-PUT flow already used for task
-              // file evidence (projectPlayerService.uploadFiles): get a signed
-              // URL for this file, upload the bytes to it, and store the
-              // resulting permanent URL (query string stripped) on the field.
               const entityId = `trainingSession-${Date.now()}`;
               const uploaded = await uploadFiles(entityId, [
                 { ...file, size: file.size ?? 0 },
@@ -219,8 +209,7 @@ const App = (): React.JSX.Element => {
               if (!url) {
                 throw new Error(`Failed to upload file: ${file.name}`);
               }
-              console.log(url,"url")
-              return url;
+              return uploaded?.data?.[0];
             }}
             submitButtonProps={{bg:"green", icon: "Check"}}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}

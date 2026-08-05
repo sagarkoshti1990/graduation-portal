@@ -43,6 +43,7 @@ import {
   Progress,
   ProgressFilledTrack,
   ButtonIcon,
+  Image,
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -345,20 +346,26 @@ function getFieldError(
 
   const rawValue = values[field.name];
 
-  // multiselect/pillmultiselect: length-based rules only. email/pattern/
-  // matchField/dateNotInFuture are meaningless for an array value — no-op.
-  if (Array.isArray(rawValue)) {
+  // multiselect/pillmultiselect (plain string[]) and file/multi-file (FileAsset
+  // or FileAsset[]) all land here: length-based rules (required/minLength/
+  // maxLength/fileCount) plus file-specific fileType. email/pattern/matchField/
+  // dateNotInFuture are meaningless for an array/object value — no-op.
+  if (Array.isArray(rawValue) || (rawValue && typeof rawValue === 'object')) {
+    const files = Array.isArray(rawValue) ? rawValue : [rawValue];
     for (const rule of field.validation) {
       const msg = rule.message.fallback;
-      if (rule.rule === 'required' && rawValue.length === 0) return msg;
-      if (rule.rule === 'minLength' && rawValue.length < Number(rule.value)) return msg;
-      if (rule.rule === 'maxLength' && rawValue.length > Number(rule.value)) return msg;
+      if (rule.rule === 'required' && files.length === 0) return msg;
+      if (rule.rule === 'minLength' && files.length < Number(rule.value)) return msg;
+      if (rule.rule === 'maxLength' && files.length > Number(rule.value)) return msg;
+      if (rule.rule === 'fileCount' && files.length > Number(rule.value)) return msg;
+      if (rule.rule === 'fileType' && field.type === FORM_FIELD_TYPES.FILE) {
+        const allowed = Array.isArray(rule.value) ? (rule.value as string[]) : [];
+        const hasInvalidType = files.some(
+          f => isFileAssetLike(f) && !matchesAllowedFileType(f, allowed),
+        );
+        if (hasInvalidType) return msg;
+      }
     }
-    return undefined;
-  }
-
-  // file field storing a picked-file asset object: only presence ('required') applies.
-  if (rawValue && typeof rawValue === 'object') {
     return undefined;
   }
 
@@ -489,6 +496,82 @@ function isFileAssetLike(value: any): value is FileAsset {
 }
 
 /**
+ * `fileType` rule values may be full MIME types ("application/pdf",
+ * "image/*") or bare file extensions ("pdf", ".pdf") — schema authors
+ * naturally reach for extensions since they're what they actually see in a
+ * file dialog, so both forms need to work, not just MIME types.
+ */
+function matchesAllowedFileType(file: FileAsset, allowed: string[]): boolean {
+  const mime = (file.type || '').toLowerCase();
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+  return allowed.some(entry => {
+    const normalized = entry.toLowerCase().trim();
+    if (normalized.includes('/')) {
+      if (normalized.endsWith('/*')) return mime.startsWith(normalized.slice(0, -1));
+      return mime === normalized;
+    }
+    return ext === normalized.replace(/^\./, '');
+  });
+}
+
+const IMAGE_EXTENSION_RE = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?.*)?$/i;
+
+function isImageFile(type: string | undefined, name: string): boolean {
+  if (type) return type.startsWith('image/');
+  return IMAGE_EXTENSION_RE.test(name);
+}
+
+/** Last path segment of a URL (query string stripped), or the string itself if that fails. */
+function fileNameFromUrl(url: string): string {
+  const withoutQuery = url.split('?')[0];
+  const segment = withoutQuery.substring(withoutQuery.lastIndexOf('/') + 1);
+  return segment || url;
+}
+
+interface FilePreviewItem {
+  key: string;
+  name: string;
+  previewUri?: string;
+  isImage: boolean;
+  raw: FileAsset | string;
+}
+
+/**
+ * Normalizes a `file` field's value — `undefined`, a single `FileAsset`, a
+ * single URL string (pre-filled/edit-mode value), or an array mixing any of
+ * those (the normal case once existing URLs and newly-picked files coexist in
+ * a `multiple` field) — into a flat list for preview rendering.
+ */
+function toFilePreviewItems(value: any): FilePreviewItem[] {
+  const items: (FileAsset | string)[] = Array.isArray(value)
+    ? value
+    : value
+    ? [value]
+    : [];
+
+  return items.map((item, index) => {
+    if (typeof item === 'string') {
+      const name = fileNameFromUrl(item);
+      return {
+        key: `${item}-${index}`,
+        name,
+        previewUri: item,
+        isImage: isImageFile(undefined, name),
+        raw: item,
+      };
+    }
+    return {
+      key: `${item.uri || item.name}-${index}`,
+      name: item.name,
+      previewUri: item.uri,
+      isImage: isImageFile(item.type, item.name),
+      raw: item,
+    };
+  });
+}
+
+/**
  * Uploads every `file`-type field's picked asset(s) via `uploadService` and
  * replaces the value with the returned URL string(s) — single asset in →
  * `string` out, array in → `string[]` out. Fields with no file-shaped value
@@ -518,8 +601,14 @@ export async function resolveFileUploads(
       const raw = values[name];
       try {
         if (Array.isArray(raw)) {
-          if (raw.length === 0 || !raw.every(isFileAssetLike)) return;
-          result[name] = await Promise.all(raw.map(file => uploadService(file)));
+          // A multi-file field's array can legitimately mix newly-picked
+          // `FileAsset`s with already-uploaded URL strings (pre-filled edit-mode
+          // values the user didn't remove) — upload only the former, and pass
+          // the latter through unchanged, rather than skipping the whole array.
+          if (raw.length === 0 || !raw.some(isFileAssetLike)) return;
+          result[name] = await Promise.all(
+            raw.map(item => (isFileAssetLike(item) ? uploadService(item) : item)),
+          );
         } else if (isFileAssetLike(raw)) {
           result[name] = await uploadService(raw);
         }
@@ -1111,28 +1200,78 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         )
       : undefined;
 
-    // Stores the full picked-file asset (not just its name) so `resolveFileUploads`
+    const isMultiple = !!field.multiple;
+    // Existing items in storage order — used both for the preview list and to
+    // append/remove without disturbing the rest. Covers `undefined`, a single
+    // `FileAsset`, a single pre-filled URL string, or a mixed array of those
+    // (the normal edit-mode-plus-newly-added-file case).
+    const existingItems: (FileAsset | string)[] = Array.isArray(value)
+      ? value
+      : value
+      ? [value]
+      : [];
+    const previewItems = toFilePreviewItems(value);
+
+    // Pre-filters the OS/browser picker to the schema's own `fileType` rule
+    // (where the platform honors it) — the real enforcement is still the
+    // `fileType` validation rule itself (which also accepts bare extensions,
+    // see `matchesAllowedFileType`), this is just a UX nicety on top of it.
+    // Only passed through when every entry is already a real MIME type: the
+    // native picker (`@react-native-documents/picker`) expects MIME types, not
+    // bare extensions, so forwarding something like "pdf" risks breaking
+    // picking on native rather than just failing to filter. Extension-only
+    // rules (the common case, e.g. `['pdf', 'doc']`) simply skip the OS-level
+    // filter and rely entirely on the post-selection validation rule.
+    const fileTypeRule = field.validation?.find(r => r.rule === 'fileType');
+    const fileTypeValues = Array.isArray(fileTypeRule?.value)
+      ? (fileTypeRule!.value as string[])
+      : undefined;
+    const allowedTypes =
+      fileTypeValues?.length && fileTypeValues.every(entry => entry.includes('/'))
+        ? fileTypeValues
+        : undefined;
+
+    // Stores the full picked-file asset(s) (not just names) so `resolveFileUploads`
     // has something to actually upload at submit time — see `FileAsset`.
     const handlePick = async () => {
       if (isDisabled) return;
       try {
-        const picked = await openFilePicker({ allowMultiSelection: false });
-        const file = picked?.[0];
-        if (file?.name) {
-          onChange(field.name || '', {
-            uri: file.uri,
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            file: file.file,
-          });
+        const picked = await openFilePicker({
+          allowMultiSelection: isMultiple,
+          ...(allowedTypes ? { type: allowedTypes } : {}),
+        });
+        const newAssets = (picked || [])
+          .filter((f: any) => f?.name)
+          .map((f: any) => ({
+            uri: f.uri,
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            file: f.file,
+          }));
+        if (newAssets.length === 0) return;
+
+        if (isMultiple) {
+          onChange(field.name || '', [...existingItems, ...newAssets]);
+        } else {
+          onChange(field.name || '', newAssets[0]);
         }
       } catch {
         // User cancelled the picker — nothing to persist.
       }
     };
 
-    const fileName = value && typeof value === 'object' ? value.name : undefined;
+    const handleRemove = (raw: FileAsset | string) => {
+      const next = existingItems.filter(item => item !== raw);
+      onChange(field.name || '', isMultiple ? next : next[0] ?? '');
+    };
+
+    const triggerLabel =
+      previewItems.length === 0
+        ? placeholder || t('common.clickToUpload', 'Click to upload')
+        : isMultiple
+        ? t('common.addMoreFiles', 'Add more files')
+        : previewItems[0].name;
 
     return (
       <VStack space="xs">
@@ -1150,14 +1289,52 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             <LucideIcon name="Upload" size={18} color="$textMutedForeground" />
             <Text
               {...TYPOGRAPHY.bodySmall}
-              color={fileName ? '$textForeground' : '$textMutedForeground'}
+              color={previewItems.length ? '$textForeground' : '$textMutedForeground'}
             >
-              {fileName ||
-                placeholder ||
-                t('common.clickToUpload', 'Click to upload')}
+              {triggerLabel}
             </Text>
           </HStack>
         </Pressable>
+
+        {previewItems.length > 0 && (
+          <VStack space="xs">
+            {previewItems.map(item => (
+              <HStack
+                key={item.key}
+                space="sm"
+                alignItems="center"
+                borderWidth={1}
+                borderColor="$borderColor"
+                borderRadius="$md"
+                p="$2"
+              >
+                {item.isImage && item.previewUri ? (
+                  <Image
+                    source={{ uri: item.previewUri }}
+                    alt={item.name}
+                    width={32}
+                    height={32}
+                    borderRadius={4}
+                  />
+                ) : (
+                  <LucideIcon name="FileText" size={20} color="$textMutedForeground" />
+                )}
+                <Text
+                  {...TYPOGRAPHY.bodySmall}
+                  color="$textForeground"
+                  flex={1}
+                  numberOfLines={1}
+                >
+                  {item.name}
+                </Text>
+                <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
+                  <LucideIcon name="X" size={16} color="$textMutedForeground" />
+                </Pressable>
+              </HStack>
+            ))}
+          </VStack>
+        )}
+
         {!!subLabelText && (
           <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
             {subLabelText}

@@ -88,7 +88,6 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             ],
           },
           {
-            visibleWhen: { field: 'pillar', value: 'Others', not: true } as any,
             fields: [
               {
                 name: 'sessionType',
@@ -102,9 +101,6 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 optionsSource: 'sessionTypes',
                 dependsOn: 'pillar',
                 disabledWhen: { field: 'pillar', empty: true },
-                visibleIf: [
-                  { name: 'pillar', value: 'Others', operator: '!=' },
-                ],
                 validation: [
                   {
                     rule: 'required',
@@ -118,19 +114,18 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             ],
           },
           {
-            visibleWhen: { field: 'pillar', value: 'Others' } as any,
             fields: [
               {
-                name: 'sessionTitle',
+                name: 'sessionTypeOther',
                 type: 'text',
                 required: true,
                 label: {
-                  key: 'sessionTitle',
-                  fallback: 'Training / Session Title',
+                  key: 'sessionType',
+                  fallback: 'Please specify',
                 },
                 placeholder: { fallback: 'Describe this session...' },
                 visibleIf: [
-                  { name: 'pillar', value: 'Others', operator: '===' },
+                  { name: 'sessionType', value: 'other', operator: '===' },
                 ],
                 validation: [
                   {
@@ -178,7 +173,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 required: false,
                 label: {
                   key: 'learningObjectives',
-                  fallback: 'Learning Objectives (optional)',
+                  fallback: 'Learning Objectives',
                 },
                 placeholder: {
                   fallback: 'List the key learning outcomes, one per line...',
@@ -190,7 +185,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             fields: [
               {
                 name: 'targetAudience',
-                type: 'pillmultiselect',
+                type: 'pillselect',
                 required: true,
                 label: { key: 'targetAudience', fallback: 'Target Audience' },
                 optionsSource: 'targetAudienceOptions',
@@ -266,13 +261,24 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               {
                 name: 'resourceContent',
                 type: 'file',
+                multiple: true,
                 required: false,
                 showOptionalTag: true,
+                validation:[
+                   {
+                    rule: 'fileType',
+                    value: ['pdf','doc'],
+                    message: {
+                      key: 'errors.startDateRequired',
+                      fallback: 'Only PDF and DOC files are allowed.',
+                    },
+                  },
+                ],
                 label: {
                   key: 'supportProvider.trainingSession.step1.resourceContent',
                   fallback: 'Resource Content',
                 },
-                subLabel: {
+                subTitle: {
                   key: 'supportProvider.trainingSession.step1.resourceUploadSub',
                   fallback: 'Upload PDF or DOC training materials',
                 },
