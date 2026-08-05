@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack } from '@ui';
+import { Card, Container, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince } from '../../../../services/usersService';
+import { saveTrainingSession, getTrainingSessionById } from '../../../../services/SupportOfferingsServices/supportOfferingsService';
 import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
 
 
@@ -33,10 +34,23 @@ const PILLAR_SESSION_TYPES: Record<string, string[]> = {
 // conflicts
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
+  const route = useRoute<any>();
+  const sessionId = route.params?.sessionId;
   const { t } = useLanguage();
   const { provinces: dynamicProvinces } = useUserManagementFilters({});
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const [values, setValues] = useState<any>({});
+  const { showAlert } = useAlert();
+
+  useEffect(() => {
+    if (sessionId) {
+      getTrainingSessionById(Number(sessionId)).then((session) => {
+        if (session) {
+          setValues(session);
+        }
+      });
+    }
+  }, [sessionId]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
     setValues(prev => {
@@ -161,6 +175,20 @@ const App = (): React.JSX.Element => {
     };
   }, [dynamicProvinces, dynamicSites, values.pillar]);
 
+  const handleSave = async (formValues: any, isDraft: boolean) => {
+    try {
+      const response = await saveTrainingSession(formValues, isDraft);
+
+      if (response.success) {
+        showAlert('success', response.message);
+        navigation.navigate('opportunities');
+      }
+    } catch (error) {
+      console.error('Error saving training session:', error);
+      showAlert('error', 'Something went wrong.');
+    }
+  };
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -176,11 +204,8 @@ const App = (): React.JSX.Element => {
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
-            onSaveDraft={(data) => console.log(data)}
-            onSubmit={(data) => {
-              setValues(data);
-              console.log("onSubmit",data)
-            }}
+            onSubmit={(formValues) => handleSave(formValues, false)}
+            onSaveDraft={(formValues) => handleSave(formValues, true)}
             uploadService={async (file) => {
               // Reuses the same signed-URL-then-PUT flow already used for task
               // file evidence (projectPlayerService.uploadFiles): get a signed

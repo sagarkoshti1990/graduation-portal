@@ -12,6 +12,7 @@ import {
   useAlert,
 } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useNavigation } from '@react-navigation/native';
 import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
 import type { ProvinceEntity, SiteEntity } from '@app-types/Users';
 import { getTrainingSessions, completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
@@ -28,6 +29,7 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const navigation = useNavigation();
   const [item, setItem] = useState<TrainingSessionItem>(initialItem);
   const [isExpanded, setIsExpanded] = useState(false);
   const [files, setFiles] = useState<MaterialItem[]>(initialItem.materials || []);
@@ -40,6 +42,8 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
   const getStatusColors = (status: string) => {
     switch (status) {
+      case 'Draft':
+        return { bg: '$backgroundLight100', border: 'transparent', text: '$textMuted', icon: 'FileText' };
       case 'Upcoming':
         return { bg: '$blue50', border: 'transparent', text: '$blue600', icon: 'Clock' };
       case 'In progress':
@@ -171,11 +175,11 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
               {t('supportProvider.supportOfferings.cards.requestedBy', { name: item.requestedBy })}
             </Text>
 
-            {item.hasCopyButton && (
+            {item.status === 'Draft' ? (
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation();
-                  handleCopySession();
+                  navigation.navigate('create-training-session' as never, { sessionId: item.id } as never);
                 }}
               >
                 {({ hovered }: any) => {
@@ -184,19 +188,47 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                     <Box {...styles.copySessionBox(isHovered)}>
                       <HStack {...styles.badgeContentHStack}>
                         <LucideIcon
-                          name="Copy"
+                          name="Edit"
                           {...(isHovered ? styles.cardWhiteIconProps : styles.cardCopyIconProps)}
                         />
                         <Text
                           {...(isHovered ? styles.cardBtnWhiteText : styles.cardBtnPrimaryText)}
                         >
-                          {t('supportProvider.supportOfferings.cards.copySession')}
+                          {t('common.edit', 'Edit')}
                         </Text>
                       </HStack>
                     </Box>
                   );
                 }}
               </Pressable>
+            ) : (
+              item.hasCopyButton && (
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleCopySession();
+                  }}
+                >
+                  {({ hovered }: any) => {
+                    const isHovered = hovered || false;
+                    return (
+                      <Box {...styles.copySessionBox(isHovered)}>
+                        <HStack {...styles.badgeContentHStack}>
+                          <LucideIcon
+                            name="Copy"
+                            {...(isHovered ? styles.cardWhiteIconProps : styles.cardCopyIconProps)}
+                          />
+                          <Text
+                            {...(isHovered ? styles.cardBtnWhiteText : styles.cardBtnPrimaryText)}
+                          >
+                            {t('supportProvider.supportOfferings.cards.copySession')}
+                          </Text>
+                        </HStack>
+                      </Box>
+                    );
+                  }}
+                </Pressable>
+              )
             )}
           </HStack>
         </VStack>
@@ -388,6 +420,7 @@ interface TrainingCardProps {
   statusFilter?: string;
   provinceFilter?: string;
   siteFilter?: string;
+  draftStatusFilter?: string;
   provincesList?: ProvinceEntity[];
   sitesList?: SiteEntity[];
 }
@@ -397,6 +430,7 @@ export default function TrainingCard({
   statusFilter,
   provinceFilter,
   siteFilter,
+  draftStatusFilter,
   provincesList = [],
   sitesList = [],
 }: TrainingCardProps): React.ReactElement {
@@ -408,10 +442,11 @@ export default function TrainingCard({
       statusFilter,
       provinceFilter,
       siteFilter,
+      draftStatusFilter,
       provincesList,
       sitesList,
     }).then(setTrainings);
-  }, [searchQuery, statusFilter, provinceFilter, siteFilter, provincesList, sitesList]);
+  }, [searchQuery, statusFilter, provinceFilter, siteFilter, draftStatusFilter, provincesList, sitesList]);
 
   return (
     <VStack {...styles.listContainer}>

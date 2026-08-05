@@ -144,6 +144,15 @@ const App = (): React.JSX.Element => {
       placeholder: 'All Sites',
       data: siteOptions,
     },
+    {
+      type: 'select',
+      attr: 'draftStatus',
+      placeholder: 'Publish Status',
+      data: [
+        { label: 'Published', value: 'Published' },
+        { label: 'Drafts', value: 'Draft' },
+      ],
+    },
   ];
 
   const cardProps = {
@@ -151,6 +160,7 @@ const App = (): React.JSX.Element => {
     statusFilter: filters.status,
     provinceFilter: filters.province,
     siteFilter: filters.site,
+    draftStatusFilter: filters.draftStatus,
     provincesList: provincesList,
     sitesList: sitesList,
   };

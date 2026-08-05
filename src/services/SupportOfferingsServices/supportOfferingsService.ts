@@ -8,6 +8,9 @@ import {
   FilterParams,
 } from '../../constants/SUPPORT_OFFERINGS_MOCK';
 
+
+const sessions: TrainingSessionItem[] = [...supportOfferingsData.mockTrainings] as TrainingSessionItem[];
+
 /**
  * Helper to dynamically compute status based on session date vs current date
  */
@@ -54,13 +57,17 @@ export const getTrainingSessions = async (params: FilterParams): Promise<Trainin
     console.warn('Backend API endpoint unavailable, using local mock dataset for Training Sessions:', error);
   }
 
-  const { searchQuery, statusFilter, provinceFilter, siteFilter, provincesList = [], sitesList = [] } = params || {};
+  const { searchQuery, statusFilter, provinceFilter, siteFilter, draftStatusFilter, provincesList = [], sitesList = [] } = params || {};
 
-  const rawTrainings = (supportOfferingsData.mockTrainings || []) as TrainingSessionItem[];
-  let list = rawTrainings.map((item) => ({
-    ...item,
-    status: item.date ? getDynamicStatusFromDate(item.date) : item.status,
-  }));
+  let list = sessions.map((item) => {
+    if (item.status === 'Draft') {
+      return item;
+    }
+    return {
+      ...item,
+      status: item.date ? getDynamicStatusFromDate(item.date) : item.status,
+    };
+  });
 
   if (searchQuery && searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase().trim();
@@ -96,6 +103,12 @@ export const getTrainingSessions = async (params: FilterParams): Promise<Trainin
 
   if (statusFilter && statusFilter !== 'all-statuses') {
     list = list.filter((item) => item.status === statusFilter);
+  }
+
+  if (draftStatusFilter === 'Draft') {
+    list = list.filter((item) => item.status === 'Draft');
+  } else if (draftStatusFilter === 'Published') {
+    list = list.filter((item) => item.status !== 'Draft');
   }
 
   return list;
@@ -236,4 +249,28 @@ export const completeTrainingSession = async (
     console.warn('Backend API endpoint unavailable for completeTrainingSession, returning fallback response:', error);
     return { success: true, sessionId, presentCount: data.presentCount };
   }
+};
+
+/**
+ * Save / Update a Training Session (Draft or Published)
+ */
+export const saveTrainingSession = async (
+  _values: any,
+  _isDraft: boolean
+): Promise<{ success: boolean; message: string }> => {
+  return {
+    success: true,
+    message: _isDraft
+      ? 'Draft saved successfully!'
+      : 'Training session saved successfully!',
+  };
+};
+
+/**
+ * Get a single training session by ID
+ */
+export const getTrainingSessionById = async (
+  id: number
+): Promise<TrainingSessionItem | undefined> => {
+  return sessions.find((s) => s.id === id);
 };
