@@ -79,31 +79,31 @@ const App = (): React.JSX.Element => {
         : [
             {
               value: 'Agriculture & Farming',
-              label:'supportProvider.assetForm.livelihoodCategories.agriculture',
+              label:'Agriculture & Farming',
             },
             {
               value: 'Livestock & Poultry',
-              label:'supportProvider.assetForm.livelihoodCategories.livestock',
+              label:'Livestock & Poultry',
             },
             {
               value: 'Small Business & Retail',
-              label:'supportProvider.assetForm.livelihoodCategories.smallBusiness',
+              label:'Small Business & Retail',
             },
             {
               value: 'Vocational & Skills Trades',
-              label:'supportProvider.assetForm.livelihoodCategories.vocational',
+              label:'Vocational & Skills Trades',
             },
             {
               value: 'Fisheries & Aquaculture',
-              label:'supportProvider.assetForm.livelihoodCategories.fisheries',
+              label:'Fisheries & Aquaculture',
             },
             {
               value: 'Services & Micro-enterprise',
-              label:'supportProvider.assetForm.livelihoodCategories.services',
+              label:'Services & Micro-enterprise',
             },
             {
               value: 'Other',
-              label:'supportProvider.assetForm.livelihoodCategories.other',
+              label:'Other',
             },
           ];
 
@@ -113,15 +113,15 @@ const App = (): React.JSX.Element => {
       assetTypes: [
         {
           value: 'Cash',
-          label: 'supportProvider.assetForm.assetTypes.cash',
+          label: 'Cash',
         },
         {
           value: 'In-kind',
-          label: 'supportProvider.assetForm.assetTypes.inKind',
+          label: 'In-kind',
         },
         {
           value: 'Voucher',
-          label: 'supportProvider.assetForm.assetTypes.voucher',
+          label: 'Voucher',
         },
       ],
       livelihoodCategories: livelihoodOpts,

@@ -58,15 +58,15 @@ const App = (): React.JSX.Element => {
       servicesCategories: [
         {
           value: 'Special Attention',
-          label:'supportProvider.additionalServicesForm.categories.specialAttention',
+          label:'Special Attention',
         },
         {
           value: 'Immediate Attention',
-          label:'supportProvider.additionalServicesForm.categories.immediateAttention',
+          label:'Immediate Attention',
         },
         {
           value: 'Other',
-          label:'supportProvider.additionalServicesForm.categories.other',
+          label:'Other',
         },
       ],
     };
