@@ -1,25 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   HStack,
   VStack,
   Text,
   Pressable,
-  Textarea,
-  TextareaInput,
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectItem,
 } from '@gluestack-ui/themed';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+import SchemaFormRenderer from '@components/SchemaFormRenderer';
+import { DECLINE_FORM_SCHEMA } from '@constants/DECLINE_FORM_SCHEMA';
 
 const BASE_PATH = 'supportProvider.supportRequests';
 
@@ -44,24 +36,44 @@ export default function DeclineModal({
   onSubmit,
 }: DeclineModalProps): React.JSX.Element {
   const { t } = useLanguage();
-  const [selectedReason, setSelectedReason] = useState('');
-  const [reasonDetails, setReasonDetails] = useState('');
+  const [values, setValues] = useState<Record<string, string>>({
+    selectedReason: '',
+    reasonDetails: '',
+  });
+
+  const handleFieldChange = useCallback((name: string, value: string) => {
+    setValues(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const optionsMap = useMemo(() => {
+    return {
+      declineReasonOptions: DECLINE_REASON_OPTIONS.map(reason => ({
+        value: reason.value,
+        label: t(reason.label) || reason.value,
+      })),
+    };
+  }, [t]);
 
   if (!isOpen) return <></>;
 
   const requestTitle = item?.title || '';
   const coachName = item?.coach || '';
 
+  const resetForm = () => {
+    setValues({
+      selectedReason: '',
+      reasonDetails: '',
+    });
+  };
+
   const handleSubmit = () => {
-    onSubmit?.(selectedReason, reasonDetails);
-    setSelectedReason('');
-    setReasonDetails('');
+    onSubmit?.(values.selectedReason || '', values.reasonDetails || '');
+    resetForm();
     onClose();
   };
 
   const handleClose = () => {
-    setSelectedReason('');
-    setReasonDetails('');
+    resetForm();
     onClose();
   };
 
@@ -113,7 +125,7 @@ export default function DeclineModal({
 
             <HStack {...modalStyles.labelRow}>
               <Text {...modalStyles.declineSummaryTitleText}>
-                {t(`${BASE_PATH}.labels.coach`)}
+                {t(`${BASE_PATH}.labels.coach`)}:
               </Text>
               <Text {...modalStyles.declineSummaryValueText}>
                 {coachName}
@@ -122,64 +134,14 @@ export default function DeclineModal({
           </VStack>
         </Box>
 
-        {/* Select Reason Dropdown */}
-        <VStack {...modalStyles.modalColFullWidth}>
-          <HStack {...modalStyles.labelRow}>
-            <Text {...modalStyles.labelText}>
-              {t(`${BASE_PATH}.labels.selectReason`)}
-            </Text>
-            <Text {...modalStyles.requiredAsterisk}>
-              *
-            </Text>
-          </HStack>
-
-          <Select
-            selectedValue={selectedReason}
-            onValueChange={setSelectedReason}
-          >
-            <SelectTrigger {...modalStyles.declineSelectTrigger}>
-              <SelectInput
-                placeholder={t(`${BASE_PATH}.placeholders.declineReason`)}
-                {...modalStyles.declineSelectInputPlaceholder}
-              />
-              <SelectIcon {...modalStyles.selectIconStyle}>
-                <LucideIcon name="ChevronDown" {...modalStyles.iconDeclineChevron} />
-              </SelectIcon>
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectBackdrop />
-              <SelectContent>
-                {DECLINE_REASON_OPTIONS.map((reason) => (
-                  <SelectItem
-                    key={reason.value}
-                    label={t(reason.label)}
-                    value={reason.value}
-                  />
-                ))}
-              </SelectContent>
-            </SelectPortal>
-          </Select>
-        </VStack>
-
-        {/* Reason Details Input */}
-        <VStack {...modalStyles.modalColFullWidth}>
-          <Text {...modalStyles.labelText}>
-            {t(`${BASE_PATH}.labels.reasonDetails`)}
-          </Text>
-
-          <Textarea {...modalStyles.declineTextarea}>
-            <TextareaInput
-              value={reasonDetails}
-              onChangeText={setReasonDetails}
-              placeholder={t(`${BASE_PATH}.placeholders.declineDetails`)}
-              {...modalStyles.declineSelectInputPlaceholder}
-            />
-          </Textarea>
-
-          <Text {...modalStyles.declineHintText}>
-            {t(`${BASE_PATH}.hints.decline`)}
-          </Text>
-        </VStack>
+        {/* Form rendered via Schema */}
+        <SchemaFormRenderer
+          schema={DECLINE_FORM_SCHEMA}
+          values={values}
+          optionsMap={optionsMap}
+          onFieldChange={handleFieldChange}
+          t={t}
+        />
       </VStack>
     </Modal>
   );

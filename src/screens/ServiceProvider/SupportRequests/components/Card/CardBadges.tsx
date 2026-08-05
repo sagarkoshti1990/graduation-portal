@@ -12,21 +12,25 @@ interface CardBadgesProps {
 
 export const CardBadges: React.FC<CardBadgesProps> = ({ overdueDays, status = 'Pending' }) => {
   const { t } = useLanguage();
+  const isDeclined = status?.toLowerCase() === 'declined';
+
   return (
     <VStack {...cardStyles.badgeContainer}>
-      {/* Overdue Red Badge */}
-      <Box {...cardStyles.overdueBadge}>
-        <HStack {...cardStyles.badgeRow}>
-          <LucideIcon name="AlertCircle" {...cardStyles.badgeIconOverdue} />
-          <Text {...cardStyles.badgeTextOverdue}>
-            {t(`${BASE_PATH}.cardBadges.overdue`)} ({overdueDays || 7} {t(`${BASE_PATH}.cardBadges.days`)})
-          </Text>
-        </HStack>
-      </Box>
+      {/* Overdue Red Badge (Hidden for Declined items) */}
+      {!isDeclined && !!overdueDays && (
+        <Box {...cardStyles.overdueBadge}>
+          <HStack {...cardStyles.badgeRow}>
+            <LucideIcon name="AlertCircle" {...cardStyles.badgeIconOverdue} />
+            <Text {...cardStyles.badgeTextOverdue}>
+              {t(`${BASE_PATH}.cardBadges.overdue`)} ({overdueDays} {t(`${BASE_PATH}.cardBadges.days`)})
+            </Text>
+          </HStack>
+        </Box>
+      )}
 
-      {/* Status Yellow Badge */}
-      <Box {...cardStyles.pendingBadge}>
-        <Text {...cardStyles.badgeTextPending}>
+      {/* Status Badge: Light Gray for Declined, Yellow for Pending/Others */}
+      <Box {...(isDeclined ? cardStyles.declinedBadge : cardStyles.pendingBadge)}>
+        <Text {...(isDeclined ? cardStyles.badgeTextDeclined : cardStyles.badgeTextPending)}>
           {status}
         </Text>
       </Box>

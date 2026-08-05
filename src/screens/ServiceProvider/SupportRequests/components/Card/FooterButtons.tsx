@@ -38,46 +38,54 @@ export default function ActionButtons({
       </Pressable>
 
       {/* Right Action Buttons */}
-      <HStack {...cardStyles.rightActionGroup}>
-        {/* Request Info Button */}
-        <Pressable
-          onPress={() => onRequestInfo?.()}
-          {...cardStyles.requestInfoBtn}
-        >
-          <HStack {...cardStyles.buttonRowMd}>
-            <LucideIcon name="MessageSquare" {...cardStyles.iconRequestInfo} />
-            <Text {...cardStyles.textRequestInfo}>
-              {t(`${BASE_PATH}.buttonTexts.requestInfo`)}
-            </Text>
-          </HStack>
-        </Pressable>
+      {(onRequestInfo || onDecline || onAcceptAndSchedule) ? (
+        <HStack {...cardStyles.rightActionGroup}>
+          {/* Request Info Button */}
+          {onRequestInfo ? (
+            <Pressable
+              onPress={() => onRequestInfo?.()}
+              {...cardStyles.requestInfoBtn}
+            >
+              <HStack {...cardStyles.buttonRowMd}>
+                <LucideIcon name="MessageSquare" {...cardStyles.iconRequestInfo} />
+                <Text {...cardStyles.textRequestInfo}>
+                  {t(`${BASE_PATH}.buttonTexts.requestInfo`)}
+                </Text>
+              </HStack>
+            </Pressable>
+          ) : null}
 
-        {/* Decline Button */}
-        <Pressable
-          onPress={() => onDecline?.()}
-          {...cardStyles.declineBtn}
-        >
-          <HStack {...cardStyles.buttonRowMd}>
-            <LucideIcon name="X" {...cardStyles.iconDecline} />
-            <Text {...cardStyles.textDecline}>
-              {t(`${BASE_PATH}.buttonTexts.decline`)}
-            </Text>
-          </HStack>
-        </Pressable>
+          {/* Decline Button */}
+          {onDecline ? (
+            <Pressable
+              onPress={() => onDecline?.()}
+              {...cardStyles.declineBtn}
+            >
+              <HStack {...cardStyles.buttonRowMd}>
+                <LucideIcon name="X" {...cardStyles.iconDecline} />
+                <Text {...cardStyles.textDecline}>
+                  {t(`${BASE_PATH}.buttonTexts.decline`)}
+                </Text>
+              </HStack>
+            </Pressable>
+          ) : null}
 
-        {/* Accept & Schedule Button */}
-        <Pressable
-          onPress={() => onAcceptAndSchedule?.()}
-          {...cardStyles.acceptBtn}
-        >
-          <HStack {...cardStyles.buttonRowMd}>
-            <LucideIcon name="CheckCircle" {...cardStyles.iconAccept} />
-            <Text {...cardStyles.textAccept}>
-              {acceptLabel.startsWith('supportProvider.') ? t(acceptLabel) : acceptLabel}
-            </Text>
-          </HStack>
-        </Pressable>
-      </HStack>
+          {/* Accept & Schedule Button */}
+          {onAcceptAndSchedule ? (
+            <Pressable
+              onPress={() => onAcceptAndSchedule?.()}
+              {...cardStyles.acceptBtn}
+            >
+              <HStack {...cardStyles.buttonRowMd}>
+                <LucideIcon name="CheckCircle" {...cardStyles.iconAccept} />
+                <Text {...cardStyles.textAccept}>
+                  {acceptLabel.startsWith('supportProvider.') ? t(acceptLabel) : acceptLabel}
+                </Text>
+              </HStack>
+            </Pressable>
+          ) : null}
+        </HStack>
+      ) : null}
     </HStack>
   );
 }

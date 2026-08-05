@@ -13,6 +13,7 @@
     "filter": "Filtrar",
     "filters": "Filtros",
     "clearFilters": "Limpiar Filtros",
+    "clear": "Borrar",
     "submit": "Enviar",
     "back": "Atrás",
     "next": "Siguiente",
@@ -26,6 +27,14 @@
     "actions": "Acciones",
     "noDataFound": "No se encontraron datos",
     "optional": "(Opcional)"
+  },
+  "datePicker": {
+    "today": "Hoy",
+    "now": "Ahora",
+    "done": "Hecho",
+    "selectDate": "Seleccionar fecha",
+    "selectTime": "Seleccionar hora",
+    "selectDateTime": "Seleccionar fecha y hora"
   },
   "navigation": {
     "menu": "Menú",

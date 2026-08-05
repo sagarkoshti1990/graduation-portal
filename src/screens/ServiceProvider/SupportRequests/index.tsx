@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, VStack, HStack, Box, Text, Pressable, LucideIcon } from '@ui';
 import styles from './styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import TrainingSessionsCard from './components/Card/TrainingSessions';
 import AdditionalServicesCard from './components/Card/AdditionalServices';
 import AssetsCard from './components/Card/Assests';
+import DeclinedCard from './components/Card/DeclinedCard';
 import { TabButton } from '@components/Tabs';
 import FilterButton from '@components/Filter';
 import SupportRequestsModals, { SupportRequestModalType } from './components/modals/SupportRequestsModals';
 import { useLanguage } from '@contexts/LanguageContext';
-import { getSupportRequests } from '../../../services/serviceProvider';
+import { getSupportRequests } from '../../../services/serviceProvider/serviceProviderService';
 import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
 
 const BASE_PATH = 'supportProvider.supportRequests';
@@ -31,12 +32,14 @@ const App = (): React.JSX.Element => {
     sessions: number;
     additional_services: number;
     assets: number;
+    declined: number;
     pendingTotal: number;
     overdueTotal: number;
   }>({
     sessions: 0,
     additional_services: 0,
     assets: 0,
+    declined: 0,
     pendingTotal: 0,
     overdueTotal: 0,
   });
@@ -57,7 +60,6 @@ const App = (): React.JSX.Element => {
             ...provincesData.map((p: any) => ({
               label: p.name || p.title || p.label,
               value: p.name?.toLowerCase(),
-              // value: p._id || p.id || p.value || p.name?.toLowerCase(),
             })),
           ];
           setProvinceOptions(dynamicProvinces);
@@ -117,27 +119,28 @@ const App = (): React.JSX.Element => {
     },
   ];
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const res = await getSupportRequests({
-          tab: activeTab as any,
-          province: filters.province,
-          site: filters.site,
-          search: filters.search,
-        });
-        if (res?.data) {
-          setRequestsData(res.data);
-        }
-        if (res?.counts) {
-          setTabCounts(res.counts);
-        }
-      } catch (err) {
-        console.error('[SupportRequests Screen] Failed to fetch support requests via service:', err);
+  const fetchRequests = useCallback(async () => {
+    try {
+      const res = await getSupportRequests({
+        tab: activeTab as any,
+        province: filters.province,
+        site: filters.site,
+        search: filters.search,
+      });
+      if (res?.data) {
+        setRequestsData(res.data);
       }
-    };
-    fetchRequests();
+      if (res?.counts) {
+        setTabCounts(res.counts);
+      }
+    } catch (err) {
+      console.error('[SupportRequests Screen] Failed to fetch support requests via service:', err);
+    }
   }, [activeTab, filters]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const handleFilterChange = (newFilters: Record<string, any>) => {
     setFilters(newFilters);
@@ -155,18 +158,27 @@ const App = (): React.JSX.Element => {
   const tabs = [
     {
       key: 'sessions',
-      label: `${t(`${BASE_PATH}.tabs.sessions`)} (${tabCounts.sessions ?? 0})`,
-      icon: 'Package',
+      label: `${t(`${BASE_PATH}.tabs.sessions`)}`,
+      count: tabCounts.sessions ?? 0,
+      icon: 'GraduationCap',
     },
     {
       key: 'additional_services',
-      label: `${t(`${BASE_PATH}.tabs.additional_services`)} (${tabCounts.additional_services ?? 0})`,
-      icon: 'Package',
+      label: `${t(`${BASE_PATH}.tabs.additional_services`)}`,
+      count: tabCounts.additional_services ?? 0,
+      icon: 'MessageSquare',
     },
     {
       key: 'assets',
-      label: `${t(`${BASE_PATH}.tabs.assets`)} (${tabCounts.assets ?? 0})`,
+      label: `${t(`${BASE_PATH}.tabs.assets`)}`,
+      count: tabCounts.assets ?? 0,
       icon: 'Package',
+    },
+    {
+      key: 'declined',
+      label: `${t(`${BASE_PATH}.tabs.declined`, 'Declined')}`,
+      count: tabCounts.declined ?? 0,
+      icon: 'XCircle',
     },
   ];
 
@@ -190,7 +202,7 @@ const App = (): React.JSX.Element => {
           </HStack>
         }
       />
-      <Box {...styles.subbox} flex={1}>
+      <Box {...styles.subbox}>
         <Container {...styles.container} py="$0">
           <HStack {...styles.tabsHeader}>
             {tabs.map((tab) => (
@@ -206,7 +218,7 @@ const App = (): React.JSX.Element => {
           </HStack>
         </Container>
       </Box>
-      <Box {...styles.subbox} flex={1}>
+      <Box {...styles.subbox}>
         {/* Filter Bar without card border, placed directly under tabs */}
         <Container {...styles.container} py="$0">
           <FilterButton
@@ -250,6 +262,12 @@ const App = (): React.JSX.Element => {
               onAcceptAndSchedule={(item) => handleOpenModal('accept_schedule', item)}
             />
           )}
+          {activeTab === 'declined' && (
+            <DeclinedCard
+              items={requestsData}
+              onViewFullDetails={(item) => handleOpenModal('view_details', item)}
+            />
+          )}
         </VStack>
       </Container>
 
@@ -259,6 +277,7 @@ const App = (): React.JSX.Element => {
         activeModal={activeModal}
         onClose={handleCloseModal}
         onOpenModal={handleOpenModal}
+        onSuccess={fetchRequests}
       />
     </VStack>
   );

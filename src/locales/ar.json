@@ -13,6 +13,7 @@
     "filter": "تصفية",
     "filters": "المرشحات",
     "clearFilters": "مسح المرشحات",
+    "clear": "مسح",
     "submit": "إرسال",
     "back": "رجوع",
     "next": "التالي",
@@ -26,6 +27,14 @@
     "actions": "الإجراءات",
     "noDataFound": "لم يتم العثور على بيانات",
     "optional": "(اختياري)"
+  },
+  "datePicker": {
+    "today": "اليوم",
+    "now": "الآن",
+    "done": "تم",
+    "selectDate": "اختر التاريخ",
+    "selectTime": "اختر الوقت",
+    "selectDateTime": "اختر التاريخ والوقت"
   },
   "navigation": {
     "menu": "القائمة",

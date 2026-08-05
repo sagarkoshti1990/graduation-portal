@@ -29,6 +29,8 @@ export interface TabData {
   mobileLabel?: string; // Optional mobile-specific label (shorter version)
   isDisabled?: boolean;
   icon?: string; // Optional Lucide icon name
+  count?: number | string;
+  badge?: number | string;
 }
 
 export interface TabButtonProps {

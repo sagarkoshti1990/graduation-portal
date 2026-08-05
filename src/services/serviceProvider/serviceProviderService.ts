@@ -3,8 +3,8 @@ import { API_ENDPOINTS } from '../apiEndpoints';
 import supportRequestsMock from './mockData/supportRequests.json';
 
 export interface SupportRequestItem {
-  id: string;
-  type: 'sessions' | 'additional_services' | 'assets';
+  id: string | number;
+  type: 'sessions' | 'additional_services' | 'assets' | 'declined';
   category: string;
   badge?: string;
   badgeColor?: string;
@@ -15,12 +15,13 @@ export interface SupportRequestItem {
   site?: string;
   province?: string;
   participantsCount?: number;
+  participants?: number;
   preferredDate?: string;
   preferredTime?: string;
   preferredLocation?: string;
   description?: string;
   specialRequirements?: string;
-  status: 'pending' | 'accepted' | 'declined' | 'info_requested';
+  status: 'pending' | 'accepted' | 'declined' | 'info_requested' | 'Pending' | 'Declined';
   requestedDate?: string;
   overdueDays?: number;
   declineReason?: string;
@@ -35,7 +36,7 @@ export interface SupportRequestsFilterParams {
 }
 
 export interface AcceptAndSchedulePayload {
-  requestId: string;
+  requestId: string | number;
   date: string;
   time: string;
   duration: string;
@@ -45,15 +46,49 @@ export interface AcceptAndSchedulePayload {
 }
 
 export interface RequestInfoPayload {
-  requestId: string;
+  requestId: string | number;
   message: string;
 }
 
 export interface DeclinePayload {
-  requestId: string;
+  requestId: string | number;
   reason: string;
   details?: string;
 }
+
+const LOCAL_STORAGE_KEY = 'sp_support_requests_store';
+
+const loadMockStore = (): Record<string, SupportRequestItem[]> => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading support requests mockStore from localStorage:', err);
+  }
+  return {
+    sessions: [...((supportRequestsMock as any).sessions || [])],
+    additional_services: [...((supportRequestsMock as any).additional_services || [])],
+    assets: [...((supportRequestsMock as any).assets || [])],
+    declined: [],
+  };
+};
+
+const saveMockStore = (store: Record<string, SupportRequestItem[]>) => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(store));
+    }
+  } catch (err) {
+    console.error('Error saving support requests mockStore to localStorage:', err);
+  }
+};
+
+// In-memory & localStorage data store for fallback mock data
+const mockStore: Record<string, SupportRequestItem[]> = loadMockStore();
 
 /**
  * Fetch support requests list filtered by tab, province, site, and search term
@@ -73,7 +108,6 @@ export const getSupportRequests = async (
   };
 }> => {
   try {
-    // Attempt API fetch if endpoint is configured, otherwise fallback gracefully to mockData
     if (API_ENDPOINTS && (API_ENDPOINTS as any).SERVICE_PROVIDER_REQUESTS) {
       const response = await api.get((API_ENDPOINTS as any).SERVICE_PROVIDER_REQUESTS, {
         params,
@@ -89,8 +123,7 @@ export const getSupportRequests = async (
   // Mock Data fallback & filtering logic
   const { tab = 'sessions', province, site, search } = params || {};
 
-  const allCategories = (supportRequestsMock as unknown) as Record<string, SupportRequestItem[]>;
-  let list: SupportRequestItem[] = allCategories[tab] || [];
+  let list: SupportRequestItem[] = [...(mockStore[tab] || [])];
 
   if (province && province !== 'all-provinces') {
     const targetProv = province.toLowerCase().replace(/[\s-_]/g, '');
@@ -114,17 +147,19 @@ export const getSupportRequests = async (
       (item) =>
         item.title.toLowerCase().includes(q) ||
         item.coach.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q)
+        (item.category && item.category.toLowerCase().includes(q))
     );
   }
 
   const counts = {
-    sessions: (allCategories.sessions || []).length,
-    additional_services: (allCategories.additional_services || []).length,
-    assets: (allCategories.assets || []).length,
-    declined: (allCategories.declined || []).length,
-    pendingTotal: 11,
-    overdueTotal: 11,
+    sessions: mockStore.sessions.length,
+    additional_services: mockStore.additional_services.length,
+    assets: mockStore.assets.length,
+    declined: mockStore.declined.length,
+    pendingTotal: mockStore.sessions.length + mockStore.additional_services.length + mockStore.assets.length,
+    overdueTotal: mockStore.sessions.filter(i => (i.overdueDays || 0) > 0).length +
+                  mockStore.additional_services.filter(i => (i.overdueDays || 0) > 0).length +
+                  mockStore.assets.filter(i => (i.overdueDays || 0) > 0).length,
   };
 
   return {
@@ -149,7 +184,6 @@ export const acceptAndScheduleSupportRequest = async (
     console.warn('Backend API unavailable, using simulated success for Accept & Schedule:', error);
   }
 
-  // Simulated local response
   return {
     success: true,
     message: 'Support request accepted and scheduled successfully.',
@@ -190,6 +224,22 @@ export const declineSupportRequest = async (
     }
   } catch (error) {
     console.warn('Backend API unavailable, using simulated success for Decline Request:', error);
+  }
+
+  // Update in-memory mock store & persist to localStorage
+  const { requestId, reason, details } = payload;
+  const categories = ['sessions', 'additional_services', 'assets'];
+  for (const cat of categories) {
+    const idx = mockStore[cat].findIndex(item => String(item.id) === String(requestId));
+    if (idx !== -1) {
+      const [declinedItem] = mockStore[cat].splice(idx, 1);
+      declinedItem.status = 'Declined';
+      declinedItem.declineReason = reason;
+      declinedItem.declineDetails = details;
+      mockStore.declined.unshift(declinedItem);
+      saveMockStore(mockStore);
+      break;
+    }
   }
 
   return {

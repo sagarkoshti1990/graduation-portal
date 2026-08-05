@@ -57,6 +57,14 @@
     "serverError500": "Something went wrong. Try again.",
     "somethingWentWrong": "Something went wrong. Try again."
   },
+  "datePicker": {
+    "today": "Today",
+    "now": "Now",
+    "done": "Done",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "selectDateTime": "Select date & time"
+  },
   "projectPlayer": {
     "onboarding": "Onboarding the",
     "participant": "Participant",
@@ -1397,7 +1405,7 @@
       "low": "Low",
       "createUser": {
         "title": "Create New User",
-        "description": "Add a new user to the system. Required fields are marked with *.",
+        "description": "Add a new user to the system. Required fields are marked with",
         "personalInformation": "Personal Information",
         "firstName": "First Name",
         "firstNamePlaceholder": "Enter first name",
@@ -2461,6 +2469,9 @@
         "clearAll": "Clear all",
         "skipAndMarkComplete": "Skip & Mark Complete",
         "confirmAndComplete": "Confirm & Complete"
+      },
+      "buttonTexts": {
+        "publishSupport": "Publish support"
       }
     },
     "dashboard": {
@@ -2533,7 +2544,7 @@
       },
       "labels": {
         "request": "Request:",
-        "coach": "Coach:",
+        "coach": "Coach",
         "yourQuestion": "Your Question or Request",
         "selectReason": "Select Reason",
         "reasonDetails": "Reason Details",
@@ -2582,6 +2593,7 @@
         "sessions": "Sessions & Trainings",
         "additional_services": "Additional Services",
         "assets": "Assets",
+        "declined": "Declined",
         "pending": "Pending",
         "overdue": "Overdue"
       }

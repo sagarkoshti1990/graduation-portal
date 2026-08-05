@@ -1,8 +1,7 @@
 export default {
   container: {
     px: '$4',
-    pt: '$0',
-    pb: '$6',
+    py: '$6',
     '$md-px': '$6',
   } as const,
   title: {
