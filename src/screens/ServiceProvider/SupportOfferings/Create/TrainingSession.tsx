@@ -9,6 +9,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince } from '../../../../services/usersService';
 import { saveTrainingSession, getTrainingSessionById } from '../../../../services/SupportOfferingsServices/supportOfferingsService';
+import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
 
 
 const PILLAR_SESSION_TYPES: Record<string, string[]> = {
@@ -103,113 +104,80 @@ const App = (): React.JSX.Element => {
       pillars: [
         {
           value: 'Social Empowerment',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.pillars.socialEmpowerment',
-            ) || 'Social Empowerment',
+          label:'Social Empowerment',
         },
         {
           value: 'Financial Inclusion',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.pillars.financialInclusion',
-            ) || 'Financial Inclusion',
+          label: 'Financial Inclusion',
         },
         {
           value: 'Livelihoods',
-          label:
-            t('supportProvider.trainingSession.step1.pillars.livelihoods') ||
-            'Livelihoods',
+          label: 'Livelihoods',
         },
         {
           value: 'Others',
-          label:
-            t('supportProvider.trainingSession.step1.pillars.others') ||
-            'Others',
+          label: 'Others',
         },
       ],
       sessionTypes: sessionTypeOpts,
       targetAudienceOptions: [
         {
           value: 'Coach',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.targetAudienceOptions.coach',
-            ) || 'Coach',
+          label: 'Coach',
         },
         {
           value: 'Participant',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.targetAudienceOptions.participant',
-            ) || 'Participant',
+          label: 'Participant',
         },
         {
           value: 'Both',
-          label:
-            t(
-              'supportProvider.trainingSession.step1.targetAudienceOptions.both',
-            ) || 'Both',
+          label: 'Both',
         },
       ],
       certificateOptions: [
         {
           value: 'Yes',
-          label:
-            t('supportProvider.trainingSession.step1.certificateOptions.yes') ||
-            'Yes',
+          label: 'Yes',
         },
         {
           value: 'No',
-          label:
-            t('supportProvider.trainingSession.step1.certificateOptions.no') ||
-            'No',
+          label: 'No',
         },
       ],
       recurringOptions: [
         {
           value: 'Yes',
-          label:
-            t('supportProvider.trainingSession.step1.recurringToggle') ||
-            'Yes — recurring session',
+          label: 'Yes — recurring session',
         },
         {
           value: 'No',
-          label:
-            t('supportProvider.trainingSession.step1.recurringToggleNo') ||
-            'No — one-off session',
+          label: 'No — one-off session',
         },
       ],
       formatOptions: [
         {
           value: 'Offline',
-          label:
-            t('supportProvider.trainingSession.step2.typeOptions.offline') ||
-            'Offline',
+          label: 'Offline',
           icon: 'MapPin',
         },
         {
           value: 'Online',
-          label:
-            t('supportProvider.trainingSession.step2.typeOptions.online') ||
-            'Online',
+          label: 'Online',
           icon: 'Video',
         },
         {
           value: 'Hybrid',
-          label:
-            t('supportProvider.trainingSession.step2.typeOptions.hybrid') ||
-            'Hybrid',
+          label: 'Hybrid',
           icon: 'Users',
         },
       ],
     };
-  }, [dynamicProvinces, dynamicSites, values.pillar, t]);
+  }, [dynamicProvinces, dynamicSites, values.pillar]);
 
-  const handleSave = async (formValues: any, isDraft: boolean) => {
+    const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
-      await saveTrainingSession({ ...values, ...formValues }, isDraft);
-      navigation.goBack();
+      await saveTrainingSession(formValues, isDraft);
+      navigation.navigate('opportunities');
     } catch (error) {
       console.error('Error saving training session:', error);
     }
@@ -232,6 +200,24 @@ const App = (): React.JSX.Element => {
             onFieldChange={handleFieldChange}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
+            uploadService={async (file) => {
+              // Reuses the same signed-URL-then-PUT flow already used for task
+              // file evidence (projectPlayerService.uploadFiles): get a signed
+              // URL for this file, upload the bytes to it, and store the
+              // resulting permanent URL (query string stripped) on the field.
+              const entityId = `trainingSession-${Date.now()}`;
+              const uploaded = await uploadFiles(entityId, [
+                { ...file, size: file.size ?? 0 },
+              ]);
+              const url = uploaded?.data?.[0]?.url;
+              if (!url) {
+                throw new Error(`Failed to upload file: ${file.name}`);
+              }
+              console.log(url,"url")
+              return url;
+            }}
+            submitButtonProps={{bg:"green", icon: "Check"}}
+            submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
           />
         </Card>
       </Container>
