@@ -1,27 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   HStack,
   VStack,
   Text,
   Pressable,
-  Input,
-  InputField,
-  Textarea,
-  TextareaInput,
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectItem,
 } from '@gluestack-ui/themed';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+import SchemaFormRenderer from '@components/SchemaFormRenderer';
+import { ACCEPT_AND_SCHEDULE_FORM_SCHEMA } from '@constants/ACCEPT_AND_SCHEDULE_FORM_SCHEMA';
 
 const BASE_PATH = 'supportProvider.supportRequests';
 
@@ -54,29 +44,45 @@ export default function AcceptAndScheduleModal({
   onSubmit,
 }: AcceptAndScheduleModalProps): React.JSX.Element {
   const { t } = useLanguage();
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [duration, setDuration] = useState<string>(DURATION_OPTIONS[2].value);
-  const [location, setLocation] = useState('');
-  const [meetingLink, setMeetingLink] = useState('');
-  const [notes, setNotes] = useState('');
+  const [values, setValues] = useState<Record<string, string>>({
+    date: '',
+    time: '',
+    duration: DURATION_OPTIONS[2].value,
+    location: '',
+    meetingLink: '',
+    notes: '',
+  });
+
+  const handleFieldChange = useCallback((name: string, value: string) => {
+    setValues(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   useEffect(() => {
     if (item) {
-      setDate(item?.preferredDate || t(`${BASE_PATH}.fallbacks.date`));
-      setTime(
-        item?.preferredTime
+      setValues({
+        date: item?.preferredDate || t(`${BASE_PATH}.fallbacks.date`),
+        time: item?.preferredTime
           ? `${item.preferredTime} AM`
           : t(`${BASE_PATH}.fallbacks.time`),
-      );
-      setLocation(
-        item?.preferredLocation ||
+        duration: DURATION_OPTIONS[2].value,
+        location:
+          item?.preferredLocation ||
           item?.location ||
           t(`${BASE_PATH}.fallbacks.location`),
-      );
-      setMeetingLink(t(`${BASE_PATH}.fallbacks.meetingLink`));
+        meetingLink: t(`${BASE_PATH}.fallbacks.meetingLink`),
+        notes: '',
+      });
     }
   }, [item, t]);
+
+  const optionsMap = useMemo(() => {
+    return {
+      durationOptions: DURATION_OPTIONS.map(opt => ({
+        value: opt.value,
+        label: t(opt.label) || opt.value,
+      })),
+    };
+  }, [t]);
 
   if (!isOpen) return <></>;
 
@@ -89,12 +95,12 @@ export default function AcceptAndScheduleModal({
 
   const handleSubmit = () => {
     onSubmit?.({
-      date,
-      time,
-      duration,
-      location,
-      meetingLink,
-      notes,
+      date: values.date || '',
+      time: values.time || '',
+      duration: values.duration || DURATION_OPTIONS[2].value,
+      location: values.location || '',
+      meetingLink: values.meetingLink || '',
+      notes: values.notes || '',
     });
     onClose();
   };
@@ -154,127 +160,14 @@ export default function AcceptAndScheduleModal({
           </VStack>
         </Box>
 
-        {/* Date & Time Row */}
-        <HStack {...modalStyles.modalRowFullWidth}>
-          {/* Date Input */}
-          <VStack {...modalStyles.modalColFlex1}>
-            <HStack {...modalStyles.labelRow}>
-              <Text {...modalStyles.labelText}>
-                {t(`${BASE_PATH}.labels.date`)}
-              </Text>
-              <Text {...modalStyles.requiredAsterisk}>
-                *
-              </Text>
-            </HStack>
-
-            <Input {...modalStyles.inputStyle}>
-              <InputField
-                value={date}
-                onChangeText={setDate}
-                {...modalStyles.modalInputField}
-              />
-              <LucideIcon name="Calendar" {...modalStyles.iconInputCalendar} />
-            </Input>
-          </VStack>
-
-          {/* Time Input */}
-          <VStack {...modalStyles.modalColFlex1}>
-            <HStack {...modalStyles.labelRow}>
-              <Text {...modalStyles.labelText}>
-                {t(`${BASE_PATH}.labels.time`)}
-              </Text>
-              <Text {...modalStyles.requiredAsterisk}>
-                *
-              </Text>
-            </HStack>
-
-            <Input {...modalStyles.inputStyle}>
-              <InputField
-                value={time}
-                onChangeText={setTime}
-                {...modalStyles.modalInputField}
-              />
-              <LucideIcon name="Clock" {...modalStyles.iconInputClock} />
-            </Input>
-          </VStack>
-        </HStack>
-
-        {/* Duration Select */}
-        <VStack {...modalStyles.modalColFullWidth}>
-          <HStack {...modalStyles.labelRow}>
-            <Text {...modalStyles.labelText}>
-              {t(`${BASE_PATH}.labels.duration`)}
-            </Text>
-            <Text {...modalStyles.requiredAsterisk}>
-              *
-            </Text>
-          </HStack>
-
-          <Select selectedValue={duration} onValueChange={setDuration}>
-            <SelectTrigger {...modalStyles.selectTriggerStyle}>
-              <SelectInput {...modalStyles.modalInputField} />
-              <SelectIcon {...modalStyles.selectIconStyle}>
-                <LucideIcon name="ChevronDown" {...modalStyles.iconSelectChevron} />
-              </SelectIcon>
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectBackdrop />
-              <SelectContent>
-                {DURATION_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} label={t(opt.label)} value={opt.value} />
-                ))}
-              </SelectContent>
-            </SelectPortal>
-          </Select>
-        </VStack>
-
-        {/* Location / Venue Input */}
-        <VStack {...modalStyles.modalColFullWidth}>
-          <Text {...modalStyles.labelText}>
-            {t(`${BASE_PATH}.labels.locationVenue`)}
-          </Text>
-
-          <Input {...modalStyles.inputStyle}>
-            <InputField
-              value={location}
-              onChangeText={setLocation}
-              placeholder={t(`${BASE_PATH}.placeholders.location`)}
-              {...modalStyles.modalInputPlaceholder}
-            />
-          </Input>
-        </VStack>
-
-        {/* Meeting Link Input */}
-        <VStack {...modalStyles.modalColFullWidth}>
-          <Text {...modalStyles.labelText}>
-            {t(`${BASE_PATH}.labels.meetingLink`)}
-          </Text>
-
-          <Input {...modalStyles.inputStyle}>
-            <InputField
-              value={meetingLink}
-              onChangeText={setMeetingLink}
-              placeholder={t(`${BASE_PATH}.placeholders.meetingLink`)}
-              {...modalStyles.modalInputPlaceholder}
-            />
-          </Input>
-        </VStack>
-
-        {/* Notes for Coach */}
-        <VStack {...modalStyles.modalColFullWidth}>
-          <Text {...modalStyles.labelText}>
-            {t(`${BASE_PATH}.labels.notesForCoach`)}
-          </Text>
-
-          <Textarea {...modalStyles.textareaStyle}>
-            <TextareaInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder={t(`${BASE_PATH}.placeholders.notes`)}
-              {...modalStyles.modalInputPlaceholder}
-            />
-          </Textarea>
-        </VStack>
+        {/* Form rendered via Schema */}
+        <SchemaFormRenderer
+          schema={ACCEPT_AND_SCHEDULE_FORM_SCHEMA}
+          values={values}
+          optionsMap={optionsMap}
+          onFieldChange={handleFieldChange}
+          t={t}
+        />
       </VStack>
     </Modal>
   );

@@ -4,6 +4,7 @@ import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
+import cardStyles from '../../styles';
 
 const BASE_PATH = 'supportProvider.supportRequests';
 
@@ -51,6 +52,8 @@ export default function ViewDetailsModal({
   const participantDetails = item?.participantDetails;
   const specialRequirements = item?.specialRequirements;
 
+  const isDeclined = item?.status?.toLowerCase() === 'declined';
+
   return (
     <Modal
       isOpen={isOpen}
@@ -79,55 +82,57 @@ export default function ViewDetailsModal({
         </VStack>
       }
       footerContent={
-        <HStack {...modalStyles.modalFooterRow}>
-          {/* Request Info Button */}
-          <Pressable
-            onPress={() => {
-              onClose();
-              onRequestInfo?.();
-            }}
-            {...modalStyles.btnViewDetailsRequestInfo}
-          >
-            <HStack {...modalStyles.buttonRowMd}>
-              <LucideIcon name="MessageSquare" {...modalStyles.iconDetails} />
-              <Text {...modalStyles.textBtnRequestInfo}>
-                {t(`${BASE_PATH}.buttonTexts.requestInfo`)}
-              </Text>
-            </HStack>
-          </Pressable>
+        isDeclined ? null : (
+          <HStack {...modalStyles.modalFooterRow}>
+            {/* Request Info Button */}
+            <Pressable
+              onPress={() => {
+                onClose();
+                onRequestInfo?.();
+              }}
+              {...modalStyles.btnViewDetailsRequestInfo}
+            >
+              <HStack {...modalStyles.buttonRowMd}>
+                <LucideIcon name="MessageSquare" {...modalStyles.iconDetails} />
+                <Text {...modalStyles.textBtnRequestInfo}>
+                  {t(`${BASE_PATH}.buttonTexts.requestInfo`)}
+                </Text>
+              </HStack>
+            </Pressable>
 
-          {/* Decline Button */}
-          <Pressable
-            onPress={() => {
-              onClose();
-              onDecline?.();
-            }}
-            {...modalStyles.btnViewDetailsDecline}
-          >
-            <HStack {...modalStyles.buttonRowMd}>
-              <LucideIcon name="X" {...modalStyles.iconDecline} />
-              <Text {...modalStyles.textDecline}>
-                {t(`${BASE_PATH}.buttonTexts.decline`)}
-              </Text>
-            </HStack>
-          </Pressable>
+            {/* Decline Button */}
+            <Pressable
+              onPress={() => {
+                onClose();
+                onDecline?.();
+              }}
+              {...modalStyles.btnViewDetailsDecline}
+            >
+              <HStack {...modalStyles.buttonRowMd}>
+                <LucideIcon name="X" {...modalStyles.iconDecline} />
+                <Text {...modalStyles.textDecline}>
+                  {t(`${BASE_PATH}.buttonTexts.decline`)}
+                </Text>
+              </HStack>
+            </Pressable>
 
-          {/* Accept Request Button */}
-          <Pressable
-            onPress={() => {
-              onClose();
-              onAcceptRequest?.();
-            }}
-            {...modalStyles.btnViewDetailsAccept}
-          >
-            <HStack {...modalStyles.buttonRowMd}>
-              <LucideIcon name="CheckCircle" {...modalStyles.iconAccept} />
-              <Text {...modalStyles.textAccept}>
-                {t(`${BASE_PATH}.buttonTexts.acceptRequest`)}
-              </Text>
-            </HStack>
-          </Pressable>
-        </HStack>
+            {/* Accept Request Button */}
+            <Pressable
+              onPress={() => {
+                onClose();
+                onAcceptRequest?.();
+              }}
+              {...modalStyles.btnViewDetailsAccept}
+            >
+              <HStack {...modalStyles.buttonRowMd}>
+                <LucideIcon name="CheckCircle" {...modalStyles.iconAccept} />
+                <Text {...modalStyles.textAccept}>
+                  {t(`${BASE_PATH}.buttonTexts.acceptRequest`)}
+                </Text>
+              </HStack>
+            </Pressable>
+          </HStack>
+        )
       }
     >
       <VStack {...modalStyles.viewDetailsBodyVStack}>
@@ -137,7 +142,7 @@ export default function ViewDetailsModal({
             {t(`${BASE_PATH}.titles.coachInformation`)}
           </Text>
           <Box {...modalStyles.coachInfoBox}>
-            <VStack {...modalStyles.coachInfoVStack}>
+            <VStack {...modalStyles.coachInfoVStack} {...modalStyles.coachInfoVStack1} >
               <HStack {...modalStyles.coachInfoRow}>
                 <LucideIcon name="User" {...modalStyles.iconCoachMeta} />
                 <Text {...modalStyles.textCoachName}>
@@ -183,7 +188,7 @@ export default function ViewDetailsModal({
               /* Training & Sessions or Extended Details Grid */
               <>
                 <HStack {...modalStyles.modalRowFullWidth}>
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.participants`)}
                     </Text>
@@ -192,7 +197,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.preferredDate`)}
                     </Text>
@@ -203,7 +208,7 @@ export default function ViewDetailsModal({
                 </HStack>
 
                 <HStack {...modalStyles.modalRowFullWidth}>
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.preferredTime`)}
                     </Text>
@@ -212,7 +217,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.preferredLocation`)}
                     </Text>
@@ -223,7 +228,7 @@ export default function ViewDetailsModal({
                 </HStack>
 
                 <HStack {...modalStyles.modalRowFullWidth}>
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.province`)}
                     </Text>
@@ -232,7 +237,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.category`)}
                     </Text>
@@ -246,7 +251,7 @@ export default function ViewDetailsModal({
               /* Standard Service / Asset Grid (3 fields) */
               <>
                 <HStack {...modalStyles.modalRowFullWidth}>
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.participants`)}
                     </Text>
@@ -255,7 +260,7 @@ export default function ViewDetailsModal({
                     </Text>
                   </Box>
 
-                  <Box {...modalStyles.gridCardBox}>
+                  <Box {...modalStyles.gridCardBox} {...modalStyles.coachInfoVStack1} >
                     <Text {...modalStyles.gridCardLabel}>
                       {t(`${BASE_PATH}.labels.province`)}
                     </Text>
@@ -265,7 +270,7 @@ export default function ViewDetailsModal({
                   </Box>
                 </HStack>
 
-                <Box {...modalStyles.gridCardBoxFullWidth}>
+                <Box {...modalStyles.gridCardBoxFullWidth} {...modalStyles.coachInfoVStack1} >
                   <Text {...modalStyles.gridCardLabel}>
                     {t(`${BASE_PATH}.labels.category`)}
                   </Text>
@@ -284,7 +289,7 @@ export default function ViewDetailsModal({
             <Text {...modalStyles.sectionHeadingText}>
               {t(`${BASE_PATH}.labels.requestJustification`)}
             </Text>
-            <Box {...modalStyles.justificationBox}>
+            <Box {...modalStyles.justificationBox} {...modalStyles.coachInfoVStack1} >
               <Text {...modalStyles.justificationText}>
                 {justification}
               </Text>
@@ -298,7 +303,7 @@ export default function ViewDetailsModal({
             <Text {...modalStyles.sectionHeadingText}>
               {t(`${BASE_PATH}.labels.participantDetails`)}
             </Text>
-            <Box {...modalStyles.justificationBox}>
+            <Box {...modalStyles.justificationBox} {...modalStyles.coachInfoVStack1} >
               <Text {...modalStyles.justificationText}>
                 {participantDetails}
               </Text>

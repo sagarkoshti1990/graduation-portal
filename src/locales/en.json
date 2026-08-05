@@ -2533,7 +2533,7 @@
       },
       "labels": {
         "request": "Request:",
-        "coach": "Coach:",
+        "coach": "Coach",
         "yourQuestion": "Your Question or Request",
         "selectReason": "Select Reason",
         "reasonDetails": "Reason Details",
@@ -2582,6 +2582,7 @@
         "sessions": "Sessions & Trainings",
         "additional_services": "Additional Services",
         "assets": "Assets",
+        "declined": "Declined",
         "pending": "Pending",
         "overdue": "Overdue"
       }
