@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, HStack, VStack, Text } from '@gluestack-ui/themed';
+import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { useAlert } from '@ui';
 import LucideIcon from '@components/ui/LucideIcon';
 import MaterialCard from './MaterialCard';
@@ -87,12 +87,12 @@ export default function MaterialsContent({
   };
 
   return (
-    <VStack space="lg" width="100%">
+    <VStack {...styles.contentVStack}>
       {/* Card Grid list */}
       {materials.length === 0 ? (
-        <Box py="$10" alignItems="center" justifyContent="center">
-          <LucideIcon name="FileX" size={48} color="$textMuted" />
-          <Text color="$textSecondary" mt="$3" fontSize="$sm">
+        <Box {...styles.emptyStateBox}>
+          <LucideIcon name="FileX" size={styles.emptyStateIcon.size} color={styles.emptyStateIcon.color} />
+          <Text {...styles.emptyStateText}>
             No resources found matching the filter criteria.
           </Text>
         </Box>

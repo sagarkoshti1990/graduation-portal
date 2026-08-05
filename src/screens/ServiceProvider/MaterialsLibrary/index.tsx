@@ -82,7 +82,7 @@ const MaterialsLibraryScreen = (): React.JSX.Element => {
   ];
 
   return (
-    <VStack flex={1} bg="$backgroundColor">
+    <VStack {...styles.screenWrapper}>
       {/* Title Header with upload action */}
       <SPTitleHeader
         title={t('supportProvider.materialsLibrary.title')}
@@ -114,12 +114,8 @@ const MaterialsLibraryScreen = (): React.JSX.Element => {
                     {stats.totalResources}
                   </Text>
                 </VStack>
-                <Box
-                  {...styles.statIconBox}
-                  bg="#FFF5F5"
-                  borderColor="#FDE8E8"
-                >
-                  <LucideIcon name="Folder" size={20} color="$primary500" />
+                <Box {...styles.statIconBoxResources}>
+                  <LucideIcon name="Folder" size={styles.statIconFolder.size} color={styles.statIconFolder.color} />
                 </Box>
               </Box>
             </Box>
@@ -135,12 +131,8 @@ const MaterialsLibraryScreen = (): React.JSX.Element => {
                     {stats.pdfDocuments}
                   </Text>
                 </VStack>
-                <Box
-                  {...styles.statIconBox}
-                  bg="#EFF6FF"
-                  borderColor="#DBEAFE"
-                >
-                  <LucideIcon name="FileText" size={20} color="$blue600" />
+                <Box {...styles.statIconBoxPdf}>
+                  <LucideIcon name="FileText" size={styles.statIconFileText.size} color={styles.statIconFileText.color} />
                 </Box>
               </Box>
             </Box>
@@ -156,12 +148,8 @@ const MaterialsLibraryScreen = (): React.JSX.Element => {
                     {stats.templatesDecks}
                   </Text>
                 </VStack>
-                <Box
-                  {...styles.statIconBox}
-                  bg="#FAF5FF"
-                  borderColor="#E9D5FF"
-                >
-                  <LucideIcon name="TrendingUp" size={20} color="$purple600" />
+                <Box {...styles.statIconBoxTemplates}>
+                  <LucideIcon name="TrendingUp" size={styles.statIconTrendingUp.size} color={styles.statIconTrendingUp.color} />
                 </Box>
               </Box>
             </Box>
@@ -177,12 +165,8 @@ const MaterialsLibraryScreen = (): React.JSX.Element => {
                     {stats.totalDownloads}
                   </Text>
                 </VStack>
-                <Box
-                  {...styles.statIconBox}
-                  bg="#F0FDF4"
-                  borderColor="#DCFCE7"
-                >
-                  <LucideIcon name="Download" size={20} color="$success600" />
+                <Box {...styles.statIconBoxDownloads}>
+                  <LucideIcon name="Download" size={styles.statIconDownload.size} color={styles.statIconDownload.color} />
                 </Box>
               </Box>
             </Box>

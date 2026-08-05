@@ -21,7 +21,13 @@ export default {
     mt: '$1',
   } as const,
 
-  // Merged Component Styles
+  // ─── index.tsx ────────────────────────────────────────────────────────────────
+  screenWrapper: {
+    flex: 1,
+    bg: '$backgroundColor',
+  } as const,
+
+  // Stat Cards
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -75,6 +81,68 @@ export default {
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
+
+  // Stat icon variants (bg + borderColor per card)
+  statIconBoxResources: {
+    width: 44,
+    height: 44,
+    borderRadius: '$xl',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    bg: '$error50',
+    borderColor: '$error100',
+  } as const,
+  statIconBoxPdf: {
+    width: 44,
+    height: 44,
+    borderRadius: '$xl',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    bg: '$blue50',
+    borderColor: '$blue100',
+  } as const,
+  statIconBoxTemplates: {
+    width: 44,
+    height: 44,
+    borderRadius: '$xl',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    bg: '$purple50',
+    borderColor: '$purple200',
+  } as const,
+  statIconBoxDownloads: {
+    width: 44,
+    height: 44,
+    borderRadius: '$xl',
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    bg: '$success50',
+    borderColor: '$success100',
+  } as const,
+
+  // Stat icon sizes / colors
+  statIconFolder: {
+    size: 20,
+    color: '$primary500',
+  } as const,
+  statIconFileText: {
+    size: 20,
+    color: '$blue600',
+  } as const,
+  statIconTrendingUp: {
+    size: 20,
+    color: '$purple600',
+  } as const,
+  statIconDownload: {
+    size: 20,
+    color: '$success600',
+  } as const,
+
+  // ─── MaterialCard.tsx ─────────────────────────────────────────────────────────
   cardsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -107,6 +175,19 @@ export default {
     mb: '$3',
     width: '100%',
   } as const,
+  // HStack wrapping icon box + title/badge column
+  cardHeaderRow: {
+    space: 'md',
+    alignItems: 'center',
+    mb: '$3',
+    width: '100%',
+  } as const,
+  cardHeaderTextCol: {
+    flex: 1,
+  } as const,
+  cardBadgeWrapper: {
+    alignSelf: 'flex-start',
+  } as const,
   cardHeaderIconBox: {
     width: 44,
     height: 44,
@@ -114,6 +195,10 @@ export default {
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  } as const,
+  // Icon inside the category icon box (size + color come from dynamic badge)
+  cardHeaderIconProps: {
+    size: 20,
   } as const,
   categoryBadgeCard: {
     flexDirection: 'row',
@@ -160,6 +245,10 @@ export default {
     space: 'xs',
     flex: 1,
   } as const,
+  fileInfoIcon: {
+    size: 14,
+    color: '$textSecondary',
+  } as const,
   fileNameText: {
     fontSize: '$xs',
     color: '$textPrimary',
@@ -179,6 +268,10 @@ export default {
     px: '$3.5',
     py: '$2.5',
     mb: '$4',
+  } as const,
+  linkedOfferingIcon: {
+    size: 14,
+    color: '$blue700',
   } as const,
   linkedOfferingText: {
     fontSize: '$xs',
@@ -209,12 +302,21 @@ export default {
     alignItems: 'center',
     space: 'xs',
   } as const,
+  downloadsIcon: {
+    size: 12,
+    color: '$success700',
+  } as const,
   cardFooterActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     space: 'xs',
     width: '100%',
+  } as const,
+  // Left group of footer buttons (Preview + Delete)
+  cardFooterLeftGroup: {
+    space: 'xs',
+    alignItems: 'center',
   } as const,
   previewBtn: {
     borderWidth: 1,
@@ -224,6 +326,14 @@ export default {
     py: '$2',
     borderRadius: '$lg',
     sx: { ':active': { bg: '$backgroundLight50' } },
+  } as const,
+  previewBtnRow: {
+    space: 'xs',
+    alignItems: 'center',
+  } as const,
+  previewBtnIcon: {
+    size: 14,
+    color: '$textPrimary',
   } as const,
   previewBtnText: {
     fontSize: '$xs',
@@ -240,6 +350,10 @@ export default {
     justifyContent: 'center',
     sx: { ':active': { bg: '$red50' } },
   } as const,
+  deleteBtnIcon: {
+    size: 14,
+    color: '$red600',
+  } as const,
   downloadBtn: {
     bg: '$success600',
     px: '$4',
@@ -247,17 +361,79 @@ export default {
     borderRadius: '$lg',
     sx: { ':active': { bg: '$success700' } },
   } as const,
+  downloadBtnRow: {
+    space: 'xs',
+    alignItems: 'center',
+  } as const,
+  downloadBtnIcon: {
+    size: 14,
+    color: '$white',
+  } as const,
   downloadBtnText: {
     fontSize: '$xs',
     fontWeight: '$bold',
     color: '$white',
   } as const,
+
+  // ─── MaterialsContent.tsx ─────────────────────────────────────────────────────
+  contentVStack: {
+    space: 'lg',
+    width: '100%',
+  } as const,
+  emptyStateBox: {
+    py: '$10',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as const,
+  emptyStateIcon: {
+    size: 48,
+    color: '$textMuted',
+  } as const,
+  emptyStateText: {
+    color: '$textSecondary',
+    mt: '$3',
+    fontSize: '$sm',
+  } as const,
+
+  // ─── UploadResourceModal.tsx ──────────────────────────────────────────────────
   uploadModalBtn: {
     bg: '$primary500',
     px: '$4',
     py: '$2.5',
     borderRadius: '$xl',
     sx: { ':active': { bg: '$primary600' } },
+  } as const,
+  modalBodyVStack: {
+    space: 'lg',
+    py: '$2',
+    width: '100%',
+  } as const,
+  modalFooterRow: {
+    space: 'md',
+    width: '$full',
+    justifyContent: 'flex-end',
+  } as const,
+  modalConfirmBtnRow: {
+    space: 'xs',
+    alignItems: 'center',
+  } as const,
+  modalConfirmBtnIcon: {
+    size: 16,
+    color: '$white',
+  } as const,
+  categoryFormatRow: {
+    space: 'md',
+    width: '100%',
+  } as const,
+  categoryFormatCol: {
+    flex: 1,
+  } as const,
+  selectIconWrapper: {
+    mr: '$1',
+  } as const,
+  selectChevronIcon: {
+    size: 16,
+    color: '$textSecondary',
   } as const,
   formInputGroup: {
     space: 'xs',
@@ -332,6 +508,8 @@ export default {
     fontSize: '$sm',
     fontWeight: '$semibold',
   } as const,
+
+  // ─── PreviewModal.tsx ─────────────────────────────────────────────────────────
   previewDetailsBox: {
     width: '100%',
     mb: '$2',
@@ -376,6 +554,8 @@ export default {
     fontWeight: '$bold',
     color: '$textPrimary',
   } as const,
+
+  // Modal shared
   modalHeaderProps: {
     borderBottomWidth: 1,
     borderBottomColor: '$borderLight200',
@@ -437,6 +617,20 @@ export default {
     lineHeight: '$md',
     py: '$2',
   } as const,
+
+  // Preview modal header
+  previewHeaderRow: {
+    space: 'sm',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'space-between',
+    width: '100%',
+  } as const,
+  previewHeaderLeft: {
+    space: 'sm',
+    alignItems: 'center',
+    flex: 1,
+  } as const,
   previewHeaderTag: {
     borderWidth: 1,
     px: '$2.5',
@@ -451,6 +645,56 @@ export default {
     fontSize: '$lg',
     fontWeight: '$bold',
     color: '$textPrimary',
+    flex: 1,
+  } as const,
+  previewCloseBtn: {
+    p: '$1',
+  } as const,
+  previewCloseIcon: {
+    size: 20,
+    color: '$red600',
+  } as const,
+
+  // Preview footer
+  previewFooterRow: {
+    space: 'md',
+    width: '$full',
+    justifyContent: 'flex-end',
+  } as const,
+  previewDownloadBtnRow: {
+    space: 'xs',
+    alignItems: 'center',
+  } as const,
+  previewDownloadBtnIcon: {
+    size: 16,
+    color: '$white',
+  } as const,
+
+  // Preview body
+  previewBodyVStack: {
+    space: 'lg',
+    py: '$2',
+    width: '100%',
+  } as const,
+
+  // Linked offering in preview (with extra bottom margin)
+  previewLinkedOfferingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    space: 'xs',
+    bg: '$blue50',
+    borderRadius: '$lg',
+    px: '$3.5',
+    py: '$2.5',
+    mb: '$2',
+  } as const,
+  previewLinkedOfferingIcon: {
+    size: 16,
+    color: '$blue700',
+  } as const,
+  previewLinkedOfferingTextCol: {
+    space: 'xs',
+    flex: 1,
   } as const,
   linkedOfferingLabel: {
     fontSize: '$xs',

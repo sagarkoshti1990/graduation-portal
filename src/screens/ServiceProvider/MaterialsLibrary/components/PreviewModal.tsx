@@ -34,7 +34,7 @@ export default function PreviewModal({
   };
 
   const tagText = getFormatTag(item.format, item.fileName);
-  
+
   // Tag styling based on format type using theme tokens
   const getTagColors = (tag: string) => {
     switch (tag) {
@@ -65,8 +65,8 @@ export default function PreviewModal({
 
   // Header Title component to match design: Tag next to Title and Red Close Button on far right
   const headerContent = (
-    <HStack space="sm" alignItems="center" flex={1} justifyContent="space-between" width="100%">
-      <HStack space="sm" alignItems="center" flex={1}>
+    <HStack {...styles.previewHeaderRow}>
+      <HStack {...styles.previewHeaderLeft}>
         <Box
           {...styles.previewHeaderTag}
           bg={colors.bg as any}
@@ -76,14 +76,14 @@ export default function PreviewModal({
             {tagText}
           </Text>
         </Box>
-        <Text {...styles.previewHeaderTitle} numberOfLines={1} style={{ flex: 1 }}>
+        <Text {...styles.previewHeaderTitle} numberOfLines={1}>
           {item.title}
         </Text>
       </HStack>
-      
+
       {/* Custom Red Close Button */}
-      <Pressable onPress={onClose} p="$1">
-        <LucideIcon name="X" size={20} color="$red600" />
+      <Pressable onPress={onClose} {...styles.previewCloseBtn}>
+        <LucideIcon name="X" size={styles.previewCloseIcon.size} color={styles.previewCloseIcon.color} />
       </Pressable>
     </HStack>
   );
@@ -97,7 +97,7 @@ export default function PreviewModal({
       headerProps={styles.modalHeaderProps}
       showCloseButton={false}
       footerContent={
-        <HStack space="md" width="$full" justifyContent="flex-end">
+        <HStack {...styles.previewFooterRow}>
           {/* Close Button */}
           <Pressable
             onPress={onClose}
@@ -113,8 +113,8 @@ export default function PreviewModal({
             onPress={handleDownload}
             {...styles.modalDownloadBtn}
           >
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Download" size={16} color="$white" />
+            <HStack {...styles.previewDownloadBtnRow}>
+              <LucideIcon name="Download" size={styles.previewDownloadBtnIcon.size} color={styles.previewDownloadBtnIcon.color} />
               <Text {...styles.modalDownloadBtnText}>
                 {t('supportProvider.materialsLibrary.previewModal.downloadFile')}
               </Text>
@@ -123,7 +123,7 @@ export default function PreviewModal({
         </HStack>
       }
     >
-      <VStack space="lg" py="$2" width="100%">
+      <VStack {...styles.previewBodyVStack}>
         {/* Category & Purpose Section */}
         <Box {...styles.previewDetailsBox}>
           <Text {...styles.previewPurposeTitle}>
@@ -139,9 +139,9 @@ export default function PreviewModal({
 
         {/* Associated offering if exists */}
         {item.associatedOffering ? (
-          <HStack {...styles.linkedOfferingBox} mb="$2">
-            <LucideIcon name="Link2" size={16} color="$blue700" />
-            <VStack space="xs" flex={1}>
+          <HStack {...styles.previewLinkedOfferingBox}>
+            <LucideIcon name="Link2" size={styles.previewLinkedOfferingIcon.size} color={styles.previewLinkedOfferingIcon.color} />
+            <VStack {...styles.previewLinkedOfferingTextCol}>
               <Text {...styles.linkedOfferingLabel}>
                 {t('supportProvider.materialsLibrary.previewModal.associatedOffering')}
               </Text>

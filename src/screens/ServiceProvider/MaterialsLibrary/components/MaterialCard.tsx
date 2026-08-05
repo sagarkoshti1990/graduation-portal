@@ -60,16 +60,16 @@ export default function MaterialCard({
     <Box {...styles.materialCard}>
       <VStack>
         {/* Card Header with Icon Box on left, Pill and Title on right */}
-        <HStack space="md" alignItems="center" mb="$3" width="100%">
+        <HStack {...styles.cardHeaderRow}>
           <Box
             {...styles.cardHeaderIconBox}
             bg={(badge.iconBg) as any}
             borderColor={(badge.iconBorder) as any}
           >
-            <LucideIcon name={badge.icon} size={20} color={badge.iconColor} />
+            <LucideIcon name={badge.icon} size={styles.cardHeaderIconProps.size} color={badge.iconColor} />
           </Box>
-          <VStack flex={1}>
-            <Box alignSelf="flex-start">
+          <VStack {...styles.cardHeaderTextCol}>
+            <Box {...styles.cardBadgeWrapper}>
               <HStack {...styles.categoryBadgeCard}>
                 <Text {...styles.categoryBadgeTextCard}>
                   {item.category}
@@ -90,7 +90,7 @@ export default function MaterialCard({
         {/* File Info Box */}
         <Box {...styles.fileInfoBox}>
           <HStack {...styles.fileInfoLeft}>
-            <LucideIcon name="FileText" size={14} color="$textSecondary" />
+            <LucideIcon name="FileText" size={styles.fileInfoIcon.size} color={styles.fileInfoIcon.color} />
             <Text {...styles.fileNameText} numberOfLines={1}>
               {item.fileName || 'file'}
             </Text>
@@ -103,7 +103,7 @@ export default function MaterialCard({
         {/* Associated offering if exists */}
         {item.associatedOffering ? (
           <HStack {...styles.linkedOfferingBox}>
-            <LucideIcon name="Link2" size={14} color="$blue700" />
+            <LucideIcon name="Link2" size={styles.linkedOfferingIcon.size} color={styles.linkedOfferingIcon.color} />
             <Text {...styles.linkedOfferingText} numberOfLines={1}>
               {t('supportProvider.materialsLibrary.card.linked', { offering: item.associatedOffering })}
             </Text>
@@ -118,7 +118,7 @@ export default function MaterialCard({
             {t('supportProvider.materialsLibrary.card.uploaded', { date: item.uploadDate })}
           </Text>
           <HStack {...styles.downloadsBox}>
-            <LucideIcon name="Download" size={12} color="$success700" />
+            <LucideIcon name="Download" size={styles.downloadsIcon.size} color={styles.downloadsIcon.color} />
             <Text {...styles.downloadsText}>
               {t('supportProvider.materialsLibrary.card.downloads', { count: item.downloads })}
             </Text>
@@ -127,14 +127,14 @@ export default function MaterialCard({
 
         {/* Card Footer Actions */}
         <Box {...styles.cardFooterActions}>
-          <HStack space="xs" alignItems="center">
+          <HStack {...styles.cardFooterLeftGroup}>
             {/* Preview Button */}
             <Pressable
               onPress={() => onPreview(item)}
               {...styles.previewBtn}
             >
-              <HStack space="xs" alignItems="center">
-                <LucideIcon name="Eye" size={14} color="$textPrimary" />
+              <HStack {...styles.previewBtnRow}>
+                <LucideIcon name="Eye" size={styles.previewBtnIcon.size} color={styles.previewBtnIcon.color} />
                 <Text {...styles.previewBtnText}>
                   {t('supportProvider.materialsLibrary.card.preview')}
                 </Text>
@@ -146,7 +146,7 @@ export default function MaterialCard({
               onPress={() => onDelete(item)}
               {...styles.deleteBtn}
             >
-              <LucideIcon name="Trash2" size={14} color="$red600" />
+              <LucideIcon name="Trash2" size={styles.deleteBtnIcon.size} color={styles.deleteBtnIcon.color} />
             </Pressable>
           </HStack>
 
@@ -155,8 +155,8 @@ export default function MaterialCard({
             onPress={() => onDownload(item.id)}
             {...styles.downloadBtn}
           >
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Download" size={14} color="$white" />
+            <HStack {...styles.downloadBtnRow}>
+              <LucideIcon name="Download" size={styles.downloadBtnIcon.size} color={styles.downloadBtnIcon.color} />
               <Text {...styles.downloadBtnText}>
                 {t('supportProvider.materialsLibrary.card.download')}
               </Text>

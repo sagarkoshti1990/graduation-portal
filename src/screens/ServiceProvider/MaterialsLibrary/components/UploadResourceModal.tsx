@@ -99,7 +99,7 @@ export default function UploadResourceModal({
       headerTitle={t('supportProvider.materialsLibrary.uploadModal.title')}
       headerProps={styles.modalHeaderProps}
       footerContent={
-        <HStack space="md" width="$full" justifyContent="flex-end">
+        <HStack {...styles.modalFooterRow}>
           {/* Cancel Button */}
           <Pressable
             onPress={handleClose}
@@ -115,8 +115,8 @@ export default function UploadResourceModal({
             onPress={handleAdd}
             {...styles.modalConfirmBtn}
           >
-            <HStack space="xs" alignItems="center">
-              <LucideIcon name="Upload" size={16} color="$white" />
+            <HStack {...styles.modalConfirmBtnRow}>
+              <LucideIcon name="Upload" size={styles.modalConfirmBtnIcon.size} color={styles.modalConfirmBtnIcon.color} />
               <Text {...styles.modalConfirmBtnText}>
                 {t('supportProvider.materialsLibrary.uploadModal.addLibrary')}
               </Text>
@@ -125,7 +125,7 @@ export default function UploadResourceModal({
         </HStack>
       }
     >
-      <VStack space="lg" py="$2" width="100%">
+      <VStack {...styles.modalBodyVStack}>
         {errorMsg ? (
           <Box {...styles.errorMsgBox}>
             <Text {...styles.errorMsgText}>
@@ -171,8 +171,8 @@ export default function UploadResourceModal({
         </VStack>
 
         {/* Category & Format Type Row */}
-        <HStack space="md" width="100%">
-          <VStack {...styles.formInputGroup} flex={1}>
+        <HStack {...styles.categoryFormatRow}>
+          <VStack {...styles.formInputGroup} {...styles.categoryFormatCol}>
             <HStack {...styles.formLabelRow}>
               <Text {...styles.formLabelText}>
                 {t('supportProvider.materialsLibrary.uploadModal.labelCategory')}
@@ -182,8 +182,8 @@ export default function UploadResourceModal({
             <Select selectedValue={category} onValueChange={setCategory}>
               <SelectTrigger {...styles.selectTrigger}>
                 <SelectInput placeholder={t('supportProvider.materialsLibrary.filters.allCategories')} {...styles.selectInputProps} />
-                <SelectIcon mr="$1">
-                  <LucideIcon name="ChevronDown" size={16} color="$textSecondary" />
+                <SelectIcon {...styles.selectIconWrapper}>
+                  <LucideIcon name="ChevronDown" size={styles.selectChevronIcon.size} color={styles.selectChevronIcon.color} />
                 </SelectIcon>
               </SelectTrigger>
               <SelectPortal>
@@ -197,7 +197,7 @@ export default function UploadResourceModal({
             </Select>
           </VStack>
 
-          <VStack {...styles.formInputGroup} flex={1}>
+          <VStack {...styles.formInputGroup} {...styles.categoryFormatCol}>
             <HStack {...styles.formLabelRow}>
               <Text {...styles.formLabelText}>
                 {t('supportProvider.materialsLibrary.uploadModal.labelFormatType')}
@@ -207,8 +207,8 @@ export default function UploadResourceModal({
             <Select selectedValue={format} onValueChange={setFormat}>
               <SelectTrigger {...styles.selectTrigger}>
                 <SelectInput placeholder={t('supportProvider.materialsLibrary.filters.allFormats')} {...styles.selectInputProps} />
-                <SelectIcon mr="$1">
-                  <LucideIcon name="ChevronDown" size={16} color="$textSecondary" />
+                <SelectIcon {...styles.selectIconWrapper}>
+                  <LucideIcon name="ChevronDown" size={styles.selectChevronIcon.size} color={styles.selectChevronIcon.color} />
                 </SelectIcon>
               </SelectTrigger>
               <SelectPortal>
