@@ -1629,8 +1629,8 @@ const StepProgress: React.FC<{
   t: (key: string, fallback?: string) => string;
 }> = ({ total, completed, t }) => {
   const percent = total > 0 ? (completed / total) * 100 : 100;
-  const displayPercent = Math.ceil(percent * 10) / 10;
-
+  const displayPercent = Math.ceil((percent * 10) / 10);
+  
   return (
     <VStack
       space="xs"
