@@ -79,59 +79,31 @@ const App = (): React.JSX.Element => {
         : [
             {
               value: 'Agriculture & Farming',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.agriculture',
-                  'Agriculture & Farming',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.agriculture',
             },
             {
               value: 'Livestock & Poultry',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.livestock',
-                  'Livestock & Poultry',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.livestock',
             },
             {
               value: 'Small Business & Retail',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.smallBusiness',
-                  'Small Business & Retail',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.smallBusiness',
             },
             {
               value: 'Vocational & Skills Trades',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.vocational',
-                  'Vocational & Skills Trades',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.vocational',
             },
             {
               value: 'Fisheries & Aquaculture',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.fisheries',
-                  'Fisheries & Aquaculture',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.fisheries',
             },
             {
               value: 'Services & Micro-enterprise',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.services',
-                  'Services & Micro-enterprise',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.services',
             },
             {
               value: 'Other',
-              label:
-                t(
-                  'supportProvider.assetForm.livelihoodCategories.other',
-                  'Other',
-                ),
+              label:'supportProvider.assetForm.livelihoodCategories.other',
             },
           ];
 
@@ -141,15 +113,15 @@ const App = (): React.JSX.Element => {
       assetTypes: [
         {
           value: 'Cash',
-          label: t('supportProvider.assetForm.assetTypes.cash', 'Cash'),
+          label: 'supportProvider.assetForm.assetTypes.cash',
         },
         {
           value: 'In-kind',
-          label: t('supportProvider.assetForm.assetTypes.inKind', 'In-kind'),
+          label: 'supportProvider.assetForm.assetTypes.inKind',
         },
         {
           value: 'Voucher',
-          label: t('supportProvider.assetForm.assetTypes.voucher', 'Voucher'),
+          label: 'supportProvider.assetForm.assetTypes.voucher',
         },
       ],
       livelihoodCategories: livelihoodOpts,
@@ -161,14 +133,11 @@ const App = (): React.JSX.Element => {
       console.log('Saving draft with payload:', formValues);
       showAlert(
         'success',
-        t(
-          'supportProvider.assetForm.draftSuccessMessage',
-          'Draft saved successfully!',
-        ),
+        'supportProvider.assetForm.draftSuccessMessage',
       );
       navigation.goBack();
     } catch (err: any) {
-      showAlert('error', err?.message || t('common.somethingWentWrong'));
+      showAlert('error', err?.message || 'common.somethingWentWrong');
     }
   }, [navigation, showAlert, t]);
 

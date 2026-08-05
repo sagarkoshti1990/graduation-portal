@@ -58,23 +58,15 @@ const App = (): React.JSX.Element => {
       servicesCategories: [
         {
           value: 'Special Attention',
-          label:
-            t(
-              'supportProvider.additionalServicesForm.categories.specialAttention',
-            ) || 'Special Attention',
+          label:'supportProvider.additionalServicesForm.categories.specialAttention',
         },
         {
           value: 'Immediate Attention',
-          label:
-            t(
-              'supportProvider.additionalServicesForm.categories.immediateAttention',
-            ) || 'Immediate Attention',
+          label:'supportProvider.additionalServicesForm.categories.immediateAttention',
         },
         {
           value: 'Other',
-          label:
-            t('supportProvider.additionalServicesForm.categories.other') ||
-            'Other',
+          label:'supportProvider.additionalServicesForm.categories.other',
         },
       ],
     };
@@ -85,16 +77,13 @@ const App = (): React.JSX.Element => {
       console.log('Saving draft with payload:', formValues);
       showAlert(
         'success',
-        t(
-          'supportProvider.additionalServicesForm.draftSuccessMessage',
-          'Draft saved successfully!',
-        ),
+        'supportProvider.additionalServicesForm.draftSuccessMessage',
       );
       navigation.goBack();
     } catch (err: any) {
-      showAlert('error', err?.message || t('common.somethingWentWrong'));
+      showAlert('error', err?.message || 'common.somethingWentWrong');
     }
-  }, [navigation, showAlert, t]);
+  }, [navigation, showAlert]);
 
   return (
     <VStack flex={1}>
