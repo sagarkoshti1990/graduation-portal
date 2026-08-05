@@ -257,8 +257,13 @@ export const completeTrainingSession = async (
 export const saveTrainingSession = async (
   _values: any,
   _isDraft: boolean
-): Promise<{ success: boolean }> => {
-  return { success: true };
+): Promise<{ success: boolean; message: string }> => {
+  return {
+    success: true,
+    message: _isDraft
+      ? 'Draft saved successfully!'
+      : 'Training session saved successfully!',
+  };
 };
 
 /**
