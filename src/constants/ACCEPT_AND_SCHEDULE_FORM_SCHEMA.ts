@@ -1,4 +1,4 @@
-import type { FormSection } from '@constants/CREATE_USER_FORM_SCHEMA';
+import type { FormSection } from '@components/SchemaFormRenderer/type';
 
 export const ACCEPT_AND_SCHEDULE_FORM_SCHEMA: FormSection[] = [
   {

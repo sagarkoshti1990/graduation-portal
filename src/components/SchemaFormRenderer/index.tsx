@@ -51,14 +51,14 @@ import DatePicker from '@components/ui/Inputs/DatePicker';
 import { openFilePicker } from '../../project-player/components/Task/FileEvidence/file-picker';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { styles } from '../../screens/UserManagement/Styles';
-import { FORM_FIELD_TYPES } from '@constants/CREATE_USER_FORM_SCHEMA';
-import type {
-  FormSection,
-  FormField,
-  ValidationRule,
-  VisibleIfCondition,
-  Hint,
-} from '@constants/CREATE_USER_FORM_SCHEMA';
+import {
+  type FormSection,
+  type FormField,
+  type ValidationRule,
+  type VisibleIfCondition,
+  type Hint,
+  FORM_FIELD_TYPES,
+} from './type';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -1201,10 +1201,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       : undefined;
 
     const isMultiple = !!field.multiple;
-    // Existing items in storage order — used both for the preview list and to
-    // append/remove without disturbing the rest. Covers `undefined`, a single
-    // `FileAsset`, a single pre-filled URL string, or a mixed array of those
-    // (the normal edit-mode-plus-newly-added-file case).
+    // Existing files in storage order, supporting single/multiple files and pre-filled URLs.
+    // Used to preserve order when adding or removing files.
     const existingItems: (FileAsset | string)[] = Array.isArray(value)
       ? value
       : value
@@ -1212,16 +1210,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       : [];
     const previewItems = toFilePreviewItems(value);
 
-    // Pre-filters the OS/browser picker to the schema's own `fileType` rule
-    // (where the platform honors it) — the real enforcement is still the
-    // `fileType` validation rule itself (which also accepts bare extensions,
-    // see `matchesAllowedFileType`), this is just a UX nicety on top of it.
-    // Only passed through when every entry is already a real MIME type: the
-    // native picker (`@react-native-documents/picker`) expects MIME types, not
-    // bare extensions, so forwarding something like "pdf" risks breaking
-    // picking on native rather than just failing to filter. Extension-only
-    // rules (the common case, e.g. `['pdf', 'doc']`) simply skip the OS-level
-    // filter and rely entirely on the post-selection validation rule.
+    // Applies OS-level file filtering only for valid MIME types (when supported).
+    // Extension-only rules rely on post-selection validation.
     const fileTypeRule = field.validation?.find(r => r.rule === 'fileType');
     const fileTypeValues = Array.isArray(fileTypeRule?.value)
       ? (fileTypeRule!.value as string[])
@@ -1276,24 +1266,41 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <VStack space="xs">
         <Pressable onPress={handlePick} disabled={isDisabled}>
-          <HStack
-            space="sm"
+          <VStack
             alignItems="center"
-            borderWidth={1}
+            justifyContent="center"
+            borderWidth={2}
             borderStyle="dashed"
             borderColor="$borderColor"
-            borderRadius="$md"
-            p="$3"
+            borderRadius="$lg"
+            // minHeight={140}
+            px="$4"
+            py="$6"
             opacity={isDisabled ? 0.5 : 1}
+            space="xs"
           >
-            <LucideIcon name="Upload" size={18} color="$textMutedForeground" />
+            <LucideIcon
+              name="Upload"
+              size={32}
+              color="$gray300"
+            />
+
             <Text
               {...TYPOGRAPHY.bodySmall}
-              color={previewItems.length ? '$textForeground' : '$textMutedForeground'}
+              color="$textMuted"
+              textAlign="center"
             >
               {triggerLabel}
             </Text>
-          </HStack>
+
+            <Text
+              {...TYPOGRAPHY.caption}
+              color="$gray300"
+              textAlign="center"
+            >
+              Max 10 MB
+            </Text>
+          </VStack>
         </Pressable>
 
         {previewItems.length > 0 && (
@@ -1345,7 +1352,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Date ────────────────────────────────────────────────────────────────────
-  if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time) {
+  if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time || field.type === FORM_FIELD_TYPES.DateTime) {
     // Internal display value: stored as YYYY_MM_DD, displayed as YYYY-MM-DD
     const displayValue = value ? value.replace(/_/g, '-') : '';
 

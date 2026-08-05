@@ -2,11 +2,12 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { VStack, HStack, Button, ButtonText, Modal, Badge, BadgeText, Text, LucideIcon, } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
-import { CREATE_USER_FORM_SCHEMA, FormField, FORM_FIELD_TYPES } from '@constants/CREATE_USER_FORM_SCHEMA';
+import { FormField, FORM_FIELD_TYPES } from '@components/SchemaFormRenderer/type';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
 import { createUser, getSitesByProvince } from '../../services/usersService';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import type { AdminUserManagementData } from '@app-types/Users';
+import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
 
 interface CreateUserFormProps {
   isOpen: boolean;

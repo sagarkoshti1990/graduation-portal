@@ -89,7 +89,8 @@ import {
   Trash2,
   MessageSquare,
   Copy,
-  CircleCheckBig
+  CircleCheckBig,
+  Video
 } from 'lucide-react-native';
 import { theme } from '@config/theme';
 
@@ -198,7 +199,8 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   Trash2,
   MessageSquare,
   Copy,
-  CircleCheckBig
+  CircleCheckBig,
+  Video
 };
 
 /**
