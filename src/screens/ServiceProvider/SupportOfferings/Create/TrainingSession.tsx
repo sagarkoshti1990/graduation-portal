@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack } from '@ui';
+import { Card, Container, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -40,6 +40,7 @@ const App = (): React.JSX.Element => {
   const { provinces: dynamicProvinces } = useUserManagementFilters({});
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const [values, setValues] = useState<any>({});
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     if (sessionId) {
@@ -174,12 +175,17 @@ const App = (): React.JSX.Element => {
     };
   }, [dynamicProvinces, dynamicSites, values.pillar]);
 
-    const handleSave = async (formValues: any, isDraft: boolean) => {
+  const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
-      await saveTrainingSession(formValues, isDraft);
-      navigation.navigate('opportunities');
+      const response = await saveTrainingSession(formValues, isDraft);
+
+      if (response.success) {
+        showAlert('success', response.message);
+        navigation.navigate('opportunities');
+      }
     } catch (error) {
       console.error('Error saving training session:', error);
+      showAlert('error', 'Something went wrong.');
     }
   };
 
