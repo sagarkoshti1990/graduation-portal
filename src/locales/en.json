@@ -2597,6 +2597,75 @@
         "pending": "Pending",
         "overdue": "Overdue"
       }
+    },
+    "materialsLibrary": {
+      "title": "Template & Resource Library",
+      "subtitle": "Standalone content repository of all workbooks, guides, templates, and manuals uploaded for support offerings.",
+      "uploadResource": "Upload Resource",
+      "stats": {
+        "totalResources": "Total Resources",
+        "pdfDocuments": "PDFs & Documents",
+        "templatesDecks": "Templates & Decks",
+        "totalDownloads": "Total Downloads"
+      },
+      "filters": {
+        "searchPlaceholder": "Search resources, templates, or linked sessions...",
+        "allCategories": "All Categories",
+        "allFormats": "All Formats"
+      },
+      "categories": {
+        "financialLiteracy": "Financial Literacy",
+        "businessManagement": "Business Management",
+        "assetEquipment": "Asset & Equipment Support",
+        "legalCompliance": "Legal & Compliance"
+      },
+      "formats": {
+        "pdf": "PDF Document",
+        "template": "Templates & Decks",
+        "video": "Video Guide"
+      },
+      "card": {
+        "linked": "Linked: {{offering}}",
+        "uploaded": "Uploaded {{date}}",
+        "downloads": "{{count}} downloads",
+        "preview": "Preview",
+        "download": "Download",
+        "delete": "Delete"
+      },
+      "uploadModal": {
+        "title": "Upload Resource Material",
+        "labelTitle": "Title",
+        "labelDescription": "Description",
+        "labelCategory": "Category",
+        "labelFormatType": "Format Type",
+        "labelFileName": "File Name (Optional)",
+        "labelAssociatedOffering": "Associated Support Offering (Optional)",
+        "placeholderTitle": "e.g. Micro-Enterprise Accounting Guide",
+        "placeholderDescription": "Describe the material contents and how it helps coaches/participants...",
+        "placeholderFileName": "e.g. accounting-guide.pdf",
+        "placeholderAssociatedOffering": "e.g. Financial Literacy Workshop",
+        "cancel": "Cancel",
+        "addLibrary": "Add to Library",
+        "successMsg": "Resource uploaded successfully!",
+        "errorMsg": "Failed to upload resource. Please fill all required fields."
+      },
+      "previewModal": {
+        "title": "Category & Purpose",
+        "associatedOffering": "Associated Support Offering",
+        "fileName": "File Name",
+        "fileSize": "File Size",
+        "uploadDate": "Upload Date",
+        "downloads": "Downloads",
+        "close": "Close",
+        "downloadFile": "Download File"
+      },
+      "deleteModal": {
+        "title": "Confirm Delete",
+        "description": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "successMsg": "Resource deleted successfully!"
+      }
     }
   }
 }

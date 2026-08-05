@@ -200,6 +200,7 @@ const App = (): React.JSX.Element => {
             data={filterOptions}
             onFilterChange={setFilters}
             showClearButton={false}
+            hideTitleHeader={true}
           />
 
           {activeTab === 'sessions' && <TrainingCard {...cardProps} />}
