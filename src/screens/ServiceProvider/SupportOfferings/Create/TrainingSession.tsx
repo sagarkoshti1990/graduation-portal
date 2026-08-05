@@ -8,6 +8,7 @@ import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince } from '../../../../services/usersService';
+import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
 
 
 const PILLAR_SESSION_TYPES: Record<string, string[]> = {
@@ -175,6 +176,29 @@ const App = (): React.JSX.Element => {
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            onSaveDraft={(data) => console.log(data)}
+            onSubmit={(data) => {
+              setValues(data);
+              console.log("onSubmit",data)
+            }}
+            uploadService={async (file) => {
+              // Reuses the same signed-URL-then-PUT flow already used for task
+              // file evidence (projectPlayerService.uploadFiles): get a signed
+              // URL for this file, upload the bytes to it, and store the
+              // resulting permanent URL (query string stripped) on the field.
+              const entityId = `trainingSession-${Date.now()}`;
+              const uploaded = await uploadFiles(entityId, [
+                { ...file, size: file.size ?? 0 },
+              ]);
+              const url = uploaded?.data?.[0]?.url;
+              if (!url) {
+                throw new Error(`Failed to upload file: ${file.name}`);
+              }
+              console.log(url,"url")
+              return url;
+            }}
+            submitButtonProps={{bg:"green", icon: "Check"}}
+            submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
           />
         </Card>
       </Container>

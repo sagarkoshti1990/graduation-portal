@@ -42,6 +42,7 @@ import {
   Modal,
   Progress,
   ProgressFilledTrack,
+  ButtonIcon,
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -139,12 +140,16 @@ export type OptionsMap = Record<string, { value: string; label: string }[]>;
 
 export interface SchemaFormRendererProps {
   schema: FormSection[];
-  /** Current field values keyed by field name */
-  values?: Record<string, string>;
+  /**
+   * Current field values keyed by field name. Most fields store a plain string;
+   * `multiselect`/`pillmultiselect` store `string[]`; `file` stores a picked-file
+   * asset object (or array of them) — see `FileAsset` below.
+   */
+  values?: Record<string, any>;
   /** Current field errors keyed by field name */
   errors?: Record<string, string>;
   /** Called when any field value changes */
-  onFieldChange?: (name: string, value: string) => void;
+  onFieldChange?: (name: string, value: any) => void;
   /** Resolved options for every optionsSource key referenced in the schema */
   optionsMap?: OptionsMap;
   /** Global disabled state (e.g. while form is submitting) */
@@ -160,11 +165,60 @@ export interface SchemaFormRendererProps {
    * Only relevant for multi-step schemas (root schema made entirely of 2+ `tab` nodes) —
    * single/no-tab schemas keep managing their own submit button externally, unchanged.
    */
-  onSubmit?: (values: Record<string, string>) => void | Promise<void>;
+  onSubmit?: (values: Record<string, any>) => void | Promise<void>;
   /** Called when the user clicks Save Draft (multi-step schemas only); no validation is run first */
-  onSaveDraft?: (values: Record<string, string>) => void | Promise<void>;
+  onSaveDraft?: (values: Record<string, any>) => void | Promise<void>;
   /** Disables the Previous/Continue/Save Draft/Submit footer buttons while a request is in flight */
   isSubmitting?: boolean;
+  /**
+   * Global default input props/config applied to every field's input component
+   * (size, placeholder, maxLength, autoFocus, etc.) unless a field declares its
+   * own `_input`, which wins. Behavior/config only — never styling/color tokens.
+   */
+  _input?: any;
+  /**
+   * Uploads a single picked file and returns its URL. When provided, every
+   * `file`-type field's value is resolved through this at submit time (see
+   * `resolveFileUploads`) before `onSubmit` fires. Omit to leave file values
+   * as-is (existing behavior, unchanged).
+   */
+  uploadService?: (file: FileAsset) => Promise<string>;
+  // ── Internal footer (multi-step schemas only) — visibility/text/props overrides ──
+  showPreviousButton?: boolean;
+  showContinueButton?: boolean;
+  showSaveDraftButton?: boolean;
+  showSubmitButton?: boolean;
+  previousButtonText?: string;
+  continueButtonText?: string;
+  saveDraftButtonText?: string;
+  submitButtonText?: string;
+  previousButtonProps?: any;
+  continueButtonProps?: any;
+  saveDraftButtonProps?: any;
+  submitButtonProps?: any;
+}
+
+/**
+ * A picked file's resolved shape — matches `openFilePicker`'s actual return value
+ * on both native (`@react-native-documents/picker`) and web (wraps a real `File`
+ * in `.file` alongside a blob `uri`), never a bare web `File`.
+ */
+export interface FileAsset {
+  uri: string;
+  name: string;
+  type?: string;
+  size?: number;
+  file?: any;
+}
+
+/** Thrown by `resolveFileUploads` when one or more `file` fields fail to upload. */
+export class FileUploadError extends Error {
+  failedFieldNames: string[];
+  constructor(failedFieldNames: string[]) {
+    super(`Failed to upload file(s) for: ${failedFieldNames.join(', ')}`);
+    this.name = 'FileUploadError';
+    this.failedFieldNames = failedFieldNames;
+  }
 }
 
 // ─── Validation Engine ────────────────────────────────────────────────────────
@@ -191,6 +245,19 @@ function isVisible(
     ].some((k: string) => roleLabel.includes(k));
   }
   return true;
+}
+
+/**
+ * True when a field's stored value should count as "filled in" — non-empty
+ * string, a non-empty array (multiselect/pillmultiselect), or a present
+ * object (a picked `file` field's asset). Used anywhere a value's presence
+ * is checked without needing the string itself (dependsOn/disabledWhen
+ * gating, required-field progress counting).
+ */
+function isValuePresent(value: any): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === 'object') return true;
+  return !!String(value ?? '').trim();
 }
 
 /**
@@ -272,11 +339,30 @@ function collectFieldsByName(
  */
 function getFieldError(
   field: FormField,
-  values: Record<string, string>,
+  values: Record<string, any>,
 ): string | undefined {
   if (!field.name || !field.validation?.length) return undefined;
 
-  const val = (values[field.name] ?? '').trim();
+  const rawValue = values[field.name];
+
+  // multiselect/pillmultiselect: length-based rules only. email/pattern/
+  // matchField/dateNotInFuture are meaningless for an array value — no-op.
+  if (Array.isArray(rawValue)) {
+    for (const rule of field.validation) {
+      const msg = rule.message.fallback;
+      if (rule.rule === 'required' && rawValue.length === 0) return msg;
+      if (rule.rule === 'minLength' && rawValue.length < Number(rule.value)) return msg;
+      if (rule.rule === 'maxLength' && rawValue.length > Number(rule.value)) return msg;
+    }
+    return undefined;
+  }
+
+  // file field storing a picked-file asset object: only presence ('required') applies.
+  if (rawValue && typeof rawValue === 'object') {
+    return undefined;
+  }
+
+  const val = (rawValue ?? '').trim();
 
   for (const rule of field.validation) {
     const err = applyRule(rule, val, values);
@@ -396,6 +482,58 @@ export function validateSchema(
   const errors: Record<string, string> = {};
   validateNodes(schema, values, optionsMap, errors);
   return errors;
+}
+
+function isFileAssetLike(value: any): value is FileAsset {
+  return !!value && typeof value === 'object' && typeof value.uri === 'string';
+}
+
+/**
+ * Uploads every `file`-type field's picked asset(s) via `uploadService` and
+ * replaces the value with the returned URL string(s) — single asset in →
+ * `string` out, array in → `string[]` out. Fields with no file-shaped value
+ * pass through unchanged, and the whole call is a no-op (returns `values`
+ * as-is) when `uploadService` is omitted, so existing consumers that don't
+ * use it see zero behavior change. Fails closed: if any upload throws, this
+ * rejects with a single `FileUploadError` listing every failed field name
+ * rather than silently keeping a session-local file reference.
+ */
+export async function resolveFileUploads(
+  schema: FormSection[],
+  values: Record<string, any>,
+  uploadService?: (file: FileAsset) => Promise<string>,
+): Promise<Record<string, any>> {
+  if (!uploadService) return values;
+
+  const fieldsByName = collectFieldsByName(schema);
+  const fileFieldNames = Object.keys(fieldsByName).filter(
+    name => fieldsByName[name].type === FORM_FIELD_TYPES.FILE,
+  );
+
+  const result: Record<string, any> = { ...values };
+  const failedFieldNames: string[] = [];
+
+  await Promise.all(
+    fileFieldNames.map(async name => {
+      const raw = values[name];
+      try {
+        if (Array.isArray(raw)) {
+          if (raw.length === 0 || !raw.every(isFileAssetLike)) return;
+          result[name] = await Promise.all(raw.map(file => uploadService(file)));
+        } else if (isFileAssetLike(raw)) {
+          result[name] = await uploadService(raw);
+        }
+      } catch {
+        failedFieldNames.push(name);
+      }
+    }),
+  );
+
+  if (failedFieldNames.length > 0) {
+    throw new FileUploadError(failedFieldNames);
+  }
+
+  return result;
 }
 
 /** Recurses through tabs/sections (via `children`) and their `rows`, validating every field found. */
@@ -610,7 +748,7 @@ function countRequiredFieldProgress(
   if (field.isReadOnly || field.type === FORM_FIELD_TYPES.VIEW) return;
 
   counts.total += 1;
-  if ((values[field.name] ?? '').trim()) counts.completed += 1;
+  if (isValuePresent(values[field.name])) counts.completed += 1;
 }
 
 /** Recurses through the given nodes — pass the whole schema for whole-form progress. */
@@ -641,13 +779,14 @@ function computeRequiredFieldProgress(
 
 interface FieldRendererProps {
   field: FormField;
-  value: string;
+  /** Plain string for most fields; `string[]` for multiselect/pillmultiselect; a `FileAsset`/`FileAsset[]` for `file`. */
+  value: any;
   error?: string;
   errors: Record<string, string>;
-  onChange: (name: string, value: string) => void;
+  onChange: (name: string, value: any) => void;
   disabled: boolean;
   optionsMap: OptionsMap;
-  values: Record<string, string>;
+  values: Record<string, any>;
   t: (key: string, fallback?: string) => string;
   /** Shared visibility state for password toggle groups */
   visibilityGroups: Record<string, boolean>;
@@ -656,7 +795,61 @@ interface FieldRendererProps {
   autoFocusRef?: React.RefObject<any>;
   isNested?: boolean;
   isEditMode?: boolean;
+  /** Global default input props (from `SchemaFormRendererProps._input`); `field._input` wins over this. */
+  globalInputProps?: any;
 }
+
+/**
+ * A row of clickable pill buttons, shared by the single-select `pillselect`
+ * and multi-select `pillmultiselect` field types so the active-styling tokens
+ * (`$primary500`/`$bgPrimary/5`/`$2xl` etc.) live in exactly one place.
+ */
+const PillOptionsRow: React.FC<{
+  options: { value: string; label: string }[];
+  isSelected: (value: string) => boolean;
+  onToggle: (value: string) => void;
+  isDisabled: boolean;
+  /** pillmultiselect only — shows a checked/unchecked checkbox beside each pill's label. */
+  isMulti?: boolean;
+}> = ({ options, isSelected, onToggle, isDisabled, isMulti = false }) => (
+  <HStack space="sm" flexWrap="wrap">
+    {options.map(option => {
+      const selected = isSelected(option.value);
+      return (
+        <Pressable
+          key={option.value}
+          disabled={isDisabled}
+          onPress={() => onToggle(option.value)}
+          flex={1}
+          px="$3"
+          py={isMulti ? "$2" :"$2.5"}
+          borderRadius={isMulti ? "$xl" :"$2xl"}
+          borderWidth={1}
+          borderColor={selected ? '$primary500' : '$borderColor'}
+          bg={selected ? '$bgPrimary/5' : 'transparent'}
+          opacity={isDisabled ? 0.5 : 1}
+        >
+          <HStack space="xs" alignItems={"center"} justifyContent={isMulti ? "flex-start" : "center"}>
+            {isMulti && (
+              <LucideIcon
+                name={selected ? 'SquareCheckBig' : 'Square'}
+                size={16}
+                color={selected ? '$primary500' : '$textMuted'}
+              />
+            )}
+            <Text
+              {...TYPOGRAPHY.bodySmall}
+              color={selected ? '$primary500' : '$textForeground'}
+              textAlign={"center"}
+            >
+              {option.label}
+            </Text>
+          </HStack>
+        </Pressable>
+      );
+    })}
+  </HStack>
+);
 
 const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -673,9 +866,17 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   autoFocusRef,
   isNested = false,
   isEditMode = false,
+  globalInputProps,
 }) => {
   const isFieldDisabled =
     disabled || !!field.disabled || (isEditMode && field.name === 'roleId');
+
+  // Single resolution point for Task 4's two-level `_input` override: field-level
+  // wins over the global default. Behavior/config props only (size, placeholder,
+  // maxLength, autoFocus, ...) — never styling, and never allowed to clobber the
+  // wiring props (value/onChange/isInvalid/isDisabled/isReadOnly) each branch
+  // applies after spreading this.
+  const resolvedInputProps = { ...globalInputProps, ...field._input };
 
   useEffect(() => {
     if (
@@ -798,13 +999,12 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     // Compute disabled-when condition
     let isDisabled = isFieldDisabled;
     if (!isDisabled && field.disabledWhen?.empty) {
-      const depVal = (values[field.disabledWhen.field] ?? '').trim();
-      if (!depVal) isDisabled = true;
+      if (!isValuePresent(values[field.disabledWhen.field])) isDisabled = true;
     }
 
     // Dynamic placeholder when dependency is satisfied
     const activePlaceholder =
-      field.placeholderWhenReady && (values[field.dependsOn ?? ''] ?? '').trim()
+      field.placeholderWhenReady && isValuePresent(values[field.dependsOn ?? ''])
         ? field.placeholderWhenReady.fallback
         : placeholder;
 
@@ -815,9 +1015,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       >
         <Select
           {...(isNested ? {} : styles.createUserFormSelect)}
+          {...resolvedInputProps}
           options={options}
           value={value}
-          onChange={(val: string, _lbl: string) =>
+          onChange={(val: string | string[]) =>
             onChange(field.name || '', val)
           }
           placeholder={activePlaceholder}
@@ -839,34 +1040,64 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     const isDisabled = isFieldDisabled || !!field.isReadOnly;
 
     return (
-      <HStack space="sm" flexWrap="wrap">
-        {rawOptions.map(option => {
-          const isSelected = option.value === value;
-          return (
-            <Pressable
-              key={option.value}
-              disabled={isDisabled}
-              onPress={() => onChange(field.name || '', option.value)}
-              flex={1}
-              px="$3"
-              py="$2.5"
-              borderRadius="$2xl"
-              borderWidth={1}
-              borderColor={isSelected ? '$primary500' : '$borderColor'}
-              bg={isSelected ? '$bgPrimary/5' : 'transparent'}
-              opacity={isDisabled ? 0.5 : 1}
-            >
-              <Text
-                {...TYPOGRAPHY.bodySmall}
-                color={isSelected ? '$primary500' : '$textForeground'}
-                textAlign='center'
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </HStack>
+      <PillOptionsRow
+        options={rawOptions}
+        isSelected={optionValue => optionValue === value}
+        onToggle={optionValue => onChange(field.name || '', optionValue)}
+        isDisabled={isDisabled}
+      />
+    );
+  }
+
+  // ── Pill Multi Select (multi-select rendered as a row of togglable pill buttons) ──
+  if (field.type === FORM_FIELD_TYPES.PILLMULTISELECT) {
+    const rawOptions = field.optionsSource
+      ? optionsMap[field.optionsSource] ?? []
+      : [];
+    const isDisabled = isFieldDisabled || !!field.isReadOnly;
+    const selectedValues: string[] = Array.isArray(value) ? value : [];
+
+    return (
+      <PillOptionsRow
+        options={rawOptions}
+        isSelected={optionValue => selectedValues.includes(optionValue)}
+        onToggle={optionValue => {
+          const next = selectedValues.includes(optionValue)
+            ? selectedValues.filter(v => v !== optionValue)
+            : [...selectedValues, optionValue];
+          onChange(field.name || '', next);
+        }}
+        isDisabled={isDisabled}
+        isMulti
+      />
+    );
+  }
+
+  // ── Multi Select (dropdown with a checkbox per option, stores string[]) ──────
+  if (field.type === FORM_FIELD_TYPES.MULTISELECT) {
+    const rawOptions = field.optionsSource
+      ? optionsMap[field.optionsSource] ?? []
+      : [];
+    const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
+    const isDisabled = isFieldDisabled || !!field.isReadOnly;
+    const selectedValues: string[] = Array.isArray(value) ? value : [];
+
+    return (
+      <Box width="100%" zIndex={field.zIndex ?? 1}>
+        <Select
+          {...styles.createUserFormSelect}
+          {...resolvedInputProps}
+          multiple
+          options={options}
+          value={selectedValues}
+          onChange={(vals: string | string[]) =>
+            onChange(field.name || '', Array.isArray(vals) ? vals : [])
+          }
+          placeholder={placeholder}
+          disabled={isDisabled}
+          isReadOnly={field.isReadOnly}
+        />
+      </Box>
     );
   }
 
@@ -880,16 +1111,28 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         )
       : undefined;
 
+    // Stores the full picked-file asset (not just its name) so `resolveFileUploads`
+    // has something to actually upload at submit time — see `FileAsset`.
     const handlePick = async () => {
       if (isDisabled) return;
       try {
         const picked = await openFilePicker({ allowMultiSelection: false });
-        const fileName = picked?.[0]?.name;
-        if (fileName) onChange(field.name || '', fileName);
+        const file = picked?.[0];
+        if (file?.name) {
+          onChange(field.name || '', {
+            uri: file.uri,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            file: file.file,
+          });
+        }
       } catch {
         // User cancelled the picker — nothing to persist.
       }
     };
+
+    const fileName = value && typeof value === 'object' ? value.name : undefined;
 
     return (
       <VStack space="xs">
@@ -907,9 +1150,9 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             <LucideIcon name="Upload" size={18} color="$textMutedForeground" />
             <Text
               {...TYPOGRAPHY.bodySmall}
-              color={value ? '$textForeground' : '$textMutedForeground'}
+              color={fileName ? '$textForeground' : '$textMutedForeground'}
             >
-              {value ||
+              {fileName ||
                 placeholder ||
                 t('common.clickToUpload', 'Click to upload')}
             </Text>
@@ -933,6 +1176,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       <Box zIndex={field.zIndex ?? 999}>
         <DatePicker
           {...styles.createUserFormInput}
+          {...resolvedInputProps}
           mode={field.type}
           placeholder={placeholder || 'YYYY-MM-DD'}
           value={displayValue}
@@ -961,11 +1205,13 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       <Box position="relative">
         <Input
           {...styles.createUserFormInput}
+          {...resolvedInputProps}
           isInvalid={!!error}
           isDisabled={disabled || field.disabled}
           isReadOnly={field.isReadOnly}
         >
           <FastInputField
+            {...resolvedInputProps}
             placeholder={placeholder}
             value={value}
             onChangeText={(text: string) => onChange(field.name || '', text)}
@@ -992,19 +1238,29 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // ── Textarea ────────────────────────────────────────────────────────────────
   if (field.type === FORM_FIELD_TYPES.TEXTAREA) {
-    const keyboardType = (field.inputProps?.keyboardType as any) ?? 'default';
+    // Precedence: the existing narrow `field.inputProps` wins (backward compat),
+    // then the resolved `_input` (global default, field-level override), then a
+    // hardcoded default.
+    const keyboardType =
+      (field.inputProps?.keyboardType as any) ??
+      resolvedInputProps.keyboardType ??
+      'default';
     const autoCapitalize =
-      (field.inputProps?.autoCapitalize as any) ?? 'sentences';
-    const maxLength = field.inputProps?.maxLength;
+      (field.inputProps?.autoCapitalize as any) ??
+      resolvedInputProps.autoCapitalize ??
+      'sentences';
+    const maxLength = field.inputProps?.maxLength ?? resolvedInputProps.maxLength;
 
     return (
       <Textarea
         {...(styles.createUserFormInput as any)}
+        {...resolvedInputProps}
         isInvalid={!!error}
         isDisabled={disabled || field.disabled}
         isReadOnly={field.isReadOnly}
       >
         <FastTextareaInput
+          {...resolvedInputProps}
           ref={field.autoFocus ? autoFocusRef : undefined}
           placeholder={placeholder}
           value={value}
@@ -1019,14 +1275,20 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Text / Email / Tel ───────────────────────────────────────────────────────
-  const keyboardType = (field.inputProps?.keyboardType as any) ?? 'default';
+  const keyboardType =
+    (field.inputProps?.keyboardType as any) ??
+    resolvedInputProps.keyboardType ??
+    'default';
   const autoCapitalize =
-    (field.inputProps?.autoCapitalize as any) ?? 'sentences';
-  const maxLength = field.inputProps?.maxLength;
+    (field.inputProps?.autoCapitalize as any) ??
+    resolvedInputProps.autoCapitalize ??
+    'sentences';
+  const maxLength = field.inputProps?.maxLength ?? resolvedInputProps.maxLength;
 
   return (
     <Input
       {...(isNested ? {} : (styles.createUserFormInput as any))}
+      {...resolvedInputProps}
       isInvalid={!!error}
       isDisabled={isFieldDisabled}
       isReadOnly={field.isReadOnly}
@@ -1050,6 +1312,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         </Box>
       )}
       <FastInputField
+        {...resolvedInputProps}
         ref={field.autoFocus ? autoFocusRef : undefined}
         placeholder={placeholder}
         value={value}
@@ -1073,12 +1336,12 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
 /** Shared render context threaded down through the recursive node tree. */
 interface NodeRenderContext {
-  values: Record<string, string>;
+  values: Record<string, any>;
   errors: Record<string, string>;
   optionsMap: OptionsMap;
   mode: string;
   t: (key: string, fallback?: string) => string;
-  onFieldChange: (name: string, value: string) => void;
+  onFieldChange: (name: string, value: any) => void;
   disabled: boolean;
   visibilityGroups: Record<string, boolean>;
   toggleVisibilityGroup: (group: string) => void;
@@ -1088,6 +1351,8 @@ interface NodeRenderContext {
   registerFieldRef?: (name: string, node: any) => void;
   /** Name of the field to temporarily highlight (set after navigating from the validation popup) */
   highlightedField?: string | null;
+  /** Global default input props (from `SchemaFormRendererProps._input`); a field's own `_input` wins over this. */
+  globalInputProps?: any;
 }
 
 function nodeTitleText(
@@ -1199,8 +1464,8 @@ const TabGroupRenderer: React.FC<{
               )
             : undefined;
           return (
-            <TabsTabPanel key={tab.id} value={tab.id}>
-              <VStack space="md">
+            <TabsTabPanel key={tab.id} value={tab.id} {...tab._container}>
+              <VStack space="md" {...tab._content}>
                 {!!subTitleText && (
                   <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
                     {subTitleText}
@@ -1238,24 +1503,35 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
       borderColor="$borderColor"
       p="$6"
       width="100%"
+      {...node._container}
     >
-      <VStack space={subTitleText ? 'xl' : 'sm'}>
+      <VStack space={subTitleText ? 'xl' : 'sm'} {...node._content}>
         {!!titleText && (
           <VStack space="xs">
-            <HStack space="xs" alignItems="center">
+            <HStack space="xs" alignItems="center" {...node._header}>
               {!!node.icon && (
                 <LucideIcon
                   name={node.icon as any}
                   size={16}
                   color="$textMutedForeground"
+                  {...node._icon}
                 />
               )}
-              <Text {...TYPOGRAPHY.h2} color="$blueGray900" fontWeight="$bold">
+              <Text
+                {...TYPOGRAPHY.h2}
+                color="$blueGray900"
+                fontWeight="$bold"
+                {...node._title}
+              >
                 {titleText}
               </Text>
             </HStack>
             {!!subTitleText && (
-              <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+              <Text
+                {...TYPOGRAPHY.caption}
+                color="$textMutedForeground"
+                {...node._subTitle}
+              >
                 {subTitleText}
               </Text>
             )}
@@ -1387,6 +1663,18 @@ const StepFooter: React.FC<{
   onSaveDraft?: () => void;
   onSubmit: () => void;
   t: (key: string, fallback?: string) => string;
+  showPreviousButton?: boolean;
+  showContinueButton?: boolean;
+  showSaveDraftButton?: boolean;
+  showSubmitButton?: boolean;
+  previousButtonText?: string;
+  continueButtonText?: string;
+  saveDraftButtonText?: string;
+  submitButtonText?: string;
+  previousButtonProps?: any;
+  continueButtonProps?: any;
+  saveDraftButtonProps?: any;
+  submitButtonProps?: any;
 }> = ({
   isFirstStep,
   isLastStep,
@@ -1396,6 +1684,18 @@ const StepFooter: React.FC<{
   onSaveDraft,
   onSubmit,
   t,
+  showPreviousButton,
+  showContinueButton,
+  showSaveDraftButton,
+  showSubmitButton,
+  previousButtonText,
+  continueButtonText,
+  saveDraftButtonText,
+  submitButtonText,
+  previousButtonProps,
+  continueButtonProps,
+  saveDraftButtonProps,
+  submitButtonProps,
 }) => (
   <HStack
     space="sm"
@@ -1403,27 +1703,39 @@ const StepFooter: React.FC<{
     width="100%"
     flexWrap="wrap"
   >
-    <Button
-      variant="outline"
-      onPress={onPrevious}
-      isDisabled={isFirstStep || disabled}
-    >
-      <ButtonText>{t('common.previous', 'Previous')}</ButtonText>
-    </Button>
+    {(showPreviousButton ?? true) && (
+      <Button
+        variant="outlineghost"
+        {...previousButtonProps}
+        onPress={onPrevious}
+        isDisabled={isFirstStep || disabled}
+      >
+        <ButtonIcon as={LucideIcon} name={previousButtonProps?.icon || "ArrowLeft"} />
+        <ButtonText>{previousButtonText ?? t('common.previous', 'Previous')}</ButtonText>
+      </Button>
+    )}
     <HStack space="sm">
-      {!!onSaveDraft && (
-        <Button variant="outline" onPress={onSaveDraft} isDisabled={disabled}>
-          <ButtonText>{t('common.saveDraft', 'Save Draft')}</ButtonText>
+      {(showSaveDraftButton ?? true) && !!onSaveDraft && (
+        <Button
+          variant="outlineghost"
+          {...saveDraftButtonProps}
+          onPress={onSaveDraft}
+          isDisabled={disabled}
+        >
+          <ButtonIcon as={LucideIcon} name={saveDraftButtonProps?.icon || "FileText"} />
+          <ButtonText>{saveDraftButtonText ?? t('common.saveDraft', 'Save Draft')}</ButtonText>
         </Button>
       )}
-      {!isLastStep && (
-        <Button onPress={onContinue} isDisabled={disabled}>
-          <ButtonText>{t('common.continue', 'Continue')}</ButtonText>
+      {(showContinueButton ?? true) && !isLastStep && (
+        <Button {...continueButtonProps} onPress={onContinue} isDisabled={disabled}>
+          <ButtonText>{continueButtonText ?? t('common.continue', 'Continue')}</ButtonText>
+          <ButtonIcon as={LucideIcon} name={continueButtonProps?.icon || "ArrowRight"} />
         </Button>
       )}
-      {isLastStep && (
-        <Button onPress={onSubmit} isDisabled={disabled}>
-          <ButtonText>{t('common.submit', 'Submit')}</ButtonText>
+      {(showSubmitButton ?? true) && isLastStep && (
+        <Button {...submitButtonProps} onPress={onSubmit} isDisabled={disabled}>
+          <ButtonIcon as={LucideIcon} name={submitButtonProps?.icon || "FileText"} />
+          <ButtonText>{submitButtonText ?? t('common.submit', 'Submit')}</ButtonText>
         </Button>
       )}
     </HStack>
@@ -1543,6 +1855,20 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   onSubmit,
   onSaveDraft,
   isSubmitting = false,
+  _input,
+  uploadService,
+  showPreviousButton,
+  showContinueButton,
+  showSaveDraftButton,
+  showSubmitButton,
+  previousButtonText,
+  continueButtonText,
+  saveDraftButtonText,
+  submitButtonText,
+  previousButtonProps,
+  continueButtonProps,
+  saveDraftButtonProps,
+  submitButtonProps,
 }) => {
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<
@@ -1682,7 +2008,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const {
       errors: allErrors,
       issues: allIssues,
@@ -1691,12 +2017,35 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
     applyValidationResult(allErrors, visited);
 
-    if (allIssues.length === 0) {
-      onSubmit?.(values);
-    } else {
+    if (allIssues.length > 0) {
       setPopupIssues(allIssues);
       setIsPopupOpen(true);
+      return;
     }
+
+    let resolvedValues = values;
+    try {
+      resolvedValues = await resolveFileUploads(schema, values, uploadService);
+    } catch (err) {
+      if (err instanceof FileUploadError) {
+        const uploadIssues: ValidationIssue[] = err.failedFieldNames.map(name => {
+          const field = fieldsByName[name];
+          return {
+            fieldName: name,
+            fieldLabel: field?.label
+              ? t(`admin.users.createUser.${field.label.key}`, field.label.fallback)
+              : name,
+            message: t('common.fileUploadFailed', 'File upload failed'),
+          };
+        });
+        setPopupIssues(uploadIssues);
+        setIsPopupOpen(true);
+        return;
+      }
+      throw err;
+    }
+
+    onSubmit?.(resolvedValues);
   };
 
   const handleSaveDraft = () => {
@@ -1734,6 +2083,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     toggleVisibilityGroup,
     firstNameRef,
     fieldsByName,
+    globalInputProps: _input,
   };
 
   if (isMultiStep) {
@@ -1793,6 +2143,18 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
           onSaveDraft={onSaveDraft ? handleSaveDraft : undefined}
           onSubmit={handleSubmit}
           t={t}
+          showPreviousButton={showPreviousButton}
+          showContinueButton={showContinueButton}
+          showSaveDraftButton={showSaveDraftButton}
+          showSubmitButton={showSubmitButton}
+          previousButtonText={previousButtonText}
+          continueButtonText={continueButtonText}
+          saveDraftButtonText={saveDraftButtonText}
+          submitButtonText={submitButtonText}
+          previousButtonProps={previousButtonProps}
+          continueButtonProps={continueButtonProps}
+          saveDraftButtonProps={saveDraftButtonProps}
+          submitButtonProps={submitButtonProps}
         />
 
         <ValidationPopup
@@ -1869,11 +2231,11 @@ interface FieldType {
   field: FormField;
   t: (key: string, fallback?: string) => string;
   isMultiField?: boolean;
-  values?: Record<string, string>;
+  values?: Record<string, any>;
   errors?: Record<string, string>;
   optionsMap?: OptionsMap;
   mode?: string;
-  onFieldChange?: () => void;
+  onFieldChange?: (name: string, value: any) => void;
   disabled?: boolean;
   visibilityGroups?: Record<string, boolean>;
   toggleVisibilityGroup?: (group: string) => void;
@@ -1887,6 +2249,8 @@ interface FieldType {
   registerFieldRef?: (name: string, node: any) => void;
   /** Name of the field to temporarily highlight (navigated to from the validation popup) */
   highlightedField?: string | null;
+  /** Global default input props (from `SchemaFormRendererProps._input`); a field's own `_input` wins over this. */
+  globalInputProps?: any;
 }
 
 const RowRenderer = memo(
@@ -2046,11 +2410,44 @@ const HintDisplay: React.FC<{
   );
 };
 
+/**
+ * Formats a stored field value for read-only display (preview mode, `view`
+ * fields): resolves option labels, joins multiselect/pillmultiselect arrays
+ * with ", ", and falls back to the raw value's name/string form for anything
+ * else (e.g. a `file` field's picked-asset object). Shared by `ViewFieldDisplay`
+ * and `FieldContainer`'s preview-mode branch so the array/object handling
+ * isn't duplicated.
+ */
+function formatFieldValueForDisplay(
+  rawValue: any,
+  optionsSource: string | undefined,
+  optionsMap: OptionsMap,
+): string {
+  const resolveLabel = (v: any): string => {
+    const option = optionsSource
+      ? optionsMap[optionsSource]?.find(o => o.value === v)
+      : undefined;
+    return option?.label || String(v);
+  };
+
+  if (Array.isArray(rawValue)) {
+    if (rawValue.length === 0) return '-';
+    return rawValue.map(v => (v && typeof v === 'object' ? v.name ?? String(v) : resolveLabel(v))).join(', ');
+  }
+
+  if (rawValue && typeof rawValue === 'object') {
+    return rawValue.name ?? '-';
+  }
+
+  const display = rawValue ? resolveLabel(rawValue) : '-';
+  return typeof display === 'string' ? display.replace(/_/g, '-') : String(display);
+}
+
 // ─── View Field (read-only display of another field's label/value) ───────────
 
 interface ViewFieldDisplayProps {
   field: FormField;
-  values: Record<string, string>;
+  values: Record<string, any>;
   optionsMap: OptionsMap;
   t: (key: string, fallback?: string) => string;
   isMultiField?: boolean;
@@ -2075,18 +2472,15 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
     : field.name ?? '-';
 
   let rawValue = field.name ? values[field.name] : undefined;
-  if (!rawValue && targetField?.defaultValue) {
+  if (!isValuePresent(rawValue) && targetField?.defaultValue) {
     rawValue = targetField.defaultValue;
   }
 
-  let displayValue: string = rawValue || '-';
-  if (targetField?.optionsSource) {
-    const option = optionsMap[targetField.optionsSource]?.find(
-      o => o.value === rawValue,
-    );
-    displayValue = option?.label || rawValue || '-';
-  }
-  displayValue = displayValue.replace(/_/g, '-');
+  const displayValue = formatFieldValueForDisplay(
+    rawValue,
+    targetField?.optionsSource,
+    optionsMap,
+  );
 
   return (
     <VStack
@@ -2120,6 +2514,7 @@ const FieldContainer = memo(
     fieldsByName = {},
     registerFieldRef,
     highlightedField,
+    globalInputProps,
     onFieldChange = (...e) => {
       console.log(e);
     },
@@ -2149,20 +2544,11 @@ const FieldContainer = memo(
         return null;
       }
 
-      let displayValue = value || '-';
-
-      if (field.optionsSource) {
-        const option = optionsMap[field.optionsSource]?.find(
-          o => o.value === value,
-        );
-
-        displayValue = option?.label || value || '-';
-      }
-
-      displayValue =
-        typeof displayValue === 'string'
-          ? displayValue.replace(/_/g, '-')
-          : String(displayValue);
+      const displayValue = formatFieldValueForDisplay(
+        value,
+        field.optionsSource,
+        optionsMap,
+      );
 
       return (
         <VStack
@@ -2203,6 +2589,7 @@ const FieldContainer = memo(
         p={isHighlighted ? '$2' : undefined}
         borderRadius={isHighlighted ? '$md' : undefined}
         bg={isHighlighted ? '$warning100' : undefined}
+        {...field._container}
       >
         {field.type !== FORM_FIELD_TYPES.NOTE && (
           <>
@@ -2210,6 +2597,7 @@ const FieldContainer = memo(
               {...TYPOGRAPHY.bodySmall}
               color="$textForeground"
               fontWeight="$medium"
+              {...field._title}
             >
               {t(
                 `admin.users.createUser.${field.label.key}`,
@@ -2218,7 +2606,11 @@ const FieldContainer = memo(
               {field.required && <Text color="$red500"> *</Text>}
             </Text>
             {!!field.subTitle && (
-              <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+              <Text
+                {...TYPOGRAPHY.caption}
+                color="$textMutedForeground"
+                {...field._subTitle}
+              >
                 {t(
                   `admin.users.createUser.${field.subTitle.key}`,
                   field.subTitle.fallback,
@@ -2242,6 +2634,7 @@ const FieldContainer = memo(
           visibilityGroups={visibilityGroups}
           toggleVisibilityGroup={toggleVisibilityGroup}
           autoFocusRef={firstNameRef}
+          globalInputProps={globalInputProps}
         />
 
         {error && (

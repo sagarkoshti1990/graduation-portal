@@ -44,7 +44,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               },
               {
                 name: 'site',
-                type: 'select',
+                type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
                 placeholder: { fallback: 'Select province first' },
@@ -190,7 +190,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             fields: [
               {
                 name: 'targetAudience',
-                type: 'pillselect',
+                type: 'pillmultiselect',
                 required: true,
                 label: { key: 'targetAudience', fallback: 'Target Audience' },
                 optionsSource: 'targetAudienceOptions',
