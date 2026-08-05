@@ -25,6 +25,9 @@ import {
   Box,
   HStack,
   Text,
+  Checkbox,
+  CheckboxIndicator,
+  CheckboxIcon,
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
 import { getSelectTriggerStyles } from './Styles';
@@ -60,8 +63,12 @@ type DropdownPosition = {
 
 type SelectProps = {
   options: RawOption[];
-  value: string;
-  onChange: (value: string, label: string) => void;
+  value: string | string[];
+  // Kept as `any` (not a strict `string | string[]` union) so every existing
+  // single-select call site's narrower callback (e.g. `(value: string) => void`)
+  // stays assignable without touching each of those unrelated screens — only
+  // this component's own internals need to actually handle both shapes.
+  onChange: (value: any, label: any) => void;
   placeholder?: string;
   bg?: string;
   borderColor?: string;
@@ -69,6 +76,9 @@ type SelectProps = {
   borderRadius?: string | number;
   disabled?: boolean;
   isReadOnly?: boolean;
+  /** Opt-in multi-select mode: `value`/`onChange` become array-valued, a checkbox
+   * appears beside every option, and picking one doesn't close the dropdown. */
+  multiple?: boolean;
 };
 
 const DROPDOWN_Z = 100000;
@@ -199,24 +209,45 @@ function WebSelect({
   borderRadius = 10,
   disabled = false,
   isReadOnly = false,
+  multiple = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
     [options],
   );
 
-  const valueKey = String(value ?? '');
+  const valueArray = useMemo(
+    () => (multiple && Array.isArray(value) ? value : []),
+    [multiple, value],
+  );
+
+  const valueKey = multiple ? '' : String((value as string) ?? '');
 
   const selectedOption =
     normalizedOptions.find(
       opt => opt.value === valueKey,
     );
 
-  const displayValue =
-    selectedOption?.nativeName ||
-    selectedOption?.name ||
-    selectedOption?.value ||
-    '';
+  const displayValue = multiple
+    ? valueArray.length > 0
+      ? `${valueArray.length} Selected`
+      : ''
+    : selectedOption?.nativeName ||
+      selectedOption?.name ||
+      selectedOption?.value ||
+      '';
+
+  const toggleMultiValue = (optionValue: string) => {
+    const exists = valueArray.includes(optionValue);
+    const next = exists
+      ? valueArray.filter(v => v !== optionValue)
+      : [...valueArray, optionValue];
+    const labels = next.map(v => {
+      const opt = normalizedOptions.find(o => o.value === v);
+      return opt?.nativeName || opt?.name || '';
+    });
+    onChange(next, labels);
+  };
 
   const localizedPlaceholder =
     placeholder ??
@@ -442,8 +473,9 @@ function WebSelect({
               option.name ||
               option.value;
 
-            const isSelected =
-              option.value === valueKey;
+            const isSelected = multiple
+              ? valueArray.includes(option.value)
+              : option.value === valueKey;
 
             return (
               <Pressable
@@ -452,11 +484,15 @@ function WebSelect({
                   index.toString()
                 }
                 onPress={() => {
-                  emitChange(
-                    option.value,
-                  );
+                  if (multiple) {
+                    toggleMultiValue(option.value);
+                  } else {
+                    emitChange(
+                      option.value,
+                    );
 
-                  setOpen(false);
+                    setOpen(false);
+                  }
                 }}
               >
                 <HStack
@@ -470,6 +506,26 @@ function WebSelect({
                       : 'transparent'
                   }
                 >
+                  {multiple && (
+                    <Checkbox
+                      value={option.value}
+                      isChecked={isSelected}
+                      onChange={() => {}}
+                      mr="$2"
+                      size="sm"
+                      aria-label={label}
+                    >
+                      <CheckboxIndicator
+                        borderColor={isSelected ? '$primary500' : '$textMuted'}
+                        bg={isSelected ? '$primary500' : '$white'}
+                      >
+                        <CheckboxIcon color="$white">
+                          <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                        </CheckboxIcon>
+                      </CheckboxIndicator>
+                    </Checkbox>
+                  )}
+
                   <Text
                     flex={1}
                     fontSize="$sm"
@@ -482,18 +538,19 @@ function WebSelect({
                     {label}
                   </Text>
 
-                  {isSelected ? (
-                    <LucideIcon
-                      name="Check"
-                      size={18}
-                      color="$textForeground"
-                    />
-                  ) : (
-                    <Box
-                      w="$4"
-                      h="$4"
-                    />
-                  )}
+                  {!multiple &&
+                    (isSelected ? (
+                      <LucideIcon
+                        name="Check"
+                        size={18}
+                        color="$textForeground"
+                      />
+                    ) : (
+                      <Box
+                        w="$4"
+                        h="$4"
+                      />
+                    ))}
                 </HStack>
               </Pressable>
             );
@@ -586,23 +643,44 @@ function NativeSelect({
   borderRadius = 10,
   disabled = false,
   isReadOnly = false,
+  multiple = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
     [options],
   );
 
-  const valueKey = String(value ?? '');
+  const valueArray = useMemo(
+    () => (multiple && Array.isArray(value) ? value : []),
+    [multiple, value],
+  );
+
+  const valueKey = multiple ? '' : String((value as string) ?? '');
 
   const selectedOption =
     normalizedOptions.find(
       item => item.value === valueKey,
     );
 
-  const displayValue =
-    selectedOption?.nativeName ||
-    selectedOption?.name ||
-    '';
+  const displayValue = multiple
+    ? valueArray.length > 0
+      ? `${valueArray.length} Selected`
+      : ''
+    : selectedOption?.nativeName ||
+      selectedOption?.name ||
+      '';
+
+  const toggleMultiValue = (optionValue: string) => {
+    const exists = valueArray.includes(optionValue);
+    const next = exists
+      ? valueArray.filter(v => v !== optionValue)
+      : [...valueArray, optionValue];
+    const labels = next.map(v => {
+      const opt = normalizedOptions.find(o => o.value === v);
+      return opt?.nativeName || opt?.name || '';
+    });
+    onChange(next, labels);
+  };
 
   const localizedPlaceholder =
     placeholder ??
@@ -820,6 +898,11 @@ function NativeSelect({
   const handleSelect = (
     selectedValue: string,
   ) => {
+    if (multiple) {
+      toggleMultiValue(selectedValue);
+      return;
+    }
+
     const option = normalizedOptions.find(
       item => item.value === selectedValue,
     );
@@ -978,9 +1061,9 @@ function NativeSelect({
                         option.name ||
                         option.value;
 
-                      const isSelected =
-                        option.value ===
-                        valueKey;
+                      const isSelected = multiple
+                        ? valueArray.includes(option.value)
+                        : option.value === valueKey;
 
                       return (
                         <Pressable
@@ -1002,6 +1085,26 @@ function NativeSelect({
                                 : '$white'
                             }
                           >
+                            {multiple && (
+                              <Checkbox
+                                value={option.value}
+                                isChecked={isSelected}
+                                onChange={() => {}}
+                                mr="$2"
+                                size="sm"
+                                aria-label={label}
+                              >
+                                <CheckboxIndicator
+                                  borderColor={isSelected ? '$primary500' : '$textMuted'}
+                                  bg={isSelected ? '$primary500' : '$white'}
+                                >
+                                  <CheckboxIcon color="$white">
+                                    <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                                  </CheckboxIcon>
+                                </CheckboxIndicator>
+                              </Checkbox>
+                            )}
+
                             <Text
                               flex={1}
                               fontSize="$sm"
@@ -1014,7 +1117,7 @@ function NativeSelect({
                               {label}
                             </Text>
 
-                            {isSelected ? (
+                            {!multiple && isSelected ? (
                               <LucideIcon
                                 name="Check"
                                 size={18}

@@ -44,7 +44,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               },
               {
                 name: 'site',
-                type: 'select',
+                type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
                 placeholder: { fallback: 'Select province first' },
@@ -190,11 +190,10 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             fields: [
               {
                 name: 'targetAudience',
-                type: 'pillselect',
+                type: 'pillmultiselect',
                 required: true,
                 label: { key: 'targetAudience', fallback: 'Target Audience' },
                 optionsSource: 'targetAudienceOptions',
-                defaultValue: 'Participant',
                 validation: [
                   {
                     rule: 'required',
@@ -218,7 +217,6 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   fallback: 'Certificate Provided',
                 },
                 optionsSource: 'certificateOptions',
-                defaultValue: 'Yes',
                 validation: [
                   {
                     rule: 'required',
@@ -259,7 +257,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   fallback: 'Recurring Session',
                 },
                 optionsSource: 'recurringOptions',
-                defaultValue: 'No',
+                defaultValue: 'Yes',
               },
             ],
           },
@@ -329,7 +327,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               },
               {
                 name: 'startTime',
-                type: 'text',
+                type: 'time',
                 required: true,
                 label: { key: 'startTime', fallback: 'Start Time' },
                 placeholder: { fallback: '--:--' },
@@ -365,7 +363,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               },
               {
                 name: 'endTime',
-                type: 'text',
+                type: 'time',
                 required: true,
                 label: { key: 'endTime', fallback: 'End Time' },
                 placeholder: { fallback: '--:--' },
@@ -409,7 +407,6 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 required: true,
                 label: { key: 'formatType', fallback: 'Type' },
                 optionsSource: 'formatOptions',
-                defaultValue: 'Offline',
                 validation: [
                   {
                     rule: 'required',

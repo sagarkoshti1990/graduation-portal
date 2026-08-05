@@ -13,6 +13,7 @@
     "filter": "फ़िल्टर",
     "filters": "फ़िल्टर",
     "clearFilters": "फ़िल्टर साफ़ करें",
+    "clear": "साफ़ करें",
     "submit": "जमा करें",
     "back": "वापस",
     "next": "अगला",
@@ -24,6 +25,14 @@
     "selectOption": "एक विकल्प चुनें",
     "placeholder": "उपयोगकर्ताओं, टेम्पलेट्स, लॉग्स खोजें...",
     "optional": "(वैकल्पिक)"
+  },
+  "datePicker": {
+    "today": "आज",
+    "now": "अभी",
+    "done": "हो गया",
+    "selectDate": "दिनांक चुनें",
+    "selectTime": "समय चुनें",
+    "selectDateTime": "दिनांक और समय चुनें"
   },
   "navigation": {
     "menu": "मेनू",

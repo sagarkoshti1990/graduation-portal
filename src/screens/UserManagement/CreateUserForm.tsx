@@ -26,7 +26,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   const { showAlert } = useAlert();
   const { roles, provinces, genders, organisations, positions, countryCodes } = useUserManagementFilters({});
   const initialValues = useMemo(() => {
-    const vals: Record<string, string> = {};
+    const vals: Record<string, any> = {};
     const initializeField = (field: FormField) => {
       if (field.type === FORM_FIELD_TYPES.GROUP && field.fields) {
         field.fields.forEach(initializeField);
@@ -128,7 +128,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       onClose={onClose}
       size="lg"
       headerTitle={t('admin.users.createUser.title') || 'Create New User'}
-      headerDescription={t('admin.users.createUser.description') || 'Add a new user to the system. Required fields are marked with *.'}
+      headerDescription={t('admin.users.createUser.description')}
       showCloseButton={true}
       closeOnOverlayClick={!isSubmitting}
       style={{ zIndex: 9999 }}

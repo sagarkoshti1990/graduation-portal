@@ -74,11 +74,16 @@ export const FORM_FIELD_TYPES = {
   DATE: 'date',
   TEXTAREA: 'textarea',
   NOTE: 'note',
+  Time: 'time',
   GROUP: 'group',
   /** Read-only display of another field's label/value, resolved by name */
   VIEW: 'view',
   /** Single-select rendered as a row of clickable pill buttons instead of a dropdown */
   PILLSELECT: 'pillselect',
+  /** Multi-select dropdown with a checkbox per option; stores `string[]` */
+  MULTISELECT: 'multiselect',
+  /** Multi-select rendered as a row of togglable pill buttons; stores `string[]` */
+  PILLMULTISELECT: 'pillmultiselect',
   /** File upload trigger */
   FILE: 'file',
 } as const;
@@ -91,7 +96,8 @@ export interface FormField {
   label: { key: string; fallback: string };
   required?: boolean;
   placeholder?: { key?: string; fallback: string };
-  defaultValue?: string;
+  /** Plain string for most fields; `string[]` for multiselect/pillmultiselect defaults */
+  defaultValue?: string | string[];
   /** When present and the flag resolves to false, this field is hidden */
   visibleWhen?: VisibleWhenFlag;
   disabled?: boolean;
@@ -131,6 +137,16 @@ export interface FormField {
   subTitle?: { key?: string; fallback: string };
   /** Informational message rendered above the input — simple string or a severity banner */
   hint?: Hint;
+  /**
+   * UI-only prop overrides, merged (never replacing) over the corresponding
+   * element's default props in `FieldContainer`. `_input` is distinct from
+   * `inputProps` above — it's for input *behavior/config* (size, maxLength,
+   * placeholder, autoFocus), not styling/color tokens.
+   */
+  _container?: any;
+  _title?: any;
+  _subTitle?: any;
+  _input?: any;
 }
 
 export interface FormRow {
@@ -158,6 +174,19 @@ export interface FormSection {
   hint?: Hint;
   children?: FormSection[]
   rows?: FormRow[];
+  /**
+   * UI-only prop overrides, merged (never replacing) over the corresponding
+   * element's default props. `_container`/`_content` apply to section AND tab
+   * nodes; `_header`/`_icon` apply to section nodes only (tabs have no header
+   * concept of their own beyond the tab button, which is intentionally not
+   * overridable here since its styling is driven by active/inactive state).
+   */
+  _container?: any;
+  _content?: any;
+  _header?: any;
+  _title?: any;
+  _subTitle?: any;
+  _icon?: any;
 }
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
