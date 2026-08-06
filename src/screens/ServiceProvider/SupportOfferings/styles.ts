@@ -24,7 +24,7 @@ export default {
   } as const,
   tabBarBox: {
     bg: '$white',
-    borderBottomWidth: 3,
+    borderBottomWidth: 1,
     borderBottomColor: '$borderLight100',
   } as const,
   cardHeaderPressable: {
