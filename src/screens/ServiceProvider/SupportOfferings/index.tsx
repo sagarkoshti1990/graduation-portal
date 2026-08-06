@@ -189,7 +189,7 @@ const App = (): React.JSX.Element => {
                 isActive={activeTab === tab.key}
                 onPress={setActiveTab}
                 _text={styles.tabTextProps}
-                _container={styles.tabButtonContainer(activeTab === tab.key)}
+                _container={styles.tabButtonContainer}
                 iconSize={16}
               />
             ))}
@@ -205,7 +205,6 @@ const App = (): React.JSX.Element => {
             showClearButton={false}
             hideTitleHeader={true}
             _container={styles.filterContainer}
-            _input={styles.filterInputProps}
           />
 
           {activeTab === 'sessions' && <TrainingCard {...cardProps} />}

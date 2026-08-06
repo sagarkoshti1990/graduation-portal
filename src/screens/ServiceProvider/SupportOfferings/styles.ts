@@ -315,10 +315,9 @@ export default {
   tabTextProps: {
     fontSize: '$sm',
   } as const,
-  tabButtonContainer: (isActive: boolean) => ({
-    paddingHorizontal: 20,
-    borderBottomWidth: isActive ? 2 : 0,
-  }) as const,
+ tabButtonContainer: {
+    paddingHorizontal: '$5',
+  } as const,
   filterContainer: {
     py: '$4' as const,
     px: '$6' as const,
