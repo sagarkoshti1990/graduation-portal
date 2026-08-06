@@ -198,24 +198,4 @@ export const styles = {
     padding: 4,
     zIndex: 1,
   },
-
-  // Create User Modal Styles
-  createUserFormInput: {
-    variant: 'outline' as const,
-    size: 'sm' as const,
-    bg: '$white' as const, // Very light grayish blue
-    borderRadius: 10 as const,
-    borderWidth: 1,
-    borderColor: '$borderColor' as const,
-    px: '$2' as const,
-    py: 0,
-  },
-  createUserFormSelect: {
-    variant: 'outline' as const,
-    size: 'sm' as const,
-    bg: '$white' as const, // Very light grayish blue
-    borderRadius: 10 as const,
-    borderWidth: 1,
-    borderColor: '$borderColor' as const,
-  },
 } as const;

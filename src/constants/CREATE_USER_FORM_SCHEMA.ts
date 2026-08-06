@@ -191,12 +191,28 @@ export interface FormSection {
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
+const INPUT_STYLE = {
+  variant: 'outline' as const,
+  size: 'sm' as const,
+  bg: '#e8f0f9ff',
+} as const;
+
+const TITLE_STYLE = {
+  fontSize: 14, fontWeight: 'normal', color: '$textMutedForeground', p: 0, m: 0,
+} as const;
+
+const CONTAINER_STYLE = {
+  borderWidth: 0, p: 0, m: 0,
+} as const;
+
 export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   {
     type:"section",
     id: 'personalInformation',
     icon: 'User',
     title: { key: 'personalInformation', fallback: 'Personal Information' },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
@@ -278,6 +294,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
                 placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
+                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -293,12 +310,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             type: 'group',
             required: false,
             label: { key: 'alternativePhone', fallback: 'Alt Phone Number' },
+            _input: INPUT_STYLE,
             fields: [
               {
                 name: 'alternativePhoneCode',
                 type: 'select',
                 required: false,
                 label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
+                _input: INPUT_STYLE,
                 defaultValue: '+27',
                 optionsSource: 'countryCodes',
                 searchable: true,
@@ -309,6 +328,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
                 placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
+                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -330,6 +350,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     id: 'roleAndPermissions',
     icon: 'Shield',
     title: { key: 'roleAndPermissions', fallback: 'Role & Permissions' },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
@@ -355,6 +377,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     id: 'additionalInformation',
     icon: 'FileText',
     title: { key: 'additionalInformation', fallback: 'Additional Information' },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
@@ -437,6 +461,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     id: 'geographicAssignment',
     icon: 'MapPin',
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [

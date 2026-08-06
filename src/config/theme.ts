@@ -132,6 +132,7 @@ export const theme = {
       tooltipBg: '#45556c',
       evidenceRequiredBg: '#fff9db',
       evidenceRequiredBorder: '#ffd230',
+      faintBlue: "#e8f0f9ff",
     },
     fonts: {
       ...((gluestackConfig.tokens as any).fonts || {}),

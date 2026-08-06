@@ -62,9 +62,9 @@ const App = (): React.JSX.Element => {
   }, []);
 
   const tabs = [
-    { key: 'sessions', label: `Trainings & Sessions (${counts.sessions})`, icon: 'GraduationCap' },
-    { key: 'additional_services', label: `Additional Services (${counts.additional_services})`, icon: 'Briefcase' },
-    { key: 'assets', label: `Assets (${counts.assets})`, icon: 'Box' },
+    { key: 'sessions', label: 'Trainings & Sessions', count: counts.sessions, icon: 'GraduationCap' },
+    { key: 'additional_services', label: 'Additional Services', count: counts.additional_services, icon: 'Briefcase' },
+    { key: 'assets', label: 'Assets', count: counts.assets, icon: 'Box' },
   ];
 
   // Fetch dynamic provinces from API
@@ -180,7 +180,7 @@ const App = (): React.JSX.Element => {
         }
       />
       <Box {...styles.tabBarBox}>
-        <Container>
+        <Container {...styles.container} py="$0">
           <HStack alignItems="center" space="sm">
             {tabs.map((tab) => (
               <TabButton
@@ -188,6 +188,9 @@ const App = (): React.JSX.Element => {
                 tab={tab}
                 isActive={activeTab === tab.key}
                 onPress={setActiveTab}
+                _text={styles.tabTextProps}
+                _container={styles.tabButtonContainer}
+                iconSize={16}
               />
             ))}
           </HStack>
@@ -201,6 +204,7 @@ const App = (): React.JSX.Element => {
             onFilterChange={setFilters}
             showClearButton={false}
             hideTitleHeader={true}
+            _container={styles.filterContainer}
           />
 
           {activeTab === 'sessions' && <TrainingCard {...cardProps} />}
