@@ -1,9 +1,9 @@
 export const filterStyles = {
   container: {
     mt: '$5' as const,
-    bg: 'transparent' as const,
+    bg: '$white' as const,
     borderWidth: 1,
-    borderColor: '$borderLight100' as const,
+    borderColor: '$borderColor' as const,
     borderRadius: '$xl' as const,
     p: '$6' as const,
     width: '$full' as const,
