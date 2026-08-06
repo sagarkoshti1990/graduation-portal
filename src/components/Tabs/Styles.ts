@@ -55,21 +55,19 @@ export const tabButtonStyles = {
   buttonTabIconColor: theme.tokens.colors.textForeground,
 
   badgeContainer: (isActive: boolean) => ({
-    minWidth: 20,
+    w: 20,
     h: 20,
-    borderRadius: '$full' as const,
+    borderRadius: 10,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    bg: isActive ? '$primary500' : '$accent200',
-    px: '$1.5' as const,
-    ml: '$1.5' as const,
+    bg: isActive ? '$red800' : '#FFF3E0',
+    ml: '$1',
   }),
 
   badgeText: (isActive: boolean) => ({
-    fontSize: '$xs' as const,
-    fontWeight: '$semibold' as const,
-    color: isActive ? '$white' : '$mutedForeground',
-    lineHeight: '$xs' as const,
+    fontSize: 11,
+    fontWeight: '$bold' as const,
+    color: isActive ? '$white' : '#D97706',
   }),
 
   tabRow: {
