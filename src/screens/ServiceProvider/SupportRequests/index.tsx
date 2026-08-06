@@ -212,7 +212,7 @@ const App = (): React.JSX.Element => {
                 isActive={activeTab === tab.key}
                 onPress={(key) => setActiveTab(key)}
                 _text={styles.tabTextProps}
-                _container={styles.tabButtonContainer}
+                _container={styles.tabButtonContainer(activeTab === tab.key)}
                 iconSize={16}
               />
             ))}

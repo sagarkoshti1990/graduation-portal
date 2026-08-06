@@ -24,7 +24,7 @@ export default {
   } as const,
   tabBarBox: {
     bg: '$white',
-    borderBottomWidth: 1,
+    borderBottomWidth: 3,
     borderBottomColor: '$borderLight100',
   } as const,
   cardHeaderPressable: {
@@ -315,14 +315,19 @@ export default {
   tabTextProps: {
     fontSize: '$sm',
   } as const,
-  tabButtonContainer: {
-    paddingHorizontal: '$5',
-  } as const,
+  tabButtonContainer: (isActive: boolean) => ({
+    paddingHorizontal: 20,
+    borderBottomWidth: isActive ? 2 : 0,
+  }) as const,
   filterContainer: {
     py: '$4' as const,
     px: '$6' as const,
     mb: '$2' as const,
     mt: '$0' as const,
+  } as const,
+  filterInputProps: {
+    bg: 'transparent',
+    borderColor: '$borderLight100',
   } as const,
   cardHeaderHStack: {
     flexDirection: 'column' as const,

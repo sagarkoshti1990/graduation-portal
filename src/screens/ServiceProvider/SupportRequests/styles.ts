@@ -716,10 +716,13 @@ export default {
   tabTextProps: {
     fontSize: '$sm',
   } as const,
-  tabButtonContainer: {
-    paddingHorizontal: '$5',
-  } as const,
+  tabButtonContainer: (isActive: boolean) => ({
+    paddingHorizontal: 20,
+    borderBottomWidth: isActive ? 2 : 0,
+  }) as const,
   filterInputProps: {
     size: 'sm',
+    bg: 'transparent',
+    borderColor: '$borderLight200',
   } as const,
 };

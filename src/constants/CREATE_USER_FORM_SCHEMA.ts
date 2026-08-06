@@ -191,6 +191,21 @@ export interface FormSection {
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
+const INPUT_STYLE = {
+  variant: 'outline' as const,
+  size: 'sm' as const,
+  bg: '#e8f0f9ff',
+  borderRadius: '$md',
+  borderWidth: 1,
+  borderColor: 'transparent',
+  '$focus': {
+    borderColor: '#833247ff' as const,
+    borderWidth: 1 as const,
+    boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const,
+    '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const,
+  },
+} as const;
+
 export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   {
     type:"section",
@@ -209,7 +224,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'name', fallback: 'Name' },
             placeholder: { key: 'namePlaceholder', fallback: 'Enter Name' },
-           _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             validation: [
               { rule: 'required', message: { key: 'errors.nameRequired', fallback: 'Name is required' } },
               { rule: 'maxLength', value: 100, message: { key: 'errors.nameMax', fallback: 'Name is too long' } },
@@ -222,7 +237,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             icon: 'Mail',
             label: { key: 'email', fallback: 'Email Address' },
             placeholder: { key: 'emailPlaceholder', fallback: 'user@skillssa.co.za' },
-           _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             inputProps: { keyboardType: 'email-address', autoCapitalize: 'none' },
             validation: [
               { rule: 'required', message: { key: 'errors.emailRequired', fallback: 'Email address is required' } },
@@ -239,7 +254,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'username', fallback: 'Username' },
             placeholder: { fallback: 'Enter username' },
-           _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             validation: [
               { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
               { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
@@ -251,7 +266,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'nationalId', fallback: 'National ID' },
             placeholder: { key: 'nationalIdPlaceholder', fallback: 'Enter National ID' },
-           _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             inputProps: { keyboardType: 'numeric' },
             validation: [
               {
@@ -284,7 +299,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
                 placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-                _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -300,14 +315,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             type: 'group',
             required: false,
             label: { key: 'alternativePhone', fallback: 'Alt Phone Number' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             fields: [
               {
                 name: 'alternativePhoneCode',
                 type: 'select',
                 required: false,
                 label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
-                _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+                _input: INPUT_STYLE,
                 defaultValue: '+27',
                 optionsSource: 'countryCodes',
                 searchable: true,
@@ -318,7 +333,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
                 placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
-                _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -352,7 +367,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             zIndex: 1000,
             label: { key: 'role', fallback: 'Role' },
             placeholder: { key: 'rolePlaceholder', fallback: 'Select user role' },
-           _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             optionsSource: 'roles',
             validation: [
               { rule: 'required', message: { key: 'errors.roleRequired', fallback: 'Role is required' } },
@@ -379,7 +394,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'gender', fallback: 'Gender' },
             placeholder: { fallback: 'Select gender' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             optionsSource: 'genders',
             validation: [
               { rule: 'required', message: { key: 'errors.genderRequired', fallback: 'Gender is required' } },
@@ -392,7 +407,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             zIndex: 999,
             label: { key: 'dob', fallback: 'DOB' },
             placeholder: { fallback: 'YYYY-MM-DD' },
-           _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             valueFormat: 'YYYY_MM_DD',
             displayFormat: 'YYYY-MM-DD',
             validation: [
@@ -413,7 +428,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             visibleWhen: { flag: 'isSupervisorOrLC' },
             label: { key: 'employeeId', fallback: 'Employee ID' },
             placeholder: { key: 'employeeIdPlaceholder', fallback: 'Enter Employee ID' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             validation: [
               { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
             ],
@@ -429,7 +444,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'organisation', fallback: 'Organisation' },
             placeholder: { key: 'organisationPlaceholder', fallback: 'Select organisation' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             optionsSource: 'organisations',
             validation: [
               { rule: 'required', message: { key: 'errors.organisationRequired', fallback: 'Organisation is required' } },
@@ -441,7 +456,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'position', fallback: 'Position' },
             placeholder: { key: 'positionPlaceholder', fallback: 'Select position' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             optionsSource: 'positions',
             validation: [
               { rule: 'required', message: { key: 'errors.positionRequired', fallback: 'Position is required' } },
@@ -468,7 +483,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: false,
             label: { key: 'province', fallback: 'Province' },
             placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             optionsSource: 'provinces',
           },
           {
@@ -480,7 +495,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             label: { key: 'site', fallback: 'Site' },
             placeholder: { key: 'sitePlaceholder', fallback: 'Select province first' },
             placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             optionsSource: 'sites',
           },
         ],
@@ -494,7 +509,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             icon: 'MapPin',
             label: { key: 'address', fallback: 'Address' },
             placeholder: { key: 'addressPlaceholder', fallback: 'Enter address' },
-            _input: { variant: 'outline' as const, size: 'sm' as const, bg: '#e8f0f9ff', borderRadius: '$md', borderWidth: 1, borderColor: 'transparent', '$focus': { borderColor: '#833247ff' as const, borderWidth: 1 as const, boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const, }, },
+            _input: INPUT_STYLE,
             validation: [
               { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
             ],
