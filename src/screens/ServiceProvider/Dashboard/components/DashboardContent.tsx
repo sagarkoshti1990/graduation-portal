@@ -171,16 +171,16 @@ const DashboardContent: React.FC = () => {
   return (
     <VStack {...styles.rootContainer}>
       {/* 1. Support Impact Overview Section */}
-      <Box style={styles.cardDashboardWrapper}>
+      <Box {...styles.cardDashboardWrapper}>
         <VStack {...styles.overviewVStack}>
           <VStack {...styles.titleVStack}>
             <HStack {...styles.headerHStack}>
               <LucideIcon name="TrendingUp" {...styles.sectionTitleIcon} />
-              <Heading style={styles.sectionTitle as any}>
+              <Heading {...styles.sectionTitle}>
                 {t('supportProvider.dashboard.supportImpactOverview', 'Support Impact Overview')}
               </Heading>
             </HStack>
-            <Text style={styles.sectionSubTitle as any}>
+            <Text {...styles.sectionSubTitle}>
               {t(
                 'supportProvider.dashboard.trackingParticipants',
                 'Tracking participants across the support pipeline'
@@ -191,35 +191,35 @@ const DashboardContent: React.FC = () => {
           {/* 3 KPI Columns */}
           <HStack {...styles.kpiRow}>
             {/* Column 1: ACTUALLY NEEDED */}
-            <Box style={[styles.kpiCardContainer] as any}>
+            <Box {...styles.kpiCardContainer}>
               <HStack {...styles.kpiHeaderRow}>
-                <Box style={styles.iconCircleOrange as any}>
+                <Box {...styles.iconCircleOrange}>
                   <LucideIcon name="Users" {...styles.kpiIconOrange} />
                 </Box>
                 <VStack {...styles.kpiTextVStack}>
-                  <Text style={styles.kpiHeaderOrange as any}>
+                  <Text {...styles.kpiHeaderOrange}>
                     {t('supportProvider.dashboard.actuallyNeeded', 'ACTUALLY NEEDED')}
                   </Text>
-                  <Text style={styles.kpiSubHeader as any}>
+                  <Text {...styles.kpiSubHeader}>
                     {t('supportProvider.dashboard.onboardedParticipants', 'Onboarded participants')}
                   </Text>
                 </VStack>
               </HStack>
 
               <HStack {...styles.kpiValueRow}>
-                <Text style={styles.kpiValueLarge as any}>{stats.neededParticipants}</Text>
-                <Text style={styles.kpiUnitText as any}>
+                <Text {...styles.kpiValueLarge}>{stats.neededParticipants}</Text>
+                <Text {...styles.kpiUnitText}>
                   {t('supportProvider.dashboard.participants', 'participants')}
                 </Text>
               </HStack>
 
-              <Text style={styles.kpiMetaText as any}>
+              <Text {...styles.kpiMetaText}>
                 {t('supportProvider.dashboard.sessionsPlannedToServe', {
                   defaultValue: '{{count}} sessions planned to serve them',
                   count: stats.totalSessionsPlanned,
                 })}
               </Text>
-              <Text style={styles.kpiValueBoldText as any}>
+              <Text {...styles.kpiValueBoldText}>
                 {t('supportProvider.dashboard.valueLabel', {
                   defaultValue: 'Value: R {{value}}',
                   value: formatNumberWithCommas(stats.neededValueNumber),
@@ -227,41 +227,43 @@ const DashboardContent: React.FC = () => {
               </Text>
 
               {/* Progress Bar Accent */}
-              <Box style={styles.progressBarTrack as any}>
-                <Box style={styles.progressBarOrange as any} />
+              <Box {...styles.progressBarTrack}>
+                <Box {...styles.progressBarOrange} />
               </Box>
             </Box>
 
+            <Box w={1} bg="#e4e4e4ff" alignSelf="stretch" my="$2" />
+
             {/* Column 2: COMMITTED */}
-            <Box style={[styles.kpiCardContainer] as any}>
+            <Box {...styles.kpiCardContainer}>
               <HStack {...styles.kpiHeaderRow}>
-                <Box style={styles.iconCircleBlue as any}>
+                <Box {...styles.iconCircleBlue}>
                   <LucideIcon name="Calendar" {...styles.kpiIconBlue} />
                 </Box>
                 <VStack {...styles.kpiTextVStack}>
-                  <Text style={styles.kpiHeaderBlue as any}>
+                  <Text {...styles.kpiHeaderBlue}>
                     {t('supportProvider.dashboard.committed', 'COMMITTED')}
                   </Text>
-                  <Text style={styles.kpiSubHeader as any}>
+                  <Text {...styles.kpiSubHeader}>
                     {t('supportProvider.dashboard.scheduledYetToDeliver', 'Scheduled — yet to deliver')}
                   </Text>
                 </VStack>
               </HStack>
 
               <HStack {...styles.kpiValueRow}>
-                <Text style={styles.kpiValueLarge as any}>{stats.committedParticipants}</Text>
-                <Text style={styles.kpiUnitText as any}>
+                <Text {...styles.kpiValueLarge}>{stats.committedParticipants}</Text>
+                <Text {...styles.kpiUnitText}>
                   {t('supportProvider.dashboard.participants', 'participants')}
                 </Text>
               </HStack>
 
-              <Text style={styles.kpiMetaText as any}>
+              <Text {...styles.kpiMetaText}>
                 {t('supportProvider.dashboard.sessionsScheduled', {
                   defaultValue: '{{count}} sessions scheduled',
                   count: stats.committedCount,
                 })}
               </Text>
-              <Text style={styles.kpiValueBlueBoldText as any}>
+              <Text {...styles.kpiValueBlueBoldText}>
                 {t('supportProvider.dashboard.valueLabel', {
                   defaultValue: 'Value: R {{value}}',
                   value: formatNumberWithCommas(stats.committedValueNumber),
@@ -269,10 +271,10 @@ const DashboardContent: React.FC = () => {
               </Text>
 
               {/* Progress Bar Accent */}
-              <Box style={styles.progressBarTrack as any}>
-                <Box style={[styles.progressBarBlue, { width: `${stats.committedPct}%` }] as any} />
+              <Box {...styles.progressBarTrack}>
+                <Box {...styles.progressBarBlue} w={`${stats.committedPct}%`} />
               </Box>
-              <Text style={styles.kpiPctTextBlue as any}>
+              <Text {...styles.kpiPctTextBlue}>
                 {t('supportProvider.dashboard.pctOfNeeded', {
                   defaultValue: '{{pct}}% of needed',
                   pct: stats.committedPct,
@@ -280,41 +282,43 @@ const DashboardContent: React.FC = () => {
               </Text>
             </Box>
 
+            <Box w={1} bg="#e4e4e4ff" alignSelf="stretch" my="$2" />
+
             {/* Column 3: DELIVERED */}
-            <Box style={styles.kpiCardContainer as any}>
+            <Box {...styles.kpiCardContainer}>
               <HStack {...styles.kpiHeaderRow}>
-                <Box style={styles.iconCircleGreen as any}>
+                <Box {...styles.iconCircleGreen}>
                   <LucideIcon name="CircleCheckBig" {...styles.kpiIconGreen} />
                 </Box>
                 <VStack {...styles.kpiTextVStack}>
                   <HStack {...styles.kpiHeaderGreenRow}>
-                    <Text style={styles.kpiHeaderGreen as any}>
+                    <Text {...styles.kpiHeaderGreen}>
                       {t('supportProvider.dashboard.delivered', 'DELIVERED')}
                     </Text>
-                    <Box style={styles.badgeGreen as any}>
-                      <Text style={styles.badgeGreenText as any}>↑ 12%</Text>
+                    <Box {...styles.badgeGreen}>
+                      <Text {...styles.badgeGreenText}>↑ 12%</Text>
                     </Box>
                   </HStack>
-                  <Text style={styles.kpiSubHeader as any}>
+                  <Text {...styles.kpiSubHeader}>
                     {t('supportProvider.dashboard.completedSessions', 'Completed sessions')}
                   </Text>
                 </VStack>
               </HStack>
 
               <HStack {...styles.kpiValueRow}>
-                <Text style={styles.kpiValueLarge as any}>{stats.deliveredParticipants}</Text>
-                <Text style={styles.kpiUnitText as any}>
+                <Text {...styles.kpiValueLarge}>{stats.deliveredParticipants}</Text>
+                <Text {...styles.kpiUnitText}>
                   {t('supportProvider.dashboard.participants', 'participants')}
                 </Text>
               </HStack>
 
-              <Text style={styles.kpiMetaText as any}>
+              <Text {...styles.kpiMetaText}>
                 {t('supportProvider.dashboard.sessionsCompleted', {
                   defaultValue: '{{count}} sessions completed',
                   count: stats.deliveredCount,
                 })}
               </Text>
-              <Text style={styles.kpiValueGreenBoldText as any}>
+              <Text {...styles.kpiValueGreenBoldText}>
                 {t('supportProvider.dashboard.valueLabel', {
                   defaultValue: 'Value: R {{value}}',
                   value: formatNumberWithCommas(stats.deliveredValueNumber),
@@ -322,10 +326,10 @@ const DashboardContent: React.FC = () => {
               </Text>
 
               {/* Progress Bar Accent */}
-              <Box style={styles.progressBarTrack as any}>
-                <Box style={[styles.progressBarGreen, { width: `${stats.deliveredPct}%` }] as any} />
+              <Box {...styles.progressBarTrack}>
+                <Box {...styles.progressBarGreen} w={`${stats.deliveredPct}%`} />
               </Box>
-              <Text style={styles.kpiPctTextGreen as any}>
+              <Text {...styles.kpiPctTextGreen}>
                 {t('supportProvider.dashboard.pctOfNeeded', {
                   defaultValue: '{{pct}}% of needed',
                   pct: stats.deliveredPct,
@@ -339,11 +343,11 @@ const DashboardContent: React.FC = () => {
       {/* 2. Middle Row: Session & Participant Trends + Asset Distribution */}
       <HStack {...styles.contentRow}>
         {/* Left: Session & Participant Trends */}
-        <Box style={styles.cardLeftWrapper as any}>
+        <Box {...styles.cardLeftWrapper}>
           <VStack {...styles.chartVStack}>
             <HStack {...styles.chartHeaderRow}>
               <LucideIcon name="TrendingUp" {...styles.headerIcon} />
-              <Heading style={styles.sectionTitle as any}>
+              <Heading {...styles.sectionTitle}>
                 {t('supportProvider.dashboard.sessionParticipantTrends', 'Session & Participant Trends')}
               </Heading>
             </HStack>
@@ -370,11 +374,11 @@ const DashboardContent: React.FC = () => {
         </Box>
 
         {/* Right: Asset Distribution */}
-        <Box style={styles.cardRightWrapper as any}>
+        <Box {...styles.cardRightWrapper}>
           <VStack {...styles.chartVStack}>
             <HStack {...styles.chartHeaderRow}>
               <LucideIcon name="ChartColumn" {...styles.headerIcon} />
-              <Heading style={styles.sectionTitle as any}>
+              <Heading {...styles.sectionTitle}>
                 {t('supportProvider.dashboard.assetDistribution', 'Asset Distribution')}
               </Heading>
             </HStack>
@@ -391,7 +395,7 @@ const DashboardContent: React.FC = () => {
               {assetDistribution.listData.map((item) => (
                 <HStack key={item.label} {...styles.legendRow}>
                   <HStack {...styles.legendLabelRow}>
-                    <Box style={[styles.legendDot, { backgroundColor: item.color }] as any} />
+                    <Box {...styles.legendDot} bg={item.color} />
                     <Text {...styles.legendLabelText}>
                       {item.label}
                     </Text>
@@ -409,11 +413,11 @@ const DashboardContent: React.FC = () => {
       {/* 3. Bottom Row: Sessions by Province + Upcoming Sessions */}
       <HStack {...styles.contentRow}>
         {/* Left: Sessions by Province */}
-        <Box style={styles.cardLeftWrapper as any}>
+        <Box {...styles.cardLeftWrapper}>
           <VStack {...styles.chartVStack}>
             <HStack {...styles.chartHeaderRow}>
               <LucideIcon name="MapPin" {...styles.headerIcon} />
-              <Heading style={styles.sectionTitle as any}>
+              <Heading {...styles.sectionTitle}>
                 {t('supportProvider.dashboard.sessionsByProvince', 'Sessions by Province')}
               </Heading>
             </HStack>
@@ -431,60 +435,61 @@ const DashboardContent: React.FC = () => {
         </Box>
 
         {/* Right: Upcoming Sessions */}
-        <Box style={styles.cardRightWrapper as any}>
+        <Box {...styles.cardRightWrapper}>
           <VStack {...styles.upcomingVStack}>
             <VStack {...styles.chartVStack}>
               <HStack {...styles.upcomingHeaderRow}>
                 <HStack {...styles.chartHeaderRow}>
                   <LucideIcon name="Clock" {...styles.headerIcon} />
-                  <Heading style={styles.sectionTitle as any}>
+                  <Heading {...styles.sectionTitle}>
                     {t('supportProvider.dashboard.upcomingSessions', 'Upcoming Sessions')}
                   </Heading>
                 </HStack>
 
-                <Box style={styles.badgeCount as any}>
-                  <Text style={styles.badgeCountText as any}>{upcomingSessions.length}</Text>
+                <Box {...styles.badgeCount}>
+                  <Text {...styles.badgeCountText}>{upcomingSessions.length}</Text>
                 </Box>
               </HStack>
 
               {/* Sessions List */}
               <VStack {...styles.upcomingListVStack}>
                 {upcomingSessions.slice(0, 3).map((session) => (
-                  <Box key={session.id} style={styles.sessionCard as any}>
+                  <Box key={session.id} {...styles.sessionCardd}>
                     <VStack {...styles.titleVStack}>
-                      <Text style={styles.sessionTitle as any}>{session.title}</Text>
+                      <Text {...styles.sessionTitle}>{session.title}</Text>
 
                       <HStack {...styles.legendLabelRow}>
                         <LucideIcon name="Calendar" {...styles.sessionIcon} />
-                        <Text style={styles.sessionMeta as any}>
+                        <Text {...styles.sessionMeta}>
                           {session.date} • {session.time}
                         </Text>
                       </HStack>
 
                       <HStack {...styles.legendLabelRow}>
                         <LucideIcon name="Users" {...styles.sessionIcon} />
-                        <Text style={styles.sessionMeta as any}>{session.participants}</Text>
+                        <Text {...styles.sessionMeta}>{session.participants}</Text>
                       </HStack>
 
                       <HStack {...styles.legendLabelRow}>
                         <LucideIcon name="MapPin" {...styles.sessionIcon} />
-                        <Text style={styles.sessionMeta as any}>{session.location || session.province}</Text>
+                        <Text {...styles.sessionMeta}>{session.location || session.province}</Text>
                       </HStack>
                     </VStack>
                   </Box>
                 ))}
               </VStack>
-            </VStack>
 
             {/* View All Sessions Button */}
             <Button
-              style={styles.viewAllBtn as any}
-              onPress={() => navigation.navigate('support-offerings' as never)}
+              {...styles.viewAllBtn}
+              onPress={() => navigation.navigate('opportunities' as never)}
             >
-              <ButtonText style={styles.viewAllBtnText as any}>
+              <ButtonText {...styles.viewAllBtnText}>
                 {t('supportProvider.dashboard.viewAllSessions', 'View All Sessions')}
               </ButtonText>
             </Button>
+            </VStack>
+
           </VStack>
         </Box>
       </HStack>
