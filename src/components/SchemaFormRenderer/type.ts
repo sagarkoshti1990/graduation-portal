@@ -1,6 +1,12 @@
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/** `dateCompare`/`timeCompare` payload: compare this field against another named field. */
+export interface FieldCompareValue {
+  field: string;
+  operator: '<' | '<=' | '>' | '>=' | '==';
+}
+
 export interface ValidationRule {
   rule:
     | 'required'
@@ -11,12 +17,17 @@ export interface ValidationRule {
     | 'matchField'
     | 'dateNotInFuture'
     | 'fileType'
-    | 'fileCount';
+    | 'fileCount'
+    | 'fileSize'
+    | 'dateCompare'
+    | 'timeCompare';
   /**
    * Numeric/string payload depending on rule (minLength value, pattern string,
-   * field name); `fileType` takes a string array of allowed MIME types.
+   * field name); `fileType` takes a string array of allowed MIME types;
+   * `fileSize` takes a max size in MB; `dateCompare`/`timeCompare` take a
+   * `{field, operator}` pair naming the other field to compare against.
    */
-  value?: number | string | string[];
+  value?: number | string | string[] | FieldCompareValue;
   message: { key: string; fallback: string };
 }
 

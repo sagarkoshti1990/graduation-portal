@@ -1,4 +1,4 @@
-import type { FormSection } from '@constants/CREATE_USER_FORM_SCHEMA';
+import type { FormSection } from '@components/SchemaFormRenderer/type';
 
 export const TRAINING_SESSION_SCHEMA: FormSection[] = [
   // ─── Tab 1: Session Details ───────────────────────────────────────────────
@@ -269,10 +269,18 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     rule: 'fileType',
                     value: ['pdf','doc'],
                     message: {
-                      key: 'errors.startDateRequired',
+                      key: 'errors.fileType',
                       fallback: 'Only PDF and DOC files are allowed.',
                     },
                   },
+                  {
+                    rule: "fileSize",
+                    value: 10,
+                    message: {
+                      key: "errors.fileSize10",
+                      fallback: "Maximum file size is 10 MB."
+                    }
+                  }
                 ],
                 label: {
                   key: 'supportProvider.trainingSession.step1.resourceContent',
@@ -329,6 +337,17 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Start date is required',
                     },
                   },
+                   {
+                    rule: "dateCompare",
+                    value: {
+                      field: "endDate",
+                      operator: "<="
+                    },
+                    message: {
+                      key: "errors.dateCompare",
+                      fallback: "Start Date must be before or equal to End Date."
+                    }
+                  }
                 ],
               },
               {
@@ -345,6 +364,17 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Start time is required',
                     },
                   },
+                  {
+                    rule: "timeCompare",
+                    value: {
+                      field: "endTime",
+                      operator: "<"
+                    },
+                    message: {
+                      key: "errors.timeCompareEndTime",
+                      fallback: "Start Time must be before End Time."
+                    }
+                  }
                 ],
               },
             ],
@@ -365,6 +395,17 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'End date is required',
                     },
                   },
+                  {
+                    rule: "dateCompare",
+                    value: {
+                      field: "startDate",
+                      operator: ">="
+                    },
+                    message: {
+                      key: "errors.dateCompareStartDate",
+                      fallback: "End Date must be after or equal to Start Date."
+                    }
+                  }
                 ],
               },
               {
@@ -381,6 +422,17 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'End time is required',
                     },
                   },
+                  {
+                    rule: "timeCompare",
+                    value: {
+                      field: "startTime",
+                      operator: ">"
+                    },
+                    message: {
+                      key: "errors.timeCompareStartTime",
+                      fallback: "End Time must be after Start Time."
+                    }
+                  }
                 ],
               },
             ],

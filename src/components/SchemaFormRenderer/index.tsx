@@ -57,6 +57,7 @@ import {
   type ValidationRule,
   type VisibleIfCondition,
   type Hint,
+  type FieldCompareValue,
   FORM_FIELD_TYPES,
 } from './type';
 
@@ -365,6 +366,13 @@ function getFieldError(
         );
         if (hasInvalidType) return msg;
       }
+      if (rule.rule === 'fileSize' && field.type === FORM_FIELD_TYPES.FILE) {
+        const maxBytes = Number(rule.value) * 1024 * 1024;
+        const hasOversized = files.some(
+          f => isFileAssetLike(f) && typeof f.size === 'number' && f.size > maxBytes,
+        );
+        if (hasOversized) return msg;
+      }
     }
     return undefined;
   }
@@ -372,7 +380,7 @@ function getFieldError(
   const val = (rawValue ?? '').trim();
 
   for (const rule of field.validation) {
-    const err = applyRule(rule, val, values);
+    const err = applyRule(rule, val, values, field.type);
     if (err) return err;
   }
 
@@ -418,10 +426,42 @@ function validateField(
   }
 }
 
+/** `dateCompare`: parses a stored date/datetime value (YYYY_MM_DD or YYYY_MM_DDTHH:mm:ss) into a comparable Date. */
+function parseComparableDate(rawValue: string): Date | null {
+  if (!rawValue) return null;
+  const date = new Date(rawValue.replace(/_/g, '-'));
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/** `timeCompare`: parses a stored "HH:mm" value into minutes-since-midnight. */
+function parseComparableMinutes(rawValue: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})/.exec(rawValue);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function compareByOperator(a: number, b: number, operator: string): boolean {
+  switch (operator) {
+    case '<':
+      return a < b;
+    case '<=':
+      return a <= b;
+    case '>':
+      return a > b;
+    case '>=':
+      return a >= b;
+    case '==':
+      return a === b;
+    default:
+      return true;
+  }
+}
+
 function applyRule(
   rule: ValidationRule,
   val: string,
   allValues: Record<string, string>,
+  fieldType?: FormField['type'],
 ): string | undefined {
   const msg = rule.message.fallback;
 
@@ -469,6 +509,39 @@ function applyRule(
       const normalized = val.replace(/_/g, '-');
       const date = new Date(normalized);
       if (!isNaN(date.getTime()) && date > new Date()) return msg;
+      break;
+    }
+
+    // Only applicable to date/datetime fields — a schema author putting this
+    // on any other field type is a no-op, not a crash.
+    case 'dateCompare': {
+      if (fieldType !== FORM_FIELD_TYPES.DATE && fieldType !== FORM_FIELD_TYPES.DateTime) break;
+      if (!val) break; // empty — 'required' (if declared) handles that separately
+      const config = rule.value as FieldCompareValue | undefined;
+      if (!config?.field || !config.operator) break;
+      const otherRaw = allValues[config.field];
+      if (!otherRaw) break; // nothing to compare against yet
+
+      const current = parseComparableDate(val);
+      const other = parseComparableDate(String(otherRaw));
+      if (!current || !other) break;
+      if (!compareByOperator(current.getTime(), other.getTime(), config.operator)) return msg;
+      break;
+    }
+
+    // Only applicable to time fields.
+    case 'timeCompare': {
+      if (fieldType !== FORM_FIELD_TYPES.Time) break;
+      if (!val) break;
+      const config = rule.value as FieldCompareValue | undefined;
+      if (!config?.field || !config.operator) break;
+      const otherRaw = allValues[config.field];
+      if (!otherRaw) break;
+
+      const current = parseComparableMinutes(val);
+      const other = parseComparableMinutes(String(otherRaw));
+      if (current === null || other === null) break;
+      if (!compareByOperator(current, other, config.operator)) return msg;
       break;
     }
   }
