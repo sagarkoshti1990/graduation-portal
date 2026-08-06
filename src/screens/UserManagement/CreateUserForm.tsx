@@ -142,8 +142,12 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           onFieldChange={handleFieldChange}
           optionsMap={optionsMap}
           disabled={isSubmitting}
-          isMobile={isMobile}
           t={t}
+          _input={{
+            variant: 'outline' as const,
+            size: 'sm' as const,
+            bg: '$faintBlue',
+          }}
           firstNameRef={firstNameRef}
         />
         <VStack space="md" width="100%">

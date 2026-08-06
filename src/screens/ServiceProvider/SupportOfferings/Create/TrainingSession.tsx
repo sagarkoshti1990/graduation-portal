@@ -184,12 +184,21 @@ const App = (): React.JSX.Element => {
     }
   };
   
+  const handleBackPress = () => {
+    if (navigation.canGoBack && navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // @ts-ignore
+      navigation.navigate('create-opportunity');
+    }
+  }
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
         title={t('supportProvider.createSupport.training.title', 'Create Training Session')}
         backButtonText={t('supportProvider.createSupport.changeType', 'Change type')}
-        onNavigateBack={() => navigation.goBack()}
+        onNavigateBack={handleBackPress}
       />
       <Container {...styles.container}>
         <Card borderRadius={"$2xl"} bg="$white">

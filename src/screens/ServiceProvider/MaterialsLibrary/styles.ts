@@ -34,7 +34,6 @@ export default {
     marginHorizontal: '-$2',
     mt: '$4',
     mb: '-$4',
-    width: '100%',
   } as const,
   statCardContainer: {
     flex: 1,
@@ -147,7 +146,6 @@ export default {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: '-$3',
-    width: '100%',
   } as const,
   cardWrapper: {
     width: '100%',

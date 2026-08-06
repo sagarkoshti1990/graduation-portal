@@ -20,6 +20,7 @@ export default {
     shadowRadius: 12,
     elevation: 3,
     width: '100%',
+    marginBottom: '$4',
   } as const,
   detailBox: {
     bg: '#F8FAFC',
@@ -139,14 +140,10 @@ export default {
     space: 'sm',
   } as const,
   filterContainer: {
-    borderWidth: 0,
-    bg: 'transparent',
-    p: 0,
-    mt: 0,
-    mb: '$0',
-    py:"$3",
-    shadowColor: 'transparent',
-    elevation: 0,
+    py: '$4' as const,
+    px: '$6' as const,
+    mb: '$2' as const,
+    mt: '$0' as const,
   } as const,
   pendingHeaderBadge: {
     bg: '$warning600',
@@ -247,7 +244,6 @@ export default {
     sx: { ':active': { opacity: 0.85 } },
   } as const,
   cardListContainer: {
-    space: 'md',
     width: '100%',
   } as const,
   cardTitleText: {
@@ -720,7 +716,12 @@ export default {
   tabTextProps: {
     fontSize: '$sm',
   } as const,
+  tabButtonContainer: {
+    paddingHorizontal: '$5',
+  } as const,
   filterInputProps: {
     size: 'sm',
+    bg: 'transparent',
+    borderColor: '$borderLight200',
   } as const,
 };

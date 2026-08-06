@@ -15,7 +15,7 @@ export default {
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
-    p: 24,
+    p: '$5',
   },
   cardLeftWrapper: {
     bg: '$white',
@@ -27,7 +27,7 @@ export default {
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
-    p: 20, // $5
+    p: '$5',
     flex: 1.6,
     minWidth: 320,
   },
@@ -41,7 +41,7 @@ export default {
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
-    p: 20, // $5
+    p: '$5',
     flex: 1,
     minWidth: 300,
   },
