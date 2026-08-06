@@ -9,7 +9,7 @@ export default {
     bg: '$white',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e4e4e4ff',
+    borderColor: '$bgPrimaryBorder/5',
     shadowColor: '$black',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -21,7 +21,7 @@ export default {
     bg: '$white',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e4e4e4ff',
+    borderColor: '$borderColor',
     shadowColor: '$black',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -35,7 +35,7 @@ export default {
     bg: '$white',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e4e4e4ff',
+    borderColor: '$borderColor',
     shadowColor: '$black',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -47,11 +47,12 @@ export default {
   },
   sectionTitle: {
     color: '$textPrimary',
-    fontWeight: '700',
-    fontSize: 18,
+    fontWeight: '400',
+    fontSize: 16,
   },
   sectionSubTitle: {
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '$normal',
     color: '$textSecondary',
     mt: 2,
   },
@@ -59,7 +60,6 @@ export default {
     bg: '$white',
     p: '$2',
     flex: 1,
-    minWidth: 260,
   },
   iconCircleOrange: {
     width: 38,
@@ -214,14 +214,23 @@ export default {
     color: '$textMutedForeground',
   },
   viewAllBtn: {
-    variant: 'link',
-    bg: 'transparent',
-    alignSelf: 'flex-start',
-    p: '$0',
+    variant: 'outline',
+    bg: '$accent100',
+    borderColor: '$borderColor',
+    borderWidth: 1,
+    borderRadius: 12,
+    w: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    py: '$2.5',
     mt: '$4',
+    ':hover': {
+      bg: '$accent200',
+      borderColor: '$borderColor',
+    },
   },
   viewAllBtnText: {
-    color: '$blue600',
+    color: '$textForegroundColor',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -249,6 +258,7 @@ export default {
     space: 'xl',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    mt: '$4',
   },
   kpiHeaderRow: {
     space: 'sm',
@@ -258,6 +268,8 @@ export default {
   kpiIconOrange: {
     size: 20,
     color: '$orange600',
+    p: '$4',
+    bg: '$orange100'
   },
   kpiIconBlue: {
     size: 20,
@@ -283,7 +295,6 @@ export default {
     space: 'lg',
     flexWrap: 'wrap',
     width: '100%',
-    p: '$4',
   },
   chartVStack: {
     space: 'md',
@@ -307,6 +318,7 @@ export default {
   legendLabelRow: {
     space: 'xs',
     alignItems: 'center',
+    mb: '$1',
   },
   legendDot: {
     width: 10,
@@ -337,5 +349,10 @@ export default {
   sessionIcon: {
     size: 12,
     color: '$textSecondary',
+  },
+  sessionCardd: {
+    px: '$2',
+    mb: '$2',
+    borderWidth: 0,
   },
 } as const;
