@@ -60,6 +60,7 @@ import {
   type FieldCompareValue,
   FORM_FIELD_TYPES,
 } from './type';
+import { formatFileSize } from '../../project-player/utils/taskUtils';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -1385,28 +1386,43 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
                 alignItems="center"
                 borderWidth={1}
                 borderColor="$borderColor"
-                borderRadius="$md"
-                p="$2"
+                borderRadius="$xl"
+                p="$2.5"
+                justifyContent='space-between'
               >
-                {item.isImage && item.previewUri ? (
-                  <Image
-                    source={{ uri: item.previewUri }}
-                    alt={item.name}
-                    width={32}
-                    height={32}
-                    borderRadius={4}
-                  />
-                ) : (
-                  <LucideIcon name="FileText" size={20} color="$textMutedForeground" />
-                )}
-                <Text
-                  {...TYPOGRAPHY.bodySmall}
-                  color="$textForeground"
-                  flex={1}
-                  numberOfLines={1}
-                >
-                  {item.name}
-                </Text>
+                <HStack space='md'>
+                  {item.isImage && item.previewUri ? (
+                    <Image
+                      source={{ uri: item.previewUri }}
+                      alt={item.name}
+                      width={32}
+                      height={32}
+                      borderRadius={4}
+                    />
+                  ) : (
+                    <Box bg="$primary300" p="$2.5" borderRadius="$xl">
+                      <LucideIcon name="FileText" size={20} color="$primary500" />
+                    </Box>
+                  )}
+                  <VStack>
+                    <Text
+                      {...TYPOGRAPHY.bodySmall}
+                      color="$textForeground"
+                      flex={1}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      {...TYPOGRAPHY.caption}
+                      color="$textForeground"
+                      flex={1}
+                      numberOfLines={1}
+                    >
+                      {formatFileSize(item?.raw?.size || 0)}
+                    </Text>
+                  </VStack>
+                </HStack>
                 <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
                   <LucideIcon name="X" size={16} color="$textMutedForeground" />
                 </Pressable>

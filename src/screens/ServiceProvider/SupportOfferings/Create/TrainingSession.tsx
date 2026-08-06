@@ -175,7 +175,8 @@ const App = (): React.JSX.Element => {
       if (response.success) {
         setValues(formValues);
         showAlert('success', response.message);
-        // navigation.navigate('opportunities');
+        // @ts-ignore
+        navigation.navigate('opportunities');
       }
     } catch (error) {
       console.error('Error saving training session:', error);
