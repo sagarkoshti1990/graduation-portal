@@ -19,7 +19,7 @@
  *   />
  */
 
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   VStack,
   HStack,
@@ -43,6 +43,7 @@ import {
   Progress,
   ProgressFilledTrack,
   ButtonIcon,
+  Image,
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -50,14 +51,16 @@ import DatePicker from '@components/ui/Inputs/DatePicker';
 import { openFilePicker } from '../../project-player/components/Task/FileEvidence/file-picker';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { styles } from '../../screens/UserManagement/Styles';
-import { FORM_FIELD_TYPES } from '@constants/CREATE_USER_FORM_SCHEMA';
-import type {
-  FormSection,
-  FormField,
-  ValidationRule,
-  VisibleIfCondition,
-  Hint,
-} from '@constants/CREATE_USER_FORM_SCHEMA';
+import {
+  type FormSection,
+  type FormField,
+  type ValidationRule,
+  type VisibleIfCondition,
+  type Hint,
+  type FieldCompareValue,
+  FORM_FIELD_TYPES,
+} from './type';
+import { formatFileSize } from '../../project-player/utils/taskUtils';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -345,27 +348,40 @@ function getFieldError(
 
   const rawValue = values[field.name];
 
-  // multiselect/pillmultiselect: length-based rules only. email/pattern/
-  // matchField/dateNotInFuture are meaningless for an array value — no-op.
-  if (Array.isArray(rawValue)) {
+  // multiselect/pillmultiselect (plain string[]) and file/multi-file (FileAsset
+  // or FileAsset[]) all land here: length-based rules (required/minLength/
+  // maxLength/fileCount) plus file-specific fileType. email/pattern/matchField/
+  // dateNotInFuture are meaningless for an array/object value — no-op.
+  if (Array.isArray(rawValue) || (rawValue && typeof rawValue === 'object')) {
+    const files = Array.isArray(rawValue) ? rawValue : [rawValue];
     for (const rule of field.validation) {
       const msg = rule.message.fallback;
-      if (rule.rule === 'required' && rawValue.length === 0) return msg;
-      if (rule.rule === 'minLength' && rawValue.length < Number(rule.value)) return msg;
-      if (rule.rule === 'maxLength' && rawValue.length > Number(rule.value)) return msg;
+      if (rule.rule === 'required' && files.length === 0) return msg;
+      if (rule.rule === 'minLength' && files.length < Number(rule.value)) return msg;
+      if (rule.rule === 'maxLength' && files.length > Number(rule.value)) return msg;
+      if (rule.rule === 'fileCount' && files.length > Number(rule.value)) return msg;
+      if (rule.rule === 'fileType' && field.type === FORM_FIELD_TYPES.FILE) {
+        const allowed = Array.isArray(rule.value) ? (rule.value as string[]) : [];
+        const hasInvalidType = files.some(
+          f => isFileAssetLike(f) && !matchesAllowedFileType(f, allowed),
+        );
+        if (hasInvalidType) return msg;
+      }
+      if (rule.rule === 'fileSize' && field.type === FORM_FIELD_TYPES.FILE) {
+        const maxBytes = Number(rule.value) * 1024 * 1024;
+        const hasOversized = files.some(
+          f => isFileAssetLike(f) && typeof f.size === 'number' && f.size > maxBytes,
+        );
+        if (hasOversized) return msg;
+      }
     }
-    return undefined;
-  }
-
-  // file field storing a picked-file asset object: only presence ('required') applies.
-  if (rawValue && typeof rawValue === 'object') {
     return undefined;
   }
 
   const val = (rawValue ?? '').trim();
 
   for (const rule of field.validation) {
-    const err = applyRule(rule, val, values);
+    const err = applyRule(rule, val, values, field.type);
     if (err) return err;
   }
 
@@ -411,10 +427,42 @@ function validateField(
   }
 }
 
+/** `dateCompare`: parses a stored date/datetime value (YYYY_MM_DD or YYYY_MM_DDTHH:mm:ss) into a comparable Date. */
+function parseComparableDate(rawValue: string): Date | null {
+  if (!rawValue) return null;
+  const date = new Date(rawValue.replace(/_/g, '-'));
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/** `timeCompare`: parses a stored "HH:mm" value into minutes-since-midnight. */
+function parseComparableMinutes(rawValue: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})/.exec(rawValue);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function compareByOperator(a: number, b: number, operator: string): boolean {
+  switch (operator) {
+    case '<':
+      return a < b;
+    case '<=':
+      return a <= b;
+    case '>':
+      return a > b;
+    case '>=':
+      return a >= b;
+    case '==':
+      return a === b;
+    default:
+      return true;
+  }
+}
+
 function applyRule(
   rule: ValidationRule,
   val: string,
   allValues: Record<string, string>,
+  fieldType?: FormField['type'],
 ): string | undefined {
   const msg = rule.message.fallback;
 
@@ -464,6 +512,39 @@ function applyRule(
       if (!isNaN(date.getTime()) && date > new Date()) return msg;
       break;
     }
+
+    // Only applicable to date/datetime fields — a schema author putting this
+    // on any other field type is a no-op, not a crash.
+    case 'dateCompare': {
+      if (fieldType !== FORM_FIELD_TYPES.DATE && fieldType !== FORM_FIELD_TYPES.DateTime) break;
+      if (!val) break; // empty — 'required' (if declared) handles that separately
+      const config = rule.value as FieldCompareValue | undefined;
+      if (!config?.field || !config.operator) break;
+      const otherRaw = allValues[config.field];
+      if (!otherRaw) break; // nothing to compare against yet
+
+      const current = parseComparableDate(val);
+      const other = parseComparableDate(String(otherRaw));
+      if (!current || !other) break;
+      if (!compareByOperator(current.getTime(), other.getTime(), config.operator)) return msg;
+      break;
+    }
+
+    // Only applicable to time fields.
+    case 'timeCompare': {
+      if (fieldType !== FORM_FIELD_TYPES.Time) break;
+      if (!val) break;
+      const config = rule.value as FieldCompareValue | undefined;
+      if (!config?.field || !config.operator) break;
+      const otherRaw = allValues[config.field];
+      if (!otherRaw) break;
+
+      const current = parseComparableMinutes(val);
+      const other = parseComparableMinutes(String(otherRaw));
+      if (current === null || other === null) break;
+      if (!compareByOperator(current, other, config.operator)) return msg;
+      break;
+    }
   }
 
   return undefined;
@@ -486,6 +567,82 @@ export function validateSchema(
 
 function isFileAssetLike(value: any): value is FileAsset {
   return !!value && typeof value === 'object' && typeof value.uri === 'string';
+}
+
+/**
+ * `fileType` rule values may be full MIME types ("application/pdf",
+ * "image/*") or bare file extensions ("pdf", ".pdf") — schema authors
+ * naturally reach for extensions since they're what they actually see in a
+ * file dialog, so both forms need to work, not just MIME types.
+ */
+function matchesAllowedFileType(file: FileAsset, allowed: string[]): boolean {
+  const mime = (file.type || '').toLowerCase();
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+  return allowed.some(entry => {
+    const normalized = entry.toLowerCase().trim();
+    if (normalized.includes('/')) {
+      if (normalized.endsWith('/*')) return mime.startsWith(normalized.slice(0, -1));
+      return mime === normalized;
+    }
+    return ext === normalized.replace(/^\./, '');
+  });
+}
+
+const IMAGE_EXTENSION_RE = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?.*)?$/i;
+
+function isImageFile(type: string | undefined, name: string): boolean {
+  if (type) return type.startsWith('image/');
+  return IMAGE_EXTENSION_RE.test(name);
+}
+
+/** Last path segment of a URL (query string stripped), or the string itself if that fails. */
+function fileNameFromUrl(url: string): string {
+  const withoutQuery = url.split('?')[0];
+  const segment = withoutQuery.substring(withoutQuery.lastIndexOf('/') + 1);
+  return segment || url;
+}
+
+interface FilePreviewItem {
+  key: string;
+  name: string;
+  previewUri?: string;
+  isImage: boolean;
+  raw: FileAsset | string;
+}
+
+/**
+ * Normalizes a `file` field's value — `undefined`, a single `FileAsset`, a
+ * single URL string (pre-filled/edit-mode value), or an array mixing any of
+ * those (the normal case once existing URLs and newly-picked files coexist in
+ * a `multiple` field) — into a flat list for preview rendering.
+ */
+function toFilePreviewItems(value: any): FilePreviewItem[] {
+  const items: (FileAsset | string)[] = Array.isArray(value)
+    ? value
+    : value
+    ? [value]
+    : [];
+
+  return items.map((item, index) => {
+    if (typeof item === 'string') {
+      const name = fileNameFromUrl(item);
+      return {
+        key: `${item}-${index}`,
+        name,
+        previewUri: item,
+        isImage: isImageFile(undefined, name),
+        raw: item,
+      };
+    }
+    return {
+      key: `${item.uri || item.name}-${index}`,
+      name: item.name,
+      previewUri: item.uri,
+      isImage: isImageFile(item.type, item.name),
+      raw: item,
+    };
+  });
 }
 
 /**
@@ -518,8 +675,14 @@ export async function resolveFileUploads(
       const raw = values[name];
       try {
         if (Array.isArray(raw)) {
-          if (raw.length === 0 || !raw.every(isFileAssetLike)) return;
-          result[name] = await Promise.all(raw.map(file => uploadService(file)));
+          // A multi-file field's array can legitimately mix newly-picked
+          // `FileAsset`s with already-uploaded URL strings (pre-filled edit-mode
+          // values the user didn't remove) — upload only the former, and pass
+          // the latter through unchanged, rather than skipping the whole array.
+          if (raw.length === 0 || !raw.some(isFileAssetLike)) return;
+          result[name] = await Promise.all(
+            raw.map(item => (isFileAssetLike(item) ? uploadService(item) : item)),
+          );
         } else if (isFileAssetLike(raw)) {
           result[name] = await uploadService(raw);
         }
@@ -811,7 +974,7 @@ const PillOptionsRow: React.FC<{
   isDisabled: boolean;
   /** pillmultiselect only — shows a checked/unchecked checkbox beside each pill's label. */
   isMulti?: boolean;
-}> = ({ options, isSelected, onToggle, isDisabled, isMulti = false }) => (
+}> = memo(({ options, isSelected, onToggle, isDisabled, isMulti = false }) => (
   <HStack space="sm" flexWrap="wrap">
     {options.map(option => {
       const selected = isSelected(option.value);
@@ -849,7 +1012,7 @@ const PillOptionsRow: React.FC<{
       );
     })}
   </HStack>
-);
+));
 
 const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -1111,53 +1274,163 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         )
       : undefined;
 
-    // Stores the full picked-file asset (not just its name) so `resolveFileUploads`
+    const isMultiple = !!field.multiple;
+    // Existing files in storage order, supporting single/multiple files and pre-filled URLs.
+    // Used to preserve order when adding or removing files.
+    const existingItems: (FileAsset | string)[] = Array.isArray(value)
+      ? value
+      : value
+      ? [value]
+      : [];
+    const previewItems = toFilePreviewItems(value);
+
+    // Applies OS-level file filtering only for valid MIME types (when supported).
+    // Extension-only rules rely on post-selection validation.
+    const fileTypeRule = field.validation?.find(r => r.rule === 'fileType');
+    const fileTypeValues = Array.isArray(fileTypeRule?.value)
+      ? (fileTypeRule!.value as string[])
+      : undefined;
+    const allowedTypes =
+      fileTypeValues?.length && fileTypeValues.every(entry => entry.includes('/'))
+        ? fileTypeValues
+        : undefined;
+
+    // Stores the full picked-file asset(s) (not just names) so `resolveFileUploads`
     // has something to actually upload at submit time — see `FileAsset`.
     const handlePick = async () => {
       if (isDisabled) return;
       try {
-        const picked = await openFilePicker({ allowMultiSelection: false });
-        const file = picked?.[0];
-        if (file?.name) {
-          onChange(field.name || '', {
-            uri: file.uri,
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            file: file.file,
-          });
+        const picked = await openFilePicker({
+          allowMultiSelection: isMultiple,
+          ...(allowedTypes ? { type: allowedTypes } : {}),
+        });
+        const newAssets = (picked || [])
+          .filter((f: any) => f?.name)
+          .map((f: any) => ({
+            uri: f.uri,
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            file: f.file,
+          }));
+        if (newAssets.length === 0) return;
+
+        if (isMultiple) {
+          onChange(field.name || '', [...existingItems, ...newAssets]);
+        } else {
+          onChange(field.name || '', newAssets[0]);
         }
       } catch {
         // User cancelled the picker — nothing to persist.
       }
     };
 
-    const fileName = value && typeof value === 'object' ? value.name : undefined;
+    const handleRemove = (raw: FileAsset | string) => {
+      const next = existingItems.filter(item => item !== raw);
+      onChange(field.name || '', isMultiple ? next : next[0] ?? '');
+    };
+
+    const triggerLabel =
+      previewItems.length === 0
+        ? placeholder || t('common.clickToUpload', 'Click to upload')
+        : isMultiple
+        ? t('common.addMoreFiles', 'Add more files')
+        : previewItems[0].name;
 
     return (
       <VStack space="xs">
         <Pressable onPress={handlePick} disabled={isDisabled}>
-          <HStack
-            space="sm"
+          <VStack
             alignItems="center"
-            borderWidth={1}
+            justifyContent="center"
+            borderWidth={2}
             borderStyle="dashed"
             borderColor="$borderColor"
-            borderRadius="$md"
-            p="$3"
+            borderRadius="$lg"
+            // minHeight={140}
+            px="$4"
+            py="$6"
             opacity={isDisabled ? 0.5 : 1}
+            space="xs"
           >
-            <LucideIcon name="Upload" size={18} color="$textMutedForeground" />
+            <LucideIcon
+              name="Upload"
+              size={32}
+              color="$gray300"
+            />
+
             <Text
               {...TYPOGRAPHY.bodySmall}
-              color={fileName ? '$textForeground' : '$textMutedForeground'}
+              color="$textMuted"
+              textAlign="center"
             >
-              {fileName ||
-                placeholder ||
-                t('common.clickToUpload', 'Click to upload')}
+              {triggerLabel}
             </Text>
-          </HStack>
+
+            <Text
+              {...TYPOGRAPHY.caption}
+              color="$gray300"
+              textAlign="center"
+            >
+              Max 10 MB
+            </Text>
+          </VStack>
         </Pressable>
+
+        {previewItems.length > 0 && (
+          <VStack space="xs">
+            {previewItems.map(item => (
+              <HStack
+                key={item.key}
+                space="sm"
+                alignItems="center"
+                borderWidth={1}
+                borderColor="$borderColor"
+                borderRadius="$xl"
+                p="$2.5"
+                justifyContent='space-between'
+              >
+                <HStack space='md'>
+                  {item.isImage && item.previewUri ? (
+                    <Image
+                      source={{ uri: item.previewUri }}
+                      alt={item.name}
+                      width={32}
+                      height={32}
+                      borderRadius={4}
+                    />
+                  ) : (
+                    <Box bg="$primary300" p="$2.5" borderRadius="$xl">
+                      <LucideIcon name="FileText" size={20} color="$primary500" />
+                    </Box>
+                  )}
+                  <VStack>
+                    <Text
+                      {...TYPOGRAPHY.bodySmall}
+                      color="$textForeground"
+                      flex={1}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      {...TYPOGRAPHY.caption}
+                      color="$textForeground"
+                      flex={1}
+                      numberOfLines={1}
+                    >
+                      {formatFileSize(item?.raw?.size || 0)}
+                    </Text>
+                  </VStack>
+                </HStack>
+                <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
+                  <LucideIcon name="X" size={16} color="$textMutedForeground" />
+                </Pressable>
+              </HStack>
+            ))}
+          </VStack>
+        )}
+
         {!!subLabelText && (
           <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
             {subLabelText}
@@ -1168,7 +1441,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   }
 
   // ── Date ────────────────────────────────────────────────────────────────────
-  if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time) {
+  if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time || field.type === FORM_FIELD_TYPES.DateTime) {
     // Internal display value: stored as YYYY_MM_DD, displayed as YYYY-MM-DD
     const displayValue = value ? value.replace(/_/g, '-') : '';
 
@@ -1186,6 +1459,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           maximumDate={
             field.validation?.some(r => r.rule === 'dateNotInFuture')
               ? new Date()
+              : undefined
+          }
+          minimumDate = {
+            field.validation?.some(r => r.rule === 'dateNotInPast')
+              ? new Date(new Date().setDate(new Date().getDate() - 1))
               : undefined
           }
           iconSize={20}
@@ -1368,7 +1646,7 @@ function nodeTitleText(
 const RenderNodes: React.FC<{
   nodes?: FormSection[];
   ctx: NodeRenderContext;
-}> = ({ nodes, ctx }) => {
+}> = memo(({ nodes, ctx }) => {
   if (!nodes?.length) return null;
 
   const items: React.ReactNode[] = [];
@@ -1397,7 +1675,7 @@ const RenderNodes: React.FC<{
   }
 
   return <>{items}</>;
-};
+});
 
 /**
  * Single Tab Rule: one tab renders its children directly, no TabList/navigation chrome.
@@ -1409,7 +1687,7 @@ const RenderNodes: React.FC<{
 const TabGroupRenderer: React.FC<{
   tabs: FormSection[];
   ctx: NodeRenderContext;
-}> = ({ tabs, ctx }) => {
+}> = memo(({ tabs, ctx }) => {
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
 
   if (tabs.length <= 1) {
@@ -1480,10 +1758,10 @@ const TabGroupRenderer: React.FC<{
       </TabsTabPanels>
     </Tabs>
   );
-};
+});
 
 /** Renders a "section" node: an @ui Card header (icon/title/subTitle/hint) plus its rows and children. */
-const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
+const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = memo(({
   node,
   ctx,
 }) => {
@@ -1548,7 +1826,7 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = ({
       </VStack>
     </Card>
   );
-};
+});
 
 // ─── Multi-Step Navigation (Previous / Continue / Save Draft / Submit) ────────
 //
@@ -1572,7 +1850,7 @@ const StepHeader: React.FC<{
   activeStepIndex: number;
   onSelectStep: (index: number) => void;
   t: (key: string, fallback?: string) => string;
-}> = ({ tabs, activeStepIndex, onSelectStep, t }) => {
+}> = memo(({ tabs, activeStepIndex, onSelectStep, t }) => {
   const activeTabId = tabs[activeStepIndex]?.id;
 
   return (
@@ -1620,14 +1898,14 @@ const StepHeader: React.FC<{
       </TabsTabList>
     </Tabs>
   );
-};
+});
 
 /** Required-fields-only completion for the active step, via the same gluestack Progress primitives already used elsewhere in the app (e.g. TasksOverviewCard). */
 const StepProgress: React.FC<{
   total: number;
   completed: number;
   t: (key: string, fallback?: string) => string;
-}> = ({ total, completed, t }) => {
+}> = memo(({ total, completed, t }) => {
   const percent = total > 0 ? (completed / total) * 100 : 100;
   const displayPercent = Math.ceil((percent * 10) / 10);
   
@@ -1652,7 +1930,7 @@ const StepProgress: React.FC<{
       </Progress>
     </VStack>
   );
-};
+});
 
 const StepFooter: React.FC<{
   isFirstStep: boolean;
@@ -1675,7 +1953,7 @@ const StepFooter: React.FC<{
   continueButtonProps?: any;
   saveDraftButtonProps?: any;
   submitButtonProps?: any;
-}> = ({
+}> = memo(({
   isFirstStep,
   isLastStep,
   disabled,
@@ -1740,7 +2018,7 @@ const StepFooter: React.FC<{
       )}
     </HStack>
   </HStack>
-);
+));
 
 /**
  * Centralized validation popup — lists every invalid field grouped by
@@ -1754,7 +2032,7 @@ const ValidationPopup: React.FC<{
   issues: ValidationIssue[];
   onSelectIssue: (issue: ValidationIssue) => void;
   t: (key: string, fallback?: string) => string;
-}> = ({ isOpen, onClose, issues, onSelectIssue, t }) => {
+}> = memo(({ isOpen, onClose, issues, onSelectIssue, t }) => {
   const groups = useMemo(() => {
     const byTab = new Map<string, Map<string, ValidationIssue[]>>();
     issues.forEach(issue => {
@@ -1836,15 +2114,30 @@ const ValidationPopup: React.FC<{
       </VStack>
     </Modal>
   );
-};
+});
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+/**
+ * Returns a permanently-stable function identity that always calls through to
+ * the latest `fn` passed in. Lets callbacks that close over fast-changing state
+ * (like `values`, which gets a new reference every keystroke) be handed to
+ * memoized children without defeating their memoization — the child's props
+ * see the same function reference across renders, while the call itself still
+ * runs against current data. Standard "latest ref" pattern, not a new
+ * architecture.
+ */
+function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
+  ref.current = fn;
+  return useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
+}
 
 const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   schema,
   values = {},
   errors = {},
-  onFieldChange = (...e) => {
+  onFieldChange: onFieldChangeProp = (...e) => {
     console.log(e);
   },
   optionsMap = {},
@@ -1870,14 +2163,21 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   saveDraftButtonProps,
   submitButtonProps,
 }) => {
+  // Caller-supplied `onFieldChange` can't be assumed referentially stable —
+  // wrap it once so every child that receives it keeps the same identity
+  // across renders (required for the memoization below to do anything).
+  const onFieldChange = useStableCallback(onFieldChangeProp);
+
   // Track password visibility per group
   const [visibilityGroups, setVisibilityGroups] = useState<
     Record<string, boolean>
   >({});
 
-  const toggleVisibilityGroup = (group: string) => {
+  // Only closes over the stable `setVisibilityGroups` dispatcher, so a plain
+  // useCallback([]) is enough — no latest-ref wrapper needed.
+  const toggleVisibilityGroup = useCallback((group: string) => {
     setVisibilityGroups(prev => ({ ...prev, [group]: !prev[group] }));
-  };
+  }, []);
 
   // Flat name → field-definition lookup, used to resolve `view` fields by name.
   const fieldsByName = useMemo(() => collectFieldsByName(schema), [schema]);
@@ -1911,9 +2211,11 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     null,
   );
 
-  const registerFieldRef = (name: string, node: any) => {
+  // Only closes over the stable `fieldRefsRef` ref, so a plain useCallback([])
+  // is enough here too.
+  const registerFieldRef = useCallback((name: string, node: any) => {
     fieldRefsRef.current[name] = node;
-  };
+  }, []);
 
   // Reveals the standard inline error for exactly this one field, then scrolls,
   // focuses, and temporarily highlights it. Other invalid fields stay quiet —
@@ -1977,18 +2279,24 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     return () => clearTimeout(timer);
   }, [safeStepIndex]);
 
-  const handlePrevious = () => {
+  // Only closes over the stable `setActiveStepIndex` dispatcher.
+  const handlePrevious = useCallback(() => {
     setActiveStepIndex(i => Math.max(0, i - 1));
-  };
+  }, []);
 
   // Direct tab clicks navigate freely (no validation gating) — only the
   // Continue button validates before advancing. Values/errors/draft state
   // are untouched since they live outside `activeStepIndex`.
-  const handleSelectStep = (index: number) => {
+  // Only closes over the stable `setActiveStepIndex` dispatcher.
+  const handleSelectStep = useCallback((index: number) => {
     setActiveStepIndex(index);
-  };
+  }, []);
 
-  const handleContinue = () => {
+  // The rest of these close over `values`/`schema`/`optionsMap`/`t`/`rootTabs`/
+  // etc., which legitimately change across renders — useStableCallback keeps
+  // their prop identity stable for memoized children while still always
+  // running against the latest closure.
+  const handleContinue = useStableCallback(() => {
     const currentTab = rootTabs[safeStepIndex];
     if (!currentTab) return;
 
@@ -2006,9 +2314,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
       setPopupIssues(stepIssues);
       setIsPopupOpen(true);
     }
-  };
+  });
 
-  const handleSubmit = async () => {
+  const handleSubmit = useStableCallback(async () => {
     const {
       errors: allErrors,
       issues: allIssues,
@@ -2046,13 +2354,13 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     }
 
     onSubmit?.(resolvedValues);
-  };
+  });
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = useStableCallback(() => {
     onSaveDraft?.(values);
-  };
+  });
 
-  const handleSelectIssue = (issue: ValidationIssue) => {
+  const handleSelectIssue = useStableCallback((issue: ValidationIssue) => {
     setIsPopupOpen(false);
 
     if (
@@ -2069,43 +2377,74 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     }
 
     revealAndFocusField(issue.fieldName, issue.message);
-  };
+  });
 
-  const baseCtx: NodeRenderContext = {
-    values,
-    errors,
-    optionsMap,
-    mode,
-    t,
-    onFieldChange,
-    disabled,
-    visibilityGroups,
-    toggleVisibilityGroup,
-    firstNameRef,
-    fieldsByName,
-    globalInputProps: _input,
-  };
+  // Only closes over the stable `setIsPopupOpen` dispatcher.
+  const handleClosePopup = useCallback(() => setIsPopupOpen(false), []);
 
-  if (isMultiStep) {
-    const activeTab = rootTabs[safeStepIndex];
-    const stepCtx: NodeRenderContext = {
+  // Memoized so its reference only changes when one of these actually
+  // changes — e.g. toggling the validation popup touches none of them, so
+  // memoized descendants (RenderNodes/SectionNode/TabGroupRenderer/...) see
+  // the same `ctx` prop and skip re-rendering entirely.
+  const baseCtx: NodeRenderContext = useMemo(
+    () => ({
+      values,
+      errors,
+      optionsMap,
+      mode,
+      t,
+      onFieldChange,
+      disabled,
+      visibilityGroups,
+      toggleVisibilityGroup,
+      firstNameRef,
+      fieldsByName,
+      globalInputProps: _input,
+    }),
+    [
+      values,
+      errors,
+      optionsMap,
+      mode,
+      t,
+      onFieldChange,
+      disabled,
+      visibilityGroups,
+      toggleVisibilityGroup,
+      firstNameRef,
+      fieldsByName,
+      _input,
+    ],
+  );
+
+  const activeTab = rootTabs[safeStepIndex];
+
+  const stepCtx: NodeRenderContext = useMemo(
+    () => ({
       ...baseCtx,
       errors: { ...errors, ...internalErrors },
       registerFieldRef,
       highlightedField,
-    };
+    }),
+    [baseCtx, errors, internalErrors, registerFieldRef, highlightedField],
+  );
 
+  // Whole-form progress (every tab/section/nested node), not just the active step.
+  // Memoized so it isn't recomputed on renders unrelated to values/optionsMap
+  // (e.g. popup toggling) — it still recomputes on every keystroke, same as
+  // before, since `values` itself changes reference every keystroke.
+  const { total: requiredTotal, completed: requiredCompleted } = useMemo(
+    () => computeRequiredFieldProgress(schema, values, optionsMap),
+    [schema, values, optionsMap],
+  );
+
+  if (isMultiStep) {
     const stepSubTitleText = activeTab?.subTitle
       ? t(
           `admin.users.createUser.${activeTab.subTitle.key}`,
           activeTab.subTitle.fallback,
         )
       : undefined;
-
-    // Whole-form progress (every tab/section/nested node), not just the active step —
-    // recalculated on every render, cheap tree walk, always reflects the latest `values`.
-    const { total: requiredTotal, completed: requiredCompleted } =
-      computeRequiredFieldProgress(schema, values, optionsMap);
 
     return (
       <VStack space="md" width="100%">
@@ -2159,7 +2498,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
 
         <ValidationPopup
           isOpen={isPopupOpen}
-          onClose={() => setIsPopupOpen(false)}
+          onClose={handleClosePopup}
           issues={popupIssues}
           onSelectIssue={handleSelectIssue}
           t={t}
@@ -2179,49 +2518,53 @@ export default SchemaFormRenderer;
 
 export const RenderRow = memo(
   ({ rows, values = {}, optionsMap = {}, mode, ...rest }: any) => {
-    const renderedRows = useMemo(() => {
-      return rows?.map((row: any, index: number) => {
-        if (!isVisible(row.visibleWhen, values, optionsMap)) {
-          return null;
+    // Not wrapped in useMemo: the previous version keyed its cache on `rest`
+    // (an object-rest-spread — a new object every render), so the cache never
+    // actually hit and this recomputed every render anyway. The computation
+    // itself is a cheap flatMap over a handful of rows/fields, and `values`/
+    // `optionsMap` already change reference every keystroke regardless — the
+    // real memoization payoff for this file lives in FieldContainer, below.
+    const renderedRows = rows?.map((row: any, index: number) => {
+      if (!isVisible(row.visibleWhen, values, optionsMap)) {
+        return null;
+      }
+
+      const visibleFields = row.fields.flatMap((field: any) => {
+        if (!isVisible(field.visibleWhen, values, optionsMap)) {
+          return [];
         }
 
-        const visibleFields = row.fields.flatMap((field: any) => {
-          if (!isVisible(field.visibleWhen, values, optionsMap)) {
-            return [];
-          }
-
-          if (!isVisibleIf(field.visibleIf, values)) {
-            return [];
-          }
-
-          if (
-            mode === 'preview' &&
-            field.type === FORM_FIELD_TYPES.GROUP &&
-            field.fields
-          ) {
-            return field.fields;
-          }
-
-          return [field];
-        });
-
-        if (!visibleFields.length) {
-          return null;
+        if (!isVisibleIf(field.visibleIf, values)) {
+          return [];
         }
 
-        return (
-          <RowRenderer
-            key={row.id ?? index}
-            fields={visibleFields}
-            isMobile={false}
-            values={values}
-            optionsMap={optionsMap}
-            mode={mode}
-            {...rest}
-          />
-        );
+        if (
+          mode === 'preview' &&
+          field.type === FORM_FIELD_TYPES.GROUP &&
+          field.fields
+        ) {
+          return field.fields;
+        }
+
+        return [field];
       });
-    }, [rows, values, optionsMap, mode, rest]);
+
+      if (!visibleFields.length) {
+        return null;
+      }
+
+      return (
+        <RowRenderer
+          key={row.id ?? index}
+          fields={visibleFields}
+          isMobile={false}
+          values={values}
+          optionsMap={optionsMap}
+          mode={mode}
+          {...rest}
+        />
+      );
+    });
 
     return <>{renderedRows}</>;
   },
@@ -2325,7 +2668,7 @@ const HINT_TYPE_CONFIG: Record<
 const HintDisplay: React.FC<{
   hint: Hint;
   t: (key: string, fallback?: string) => string;
-}> = ({ hint, t }) => {
+}> = memo(({ hint, t }) => {
   if (typeof hint === 'string') {
     return (
       <HStack
@@ -2408,7 +2751,7 @@ const HintDisplay: React.FC<{
       </HStack>
     </VStack>
   );
-};
+});
 
 /**
  * Formats a stored field value for read-only display (preview mode, `view`
@@ -2454,7 +2797,7 @@ interface ViewFieldDisplayProps {
   fieldsByName: Record<string, FormField>;
 }
 
-const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
+const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
   field,
   values,
   optionsMap,
@@ -2496,7 +2839,126 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = ({
       </Text>
     </VStack>
   );
-};
+});
+
+// ─── FieldContainer's fine-grained re-render gate ─────────────────────────────
+//
+// `values`/`errors` always get a new object reference on every keystroke (this
+// component is fully controlled), so no comparison based on their identity can
+// ever skip a re-render. Instead, for a given field, we compare only the
+// specific `values`/`errors`/`optionsMap` KEYS that field actually reads —
+// its own name, plus (for GROUP) every sub-field's name, plus whatever
+// `disabledWhen`/`dependsOn`/`optionsSource` it references.
+//
+// Deliberately excluded: `visibleIf`/`visibleWhen`. Visibility is resolved one
+// level up, in `RenderRow`, before a `<FieldContainer>` element is even
+// constructed — when a field becomes visible/invisible, React mounts/unmounts
+// it by key, and a memo comparator is never invoked for a mount/unmount.
+interface FieldStructuralDeps {
+  valueKeys: string[];
+  errorKeys: string[];
+  optionsKeys: string[];
+}
+
+const fieldStructuralDepsCache = new WeakMap<FormField, FieldStructuralDeps>();
+
+function extractStructuralDeps(field: FormField): FieldStructuralDeps {
+  const cached = fieldStructuralDepsCache.get(field);
+  if (cached) return cached;
+
+  const valueKeys = new Set<string>();
+  const errorKeys = new Set<string>();
+  const optionsKeys = new Set<string>();
+
+  const walk = (f: FormField) => {
+    if (f.name) {
+      valueKeys.add(f.name);
+      errorKeys.add(f.name);
+    }
+    if (f.optionsSource) optionsKeys.add(f.optionsSource);
+    if (f.disabledWhen?.field) valueKeys.add(f.disabledWhen.field);
+    if (f.dependsOn) valueKeys.add(f.dependsOn);
+    if (f.type === FORM_FIELD_TYPES.GROUP && Array.isArray(f.fields)) {
+      f.fields.forEach(walk);
+    }
+  };
+  walk(field);
+
+  const deps: FieldStructuralDeps = {
+    valueKeys: Array.from(valueKeys),
+    errorKeys: Array.from(errorKeys),
+    optionsKeys: Array.from(optionsKeys),
+  };
+  fieldStructuralDepsCache.set(field, deps);
+  return deps;
+}
+
+// `view` fields display another field's value by name — resolved fresh every
+// comparison (a couple of property lookups, not worth caching) since it
+// depends on `fieldsByName`, which isn't part of the cache key above.
+function extraViewOptionsKey(
+  field: FormField,
+  fieldsByName: Record<string, FormField>,
+): string | undefined {
+  if (field.type === FORM_FIELD_TYPES.VIEW && field.name) {
+    return fieldsByName[field.name]?.optionsSource;
+  }
+  return undefined;
+}
+
+function shallowEqualObjects(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every(key => a[key] === b[key]);
+}
+
+function fieldContainerPropsAreEqual(prev: FieldType, next: FieldType): boolean {
+  if (prev.field !== next.field) return false;
+  if (prev.mode !== next.mode) return false;
+  if (prev.disabled !== next.disabled) return false;
+  if (prev.isMultiField !== next.isMultiField) return false;
+  if (prev.t !== next.t) return false;
+  if (prev.visibilityGroups !== next.visibilityGroups) return false;
+  if (prev.toggleVisibilityGroup !== next.toggleVisibilityGroup) return false;
+  if (prev.firstNameRef !== next.firstNameRef) return false;
+  if (prev.fieldsByName !== next.fieldsByName) return false;
+  if (prev.registerFieldRef !== next.registerFieldRef) return false;
+  if (prev.onFieldChange !== next.onFieldChange) return false;
+  if (!shallowEqualObjects(prev.globalInputProps, next.globalInputProps)) return false;
+
+  const prevHighlighted = !!next.field.name && prev.highlightedField === next.field.name;
+  const nextHighlighted = !!next.field.name && next.highlightedField === next.field.name;
+  if (prevHighlighted !== nextHighlighted) return false;
+
+  const prevValues = prev.values ?? {};
+  const nextValues = next.values ?? {};
+  const prevErrors = prev.errors ?? {};
+  const nextErrors = next.errors ?? {};
+  const prevOptionsMap = prev.optionsMap ?? {};
+  const nextOptionsMap = next.optionsMap ?? {};
+
+  const deps = extractStructuralDeps(next.field);
+
+  for (const key of deps.valueKeys) {
+    if (prevValues[key] !== nextValues[key]) return false;
+  }
+  for (const key of deps.errorKeys) {
+    if (prevErrors[key] !== nextErrors[key]) return false;
+  }
+  for (const key of deps.optionsKeys) {
+    if (prevOptionsMap[key] !== nextOptionsMap[key]) return false;
+  }
+
+  const viewOptionsKey = extraViewOptionsKey(next.field, next.fieldsByName ?? {});
+  if (viewOptionsKey && prevOptionsMap[viewOptionsKey] !== nextOptionsMap[viewOptionsKey]) {
+    return false;
+  }
+
+  return true;
+}
 
 const FieldContainer = memo(
   ({
@@ -2645,4 +3107,5 @@ const FieldContainer = memo(
       </VStack>
     );
   },
+  fieldContainerPropsAreEqual,
 );

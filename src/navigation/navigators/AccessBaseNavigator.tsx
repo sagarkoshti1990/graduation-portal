@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import LayoutWrapper from '@layout/LayoutWrapper';
+import { MENTOR_ROLES } from '@constants/ROLES';
 
 const Stack = createStackNavigator();
 
@@ -41,10 +42,13 @@ const createScreenWithLayout = (
   return ScreenWithLayout;
 };
 
-function titleNamespaceForRole(role?: string): 'admin' | 'lc' {
+function titleNamespaceForRole(role?: string): 'admin' | 'lc' | "supportProvider" {
   const r = role?.toLowerCase();
   if (r === 'admin' || r === 'supervisor') {
     return 'admin';
+  }
+  if (MENTOR_ROLES.includes(r || "")) {
+    return 'supportProvider';
   }
   return 'lc';
 }
@@ -71,7 +75,7 @@ const AccessBaseNavigator: React.FC<{
       })),
     [accessPages],
   );
-
+  
   return (
     <Stack.Navigator
       initialRouteName={accessPages[0].name}

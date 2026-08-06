@@ -1,4 +1,4 @@
-import type { FormSection } from '@constants/CREATE_USER_FORM_SCHEMA';
+import type { FormSection } from '@components/SchemaFormRenderer/type';
 
 export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
   // ─── Tab 1: Service Details ───────────────────────────────────────────────
