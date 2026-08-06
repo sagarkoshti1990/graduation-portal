@@ -40,10 +40,10 @@ export const filterStyles = {
   },
   input: {
     variant: 'outline' as const,
-    size: 'sm' as const,
+    size: 'md' as const,
     borderRadius: '$md' as const,
-    bg: 'transparent' as const,
-    borderColor: '$borderLight100' as const,
+    bg: '$backgroundLight50' as const,
+    borderColor: '$borderLight300' as const,
     height: '$9' as const,
   },
   clearLinkText: {
