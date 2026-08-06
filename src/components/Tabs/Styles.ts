@@ -6,7 +6,7 @@ export const tabButtonStyles = {
   defaultContainer: (isActive: boolean) => ({
     paddingHorizontal: '$6',
     paddingVertical: '$3',
-    borderBottomWidth: 3,
+    borderBottomWidth: 2,
     borderBottomColor: isActive
       ? theme.tokens.colors.primary500
       : 'transparent',
@@ -55,19 +55,21 @@ export const tabButtonStyles = {
   buttonTabIconColor: theme.tokens.colors.textForeground,
 
   badgeContainer: (isActive: boolean) => ({
-    w: 20,
+    minWidth: 20,
     h: 20,
-    borderRadius: 10,
+    borderRadius: '$full' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    bg: isActive ? '$red800' : '#FFF3E0',
-    ml: '$1',
+    bg: isActive ? '$primary500' : '$accent200',
+    px: '$1.5' as const,
+    ml: '$1.5' as const,
   }),
 
   badgeText: (isActive: boolean) => ({
-    fontSize: 11,
-    fontWeight: '$bold' as const,
-    color: isActive ? '$white' : '#D97706',
+    fontSize: '$xs' as const,
+    fontWeight: '$semibold' as const,
+    color: isActive ? '$white' : '$mutedForeground',
+    lineHeight: '$xs' as const,
   }),
 
   tabRow: {

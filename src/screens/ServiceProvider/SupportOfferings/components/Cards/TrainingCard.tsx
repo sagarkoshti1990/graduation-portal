@@ -137,21 +137,21 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
           {/* Row 2: Metadata */}
           <HStack {...styles.headerMetaHStack}>
-            <HStack {...styles.metaItemHStack}>
+            <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>
                 {item.date}
               </Text>
             </HStack>
 
-            <HStack {...styles.metaItemHStack}>
+            <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="Clock" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>
                 {item.time}
               </Text>
             </HStack>
 
-            <HStack {...styles.metaItemHStack}>
+            <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon
                 name={item.format === 'Virtual' ? 'Video' : 'MapPin'}
                 {...styles.cardMetaIconProps}
@@ -161,7 +161,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
               </Text>
             </HStack>
 
-            <HStack {...styles.metaItemHStack}>
+            <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="Users" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>
                 {item.participants}

@@ -20,6 +20,7 @@ export default {
     shadowRadius: 8,
     elevation: 2,
     width: '100%',
+    marginBottom: '$4',
   } as const,
   tabBarBox: {
     bg: '$white',
@@ -146,7 +147,7 @@ export default {
   copyOfferingBtn: {
     borderWidth: 1,
     borderColor: '$primary600',
-    bg: '$primary100',
+    bg: '$primary300',
     px: '$4',
     py: '$2',
     borderRadius: '$lg',
@@ -191,7 +192,7 @@ export default {
   copySessionBox: (isHovered: boolean) => ({
     borderWidth: 1,
     borderColor: '$primary500',
-    bg: isHovered ? '$primary500' : '$primary50',
+    bg: isHovered ? '$primary500' : '$primary300',
     px: '$4',
     py: '$2',
     borderRadius: '$lg',
@@ -308,8 +309,20 @@ export default {
     textTransform: 'none' as const,
   }),
   contentContainer: {
-    space: 'lg',
+    space: 'md',
     width: '100%',
+  } as const,
+  tabTextProps: {
+    fontSize: '$sm',
+  } as const,
+  tabButtonContainer: {
+    paddingHorizontal: '$5',
+  } as const,
+  filterContainer: {
+    py: '$4' as const,
+    px: '$6' as const,
+    mb: '$2' as const,
+    mt: '$0' as const,
   } as const,
   cardHeaderHStack: {
     flexDirection: 'column' as const,
@@ -320,7 +333,6 @@ export default {
     space: 'lg' as const,
   } as const,
   listContainer: {
-    space: 'md' as const,
     width: '100%' as const,
   } as const,
   cardLeftVStack: {
@@ -344,6 +356,12 @@ export default {
   metaItemHStack: {
     space: 'xs' as const,
     alignItems: 'center' as const,
+  } as const,
+  trainingMetaItemHStack: {
+    space: 'xs' as const,
+    alignItems: 'center' as const,
+    flex: 1,
+    minWidth: 120,
   } as const,
   pressableInnerHStack: {
     space: 'xs' as const,

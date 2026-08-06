@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, VStack, HStack, Box, Text, Pressable, LucideIcon } from '@ui';
+import { Container, VStack, HStack, Box, Text } from '@ui';
 import styles from './styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import TrainingSessionsCard from './components/Card/TrainingSessions';
@@ -212,15 +212,15 @@ const App = (): React.JSX.Element => {
                 isActive={activeTab === tab.key}
                 onPress={(key) => setActiveTab(key)}
                 _text={styles.tabTextProps}
+                _container={styles.tabButtonContainer}
                 iconSize={16}
               />
             ))}
           </HStack>
         </Container>
       </Box>
-      <Box {...styles.subbox}>
-        {/* Filter Bar without card border, placed directly under tabs */}
-        <Container {...styles.container} py="$0">
+      <Container {...styles.container}>
+        <VStack {...styles.screenVStack}>
           <FilterButton
             data={filterOptions}
             onFilterChange={handleFilterChange}
@@ -229,11 +229,6 @@ const App = (): React.JSX.Element => {
             _container={styles.filterContainer}
             _input={styles.filterInputProps}
           />
-        </Container>
-      </Box>
-      <Container {...styles.container}>
-        <VStack {...styles.screenVStack}>
-          {/* Tabs Navigation */}
 
           {activeTab === 'sessions' && (
             <TrainingSessionsCard

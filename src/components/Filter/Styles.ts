@@ -1,9 +1,9 @@
 export const filterStyles = {
   container: {
     mt: '$5' as const,
-    bg: '$white' as const,
+    bg: 'transparent' as const,
     borderWidth: 1,
-    borderColor: '$borderColor' as const,
+    borderColor: '$borderLight100' as const,
     borderRadius: '$xl' as const,
     p: '$6' as const,
     width: '$full' as const,
@@ -40,10 +40,10 @@ export const filterStyles = {
   },
   input: {
     variant: 'outline' as const,
-    size: 'md' as const,
+    size: 'sm' as const,
     borderRadius: '$md' as const,
-    bg: '$backgroundLight50' as const,
-    borderColor: '$borderLight300' as const,
+    bg: 'transparent' as const,
+    borderColor: '$borderLight100' as const,
     height: '$9' as const,
   },
   clearLinkText: {

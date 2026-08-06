@@ -25,7 +25,7 @@ const SPTitleHeader = ({
       _subtitle={{ lineHeight: '$xl' }}
       _css={{ shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: '$borderLight100' }}
       _leftSection={{ flexDirection: 'column', alignItems: 'start' }}
-      _content={{ py: '$6', px: '$6' }}
+      _content={{ py: '$6' }}
       rightSection={rightSection}
     />
   );
