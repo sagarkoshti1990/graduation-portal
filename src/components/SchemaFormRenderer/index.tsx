@@ -1461,6 +1461,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               ? new Date()
               : undefined
           }
+          minimumDate = {
+            field.validation?.some(r => r.rule === 'dateNotInPast')
+              ? new Date(new Date().setDate(new Date().getDate() - 1))
+              : undefined
+          }
           iconSize={20}
           isDisabled={disabled || field.disabled}
           isReadOnly={field.isReadOnly}

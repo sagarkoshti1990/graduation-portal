@@ -104,7 +104,7 @@ export const buildTheme = (
 // `date` keeps the original fixed width exactly (backward compatible sizing);
 // `time`/`datetime` need more room for the hour/minute/AM-PM columns.
 export const getContainerSizeStyle = (mode: DatePickerMode) => {
-  if (mode === 'time') return { maxWidth: 300 };
+  if (mode === 'time') return { maxWidth: 312 };
   if (mode === 'datetime') return { maxWidth: 460 };
   return {};
 };
@@ -148,6 +148,7 @@ export const calendarStyles = {
     borderColor: '$borderLight200' as const,
     p: '$3' as const,
     maxWidth: 300,
+    width: 300,
     shadowColor: '$foreground' as const,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -283,64 +284,48 @@ export const getDateTextStyle = (
 };
 
 // ---------------------------------------------------------------------------
-// Month/year mini-dropdowns (calendar header)
+// Month/year picker grid — replaces the calendar's day grid in place (no
+// floating overlay) when picking a month or year. `container`/`row` lay out
+// a 4-per-row grid of circular selectable cells, matching the day-grid's own
+// selected/unselected visual language (filled `theme.primary` circle vs
+// plain text) rather than the old rectangular dropdown-option look.
 // ---------------------------------------------------------------------------
 
-export const dropdownStyles = {
-  // Invisible full-calendar click-catcher, rendered only while a dropdown is
-  // open. Sits above the day grid (which has no z-index of its own) so a tap
-  // meant to dismiss the dropdown can never "fall through" onto a day cell,
-  // and below the panel itself so option rows stay clickable.
-  backdrop: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 15,
-  },
-  // Positioned relative to the calendar's own container (not the small
-  // month/year label) so its stacking never has to compete with sibling
-  // header/grid content for who's "on top".
+export const pickerGridStyles = {
   container: {
-    position: 'absolute' as const,
-    top: 44,
-    left: '$3' as const,
-    right: '$3' as const,
-    zIndex: 20,
-    bg: '$white' as const,
-    borderRadius: '$md' as const,
-    borderWidth: 1,
-    borderColor: '$borderLight200' as const,
-    maxHeight: 180,
-    shadowColor: '$foreground' as const,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    maxHeight: 220,
   },
-  option: {
-    px: '$3' as const,
-    py: '$2' as const,
+  row: {
+    justifyContent: 'space-around' as const,
+    my: '$1' as const,
   },
-  optionText: {
+  cell: {
+    width: 56,
+    height: 56,
+    borderRadius: '$lg' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    "$hover" : {
+      bg: "$hoverBackground"
+    }
+  },
+  cellText: {
     fontSize: '$sm' as const,
-    color: '$textForeground' as const,
   },
 };
 
-export const getDropdownOptionStyle = (
+export const getPickerCellStyle = (
   isSelected: boolean,
   theme: DatePickerTheme = DEFAULT_THEME,
 ) => ({
-  bg: isSelected ? theme.primaryLight : 'transparent',
+  bg: isSelected ? theme.primary : 'transparent',
 });
 
-export const getDropdownOptionTextStyle = (
+export const getPickerCellTextStyle = (
   isSelected: boolean,
   theme: DatePickerTheme = DEFAULT_THEME,
 ) => ({
-  color: isSelected ? theme.primaryDark : theme.text,
+  color: isSelected ? '$white' : theme.text,
   fontWeight: isSelected ? ('$semibold' as const) : ('$normal' as const),
 });
 
@@ -457,7 +442,6 @@ export const datePickerStyles = {
         left: calendarPosition.left,
         zIndex: 99999,
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-        width: "-webkit-fill-available"
       },
       platform === 'android' && {
         zIndex: 99999,

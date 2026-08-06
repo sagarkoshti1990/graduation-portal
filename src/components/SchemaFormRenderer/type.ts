@@ -16,6 +16,7 @@ export interface ValidationRule {
     | 'pattern'
     | 'matchField'
     | 'dateNotInFuture'
+    | 'dateNotInPast'
     | 'fileType'
     | 'fileCount'
     | 'fileSize'

@@ -199,6 +199,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
     }
   }, [controlledIsOpen]);
   const inputRef = useRef<any>(null);
+  const calendarPopupRef = useRef<any>(null);
   const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
 
   // ---- controlled/uncontrolled value ----
@@ -216,7 +217,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const effectiveDisplayFormat = displayFormat ?? getDefaultDisplayFormat(mode, hourFormat);
   const effectiveLocale = locale ?? currentLanguage;
 
-  const monthNames = useMemo(() => getMonthNames(effectiveLocale, 'long'), [effectiveLocale]);
+  // const monthNames = useMemo(() => getMonthNames(effectiveLocale, 'long'), [effectiveLocale]);
   const monthNamesShort = useMemo(() => getMonthNames(effectiveLocale, 'short'), [effectiveLocale]);
   const dayNames = useMemo(() => getDayNames(effectiveLocale, 'short'), [effectiveLocale]);
 
@@ -310,17 +311,22 @@ const DatePicker: React.FC<DatePickerProps> = ({
           const target = event.target as HTMLElement;
           if (!target) return;
 
-          // Find calendar element using unique ID
-          const calendarElement = document.querySelector(`[data-calendar-container="${calendarIdRef.current}"]`);
+          // Resolve the popup DOM node from the ref instead of a `data-*` query
+          // to ensure inside clicks don't incorrectly close the calendar.
+          const popupNode =
+            (calendarPopupRef.current as any)?._node ||
+            (calendarPopupRef.current as any)?.current ||
+            calendarPopupRef.current;
 
-          // Check if click is inside calendar - if so, don't close
+          // Check if click is inside the popup - if so, don't close
           // (Date selection will be handled by the Calendar component's onPress)
-          if (calendarElement && calendarElement.contains(target)) {
-            return; // Don't close if clicking inside calendar
+          if (popupNode && typeof popupNode.contains === 'function' && popupNode.contains(target)) {
+            return; // Don't close if clicking inside the popup
           }
 
-          // Close if click is outside calendar
-          closePicker();
+          // Close on outside click and restore the value from when the popup opened.
+          // Discards unconfirmed time changes, matching the Cancel action.
+          handleCancel();
         };
 
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -394,7 +400,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
       hourFormat={hourFormat}
       theme={resolvedTheme}
       styles={styles}
-      monthNames={monthNames}
+      monthNames={monthNamesShort}
       monthNamesShort={monthNamesShort}
       dayNames={dayNames}
       labels={labels}
@@ -408,6 +414,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const webCalendarContent =
     Platform.OS === 'web' && showPicker ? (
       <Box
+        ref={calendarPopupRef}
         {...mergeStyle(calendarContentStyle as any, styles?.popup)}
         data-calendar-container={calendarIdRef.current}
       >
@@ -478,7 +485,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
       {Platform.OS !== 'web' && (
         <Modal
           isOpen={showPicker}
-          onClose={closePicker}
+          onClose={handleCancel}
           headerTitle={modalTitle}
           size="md"
           contentProps={styles?.popup as any}

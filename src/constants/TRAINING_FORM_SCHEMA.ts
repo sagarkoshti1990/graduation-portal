@@ -337,7 +337,14 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Start date is required',
                     },
                   },
-                   {
+                  {
+                    rule: 'dateNotInPast',
+                    message: {
+                      key: 'errors.dateNotInPast',
+                      fallback: 'Past dates are not allowed.',
+                    },
+                  },
+                  {
                     rule: "dateCompare",
                     value: {
                       field: "endDate",
@@ -393,6 +400,13 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     message: {
                       key: 'errors.endDateRequired',
                       fallback: 'End date is required',
+                    },
+                  },
+                  {
+                    rule: 'dateNotInPast',
+                    message: {
+                      key: 'errors.dateNotInPast',
+                      fallback: 'Past dates are not allowed.',
                     },
                   },
                   {
