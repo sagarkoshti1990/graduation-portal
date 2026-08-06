@@ -197,14 +197,22 @@ const INPUT_STYLE = {
   bg: '#e8f0f9ff',
 } as const;
 
+const TITLE_STYLE = {
+  fontSize: 14, fontWeight: 'normal', color: '$textMutedForeground', p: 0, m: 0,
+} as const;
+
+const CONTAINER_STYLE = {
+  borderWidth: 0, p: 0, m: 0,
+} as const;
+
 export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   {
     type:"section",
     id: 'personalInformation',
     icon: 'User',
     title: { key: 'personalInformation', fallback: 'Personal Information' },
-    _title: { fontSize: 14, fontWeight: 'normal', color: '$textMutedForeground', p: 0, m: 0, },
-    _container: { borderWidth: 0, p: 0, m: 0, },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
@@ -342,8 +350,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     id: 'roleAndPermissions',
     icon: 'Shield',
     title: { key: 'roleAndPermissions', fallback: 'Role & Permissions' },
-    _title: { fontSize: 14, fontWeight: 'normal', color: '$textMutedForeground', p: 0, m: 0, },
-    _container: { borderWidth: 0, p: 0, m: 0, },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
@@ -369,8 +377,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     id: 'additionalInformation',
     icon: 'FileText',
     title: { key: 'additionalInformation', fallback: 'Additional Information' },
-    _title: { fontSize: 14, fontWeight: 'normal', color: '$textMutedForeground', p: 0, m: 0, },
-    _container: { borderWidth: 0, p: 0, m: 0, },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
@@ -453,8 +461,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     id: 'geographicAssignment',
     icon: 'MapPin',
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },
-    _title: { fontSize: 14, fontWeight: 'normal', color: '$textMutedForeground', p: 0, m: 0, },
-    _container: { borderWidth: 0, p: 0, m: 0, },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
     rows: [
       {
         fields: [
