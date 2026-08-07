@@ -44,7 +44,7 @@ export const ASSET_SCHEMA: FormSection[] = [
               },
               {
                 name: 'site',
-                type: 'select',
+                type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
                 placeholder: { fallback: 'Select province first' },
@@ -185,36 +185,102 @@ export const ASSET_SCHEMA: FormSection[] = [
             fields: [
               {
                 name: 'startDate',
-                type: 'date',
+                type: 'datetime',
                 required: false,
                 label: { key: 'startDate', fallback: 'Start Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                validation: [
+                  {
+                    rule: 'dateNotInPast',
+                    message: {
+                      key: 'errors.dateNotInPast',
+                      fallback: 'Past dates are not allowed.',
+                    },
+                  },
+                  {
+                    rule: "dateCompare",
+                    value: {
+                      field: "endDate",
+                      operator: "<="
+                    },
+                    message: {
+                      key: "errors.dateCompare",
+                      fallback: "Start Date must be before or equal to End Date."
+                    }
+                  }
+                ],
               },
-              {
-                name: 'startTime',
-                type: 'text',
-                required: false,
-                label: { key: 'startTime', fallback: 'Start Time' },
-                placeholder: { fallback: '--:--' },
-              },
+              // {
+              //   name: 'startTime',
+              //   type: 'time',
+              //   required: false,
+              //   label: { key: 'startTime', fallback: 'Start Time' },
+              //   placeholder: { fallback: '--:--' },
+              //   validation: [
+              //     {
+              //       rule: "timeCompare",
+              //       value: {
+              //         field: "endTime",
+              //         operator: "<"
+              //       },
+              //       message: {
+              //         key: "errors.timeCompareEndTime",
+              //         fallback: "Start Time must be before End Time."
+              //       }
+              //     }
+              //   ],
+              // },
             ],
           },
           {
             fields: [
               {
                 name: 'endDate',
-                type: 'date',
+                type: 'datetime',
                 required: false,
                 label: { key: 'endDate', fallback: 'End Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                validation: [
+                  {
+                    rule: 'dateNotInPast',
+                    message: {
+                      key: 'errors.dateNotInPast',
+                      fallback: 'Past dates are not allowed.',
+                    },
+                  },
+                  {
+                    rule: "dateCompare",
+                    value: {
+                      field: "startDate",
+                      operator: ">="
+                    },
+                    message: {
+                      key: "errors.dateCompareStartDate",
+                      fallback: "End Date must be after or equal to Start Date."
+                    }
+                  }
+                ],
               },
-              {
-                name: 'endTime',
-                type: 'text',
-                required: false,
-                label: { key: 'endTime', fallback: 'End Time' },
-                placeholder: { fallback: '--:--' },
-              },
+              // {
+              //   name: 'endTime',
+              //   type: 'time',
+              //   required: false,
+              //   label: { key: 'endTime', fallback: 'End Time' },
+              //   placeholder: { fallback: '--:--' },
+              //   validation: [
+              //     {
+              //       rule: "timeCompare",
+              //       value: {
+              //         field: "startTime",
+              //         operator: ">"
+              //       },
+              //       message: {
+              //         key: "errors.timeCompareStartTime",
+              //         fallback: "End Time must be after Start Time."
+              //       }
+              //     }
+              //   ],
+              // },
             ],
           },
         ],
@@ -267,6 +333,103 @@ export const ASSET_SCHEMA: FormSection[] = [
               key: 'supportProvider.assetForm.step2.assetDetailsTitle',
               fallback: 'Asset Details',
             },
+            rows:[
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'province',
+                    optionsSource: 'provinces',
+                    label: {
+                      key: 'province',
+                      fallback: 'Province',
+                    },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'site',
+                    optionsSource: 'sites',
+                    label: {
+                      key: 'site',
+                      fallback: 'Site',
+                    },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'assetType',
+                    label: { key: 'assetType', fallback: 'Asset Type' },
+                    optionsSource: 'assetTypes',
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'livelihoodCategory',
+                    label: { key: 'livelihoodCategory', fallback: 'Category of Livelihoods' },
+                    optionsSource: 'livelihoodCategories',
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'assetTitle',
+                    label: { key: 'assetTitle', fallback: 'Asset Title' },
+                    placeholder: { fallback: 'Name of this asset...' },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'estimatedValue',
+                    type: 'view',
+                    label: { key: 'estimatedValue', fallback: 'Estimated Value' },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'startDate',
+                    type: 'view',
+                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    label: { key: 'startDate', fallback: 'Start Date' },
+                  },
+                  // {
+                  //   name: 'startTime',
+                  //   type: 'view',
+                  //   label: { key: 'startTime', fallback: 'Start Time' },
+                  // },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'endDate',
+                    type: 'view',
+                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    label: { key: 'endDate', fallback: 'End Date' },
+                  },
+                  // {
+                  //   name: 'endTime',
+                  //   type: 'view',
+                  //   label: { key: 'endTime', fallback: 'End Time' },
+                  // },
+                ],
+              },
+            ]
           },
         ],
       },
