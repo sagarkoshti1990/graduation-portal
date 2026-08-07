@@ -604,3 +604,21 @@ export const getCountryCodesList = async (): Promise<ProvinceEntity[]> => {
     return [];
   }
 };
+
+/**
+ * Update user profile
+ *
+ * API: PATCH /api/user/v1/user/update
+ * Body: { "name": "New Name", ... }
+ */
+export const updateUser = async (
+  _userId: string | number,
+  payload: any
+): Promise<any> => {
+  try {
+    const response = await api.patch(API_ENDPOINTS.UPDATE_USER, payload);
+    return response.data?.result ?? response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
