@@ -4,17 +4,16 @@ import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
-import { ADDITIONAL_SERVICES_FORM_SCHEMA } from '@constants/ADDITIONAL_SERVICES_SCHEMA';
+import { ADDITIONAL_SERVICES_FORM_SCHEMA,tabs } from '@constants/ADDITIONAL_SERVICES_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
-import { getSitesByProvince } from '../../../../services/usersService';
+import { getProvincesList, getSitesByProvince } from '../../../../services/usersService';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
 
-  const { provinces: dynamicProvinces } = useUserManagementFilters({});
+  const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
   const [values, setValues] = useState<any>({});
 
@@ -25,6 +24,14 @@ const App = (): React.JSX.Element => {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      const result = await getProvincesList();
+      setProvinces(result);
+    }
+    init();
+  },[])
 
   useEffect(() => {
     if (!values.province) {
@@ -38,8 +45,8 @@ const App = (): React.JSX.Element => {
 
   const optionsMap = useMemo(() => {
     const provinceOpts =
-      dynamicProvinces && dynamicProvinces.length > 0
-        ? dynamicProvinces.map((p: any) => ({
+      provinces && provinces.length > 0
+        ? provinces.map((p: any) => ({
             value: p._id || p.id || p.name,
             label: p.name || p.label,
           }))
@@ -51,7 +58,7 @@ const App = (): React.JSX.Element => {
           label: s.name || s.label,
         }))
       : [];
-
+      
     return {
       provinces: provinceOpts,
       sites: siteOpts,
@@ -69,8 +76,9 @@ const App = (): React.JSX.Element => {
           label:'Other',
         },
       ],
+      tags: tabs.filter(item => (!values.servicesCategory) || values.servicesCategory === item.parent)
     };
-  }, [dynamicProvinces, dynamicSites, t]);
+  }, [provinces, dynamicSites, values.servicesCategory]);
 
   const handleSaveDraft = useCallback(async (formValues: any) => {
     try {

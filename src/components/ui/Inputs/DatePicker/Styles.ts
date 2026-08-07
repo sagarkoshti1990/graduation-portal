@@ -104,8 +104,8 @@ export const buildTheme = (
 // `date` keeps the original fixed width exactly (backward compatible sizing);
 // `time`/`datetime` need more room for the hour/minute/AM-PM columns.
 export const getContainerSizeStyle = (mode: DatePickerMode) => {
-  if (mode === 'time') return { maxWidth: 312 };
-  if (mode === 'datetime') return { maxWidth: 460 };
+  if (mode === 'time') return { maxWidth: 312, width: 300 };
+  if (mode === 'datetime') return { maxWidth: 460, width: 460 };
   return {};
 };
 

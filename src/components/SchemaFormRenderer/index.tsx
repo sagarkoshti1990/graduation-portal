@@ -50,7 +50,7 @@ import Select from '@components/ui/Inputs/Select';
 import DatePicker from '@components/ui/Inputs/DatePicker';
 import { openFilePicker } from '../../project-player/components/Task/FileEvidence/file-picker';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
-import { styles } from '../../screens/UserManagement/Styles';
+import styles from './Styles';
 import {
   type FormSection,
   type FormField,
@@ -61,6 +61,7 @@ import {
   FORM_FIELD_TYPES,
 } from './type';
 import { formatFileSize } from '../../project-player/utils/taskUtils';
+import moment from 'moment';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -427,7 +428,7 @@ function validateField(
   }
 }
 
-/** `dateCompare`: parses a stored date/datetime value (YYYY_MM_DD or YYYY_MM_DDTHH:mm:ss) into a comparable Date. */
+/** `dateCompare`: parses a stored date/datetime value (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss) into a comparable Date. */
 function parseComparableDate(rawValue: string): Date | null {
   if (!rawValue) return null;
   const date = new Date(rawValue.replace(/_/g, '-'));
@@ -1089,7 +1090,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
     return (
       <HStack
-        {...(styles.createUserFormInput as any)}
+        {...(styles.input as any)}
         isInvalid={!!combinedError}
         isDisabled={disabled || field.disabled}
         alignItems="center"
@@ -1177,7 +1178,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         zIndex={field.zIndex ?? (isNested ? 1000 : 1)}
       >
         <Select
-          {...(isNested ? {} : styles.createUserFormSelect)}
+          {...(isNested ? {} : styles.select)}
           {...resolvedInputProps}
           options={options}
           value={value}
@@ -1248,7 +1249,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <Box width="100%" zIndex={field.zIndex ?? 1}>
         <Select
-          {...styles.createUserFormSelect}
+          {...styles.select}
           {...resolvedInputProps}
           multiple
           options={options}
@@ -1442,19 +1443,19 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // ── Date ────────────────────────────────────────────────────────────────────
   if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time || field.type === FORM_FIELD_TYPES.DateTime) {
-    // Internal display value: stored as YYYY_MM_DD, displayed as YYYY-MM-DD
-    const displayValue = value ? value.replace(/_/g, '-') : '';
+    // Internal display value: stored as YYYY-MM-DD, displayed as YYYY-MM-DD
+    const displayValue = value ? value : '';
 
     return (
       <Box zIndex={field.zIndex ?? 999}>
         <DatePicker
-          {...styles.createUserFormInput}
+          {...styles.input}
           {...resolvedInputProps}
           mode={field.type}
           placeholder={placeholder || 'YYYY-MM-DD'}
           value={displayValue}
           onChange={(date: string) =>
-            onChange(field.name || '', date.replace(/-/g, '_'))
+            onChange(field.name || '', date)
           }
           maximumDate={
             field.validation?.some(r => r.rule === 'dateNotInFuture')
@@ -1482,7 +1483,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <Box position="relative">
         <Input
-          {...styles.createUserFormInput}
+          {...styles.input}
           {...resolvedInputProps}
           isInvalid={!!error}
           isDisabled={disabled || field.disabled}
@@ -1531,7 +1532,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
     return (
       <Textarea
-        {...(styles.createUserFormInput as any)}
+        {...(styles.input as any)}
         {...resolvedInputProps}
         isInvalid={!!error}
         isDisabled={disabled || field.disabled}
@@ -1565,7 +1566,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   return (
     <Input
-      {...(isNested ? {} : (styles.createUserFormInput as any))}
+      {...(isNested ? {} : (styles.input as any))}
       {...resolvedInputProps}
       isInvalid={!!error}
       isDisabled={isFieldDisabled}
@@ -2763,12 +2764,18 @@ const HintDisplay: React.FC<{
  */
 function formatFieldValueForDisplay(
   rawValue: any,
-  optionsSource: string | undefined,
+  filed: FormField | undefined,
   optionsMap: OptionsMap,
 ): string {
   const resolveLabel = (v: any): string => {
-    const option = optionsSource
-      ? optionsMap[optionsSource]?.find(o => o.value === v)
+    if(filed?.displayFormat) {
+      const [type,format] = filed?.displayFormat?.split("@")
+      if(type === "dateFormat") {
+        return moment(v).format(format)
+      }
+    }
+    const option = filed?.optionsSource
+      ? optionsMap[filed?.optionsSource]?.find(o => o.value === v)
       : undefined;
     return option?.label || String(v);
   };
@@ -2821,23 +2828,23 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
 
   const displayValue = formatFieldValueForDisplay(
     rawValue,
-    targetField?.optionsSource,
+    targetField,
     optionsMap,
   );
 
   return (
-    <VStack
+    <HStack
       space="xs"
       flex={isMultiField ? 1 : undefined}
       width={!isMultiField ? '100%' : undefined}
     >
-      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
+      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground" flex={1}>
         {label}
       </Text>
-      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
+      <Text {...TYPOGRAPHY.bodySmall} color="$textForeground" flex={2}>
         {displayValue}
       </Text>
-    </VStack>
+    </HStack>
   );
 });
 
@@ -3008,7 +3015,7 @@ const FieldContainer = memo(
 
       const displayValue = formatFieldValueForDisplay(
         value,
-        field.optionsSource,
+        field,
         optionsMap,
       );
 
@@ -3065,7 +3072,7 @@ const FieldContainer = memo(
                 `admin.users.createUser.${field.label.key}`,
                 field.label.fallback,
               )}
-              {field.required && <Text color="$red500"> *</Text>}
+              <Text ml="$1" color={field.required ? "$red500" : "$blueGray400"} fontSize={"$sm"}>{field.required ? "*" : "(optional)"}</Text>
             </Text>
             {!!field.subTitle && (
               <Text
