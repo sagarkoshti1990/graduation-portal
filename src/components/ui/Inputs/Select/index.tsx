@@ -249,12 +249,32 @@ function WebSelect({
     onChange(next, labels);
   };
 
+  const isAllSelected =
+    multiple &&
+    normalizedOptions.length > 0 &&
+    valueArray.length === normalizedOptions.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      onChange([], []);
+      return;
+    }
+    const allValues = normalizedOptions.map(o => o.value);
+    const allLabels = normalizedOptions.map(o => o.nativeName || o.name || '');
+    onChange(allValues, allLabels);
+  };
+
   const localizedPlaceholder =
     placeholder ??
     i18n.t(
       'common.selectOption',
       'Select an option',
     );
+
+  const localizedSelectAll = i18n.t(
+    'common.selectAll',
+    'Select All',
+  );
 
   const writingDirection =
     I18nManager.isRTL ? 'rtl' : 'ltr';
@@ -466,6 +486,48 @@ function WebSelect({
           maxHeight: pos.maxHeight,
         }}
       >
+        {multiple && (
+          <Pressable onPress={toggleSelectAll}>
+            <HStack
+              alignItems="center"
+              justifyContent="space-between"
+              py="$2.5"
+              px="$3"
+              borderBottomWidth={1}
+              borderColor="$borderColor"
+            >
+              <Text
+                flex={1}
+                fontSize="$sm"
+                fontFamily="Inter"
+                fontWeight="$medium"
+                color="$textForeground"
+                style={{ writingDirection }}
+              >
+                {localizedSelectAll}
+              </Text>
+
+              <Checkbox
+                value="__select_all__"
+                isChecked={isAllSelected}
+                onChange={() => {}}
+                mr="$2"
+                size="sm"
+                aria-label={localizedSelectAll}
+              >
+                <CheckboxIndicator
+                  borderColor={isAllSelected ? '$primary500' : '$textMuted'}
+                  bg={isAllSelected ? '$primary500' : '$white'}
+                >
+                  <CheckboxIcon color="$white">
+                    <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                  </CheckboxIcon>
+                </CheckboxIndicator>
+              </Checkbox>
+            </HStack>
+          </Pressable>
+        )}
+
         {normalizedOptions.map(
           (option, index) => {
             const label =
@@ -506,6 +568,19 @@ function WebSelect({
                       : 'transparent'
                   }
                 >
+
+                  <Text
+                    flex={1}
+                    fontSize="$sm"
+                    fontFamily="Inter"
+                    color="$textForeground"
+                    style={{
+                      writingDirection,
+                    }}
+                  >
+                    {label}
+                  </Text>
+
                   {multiple && (
                     <Checkbox
                       value={option.value}
@@ -525,18 +600,6 @@ function WebSelect({
                       </CheckboxIndicator>
                     </Checkbox>
                   )}
-
-                  <Text
-                    flex={1}
-                    fontSize="$sm"
-                    fontFamily="Inter"
-                    color="$textForeground"
-                    style={{
-                      writingDirection,
-                    }}
-                  >
-                    {label}
-                  </Text>
 
                   {!multiple &&
                     (isSelected ? (
@@ -682,12 +745,32 @@ function NativeSelect({
     onChange(next, labels);
   };
 
+  const isAllSelected =
+    multiple &&
+    normalizedOptions.length > 0 &&
+    valueArray.length === normalizedOptions.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      onChange([], []);
+      return;
+    }
+    const allValues = normalizedOptions.map(o => o.value);
+    const allLabels = normalizedOptions.map(o => o.nativeName || o.name || '');
+    onChange(allValues, allLabels);
+  };
+
   const localizedPlaceholder =
     placeholder ??
     i18n.t(
       'common.selectOption',
       'Select an option',
     );
+
+  const localizedSelectAll = i18n.t(
+    'common.selectAll',
+    'Select All',
+  );
 
   const writingDirection =
     I18nManager.isRTL ? 'rtl' : 'ltr';
@@ -1051,6 +1134,49 @@ function NativeSelect({
                     false
                   }
                 >
+                  {multiple && (
+                    <Pressable onPress={toggleSelectAll}>
+                      <HStack
+                        px="$3"
+                        py="$3"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        bg="$white"
+                        borderBottomWidth={1}
+                        borderColor="$borderColor"
+                      >
+                        <Checkbox
+                          value="__select_all__"
+                          isChecked={isAllSelected}
+                          onChange={() => {}}
+                          mr="$2"
+                          size="sm"
+                          aria-label={localizedSelectAll}
+                        >
+                          <CheckboxIndicator
+                            borderColor={isAllSelected ? '$primary500' : '$textMuted'}
+                            bg={isAllSelected ? '$primary500' : '$white'}
+                          >
+                            <CheckboxIcon color="$white">
+                              <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                            </CheckboxIcon>
+                          </CheckboxIndicator>
+                        </Checkbox>
+
+                        <Text
+                          flex={1}
+                          fontSize="$sm"
+                          fontFamily="Inter"
+                          fontWeight="$medium"
+                          color="$textForeground"
+                          style={{ writingDirection }}
+                        >
+                          {localizedSelectAll}
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  )}
+
                   {normalizedOptions.map(
                     (
                       option,

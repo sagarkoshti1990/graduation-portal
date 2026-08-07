@@ -2838,7 +2838,7 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
       flex={isMultiField ? 1 : undefined}
       width={!isMultiField ? '100%' : undefined}
     >
-      <Text {...TYPOGRAPHY.caption} color="$textMutedForeground" flex={1}>
+      <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" flex={1}>
         {label}
       </Text>
       <Text {...TYPOGRAPHY.bodySmall} color="$textForeground" flex={2}>

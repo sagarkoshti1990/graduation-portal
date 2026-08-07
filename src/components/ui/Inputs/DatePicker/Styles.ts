@@ -370,8 +370,14 @@ export const timePickerStyles = {
     py: '$0.5' as const,
   },
   column: {
-    maxHeight: 160,
+    height: 160,
     width: 52,
+  },
+  // Centers content shorter than the column (AM/PM's two rows) — a no-op for
+  // hour/minute, whose content already overflows and scrolls.
+  columnContent: {
+    flexGrow: 1,
+    justifyContent: 'center' as const,
   },
   row: {
     height: 32,
@@ -424,7 +430,10 @@ export const datePickerStyles = {
     fontSize: '$xs' as const,
     mt: '$1' as const,
   },
-  getCalendarContentStyle: (platform: string, calendarPosition: { top: number; left: number }) => {
+  getCalendarContentStyle: (
+    platform: string,
+    calendarPosition: { top?: number; bottom?: number; left: number; maxHeight?: number },
+  ) => {
     const baseStyle: any = {
       position: 'absolute' as const,
     };
@@ -439,9 +448,17 @@ export const datePickerStyles = {
       platform === 'web' && {
         position: 'fixed' as any,
         top: calendarPosition.top,
+        bottom: calendarPosition.bottom,
         left: calendarPosition.left,
         zIndex: 99999,
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+        // Clamped to the available viewport space (see index.tsx's
+        // `computePosition`) — only ever constrains height when there truly
+        // isn't room to show the popup at its natural size, so it never
+        // clips content that would otherwise fit.
+        ...(calendarPosition.maxHeight
+          ? { maxHeight: calendarPosition.maxHeight, overflowY: 'auto' as any }
+          : null),
       },
       platform === 'android' && {
         zIndex: 99999,

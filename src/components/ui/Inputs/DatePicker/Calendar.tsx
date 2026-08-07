@@ -4,7 +4,6 @@ import { Box, HStack, Text, VStack } from '@ui';
 import {
   calendarStyles,
   timePickerStyles,
-  getDoneButtonStyle,
   getContainerSizeStyle,
   mergeStyle,
 } from './Styles';
@@ -131,8 +130,9 @@ const Calendar: React.FC<CalendarProps> = ({
         next.setHours(to24Hour(hour, isPM));
       }
       onChange(next);
+      if (mode === 'time') onClose();
     },
-    [value, hourFormat, onChange],
+    [mode, value, hourFormat, onChange, onClose],
   );
 
   const handleMinuteSelect = useCallback(
@@ -140,8 +140,9 @@ const Calendar: React.FC<CalendarProps> = ({
       const next = new Date(value);
       next.setMinutes(minute);
       onChange(next);
+      if (mode === 'time') onClose();
     },
-    [value, onChange],
+    [mode, value, onChange, onClose],
   );
 
   const handleAmPmSelect = useCallback(
@@ -150,14 +151,16 @@ const Calendar: React.FC<CalendarProps> = ({
       const hour12 = to12Hour(value.getHours());
       next.setHours(to24Hour(hour12, isPM));
       onChange(next);
+      if (mode === 'time') onClose();
     },
-    [value, onChange],
+    [mode, value, onChange, onClose],
   );
 
   const handleNow = useCallback(() => {
     const now = new Date();
     if (mode === 'time') {
       onChange(combineDateAndTime(value, now));
+      onClose();
       return;
     }
     if (isDateDisabled(startOfDay(now), minimumDate, effectiveMaxDate)) return;
@@ -406,16 +409,6 @@ const Calendar: React.FC<CalendarProps> = ({
               <Text {...mergeStyle(calendarStyles.footerButtonText, styles?.button)}>
                 {mode === 'date' ? labels.today : labels.now}
               </Text>
-            </Pressable>
-          </HStack>
-          <HStack {...calendarStyles.footerGroup}>
-            <Pressable accessibilityRole="button" accessibilityLabel={labels.cancel} onPress={handleCancelPress}>
-              <Text {...mergeStyle(calendarStyles.footerButtonText, styles?.button)}>{labels.cancel}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={labels.done} onPress={handleDone}>
-              <Box {...calendarStyles.doneButton} {...getDoneButtonStyle(theme)}>
-                <Text {...mergeStyle(calendarStyles.doneButtonText, styles?.button)}>{labels.done}</Text>
-              </Box>
             </Pressable>
           </HStack>
         </HStack>

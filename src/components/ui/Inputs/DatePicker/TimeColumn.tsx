@@ -91,6 +91,7 @@ const TimeColumn = React.memo(function TimeColumn({
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         accessibilityLabel={accessibilityLabel}
+        contentContainerStyle={timePickerStyles.columnContent}
       >
         {items.map(item => {
           const isSelected = item.value === selectedValue;
