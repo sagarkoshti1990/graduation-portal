@@ -17,7 +17,12 @@ import { LucideIcon } from '@ui/index';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
 import { useAuth } from '@contexts/AuthContext';
-import { getEntityDetails, updateEntityDetails } from '../../../services/participantService';
+import { getUserProfile } from '../../../services/authenticationService';
+import {
+  updateUser,
+  getProvincesList,
+  getSitesByProvince,
+} from '../../../services/usersService';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
 import { BASIC_INFO_SCHEMA } from './constants/profileSchema/BASIC_INFO_SCHEMA';
 import { CONTACT_PERSON_SCHEMA } from './constants/profileSchema/CONTACT_PERSON_SCHEMA';
@@ -38,6 +43,7 @@ const DEFAULT_CATEGORIES = [
   },
 ];
 
+// Main screen component for viewing and managing the organization profile.
 const OrganizationProfile = (): React.JSX.Element => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -54,14 +60,7 @@ const OrganizationProfile = (): React.JSX.Element => {
   const [supportCategories, setSupportCategories] = useState<SupportCategoryItem[]>([]);
   const [originalSupportCategories, setOriginalSupportCategories] = useState<SupportCategoryItem[]>([]);
   
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  // Extract orgId from user context
-  const orgId = user?.user_organizations?.[0]?.organization?.id || 
-                user?.user_organizations?.[0]?.organization?._id ||
-                user?.organizations?.[0]?.id || 
-                user?.organizations?.[0]?._id;
 
   // Options map for select fields
   const optionsMap = {
@@ -76,15 +75,16 @@ const OrganizationProfile = (): React.JSX.Element => {
     ],
   };
 
-  // Fetch organization profile details on mount
+  // Fetches and parses the logged-in user's organization profile on mount.
   useEffect(() => {
-    if (!orgId) {
+    if (!user?.id) {
       const emptyValues = {
-        name: '',
+        name: user?.name || '',
         organizationType: [],
-        contactPersonName: '',
-        contactEmail: '',
-        contactPhone: '',
+        contactPersonName: user?.name || '',
+        contactEmail: user?.email || '',
+        contactPhone: user?.phone || '',
+        phone_code: user?.phone_code || '27',
         agreementMoU: null,
         organisationCredentials: null,
       };
@@ -94,25 +94,82 @@ const OrganizationProfile = (): React.JSX.Element => {
       setOriginalProvinceCoverage([]);
       setSupportCategories(DEFAULT_CATEGORIES);
       setOriginalSupportCategories(DEFAULT_CATEGORIES);
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    getEntityDetails(orgId)
+    getUserProfile(user?.id)
       .then((res: any) => {
-        const profileData = res?.data || {};
-        const mapped = {
-          name: profileData?.name || '',
-          organizationType: profileData?.organizationType || profileData?.meta?.organizationType || [],
-          contactPersonName: profileData?.contactPersonName || profileData?.meta?.contactPersonName || '',
-          contactEmail: profileData?.contactEmail || profileData?.meta?.contactEmail || '',
-          contactPhone: profileData?.contactPhone || profileData?.meta?.contactPhone || '',
-          agreementMoU: profileData?.agreementMoU || profileData?.meta?.agreementMoU || null,
-          organisationCredentials: profileData?.organisationCredentials || profileData?.meta?.organisationCredentials || null,
+        const profileData = res || {};
+        
+        // Helper to extract fields from the profile response payload.
+        const getField = (key: string, fallback: any = '') => {
+          const val = profileData[key] ?? 
+                      profileData?.meta?.[key] ?? 
+                      profileData?.extra?.[key] ?? 
+                      profileData?.userDetails?.[key] ?? 
+                      profileData?.userDetails?.meta?.[key] ?? 
+                      profileData?.userDetails?.extra?.[key] ??
+                      profileData?.custom_entity_text?.[key];
+          
+          if (val === undefined || val === null) {
+            return fallback;
+          }
+          return val;
         };
-        const cov = profileData?.provinceCoverage || profileData?.meta?.provinceCoverage || [];
-        const cat = profileData?.supportCategories || profileData?.meta?.supportCategories || DEFAULT_CATEGORIES;
+
+        let orgType = getField('organizationType', []);
+        if (typeof orgType === 'string') {
+          try {
+            orgType = JSON.parse(orgType);
+          } catch {
+            orgType = [orgType];
+          }
+        }
+        if (!Array.isArray(orgType)) {
+          orgType = [];
+        }
+
+        const mapped = {
+          name: getField('about') || getField('name') || user?.name || '',
+          organizationType: orgType,
+          contactPersonName: getField('name') || user?.name || '',
+          contactEmail: getField('email') || user?.email || '',
+          contactPhone: getField('phone') || user?.phone || '',
+          phone_code: getField('phone_code') || getField('phoneCode') || user?.phone_code || '27',
+          agreementMoU: getField('agreementMoU', null),
+          organisationCredentials: getField('organisationCredentials', null),
+        };
+
+        const rawCov = getField('provinceCoverage', []);
+        const rawCat = getField('supportCategories', DEFAULT_CATEGORIES);
+
+        let cov = [];
+        if (rawCov) {
+          if (typeof rawCov === 'object') {
+            cov = rawCov;
+          } else {
+            try {
+              cov = JSON.parse(rawCov);
+            } catch {
+              cov = [];
+            }
+          }
+        }
+        if (!Array.isArray(cov)) cov = [];
+
+        let cat = DEFAULT_CATEGORIES;
+        if (rawCat) {
+          if (typeof rawCat === 'object') {
+            cat = rawCat;
+          } else {
+            try {
+              cat = JSON.parse(rawCat);
+            } catch {
+              cat = DEFAULT_CATEGORIES;
+            }
+          }
+        }
+        if (!Array.isArray(cat)) cat = DEFAULT_CATEGORIES;
 
         setValues(mapped);
         setOriginalValues(mapped);
@@ -123,27 +180,10 @@ const OrganizationProfile = (): React.JSX.Element => {
       })
       .catch((err: any) => {
         console.error('Error fetching org profile:', err);
-        const emptyValues = {
-          name: '',
-          organizationType: [],
-          contactPersonName: '',
-          contactEmail: '',
-          contactPhone: '',
-          agreementMoU: null,
-          organisationCredentials: null,
-        };
-        setValues(emptyValues);
-        setOriginalValues(emptyValues);
-        setProvinceCoverage([]);
-        setOriginalProvinceCoverage([]);
-        setSupportCategories(DEFAULT_CATEGORIES);
-        setOriginalSupportCategories(DEFAULT_CATEGORIES);
-      })
-      .finally(() => {
-        setLoading(false);
       });
-  }, [orgId]);
+  }, [user?.id, user?.name, user?.email, user?.phone]);
 
+  // Updates a form field value and clears its validation error.
   const handleFieldChange = useCallback((name: string, value: any) => {
     setValues((prev: any) => ({ ...prev, [name]: value }));
     setErrors((prev: any) => {
@@ -153,6 +193,7 @@ const OrganizationProfile = (): React.JSX.Element => {
     });
   }, []);
 
+  // Cancels editing mode and restores the previous saved values.
   const handleCancel = () => {
     setValues(originalValues);
     setProvinceCoverage(originalProvinceCoverage);
@@ -161,6 +202,7 @@ const OrganizationProfile = (): React.JSX.Element => {
     setMode('preview');
   };
 
+  // Validates forms, constructs payload, updates profile via API, and updates local original values on success.
   const handleSave = async () => {
     // Validate the three schemas
     const basicErrors = validateSchema(BASIC_INFO_SCHEMA, values, optionsMap);
@@ -177,22 +219,29 @@ const OrganizationProfile = (): React.JSX.Element => {
     setSaving(true);
     try {
       const payload = {
-        ...values,
-        provinceCoverage,
-        supportCategories,
+        name: values.contactPersonName,
+        about: values.name,
+        email: values.contactEmail,
+        phone: values.contactPhone,
+        phone_code: values.phone_code ? values.phone_code.toString().replace('+', '') : '27',
+        meta: {
+          organizationType: values.organizationType,
+          provinceCoverage: JSON.stringify(provinceCoverage),
+          supportCategories: JSON.stringify(supportCategories),
+          agreementMoU: values.agreementMoU,
+          organisationCredentials: values.organisationCredentials,
+        }
       };
 
-      await updateEntityDetails({
-        userId: user?.id || '',
-        entityId: orgId || user?.id || '',
-        entityUpdates: payload,
-      });
+      await updateUser(user?.id || '', payload);
 
+      showAlert('success', t('profile.saveSuccess', 'Profile updated successfully.'));
+      setMode('preview');
+      
+      // Update original states locally
       setOriginalValues(values);
       setOriginalProvinceCoverage(provinceCoverage);
       setOriginalSupportCategories(supportCategories);
-      setMode('preview');
-      showAlert('success', t('profile.saveSuccess', 'Profile updated successfully.'));
     } catch (err) {
       console.error('Failed to update organization profile:', err);
       showAlert('error', t('profile.saveError', 'Failed to update profile.'));
@@ -201,7 +250,7 @@ const OrganizationProfile = (): React.JSX.Element => {
     }
   };
 
-  // Upload service implementation for documents
+  // Uploads the selected document to the server and returns the uploaded file URL.
   const handleUpload = async (file: any): Promise<string> => {
     const entityId = `orgDoc-${Date.now()}`;
     const uploaded = await uploadFiles(entityId, [
@@ -214,71 +263,43 @@ const OrganizationProfile = (): React.JSX.Element => {
     return url;
   };
 
-  if (loading) {
-    return (
-      <VStack flex={1} justifyContent="center" alignItems="center" bg="$background50">
-        <Spinner size="large" />
-      </VStack>
-    );
-  }
-
-  const isEdit = mode === 'edit';
-
   return (
-    <VStack flex={1}>
+    <VStack {...styles.root}>
       <SPTitleHeader
         title={t('profile.title', 'Organisation Profile')}
         subTitle={t('profile.subTitle', "Manage your organisation's information and support coverage")}
         rightSection={
-          !isEdit ? (
+          mode !== 'edit' ? (
             <Button
               onPress={() => setMode('edit')}
-              style={{
-                borderRadius: 6,
-                height: 40,
-                paddingHorizontal: 16,
-              }}
+              {...styles.editButton}
             >
-              <ButtonIcon as={LucideIcon} name={'SquarePen'} mr="$2" />
+              <ButtonIcon as={LucideIcon} name={'SquarePen'} {...styles.editButtonIcon} />
               <ButtonText>{t('profile.editProfile', 'Edit Profile')}</ButtonText>
             </Button>
           ) : (
-            <HStack space="sm">
+            <HStack {...styles.headerActions}>
               <Button
-                variant="outline"
-                borderColor="$borderColor"
                 onPress={handleCancel}
                 isDisabled={saving}
-                style={{
-                  borderRadius: 10,
-                  height: 40,
-                  paddingHorizontal: 16,
-                  backgroundColor: 'transparent',
-                }}
+                {...styles.cancelButton}
               >
-                <ButtonIcon as={LucideIcon} name="X" color="#6b7280" mr="$2" />
-                <ButtonText color="#4b5563" fontWeight="600">
+                <ButtonIcon as={LucideIcon} name="X" {...styles.cancelButtonIcon} />
+                <ButtonText {...styles.cancelButtonText}>
                   {t('common.cancel', 'Cancel')}
                 </ButtonText>
               </Button>
               <Button
-                variant="solid"
-                bg="$success600"
-                borderColor="$success600"
                 onPress={handleSave}
                 isDisabled={saving}
-                style={{
-                  borderRadius: 10,
-                  height: 40,
-                  paddingHorizontal: 16,
-                }}
+                {...styles.saveButton}
               >
                 {saving ? (
-                  <Spinner size="small" color="$white" mr="$2" />
+                  <Spinner {...styles.saveSpinner} />
                 ) : (
-                  <ButtonIcon as={LucideIcon} name="Save" color="$white" mr="$2" />
+                  <ButtonIcon as={LucideIcon} name="Save" {...styles.saveButtonIcon} />
                 )}
-                <ButtonText color="$white" fontWeight="600">
+                <ButtonText {...styles.saveButtonText}>
                   {t('common.saveChanges', 'Save Changes')}
                 </ButtonText>
               </Button>
@@ -293,7 +314,7 @@ const OrganizationProfile = (): React.JSX.Element => {
           <VStack {...styles.sectionCard}>
             <HStack {...styles.sectionHeader}>
               <Box {...styles.sectionIconContainer}>
-                <LucideIcon name="Building" size={20} color="$primary500" />
+                <LucideIcon name="Building" {...styles.sectionIcon} />
               </Box>
               <VStack>
                 <Text {...styles.sectionTitle}>{t('profile.basicInfo', 'Basic Information')}</Text>
@@ -319,7 +340,7 @@ const OrganizationProfile = (): React.JSX.Element => {
           <VStack {...styles.sectionCard}>
             <HStack {...styles.sectionHeader}>
               <Box {...styles.sectionIconContainer}>
-                <LucideIcon name="User" size={20} color="$primary500" />
+                <LucideIcon name="User" {...styles.sectionIcon} />
               </Box>
               <VStack>
                 <Text {...styles.sectionTitle}>{t('profile.contactPerson', 'Contact Person')}</Text>
@@ -345,12 +366,12 @@ const OrganizationProfile = (): React.JSX.Element => {
           <VStack {...styles.sectionCard}>
             <HStack {...styles.sectionHeader}>
               <Box {...styles.sectionIconContainer}>
-                <LucideIcon name="MapPin" size={20} color="$primary500" />
+                <LucideIcon name="MapPin" {...styles.sectionIcon} />
               </Box>
               <VStack>
-                <HStack alignItems="center">
+                <HStack {...styles.alignCenterRow}>
                   <Text {...styles.sectionTitle}>{t('profile.coverage', 'Coverage')}</Text>
-                  <Text color="$red500" fontSize={16} fontWeight="700"> *</Text>
+                  <Text {...styles.requiredAsterisk}> *</Text>
                 </HStack>
                 <Text {...styles.sectionSubtitle}>
                   {t('profile.coverageSubtitle', 'Select province and multi-select sites, then click + Add Province')}
@@ -370,12 +391,12 @@ const OrganizationProfile = (): React.JSX.Element => {
           <VStack {...styles.sectionCard}>
             <HStack {...styles.sectionHeader}>
               <Box {...styles.sectionIconContainer}>
-                <LucideIcon name="Layers" size={20} color="$primary500" />
+                <LucideIcon name="Layers" {...styles.sectionIcon} />
               </Box>
               <VStack>
-                <HStack alignItems="center">
+                <HStack {...styles.alignCenterRow}>
                   <Text {...styles.sectionTitle}>{t('profile.supportCategoriesOffered', 'Support Categories Offered')}</Text>
-                  <Text color="$red500" fontSize={16} fontWeight="700"> *</Text>
+                  <Text {...styles.requiredAsterisk}> *</Text>
                 </HStack>
                 <Text {...styles.sectionSubtitle}>
                   {t('profile.supportCategoriesSubtitle', 'Choose categories and sub-options, then click + Add Category')}
@@ -395,7 +416,7 @@ const OrganizationProfile = (): React.JSX.Element => {
           <VStack {...styles.sectionCard}>
             <HStack {...styles.sectionHeader}>
               <Box {...styles.sectionIconContainer}>
-                <LucideIcon name="FileText" size={20} color="$primary500" />
+                <LucideIcon name="FileText" {...styles.sectionIcon} />
               </Box>
               <VStack>
                 <Text {...styles.sectionTitle}>{t('profile.documents', 'Documents')}</Text>

@@ -175,41 +175,41 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   };
 
   return (
-    <VStack space="md" width="100%">
+    <VStack {...styles.coverageContainer}>
       {/* Added Category Cards */}
-      <VStack space="sm">
+      <VStack {...styles.addedCardsContainer}>
         {value.length === 0 && !isEdit && (
-          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+          <Text {...styles.noCoverageText}>
             {t('profile.noSupportCategories', 'No support categories added.')}
           </Text>
         )}
         {value.map(item => (
           <VStack key={item.id} {...styles.categoryCard}>
-            <HStack justifyContent="space-between" alignItems="center" width="100%">
-              <HStack alignItems="center">
-                <Text {...TYPOGRAPHY.bodySmall} fontWeight="700" color="$primary700">
+            <HStack {...styles.cardHeader}>
+              <HStack {...styles.supportCategoryHeader}>
+                <Text {...styles.cardTitleText}>
                   {item.categoryName}
                 </Text>
-                <Badge {...styles.redBadge} ml="$2" mr={0} mb={0}>
+                <Badge {...styles.offeredBadge}>
                   <BadgeText {...styles.redBadgeText}>Offered</BadgeText>
                 </Badge>
               </HStack>
               {isEdit && (
               <Pressable onPress={() => handleDeleteCategory(item.id)}>
-                <LucideIcon name="Trash2" size={16} color="$error600" />
+                <LucideIcon name="Trash2" {...styles.trashIcon} />
               </Pressable>
               )}
             </HStack>
 
             {/* Render Category Details */}
             {item.categoryName === 'Training / Sessions' && item.trainingData && (
-              <VStack space="sm" mt="$2">
-                <Text {...styles.cardSectionHeading}>Specific Training Areas:</Text>
+              <VStack {...styles.subCategoriesContainer}>
+                <Text {...styles.specificTrainingTitle}>Specific Training Areas:</Text>
                 
                 {item.trainingData.socialEmpowerment.length > 0 && (
-                  <VStack space="xs">
+                  <VStack {...styles.subCategoryCol}>
                     <Text {...styles.cardFieldLabel}>Social Empowerment Sessions</Text>
-                    <HStack space="xs" flexWrap="wrap">
+                    <HStack {...styles.badgeRow}>
                       {item.trainingData.socialEmpowerment.map((s, idx) => (
                         <Badge key={idx} {...styles.blueBadge}>
                           <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
@@ -220,9 +220,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 )}
 
                 {item.trainingData.financialInclusion.length > 0 && (
-                  <VStack space="xs">
+                  <VStack {...styles.subCategoryCol}>
                     <Text {...styles.cardFieldLabel}>Financial Inclusion Sessions</Text>
-                    <HStack space="xs" flexWrap="wrap">
+                    <HStack {...styles.badgeRow}>
                       {item.trainingData.financialInclusion.map((s, idx) => (
                         <Badge key={idx} {...styles.blueBadge}>
                           <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
@@ -233,9 +233,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 )}
 
                 {item.trainingData.livelihoods.length > 0 && (
-                  <VStack space="xs">
+                  <VStack {...styles.subCategoryCol}>
                     <Text {...styles.cardFieldLabel}>Livelihoods Sessions</Text>
-                    <HStack space="xs" flexWrap="wrap">
+                    <HStack {...styles.badgeRow}>
                       {item.trainingData.livelihoods.map((s, idx) => (
                         <Badge key={idx} {...styles.blueBadge}>
                           <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
@@ -248,11 +248,11 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
             )}
 
             {item.categoryName === 'Linkage to Additional Services' && item.linkageData && (
-              <VStack space="sm" mt="$2">
+              <VStack {...styles.subCategoriesContainer}>
                 {item.linkageData.specialAttention.length > 0 && (
-                  <VStack space="xs">
+                  <VStack {...styles.subCategoryCol}>
                     <Text {...styles.cardFieldLabel}>Special Attention Tags</Text>
-                    <HStack space="xs" flexWrap="wrap">
+                    <HStack {...styles.badgeRow}>
                       {item.linkageData.specialAttention.map((s, idx) => (
                         <Badge key={idx} {...styles.purpleBadge}>
                           <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
@@ -263,9 +263,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 )}
 
                 {item.linkageData.immediateAttention.length > 0 && (
-                  <VStack space="xs">
+                  <VStack {...styles.subCategoryCol}>
                     <Text {...styles.cardFieldLabel}>Immediate Attention Tags</Text>
-                    <HStack space="xs" flexWrap="wrap">
+                    <HStack {...styles.badgeRow}>
                       {item.linkageData.immediateAttention.map((s, idx) => (
                         <Badge key={idx} {...styles.purpleBadge}>
                           <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
@@ -278,9 +278,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
             )}
 
             {item.categoryName === 'Assets' && item.assetsData && (
-              <VStack space="xs" mt="$2">
+              <VStack {...styles.subCategoryCol} {...styles.detailsCol}>
                 <Text {...styles.cardFieldLabel}>Asset Types Offered:</Text>
-                <HStack space="xs" flexWrap="wrap">
+                <HStack {...styles.badgeRow}>
                   {item.assetsData.assetTypes.map((s, idx) => (
                     <Badge key={idx} {...styles.greenBadge}>
                       <BadgeText {...styles.greenBadgeText}>{s}</BadgeText>
@@ -291,9 +291,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
             )}
 
             {item.categoryName === 'Others' && item.othersData && (
-              <VStack space="xs" mt="$2">
+              <VStack {...styles.detailsCol}>
                 <Text {...styles.cardFieldLabel}>Details</Text>
-                <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">{item.othersData}</Text>
+                <Text {...styles.detailsText}>{item.othersData}</Text>
               </VStack>
             )}
           </VStack>
@@ -302,14 +302,14 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
       {/* Edit Form */}
       {isEdit && (
-      <VStack space="md" {...styles.coverageAddSection}>
-        <Text fontSize={12} fontWeight="700" color="$primary500" letterSpacing={0.5}>
+      <VStack {...styles.coverageAddSection}>
+        <Text {...styles.addSupportCategoryTitle}>
           + ADD SUPPORT CATEGORY
         </Text>
-        <VStack space="xs">
-          <HStack>
+        <VStack {...styles.categorySelectCol}>
+          <HStack {...styles.labelCol}>
             <Text {...styles.label}>{t('profile.supportCategoryOffered', 'Support Category Offered')}</Text>
-            <Text color="$red500" fontSize={12}> *</Text>
+            <Text {...styles.redAsteriskSmall}> *</Text>
           </HStack>
           <Select
             options={CATEGORY_OPTIONS}
@@ -324,19 +324,12 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
         {/* select Training / Sessions category */}
         {selectedCategory === 'Training / Sessions' && (
-          <VStack
-            space="md"
-            p="$4"
-            bg="#eff6ff"
-            borderWidth={1}
-            borderColor="#bfdbfe"
-            borderRadius="$lg"
-          >
-            <Text fontSize={14} fontWeight="700" color="#1d4ed8" mb="$1">
+          <VStack {...styles.trainingAreaBox}>
+            <Text {...styles.trainingAreaTitle}>
               Specific Training Areas
             </Text>
-            <VStack space="xs">
-              <Text {...styles.label} fontWeight="600" mb={0}>
+            <VStack {...styles.trainingAreaFieldCol}>
+              <Text {...styles.trainingAreaLabel}>
                 {t('profile.socialEmpowerment', 'Social Empowerment Sessions')}
               </Text>
               <Select
@@ -348,8 +341,8 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               />
             </VStack>
 
-            <VStack space="xs">
-              <Text {...styles.label} fontWeight="600" mb={0}>
+            <VStack {...styles.trainingAreaFieldCol}>
+              <Text {...styles.trainingAreaLabel}>
                 {t('profile.financialInclusion', 'Financial Inclusion Sessions')}
               </Text>
               <Select
@@ -361,8 +354,8 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               />
             </VStack>
 
-            <VStack space="xs">
-              <Text {...styles.label} fontWeight="600" mb={0}>
+            <VStack {...styles.trainingAreaFieldCol}>
+              <Text {...styles.trainingAreaLabel}>
                 {t('profile.livelihoods', 'Livelihoods Sessions')}
               </Text>
               <Select
@@ -378,16 +371,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
         {/* select Linkage to Additional Services category */}
         {selectedCategory === 'Linkage to Additional Services' && (
-          <VStack
-            space="md"
-            p="$4"
-            bg="#faf5ff"
-            borderWidth={1}
-            borderColor="#e9d5ff"
-            borderRadius="$lg"
-          >
-            <VStack space="xs">
-              <Text {...styles.label} fontWeight="600" mb={0}>
+          <VStack {...styles.linkageAreaBox}>
+            <VStack {...styles.linkageAreaFieldCol}>
+              <Text {...styles.linkageAreaLabel}>
                 {t('profile.specialAttention', 'Special Attention Tags')}
               </Text>
               <Select
@@ -399,8 +385,8 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               />
             </VStack>
 
-            <VStack space="xs">
-              <Text {...styles.label} fontWeight="600" mb={0}>
+            <VStack {...styles.linkageAreaFieldCol}>
+              <Text {...styles.linkageAreaLabel}>
                 {t('profile.immediateAttention', 'Immediate Attention Tags')}
               </Text>
               <Select
@@ -416,15 +402,8 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
         {/* select Assets category */}
         {selectedCategory === 'Assets' && (
-          <VStack
-            space="md"
-            p="$4"
-            bg="#f0fdf4"
-            borderWidth={1}
-            borderColor="#bbf7d0"
-            borderRadius="$lg"
-          >
-              <Text {...styles.label} color="$success800" fontWeight="700">
+          <VStack {...styles.assetsAreaBox}>
+              <Text {...styles.assetsAreaLabel}>
                 {t('profile.assetTypes', 'Asset Types Offered')}
             </Text>
             <Select
@@ -439,7 +418,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
         {/* select Others category */}
         {selectedCategory === 'Others' && (
-          <VStack space="xs">
+          <VStack {...styles.othersAreaCol}>
             <Text {...styles.label}>{t('profile.otherDetails', 'Other Support Details')}</Text>
             <Input {...styles.textInput}>
               <InputField
@@ -451,21 +430,20 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
           </VStack>
         )}
 
-        <HStack justifyContent="flex-end" width="100%">
+        <HStack {...styles.actionButtonRow}>
           <Button
-            variant="solid"
             onPress={handleAddCategory}
             isDisabled={isAddDisabled()}
-            bg={isAddDisabled() ? '$background100' : '$primary500'}
-            borderColor={isAddDisabled() ? '$background100' : '$primary500'}
-            size="sm"
-            style={{
-              borderRadius: 8,
-              height: 38,
-            }}
+            {...(isAddDisabled() ? styles.addCategoryButtonDisabled : styles.addCategoryButtonActive)}
           >
-            <ButtonIcon as={LucideIcon} name="Plus" mr="$2" color={isAddDisabled() ? '$textMuted' : '$white'} />
-            <ButtonText color={isAddDisabled() ? '$textMuted' : '$white'} fontWeight="600">
+            <ButtonIcon
+              as={LucideIcon}
+              name="Plus"
+              {...(isAddDisabled() ? styles.addCategoryButtonIconDisabled : styles.addCategoryButtonIconActive)}
+            />
+            <ButtonText
+              {...(isAddDisabled() ? styles.addCategoryButtonTextDisabled : styles.addCategoryButtonTextActive)}
+            >
               {t('profile.addCategory', 'Add Category')}
             </ButtonText>
           </Button>

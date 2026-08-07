@@ -137,30 +137,30 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
   const isEdit = mode === 'edit';
 
   return (
-    <VStack space="md" width="100%">
+    <VStack {...styles.coverageContainer}>
       {/* Title */}
-      <VStack space="xs">
+      <VStack {...styles.titleContainer}>
         <Text {...styles.subSectionTitle}>
           {t('profile.provinceCoverage', 'Province Coverage')}
         </Text>
       </VStack>
 
       {/* Added Cards */}
-      <VStack space="sm">
+      <VStack {...styles.addedCardsContainer}>
         {value.length === 0 && !isEdit && (
-          <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground">
+          <Text {...styles.noCoverageText}>
             {t('profile.noCoverage', 'No province coverage added.')}
           </Text>
         )}
         {value.map(item => (
           <VStack key={item.provinceId} {...styles.coverageCard}>
-            <HStack justifyContent="space-between" alignItems="center" width="100%">
-              <HStack space="sm" alignItems="center" flex={1}>
-                <LucideIcon name="MapPin" size={16} color="$primary500" />
-                <Text {...TYPOGRAPHY.bodySmall} fontWeight="700" color="$textForeground">
+            <HStack {...styles.cardHeader}>
+              <HStack {...styles.cardHeaderLeft}>
+                <LucideIcon name="MapPin" {...styles.mapPinIcon} />
+                <Text {...styles.cardTitleText}>
                   {item.provinceName}
                 </Text>
-                <Badge {...styles.blueBadge} mr={0} mb={0}>
+                <Badge {...styles.cardBadge}>
                   <BadgeText {...styles.blueBadgeText}>
                     {`${item.siteIds.length} ${item.siteIds.length === 1 ? 'site' : 'sites'}`}
                   </BadgeText>
@@ -168,13 +168,13 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
               </HStack>
               {isEdit && (
               <Pressable onPress={() => handleDeleteCard(item.provinceId)}>
-                <LucideIcon name="Trash2" size={16} color="$error600" />
+                <LucideIcon name="Trash2" {...styles.trashIcon} />
               </Pressable>
               )}
             </HStack>
             
             {/* Site Names List */}
-            <HStack space="xs" flexWrap="wrap" mt="$2">
+            <HStack {...styles.siteBadgeContainer}>
               {item.siteNames.map((siteName, idx) => (
                 <Badge key={idx} {...styles.greyBadge}>
                   <BadgeText {...styles.greyBadgeText}>{siteName}</BadgeText>
@@ -187,15 +187,15 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 
       {/* Edit controls */}
       {isEdit && (
-      <VStack space="md" {...styles.coverageAddSection}>
-        <Text fontSize={12} fontWeight="700" color="$primary500" letterSpacing={0.5}>
+      <VStack {...styles.coverageAddSection}>
+        <Text {...styles.coverageAddTitle}>
           + ADD PROVINCE COVERAGE
         </Text>
-        <HStack space="md" width="100%">
-          <VStack flex={1} space="xs">
-            <HStack>
+        <HStack {...styles.coverageAddInputs}>
+          <VStack {...styles.inputCol}>
+            <HStack {...styles.labelCol}>
               <Text {...styles.label}>{t('profile.provinceLabel', 'Province')}</Text>
-              <Text color="$red500" fontSize={12}> *</Text>
+              <Text {...styles.redAsteriskSmall}> *</Text>
             </HStack>
             <Select
               options={provinceOptions}
@@ -206,10 +206,10 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
             />
           </VStack>
 
-          <VStack flex={1} space="xs">
-            <HStack>
+          <VStack {...styles.inputCol}>
+            <HStack {...styles.labelCol}>
               <Text {...styles.label}>{t('profile.siteFieldLabel', 'Site Field')}</Text>
-              <Text color="$red500" fontSize={12}> *</Text>
+              <Text {...styles.redAsteriskSmall}> *</Text>
             </HStack>
             <Select
               options={siteOptions}
@@ -222,16 +222,14 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
           </VStack>
         </HStack>
 
-        <HStack justifyContent="flex-end" width="100%">
+        <HStack {...styles.actionButtonRow}>
           <Button
-            variant="solid"
-            action="primary"
             onPress={handleAddCoverage}
-              isDisabled={!selectedProvinceId || selectedSiteIds.length === 0}  
-            bg={selectedProvinceId ? '#7a1f2d' : '#cca3a9'}
-            style={{ borderRadius: 6, height: 40 }}            >
-              <ButtonIcon as={LucideIcon} name="Plus" mr="$1" />
-              <ButtonText>{t('profile.addProvince', 'Add Province')}</ButtonText>
+            isDisabled={!selectedProvinceId || selectedSiteIds.length === 0}  
+            {...(selectedProvinceId ? styles.addButtonActive : styles.addButtonDisabled)}
+          >
+            <ButtonIcon as={LucideIcon} name="Plus" {...styles.plusIconSmall} />
+            <ButtonText>{t('profile.addProvince', 'Add Province')}</ButtonText>
           </Button>
         </HStack>
       </VStack>
