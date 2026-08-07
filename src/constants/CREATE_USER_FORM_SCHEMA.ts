@@ -14,7 +14,7 @@ import { FormSection } from "@components/SchemaFormRenderer/type";
 const INPUT_STYLE = {
   variant: 'outline' as const,
   size: 'sm' as const,
-  bg: '#e8f0f9ff',
+  bg: '$faintBlue',
 } as const;
 
 const TITLE_STYLE = {

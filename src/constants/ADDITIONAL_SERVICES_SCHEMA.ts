@@ -1,5 +1,38 @@
 import type { FormSection } from '@components/SchemaFormRenderer/type';
 
+export const tabs = [
+  {
+    parent: "Special Attention",
+    value: 'GBV',
+    label:'GBV',
+  },
+  {
+    parent: "Special Attention",
+    value: 'Mental Health',
+    label:'Mental Health',
+  },
+  {
+    parent: "Special Attention",
+    value: 'Substance Abuse',
+    label:'Substance Abuse',
+  },
+  {
+    parent: "Immediate Attention",
+    value: 'Food',
+    label:'Food',
+  },
+  {
+    parent: "Immediate Attention",
+    value: 'Health',
+    label:'Health',
+  },
+  {
+    parent: "Immediate Attention",
+    value: 'Municipal Indigent Programs',
+    label:'Municipal Indigent Programs',
+  },
+]
+
 export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
   // ─── Tab 1: Service Details ───────────────────────────────────────────────
   {
@@ -44,7 +77,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
               },
               {
                 name: 'site',
-                type: 'select',
+                type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
                 placeholder: { fallback: 'Select province first' },
@@ -84,6 +117,19 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
+              },
+            ],
+          },
+          {
+            fields: [
+              {
+                name: 'tags',
+                type: 'pillmultiselect',
+                label: { key: 'servicesCategory', fallback: 'Tags' },
+                optionsSource: 'tags',
+                visibleIf: [
+                  { name: 'servicesCategory', value: 'Other', operator: '!=' },
+                ]
               },
             ],
           },
@@ -136,43 +182,109 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
         id: 'serviceAvailability',
         title: {
           key: 'supportProvider.additionalServicesForm.step1.availabilityTitle',
-          fallback: 'Service Availability (optional)',
+          fallback: 'Service Availability',
         },
         rows: [
           {
             fields: [
               {
                 name: 'startDate',
-                type: 'date',
+                type: 'datetime',
                 required: false,
                 label: { key: 'startDate', fallback: 'Start Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                validation: [
+                  {
+                    rule: 'dateNotInPast',
+                    message: {
+                      key: 'errors.dateNotInPast',
+                      fallback: 'Past dates are not allowed.',
+                    },
+                  },
+                  {
+                    rule: "dateCompare",
+                    value: {
+                      field: "endDate",
+                      operator: "<="
+                    },
+                    message: {
+                      key: "errors.dateCompare",
+                      fallback: "Start Date must be before or equal to End Date."
+                    }
+                  }
+                ],
               },
-              {
-                name: 'startTime',
-                type: 'text',
-                required: false,
-                label: { key: 'startTime', fallback: 'Start Time' },
-                placeholder: { fallback: '--:--' },
-              },
+              // {
+              //   name: 'startTime',
+              //   type: 'time',
+              //   required: false,
+              //   label: { key: 'startTime', fallback: 'Start Time' },
+              //   placeholder: { fallback: '--:--' },
+              //   validation: [
+              //     {
+              //       rule: "timeCompare",
+              //       value: {
+              //         field: "endTime",
+              //         operator: "<"
+              //       },
+              //       message: {
+              //         key: "errors.timeCompareEndTime",
+              //         fallback: "Start Time must be before End Time."
+              //       }
+              //     }
+              //   ],
+              // },
             ],
           },
           {
             fields: [
               {
                 name: 'endDate',
-                type: 'date',
+                type: 'datetime',
                 required: false,
                 label: { key: 'endDate', fallback: 'End Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                validation: [
+                  {
+                    rule: 'dateNotInPast',
+                    message: {
+                      key: 'errors.dateNotInPast',
+                      fallback: 'Past dates are not allowed.',
+                    },
+                  },
+                  {
+                    rule: "dateCompare",
+                    value: {
+                      field: "startDate",
+                      operator: ">="
+                    },
+                    message: {
+                      key: "errors.dateCompareStartDate",
+                      fallback: "End Date must be after or equal to Start Date."
+                    }
+                  }
+                ],
               },
-              {
-                name: 'endTime',
-                type: 'text',
-                required: false,
-                label: { key: 'endTime', fallback: 'End Time' },
-                placeholder: { fallback: '--:--' },
-              },
+              // {
+              //   name: 'endTime',
+              //   type: 'time',
+              //   required: false,
+              //   label: { key: 'endTime', fallback: 'End Time' },
+              //   placeholder: { fallback: '--:--' },
+              //   validation: [
+              //     {
+              //       rule: "timeCompare",
+              //       value: {
+              //         field: "startTime",
+              //         operator: ">"
+              //       },
+              //       message: {
+              //         key: "errors.timeCompareStartTime",
+              //         fallback: "End Time must be after Start Time."
+              //       }
+              //     }
+              //   ],
+              // },
             ],
           },
           {
@@ -181,7 +293,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 name: 'serviceLocation',
                 type: 'text',
                 required: false,
-                label: { key: 'serviceLocation', fallback: 'Location where service is provided (optional)' },
+                label: { key: 'serviceLocation', fallback: 'Location where service is provided' },
                 placeholder: { fallback: "Address or indicate 'Online / Remote'..." },
               },
             ],
@@ -192,7 +304,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 name: 'eligibilityCriteria',
                 type: 'textarea',
                 required: false,
-                label: { key: 'eligibilityCriteria', fallback: 'Eligibility Criteria (optional)' },
+                label: { key: 'eligibilityCriteria', fallback: 'Eligibility Criteria' },
                 placeholder: { fallback: 'Who can access this service? Any specific requirements?' },
               },
             ],
@@ -247,6 +359,106 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
               key: 'supportProvider.additionalServicesForm.step2.serviceDetailsTitle',
               fallback: 'Service Details',
             },
+            rows: [
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'province',
+                    optionsSource: 'provinces',
+                    label: {
+                      key: 'province',
+                      fallback: 'Province',
+                    },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'site',
+                    optionsSource: 'sites',
+                    label: {
+                      key: 'site',
+                      fallback: 'Site',
+                    },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'servicesCategory',
+                    label: {
+                      key: 'servicesCategory',
+                      fallback: 'Category',
+                    },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'tags',
+                    label: {
+                      key: 'servicesCategory',
+                      fallback: 'Tags',
+                    },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'servicesTitle',
+                    type: 'view',
+                    label: { key: 'servicesTitle', fallback: 'Title' },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'startDate',
+                    type: 'view',
+                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    label: { key: 'startDate', fallback: 'Start Date' },
+                  },
+                  // {
+                  //   name: 'startTime',
+                  //   type: 'view',
+                  //   label: { key: 'startTime', fallback: 'Start Time' },
+                  // },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'endDate',
+                    type: 'view',
+                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    label: { key: 'endDate', fallback: 'End Date' },
+                  },
+                  // {
+                  //   name: 'endTime',
+                  //   type: 'view',
+                  //   label: { key: 'endTime', fallback: 'End Time' },
+                  // },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'serviceLocation',
+                    type: 'view',
+                    label: { key: 'serviceLocation', fallback: 'Location' },
+                  },
+                ],
+              },
+            ],
           },
         ],
       },
