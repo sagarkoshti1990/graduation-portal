@@ -198,25 +198,23 @@ export default {
     borderRadius: '$lg',
   }) as const,
   attendanceBox: {
-    bg: '$white',
-    borderWidth: 1,
-    borderColor: '$borderColor',
+    bg: '$white' as const,
+    borderWidth: 0,
     p: '$4',
     borderRadius: '$lg',
     width: '100%' as const,
   } as const,
   materialFileCard: {
-    borderWidth: 1,
-    borderColor: '$borderColor',
+    borderWidth: 0,
     borderRadius: '$lg',
-    p: '$3',
-    bg: '$white',
+    py: '$4' as const,
+    px: '$5' as const,
+    bg: '$white' as const,
     width: '100%' as const,
   } as const,
   notesBox: {
-    bg: '$white',
-    borderWidth: 1,
-    borderColor: '$borderColor',
+    bg: '$white' as const,
+    borderWidth: 0,
     p: '$4',
     borderRadius: '$lg',
     width: '100%' as const,
@@ -257,12 +255,12 @@ export default {
   } as const,
   cardValueBoldText: {
     fontSize: '$md' as const,
-    fontWeight: '$sm' as const,
+    fontWeight: '$semibold' as const,
     color: '$textPrimary' as const,
   } as const,
   cardValueBoldSmText: {
     fontSize: '$sm' as const,
-    fontWeight: '$sm' as const,
+    fontWeight: '$semibold' as const,
     color: '$textPrimary' as const,
   } as const,
   cardSuccessBoldText: {
@@ -325,8 +323,9 @@ export default {
     mt: '$0' as const,
   } as const,
   filterInputProps: {
-    bg: 'transparent',
-    borderColor: '$borderLight100',
+    bg: 'transparent' as const,
+    borderColor: '$borderColor' as const,
+    size: 'sm' as const,
   } as const,
   cardHeaderHStack: {
     flexDirection: 'column' as const,
@@ -446,17 +445,22 @@ export default {
     width: '100%' as const,
   } as const,
   fileCardInnerHStack: {
-    space: 'sm' as const,
+    space: 'md' as const,
     alignItems: 'center' as const,
     flex: 1,
   } as const,
   fileIconBox: {
     bg: '$primary100' as const,
-    p: '$2' as const,
-    borderRadius: '$md' as const,
+    p: '$2.5' as const,
+    borderRadius: '$lg' as const,
   } as const,
   fileTextVStack: {
     flex: 1,
+    space: 'xs' as const,
+  } as const,
+  filesListVStack: {
+    space: 'sm' as const,
+    width: '100%' as const,
   } as const,
   sessionCompleteHStack: {
     justifyContent: 'flex-end' as const,
@@ -502,7 +506,7 @@ export default {
     color: '$success600' as const,
   },
   cardFileTextIconProps: {
-    size: 16,
+    size: 20,
     color: '$primary500' as const,
   },
   modalFooterHStack: {

@@ -335,7 +335,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 )}
               </HStack>
 
-              <VStack {...styles.sectionVStack}>
+              <VStack {...styles.filesListVStack}>
                 {files.map((file, idx) => (
                   <Box
                     key={idx}

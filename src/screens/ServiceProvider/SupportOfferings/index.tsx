@@ -205,6 +205,7 @@ const App = (): React.JSX.Element => {
             showClearButton={false}
             hideTitleHeader={true}
             _container={styles.filterContainer}
+            _input={styles.filterInputProps}
           />
 
           {activeTab === 'sessions' && <TrainingCard {...cardProps} />}
