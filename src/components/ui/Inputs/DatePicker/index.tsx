@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { Pressable, Platform } from 'react-native';
 import { Input, InputField, Box, HStack, Text, Modal } from '@ui';
 import { LucideIcon } from '@ui';
@@ -18,6 +18,28 @@ let ReactDOM: any = null;
 if (Platform.OS === 'web') {
   ReactDOM = require('react-dom');
 }
+
+// Web popup positioning: same viewport-clamping approach already used by
+// Select's dropdown (top/bottom flip + horizontal clamp + maxHeight cap).
+// Width is known per mode (matches Styles.ts's `getContainerSizeStyle`);
+// height is content-driven, so it starts as a generous estimate and gets
+// corrected against the real rendered size the moment the popup mounts.
+const POPUP_WIDTH_BY_MODE: Record<DatePickerMode, number> = {
+  date: 300,
+  time: 300,
+  datetime: 460,
+};
+const POPUP_HEIGHT_ESTIMATE = 420;
+const POSITION_MARGIN = 8;
+const POSITION_GAP = 8;
+
+const resolveDom = (node: unknown): HTMLElement | null => {
+  if (!node) return null;
+  const inner = (node as any)._node || (node as any).current || node;
+  return inner && typeof (inner as any).getBoundingClientRect === 'function'
+    ? (inner as HTMLElement)
+    : null;
+};
 
 // Module-level singleton: every DatePicker instance shares this import, so a
 // plain Map here coordinates across independent instances with no new props,
@@ -188,19 +210,76 @@ const DatePicker: React.FC<DatePickerProps> = ({
     };
   }, [showPicker]);
 
+  const inputRef = useRef<any>(null);
+  const calendarPopupRef = useRef<any>(null);
+  const [calendarPosition, setCalendarPosition] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    maxHeight?: number;
+  }>({ top: 0, left: 0 });
+
+  // Starts as a generous estimate and is corrected against the real rendered
+  // popup height once it mounts (see the layout effect below) — persists
+  // across opens so later opens already start from a good guess.
+  const popupHeightRef = useRef(POPUP_HEIGHT_ESTIMATE);
+
+  const computePosition = () => {
+    if (Platform.OS !== 'web') return { top: 0, left: 0 };
+    const domElement = resolveDom(inputRef.current);
+    if (!domElement) return { top: 0, left: 0 };
+
+    const rect = domElement.getBoundingClientRect();
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const popupWidth = POPUP_WIDTH_BY_MODE[mode];
+    const popupHeight = popupHeightRef.current;
+
+    const availableBelow = Math.max(
+      0,
+      viewportHeight - rect.bottom - POSITION_MARGIN - POSITION_GAP,
+    );
+    const availableAbove = Math.max(0, rect.top - POSITION_MARGIN - POSITION_GAP);
+
+    const openUp = availableBelow < popupHeight && availableAbove > availableBelow;
+    const availableHeight = openUp ? availableAbove : availableBelow;
+    const maxHeight = Math.max(160, Math.min(popupHeight, availableHeight || popupHeight));
+
+    const left = Math.min(
+      Math.max(rect.left, POSITION_MARGIN),
+      Math.max(POSITION_MARGIN, viewportWidth - popupWidth - POSITION_MARGIN),
+    );
+
+    return openUp
+      ? { bottom: viewportHeight - rect.top + POSITION_GAP, left, maxHeight }
+      : { top: rect.bottom + POSITION_GAP, left, maxHeight };
+  };
+
   // Sync controlled state changes
   useEffect(() => {
     if (controlledIsOpen !== undefined) {
       // If controlled, sync internal state (for position calculation, etc.)
       if (controlledIsOpen && Platform.OS === 'web') {
-        const newPosition = calculatePosition();
-        setCalendarPosition(newPosition);
+        setCalendarPosition(computePosition());
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlledIsOpen]);
-  const inputRef = useRef<any>(null);
-  const calendarPopupRef = useRef<any>(null);
-  const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
+
+  // Corrects the estimated position against the popup's real rendered size —
+  // runs synchronously before paint, so a wrong first guess never flashes.
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'web' || !showPicker) return;
+    const popupDom = resolveDom(calendarPopupRef.current);
+    if (popupDom) {
+      const popupRect = popupDom.getBoundingClientRect();
+      if (popupRect.height && Math.abs(popupRect.height - popupHeightRef.current) > 1) {
+        popupHeightRef.current = popupRect.height;
+        setCalendarPosition(computePosition());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPicker]);
 
   // ---- controlled/uncontrolled value ----
   const isControlled = value !== undefined;
@@ -264,32 +343,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
     closePicker();
   };
 
-  // Calculate position synchronously when opening
-  const calculatePosition = () => {
-    if (Platform.OS === 'web' && inputRef.current) {
-      const inputElement = inputRef.current;
-      // Try to get the actual DOM element
-      const domElement = (inputElement as any)?._node ||
-                       (inputElement as any)?.current ||
-                       inputElement;
-
-      if (domElement && typeof domElement.getBoundingClientRect === 'function') {
-        const rect = domElement.getBoundingClientRect();
-        return {
-          top: rect.bottom + window.scrollY + 8, // 8px margin
-          left: rect.left + window.scrollX,
-        };
-      }
-    }
-    return { top: 0, left: 0 };
-  };
-
   // Update position on scroll/resize (web only)
   useEffect(() => {
     if (Platform.OS === 'web' && showPicker) {
       const updatePosition = () => {
-        const newPosition = calculatePosition();
-        setCalendarPosition(newPosition);
+        setCalendarPosition(computePosition());
       };
 
       updatePosition();
@@ -301,6 +359,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
         window.removeEventListener('resize', updatePosition);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPicker]);
 
   // Handle click outside / Escape to close (all platforms)
@@ -324,9 +383,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
             return; // Don't close if clicking inside the popup
           }
 
-          // Close on outside click and restore the value from when the popup opened.
-          // Discards unconfirmed time changes, matching the Cancel action.
-          handleCancel();
+          // Close on outside click
+          closePicker();
         };
 
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -360,8 +418,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
     const newState = !showPicker;
     if (newState && Platform.OS === 'web') {
       // Calculate position before showing
-      const newPosition = calculatePosition();
-      setCalendarPosition(newPosition);
+      setCalendarPosition(computePosition());
     }
     setShowPicker(newState);
   };
@@ -485,7 +542,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
       {Platform.OS !== 'web' && (
         <Modal
           isOpen={showPicker}
-          onClose={handleCancel}
+          onClose={closePicker}
           headerTitle={modalTitle}
           size="md"
           contentProps={styles?.popup as any}
