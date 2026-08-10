@@ -152,34 +152,28 @@ const Card: React.FC<CardProps> = ({ item }) => {
 // ---------- ListCard ----------
 
 interface AssetCardProps {
-  searchQuery?: string;
-  statusFilter?: string;
-  provinceFilter?: string;
-  siteFilter?: string;
-  provincesList?: ProvinceEntity[];
-  sitesList?: SiteEntity[];
+  search?: string;
+  status?: string;
+  province?: string;
+  site?: string;
 }
 
 export default function AssetCard({
-  searchQuery,
-  statusFilter,
-  provinceFilter,
-  siteFilter,
-  provincesList = [],
-  sitesList = [],
+  search,
+  status,
+  province,
+  site,
 }: AssetCardProps): React.ReactElement {
   const [assets, setAssets] = useState<AssetItem[]>([]);
 
   useEffect(() => {
     getAssets({
-      searchQuery,
-      statusFilter,
-      provinceFilter,
-      siteFilter,
-      provincesList,
-      sitesList,
+      searchQuery: search,
+      statusFilter: status,
+      provinceFilter: province,
+      siteFilter: site,
     }).then(setAssets);
-  }, [searchQuery, statusFilter, provinceFilter, siteFilter, provincesList, sitesList]);
+  }, [search, status, province, site]);
 
   return (
     <VStack {...styles.listContainer}>

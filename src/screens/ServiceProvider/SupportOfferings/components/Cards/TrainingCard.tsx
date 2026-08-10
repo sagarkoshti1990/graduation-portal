@@ -10,7 +10,10 @@ import {
   BadgeText,
   Divider,
   useAlert,
+  Button,
+  ButtonText,
 } from '@ui';
+import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
@@ -40,6 +43,49 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
     setFiles(initialItem.materials || []);
   }, [initialItem]);
 
+  const displayDate = item.start_date
+    ? moment(typeof item.start_date === 'number' || !isNaN(Number(item.start_date)) ? Number(item.start_date) * 1000 : item.start_date).format('DD MMM YYYY')
+    : '--';
+
+  const displayTime = item.start_date && item.end_date
+    ? `${moment(typeof item.start_date === 'number' || !isNaN(Number(item.start_date)) ? Number(item.start_date) * 1000 : item.start_date).format('HH:mm')} - ${moment(typeof item.end_date === 'number' || !isNaN(Number(item.end_date)) ? Number(item.end_date) * 1000 : item.end_date).format('HH:mm')}`
+    : '--';
+
+  const displayFormat =
+    item.delivery_mode?.value
+      ? item.delivery_mode.value.toLowerCase().includes('online') || item.delivery_mode.value.toLowerCase().includes('virtual')
+        ? 'Virtual'
+        : item.delivery_mode.value.toLowerCase().includes('hybrid')
+          ? 'Hybrid'
+          : 'In-person'
+      : item.training_type || 'In-person';
+
+  const displayRequestedBy = item.mentor_name
+    ? (item.organization?.organization_code || item.organization_code)
+      ? `${item.mentor_name} (${item.organization?.organization_code || item.organization_code})`
+      : item.mentor_name
+    : 'Unknown Mentor';
+
+  const getStatus = () => {
+    if (item.status === 'DRAFT' || item.status === 'Draft') return 'Draft';
+    if (item.status === 'COMPLETED' || item.status === 'Completed') return 'Completed';
+    if (item.start_date) {
+      const startMs = typeof item.start_date === 'number' || !isNaN(Number(item.start_date)) ? Number(item.start_date) * 1000 : new Date(item.start_date).getTime();
+      const today = new Date();
+      const sessionDate = new Date(startMs);
+      const isToday =
+        sessionDate.getDate() === today.getDate() &&
+        sessionDate.getMonth() === today.getMonth() &&
+        sessionDate.getFullYear() === today.getFullYear();
+      if (sessionDate.getTime() > today.getTime() && !isToday) return 'Upcoming';
+      if (isToday) return 'In progress';
+      return 'Completed';
+    }
+    return item.status || 'Upcoming';
+  };
+
+  const currentStatus = getStatus();
+
   const getStatusColors = (status: string) => {
     switch (status) {
       case 'Draft':
@@ -54,25 +100,34 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
     }
   };
 
-  const statusColors = getStatusColors(item.status);
+  const statusColors = getStatusColors(currentStatus);
+  const canCopy = !!item.can_be_copied;
+  const expectedCount = item.expected_participants ?? 0;
+  const confirmedCount = item.confirmed_present !== undefined ? `${item.confirmed_present}` : '0';
 
   const handleCopySession = () => {
     showAlert('success', t('supportProvider.supportOfferings.cards.alerts.sessionCopied'));
   };
 
-  const handleConfirmSessionComplete = async (presentCount: number) => {
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const handleConfirmSessionComplete = async (selectedParticipantIds: string[]) => {
+    if (isCompleting) return;
+    setIsCompleting(true);
     try {
-      await completeTrainingSession(item.id, { presentCount });
+      await completeTrainingSession(item.id, { mentees: selectedParticipantIds });
       setItem((prev) => ({
         ...prev,
         status: 'Completed',
-        confirmedPresent: `${presentCount}`,
+        confirmed_present: selectedParticipantIds.length,
         completionNotes: prev.completionNotes || t('supportProvider.supportOfferings.cards.alerts.sessionCompleted'),
       }));
       showAlert('success', t('supportProvider.supportOfferings.cards.alerts.sessionCompleted'));
     } catch (error) {
       console.error('Error completing session via API:', error);
       showAlert('error', 'Failed to complete session. Please try again.');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -124,7 +179,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 <HStack {...styles.badgeContentHStack}>
                   <LucideIcon name={statusColors.icon} {...styles.badgeIconProps(statusColors.text)} />
                   <BadgeText {...styles.badgeText(statusColors.text)}>
-                    {item.status}
+                    {currentStatus}
                   </BadgeText>
                 </HStack>
               </Badge>
@@ -140,24 +195,24 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>
-                {item.date}
+                {displayDate}
               </Text>
             </HStack>
 
             <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="Clock" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>
-                {item.time}
+                {displayTime}
               </Text>
             </HStack>
 
             <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon
-                name={item.format === 'Virtual' ? 'Video' : 'MapPin'}
+                name={displayFormat === 'Virtual' ? 'Video' : 'MapPin'}
                 {...styles.cardMetaIconProps}
               />
               <Text {...styles.cardMetaSmText}>
-                {item.format}
+                {displayFormat}
               </Text>
             </HStack>
 
@@ -172,14 +227,14 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
           {/* Row 3: Requested by & Copy Button */}
           <HStack {...styles.requestedByRowHStack}>
             <Text {...styles.cardRequestedByText}>
-              {t('supportProvider.supportOfferings.cards.requestedBy', { name: item.requestedBy })}
+              {t('supportProvider.supportOfferings.cards.requestedBy', { name: displayRequestedBy })}
             </Text>
 
-            {item.status === 'Draft' ? (
+            {currentStatus === 'Draft' ? (
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation();
-                  navigation.navigate('create-training-session' as never, { sessionId: item.id } as never);
+                  (navigation.navigate as any)('create-training-session', { sessionId: item.id });
                 }}
               >
                 {({ hovered }: any) => {
@@ -202,7 +257,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 }}
               </Pressable>
             ) : (
-              item.hasCopyButton && (
+              canCopy && (
                 <Pressable
                   onPress={(e) => {
                     e.stopPropagation();
@@ -212,27 +267,27 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   {({ hovered }: any) => {
                     const isHovered = hovered || false;
                     return (
-                      <Box {...styles.copySessionBox(isHovered)}>
-                        <HStack {...styles.badgeContentHStack}>
-                          <LucideIcon
-                            name="Copy"
-                            {...(isHovered ? styles.cardWhiteIconProps : styles.cardCopyIconProps)}
-                          />
-                          <Text
-                            {...(isHovered ? styles.cardBtnWhiteText : styles.cardBtnPrimaryText)}
-                          >
-                            {t('supportProvider.supportOfferings.cards.copySession')}
-                          </Text>
-                        </HStack>
-                      </Box>
-                    );
-                  }}
-                </Pressable>
-              )
-            )}
-          </HStack>
-        </VStack>
-      </Pressable>
+                    <Box {...styles.copySessionBox(isHovered)}>
+                      <HStack {...styles.badgeContentHStack}>
+                        <LucideIcon
+                          name="Copy"
+                          {...(isHovered ? styles.cardWhiteIconProps : styles.cardCopyIconProps)}
+                        />
+                        <Text
+                          {...(isHovered ? styles.cardBtnWhiteText : styles.cardBtnPrimaryText)}
+                        >
+                          {t('supportProvider.supportOfferings.cards.copySession')}
+                        </Text>
+                      </HStack>
+                    </Box>
+                  );
+                }}
+              </Pressable>
+            )
+          )}
+        </HStack>
+      </VStack>
+    </Pressable>
 
       {/* Accordion Content */}
       {isExpanded && (
@@ -253,11 +308,8 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                     <HStack {...styles.virtualLinkHStack}>
                       <LucideIcon name="Video" {...styles.cardPrimaryIconProps} />
                       <Text
-                        as="a"
-                        href={item.virtualLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         {...styles.cardPrimaryLinkText}
+                        onPress={() => item.virtualLink && typeof window !== 'undefined' && window.open(item.virtualLink, '_blank')}
                       >
                         {item.virtualLink}
                       </Text>
@@ -287,24 +339,25 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                       {t('supportProvider.supportOfferings.cards.expectedParticipants')}
                     </Text>
                     <Text {...styles.cardValueBoldText}>
-                      {item.expectedParticipants}
+                      {expectedCount}
                     </Text>
                   </VStack>
                   <VStack {...styles.attendanceItemVStack}>
                     <Text {...styles.cardMetaText}>
                       {t('supportProvider.supportOfferings.cards.confirmedPresent')}
                     </Text>
-                    {item.status === 'Completed' && item.confirmedPresent ? (
+                    {currentStatus === 'Completed' && confirmedCount && confirmedCount !== '0' ? (
                       <HStack {...styles.badgeContentHStack}>
                         <Text {...styles.cardSuccessBoldText}>
-                          {item.confirmedPresent}
+                          {confirmedCount}
                         </Text>
                         <LucideIcon name="CheckCircle" {...styles.cardSuccessIconProps} />
                       </HStack>
                     ) : (
                       <Text {...styles.cardMetaSmText}>
-                        {item.confirmedPresent ||
-                          (item.status === 'In progress'
+                        {confirmedCount && confirmedCount !== '0'
+                          ? confirmedCount
+                          : (currentStatus === 'In progress'
                             ? '--'
                             : t('supportProvider.supportOfferings.cards.notConfirmed'))}
                       </Text>
@@ -320,7 +373,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 <Text {...styles.cardSectionTitleText}>
                   {t('supportProvider.supportOfferings.cards.sessionMaterials')}
                 </Text>
-                {item.status !== 'Completed' && (
+                {currentStatus !== 'Completed' && (
                   <Pressable
                     {...styles.uploadMaterialBtn}
                     onPress={handleUploadPress}
@@ -365,23 +418,23 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             </VStack>
 
             {/* Session Notes / Completion Notes */}
-            {(item.status === 'Completed' ? (item.completionNotes || item.notes) : item.notes) && (
+            {(currentStatus === 'Completed' ? (item.completionNotes || item.notes) : item.notes) && (
               <VStack {...styles.sectionVStack}>
                 <Text {...styles.cardSectionTitleText}>
-                  {item.status === 'Completed'
+                  {currentStatus === 'Completed'
                     ? t('supportProvider.supportOfferings.cards.completionNotes')
                     : t('supportProvider.supportOfferings.cards.sessionNotes')}
                 </Text>
                 <Box {...styles.notesBox}>
                   <Text {...styles.cardDescriptionText}>
-                    {item.status === 'Completed' ? (item.completionNotes || item.notes) : item.notes}
+                    {currentStatus === 'Completed' ? (item.completionNotes || item.notes) : item.notes}
                   </Text>
                 </Box>
               </VStack>
             )}
 
             {/* Session Complete Button (In progress only) */}
-            {item.status === 'In progress' && (
+            {currentStatus === 'In progress' && (
               <HStack {...styles.sessionCompleteHStack}>
                 <Pressable
                   {...styles.sessionCompleteBtn}
@@ -405,7 +458,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
         isOpen={isCompleteModalOpen}
         onClose={() => setIsCompleteModalOpen(false)}
         sessionTitle={item.title}
-        expectedParticipantsCount={item.expectedParticipants}
+        expectedParticipantsCount={expectedCount}
         initialParticipants={item.participantList}
         onConfirmComplete={handleConfirmSessionComplete}
       />
@@ -416,43 +469,52 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 // ---------- ListCard ----------
 
 interface TrainingCardProps {
-  searchQuery?: string;
-  statusFilter?: string;
-  provinceFilter?: string;
-  siteFilter?: string;
-  draftStatusFilter?: string;
-  provincesList?: ProvinceEntity[];
-  sitesList?: SiteEntity[];
+  search?: string;
+  status?: string;
+  province?: string;
+  site?: string;
 }
 
 export default function TrainingCard({
-  searchQuery,
-  statusFilter,
-  provinceFilter,
-  siteFilter,
-  draftStatusFilter,
-  provincesList = [],
-  sitesList = [],
+  search,
+  status,
+  province,
+  site,
 }: TrainingCardProps): React.ReactElement {
+  const { t } = useLanguage();
   const [trainings, setTrainings] = useState<TrainingSessionItem[]>([]);
+  const [limit, setLimit] = useState(5);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     getTrainingSessions({
-      searchQuery,
-      statusFilter,
-      provinceFilter,
-      siteFilter,
-      draftStatusFilter,
-      provincesList,
-      sitesList,
-    }).then(setTrainings);
-  }, [searchQuery, statusFilter, provinceFilter, siteFilter, draftStatusFilter, provincesList, sitesList]);
+      search,
+      status,
+      province,
+      site,
+      limit,
+    }).then((res) => {
+      setTrainings(res?.result?.data || []);
+      setTotal(res?.total || 0);
+    });
+  }, [search, status, province, site, limit]);
+
+  const handleLoadMore = () => {
+    setLimit((prev) => prev + 5);
+  };
 
   return (
     <VStack {...styles.listContainer}>
       {trainings.map((item) => (
         <Card key={item.id} item={item} />
       ))}
+      {trainings.length === limit && (
+        <Box alignItems="center" mt="$4" width="100%">
+          <Button onPress={handleLoadMore}>
+            <ButtonText>{t('supportProvider.supportOfferings.buttonTexts.loadMoreSessions')}</ButtonText>
+          </Button>
+        </Box>
+      )}
     </VStack>
   );
 }

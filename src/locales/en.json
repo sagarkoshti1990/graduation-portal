@@ -2432,10 +2432,10 @@
       },
       "statusOptions": {
         "allStatuses": "All Statuses",
-        "pending": "Pending",
         "upcoming": "Upcoming",
         "inProgress": "In progress",
-        "completed": "Completed"
+        "completed": "Completed",
+        "draft": "Draft"
       },
       "cards": {
         "requestedBy": "Requested by: {{name}}",
@@ -2477,7 +2477,8 @@
         "confirmAndComplete": "Confirm & Complete"
       },
       "buttonTexts": {
-        "publishSupport": "Publish support"
+        "publishSupport": "Publish support",
+        "loadMoreSessions": "Load More Sessions"
       }
     },
     "dashboard": {

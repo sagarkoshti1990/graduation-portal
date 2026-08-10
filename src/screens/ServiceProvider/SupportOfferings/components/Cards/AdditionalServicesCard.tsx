@@ -145,34 +145,28 @@ const Card: React.FC<CardProps> = ({ item }) => {
 // ---------- ListCard ----------
 
 interface AdditionalServicesCardProps {
-  searchQuery?: string;
-  statusFilter?: string;
-  provinceFilter?: string;
-  siteFilter?: string;
-  provincesList?: ProvinceEntity[];
-  sitesList?: SiteEntity[];
+  search?: string;
+  status?: string;
+  province?: string;
+  site?: string;
 }
 
 export default function AdditionalServicesCard({
-  searchQuery,
-  statusFilter,
-  provinceFilter,
-  siteFilter,
-  provincesList = [],
-  sitesList = [],
+  search,
+  status,
+  province,
+  site,
 }: AdditionalServicesCardProps): React.ReactElement {
   const [services, setServices] = useState<ServiceItem[]>([]);
 
   useEffect(() => {
     getAdditionalServices({
-      searchQuery,
-      statusFilter,
-      provinceFilter,
-      siteFilter,
-      provincesList,
-      sitesList,
+      searchQuery: search,
+      statusFilter: status,
+      provinceFilter: province,
+      siteFilter: site,
     }).then(setServices);
-  }, [searchQuery, statusFilter, provinceFilter, siteFilter, provincesList, sitesList]);
+  }, [search, status, province, site]);
 
   return (
     <VStack {...styles.listContainer}>

@@ -50,7 +50,7 @@ const App = (): React.JSX.Element => {
         ]);
 
         setCounts({
-          sessions: sessionsData.length,
+          sessions: sessionsData?.result?.data?.length || 0,
           additional_services: servicesData.length,
           assets: assetsData.length,
         });
@@ -77,10 +77,8 @@ const App = (): React.JSX.Element => {
           const dynamicProvinces = [
             { label: 'All Provinces', value: 'all-provinces' },
             ...provincesData.map((p: any) => ({
-              label: p.name || p.title || p.label,
-              value: p.name?.toLowerCase()
-              // we can use it for api
-              // value: p._id || p.id || p.value || p.name?.toLowerCase(),
+              label: p.metaInformation?.name || p.name || p.title || p.label,
+              value: p.externalId || p._id || p.id || p.value,
             })),
           ];
           setProvinceOptions(dynamicProvinces);
@@ -98,9 +96,14 @@ const App = (): React.JSX.Element => {
       try {
         const selectedProv = filters.province;
         const selectedProvinceObj = provincesList.find(
-          (p: any) => p.name?.toLowerCase() === selectedProv?.toLowerCase() || p._id === selectedProv
+          (p: any) =>
+            p.externalId === selectedProv ||
+            p._id === selectedProv ||
+            p.name?.toLowerCase() === selectedProv?.toLowerCase()
         );
-        const provinceIdParam = selectedProvinceObj ? selectedProvinceObj._id : (selectedProv && selectedProv !== 'all-provinces' ? selectedProv : undefined);
+        const provinceIdParam = selectedProvinceObj
+          ? (selectedProvinceObj._id || selectedProvinceObj.externalId)
+          : (selectedProv && selectedProv !== 'all-provinces' ? selectedProv : undefined);
 
         const res = await getSitesByProvince({
           provinceId: provinceIdParam,
@@ -112,8 +115,8 @@ const App = (): React.JSX.Element => {
         const dynamicSites = [
           { label: 'All Sites', value: 'all-sites' },
           ...(fetchedSites || []).map((s: any) => ({
-            label: s.name || s.title || s.label,
-            value: s.name?.toLowerCase() || s._id,
+            label: s.metaInformation?.name || s.name || s.title || s.label,
+            value: s.externalId || s._id || s.id || s.value,
           })),
         ];
         setSiteOptions(dynamicSites);
@@ -144,25 +147,13 @@ const App = (): React.JSX.Element => {
       placeholder: 'All Sites',
       data: siteOptions,
     },
-    {
-      type: 'select',
-      attr: 'draftStatus',
-      placeholder: 'Publish Status',
-      data: [
-        { label: 'Published', value: 'Published' },
-        { label: 'Drafts', value: 'Draft' },
-      ],
-    },
   ];
 
   const cardProps = {
-    searchQuery: filters.search,
-    statusFilter: filters.status,
-    provinceFilter: filters.province,
-    siteFilter: filters.site,
-    draftStatusFilter: filters.draftStatus,
-    provincesList: provincesList,
-    sitesList: sitesList,
+    search: filters.search,
+    status: filters.status,
+    province: filters.province,
+    site: filters.site,
   };
 
   return (

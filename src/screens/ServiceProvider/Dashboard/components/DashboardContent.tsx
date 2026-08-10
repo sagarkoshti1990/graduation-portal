@@ -50,7 +50,7 @@ const DashboardContent: React.FC = () => {
         ]);
 
         if (isMounted) {
-          setTrainings(trainingsData || []);
+          setTrainings(trainingsData?.result?.data || []);
           setServices(servicesData || []);
           setAssets(assetsData || []);
           setProvincesList(provData || []);
@@ -472,7 +472,7 @@ const DashboardContent: React.FC = () => {
 
                       <HStack {...styles.legendLabelRow}>
                         <LucideIcon name="MapPin" {...styles.sessionIcon} />
-                        <Text {...styles.sessionMeta}>{session.location || session.province}</Text>
+                        <Text {...styles.sessionMeta}>{session.location || (session.provinces && session.provinces[0])}</Text>
                       </HStack>
                     </VStack>
                   </Box>

@@ -25,7 +25,7 @@ interface SessionCompleteModalProps {
   sessionTitle: string;
   expectedParticipantsCount: number;
   initialParticipants?: ParticipantAttendanceItem[];
-  onConfirmComplete: (presentCount: number) => void;
+  onConfirmComplete: (selectedParticipantIds: string[]) => void;
 }
 
 const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
@@ -64,13 +64,22 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
     setParticipants((prev) => prev.map((p) => ({ ...p, isPresent: false })));
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleConfirm = () => {
-    onConfirmComplete(markedPresentCount);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const selectedIds = participants
+      .filter((p) => p.isPresent)
+      .map((p) => String(p.id));
+    onConfirmComplete(selectedIds);
     onClose();
   };
 
   const handleSkip = () => {
-    onConfirmComplete(0);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    onConfirmComplete([]);
     onClose();
   };
 
