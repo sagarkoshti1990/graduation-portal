@@ -1,5 +1,6 @@
 import api from './api';
 import { API_ENDPOINTS } from './apiEndpoints';
+import { MENTORING_ENTITY_TYPES } from '@constants/SP_MENU_OPTIONS';
 
 export interface MentoringOption {
   value: string;
@@ -47,14 +48,14 @@ export const getMentoringEntities = async (
  * Get session categories (pillars) list
  */
 export const getSessionCategories = async (): Promise<MentoringOption[]> => {
-  return getMentoringEntities({ value: 'session_categories' });
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.SESSION_CATEGORIES });
 };
 
 /**
  * Get recommended target audience list
  */
 export const getRecommendedFor = async (): Promise<MentoringOption[]> => {
-  return getMentoringEntities({ value: 'recommended_for' });
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.RECOMMENDED_FOR });
 };
 
 /**
@@ -69,14 +70,14 @@ export const getSessionTypesByPillar = async (pillarCode: string): Promise<Mento
  * Get delivery mode options (e.g. Online / Offline / Hybrid) list
  */
 export const getDeliveryModes = async (): Promise<MentoringOption[]> => {
-  return getMentoringEntities({ value: 'delivery_mode' });
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.DELIVERY_MODE });
 };
 
 /**
  * Get certificate provided options list
  */
 export const getCertificateProvided = async (): Promise<MentoringOption[]> => {
-  return getMentoringEntities({ value: 'certificate_provided' });
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.CERTIFICATE_PROVIDED });
 };
 
 /**
