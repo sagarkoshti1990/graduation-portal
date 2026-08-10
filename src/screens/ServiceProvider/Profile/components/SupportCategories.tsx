@@ -115,44 +115,129 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
     setOthersText('');
   };
 
+  const handleSelectCategory = (catName: string) => {
+    setSelectedCategory(catName);
+    const existing = value.find(item => item.categoryName === catName);
+    if (existing) {
+      if (catName === 'Training / Sessions') {
+        setSocialEmpowerment(existing.trainingData?.socialEmpowerment || []);
+        setFinancialInclusion(existing.trainingData?.financialInclusion || []);
+        setLivelihoods(existing.trainingData?.livelihoods || []);
+        setSpecialAttention([]);
+        setImmediateAttention([]);
+        setAssetTypes([]);
+        setOthersText('');
+      } else if (catName === 'Linkage to Additional Services') {
+        setSpecialAttention(existing.linkageData?.specialAttention || []);
+        setImmediateAttention(existing.linkageData?.immediateAttention || []);
+        setSocialEmpowerment([]);
+        setFinancialInclusion([]);
+        setLivelihoods([]);
+        setAssetTypes([]);
+        setOthersText('');
+      } else if (catName === 'Assets') {
+        setAssetTypes(existing.assetsData?.assetTypes || []);
+        setSocialEmpowerment([]);
+        setFinancialInclusion([]);
+        setLivelihoods([]);
+        setSpecialAttention([]);
+        setImmediateAttention([]);
+        setOthersText('');
+      } else if (catName === 'Others') {
+        setOthersText(existing.othersData || '');
+        setSocialEmpowerment([]);
+        setFinancialInclusion([]);
+        setLivelihoods([]);
+        setSpecialAttention([]);
+        setImmediateAttention([]);
+        setAssetTypes([]);
+      }
+    } else {
+      resetFormState();
+    }
+  };
+
   const handleAddCategory = () => {
     if (!selectedCategory) return;
 
-    let newItem: SupportCategoryItem = {
-      id: `${selectedCategory}-${Date.now()}`,
-      categoryName: selectedCategory,
-    };
+    const existingIndex = value.findIndex(item => item.categoryName === selectedCategory);
+    let nextValue = [...value];
 
-    if (selectedCategory === 'Training / Sessions') {
-      if (socialEmpowerment.length === 0 && financialInclusion.length === 0 && livelihoods.length === 0) return;
-      newItem.trainingData = {
-        socialEmpowerment,
-        financialInclusion,
-        livelihoods,
+    if (existingIndex > -1) {
+      const existingItem = nextValue[existingIndex];
+      const updatedItem: SupportCategoryItem = {
+        id: existingItem.id,
+        categoryName: selectedCategory,
       };
-    } else if (selectedCategory === 'Linkage to Additional Services') {
-      if (specialAttention.length === 0 && immediateAttention.length === 0) return;
-      newItem.linkageData = {
-        specialAttention,
-        immediateAttention,
+
+      if (selectedCategory === 'Training / Sessions') {
+        if (socialEmpowerment.length === 0 && financialInclusion.length === 0 && livelihoods.length === 0) return;
+        updatedItem.trainingData = {
+          socialEmpowerment,
+          financialInclusion,
+          livelihoods,
+        };
+      } else if (selectedCategory === 'Linkage to Additional Services') {
+        if (specialAttention.length === 0 && immediateAttention.length === 0) return;
+        updatedItem.linkageData = {
+          specialAttention,
+          immediateAttention,
+        };
+      } else if (selectedCategory === 'Assets') {
+        if (assetTypes.length === 0) return;
+        updatedItem.assetsData = {
+          assetTypes,
+        };
+      } else if (selectedCategory === 'Others') {
+        if (!othersText.trim()) return;
+        updatedItem.othersData = othersText.trim();
+      }
+
+      nextValue[existingIndex] = updatedItem;
+    } else {
+      let newItem: SupportCategoryItem = {
+        id: `${selectedCategory}-${Date.now()}`,
+        categoryName: selectedCategory,
       };
-    } else if (selectedCategory === 'Assets') {
-      if (assetTypes.length === 0) return;
-      newItem.assetsData = {
-        assetTypes,
-      };
-    } else if (selectedCategory === 'Others') {
-      if (!othersText.trim()) return;
-      newItem.othersData = othersText.trim();
+
+      if (selectedCategory === 'Training / Sessions') {
+        if (socialEmpowerment.length === 0 && financialInclusion.length === 0 && livelihoods.length === 0) return;
+        newItem.trainingData = {
+          socialEmpowerment,
+          financialInclusion,
+          livelihoods,
+        };
+      } else if (selectedCategory === 'Linkage to Additional Services') {
+        if (specialAttention.length === 0 && immediateAttention.length === 0) return;
+        newItem.linkageData = {
+          specialAttention,
+          immediateAttention,
+        };
+      } else if (selectedCategory === 'Assets') {
+        if (assetTypes.length === 0) return;
+        newItem.assetsData = {
+          assetTypes,
+        };
+      } else if (selectedCategory === 'Others') {
+        if (!othersText.trim()) return;
+        newItem.othersData = othersText.trim();
+      }
+
+      nextValue.push(newItem);
     }
 
-    onChange([...value, newItem]);
+    onChange(nextValue);
     setSelectedCategory('');
     resetFormState();
   };
 
   const handleDeleteCategory = (id: string) => {
+    const deleted = value.find(item => item.id === id);
     onChange(value.filter(item => item.id !== id));
+    if (deleted && deleted.categoryName === selectedCategory) {
+      setSelectedCategory('');
+      resetFormState();
+    }
   };
 
   const isEdit = mode === 'edit';
@@ -184,22 +269,30 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
           </Text>
         )}
         {value.map(item => (
-          <VStack key={item.id} {...styles.categoryCard}>
-            <HStack {...styles.cardHeader}>
-              <HStack {...styles.supportCategoryHeader}>
-                <Text {...styles.cardTitleText}>
-                  {item.categoryName}
-                </Text>
-                <Badge {...styles.offeredBadge}>
-                  <BadgeText {...styles.redBadgeText}>Offered</BadgeText>
-                </Badge>
+          <Pressable
+            key={item.id}
+            onPress={() => {
+              if (isEdit) {
+                handleSelectCategory(item.categoryName);
+              }
+            }}
+          >
+            <VStack {...styles.categoryCard}>
+              <HStack {...styles.cardHeader}>
+                <HStack {...styles.supportCategoryHeader}>
+                  <Text {...styles.cardTitleText}>
+                    {item.categoryName}
+                  </Text>
+                  <Badge {...styles.offeredBadge}>
+                    <BadgeText {...styles.redBadgeText}>Offered</BadgeText>
+                  </Badge>
+                </HStack>
+                {isEdit && (
+                  <Pressable onPress={() => handleDeleteCategory(item.id)}>
+                    <LucideIcon name="Trash2" {...styles.trashIcon} />
+                  </Pressable>
+                )}
               </HStack>
-              {isEdit && (
-              <Pressable onPress={() => handleDeleteCategory(item.id)}>
-                <LucideIcon name="Trash2" {...styles.trashIcon} />
-              </Pressable>
-              )}
-            </HStack>
 
             {/* Render Category Details */}
             {item.categoryName === 'Training / Sessions' && item.trainingData && (
@@ -296,7 +389,8 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 <Text {...styles.detailsText}>{item.othersData}</Text>
               </VStack>
             )}
-          </VStack>
+            </VStack>
+          </Pressable>
         ))}
       </VStack>
 
@@ -315,8 +409,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
             options={CATEGORY_OPTIONS}
             value={selectedCategory}
             onChange={(val) => {
-              setSelectedCategory(val);
-              resetFormState();
+              handleSelectCategory(val);
             }}
             placeholder={t('profile.selectCategoryPlaceholder', 'Select Support Category')}
           />

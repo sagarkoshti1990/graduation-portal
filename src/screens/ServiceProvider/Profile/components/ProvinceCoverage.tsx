@@ -54,31 +54,63 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     setLoadingSites(true);
     getSitesByProvince({ provinceId: selectedProvinceId, page: 1, limit: 100 })
       .then(res => {
-        setSites(res.result?.data || []);
-        setSelectedSiteIds([]);
+        const sitesList = res.result?.data || [];
+        setSites(sitesList);
+
+        // Check if this province is already in value to pre-populate selected sites
+        const selectedProvince = provinces.find(
+          p => (p._id || p.id) === selectedProvinceId || p.externalId === selectedProvinceId
+        );
+        const provinceExtId = selectedProvince?.externalId || selectedProvince?.metaInformation?.externalId || selectedProvince?._id || selectedProvinceId;
+        const provinceName = selectedProvince?.name || selectedProvince?.metaInformation?.name || '';
+
+        const existing = value.find(
+          item =>
+            item.provinceId === provinceExtId ||
+            item.provinceId === selectedProvince?._id ||
+            (provinceName && item.provinceName?.toLowerCase() === provinceName.toLowerCase())
+        );
+
+        if (existing) {
+          const matchedSiteIds = sitesList
+            .filter((s: any) => {
+              const sExtId = s.externalId || s.metaInformation?.externalId || s._id || s.id;
+              const sMongoId = s._id || s.id;
+              const sName = s.name || s.metaInformation?.name;
+              return (
+                existing.siteIds?.includes(sExtId) ||
+                existing.siteIds?.includes(sMongoId) ||
+                (sName && existing.siteNames?.includes(sName))
+              );
+            })
+            .map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id);
+          setSelectedSiteIds(matchedSiteIds);
+        } else {
+          setSelectedSiteIds([]);
+        }
       })
       .catch(err => console.error('Error fetching sites in coverage:', err))
       .finally(() => setLoadingSites(false));
-  }, [selectedProvinceId]);
+  }, [selectedProvinceId, provinces, value]);
 
   // Options mapping
   const provinceOptions = useMemo(() => {
-    return provinces.map(p => ({
-      value: p._id || p.id || '',
+    return provinces.map((p: any) => ({
+      value: p._id || p.id || p.externalId || '',
       label: p.name || p.metaInformation?.name || '',
     }));
   }, [provinces]);
 
   const siteOptions = useMemo(() => {
-    return sites.map(s => ({
-      value: s._id || s.id || '',
+    return sites.map((s: any) => ({
+      value: s.externalId || s.metaInformation?.externalId || s._id || s.id || '',
       label: s.name || s.metaInformation?.name || '',
     }));
   }, [sites]);
 
   const handleSiteChange = (selectedValues: string[]) => {
     if (selectedValues.includes('Select All')) {
-      const regularOptions = sites.map(s => s._id || s.id || '');
+      const regularOptions = sites.map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id || '');
       const allAlreadySelected = regularOptions.every(val => selectedValues.includes(val));
       if (allAlreadySelected) {
         setSelectedSiteIds([]);
@@ -93,30 +125,37 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
   const handleAddCoverage = () => {
     if (!selectedProvinceId || selectedSiteIds.length === 0) return;
 
-    // Check if this province is already added
-    const existingIndex = value.findIndex(item => item.provinceId === selectedProvinceId);
-    
-    const selectedProvince = provinces.find(p => (p._id || p.id) === selectedProvinceId);
+    const selectedProvince: any = provinces.find(
+      (p: any) => (p._id || p.id) === selectedProvinceId || p.externalId === selectedProvinceId
+    );
+    const provinceExtId = selectedProvince?.externalId || selectedProvince?.metaInformation?.externalId || selectedProvince?._id || selectedProvinceId;
     const provinceName = selectedProvince?.name || selectedProvince?.metaInformation?.name || '';
     
-    const selectedSitesObjects = sites.filter(s => selectedSiteIds.includes(s._id || s.id));
-    const newSiteNames = selectedSitesObjects.map(s => s.name || s.metaInformation?.name || '');
-    const newSiteIds = selectedSitesObjects.map(s => s._id || s.id);
+    const selectedSitesObjects = sites.filter((s: any) => 
+      selectedSiteIds.includes(s.externalId || s.metaInformation?.externalId || s._id || s.id)
+    );
+    const newSiteNames = selectedSitesObjects.map((s: any) => s.name || s.metaInformation?.name || '');
+    const newSiteIds = selectedSitesObjects.map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id);
+
+    // Check if this province is already added
+    const existingIndex = value.findIndex(item => 
+      item.provinceId === provinceExtId || 
+      item.provinceId === selectedProvince?._id || 
+      (provinceName && item.provinceName?.toLowerCase() === provinceName.toLowerCase())
+    );
 
     let nextValue = [...value];
     if (existingIndex > -1) {
-      // Merge sites
-      const existing = nextValue[existingIndex];
-      const mergedSiteIds = Array.from(new Set([...existing.siteIds, ...newSiteIds]));
-      const mergedSiteNames = Array.from(new Set([...existing.siteNames, ...newSiteNames]));
+      // Replace existing coverage card with updated values
       nextValue[existingIndex] = {
-        ...existing,
-        siteIds: mergedSiteIds,
-        siteNames: mergedSiteNames,
+        provinceId: provinceExtId,
+        provinceName: provinceName || nextValue[existingIndex].provinceName,
+        siteIds: newSiteIds,
+        siteNames: newSiteNames,
       };
     } else {
       nextValue.push({
-        provinceId: selectedProvinceId,
+        provinceId: provinceExtId,
         provinceName,
         siteIds: newSiteIds,
         siteNames: newSiteNames,
@@ -132,6 +171,13 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
   const handleDeleteCard = (provinceId: string) => {
     const nextValue = value.filter(item => item.provinceId !== provinceId);
     onChange(nextValue);
+    const selectedProv = provinces.find(p => (p._id || p.id) === selectedProvinceId);
+    const selectedExtId = selectedProv?.externalId || selectedProv?.metaInformation?.externalId || selectedProv?._id;
+    if (provinceId === selectedProvinceId || provinceId === selectedExtId) {
+      setSelectedProvinceId('');
+      setSites([]);
+      setSelectedSiteIds([]);
+    }
   };
 
   const isEdit = mode === 'edit';
@@ -153,35 +199,53 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
           </Text>
         )}
         {value.map(item => (
-          <VStack key={item.provinceId} {...styles.coverageCard}>
-            <HStack {...styles.cardHeader}>
-              <HStack {...styles.cardHeaderLeft}>
-                <LucideIcon name="MapPin" {...styles.mapPinIcon} />
-                <Text {...styles.cardTitleText}>
-                  {item.provinceName}
-                </Text>
-                <Badge {...styles.cardBadge}>
-                  <BadgeText {...styles.blueBadgeText}>
-                    {`${item.siteIds.length} ${item.siteIds.length === 1 ? 'site' : 'sites'}`}
-                  </BadgeText>
-                </Badge>
+          <Pressable
+            key={item.provinceId}
+            onPress={() => {
+              if (isEdit) {
+                const matchProv = provinces.find(
+                  p =>
+                    (p.externalId && p.externalId === item.provinceId) ||
+                    (p._id && p._id === item.provinceId) ||
+                    (p.metaInformation?.externalId && p.metaInformation.externalId === item.provinceId) ||
+                    (p.name && item.provinceName && p.name.toLowerCase() === item.provinceName.toLowerCase())
+                );
+                if (matchProv) {
+                  setSelectedProvinceId(matchProv._id || matchProv.id || matchProv.externalId);
+                }
+              }
+            }}
+          >
+            <VStack {...styles.coverageCard}>
+              <HStack {...styles.cardHeader}>
+                <HStack {...styles.cardHeaderLeft}>
+                  <LucideIcon name="MapPin" {...styles.mapPinIcon} />
+                  <Text {...styles.cardTitleText}>
+                    {item.provinceName || provinces.find(p => (p.externalId === item.provinceId || p._id === item.provinceId || p.id === item.provinceId))?.name || item.provinceId}
+                  </Text>
+                  <Badge {...styles.cardBadge}>
+                    <BadgeText {...styles.blueBadgeText}>
+                      {`${item.siteIds.length} ${item.siteIds.length === 1 ? 'site' : 'sites'}`}
+                    </BadgeText>
+                  </Badge>
+                </HStack>
+                {isEdit && (
+                  <Pressable onPress={() => handleDeleteCard(item.provinceId)}>
+                    <LucideIcon name="Trash2" {...styles.trashIcon} />
+                  </Pressable>
+                )}
               </HStack>
-              {isEdit && (
-              <Pressable onPress={() => handleDeleteCard(item.provinceId)}>
-                <LucideIcon name="Trash2" {...styles.trashIcon} />
-              </Pressable>
-              )}
-            </HStack>
-            
-            {/* Site Names List */}
-            <HStack {...styles.siteBadgeContainer}>
-              {item.siteNames.map((siteName, idx) => (
-                <Badge key={idx} {...styles.greyBadge}>
-                  <BadgeText {...styles.greyBadgeText}>{siteName}</BadgeText>
-                </Badge>
-              ))}
-            </HStack>
-          </VStack>
+              
+              {/* Site Names List */}
+              <HStack {...styles.siteBadgeContainer}>
+                {(item.siteNames && item.siteNames.length > 0 ? item.siteNames : item.siteIds).map((siteName, idx) => (
+                  <Badge key={idx} {...styles.greyBadge}>
+                    <BadgeText {...styles.greyBadgeText}>{siteName}</BadgeText>
+                  </Badge>
+                ))}
+              </HStack>
+            </VStack>
+          </Pressable>
         ))}
       </VStack>
 

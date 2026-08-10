@@ -140,7 +140,9 @@ const OrganizationProfile = (): React.JSX.Element => {
           organisationCredentials: getField('organisationCredentials', null),
         };
 
-        const rawCov = getField('provinceCoverage', []);
+        const rawCov = getField('provinceCoverage', null);
+        const rawProvinces = getField('provinces', []);
+        const rawSites = getField('sites', []);
         const rawCat = getField('supportCategories', DEFAULT_CATEGORIES);
 
         let cov = [];
@@ -157,6 +159,26 @@ const OrganizationProfile = (): React.JSX.Element => {
         }
         if (!Array.isArray(cov)) cov = [];
 
+        if (cov.length === 0 && Array.isArray(rawProvinces) && rawProvinces.length > 0) {
+          const siteExtIds = Array.isArray(rawSites)
+            ? rawSites.map((s: any) => (typeof s === 'object' ? s.externalId || s._id || s.id : s)).filter(Boolean)
+            : [];
+          const siteNames = Array.isArray(rawSites)
+            ? rawSites.map((s: any) => (typeof s === 'object' ? s.name || s.externalId || s._id : s)).filter(Boolean)
+            : [];
+
+          cov = rawProvinces.map((p: any) => {
+            const pId = typeof p === 'object' ? p.externalId || p._id || p.id : p;
+            const pName = typeof p === 'object' ? p.name || pId : pId;
+            return {
+              provinceId: pId,
+              provinceName: pName,
+              siteIds: siteExtIds,
+              siteNames: siteNames,
+            };
+          }).filter((item: any) => Boolean(item.provinceId));
+        }
+
         let cat = DEFAULT_CATEGORIES;
         if (rawCat) {
           if (typeof rawCat === 'object') {
@@ -169,7 +191,7 @@ const OrganizationProfile = (): React.JSX.Element => {
             }
           }
         }
-        if (!Array.isArray(cat)) cat = DEFAULT_CATEGORIES;
+        if (!Array.isArray(cat) || cat.length === 0) cat = DEFAULT_CATEGORIES;
 
         setValues(mapped);
         setOriginalValues(mapped);
@@ -218,16 +240,20 @@ const OrganizationProfile = (): React.JSX.Element => {
 
     setSaving(true);
     try {
+      const provinces = Array.from(new Set(provinceCoverage.map(item => item.provinceId).filter(Boolean)));
+      const sites = Array.from(new Set(provinceCoverage.flatMap(item => item.siteIds || []).filter(Boolean)));
+
       const payload = {
         name: values.contactPersonName,
         about: values.name,
         email: values.contactEmail,
         phone: values.contactPhone,
         phone_code: values.phone_code ? values.phone_code.toString().replace('+', '') : '27',
+        provinces,
+        sites,
+        supportCategories,
         meta: {
           organizationType: values.organizationType,
-          provinceCoverage: JSON.stringify(provinceCoverage),
-          supportCategories: JSON.stringify(supportCategories),
           agreementMoU: values.agreementMoU,
           organisationCredentials: values.organisationCredentials,
         }
