@@ -70,7 +70,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'pillar',
+                name: 'categories',
                 type: 'pillselect',
                 required: true,
                 label: { key: 'pillar', fallback: 'Pillar' },
@@ -90,17 +90,17 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'sessionType',
+                name: 'idp_training_task',
                 type: 'select',
                 required: true,
                 label: {
-                  key: 'sessionType',
+                  key: 'idp_training_task',
                   fallback: 'Training / Session Type',
                 },
                 placeholder: { fallback: 'Select session type' },
                 optionsSource: 'sessionTypes',
-                dependsOn: 'pillar',
-                disabledWhen: { field: 'pillar', empty: true },
+                dependsOn: 'categories',
+                disabledWhen: { field: 'categories', empty: true },
                 validation: [
                   {
                     rule: 'required',
@@ -168,7 +168,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'learningObjectives',
+                name: 'learning_objectives',
                 type: 'textarea',
                 required: false,
                 label: {
@@ -184,7 +184,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'targetAudience',
+                name: 'recommended_for',
                 type: 'pillselect',
                 required: true,
                 label: { key: 'targetAudience', fallback: 'Target Audience' },
@@ -204,7 +204,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'certificateProvided',
+                name: 'certificate_provided',
                 type: 'pillselect',
                 required: true,
                 label: {
@@ -227,7 +227,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'maxCapacity',
+                name: 'max_capacity',
                 type: 'text',
                 required: true,
                 label: { key: 'maxCapacity', fallback: 'Maximum Capacity' },
@@ -244,7 +244,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 ],
               },
               {
-                name: 'recurringSession',
+                name: 'can_be_copied',
                 type: 'select',
                 required: false,
                 label: {
@@ -259,7 +259,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'resourceContent',
+                name: 'resources',
                 type: 'file',
                 multiple: true,
                 required: false,
@@ -324,17 +324,17 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'startDate',
-                type: 'date',
+                name: 'start_date',
+                type: 'datetime',
                 required: true,
-                label: { key: 'startDate', fallback: 'Start Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                label: { key: 'start_date', fallback: 'Start Date & Time' },
+                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
                 validation: [
                   {
                     rule: 'required',
                     message: {
                       key: 'errors.startDateRequired',
-                      fallback: 'Start date is required',
+                      fallback: 'Start date & time is required',
                     },
                   },
                   {
@@ -347,59 +347,32 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   {
                     rule: "dateCompare",
                     value: {
-                      field: "endDate",
+                      field: "end_date",
                       operator: "<="
                     },
                     message: {
                       key: "errors.dateCompare",
-                      fallback: "Start Date must be before or equal to End Date."
+                      fallback: "Start Date & Time must be before or equal to End Date & Time."
                     }
                   }
                 ],
               },
-              {
-                name: 'startTime',
-                type: 'time',
-                required: true,
-                label: { key: 'startTime', fallback: 'Start Time' },
-                placeholder: { fallback: '--:--' },
-                validation: [
-                  {
-                    rule: 'required',
-                    message: {
-                      key: 'errors.startTimeRequired',
-                      fallback: 'Start time is required',
-                    },
-                  },
-                  {
-                    rule: "timeCompare",
-                    value: {
-                      field: "endTime",
-                      operator: "<"
-                    },
-                    message: {
-                      key: "errors.timeCompareEndTime",
-                      fallback: "Start Time must be before End Time."
-                    }
-                  }
-                ],
-              },
-            ],
+            ]
           },
           {
-            fields: [
+            fields: [    
               {
-                name: 'endDate',
-                type: 'date',
+                name: 'end_date',
+                type: 'datetime',
                 required: true,
-                label: { key: 'endDate', fallback: 'End Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                label: { key: 'end_date', fallback: 'End Date & Time' },
+                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
                 validation: [
                   {
                     rule: 'required',
                     message: {
                       key: 'errors.endDateRequired',
-                      fallback: 'End date is required',
+                      fallback: 'End date & time is required',
                     },
                   },
                   {
@@ -412,39 +385,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   {
                     rule: "dateCompare",
                     value: {
-                      field: "startDate",
+                      field: "start_date",
                       operator: ">="
                     },
                     message: {
                       key: "errors.dateCompareStartDate",
-                      fallback: "End Date must be after or equal to Start Date."
-                    }
-                  }
-                ],
-              },
-              {
-                name: 'endTime',
-                type: 'time',
-                required: true,
-                label: { key: 'endTime', fallback: 'End Time' },
-                placeholder: { fallback: '--:--' },
-                validation: [
-                  {
-                    rule: 'required',
-                    message: {
-                      key: 'errors.endTimeRequired',
-                      fallback: 'End time is required',
-                    },
-                  },
-                  {
-                    rule: "timeCompare",
-                    value: {
-                      field: "startTime",
-                      operator: ">"
-                    },
-                    message: {
-                      key: "errors.timeCompareStartTime",
-                      fallback: "End Time must be after Start Time."
+                      fallback: "End Date & Time must be after or equal to Start Date & Time."
                     }
                   }
                 ],
@@ -454,27 +400,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'venueLocation',
-                type: 'text',
-                required: true,
-                label: { key: 'venueLocation', fallback: 'Venue Location' },
-                placeholder: { fallback: 'Venue name and address...' },
-                validation: [
-                  {
-                    rule: 'required',
-                    message: {
-                      key: 'errors.venueRequired',
-                      fallback: 'Venue location is required',
-                    },
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            fields: [
-              {
-                name: 'formatType',
+                name: 'delivery_mode',
                 type: 'pillselect',
                 required: true,
                 label: { key: 'formatType', fallback: 'Type' },
@@ -491,11 +417,58 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               },
             ],
           },
+          {
+            fields: [
+              {
+                name: 'location',
+                type: 'text',
+                required: true,
+                label: { key: 'location', fallback: 'Venue Location' },
+                placeholder: { fallback: 'Venue name and address...' },
+                visibleIf: [
+                  { name: 'delivery_mode', value: 'online', operator: '!=' },
+                ],
+                validation: [
+                  {
+                    rule: 'required',
+                    message: {
+                      key: 'errors.venueRequired',
+                      fallback: 'Venue location is required',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            fields: [
+              {
+                name: 'meeting_link',
+                type: 'text',
+                required: true,
+                label: { key: 'meetingLink', fallback: 'Meeting Link' },
+                placeholder: { fallback: 'https://...' },
+                visibleIf: [
+                  { name: 'delivery_mode', value: 'offline', operator: '!=' },
+                ],
+                validation: [
+                  {
+                    rule: 'required',
+                    message: {
+                      key: 'errors.meetingLinkRequired',
+                      fallback: 'Meeting link is required',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
         ],
       },
     ],
   },
 
+  // // ─── Tab 2: Review Tab ─────────────────────────────────────────────
   {
     type: 'tab',
     id: 'review',
@@ -546,15 +519,93 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               {
                 fields: [
                   {
+                    name: 'province',
                     type: 'view',
-                    name: 'recurringSession',
+                    label: { key: 'province', fallback: 'Province' },
+                    optionsSource: 'provinces',
+                  }],
+              },
+              {
+                  fields: [
+                  {
+                    name: 'site',
+                    type: 'view',
+                    label: { key: 'site', fallback: 'Site' },
+                    optionsSource: 'sites',
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'categories',
+                    type: 'view',
+                    required: true,
+                    label: { key: 'pillar', fallback: 'Pillar' },
+                    optionsSource: 'pillars',
+                    
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'idp_training_task',
+                    type: 'view',
+                    required: true,
                     label: {
-                      key: 'supportProvider.trainingSession.step3.recurringLabel',
-                      fallback: 'Recurring',
+                      key: 'idp_training_task',
+                      fallback: 'Training / Session Type',
+                    },
+                    optionsSource: 'sessionTypes',
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'recommended_for',
+                    type: 'view',
+                    required: true,
+                    label: { key: 'targetAudience', fallback: 'Target Audience' },
+                    optionsSource: 'targetAudienceOptions',
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'can_be_copied',
+                    type: 'view',
+                    label: {
+                      key: 'recurringSession',
+                      fallback: 'Recurring Session',
                     },
                   },
                 ],
               },
+              {
+                fields: [
+                  {
+                    name: 'certificate_provided',
+                    type: 'view',
+                    label: {
+                      key: 'certificateProvided',
+                      fallback: 'Certificate Provided',
+                    },
+                    optionsSource: 'certificateOptions',
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    name: 'max_capacity',
+                    type: 'view',
+                    label: { key: 'maxCapacity', fallback: 'Maximum Capacity' },
+                  },
+                ],
+          },
             ],
           },
           {
@@ -569,10 +620,11 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'startDate',
+                    name: 'start_date',
+                    displayFormat: 'dateFormat@DD/MM/YYYY hh:mm A',
                     label: {
                       key: 'supportProvider.trainingSession.step3.startLabel',
-                      fallback: 'Start',
+                      fallback: 'Start Date & Time',
                     },
                   },
                 ],
@@ -581,10 +633,11 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'endDate',
+                    name: 'end_date',
+                    displayFormat: 'dateFormat@DD/MM/YYYY hh:mm A',
                     label: {
                       key: 'supportProvider.trainingSession.step3.endLabel',
-                      fallback: 'End',
+                      fallback: 'End Date & Time',
                     },
                   },
                 ],
@@ -593,11 +646,41 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'formatType',
+                    name: 'delivery_mode',
                     label: {
                       key: 'supportProvider.trainingSession.step3.formatLabel',
                       fallback: 'Format',
                     },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'location',
+                    label: {
+                      key: 'location',
+                      fallback: 'Venue Location',
+                    },
+                    visibleIf: [
+                      { name: 'delivery_mode', value: 'online', operator: '!=' },
+                    ],
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'link',
+                    label: {
+                      key: 'meetingLink',
+                      fallback: 'Meeting Link',
+                    },
+                    visibleIf: [
+                      { name: 'delivery_mode', value: 'offline', operator: '!=' },
+                    ],
                   },
                 ],
               },

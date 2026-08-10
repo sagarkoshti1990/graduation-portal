@@ -6,178 +6,163 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
-import { getSitesByProvince } from '../../../../services/usersService';
-import { saveTrainingSession, getTrainingSessionById } from '../../../../services/SupportOfferingsServices/supportOfferingsService';
+import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
 import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
+import {
+  getSessionCategories,
+  getRecommendedFor,
+  getSessionTypesByPillar,
+  getDeliveryModes,
+  createSession,
+  MentoringOption,
+} from '../../../../services/mentoringService';
+import moment from 'moment';
 
-
-const PILLAR_SESSION_TYPES: Record<string, string[]> = {
-  'Social Empowerment': [
-    'Personal Mastery Training',
-    'Parenting Skills Training',
-    'GBV Awareness Session',
-    'Substance Abuse Awareness Session',
-  ],
-  'Financial Inclusion': ['Financial Literacy Training'],
-  Livelihoods: [
-    'Generate Your Business Idea Training',
-    'Start Your Business Training',
-    'Diversification Strategy',
-    'Market Growth Strategy',
-    'Livelihood Specific Training',
-    'Job Readiness Training',
-    'Technical/Vocational Training',
-  ],
+// Icon shown next to each delivery mode option in the format-type pill selector
+const DELIVERY_MODE_ICONS: Record<string, string> = {
+  offline: 'MapPin',
+  online: 'Video',
+  hybrid: 'Users',
 };
 
-// conflicts
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute<any>();
   const sessionId = route.params?.sessionId;
   const { t } = useLanguage();
-  const { provinces: dynamicProvinces } = useUserManagementFilters({});
-  const [dynamicSites, setDynamicSites] = useState<any[]>([]);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [sites, setSites] = useState<any[]>([]);
+  const [pillers, setPillers] = useState<MentoringOption[]>([]);
+  const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
+  const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
+  const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const { showAlert } = useAlert();
 
   useEffect(() => {
-    if (sessionId) {
-      getTrainingSessionById(Number(sessionId)).then((session) => {
-        if (session) {
-          setValues(session);
-        }
-      });
-    }
-  }, [sessionId]);
-
-  const handleFieldChange = useCallback((name: string, value: string) => {
-    setValues(prev => {
-      const next = { ...prev, [name]: value };
-      if (name === 'province') next.site = '';
-      if (name === 'pillar') {
-        next.sessionType = '';
-        next.sessionTitle = '';
-      }
-      return next;
-    });
+    
+  const init = async () => {
+    
+    const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
+      getProvincesList(),
+      getSessionCategories(),
+      getRecommendedFor(),
+      getDeliveryModes(),
+    ]);
+    setProvinces(result)
+    setPillers(getCategories)
+    setTargetAudience(getTarget)
+    setDeliveryModes(getDeliveryModeOptions)
+  };
+  
+  init();
   }, []);
+
+  const handleFieldChange = useCallback(
+    (name: string, value: string, other?:any) => {
+      setValues((prev: Record<string, any>) => {
+        const next = { ...prev, [name]: value };
+        if (name === 'province') next.site = '';
+        if (name === 'categories') {
+          next.idp_training_task = '';
+          next.title = '';
+        }
+        if(name === 'idp_training_task'){
+          next.title = other?.label;
+        }
+        return next;
+      });
+      if (name === 'categories') {
+        if (!value) {
+          setSessionTypes([]);
+          return;
+        }
+        const selectedPillarObj = pillers.find(
+          p => p.value === value || p.label === value
+        );
+        const pillarCode = (selectedPillarObj?.value || value).toLowerCase();
+        if (pillarCode) {
+          getSessionTypesByPillar(pillarCode).then(res => setSessionTypes(res || []));
+        } else {
+          setSessionTypes([]);
+        }
+      }
+    },
+    [pillers]
+  );
 
   useEffect(() => {
     if (!values.province) {
-      setDynamicSites([]);
+      setSites([]);
       return;
     }
     getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 })
-      .then(res => setDynamicSites(res.result?.data || []))
-      .catch(() => setDynamicSites([]));
+      .then(res => setSites(res.result?.data || []))
+      .catch(() => setSites([]));
   }, [values.province]);
 
   const optionsMap = useMemo(() => {
     const provinceOpts =
-      dynamicProvinces && dynamicProvinces.length > 0
-        ? dynamicProvinces.map((p: any) => ({
+      provinces && provinces.length > 0
+        ? provinces.map((p: any) => ({
             value: p._id || p.id || p.name,
             label: p.name || p.label,
           }))
         : [];
 
-    const siteOpts = dynamicSites
-      ? dynamicSites.map((s: any) => ({
+    const siteOpts = sites
+      ? sites.map((s: any) => ({
           value: s._id || s.id || s.name,
           label: s.name || s.label,
         }))
       : [];
 
-    const selectedPillar = values.pillar;
-    const sessionTypeOpts = (PILLAR_SESSION_TYPES[selectedPillar] || []).map(v => ({
-      value: v,
-      label: v,
-    }));
-
     return {
       provinces: provinceOpts,
       sites: siteOpts,
-      pillars: [
-        {
-          value: 'Social Empowerment',
-          label:'Social Empowerment',
-        },
-        {
-          value: 'Financial Inclusion',
-          label: 'Financial Inclusion',
-        },
-        {
-          value: 'Livelihoods',
-          label: 'Livelihoods',
-        },
-      ],
-      sessionTypes: [...sessionTypeOpts,...[{value:"other",label:"Other"}]],
-      targetAudienceOptions: [
-        {
-          value: 'Coach',
-          label: 'Coach',
-        },
-        {
-          value: 'Participant',
-          label: 'Participant',
-        },
-        {
-          value: 'Both',
-          label: 'Both',
-        },
-      ],
+      pillars: pillers,
+      sessionTypes: sessionTypes,
+      targetAudienceOptions: targetAudience,
       certificateOptions: [
-        {
-          value: 'Yes',
-          label: 'Yes',
-        },
-        {
-          value: 'No',
-          label: 'No',
-        },
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' },
       ],
       recurringOptions: [
-        {
-          value: 'Yes',
-          label: 'Yes — recurring session',
-        },
-        {
-          value: 'No',
-          label: 'No — one-off session',
-        },
+        { value: 'true', label: 'Yes — recurring session' },
+        { value: 'false', label: 'No — one-off session' },
       ],
-      formatOptions: [
-        {
-          value: 'Offline',
-          label: 'Offline',
-          icon: 'MapPin',
-        },
-        {
-          value: 'Online',
-          label: 'Online',
-          icon: 'Video',
-        },
-        {
-          value: 'Hybrid',
-          label: 'Hybrid',
-          icon: 'Users',
-        },
-      ],
+      formatOptions: deliveryModes.map((mode) => ({
+        value: mode.value,
+        label: mode.label,
+        icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
+      })),
     };
-  }, [dynamicProvinces, dynamicSites, values.pillar]);
+  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.categories]);
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
-      const response = await saveTrainingSession(formValues, isDraft);
+      const payload = {
+        ...formValues,
+        categories: [formValues.categories],
+        province: [formValues.province],
+        recommended_for: [formValues.recommended_for],
+        start_date: moment(formValues.start_date).unix(),
+        end_date: moment(formValues.end_date).unix(),
+        certificate_provided: formValues.certificate_provided === true,
+        can_be_copied: formValues.can_be_copied === true,
+        time_zone: 'Asia/Kolkata',
+        session_type: "Public",
+        status: isDraft ? 'DRAFT' : 'PUBLISHED',
+        meeting_info: {
+          link: formValues.meeting_link,
+          location: formValues.location
+        },
+      };
+      await createSession(payload);
 
-      if (response.success) {
-        setValues(formValues);
-        showAlert('success', response.message);
-        // @ts-ignore
-        navigation.navigate('opportunities');
-      }
+      showAlert('success', isDraft ? 'Draft saved successfully!' : 'Training session saved successfully!');
+      // @ts-ignore
+      navigation.navigate('opportunities');
     } catch (error) {
       console.error('Error saving training session:', error);
       showAlert('error', 'Something went wrong.');
