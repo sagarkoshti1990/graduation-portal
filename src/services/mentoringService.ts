@@ -34,10 +34,7 @@ export const getMentoringEntities = async (
 
     const entitiesList: any[] = entityTypeRecord?.entities ?? [];
 
-    return entitiesList.map((item: any) => ({
-      value: item.value,
-      label: item.label,
-    }));
+    return entitiesList;
   } catch (error: any) {
     console.error(`Error fetching mentoring entities for '${value}':`, error);
     return [];
