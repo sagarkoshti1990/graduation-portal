@@ -325,16 +325,16 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             fields: [
               {
                 name: 'startDate',
-                type: 'date',
+                type: 'datetime',
                 required: true,
-                label: { key: 'startDate', fallback: 'Start Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                label: { key: 'startDate', fallback: 'Start Date & Time' },
+                placeholder: { fallback: 'dd/mm/yyyy --:--' },
                 validation: [
                   {
                     rule: 'required',
                     message: {
                       key: 'errors.startDateRequired',
-                      fallback: 'Start date is required',
+                      fallback: 'Start date & time is required',
                     },
                   },
                   {
@@ -352,54 +352,23 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                     message: {
                       key: "errors.dateCompare",
-                      fallback: "Start Date must be before or equal to End Date."
+                      fallback: "Start Date & Time must be before or equal to End Date & Time."
                     }
                   }
                 ],
               },
-              {
-                name: 'startTime',
-                type: 'time',
-                required: true,
-                label: { key: 'startTime', fallback: 'Start Time' },
-                placeholder: { fallback: '--:--' },
-                validation: [
-                  {
-                    rule: 'required',
-                    message: {
-                      key: 'errors.startTimeRequired',
-                      fallback: 'Start time is required',
-                    },
-                  },
-                  {
-                    rule: "timeCompare",
-                    value: {
-                      field: "endTime",
-                      operator: "<"
-                    },
-                    message: {
-                      key: "errors.timeCompareEndTime",
-                      fallback: "Start Time must be before End Time."
-                    }
-                  }
-                ],
-              },
-            ],
-          },
-          {
-            fields: [
               {
                 name: 'endDate',
-                type: 'date',
+                type: 'datetime',
                 required: true,
-                label: { key: 'endDate', fallback: 'End Date' },
-                placeholder: { fallback: 'dd/mm/yyyy' },
+                label: { key: 'endDate', fallback: 'End Date & Time' },
+                placeholder: { fallback: 'dd/mm/yyyy --:--' },
                 validation: [
                   {
                     rule: 'required',
                     message: {
                       key: 'errors.endDateRequired',
-                      fallback: 'End date is required',
+                      fallback: 'End date & time is required',
                     },
                   },
                   {
@@ -417,56 +386,9 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                     message: {
                       key: "errors.dateCompareStartDate",
-                      fallback: "End Date must be after or equal to Start Date."
+                      fallback: "End Date & Time must be after or equal to Start Date & Time."
                     }
                   }
-                ],
-              },
-              {
-                name: 'endTime',
-                type: 'time',
-                required: true,
-                label: { key: 'endTime', fallback: 'End Time' },
-                placeholder: { fallback: '--:--' },
-                validation: [
-                  {
-                    rule: 'required',
-                    message: {
-                      key: 'errors.endTimeRequired',
-                      fallback: 'End time is required',
-                    },
-                  },
-                  {
-                    rule: "timeCompare",
-                    value: {
-                      field: "startTime",
-                      operator: ">"
-                    },
-                    message: {
-                      key: "errors.timeCompareStartTime",
-                      fallback: "End Time must be after Start Time."
-                    }
-                  }
-                ],
-              },
-            ],
-          },
-          {
-            fields: [
-              {
-                name: 'venueLocation',
-                type: 'text',
-                required: true,
-                label: { key: 'venueLocation', fallback: 'Venue Location' },
-                placeholder: { fallback: 'Venue name and address...' },
-                validation: [
-                  {
-                    rule: 'required',
-                    message: {
-                      key: 'errors.venueRequired',
-                      fallback: 'Venue location is required',
-                    },
-                  },
                 ],
               },
             ],
@@ -485,6 +407,54 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     message: {
                       key: 'errors.formatTypeRequired',
                       fallback: 'Format type is required',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            fields: [
+              {
+                name: 'venueLocation',
+                type: 'text',
+                required: true,
+                label: { key: 'venueLocation', fallback: 'Venue Location' },
+                placeholder: { fallback: 'Venue name and address...' },
+                visibleIf: [
+                  { name: 'formatType', value: 'offline', operator: '===' },
+                  { name: 'formatType', value: 'hybrid', operator: '===' },
+                ],
+                validation: [
+                  {
+                    rule: 'required',
+                    message: {
+                      key: 'errors.venueRequired',
+                      fallback: 'Venue location is required',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            fields: [
+              {
+                name: 'meetingLink',
+                type: 'text',
+                required: true,
+                label: { key: 'meetingLink', fallback: 'Meeting Link' },
+                placeholder: { fallback: 'https://...' },
+                visibleIf: [
+                  { name: 'formatType', value: 'online', operator: '===' },
+                  { name: 'formatType', value: 'hybrid', operator: '===' },
+                ],
+                validation: [
+                  {
+                    rule: 'required',
+                    message: {
+                      key: 'errors.meetingLinkRequired',
+                      fallback: 'Meeting link is required',
                     },
                   },
                 ],
@@ -598,6 +568,38 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       key: 'supportProvider.trainingSession.step3.formatLabel',
                       fallback: 'Format',
                     },
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'venueLocation',
+                    label: {
+                      key: 'venueLocation',
+                      fallback: 'Venue Location',
+                    },
+                    visibleIf: [
+                      { name: 'formatType', value: 'offline', operator: '===' },
+                      { name: 'formatType', value: 'hybrid', operator: '===' },
+                    ],
+                  },
+                ],
+              },
+              {
+                fields: [
+                  {
+                    type: 'view',
+                    name: 'meetingLink',
+                    label: {
+                      key: 'meetingLink',
+                      fallback: 'Meeting Link',
+                    },
+                    visibleIf: [
+                      { name: 'formatType', value: 'online', operator: '===' },
+                      { name: 'formatType', value: 'hybrid', operator: '===' },
+                    ],
                   },
                 ],
               },

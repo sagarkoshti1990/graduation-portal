@@ -61,7 +61,6 @@ import {
   FORM_FIELD_TYPES,
 } from './type';
 import { formatFileSize } from '../../project-player/utils/taskUtils';
-import moment from 'moment';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -300,8 +299,15 @@ function evaluateVisibleIfCondition(
 function isVisibleIf(
   visibleIf: VisibleIfCondition[] | undefined,
   values: Record<string, string>,
+  matchAny: boolean = false,
 ): boolean {
   if (!visibleIf?.length) return true;
+  // If matchAny is set, OR if all conditions target the same field name with '===' operator,
+  // treat as OR logic (e.g. formatType === 'offline' OR formatType === 'hybrid')
+  const sameFieldAndEquals = visibleIf.length > 1 && visibleIf.every(c => c.name === visibleIf[0].name && (c.operator === '===' || !c.operator));
+  if (matchAny || sameFieldAndEquals) {
+    return visibleIf.some(condition => evaluateVisibleIfCondition(condition, values));
+  }
   return visibleIf.every(condition =>
     evaluateVisibleIfCondition(condition, values),
   );

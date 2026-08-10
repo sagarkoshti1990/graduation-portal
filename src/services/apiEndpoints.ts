@@ -37,4 +37,9 @@ export const API_ENDPOINTS = {
   GENERATE_CERTIFICATE: (projectId: string) => `${prefix}/project/v1/userProjects/update/${projectId}`,
   PROJECT_DETAILS: (projectId: string) => `${prefix}/project/v1/userProjects/details/${projectId}`,
   SUPPORT_OFFERINGS_COMPLETE_SESSION: (sessionId: string) => `${prefix}/user/v1/support-offerings/sessions/${sessionId}/complete`,
+  MENTORING_READ_ENTITY: `${prefix}/mentoring/v1/entity/read`,
+  MENTORING_READ_ENTITY_TYPE: `${prefix}/mentoring/v1/entity-type/read`,
+  MENTORING_LIST_ENTITY: `${prefix}/mentoring/v1/entity/list`,
+  MENTORING_LIST_ENTITY_TYPE: `${prefix}/mentoring/v1/entity-type/read`,
+  MENTORING_CREATE_SESSION: `${prefix}/mentoring/v1/sessions/update`,
 };
