@@ -61,6 +61,7 @@ import {
   FORM_FIELD_TYPES,
 } from './type';
 import { formatFileSize } from '../../project-player/utils/taskUtils';
+import moment from 'moment';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -152,7 +153,7 @@ export interface SchemaFormRendererProps {
   /** Current field errors keyed by field name */
   errors?: Record<string, string>;
   /** Called when any field value changes */
-  onFieldChange?: (name: string, value: any) => void;
+  onFieldChange?: (name: string, value: any, other?:any) => void;
   /** Resolved options for every optionsSource key referenced in the schema */
   optionsMap?: OptionsMap;
   /** Global disabled state (e.g. while form is submitting) */
@@ -299,15 +300,8 @@ function evaluateVisibleIfCondition(
 function isVisibleIf(
   visibleIf: VisibleIfCondition[] | undefined,
   values: Record<string, string>,
-  matchAny: boolean = false,
 ): boolean {
   if (!visibleIf?.length) return true;
-  // If matchAny is set, OR if all conditions target the same field name with '===' operator,
-  // treat as OR logic (e.g. formatType === 'offline' OR formatType === 'hybrid')
-  const sameFieldAndEquals = visibleIf.length > 1 && visibleIf.every(c => c.name === visibleIf[0].name && (c.operator === '===' || !c.operator));
-  if (matchAny || sameFieldAndEquals) {
-    return visibleIf.some(condition => evaluateVisibleIfCondition(condition, values));
-  }
   return visibleIf.every(condition =>
     evaluateVisibleIfCondition(condition, values),
   );
@@ -953,7 +947,7 @@ interface FieldRendererProps {
   value: any;
   error?: string;
   errors: Record<string, string>;
-  onChange: (name: string, value: any) => void;
+  onChange: (name: string, value: any, other?:any) => void;
   disabled: boolean;
   optionsMap: OptionsMap;
   values: Record<string, any>;
@@ -977,7 +971,7 @@ interface FieldRendererProps {
 const PillOptionsRow: React.FC<{
   options: { value: string; label: string }[];
   isSelected: (value: string) => boolean;
-  onToggle: (value: string) => void;
+  onToggle: (value: string, other?:any) => void;
   isDisabled: boolean;
   /** pillmultiselect only — shows a checked/unchecked checkbox beside each pill's label. */
   isMulti?: boolean;
@@ -989,7 +983,7 @@ const PillOptionsRow: React.FC<{
         <Pressable
           key={option.value}
           disabled={isDisabled}
-          onPress={() => onToggle(option.value)}
+          onPress={() => onToggle(option.value, option)}
           flex={1}
           px="$3"
           py={isMulti ? "$2" :"$2.5"}
@@ -1188,8 +1182,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           {...resolvedInputProps}
           options={options}
           value={value}
-          onChange={(val: string | string[]) =>
-            onChange(field.name || '', val)
+          onChange={(val: string | string[],label?:any) =>
+            onChange(field.name || '', val, { label })
           }
           placeholder={activePlaceholder}
           disabled={isDisabled}
@@ -1213,7 +1207,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       <PillOptionsRow
         options={rawOptions}
         isSelected={optionValue => optionValue === value}
-        onToggle={optionValue => onChange(field.name || '', optionValue)}
+        onToggle={(optionValue, other) => onChange(field.name || '', optionValue, other)}
         isDisabled={isDisabled}
       />
     );
@@ -1260,8 +1254,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           multiple
           options={options}
           value={selectedValues}
-          onChange={(vals: string | string[]) =>
-            onChange(field.name || '', Array.isArray(vals) ? vals : [])
+          onChange={(vals: string | string[], other?:any) =>
+            onChange(field.name || '', Array.isArray(vals) ? vals : [], other)
           }
           placeholder={placeholder}
           disabled={isDisabled}
@@ -1626,7 +1620,7 @@ interface NodeRenderContext {
   optionsMap: OptionsMap;
   mode: string;
   t: (key: string, fallback?: string) => string;
-  onFieldChange: (name: string, value: any) => void;
+  onFieldChange: (name: string, value: any, other?:any) => void;
   disabled: boolean;
   visibilityGroups: Record<string, boolean>;
   toggleVisibilityGroup: (group: string) => void;
@@ -2585,7 +2579,7 @@ interface FieldType {
   errors?: Record<string, string>;
   optionsMap?: OptionsMap;
   mode?: string;
-  onFieldChange?: (name: string, value: any) => void;
+  onFieldChange?: (name: string, value: any, other?:any) => void;
   disabled?: boolean;
   visibilityGroups?: Record<string, boolean>;
   toggleVisibilityGroup?: (group: string) => void;

@@ -7,16 +7,16 @@ import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
-import { saveTrainingSession } from '../../../../services/SupportOfferingsServices/supportOfferingsService';
 import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
 import {
   getSessionCategories,
   getRecommendedFor,
   getSessionTypesByPillar,
   getDeliveryModes,
-  createMentoringSession,
+  createSession,
   MentoringOption,
 } from '../../../../services/mentoringService';
+import moment from 'moment';
 
 // Icon shown next to each delivery mode option in the format-type pill selector
 const DELIVERY_MODE_ICONS: Record<string, string> = {
@@ -59,18 +59,20 @@ const App = (): React.JSX.Element => {
   }, []);
 
   const handleFieldChange = useCallback(
-    (name: string, value: string) => {
+    (name: string, value: string, other?:any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
         if (name === 'province') next.site = '';
-        if (name === 'pillar') {
-          next.sessionType = '';
-          next.sessionTitle = '';
+        if (name === 'categories') {
+          next.idp_training_task = '';
+          next.title = '';
+        }
+        if(name === 'idp_training_task'){
+          next.title = other?.label;
         }
         return next;
       });
-
-      if (name === 'pillar') {
+      if (name === 'categories') {
         if (!value) {
           setSessionTypes([]);
           return;
@@ -135,11 +137,28 @@ const App = (): React.JSX.Element => {
         icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
       })),
     };
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.pillar]);
+  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.categories]);
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
-      await createMentoringSession(formValues, isDraft);
+      const payload = {
+        ...formValues,
+        categories: [formValues.categories],
+        province: [formValues.province],
+        recommended_for: [formValues.recommended_for],
+        start_date: moment(formValues.start_date).unix(),
+        end_date: moment(formValues.end_date).unix(),
+        certificate_provided: formValues.certificate_provided === true,
+        can_be_copied: formValues.can_be_copied === true,
+        time_zone: 'Asia/Kolkata',
+        session_type: "Public",
+        status: isDraft ? 'DRAFT' : 'PUBLISHED',
+        meeting_info: {
+          link: formValues.meeting_link,
+          location: formValues.location
+        },
+      };
+      await createSession(payload);
 
       showAlert('success', isDraft ? 'Draft saved successfully!' : 'Training session saved successfully!');
       // @ts-ignore
