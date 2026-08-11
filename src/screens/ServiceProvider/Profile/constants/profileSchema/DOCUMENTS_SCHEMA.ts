@@ -18,7 +18,25 @@ export const DOCUMENTS_SCHEMA: FormSection[] = [
             label: { key: 'documents.agreementMoU', fallback: 'Agreement / MoU' },
             subTitle: { key: 'documents.agreementMoUSub', fallback: 'Upload if applicable' },
             placeholder: { key: 'documents.agreementMoUPlaceholder', fallback: 'Click to upload PDF / DOC / JPG' },
-            _input: styles.input
+            _input: styles.input,
+             validation: [
+              {
+                rule: 'fileType',
+                value: ['pdf', 'doc', 'docx', 'jpg', 'jpeg'],
+                message: {
+                  key: 'errors.fileType',
+                  fallback: 'Upload a PDF, DOC or JPG file'
+                }
+              },
+              {
+                rule: 'fileSize',
+                value: 10,
+                message: {
+                  key: 'errors.fileSize',
+                  fallback: 'File must be 10 MB or smaller'
+                }
+              }
+            ]
           }
         ]
       },
@@ -31,7 +49,25 @@ export const DOCUMENTS_SCHEMA: FormSection[] = [
             label: { key: 'documents.organisationCredentials', fallback: 'Organisation Credentials' },
             subTitle: { key: 'documents.organisationCredentialsSub', fallback: 'Certificates, Portfolio, etc.' },
             placeholder: { key: 'documents.organisationCredentialsPlaceholder', fallback: 'Click to upload PDF / DOC / JPG' },
-            _input: styles.input
+            _input: styles.input,
+             validation: [
+              {
+                rule: 'fileType',
+                value: ['pdf', 'doc', 'docx', 'jpg', 'jpeg'],
+                message: {
+                  key: 'errors.fileType',
+                  fallback: 'Upload a PDF, DOC or JPG file'
+                }
+              },
+              {
+                rule: 'fileSize',
+                value: 10,
+                message: {
+                  key: 'errors.fileSize',
+                  fallback: 'File must be 10 MB or smaller'
+                }
+              }
+            ]
           }
         ]
       }

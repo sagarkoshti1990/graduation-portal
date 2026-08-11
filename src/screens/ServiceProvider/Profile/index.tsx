@@ -31,17 +31,7 @@ import ProvinceCoverage, { CoverageItem } from './components/ProvinceCoverage';
 import SupportCategories, { SupportCategoryItem } from './components/SupportCategories';
 import styles from './styles';
 
-const DEFAULT_CATEGORIES = [
-  {
-    id: 'Training / Sessions-1',
-    categoryName: 'Training / Sessions',
-    trainingData: {
-      socialEmpowerment: ['Personal Mastery Training', 'Parenting Skills Training'],
-      financialInclusion: ['Financial Literacy Training'],
-      livelihoods: ['Job Readiness Training', 'Technical/Vocational Training'],
-    },
-  },
-];
+const DEFAULT_CATEGORIES: SupportCategoryItem[] = [];
 
 // Main screen component for viewing and managing the organization profile.
 const OrganizationProfile = (): React.JSX.Element => {
