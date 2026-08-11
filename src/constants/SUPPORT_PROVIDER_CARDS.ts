@@ -7,7 +7,7 @@ export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
     icon: 'GraduationCap',
     title: 'supportProvider.createSupport.cards.training.title',
     description: 'supportProvider.createSupport.cards.training.description',
-    navigationUrl: 'create-training-session',
+    navigationUrl: 'form-training-session',
   },
   {
     id: 'additional-services',

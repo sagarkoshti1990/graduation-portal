@@ -26,7 +26,14 @@ export const SupportCard: React.FC<FeatureCardProps> = ({ card }) => {
   return (
     <Pressable
       {...styles.pressable}
-      onPress={() => navigationUrl && navigation.navigate(navigationUrl as never)}
+      onPress={() => {
+        if (!navigationUrl) return;
+        if (navigationUrl === 'form-training-session') {
+          navigation.navigate(navigationUrl as never, { type: 'create' } as never);
+        } else {
+          navigation.navigate(navigationUrl as never);
+        }
+      }}
     >
       {/* Icon Circle */}
       <Box

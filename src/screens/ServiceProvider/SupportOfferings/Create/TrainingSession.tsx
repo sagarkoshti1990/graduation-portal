@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack, useAlert } from '@ui';
+import { Card, Container, VStack, Text, LucideIcon, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -14,9 +14,11 @@ import {
   getSessionTypesByPillar,
   getDeliveryModes,
   createSession,
+  getSessionDetails,
   MentoringOption,
 } from '../../../../services/mentoringService';
-import moment from 'moment';
+import NotFound from '@components/NotFound';
+import { valueMapping } from '@utils/supportProvider';
 
 // Icon shown next to each delivery mode option in the format-type pill selector
 const DELIVERY_MODE_ICONS: Record<string, string> = {
@@ -28,7 +30,9 @@ const DELIVERY_MODE_ICONS: Record<string, string> = {
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const sessionId = route.params?.sessionId;
+  const modeType: 'create' | 'edit' | 'copy' = route.params?.type;
+  const sessionId = route.params?.id || route.params?.sessionId;
+  const initialSessionData = route.params?.sessionData;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -39,24 +43,49 @@ const App = (): React.JSX.Element => {
   const [values, setValues] = useState<any>({});
   const { showAlert } = useAlert();
 
-  useEffect(() => {
-    
-  const init = async () => {
-    
-    const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
-      getProvincesList(),
-      getSessionCategories(),
-      getRecommendedFor(),
-      getDeliveryModes(),
-    ]);
-    setProvinces(result)
-    setPillers(getCategories)
-    setTargetAudience(getTarget)
-    setDeliveryModes(getDeliveryModeOptions)
+  const getHeaderTitle = () => {
+    switch (modeType) {
+      case 'edit':
+        return t('supportProvider.createSupport.training.editTitle', 'Edit Training Session');
+      case 'copy':
+        return t('supportProvider.createSupport.training.copyTitle', 'Copy Training Session');
+      case 'create':
+      default:
+        return t('supportProvider.createSupport.training.title', 'Create Training Session');
+    }
   };
-  
-  init();
-  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
+          getProvincesList(),
+          getSessionCategories(),
+          getRecommendedFor(),
+          getDeliveryModes(),
+        ]);
+        setProvinces(result);
+        setPillers(getCategories);
+        setTargetAudience(getTarget);
+        setDeliveryModes(getDeliveryModeOptions);
+
+        // Fetch session data via getSessionDetails API when in Copy or Edit mode
+        if ((modeType === 'copy' || modeType === 'edit')) {
+          const rawResponse = await getSessionDetails(sessionId);
+          const rawData = rawResponse?.result;
+          if (rawData) {
+            const formattedValues: any = valueMapping(rawData, true); // Reverse mapping to form values
+            setValues(formattedValues);
+          }
+        }
+      } catch (error: any) {
+        console.error('Error loading form data:', error);
+        showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
+      }
+    };
+
+    init();
+  }, [sessionId, modeType]);
 
   const handleFieldChange = useCallback(
     (name: string, value: string, other?:any) => {
@@ -72,24 +101,29 @@ const App = (): React.JSX.Element => {
         }
         return next;
       });
-      if (name === 'categories') {
-        if (!value) {
-          setSessionTypes([]);
-          return;
-        }
-        const selectedPillarObj = pillers.find(
-          p => p.value === value || p.label === value
-        );
-        const pillarCode = (selectedPillarObj?.value || value).toLowerCase();
-        if (pillarCode) {
-          getSessionTypesByPillar(pillarCode).then(res => setSessionTypes(res || []));
-        } else {
-          setSessionTypes([]);
-        }
-      }
     },
     [pillers]
   );
+
+  useEffect(() => {
+    if (values.categories) {
+      if (!values.categories) {
+        setSessionTypes([]);
+        return;
+      }
+      const selectedPillarObj = pillers.find(
+        p => p.value === values.categories || p.label === values.categories
+      );
+      const pillarCode = (selectedPillarObj?.value || values.categories).toLowerCase();
+      if (pillarCode) {
+        console.log("Pillar Code : " + pillarCode);
+        getSessionTypesByPillar(pillarCode).then(res => setSessionTypes(res || []));
+      } else {
+        setSessionTypes([]);
+      }
+    }
+  }, [values.categories]);
+
 
   useEffect(() => {
     if (!values.province) {
@@ -141,31 +175,32 @@ const App = (): React.JSX.Element => {
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
-      const payload = {
-        ...formValues,
-        categories: [formValues.categories],
-        province: [formValues.province],
-        recommended_for: [formValues.recommended_for],
-        start_date: moment(formValues.start_date).unix(),
-        end_date: moment(formValues.end_date).unix(),
-        certificate_provided: formValues.certificate_provided === true,
-        can_be_copied: formValues.can_be_copied === true,
-        time_zone: 'Asia/Kolkata',
-        session_type: "Public",
-        status: isDraft ? 'DRAFT' : 'PUBLISHED',
-        meeting_info: {
-          link: formValues.meeting_link,
-          location: formValues.location
-        },
-      };
-      await createSession(payload);
+      const payload: any = valueMapping({ ...formValues, isDraft });
 
-      showAlert('success', isDraft ? 'Draft saved successfully!' : 'Training session saved successfully!');
+      if (modeType === 'edit') {
+        // update code api call
+      }
+      else {
+        await createSession(payload);
+      }
+
+      const successMsg = isDraft
+        ? 'Draft saved successfully!'
+        : modeType === 'copy'
+          ? 'Training session copied successfully!'
+          : 'Training session saved successfully!';
+
+      showAlert('success', successMsg);
       // @ts-ignore
       navigation.navigate('opportunities');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving training session:', error);
-      showAlert('error', 'Something went wrong.');
+      // Show specific API error message if available, otherwise generic message
+      const errMsg =
+        error?.data?.message ||
+        error?.message ||
+        'Something went wrong while saving. Please try again.';
+      showAlert('error', errMsg);
     }
   };
   
@@ -178,10 +213,21 @@ const App = (): React.JSX.Element => {
     }
   }
 
+  // Route Validation:
+  // 1. 'create' mode WITH an ID -> Not Found
+  // 2. 'copy' or 'edit' mode WITHOUT an ID -> Not Found
+  if (modeType === 'create' && sessionId) {
+    return <NotFound message="Routes Not Found" />;
+  }
+
+  if ((modeType === 'copy' || modeType === 'edit') && !sessionId && !initialSessionData) {
+    return <NotFound message="Routes Not Found" />;
+  }
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title={t('supportProvider.createSupport.training.title', 'Create Training Session')}
+        title={getHeaderTitle()}
         backButtonText={t('supportProvider.createSupport.changeType', 'Change type')}
         onNavigateBack={handleBackPress}
       />

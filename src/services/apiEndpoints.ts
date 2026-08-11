@@ -40,4 +40,5 @@ export const API_ENDPOINTS = {
   MENTORING_READ_ENTITY_TYPE: `${prefix}/mentoring/v1/entity-type/read`,
   MENTORING_CREATE_SESSION: `${prefix}/mentoring/v1/sessions/update`,
   MENTORING_UPDATE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/update/${sessionId}`,
+  MENTORING_DETAILS_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/details/${sessionId}?get_mentees=true`,
 };
