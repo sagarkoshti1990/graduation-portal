@@ -26,3 +26,37 @@ export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
     navigationUrl: 'create-asset',
   },
 ];
+
+export const FORM_MODE = {
+  CREATE: 'create',
+  EDIT: 'edit',
+  COPY: 'copy',
+} as const;
+
+export type FormModeType = typeof FORM_MODE[keyof typeof FORM_MODE];
+
+export const SESSION_STATUS = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+} as const;
+
+export const DEFAULT_SESSION_CONFIG = {
+  TIMEZONE: 'Asia/Kolkata',
+  SESSION_TYPE: 'Public',
+} as const;
+
+export const TRAINING_SESSION_FIELDS = {
+  PROVINCE: 'province',
+  SITE: 'site',
+  CATEGORIES: 'categories',
+  IDP_TRAINING_TASK: 'idp_training_task',
+  TITLE: 'title',
+  RECOMMENDED_FOR: 'recommended_for',
+  DELIVERY_MODE: 'delivery_mode',
+  CERTIFICATE_PROVIDED: 'certificate_provided',
+  CAN_BE_COPIED: 'can_be_copied',
+  MEETING_LINK: 'meeting_link',
+  LOCATION: 'location',
+} as const;
+
+

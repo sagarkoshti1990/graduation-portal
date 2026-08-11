@@ -182,7 +182,7 @@ const getAccessPages = (
         { name: 'dashboard', path: "/dashboard", component: SPDashboardScreen },
         { name: 'opportunities', path: "/opportunities", component: SPSupportOfferingsScreen },
         { name: 'create-opportunity', path: "/opportunities/create", component: SPSupportOfferingsCreateScreen },
-        { name: 'form-training-session', path: "/opportunities/training-session/:type?/:id?", component: SPCreateTrainingSessionScreen },
+        { name: 'form-training-session', path: "/opportunities/training-session/:type/:id?", component: SPCreateTrainingSessionScreen },
         { name: 'create-additional-service', path: "/opportunities/create-additional-service", component: SPCreateAdditionalServiceScreen },
         { name: 'create-asset', path: "/opportunities/create-asset", component: SPCreateAssetScreen },
         { name: 'requests', path: "/requests", component: SPSupportRequestsScreen },

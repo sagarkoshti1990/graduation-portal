@@ -179,7 +179,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation();
-                  navigation.navigate('form-training-session' as never, { sessionId: item.id } as never);
+                  navigation.navigate('form-training-session' as never, { type: 'edit', sessionId: item.id } as never);
                 }}
               >
                 {({ hovered }: any) => {

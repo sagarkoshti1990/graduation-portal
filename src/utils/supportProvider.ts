@@ -2,9 +2,8 @@ import { LC_ROLES, PARTICIPANT } from "@constants/ROLES";
 import moment from "moment";
 
 
-export function valueMapping(formValues: any, isReverseMapping: boolean = false): any {
+export function valueMapping(formValues: any, isReverseMapping: boolean = false, optionMap: any = {}): any {
   if (isReverseMapping) {
-
     let recommended_for = "";
       if(formValues.recommended_for && Array.isArray(formValues.recommended_for)) {
         let tempArray = formValues.recommended_for.map((item: any) => item?.value ?? item);
@@ -32,11 +31,20 @@ export function valueMapping(formValues: any, isReverseMapping: boolean = false)
     };
   }
 
+  let recommendedForPayload: string[] = [];
+  if (Array.isArray(formValues.recommended_for)) {
+    recommendedForPayload = formValues.recommended_for;
+  } else if (formValues.recommended_for === 'both') {
+    recommendedForPayload = ['org_admin', 'user'];
+  } else if (formValues.recommended_for) {
+    recommendedForPayload = [formValues.recommended_for];
+  }
+
   return {
     ...formValues,
     categories: [formValues.categories],
     province: [formValues.province],
-    recommended_for: [formValues.recommended_for],
+    recommended_for: recommendedForPayload,
     start_date: moment(formValues.start_date).unix(),
     end_date: moment(formValues.end_date).unix(),
     certificate_provided: formValues.certificate_provided === true,
@@ -44,6 +52,8 @@ export function valueMapping(formValues: any, isReverseMapping: boolean = false)
     time_zone: 'Asia/Kolkata',
     session_type: "Public",
     status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
+    max_capacity: formValues.max_capacity,
+    notifyUser: false,
     meeting_info: {
       link: formValues.meeting_link,
       location: formValues.location

@@ -581,6 +581,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       key: 'recurringSession',
                       fallback: 'Recurring Session',
                     },
+                    optionsSource: 'recurringOptions'
                   },
                 ],
               },
