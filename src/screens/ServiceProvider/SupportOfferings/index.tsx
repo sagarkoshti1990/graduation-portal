@@ -51,8 +51,8 @@ const App = (): React.JSX.Element => {
 
         setCounts({
           sessions: sessionsData?.result?.data?.length || 0,
-          additional_services: servicesData.length,
-          assets: assetsData.length,
+          additional_services: servicesData?.result?.data?.length || 0,
+          assets: assetsData?.result?.data?.length || 0,
         });
       } catch (err) {
         console.error('Error fetching tab counts:', err);
@@ -92,40 +92,65 @@ const App = (): React.JSX.Element => {
 
   // Fetch dynamic sites based on selected province filter
   useEffect(() => {
-    const fetchSitesData = async () => {
-      try {
-        const selectedProv = filters.province;
-        const selectedProvinceObj = provincesList.find(
-          (p: any) =>
-            p.externalId === selectedProv ||
-            p._id === selectedProv ||
-            p.name?.toLowerCase() === selectedProv?.toLowerCase()
-        );
-        const provinceIdParam = selectedProvinceObj
-          ? (selectedProvinceObj._id || selectedProvinceObj.externalId)
-          : (selectedProv && selectedProv !== 'all-provinces' ? selectedProv : undefined);
+  const fetchSitesData = async () => {
+    const selectedProv = filters.province;
 
-        const res = await getSitesByProvince({
-          provinceId: provinceIdParam,
-          page: 1,
-          limit: 100,
-        });
-        const fetchedSites = res?.result?.data || [];
-        setSitesList(fetchedSites);
-        const dynamicSites = [
-          { label: 'All Sites', value: 'all-sites' },
-          ...(fetchedSites || []).map((s: any) => ({
-            label: s.metaInformation?.name || s.name || s.title || s.label,
-            value: s.externalId || s._id || s.id || s.value,
-          })),
-        ];
-        setSiteOptions(dynamicSites);
-      } catch (err) {
-        console.error('Error fetching dynamic sites:', err);
-      }
-    };
-    fetchSitesData();
-  }, [filters.province, provincesList]);
+    // Province select- Site disabled 
+    // just default option - API call
+    if (!selectedProv || selectedProv === 'all-provinces') {
+      setSitesList([]);
+      setSiteOptions([]);
+      return;
+    }
+
+    try {
+      const selectedProvinceObj = provincesList.find(
+        (p: any) =>
+          p.externalId === selectedProv ||
+          p._id === selectedProv ||
+          p.name?.toLowerCase() === selectedProv?.toLowerCase()
+      );
+
+      const provinceIdParam = selectedProvinceObj
+        ? selectedProvinceObj._id || selectedProvinceObj.externalId
+        : selectedProv;
+
+      const res = await getSitesByProvince({
+        provinceId: provinceIdParam,
+        page: 1,
+        limit: 100,
+      });
+
+      const fetchedSites = res?.result?.data || [];
+
+      setSitesList(fetchedSites);
+
+      const dynamicSites = [
+        { label: 'All Sites', value: 'all-sites' },
+        ...fetchedSites.map((s: any) => ({
+          label:
+            s.metaInformation?.name ||
+            s.name ||
+            s.title ||
+            s.label,
+          value:
+            s.externalId ||
+            s._id ||
+            s.id ||
+            s.value,
+        })),
+      ];
+
+      setSiteOptions(dynamicSites);
+    } catch (err) {
+      console.error('Error fetching dynamic sites:', err);
+      setSitesList([]);
+      setSiteOptions([]);
+    }
+  };
+
+  fetchSitesData();
+}, [filters.province, provincesList]);
 
   const filterOptions = [
     { type: 'search', attr: 'search', placeholderKey: 'admin.filters.searchOfferingsPlaceholder' },
