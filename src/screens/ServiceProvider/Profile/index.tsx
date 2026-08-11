@@ -15,7 +15,7 @@ import {
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
+import SchemaFormRenderer, { validateSchema, resolveFileUploads, FileUploadError, } from '@components/SchemaFormRenderer';
 import { useAuth } from '@contexts/AuthContext';
 import { getUserProfile } from '../../../services/authenticationService';
 import {
@@ -88,6 +88,7 @@ const OrganizationProfile = (): React.JSX.Element => {
         agreementMoU: null,
         organisationCredentials: null,
       };
+
       setValues(emptyValues);
       setOriginalValues(emptyValues);
       setProvinceCoverage([]);
@@ -97,27 +98,34 @@ const OrganizationProfile = (): React.JSX.Element => {
       return;
     }
 
-    getUserProfile(user?.id)
+    getUserProfile(user.id)
       .then((res: any) => {
+        // Don't overwrite unsaved changes while editing
+        if (mode === 'edit') {
+          return;
+        }
+
         const profileData = res || {};
-        
-        // Helper to extract fields from the profile response payload.
+
         const getField = (key: string, fallback: any = '') => {
-          const val = profileData[key] ?? 
-                      profileData?.meta?.[key] ?? 
-                      profileData?.extra?.[key] ?? 
-                      profileData?.userDetails?.[key] ?? 
-                      profileData?.userDetails?.meta?.[key] ?? 
-                      profileData?.userDetails?.extra?.[key] ??
-                      profileData?.custom_entity_text?.[key];
-          
+          const val =
+            profileData[key] ??
+            profileData?.meta?.[key] ??
+            profileData?.extra?.[key] ??
+            profileData?.userDetails?.[key] ??
+            profileData?.userDetails?.meta?.[key] ??
+            profileData?.userDetails?.extra?.[key] ??
+            profileData?.custom_entity_text?.[key];
+
           if (val === undefined || val === null) {
             return fallback;
           }
+
           return val;
         };
 
         let orgType = getField('organizationType', []);
+
         if (typeof orgType === 'string') {
           try {
             orgType = JSON.parse(orgType);
@@ -125,6 +133,7 @@ const OrganizationProfile = (): React.JSX.Element => {
             orgType = [orgType];
           }
         }
+
         if (!Array.isArray(orgType)) {
           orgType = [];
         }
@@ -135,17 +144,26 @@ const OrganizationProfile = (): React.JSX.Element => {
           contactPersonName: getField('name') || user?.name || '',
           contactEmail: getField('email') || user?.email || '',
           contactPhone: getField('phone') || user?.phone || '',
-          phone_code: getField('phone_code') || getField('phoneCode') || user?.phone_code || '27',
+          phone_code:
+            getField('phone_code') ||
+            getField('phoneCode') ||
+            user?.phone_code ||
+            '27',
           agreementMoU: getField('agreementMoU', null),
-          organisationCredentials: getField('organisationCredentials', null),
+          organisationCredentials: getField(
+            'organisationCredentials',
+            null,
+          ),
         };
 
-        const rawCov = getField('provinceCoverage', null);
-        const rawProvinces = getField('provinces', []);
-        const rawSites = getField('sites', []);
-        const rawCat = getField('supportCategories', DEFAULT_CATEGORIES);
+        const rawCov = getField('provinceCoverage', []);
+        const rawCat = getField(
+          'supportCategories',
+          DEFAULT_CATEGORIES,
+        );
 
         let cov = [];
+
         if (rawCov) {
           if (typeof rawCov === 'object') {
             cov = rawCov;
@@ -157,29 +175,13 @@ const OrganizationProfile = (): React.JSX.Element => {
             }
           }
         }
-        if (!Array.isArray(cov)) cov = [];
 
-        if (cov.length === 0 && Array.isArray(rawProvinces) && rawProvinces.length > 0) {
-          const siteExtIds = Array.isArray(rawSites)
-            ? rawSites.map((s: any) => (typeof s === 'object' ? s.externalId || s._id || s.id : s)).filter(Boolean)
-            : [];
-          const siteNames = Array.isArray(rawSites)
-            ? rawSites.map((s: any) => (typeof s === 'object' ? s.name || s.externalId || s._id : s)).filter(Boolean)
-            : [];
-
-          cov = rawProvinces.map((p: any) => {
-            const pId = typeof p === 'object' ? p.externalId || p._id || p.id : p;
-            const pName = typeof p === 'object' ? p.name || pId : pId;
-            return {
-              provinceId: pId,
-              provinceName: pName,
-              siteIds: siteExtIds,
-              siteNames: siteNames,
-            };
-          }).filter((item: any) => Boolean(item.provinceId));
+        if (!Array.isArray(cov)) {
+          cov = [];
         }
 
         let cat = DEFAULT_CATEGORIES;
+
         if (rawCat) {
           if (typeof rawCat === 'object') {
             cat = rawCat;
@@ -191,7 +193,10 @@ const OrganizationProfile = (): React.JSX.Element => {
             }
           }
         }
-        if (!Array.isArray(cat) || cat.length === 0) cat = DEFAULT_CATEGORIES;
+
+        if (!Array.isArray(cat)) {
+          cat = DEFAULT_CATEGORIES;
+        }
 
         setValues(mapped);
         setOriginalValues(mapped);
@@ -203,7 +208,7 @@ const OrganizationProfile = (): React.JSX.Element => {
       .catch((err: any) => {
         console.error('Error fetching org profile:', err);
       });
-  }, [user?.id, user?.name, user?.email, user?.phone]);
+  }, [user?.id]);
 
   // Updates a form field value and clears its validation error.
   const handleFieldChange = useCallback((name: string, value: any) => {
@@ -225,56 +230,100 @@ const OrganizationProfile = (): React.JSX.Element => {
   };
 
   // Validates forms, constructs payload, updates profile via API, and updates local original values on success.
-  const handleSave = async () => {
-    // Validate the three schemas
-    const basicErrors = validateSchema(BASIC_INFO_SCHEMA, values, optionsMap);
-    const contactErrors = validateSchema(CONTACT_PERSON_SCHEMA, values, optionsMap);
-    const docErrors = validateSchema(DOCUMENTS_SCHEMA, values, optionsMap);
-    
-    const allErrors = { ...basicErrors, ...contactErrors, ...docErrors };
-    if (Object.keys(allErrors).length > 0) {
-      setErrors(allErrors);
-      showAlert('error', t('profile.pleaseFixErrors', 'Please correct the highlighted fields before saving.'));
-      return;
-    }
+const handleSave = async () => {
+  // Validate the three schemas
+  const basicErrors = validateSchema(BASIC_INFO_SCHEMA, values, optionsMap);
+  const contactErrors = validateSchema(CONTACT_PERSON_SCHEMA, values, optionsMap);
+  const docErrors = validateSchema(DOCUMENTS_SCHEMA, values, optionsMap);
 
-    setSaving(true);
-    try {
-      const provinces = Array.from(new Set(provinceCoverage.map(item => item.provinceId).filter(Boolean)));
-      const sites = Array.from(new Set(provinceCoverage.flatMap(item => item.siteIds || []).filter(Boolean)));
-
-      const payload = {
-        name: values.contactPersonName,
-        about: values.name,
-        email: values.contactEmail,
-        phone: values.contactPhone,
-        phone_code: values.phone_code ? values.phone_code.toString().replace('+', '') : '27',
-        provinces,
-        sites,
-        supportCategories,
-        meta: {
-          organizationType: values.organizationType,
-          agreementMoU: values.agreementMoU,
-          organisationCredentials: values.organisationCredentials,
-        }
-      };
-
-      await updateUser(user?.id || '', payload);
-
-      showAlert('success', t('profile.saveSuccess', 'Profile updated successfully.'));
-      setMode('preview');
-      
-      // Update original states locally
-      setOriginalValues(values);
-      setOriginalProvinceCoverage(provinceCoverage);
-      setOriginalSupportCategories(supportCategories);
-    } catch (err) {
-      console.error('Failed to update organization profile:', err);
-      showAlert('error', t('profile.saveError', 'Failed to update profile.'));
-    } finally {
-      setSaving(false);
-    }
+  const allErrors = {
+    ...basicErrors,
+    ...contactErrors,
+    ...docErrors,
   };
+
+  if (provinceCoverage.length === 0) {
+    allErrors.provinceCoverage = t(
+      'errors.coverageRequired',
+      'Add at least one province coverage entry.',
+    );
+  }
+
+  if (supportCategories.length === 0) {
+    allErrors.supportCategories = t(
+      'errors.categoriesRequired',
+      'Add at least one support category.',
+    );
+  }
+
+  if (Object.keys(allErrors).length > 0) {
+    setErrors(allErrors);
+    showAlert(
+      'error',
+      t(
+        'profile.pleaseFixErrors',
+        'Please correct the highlighted fields before saving.',
+      ),
+    );
+    return;
+  }
+
+setSaving(true);
+
+try {
+  const resolvedValues = await resolveFileUploads(
+    DOCUMENTS_SCHEMA,
+    values,
+    handleUpload,
+  );
+
+  const provinces = Array.from(
+    new Set(
+      provinceCoverage
+        .map(item => item.provinceId)
+        .filter(Boolean),
+    ),
+  );
+
+  const sites = Array.from(
+    new Set(
+      provinceCoverage
+        .flatMap(item => item.siteIds || [])
+        .filter(Boolean),
+    ),
+  );
+
+  const payload = {
+    name: values.contactPersonName,
+    about: values.name,
+    email: values.contactEmail,
+    phone: values.contactPhone,
+    phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
+    provinces,
+    sites,
+    supportCategories,
+    meta: {
+      organizationType: values.organizationType,
+      agreementMoU: resolvedValues.agreementMoU,
+      organisationCredentials: resolvedValues.organisationCredentials,
+    },
+  };
+
+  await updateUser(user?.id || '', payload);
+
+    showAlert('success',t('profile.saveSuccess', 'Profile updated successfully.'),)
+    setMode('preview');
+
+    setOriginalValues(values);
+    setOriginalProvinceCoverage(provinceCoverage);
+    setOriginalSupportCategories(supportCategories);
+  } catch (err) {
+    console.error('Failed to update organization profile:', err);
+    showAlert('error',t('profile.saveError', 'Failed to update profile.'),);
+  } finally {
+    setSaving(false);
+  }
+};
 
   // Uploads the selected document to the server and returns the uploaded file URL.
   const handleUpload = async (file: any): Promise<string> => {

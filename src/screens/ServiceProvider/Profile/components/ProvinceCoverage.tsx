@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { VStack, HStack, Text, Box, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable } from '@ui';
+import { VStack, HStack, Text, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
 import { getProvincesList, getSitesByProvince } from '../../../../services/usersService';
-import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import styles from '../styles';
 
 export interface CoverageItem {
