@@ -33,7 +33,6 @@ const App = (): React.JSX.Element => {
   const route = useRoute<any>();
   const modeType: String = route.params?.type;
   const sessionId = route.params?.id || route.params?.sessionId;
-  const initialSessionData = route.params?.sessionData;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -237,7 +236,7 @@ const App = (): React.JSX.Element => {
     return <NotFound message="Routes Not Found" />;
   }
 
-  if ((modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) && !sessionId && !initialSessionData) {
+  if ((modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) && !sessionId) {
     return <NotFound message="Routes Not Found" />;
   }
 

@@ -45,18 +45,3 @@ export const DEFAULT_SESSION_CONFIG = {
   SESSION_TYPE: 'Public',
 } as const;
 
-export const TRAINING_SESSION_FIELDS = {
-  PROVINCE: 'province',
-  SITE: 'site',
-  CATEGORIES: 'categories',
-  IDP_TRAINING_TASK: 'idp_training_task',
-  TITLE: 'title',
-  RECOMMENDED_FOR: 'recommended_for',
-  DELIVERY_MODE: 'delivery_mode',
-  CERTIFICATE_PROVIDED: 'certificate_provided',
-  CAN_BE_COPIED: 'can_be_copied',
-  MEETING_LINK: 'meeting_link',
-  LOCATION: 'location',
-} as const;
-
-
