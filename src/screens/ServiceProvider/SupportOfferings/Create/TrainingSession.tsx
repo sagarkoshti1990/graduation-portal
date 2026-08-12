@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack, useAlert } from '@ui';
+import { Card, Container, Loader, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -19,7 +19,8 @@ import {
 } from '../../../../services/mentoringService';
 import NotFound from '@components/NotFound';
 import { valueMapping } from '@utils/supportProvider';
-import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+
 
 // Icon shown next to each delivery mode option in the format-type pill selector
 const DELIVERY_MODE_ICONS: Record<string, string> = {
@@ -41,6 +42,7 @@ const App = (): React.JSX.Element => {
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
 
   const getHeaderTitle = () => {
@@ -81,6 +83,8 @@ const App = (): React.JSX.Element => {
       } catch (error: any) {
         console.error('Error loading form data:', error);
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -229,8 +233,16 @@ const App = (): React.JSX.Element => {
     }
   }
 
+  if (isLoading) {
+    return <Loader fullScreen message="Loading..." />;
+  }
+
   if ((modeType === FORM_MODE.CREATE && sessionId) || ((modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) && !sessionId)) {
     return <NotFound message="Routes Not Found" />;
+  }
+
+  if (modeType === FORM_MODE.EDIT && values.status === SESSION_STATUS.PUBLISHED) {
+    return <NotFound message="Published sessions cannot be edited" />;
   }
 
   return (

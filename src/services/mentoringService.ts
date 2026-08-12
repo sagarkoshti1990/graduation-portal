@@ -89,7 +89,7 @@ export const createSession = async (payload: any): Promise<any> => {
     const response = await api.post(API_ENDPOINTS.MENTORING_CREATE_SESSION, payload);
     return response.data;
   } catch (error: any) {
-    return { error: error.response.data };
+    throw error;
   }
 };
 
