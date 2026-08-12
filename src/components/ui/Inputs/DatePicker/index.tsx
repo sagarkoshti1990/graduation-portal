@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { Pressable, Platform } from 'react-native';
 import { Input, InputField, Box, HStack, Text, Modal } from '@ui';
 import { LucideIcon } from '@ui';
@@ -40,6 +40,19 @@ const resolveDom = (node: unknown): HTMLElement | null => {
     ? (inner as HTMLElement)
     : null;
 };
+
+/**
+ * "Latest ref" wrapper — returns a permanently-stable function identity that
+ * always calls whatever `fn` was passed on the most recent render. Lets
+ * `Calendar` (already `React.memo`'d, along with everything under it) skip
+ * re-rendering when a caller-supplied callback prop (e.g. `onChange`) isn't
+ * itself stable, without needing that caller to change anything.
+ */
+function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
+  ref.current = fn;
+  return useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
+}
 
 // Module-level singleton: every DatePicker instance shares this import, so a
 // plain Map here coordinates across independent instances with no new props,
@@ -343,6 +356,30 @@ const DatePicker: React.FC<DatePickerProps> = ({
     closePicker();
   };
 
+  // Permanently-stable identities for everything passed to `<Calendar>` (already
+  // `React.memo`'d end-to-end) so a parent re-render that doesn't actually change
+  // any of this data — e.g. the user typing in an unrelated field elsewhere in the
+  // form — doesn't cascade into recomputing/re-rendering the whole calendar tree.
+  const stableHandleCalendarChange = useStableCallback(handleCalendarChange);
+  const stableClosePicker = useStableCallback(closePicker);
+  const stableHandleClear = useStableCallback(handleClear);
+  const stableHandleCancel = useStableCallback(handleCancel);
+
+  // `selectedDate` is already memoized; only the `|| new Date()` fallback was
+  // creating a fresh object every render when nothing's selected yet.
+  const calendarValue = useMemo(() => selectedDate || new Date(), [selectedDate]);
+
+  // Guards against a caller re-creating an equal-but-referentially-new Date
+  // every render (common when `maximumDate`/`minimumDate` are computed inline,
+  // e.g. `new Date()` in a validation-driven expression) — compares by value
+  // instead of identity so that doesn't defeat memoization downstream.
+  const maximumDateTime = maximumDate?.getTime();
+  const minimumDateTime = minimumDate?.getTime();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableMaximumDate = useMemo(() => maximumDate, [maximumDateTime]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableMinimumDate = useMemo(() => minimumDate, [minimumDateTime]);
+
   // Update position on scroll/resize (web only)
   useEffect(() => {
     if (Platform.OS === 'web' && showPicker) {
@@ -446,13 +483,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const calendarElement = (
     <Calendar
       mode={mode}
-      value={selectedDate || new Date()}
-      onChange={handleCalendarChange}
-      onClose={closePicker}
-      onClear={handleClear}
-      onCancel={handleCancel}
-      maximumDate={maximumDate}
-      minimumDate={minimumDate}
+      value={calendarValue}
+      onChange={stableHandleCalendarChange}
+      onClose={stableClosePicker}
+      onClear={stableHandleClear}
+      onCancel={stableHandleCancel}
+      maximumDate={stableMaximumDate}
+      minimumDate={stableMinimumDate}
       calendarId={calendarIdRef.current}
       hourFormat={hourFormat}
       theme={resolvedTheme}
@@ -542,7 +579,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
       {Platform.OS !== 'web' && (
         <Modal
           isOpen={showPicker}
-          onClose={closePicker}
+          onClose={stableClosePicker}
           headerTitle={modalTitle}
           size="md"
           contentProps={styles?.popup as any}

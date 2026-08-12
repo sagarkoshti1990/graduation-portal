@@ -56,6 +56,7 @@ import {
   type FormField,
   type ValidationRule,
   type VisibleIfCondition,
+  type DisabledWhenCondition,
   type Hint,
   type FieldCompareValue,
   FORM_FIELD_TYPES,
@@ -188,6 +189,12 @@ export interface SchemaFormRendererProps {
    */
   uploadService?: (file: FileAsset) => Promise<string>;
   // ── Internal footer (multi-step schemas only) — visibility/text/props overrides ──
+  /**
+   * Optional, fully caller-controlled element rendered in the footer immediately
+   * before the Save Draft button. Render-only — it never touches form state,
+   * validation, or the Submit/Save Draft flows.
+   */
+  customButton?: React.ReactNode;
   showPreviousButton?: boolean;
   showContinueButton?: boolean;
   showSaveDraftButton?: boolean;
@@ -305,6 +312,30 @@ function isVisibleIf(
   return visibleIf.every(condition =>
     evaluateVisibleIfCondition(condition, values),
   );
+}
+
+/**
+ * Single, centralized `disabledWhen` evaluator — every field type routes
+ * through this (via `isFieldDisabled` in `FieldRenderer`) instead of each
+ * branch re-implementing its own condition check. `empty` checks presence;
+ * `value` reuses the same comparison engine as `visibleIf` (default `===`)
+ * so both condition styles share one implementation.
+ */
+function isDisabledWhen(
+  disabledWhen: DisabledWhenCondition | undefined,
+  values: Record<string, any>,
+): boolean {
+  if (!disabledWhen?.field) return false;
+  if (disabledWhen.empty) {
+    return !isValuePresent(values[disabledWhen.field]);
+  }
+  if (disabledWhen.value !== undefined) {
+    return evaluateVisibleIfCondition(
+      { name: disabledWhen.field, operator: disabledWhen.operator, value: disabledWhen.value },
+      values,
+    );
+  }
+  return false;
 }
 
 /** Recursively walks a field (and its group sub-fields) into a flat name → field map. */
@@ -1032,8 +1063,14 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   isEditMode = false,
   globalInputProps,
 }) => {
+  // Centralized for every field type below — `disabled`/`field.disabled` are
+  // permanent and always win; `disabledWhen` is re-evaluated from `values` on
+  // every render, so it recalculates automatically when its dependency changes.
   const isFieldDisabled =
-    disabled || !!field.disabled || (isEditMode && field.name === 'roleId');
+    disabled ||
+    !!field.disabled ||
+    (isEditMode && field.name === 'roleId') ||
+    isDisabledWhen(field.disabledWhen, values);
 
   // Single resolution point for Task 4's two-level `_input` override: field-level
   // wins over the global default. Behavior/config props only (size, placeholder,
@@ -1092,7 +1129,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       <HStack
         {...(styles.input as any)}
         isInvalid={!!combinedError}
-        isDisabled={disabled || field.disabled}
+        isDisabled={isFieldDisabled}
         alignItems="center"
         paddingLeft={0}
         height={40}
@@ -1114,7 +1151,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               error={subField.name ? errors[subField.name] : undefined}
               errors={errors}
               onChange={onChange}
-              disabled={disabled || !!subField.disabled}
+              disabled={isFieldDisabled || !!subField.disabled}
               optionsMap={optionsMap}
               values={values}
               t={t}
@@ -1159,12 +1196,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       ? optionsMap[field.optionsSource] ?? []
       : [];
     const options = rawOptions.map(o => ({ value: o.value, label: o.label }));
-
-    // Compute disabled-when condition
-    let isDisabled = isFieldDisabled;
-    if (!isDisabled && field.disabledWhen?.empty) {
-      if (!isValuePresent(values[field.disabledWhen.field])) isDisabled = true;
-    }
+    const isDisabled = isFieldDisabled;
 
     // Dynamic placeholder when dependency is satisfied
     const activePlaceholder =
@@ -1468,7 +1500,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               : undefined
           }
           iconSize={20}
-          isDisabled={disabled || field.disabled}
+          isDisabled={isFieldDisabled}
           isReadOnly={field.isReadOnly}
         />
       </Box>
@@ -1486,7 +1518,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           {...styles.input}
           {...resolvedInputProps}
           isInvalid={!!error}
-          isDisabled={disabled || field.disabled}
+          isDisabled={isFieldDisabled}
           isReadOnly={field.isReadOnly}
         >
           <FastInputField
@@ -1501,7 +1533,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         {field.toggleVisibility && (
           <Pressable
             onPress={() => toggleVisibilityGroup(group)}
-            disabled={disabled || field.disabled}
+            disabled={isFieldDisabled}
             style={styles.resetPasswordEyeIconButton}
           >
             <LucideIcon
@@ -1535,7 +1567,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         {...(styles.input as any)}
         {...resolvedInputProps}
         isInvalid={!!error}
-        isDisabled={disabled || field.disabled}
+        isDisabled={isFieldDisabled}
         isReadOnly={field.isReadOnly}
       >
         <FastTextareaInput
@@ -1942,6 +1974,7 @@ const StepFooter: React.FC<{
   onSaveDraft?: () => void;
   onSubmit: () => void;
   t: (key: string, fallback?: string) => string;
+  customButton?: React.ReactNode;
   showPreviousButton?: boolean;
   showContinueButton?: boolean;
   showSaveDraftButton?: boolean;
@@ -1963,6 +1996,7 @@ const StepFooter: React.FC<{
   onSaveDraft,
   onSubmit,
   t,
+  customButton,
   showPreviousButton,
   showContinueButton,
   showSaveDraftButton,
@@ -1994,6 +2028,7 @@ const StepFooter: React.FC<{
       </Button>
     )}
     <HStack space="sm">
+      {customButton}
       {(showSaveDraftButton ?? true) && !!onSaveDraft && (
         <Button
           variant="outlineghost"
@@ -2151,6 +2186,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   isSubmitting = false,
   _input,
   uploadService,
+  customButton,
   showPreviousButton,
   showContinueButton,
   showSaveDraftButton,
@@ -2317,6 +2353,21 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     }
   });
 
+  // Shared by Submit and Save Draft — both resolve file uploads through the
+  // exact same `resolveFileUploads` call and report failures the same way;
+  // the only difference between the two flows is whether validation runs first.
+  const buildFileUploadIssues = (failedFieldNames: string[]): ValidationIssue[] =>
+    failedFieldNames.map(name => {
+      const field = fieldsByName[name];
+      return {
+        fieldName: name,
+        fieldLabel: field?.label
+          ? t(`admin.users.createUser.${field.label.key}`, field.label.fallback)
+          : name,
+        message: t('common.fileUploadFailed', 'File upload failed'),
+      };
+    });
+
   const handleSubmit = useStableCallback(async () => {
     const {
       errors: allErrors,
@@ -2337,17 +2388,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
       resolvedValues = await resolveFileUploads(schema, values, uploadService);
     } catch (err) {
       if (err instanceof FileUploadError) {
-        const uploadIssues: ValidationIssue[] = err.failedFieldNames.map(name => {
-          const field = fieldsByName[name];
-          return {
-            fieldName: name,
-            fieldLabel: field?.label
-              ? t(`admin.users.createUser.${field.label.key}`, field.label.fallback)
-              : name,
-            message: t('common.fileUploadFailed', 'File upload failed'),
-          };
-        });
-        setPopupIssues(uploadIssues);
+        setPopupIssues(buildFileUploadIssues(err.failedFieldNames));
         setIsPopupOpen(true);
         return;
       }
@@ -2357,8 +2398,22 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     onSubmit?.(resolvedValues);
   });
 
-  const handleSaveDraft = useStableCallback(() => {
-    onSaveDraft?.(values);
+  const handleSaveDraft = useStableCallback(async () => {
+    // No validation here by design — Save Draft only differs from Submit by
+    // skipping it; the upload step itself is identical.
+    let resolvedValues = values;
+    try {
+      resolvedValues = await resolveFileUploads(schema, values, uploadService);
+    } catch (err) {
+      if (err instanceof FileUploadError) {
+        setPopupIssues(buildFileUploadIssues(err.failedFieldNames));
+        setIsPopupOpen(true);
+        return;
+      }
+      throw err;
+    }
+
+    onSaveDraft?.(resolvedValues);
   });
 
   const handleSelectIssue = useStableCallback((issue: ValidationIssue) => {
@@ -2483,6 +2538,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
           onSaveDraft={onSaveDraft ? handleSaveDraft : undefined}
           onSubmit={handleSubmit}
           t={t}
+          customButton={customButton}
           showPreviousButton={showPreviousButton}
           showContinueButton={showContinueButton}
           showSaveDraftButton={showSaveDraftButton}

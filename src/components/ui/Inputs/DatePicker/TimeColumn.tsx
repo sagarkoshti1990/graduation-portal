@@ -18,6 +18,34 @@ interface TimeColumnItem {
   label: string;
 }
 
+interface TimeRowProps {
+  value: number | string;
+  label: string;
+  isSelected: boolean;
+  onSelect: (value: any) => void;
+  theme: DatePickerTheme;
+}
+
+// Its own `React.memo` so picking a new hour/minute only re-renders the one
+// row that lost its selected state and the one that gained it — not all 24
+// (hour) or 60 (minute) rows every time.
+const TimeRow = React.memo(function TimeRow({ value, label, isSelected, onSelect, theme }: TimeRowProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
+      accessibilityLabel={label}
+      onPress={() => onSelect(value)}
+    >
+      <Box {...timePickerStyles.row} {...getTimeRowStyle(isSelected, theme)}>
+        <Text {...timePickerStyles.rowText} {...getTimeRowTextStyle(isSelected, theme)}>
+          {label}
+        </Text>
+      </Box>
+    </Pressable>
+  );
+});
+
 interface TimeColumnProps {
   items: TimeColumnItem[];
   selectedValue: number | string;
@@ -93,24 +121,16 @@ const TimeColumn = React.memo(function TimeColumn({
         accessibilityLabel={accessibilityLabel}
         contentContainerStyle={timePickerStyles.columnContent}
       >
-        {items.map(item => {
-          const isSelected = item.value === selectedValue;
-          return (
-            <Pressable
-              key={String(item.value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={item.label}
-              onPress={() => onSelect(item.value)}
-            >
-              <Box {...timePickerStyles.row} {...getTimeRowStyle(isSelected, theme)}>
-                <Text {...timePickerStyles.rowText} {...getTimeRowTextStyle(isSelected, theme)}>
-                  {item.label}
-                </Text>
-              </Box>
-            </Pressable>
-          );
-        })}
+        {items.map(item => (
+          <TimeRow
+            key={String(item.value)}
+            value={item.value}
+            label={item.label}
+            isSelected={item.value === selectedValue}
+            onSelect={onSelect}
+            theme={theme}
+          />
+        ))}
       </ScrollView>
       <Pressable
         accessibilityRole="button"
