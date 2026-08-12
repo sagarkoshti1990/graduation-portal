@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack, useAlert } from '@ui';
+import { Card, Container, Loader, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -14,9 +14,13 @@ import {
   getSessionTypesByPillar,
   getDeliveryModes,
   createSession,
+  getSessionDetails,
   MentoringOption,
 } from '../../../../services/mentoringService';
-import moment from 'moment';
+import NotFound from '@components/NotFound';
+import { valueMapping } from '@utils/supportProvider';
+import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+
 
 // Icon shown next to each delivery mode option in the format-type pill selector
 const DELIVERY_MODE_ICONS: Record<string, string> = {
@@ -28,7 +32,8 @@ const DELIVERY_MODE_ICONS: Record<string, string> = {
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const sessionId = route.params?.sessionId;
+  const modeType: String = route.params?.type;
+  const sessionId = route.params?.id || route.params?.sessionId;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -37,29 +42,57 @@ const App = (): React.JSX.Element => {
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
 
-  useEffect(() => {
-    
-  const init = async () => {
-    
-    const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
-      getProvincesList(),
-      getSessionCategories(),
-      getRecommendedFor(),
-      getDeliveryModes(),
-    ]);
-    setProvinces(result)
-    setPillers(getCategories)
-    setTargetAudience(getTarget)
-    setDeliveryModes(getDeliveryModeOptions)
+  const getHeaderTitle = () => {
+    switch (modeType) {
+      case FORM_MODE.EDIT:
+        return t('supportProvider.createSupport.training.editTitle', 'Edit Training Session');
+      case FORM_MODE.COPY:
+        return t('supportProvider.createSupport.training.copyTitle', 'Copy Training Session');
+      case FORM_MODE.CREATE:
+      default:
+        return t('supportProvider.createSupport.training.title', 'Create Training Session');
+    }
   };
-  
-  init();
-  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
+          getProvincesList(),
+          getSessionCategories(),
+          getRecommendedFor(),
+          getDeliveryModes(),
+        ]);
+        setProvinces(result);
+        setPillers(getCategories);
+        setTargetAudience(getTarget);
+        setDeliveryModes(getDeliveryModeOptions);
+
+        // Fetch session data via getSessionDetails API when in Copy or Edit mode
+        if (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) {
+          const rawResponse = await getSessionDetails(sessionId);
+          const rawData = rawResponse?.result;
+          if (rawData) {
+            const formattedValues: any = valueMapping(rawData, true); // Reverse mapping to form values
+            setValues(formattedValues);
+          }
+        }
+      } catch (error: any) {
+        console.error('Error loading form data:', error);
+        showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
+  }, [sessionId, modeType]);
 
   const handleFieldChange = useCallback(
-    (name: string, value: string, other?:any) => {
+    (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
         if (name === 'province') next.site = '';
@@ -67,54 +100,74 @@ const App = (): React.JSX.Element => {
           next.idp_training_task = '';
           next.title = '';
         }
-        if(name === 'idp_training_task'){
+        if (name === 'idp_training_task') {
           next.title = other?.label;
         }
         return next;
       });
-      if (name === 'categories') {
-        if (!value) {
-          setSessionTypes([]);
-          return;
-        }
-        const selectedPillarObj = pillers.find(
-          p => p.value === value || p.label === value
-        );
-        const pillarCode = (selectedPillarObj?.value || value).toLowerCase();
-        if (pillarCode) {
-          getSessionTypesByPillar(pillarCode).then(res => setSessionTypes(res || []));
-        } else {
-          setSessionTypes([]);
-        }
-      }
     },
     [pillers]
   );
 
   useEffect(() => {
-    if (!values.province) {
-      setSites([]);
-      return;
-    }
-    getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 })
-      .then(res => setSites(res.result?.data || []))
-      .catch(() => setSites([]));
+    const init = async () => {
+      if (!values.categories) {
+        setSessionTypes([]);
+        return;
+      }
+      const selectedPillarObj = pillers.find(
+        p => p.value === values.categories || p.label === values.categories
+      );
+      const pillarCode = (selectedPillarObj?.value || values.categories).toLowerCase();
+      if (pillarCode) {
+        try {
+          const res = await getSessionTypesByPillar(pillarCode);
+          setSessionTypes(res || []);
+        } catch (err) {
+          console.error('Error fetching session types:', err);
+          setSessionTypes([]);
+        }
+      } else {
+        setSessionTypes([]);
+      }
+    };
+
+    init();
+  }, [values.categories]);
+
+
+  useEffect(() => {
+    const init = async () => {
+      if (!values.province) {
+        setSites([]);
+        return;
+      }
+      try {
+        const res = await getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 });
+        setSites(res.result?.data || []);
+      } catch (err) {
+        console.error('Error fetching sites:', err);
+        setSites([]);
+      }
+    };
+
+    init();
   }, [values.province]);
 
   const optionsMap = useMemo(() => {
     const provinceOpts =
       provinces && provinces.length > 0
         ? provinces.map((p: any) => ({
-            value: p._id || p.id || p.name,
-            label: p.name || p.label,
-          }))
+          value: p._id || p.id || p.name,
+          label: p.name || p.label,
+        }))
         : [];
 
     const siteOpts = sites
       ? sites.map((s: any) => ({
-          value: s._id || s.id || s.name,
-          label: s.name || s.label,
-        }))
+        value: s._id || s.id || s.name,
+        label: s.name || s.label,
+      }))
       : [];
 
     return {
@@ -141,34 +194,36 @@ const App = (): React.JSX.Element => {
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
-      const payload = {
-        ...formValues,
-        categories: [formValues.categories],
-        province: [formValues.province],
-        recommended_for: [formValues.recommended_for],
-        start_date: moment(formValues.start_date).unix(),
-        end_date: moment(formValues.end_date).unix(),
-        certificate_provided: formValues.certificate_provided === true,
-        can_be_copied: formValues.can_be_copied === true,
-        time_zone: 'Asia/Kolkata',
-        session_type: "Public",
-        status: isDraft ? 'DRAFT' : 'PUBLISHED',
-        meeting_info: {
-          link: formValues.meeting_link,
-          location: formValues.location
-        },
-      };
-      await createSession(payload);
+      setValues(formValues);
+      const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
 
-      showAlert('success', isDraft ? 'Draft saved successfully!' : 'Training session saved successfully!');
+      if (modeType === 'edit') {
+        // update code api call
+      }
+      else {
+        await createSession(payload);
+      }
+
+      const successMsg = isDraft
+        ? t('supportProvider.createSupport.training.alerts.draftSaved', 'Draft saved successfully!')
+        : modeType === FORM_MODE.COPY
+          ? t('supportProvider.createSupport.training.alerts.sessionCopied', 'Training session copied successfully!')
+          : t('supportProvider.createSupport.training.alerts.sessionSaved', 'Training session saved successfully!');
+
+      showAlert('success', successMsg);
       // @ts-ignore
       navigation.navigate('opportunities');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving training session:', error);
-      showAlert('error', 'Something went wrong.');
+      // Show specific API error message if available, otherwise generic message
+      const errMsg =
+        error?.data?.message ||
+        error?.message ||
+        t('supportProvider.createSupport.training.errors.saveFailed', 'Something went wrong while saving. Please try again.');
+      showAlert('error', errMsg);
     }
   };
-  
+
   const handleBackPress = () => {
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
@@ -178,10 +233,22 @@ const App = (): React.JSX.Element => {
     }
   }
 
+  if (isLoading) {
+    return <Loader fullScreen message="Loading..." />;
+  }
+
+  if ((modeType === FORM_MODE.CREATE && sessionId) || ((modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) && !sessionId)) {
+    return <NotFound message="Routes Not Found" />;
+  }
+
+  if (modeType === FORM_MODE.EDIT && values.status === SESSION_STATUS.PUBLISHED) {
+    return <NotFound message="Published sessions cannot be edited" />;
+  }
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title={t('supportProvider.createSupport.training.title', 'Create Training Session')}
+        title={getHeaderTitle()}
         backButtonText={t('supportProvider.createSupport.changeType', 'Change type')}
         onNavigateBack={handleBackPress}
       />
@@ -204,9 +271,17 @@ const App = (): React.JSX.Element => {
               if (!url) {
                 throw new Error(`Failed to upload file: ${file.name}`);
               }
-              return uploaded?.data?.[0];
+              const data = uploaded?.data?.[0];
+              const [f, s] = data?.type.split("/");
+              return {
+                name: data?.name,
+                link: data?.url,
+                sourcePath: data?.sourcePath,
+                type: s || f,
+                size: data?.size
+              }
             }}
-            submitButtonProps={{bg:"green", icon: "Check"}}
+            submitButtonProps={{ bg: "green", icon: "Check" }}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
           />
         </Card>

@@ -47,7 +47,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
-                placeholder: { fallback: 'Select province first' },
+                placeholder: { fallback: 'Select Site' },
                 placeholderWhenReady: {
                   key: 'sitePlaceholderReady',
                   fallback: 'Select site',
@@ -581,6 +581,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       key: 'recurringSession',
                       fallback: 'Recurring Session',
                     },
+                    optionsSource: 'recurringOptions'
                   },
                 ],
               },

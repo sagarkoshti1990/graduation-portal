@@ -19,6 +19,7 @@ import { getTrainingSessions, completeTrainingSession } from '../../../../../ser
 import type { MaterialItem, TrainingSessionItem } from '../../../../../constants/SUPPORT_OFFERINGS_MOCK';
 import SessionCompleteModal from '../modals/SessionCompleteModal';
 import styles from '../../styles';
+import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
 
 // ---------- Card ----------
 
@@ -57,7 +58,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const statusColors = getStatusColors(item.status);
 
   const handleCopySession = () => {
-    showAlert('success', t('supportProvider.supportOfferings.cards.alerts.sessionCopied'));
+    navigation.navigate('form-training-session' as never, { type: FORM_MODE.COPY, id: item.id } as never);
   };
 
   const handleConfirmSessionComplete = async (presentCount: number) => {
@@ -179,7 +180,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation();
-                  navigation.navigate('create-training-session' as never, { sessionId: item.id } as never);
+                  navigation.navigate('form-training-session' as never, { type: FORM_MODE.EDIT, sessionId: item.id } as never);
                 }}
               >
                 {({ hovered }: any) => {

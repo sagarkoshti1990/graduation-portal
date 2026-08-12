@@ -89,6 +89,19 @@ export const createSession = async (payload: any): Promise<any> => {
     const response = await api.post(API_ENDPOINTS.MENTORING_CREATE_SESSION, payload);
     return response.data;
   } catch (error: any) {
+    throw error;
+  }
+};
+
+/**
+ * Get Mentoring Session details by ID
+ * Endpoint: GET /mentoring/v1/sessions/details/:sessionId?get_mentees=true
+ */
+export const getSessionDetails = async (sessionId: string | number): Promise<any> => {
+  try {
+    const response = await api.get(API_ENDPOINTS.MENTORING_DETAILS_SESSION(sessionId));
+    return response.data;
+  } catch (error: any) {
     return { error: error.response.data };
   }
 };

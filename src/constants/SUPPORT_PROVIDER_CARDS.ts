@@ -7,7 +7,7 @@ export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
     icon: 'GraduationCap',
     title: 'supportProvider.createSupport.cards.training.title',
     description: 'supportProvider.createSupport.cards.training.description',
-    navigationUrl: 'create-training-session',
+    navigationUrl: 'form-training-session',
   },
   {
     id: 'additional-services',
@@ -26,3 +26,22 @@ export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
     navigationUrl: 'create-asset',
   },
 ];
+
+export const FORM_MODE = {
+  CREATE: 'create',
+  EDIT: 'edit',
+  COPY: 'copy',
+} as const;
+
+export type FormModeType = typeof FORM_MODE[keyof typeof FORM_MODE];
+
+export const SESSION_STATUS = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+} as const;
+
+export const DEFAULT_SESSION_CONFIG = {
+  TIMEZONE: 'Asia/Kolkata',
+  SESSION_TYPE: 'Public',
+} as const;
+
