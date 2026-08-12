@@ -1406,7 +1406,7 @@
       "low": "Low",
       "createUser": {
         "title": "Create New User",
-        "description": "Add a new user to the system. Required fields are marked with",
+        "description": "Training / Session Description",
         "personalInformation": "Personal Information",
         "firstName": "First Name",
         "firstNamePlaceholder": "Enter first name",

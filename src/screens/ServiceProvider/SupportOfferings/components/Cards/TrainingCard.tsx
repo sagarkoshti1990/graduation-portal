@@ -21,6 +21,7 @@ import { openFilePicker } from '../../../../../project-player/components/Task/Fi
 import type { MaterialItem, TrainingSessionItem } from '../../../../../types/supportOfferingsTypes';
 import SessionCompleteModal from '../modals/SessionCompleteModal';
 import styles from '../../styles';
+import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
   const rawMode = (
@@ -222,10 +223,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const descriptionText = item.description || item.notes || '';
 
   const handleCopySession = () => {
-    showAlert(
-      'success',
-      t('supportProvider.supportOfferings.cards.alerts.sessionCopied')
-    );
+    navigation.navigate('form-training-session' as never, { type: FORM_MODE.COPY, id: item.id } as never);
   };
 
   /*
@@ -486,10 +484,10 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   {...styles.outlineActionBtn}
                   onPress={() => {
                     (navigation as any).navigate(
-                      'create-training-session',
+                      'form-training-session',
                       {
                         sessionId: item.id,
-                        item,
+                        type: FORM_MODE.EDIT,
                       }
                     );
                   }}
