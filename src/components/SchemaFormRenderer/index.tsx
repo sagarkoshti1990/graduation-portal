@@ -2055,7 +2055,6 @@ const ValidationPopup: React.FC<{
     }));
   }, [issues]);
 
-  // console.log("groups : " + JSON.stringify(groups));
   return (
     <Modal
       isOpen={isOpen}
