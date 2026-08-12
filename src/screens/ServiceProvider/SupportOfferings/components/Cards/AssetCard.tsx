@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   HStack,
@@ -9,12 +9,12 @@ import {
   Badge,
   BadgeText,
   useAlert,
+  Button,
+  ButtonText,
 } from '@ui';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
-import type { ProvinceEntity, SiteEntity } from '@app-types/Users';
-import { getAssets } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
-import type { AssetItem } from '../../../../../constants/SUPPORT_OFFERINGS_MOCK';
+import type { AssetItem } from '../../../../../types/supportOfferingsTypes';
 import styles from '../../styles';
 
 // ---------- Card ----------
@@ -152,34 +152,30 @@ const Card: React.FC<CardProps> = ({ item }) => {
 // ---------- ListCard ----------
 
 interface AssetCardProps {
-  search?: string;
-  status?: string;
-  province?: string;
-  site?: string;
+  items: AssetItem[];
+  isShowLoadMore: boolean;
+  onLoadMoreItems: () => void;
 }
 
 export default function AssetCard({
-  search,
-  status,
-  province,
-  site,
+  items = [],
+  isShowLoadMore,
+  onLoadMoreItems,
 }: AssetCardProps): React.ReactElement {
-  const [assets, setAssets] = useState<AssetItem[]>([]);
-
-  useEffect(() => {
-    getAssets({
-      searchQuery: search,
-      statusFilter: status,
-      provinceFilter: province,
-      siteFilter: site,
-    }).then(setAssets);
-  }, [search, status, province, site]);
+  const { t } = useLanguage();
 
   return (
     <VStack {...styles.listContainer}>
-      {assets.map((item) => (
+      {items.map((item) => (
         <Card key={item.id} item={item} />
       ))}
+      {isShowLoadMore && (
+        <Box alignItems="center" mt="$4" width="100%">
+          <Button onPress={onLoadMoreItems}>
+            <ButtonText>{t('common.loadMore', 'Load More')}</ButtonText>
+          </Button>
+        </Box>
+      )}
     </VStack>
   );
 }

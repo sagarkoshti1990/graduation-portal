@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   HStack,
@@ -9,12 +9,12 @@ import {
   Badge,
   BadgeText,
   useAlert,
+  Button,
+  ButtonText,
 } from '@ui';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
-import type { ProvinceEntity, SiteEntity } from '@app-types/Users';
-import { getAdditionalServices } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
-import type { ServiceItem } from '../../../../../constants/SUPPORT_OFFERINGS_MOCK';
+import type { ServiceItem } from '../../../../../types/supportOfferingsTypes';
 import styles from '../../styles';
 
 // ---------- Card ----------
@@ -145,34 +145,30 @@ const Card: React.FC<CardProps> = ({ item }) => {
 // ---------- ListCard ----------
 
 interface AdditionalServicesCardProps {
-  search?: string;
-  status?: string;
-  province?: string;
-  site?: string;
+  items: ServiceItem[];
+  isShowLoadMore: boolean;
+  onLoadMoreItems: () => void;
 }
 
 export default function AdditionalServicesCard({
-  search,
-  status,
-  province,
-  site,
+  items = [],
+  isShowLoadMore,
+  onLoadMoreItems,
 }: AdditionalServicesCardProps): React.ReactElement {
-  const [services, setServices] = useState<ServiceItem[]>([]);
-
-  useEffect(() => {
-    getAdditionalServices({
-      searchQuery: search,
-      statusFilter: status,
-      provinceFilter: province,
-      siteFilter: site,
-    }).then(setServices);
-  }, [search, status, province, site]);
+  const { t } = useLanguage();
 
   return (
     <VStack {...styles.listContainer}>
-      {services.map((item) => (
+      {items.map((item) => (
         <Card key={item.id} item={item} />
       ))}
+      {isShowLoadMore && (
+        <Box alignItems="center" mt="$4" width="100%">
+          <Button onPress={onLoadMoreItems}>
+            <ButtonText>{t('common.loadMore', 'Load More')}</ButtonText>
+          </Button>
+        </Box>
+      )}
     </VStack>
   );
 }

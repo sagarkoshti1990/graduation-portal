@@ -8,7 +8,6 @@ import {
   LucideIcon,
   Badge,
   BadgeText,
-  Divider,
   useAlert,
   Button,
   ButtonText,
@@ -17,69 +16,29 @@ import {
 import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
+import { completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
 import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
-import type { ProvinceEntity, SiteEntity } from '@app-types/Users';
-import { getTrainingSessions, completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
-import type { MaterialItem, TrainingSessionItem } from '../../../../../constants/SUPPORT_OFFERINGS_MOCK';
+import type { MaterialItem, TrainingSessionItem } from '../../../../../types/supportOfferingsTypes';
 import SessionCompleteModal from '../modals/SessionCompleteModal';
 import styles from '../../styles';
 
-const formatLocationDisplay = (item: TrainingSessionItem) => {
-  if (item.location) {
-    if (item.location.toLowerCase().includes('soweto')) {
-      return 'Soweto';
-    }
+const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
+  const rawMode = (
+    (typeof item.delivery_mode === 'object' ? item.delivery_mode?.value : item.delivery_mode) ||
+    ''
+  ).toLowerCase();
 
-    if (item.location.toLowerCase().includes('durban')) {
-      return 'Durban';
-    }
-
-    return item.location;
+  if (rawMode.includes('hybrid')) {
+    return 'hybrid';
   }
-
-  return '-';
-};
-
-const formatParticipantsDisplay = (item: TrainingSessionItem) => {
-  const expected = Number(item.expected_participants ?? item.expectedParticipants ?? 0);
-
-  const confirmed = Number(
-    item.confirmed_present ??
-    item.confirmedPresent ??
-    0
-  );
-
-  return `${confirmed} / ${expected} participants`;
-};
-
-const getProviderInfo = (item: TrainingSessionItem) => {
-  let orgName = '';
-  let provinceName = item.province || '';
-
-  if (item.requestedBy) {
-    const orgMatch = item.requestedBy.match(/\(([^)]+)\)/);
-    if (orgMatch) {
-      orgName = orgMatch[1];
-    } else if (item.requestedBy.includes('•')) {
-      orgName = item.requestedBy.split('•')[0].trim();
-    } else {
-      orgName = item.requestedBy.trim();
-    }
-
-    if (!provinceName && item.requestedBy.includes('•')) {
-      provinceName = item.requestedBy.split('•')[1].trim();
-    }
+  if (rawMode.includes('online') || rawMode.includes('virtual')) {
+    return 'online';
   }
-
-  return {
-    orgName: orgName || 'Johannesburg Youth Development',
-    provinceName: provinceName || 'Gauteng',
-  };
+  return 'offline';
 };
 
-const getDeliveryBadge = (formatStr?: string) => {
-  const fmt = (formatStr || '').toLowerCase();
-  if (fmt === 'virtual' || fmt === 'online') {
+const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
+  if (deliveryMode === 'online') {
     return {
       label: 'Online',
       icon: 'Video',
@@ -88,10 +47,10 @@ const getDeliveryBadge = (formatStr?: string) => {
       color: '$blue600',
     };
   }
-  if (fmt === 'hybrid') {
+  if (deliveryMode === 'hybrid') {
     return {
       label: 'Hybrid',
-      icon: 'MapPin',
+      icon: 'Users',
       bg: '$purple50',
       border: '$purple200',
       color: '$purple600',
@@ -134,13 +93,6 @@ const getStatusColors = (status: string) => {
       };
 
     case 'Completed':
-      return {
-        bg: '$success50',
-        border: '#a7f3d0',
-        text: '$success600',
-        icon: 'CheckCircle',
-      };
-
     default:
       return {
         bg: '$success50',
@@ -158,6 +110,7 @@ const formatResourceName = (file: MaterialItem) => {
   }
   return file.name;
 };
+
 // ---------- Card ----------
 
 interface CardProps {
@@ -180,16 +133,12 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
     setFiles(initialItem.materials || []);
   }, [initialItem]);
 
-  /* =========================
-     OLD FUNCTIONALITY - KEEP
-  ========================== */
-
   const displayDate = item.start_date
     ? moment(
       typeof item.start_date === 'number' || !isNaN(Number(item.start_date))
         ? Number(item.start_date) * 1000
         : item.start_date
-    ).format('DD MMM YYYY')
+    ).format('ddd, D MMM YYYY')
     : '--';
 
   const displayTime =
@@ -203,24 +152,12 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
           ? Number(item.end_date) * 1000
           : item.end_date
       ).format('HH:mm')}`
-      : '--';
+      : '';
 
-  const displayFormat =
-    item.delivery_mode?.value
-      ? item.delivery_mode.value.toLowerCase().includes('online') ||
-        item.delivery_mode.value.toLowerCase().includes('virtual')
-        ? 'Virtual'
-        : item.delivery_mode.value.toLowerCase().includes('hybrid')
-          ? 'Hybrid'
-          : 'In-person'
-      : item.training_type || 'In-person';
+  const dateTime = displayTime ? `${displayDate}, ${displayTime}` : displayDate;
 
-  const displayRequestedBy = item.mentor_name
-    ? item.organization?.organization_code || item.organization_code
-      ? `${item.mentor_name} (${item.organization?.organization_code || item.organization_code
-      })`
-      : item.mentor_name
-    : 'Unknown Mentor';
+  const deliveryMode = getDeliveryMode(item);
+  const deliveryBadge = getDeliveryBadge(deliveryMode);
 
   const getStatus = () => {
     if (item.status === 'DRAFT' || item.status === 'Draft') {
@@ -261,54 +198,28 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   };
 
   const currentStatus = getStatus();
-
-  const getStatusColors = (status: string) => {
-    switch (status) {
-      case 'Draft':
-        return {
-          bg: '$backgroundLight100',
-          border: 'transparent',
-          text: '$textMuted',
-          icon: 'FileText',
-        };
-
-      case 'Upcoming':
-        return {
-          bg: '$blue50',
-          border: 'transparent',
-          text: '$blue600',
-          icon: 'Clock',
-        };
-
-      case 'In progress':
-        return {
-          bg: '$observationTaskBg',
-          border: 'transparent',
-          text: '$warningIconColor',
-          icon: 'AlertCircle',
-        };
-
-      case 'Completed':
-      default:
-        return {
-          bg: '$success50',
-          border: 'transparent',
-          text: '$success600',
-          icon: 'CheckCircle',
-        };
-    }
-  };
-
   const statusColors = getStatusColors(currentStatus);
 
   const canCopy = !!item.can_be_copied;
 
-  const expectedCount = item.expected_participants ?? 0;
+  // Expected participants and confirmed present dynamically from seats_limit and seats_remaining
+  const expectedParticipants = item.seats_limit || 0;
+  const confirmedPresent =
+    (item.seats_limit || 0) - (item.seats_remaining || 0);
+  const participantsDisplay = `${confirmedPresent} / ${expectedParticipants}`;
 
-  const confirmedCount =
-    item.confirmed_present !== undefined
-      ? `${item.confirmed_present}`
-      : '0';
+  // Location & Link from meeting_info
+  const locationValue = item.meeting_info?.location || '';
+  const linkValue = item.meeting_info?.link || '';
+
+  const orgName =
+    (typeof item.organization === 'object'
+      ? item.organization?.name || item.organization?.organization_code
+      : item.organization) ||
+    item.organization_code ||
+    '';
+  const provinceName = (item.provinces && item.provinces[0]) || '';
+  const descriptionText = item.description || item.notes || '';
 
   const handleCopySession = () => {
     showAlert(
@@ -318,9 +229,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   };
 
   /*
-   * IMPORTANT:
    * Keep participant ID based completion functionality.
-   * Do NOT change this to presentCount.
    */
   const handleConfirmSessionComplete = async (
     selectedParticipantIds: string[]
@@ -334,16 +243,19 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
         mentees: selectedParticipantIds,
       });
 
-      setItem((prev) => ({
-        ...prev,
-        status: 'Completed',
-        confirmed_present: selectedParticipantIds.length,
-        completionNotes:
-          prev.completionNotes ||
-          t(
-            'supportProvider.supportOfferings.cards.alerts.sessionCompleted'
-          ),
-      }));
+      setItem((prev) => {
+        const prevLimit = prev.seats_limit || 0;
+        return {
+          ...prev,
+          status: 'Completed',
+          seats_remaining: Math.max(0, prevLimit - selectedParticipantIds.length),
+          completionNotes:
+            prev.completionNotes ||
+            t(
+              'supportProvider.supportOfferings.cards.alerts.sessionCompleted'
+            ),
+        };
+      });
 
       setIsCompleteModalOpen(false);
 
@@ -366,7 +278,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   };
 
   /*
-   * Keep upload functionality exactly as before
+   * Keep upload functionality
    */
   const handleUploadPress = async () => {
     try {
@@ -420,65 +332,12 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
     }
   };
 
-  /* =========================
-     NEW UI DISPLAY HELPERS
-  ========================== */
-
-  const deliveryBadge = getDeliveryBadge(item.format);
-
-  const formattedDate = item.date
-    ? moment(item.date).isValid()
-      ? moment(item.date).format('ddd, D MMM YYYY')
-      : item.date
-    : displayDate;
-
-  const startTime =
-    item.time?.split('-')[0]?.trim() ||
-    item.time ||
-    '';
-
-  const dateTime = startTime
-    ? `${formattedDate}, ${startTime}`
-    : formattedDate;
-
-  const duration =
-    (item as any).duration ||
-    (item.time?.toLowerCase().includes('hour')
-      ? item.time
-      : displayTime !== '--'
-        ? displayTime
-        : '3 hours');
-
-  const locationText = formatLocationDisplay(item);
-
-  const participantsText = formatParticipantsDisplay(item);
-
-  const { orgName, provinceName } = getProviderInfo(item);
-
-  const descriptionText =
-    item.notes || (item as any).description;
-
-  const formatLower = (
-    item.format ||
-    displayFormat ||
-    ''
-  ).toLowerCase();
-
-  const isOnline =
-    formatLower === 'online' ||
-    formatLower === 'virtual' ||
-    formatLower.includes('online') ||
-    formatLower.includes('virtual');
-
-  const hasPhysicalLocation =
-    !isOnline && Boolean(locationText);
-
   return (
     <Box {...styles.cardContainer}>
       <VStack {...styles.cardFullVStack}>
 
         {/* =========================
-            ROW 1
+            ROW 1 - TITLE & BADGES
         ========================== */}
 
         <HStack {...styles.headerTopHStack}>
@@ -554,18 +413,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             </Text>
           </HStack>
 
-          {/* <HStack {...styles.trainingMetaItemHStack}>
-            <LucideIcon
-              name="Clock"
-              {...styles.cardMetaIconProps}
-            />
-
-            <Text {...styles.cardMetaSmText}>
-              {duration}
-            </Text>
-          </HStack> */}
-
-          {hasPhysicalLocation && (
+          {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
             <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon
                 name="MapPin"
@@ -573,7 +421,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
               />
 
               <Text {...styles.cardMetaSmText}>
-                {locationText}
+                {locationValue || '-'}
               </Text>
             </HStack>
           )}
@@ -585,14 +433,14 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             />
 
             <Text {...styles.cardMetaSmText}>
-              {participantsText}
+              {participantsDisplay}
             </Text>
           </HStack>
 
         </HStack>
 
         {/* =========================
-            ROW 3 - NOTES
+            ROW 3 - NOTES / DESCRIPTION
         ========================== */}
 
         {descriptionText ? (
@@ -609,7 +457,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
         <HStack {...styles.requestedByRowHStack}>
 
-          <Text {...styles.cardRequestedByText}>
+          {/* <Text {...styles.cardRequestedByText}>
             {t(
               'supportProvider.supportOfferings.cards.providedBy',
               'Provided by:'
@@ -624,18 +472,17 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 {` • ${provinceName}`}
               </Text>
             ) : null}
-          </Text>
+          </Text> */}
 
           <HStack
             {...styles.badgeContentHStack}
-            space="sm"
           >
 
             {/* DRAFT */}
             {currentStatus === 'Draft' ? (
               <>
                 <Button
-                  variant="solid"
+                  variant="outline"
                   {...styles.outlineActionBtn}
                   onPress={() => {
                     (navigation as any).navigate(
@@ -655,7 +502,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 </Button>
 
                 <Button
-                  variant="outlineghost"
+                  variant="solid"
                   {...styles.detailsBtn}
                   onPress={() =>
                     setIsExpanded((prev) => !prev)
@@ -754,6 +601,21 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   </Button>
                 )}
 
+                {deliveryMode === 'hybrid' && (
+                  <Button
+                    variant="solid"
+                    {...styles.confirmAttendanceBtn}
+                    onPress={() => setIsCompleteModalOpen(true)}
+                  >
+                    <ButtonText {...styles.confirmAttendanceBtnText}>
+                      {t(
+                        'supportProvider.supportOfferings.cards.confirmAttendance',
+                        'Confirm Attendance'
+                      )}
+                    </ButtonText>
+                  </Button>
+                )}
+
                 <Button
                   variant="solid"
                   {...styles.detailsBtn}
@@ -788,70 +650,48 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
         {isExpanded && (
           <VStack {...styles.expandedContentVStack}>
 
-            {/* LOCATION / VIRTUAL LINK */}
+            {/* LOCATION / LINK */}
 
-            {(item.virtualLink ||
-              item.location ||
-              locationText ||
-              isOnline) && (
+            {(deliveryMode === 'offline' ||
+              deliveryMode === 'hybrid' ||
+              (deliveryMode === 'online' && linkValue)) && (
                 <VStack {...styles.sectionVStack}>
 
                   <Text {...styles.cardSectionTitleText}>
-                    {isOnline && !item.location
-                      ? t(
-                        'supportProvider.supportOfferings.cards.virtualLink',
-                        'Virtual Link'
-                      )
-                      : t(
-                        'supportProvider.supportOfferings.cards.location',
-                        'Location'
-                      )}
+                    {t(
+                      'supportProvider.supportOfferings.cards.location',
+                      'Location'
+                    )}
                   </Text>
 
-                  {item.virtualLink && isOnline && (
+                  {/* Link: Online or Hybrid */}
+                  {(deliveryMode === 'online' || deliveryMode === 'hybrid') &&
+                    linkValue ? (
                     <HStack {...styles.virtualLinkHStack}>
                       <LucideIcon
                         name="Video"
                         {...styles.cardPrimaryIconProps}
                       />
 
-                      <Text
-                        {...styles.cardPrimaryLinkText}
-                        onPress={() => {
-                          if (
-                            item.virtualLink &&
-                            typeof window !== 'undefined'
-                          ) {
-                            window.open(
-                              item.virtualLink,
-                              '_blank'
-                            );
-                          }
-                        }}
-                      >
-                        {item.virtualLink}
+                      <Text {...styles.cardPrimaryLinkText}>
+                        {linkValue}
+                      </Text>
+                    </HStack>
+                  ) : null}
+
+                  {/* Physical Location: Offline or Hybrid */}
+                  {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
+                    <HStack {...styles.virtualLinkHStack}>
+                      <LucideIcon
+                        name="MapPin"
+                        {...styles.cardMetaIconProps}
+                      />
+
+                      <Text {...styles.cardLocationValueText}>
+                        {locationValue || '-'}
                       </Text>
                     </HStack>
                   )}
-
-                  {!isOnline &&
-                    (item.location || locationText) && (
-                      <HStack
-                        {...styles.virtualLinkHStack}
-                      >
-                        <LucideIcon
-                          name="MapPin"
-                          {...styles.cardMetaIconProps}
-                        />
-
-                        <Text
-                          {...styles.cardLocationValueText}
-                        >
-                          {item.location ||
-                            locationText}
-                        </Text>
-                      </HStack>
-                    )}
 
                 </VStack>
               )}
@@ -862,12 +702,38 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
             <VStack {...styles.sectionVStack}>
 
-              <Text {...styles.cardSectionTitleText}>
-                {t(
-                  'supportProvider.supportOfferings.cards.attendance',
-                  'Attendance'
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                width="100%"
+              >
+                <Text {...styles.cardSectionTitleText}>
+                  {t(
+                    'supportProvider.supportOfferings.cards.attendance',
+                    'Attendance'
+                  )}
+                </Text>
+
+                {deliveryMode === 'hybrid' && (
+                  <Button
+                    variant="solid"
+                    {...styles.confirmAttendanceBtn}
+                    onPress={() => setIsCompleteModalOpen(true)}
+                  >
+                    <ButtonIcon
+                      as={LucideIcon}
+                      name="Check"
+                      {...styles.cardWhiteIconProps}
+                    />
+                    <ButtonText {...styles.confirmAttendanceBtnText}>
+                      {t(
+                        'supportProvider.supportOfferings.cards.confirmAttendance',
+                        'Confirm Attendance'
+                      )}
+                    </ButtonText>
+                  </Button>
                 )}
-              </Text>
+              </HStack>
 
               <Box {...styles.attendanceBox}>
                 <HStack {...styles.attendanceRowHStack}>
@@ -885,7 +751,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                     <Text
                       {...styles.cardValueBoldText}
                     >
-                      {expectedCount}
+                      {expectedParticipants}
                     </Text>
                   </VStack>
 
@@ -899,16 +765,14 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                       )}
                     </Text>
 
-                    {currentStatus === 'Completed' &&
-                      confirmedCount &&
-                      confirmedCount !== '0' ? (
+                    {currentStatus === 'Completed' ? (
                       <HStack
                         {...styles.badgeContentHStack}
                       >
                         <Text
                           {...styles.cardSuccessBoldText}
                         >
-                          {confirmedCount}
+                          {confirmedPresent}
                         </Text>
 
                         <LucideIcon
@@ -918,11 +782,9 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                       </HStack>
                     ) : (
                       <Text {...styles.cardMetaSmText}>
-                        {confirmedCount &&
-                          confirmedCount !== '0'
-                          ? confirmedCount
-                          : currentStatus ===
-                            'In progress'
+                        {confirmedPresent > 0
+                          ? confirmedPresent
+                          : currentStatus === 'In progress'
                             ? '--'
                             : t(
                               'supportProvider.supportOfferings.cards.notConfirmed',
@@ -1022,8 +884,8 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             ========================== */}
 
             {(currentStatus === 'Completed'
-              ? item.completionNotes || item.notes
-              : item.notes) && (
+              ? item.completionNotes || item.notes || item.description
+              : item.notes || item.description) && (
                 <VStack {...styles.sectionVStack}>
 
                   <Text {...styles.cardSectionTitleText}>
@@ -1043,9 +905,8 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                       {...styles.cardDescriptionText}
                     >
                       {currentStatus === 'Completed'
-                        ? item.completionNotes ||
-                        item.notes
-                        : item.notes}
+                        ? item.completionNotes || item.notes || item.description
+                        : item.notes || item.description}
                     </Text>
                   </Box>
 
@@ -1054,7 +915,6 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
             {/* =========================
                 UPLOAD MATERIAL
-                OLD FUNCTIONALITY
             ========================== */}
 
             {currentStatus !== 'Completed' && (
@@ -1132,7 +992,6 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
       {/* =========================
           SESSION COMPLETE MODAL
-          KEEP OLD FUNCTIONALITY
       ========================== */}
 
       <SessionCompleteModal
@@ -1141,7 +1000,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
           setIsCompleteModalOpen(false)
         }
         sessionTitle={item.title}
-        expectedParticipantsCount={expectedCount}
+        expectedParticipantsCount={expectedParticipants}
         initialParticipants={item.participantList}
         onConfirmComplete={
           handleConfirmSessionComplete
@@ -1154,49 +1013,29 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 // ---------- ListCard ----------
 
 interface TrainingCardProps {
-  search?: string;
-  status?: string;
-  province?: string;
-  site?: string;
+  items: TrainingSessionItem[];
+  isShowLoadMore: boolean;
+  onLoadMoreItems: () => void;
 }
 
 export default function TrainingCard({
-  search,
-  status,
-  province,
-  site,
+  items = [],
+  isShowLoadMore,
+  onLoadMoreItems,
 }: TrainingCardProps): React.ReactElement {
   const { t } = useLanguage();
-  const [trainings, setTrainings] = useState<TrainingSessionItem[]>([]);
-  const [limit, setLimit] = useState(5);
-  const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    getTrainingSessions({
-      search,
-      status,
-      province,
-      site,
-      limit,
-    }).then((res) => {
-      setTrainings(res?.result?.data || []);
-      setTotal(res?.total || 0);
-    });
-  }, [search, status, province, site, limit]);
-
-  const handleLoadMore = () => {
-    setLimit((prev) => prev + 5);
-  };
 
   return (
     <VStack {...styles.listContainer}>
-      {trainings.map((item) => (
+      {items.map((item) => (
         <Card key={item.id} item={item} />
       ))}
-      {trainings.length === limit && (
+      {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">
-          <Button onPress={handleLoadMore}>
-            <ButtonText>{t('supportProvider.supportOfferings.buttonTexts.loadMoreSessions')}</ButtonText>
+          <Button onPress={onLoadMoreItems}>
+            <ButtonText>
+              {t('supportProvider.supportOfferings.buttonTexts.loadMoreSessions', 'Load More Sessions')}
+            </ButtonText>
           </Button>
         </Box>
       )}

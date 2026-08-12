@@ -2447,6 +2447,7 @@
         "virtualLink": "Virtual Link",
         "location": "Location",
         "attendance": "Attendance",
+        "confirmAttendance": "Confirm Attendance",
         "expectedParticipants": "Expected Participants",
         "confirmedPresent": "Confirmed Present",
         "notConfirmed": "Not confirmed",

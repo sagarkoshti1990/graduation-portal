@@ -1,5 +1,6 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
+import type { ServiceItem, AssetItem, FilterParams } from '../../types/supportOfferingsTypes';
 
 /**
  * Fetches the created mentoring sessions list from the backend for the Support Offerings screen.
@@ -16,8 +17,8 @@ const getSupportOfferingsList = async (
 ): Promise<any> => {
   try {
     const {
-      page = 1,
-      limit = 5,
+      page,
+      limit,
       status,
       search,
       province,
@@ -35,11 +36,15 @@ const getSupportOfferingsList = async (
       apiStatus = status.toUpperCase();
     }
 
-    // Build query string matching getParticipantsList pattern
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+    const queryParams = new URLSearchParams();
+
+    if (page !== undefined && page !== null) {
+      queryParams.append('page', page.toString());
+    }
+
+    if (limit !== undefined && limit !== null) {
+      queryParams.append('limit', limit.toString());
+    }
 
     if (apiStatus) {
       queryParams.append('status', apiStatus);
@@ -57,11 +62,20 @@ const getSupportOfferingsList = async (
       queryParams.append('site', site);
     }
 
-    const endpoint = `${API_ENDPOINTS.SUPPORT_OFFERINGS_SESSIONS}?${queryParams.toString()}`;
+    const queryString = queryParams.toString();
+    const endpoint = queryString
+      ? `${API_ENDPOINTS.SUPPORT_OFFERINGS_SESSIONS}?${queryString}`
+      : API_ENDPOINTS.SUPPORT_OFFERINGS_SESSIONS;
 
     const response = await api.get(endpoint);
 
     const data = response.data?.result?.data || [];
+    const totalCount =
+      response.data?.result?.count ??
+      response.data?.result?.total ??
+      response.data?.total ??
+      response.data?.count ??
+      data.length;
 
     return {
       ...response.data,
@@ -69,7 +83,7 @@ const getSupportOfferingsList = async (
         ...response.data?.result,
         data,
       },
-      total: response.data?.total ?? response.data?.result?.total ?? response.data?.count ?? data.length,
+      total: totalCount,
     };
   } catch (error) {
     console.error('Error fetching support offerings:', error);
@@ -109,16 +123,16 @@ export const getTrainingSessions = async (
 };
 
 /**
- * Fetch Additional Services (Empty placeholder as mock data is deleted and API is not implemented)
+ * Fetch Additional Services
  */
-export const getAdditionalServices = async (params: FilterParams): Promise<ServiceItem[]> => {
+export const getAdditionalServices = async (params?: FilterParams): Promise<ServiceItem[]> => {
   return [];
 };
 
 /**
- * Fetch Assets (Empty placeholder as mock data is deleted and API is not implemented)
+ * Fetch Assets
  */
-export const getAssets = async (params: FilterParams): Promise<AssetItem[]> => {
+export const getAssets = async (params?: FilterParams): Promise<AssetItem[]> => {
   return [];
 };
 
@@ -154,3 +168,22 @@ export const saveTrainingSession = async (
       : 'Training session saved successfully!',
   };
 };
+
+/**
+ * Get a single training session by its ID
+ */
+export const getTrainingSessionById = async (
+  sessionId: string | number
+): Promise<any> => {
+  try {
+    const listRes = await getSupportOfferingsList({ limit: 100 });
+    const sessions = listRes?.result?.data || [];
+    const matched = sessions.find((s: any) => String(s.id) === String(sessionId) || String(s._id) === String(sessionId));
+    return matched || null;
+  } catch (error) {
+    console.error('Error fetching training session by id:', error);
+    return null;
+  }
+};
+
+
