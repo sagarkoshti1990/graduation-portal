@@ -19,7 +19,6 @@ export function valueMapping(formValues: any, isReverseMapping: boolean = false,
           recommended_for = "user";
         }
       } 
-      console.log(formValues.seats_limit);
     return {
       ...formValues,
       categories: formValues.categories?.[0],
@@ -53,7 +52,6 @@ export function valueMapping(formValues: any, isReverseMapping: boolean = false,
     session_type: "Public",
     status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
     max_capacity: formValues.max_capacity,
-    notifyUser: false,
     meeting_info: {
       link: formValues.meeting_link,
       location: formValues.location

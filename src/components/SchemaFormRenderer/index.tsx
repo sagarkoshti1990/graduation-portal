@@ -379,7 +379,7 @@ function getFieldError(
     return undefined;
   }
 
-  const val = (rawValue ?? '').trim();
+  const val = String(rawValue ?? '').trim();
 
   for (const rule of field.validation) {
     const err = applyRule(rule, val, values, field.type);

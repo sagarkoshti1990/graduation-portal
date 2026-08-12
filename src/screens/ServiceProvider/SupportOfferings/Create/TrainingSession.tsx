@@ -259,7 +259,15 @@ const App = (): React.JSX.Element => {
               if (!url) {
                 throw new Error(`Failed to upload file: ${file.name}`);
               }
-              return uploaded?.data?.[0];
+              const data = uploaded?.data?.[0];
+              const [f, s] = data?.type.split("/");
+              return {
+                name: data?.name,
+                link: data?.url,
+                sourcePath: data?.sourcePath,
+                type: s || f,
+                size: data?.size
+              }
             }}
             submitButtonProps={{ bg: "green", icon: "Check" }}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
