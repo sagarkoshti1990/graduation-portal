@@ -88,7 +88,7 @@ const App = (): React.JSX.Element => {
   }, [sessionId, modeType]);
 
   const handleFieldChange = useCallback(
-    (name: string, value: string, other?:any) => {
+    (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
         if (name === 'province') next.site = '';
@@ -96,7 +96,7 @@ const App = (): React.JSX.Element => {
           next.idp_training_task = '';
           next.title = '';
         }
-        if(name === 'idp_training_task'){
+        if (name === 'idp_training_task') {
           next.title = other?.label;
         }
         return next;
@@ -154,16 +154,16 @@ const App = (): React.JSX.Element => {
     const provinceOpts =
       provinces && provinces.length > 0
         ? provinces.map((p: any) => ({
-            value: p._id || p.id || p.name,
-            label: p.name || p.label,
-          }))
+          value: p._id || p.id || p.name,
+          label: p.name || p.label,
+        }))
         : [];
 
     const siteOpts = sites
       ? sites.map((s: any) => ({
-          value: s._id || s.id || s.name,
-          label: s.name || s.label,
-        }))
+        value: s._id || s.id || s.name,
+        label: s.name || s.label,
+      }))
       : [];
 
     return {
@@ -219,7 +219,7 @@ const App = (): React.JSX.Element => {
       showAlert('error', errMsg);
     }
   };
-  
+
   const handleBackPress = () => {
     if (navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
@@ -229,14 +229,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  // Route Validation:
-  // 1. 'create' mode WITH an ID -> Not Found
-  // 2. 'copy' or 'edit' mode WITHOUT an ID -> Not Found
-  if (modeType === FORM_MODE.CREATE && sessionId) {
-    return <NotFound message="Routes Not Found" />;
-  }
-
-  if ((modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) && !sessionId) {
+  if ((modeType === FORM_MODE.CREATE && sessionId) || ((modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) && !sessionId)) {
     return <NotFound message="Routes Not Found" />;
   }
 
@@ -268,7 +261,7 @@ const App = (): React.JSX.Element => {
               }
               return uploaded?.data?.[0];
             }}
-            submitButtonProps={{bg:"green", icon: "Check"}}
+            submitButtonProps={{ bg: "green", icon: "Check" }}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
           />
         </Card>
