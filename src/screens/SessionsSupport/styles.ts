@@ -108,6 +108,22 @@ export const sessionsSupportStyles = {
     fontSize: '$sm',
     color: '$textSecondary',
   },
+  headerBadgeBox: {
+    bg: '#FEE2E2',
+    px: '$2.5',
+    py: '$0.5',
+    borderRadius: '$full',
+  },
+  headerBadgeText: {
+    fontSize: '$xs',
+    fontWeight: '500',
+    color: '#8B2842',
+  },
+  headerSubTitleText: {
+    fontSize: '$xl',
+    fontWeight: '600',
+    color: '$textForeground',
+  },
 } as const;
 
 export default sessionsSupportStyles;

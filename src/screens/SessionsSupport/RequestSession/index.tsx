@@ -16,6 +16,8 @@ import {
   MentoringOption,
 } from '../../../services/mentoringService';
 import { valueMapping } from '@utils/supportProvider';
+import { useTrainingFormOptions } from '@hooks';
+import styles from '../styles';
 
 const DELIVERY_MODE_ICONS: Record<string, string> = {
   offline: 'MapPin',
@@ -27,28 +29,38 @@ const RequestSessionScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [sites, setSites] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
-  const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
 
+  const { optionsMap } = useTrainingFormOptions({
+    values,
+    provinces,
+    pillers,
+    targetAudience,
+    deliveryModes,
+    deliveryModeIcons: DELIVERY_MODE_ICONS,
+  });
+
   useEffect(() => {
     const init = async () => {
       try {
-        const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
+        const results = await Promise.allSettled([
           getProvincesList(),
           getSessionCategories(),
           getRecommendedFor(),
           getDeliveryModes(),
         ]);
-        setProvinces(result);
-        setPillers(getCategories);
-        setTargetAudience(getTarget);
-        setDeliveryModes(getDeliveryModeOptions);
+
+        const [resProvinces, resCategories, resTarget, resDeliveryModes] = results;
+
+        setProvinces(resProvinces.status === 'fulfilled' ? resProvinces.value || [] : []);
+        setPillers(resCategories.status === 'fulfilled' ? resCategories.value || [] : []);
+        setTargetAudience(resTarget.status === 'fulfilled' ? resTarget.value || [] : []);
+        setDeliveryModes(resDeliveryModes.status === 'fulfilled' ? resDeliveryModes.value || [] : []);
       } catch (error: any) {
         console.error('Error loading form data:', error);
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
@@ -75,90 +87,8 @@ const RequestSessionScreen = (): React.JSX.Element => {
         return next;
       });
     },
-    [pillers]
+    []
   );
-
-  useEffect(() => {
-    const init = async () => {
-      if (!values.categories) {
-        setSessionTypes([]);
-        return;
-      }
-      const selectedPillarObj = pillers.find(
-        p => p.value === values.categories || p.label === values.categories
-      );
-      const pillarCode = (selectedPillarObj?.value || values.categories).toLowerCase();
-      if (pillarCode) {
-        try {
-          const res = await getSessionTypesByPillar(pillarCode);
-          setSessionTypes(res || []);
-        } catch (err) {
-          console.error('Error fetching session types:', err);
-          setSessionTypes([]);
-        }
-      } else {
-        setSessionTypes([]);
-      }
-    };
-
-    init();
-  }, [values.categories]);
-
-  useEffect(() => {
-    const init = async () => {
-      if (!values.province) {
-        setSites([]);
-        return;
-      }
-      try {
-        const res = await getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 });
-        setSites(res.result?.data || []);
-      } catch (err) {
-        console.error('Error fetching sites:', err);
-        setSites([]);
-      }
-    };
-
-    init();
-  }, [values.province]);
-
-  const optionsMap = useMemo(() => {
-    const provinceOpts =
-      provinces && provinces.length > 0
-        ? provinces.map((p: any) => ({
-          value: p._id || p.id || p.name,
-          label: p.name || p.label,
-        }))
-        : [];
-
-    const siteOpts = sites
-      ? sites.map((s: any) => ({
-        value: s._id || s.id || s.name,
-        label: s.name || s.label,
-      }))
-      : [];
-
-    return {
-      provinces: provinceOpts,
-      sites: siteOpts,
-      pillars: pillers,
-      sessionTypes: sessionTypes,
-      targetAudienceOptions: targetAudience,
-      certificateOptions: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-      recurringOptions: [
-        { value: 'true', label: 'Yes — recurring session' },
-        { value: 'false', label: 'No — one-off session' },
-      ],
-      formatOptions: deliveryModes.map((mode) => ({
-        value: mode.value,
-        label: mode.label,
-        icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
-      })),
-    };
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.categories]);
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
@@ -196,13 +126,13 @@ const RequestSessionScreen = (): React.JSX.Element => {
   }
 
   const headerTitle = (
-    <HStack alignItems="center" space="sm">
-      <Text fontSize="$xl" fontWeight="600" color="$textForeground">
-        {t('lc.requestSession.title', { defaultValue: 'Request a Session' })}
+    <HStack {...styles.headerTitleHStack}>
+      <Text {...styles.headerSubTitleText}>
+        {t('lc.requestSession.title')}
       </Text>
-      <Box bg="#FEE2E2" px="$2.5" py="$0.5" borderRadius="$full">
-        <Text fontSize="$xs" fontWeight="500" color="#8B2842">
-          {t('lc.requestSession.badge', { defaultValue: 'Training Session' })}
+      <Box {...styles.headerBadgeBox}>
+        <Text {...styles.headerBadgeText}>
+          {t('lc.requestSession.badge')}
         </Text>
       </Box>
     </HStack>

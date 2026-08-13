@@ -69,3 +69,13 @@ export const REQUEST_SUPPORT_OPTIONS = [
   },
 ];
 
+export const CERTIFICATE_OPTIONS = [
+  { value: 'true', label: 'Yes' },
+  { value: 'false', label: 'No' },
+] as const;
+
+export const RECURRING_OPTIONS = [
+  { value: 'true', label: 'Yes — recurring session' },
+  { value: 'false', label: 'No — one-off session' },
+] as const;
+

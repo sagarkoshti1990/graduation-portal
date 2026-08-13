@@ -16,6 +16,7 @@ import {
   MentoringOption,
 } from '../../../services/mentoringService';
 import { valueMapping } from '@utils/supportProvider';
+import { CERTIFICATE_OPTIONS, RECURRING_OPTIONS } from '@constants/SUPPORT_PROVIDER_CARDS';
 
 const DELIVERY_MODE_ICONS: Record<string, string> = {
   offline: 'MapPin',
@@ -23,18 +24,28 @@ const DELIVERY_MODE_ICONS: Record<string, string> = {
   hybrid: 'Users',
 };
 
+import { useTrainingFormOptions } from '@hooks';
+import styles from '../styles';
+
 const CreateSessionScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [sites, setSites] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
-  const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
+
+  const { optionsMap } = useTrainingFormOptions({
+    values,
+    provinces,
+    pillers,
+    targetAudience,
+    deliveryModes,
+    deliveryModeIcons: DELIVERY_MODE_ICONS,
+  });
 
   useEffect(() => {
     const init = async () => {
@@ -80,89 +91,6 @@ const CreateSessionScreen = (): React.JSX.Element => {
     [pillers]
   );
 
-  useEffect(() => {
-    const init = async () => {
-      if (!values.categories) {
-        setSessionTypes([]);
-        return;
-      }
-      const selectedPillarObj = pillers.find(
-        p => p.value === values.categories || p.label === values.categories
-      );
-      const pillarCode = (selectedPillarObj?.value || values.categories).toLowerCase();
-      if (pillarCode) {
-        try {
-          const res = await getSessionTypesByPillar(pillarCode);
-          setSessionTypes(res || []);
-        } catch (err) {
-          console.error('Error fetching session types:', err);
-          setSessionTypes([]);
-        }
-      } else {
-        setSessionTypes([]);
-      }
-    };
-
-    init();
-  }, [values.categories]);
-
-  useEffect(() => {
-    const init = async () => {
-      if (!values.province) {
-        setSites([]);
-        return;
-      }
-      try {
-        const res = await getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 });
-        setSites(res.result?.data || []);
-      } catch (err) {
-        console.error('Error fetching sites:', err);
-        setSites([]);
-      }
-    };
-
-    init();
-  }, [values.province]);
-
-  const optionsMap = useMemo(() => {
-    const provinceOpts =
-      Array.isArray(provinces) && provinces.length > 0
-        ? provinces.map((p: any) => ({
-          value: p._id || p.id || p.name,
-          label: p.name || p.label,
-        }))
-        : [];
-
-    const siteOpts =
-      Array.isArray(sites) && sites.length > 0
-        ? sites.map((s: any) => ({
-          value: s._id || s.id || s.name,
-          label: s.name || s.label,
-        }))
-        : [];
-
-    return {
-      provinces: provinceOpts,
-      sites: siteOpts,
-      pillars: Array.isArray(pillers) ? pillers : [],
-      sessionTypes: Array.isArray(sessionTypes) ? sessionTypes : [],
-      targetAudienceOptions: Array.isArray(targetAudience) ? targetAudience : [],
-      certificateOptions: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-      recurringOptions: [
-        { value: 'true', label: 'Yes — recurring session' },
-        { value: 'false', label: 'No — one-off session' },
-      ],
-      formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode) => ({
-        value: mode.value,
-        label: mode.label,
-        icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
-      })),
-    };
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.categories]);
-
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
       setValues(formValues);
@@ -199,13 +127,13 @@ const CreateSessionScreen = (): React.JSX.Element => {
   }
 
   const headerTitle = (
-    <HStack alignItems="center" space="sm">
-      <Text fontSize="$xl" fontWeight="600" color="$textForeground">
-        {t('lc.createSession.title', { defaultValue: 'Create a Session' })}
+    <HStack {...styles.headerTitleHStack}>
+      <Text {...styles.headerSubTitleText}>
+        {t('lc.createSession.title')}
       </Text>
-      <Box bg="#FEE2E2" px="$2.5" py="$0.5" borderRadius="$full">
-        <Text fontSize="$xs" fontWeight="500" color="#8B2842">
-          {t('lc.createSession.badge', { defaultValue: 'Training Session' })}
+      <Box {...styles.headerBadgeBox}>
+        <Text {...styles.headerBadgeText}>
+          {t('lc.createSession.badge')}
         </Text>
       </Box>
     </HStack>

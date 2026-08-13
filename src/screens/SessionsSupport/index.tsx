@@ -22,7 +22,7 @@ const SessionsSupportScreen: React.FC = () => {
     <HStack {...styles.headerTitleHStack}>
       <LucideIcon name="LifeBuoy" size={24} color="#8B2842" />
       <Text {...styles.headerTitleText}>
-        {t('lc.pageTitle.sessions-support', { defaultValue: 'Sessions & Support' })}
+        {t('lc.pageTitle.sessions-support')}
       </Text>
     </HStack>
   );
@@ -31,9 +31,7 @@ const SessionsSupportScreen: React.FC = () => {
     <VStack {...styles.container}>
       <PageHeader
         title={titleNode}
-        subtitle={t('lc.sessionsSupport.subtitle', {
-          defaultValue: 'Browse sessions, additional services, and assets available in your province and site',
-        })}
+        subtitle={t('lc.sessionsSupport.subtitle')}
         rightSection={
           <Box {...styles.rightSectionBox}>
             <HStack {...styles.rightSectionHStack}>
@@ -43,7 +41,7 @@ const SessionsSupportScreen: React.FC = () => {
               >
                 <ButtonIcon as={LucideIcon} name="Plus" size={16} color="$textForegroundColor" />
                 <ButtonText {...styles.createSessionBtnText}>
-                  {t('lc.sessionsSupport.createSession', { defaultValue: 'Create A Session' })}
+                  {t('lc.sessionsSupport.createSession')}
                 </ButtonText>
               </Button>
               <Button
@@ -52,7 +50,7 @@ const SessionsSupportScreen: React.FC = () => {
               >
                 <ButtonIcon as={LucideIcon} name="Plus" size={16} color="$white" />
                 <ButtonText {...styles.requestSupportBtnText}>
-                  {t('lc.sessionsSupport.requestSupport', { defaultValue: 'Request New Support' })}
+                  {t('lc.sessionsSupport.requestSupport')}
                 </ButtonText>
               </Button>
             </HStack>

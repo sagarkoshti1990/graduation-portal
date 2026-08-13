@@ -20,6 +20,7 @@ import {
 import NotFound from '@components/NotFound';
 import { valueMapping } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { useTrainingFormOptions } from '@hooks';
 
 
 // Icon shown next to each delivery mode option in the format-type pill selector
@@ -36,14 +37,21 @@ const App = (): React.JSX.Element => {
   const sessionId = route.params?.id || route.params?.sessionId;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [sites, setSites] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
-  const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
+
+  const { optionsMap } = useTrainingFormOptions({
+    values,
+    provinces,
+    pillers,
+    targetAudience,
+    deliveryModes,
+    deliveryModeIcons: DELIVERY_MODE_ICONS,
+  });
 
   const getHeaderTitle = () => {
     switch (modeType) {
@@ -108,89 +116,6 @@ const App = (): React.JSX.Element => {
     },
     [pillers]
   );
-
-  useEffect(() => {
-    const init = async () => {
-      if (!values.categories) {
-        setSessionTypes([]);
-        return;
-      }
-      const selectedPillarObj = pillers.find(
-        p => p.value === values.categories || p.label === values.categories
-      );
-      const pillarCode = (selectedPillarObj?.value || values.categories).toLowerCase();
-      if (pillarCode) {
-        try {
-          const res = await getSessionTypesByPillar(pillarCode);
-          setSessionTypes(res || []);
-        } catch (err) {
-          console.error('Error fetching session types:', err);
-          setSessionTypes([]);
-        }
-      } else {
-        setSessionTypes([]);
-      }
-    };
-
-    init();
-  }, [values.categories]);
-
-
-  useEffect(() => {
-    const init = async () => {
-      if (!values.province) {
-        setSites([]);
-        return;
-      }
-      try {
-        const res = await getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 });
-        setSites(res.result?.data || []);
-      } catch (err) {
-        console.error('Error fetching sites:', err);
-        setSites([]);
-      }
-    };
-
-    init();
-  }, [values.province]);
-
-  const optionsMap = useMemo(() => {
-    const provinceOpts =
-      provinces && provinces.length > 0
-        ? provinces.map((p: any) => ({
-          value: p._id || p.id || p.name,
-          label: p.name || p.label,
-        }))
-        : [];
-
-    const siteOpts = sites
-      ? sites.map((s: any) => ({
-        value: s._id || s.id || s.name,
-        label: s.name || s.label,
-      }))
-      : [];
-
-    return {
-      provinces: provinceOpts,
-      sites: siteOpts,
-      pillars: pillers,
-      sessionTypes: sessionTypes,
-      targetAudienceOptions: targetAudience,
-      certificateOptions: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-      recurringOptions: [
-        { value: 'true', label: 'Yes — recurring session' },
-        { value: 'false', label: 'No — one-off session' },
-      ],
-      formatOptions: deliveryModes.map((mode) => ({
-        value: mode.value,
-        label: mode.label,
-        icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
-      })),
-    };
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.categories]);
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
