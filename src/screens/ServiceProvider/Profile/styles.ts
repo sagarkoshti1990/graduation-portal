@@ -15,7 +15,7 @@ export default {
     fontWeight: '700',
     color: '$textForeground',
   },
-  
+
   // Card section styling
   sectionCard: {
     bg: '$white',
@@ -34,7 +34,7 @@ export default {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: '$3',
-    mb: '$5',
+    mb: '$2',
   },
   sectionIconContainer: {
     p: 0,
@@ -64,7 +64,7 @@ export default {
   // Field/Input styling
   input: {
     variant: 'outline' as const,
-    size: 'sm' as const,
+    size: 'md' as const,
     bg: '$white',
     borderColor: '#d1d5db',
     borderWidth: 1,
@@ -108,7 +108,7 @@ export default {
     shadowOpacity: 0.02,
     shadowRadius: 4,
   },
-  
+
   // Custom design-parity badge styles
   blueBadge: {
     bg: '#eff6ff',
@@ -462,6 +462,7 @@ export default {
   badgeRow: {
     space: 'xs' as const,
     flexWrap: 'wrap' as const,
+    marginTop: '$3',
   },
   detailsCol: {
     space: 'xs' as const,
@@ -487,6 +488,7 @@ export default {
     borderWidth: 1,
     borderColor: '#bfdbfe',
     borderRadius: '$lg',
+    mt: '$3',
   },
   trainingAreaTitle: {
     fontSize: 14,
@@ -510,6 +512,7 @@ export default {
     borderWidth: 1,
     borderColor: '#e9d5ff',
     borderRadius: '$lg',
+    mt: '$3',
   },
   linkageAreaFieldCol: {
     space: 'xs' as const,
@@ -527,6 +530,7 @@ export default {
     borderWidth: 1,
     borderColor: '#bbf7d0',
     borderRadius: '$lg',
+    mt: '$3',
   },
   assetsAreaLabel: {
     fontSize: 12,
@@ -535,6 +539,7 @@ export default {
   },
   othersAreaCol: {
     space: 'xs' as const,
+    mt: '$3',
   },
   othersAreaLabel: {
     fontSize: 12,

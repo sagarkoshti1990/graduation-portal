@@ -94,11 +94,41 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 
   // Options mapping
   const provinceOptions = useMemo(() => {
-    return provinces.map((p: any) => ({
-      value: p._id || p.id || p.externalId || '',
-      label: p.name || p.metaInformation?.name || '',
-    }));
-  }, [provinces]);
+    return provinces
+      .filter((p: any) => {
+        const pId = p._id || p.id || p.externalId || '';
+        const pExtId = p.externalId || p.metaInformation?.externalId || p._id || '';
+        const pName = p.name || p.metaInformation?.name || '';
+
+        // If it's the currently selected province, keep it in the options
+        if (
+          selectedProvinceId &&
+          (pId === selectedProvinceId ||
+            pExtId === selectedProvinceId ||
+            p._id === selectedProvinceId ||
+            p.id === selectedProvinceId)
+        ) {
+          return true;
+        }
+
+        // Check if already exists in added coverages (value)
+        const exists = value.some((item) => {
+          return (
+            (pId && item.provinceId === pId) ||
+            (pExtId && item.provinceId === pExtId) ||
+            (p._id && item.provinceId === p._id) ||
+            (p.id && item.provinceId === p.id) ||
+            (pName && item.provinceName && item.provinceName.toLowerCase() === pName.toLowerCase())
+          );
+        });
+
+        return !exists;
+      })
+      .map((p: any) => ({
+        value: p._id || p.id || p.externalId || '',
+        label: p.name || p.metaInformation?.name || '',
+      }));
+  }, [provinces, value, selectedProvinceId]);
 
   const siteOptions = useMemo(() => {
     return sites.map((s: any) => ({
@@ -129,17 +159,17 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     );
     const provinceExtId = selectedProvince?.externalId || selectedProvince?.metaInformation?.externalId || selectedProvince?._id || selectedProvinceId;
     const provinceName = selectedProvince?.name || selectedProvince?.metaInformation?.name || '';
-    
-    const selectedSitesObjects = sites.filter((s: any) => 
+
+    const selectedSitesObjects = sites.filter((s: any) =>
       selectedSiteIds.includes(s.externalId || s.metaInformation?.externalId || s._id || s.id)
     );
     const newSiteNames = selectedSitesObjects.map((s: any) => s.name || s.metaInformation?.name || '');
     const newSiteIds = selectedSitesObjects.map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id);
 
     // Check if this province is already added
-    const existingIndex = value.findIndex(item => 
-      item.provinceId === provinceExtId || 
-      item.provinceId === selectedProvince?._id || 
+    const existingIndex = value.findIndex(item =>
+      item.provinceId === provinceExtId ||
+      item.provinceId === selectedProvince?._id ||
       (provinceName && item.provinceName?.toLowerCase() === provinceName.toLowerCase())
     );
 
@@ -234,7 +264,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
                   </Pressable>
                 )}
               </HStack>
-              
+
               {/* Site Names List */}
               <HStack {...styles.siteBadgeContainer}>
                 {(item.siteNames && item.siteNames.length > 0 ? item.siteNames : item.siteIds).map((siteName, idx) => (
@@ -250,52 +280,52 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 
       {/* Edit controls */}
       {isEdit && (
-      <VStack {...styles.coverageAddSection}>
-        <Text {...styles.coverageAddTitle}>
-          + ADD PROVINCE COVERAGE
-        </Text>
-        <HStack {...styles.coverageAddInputs}>
-          <VStack {...styles.inputCol}>
-            <HStack {...styles.labelCol}>
-              <Text {...styles.label}>{t('profile.provinceLabel', 'Province')}</Text>
-              <Text {...styles.redAsteriskSmall}> *</Text>
-            </HStack>
-            <Select
-              options={provinceOptions}
-              value={selectedProvinceId}
-              onChange={(val) => setSelectedProvinceId(val)}
-              placeholder={t('profile.selectProvincePlaceholder', 'Select province')}
-              disabled={loadingProvinces}
-            />
-          </VStack>
+        <VStack {...styles.coverageAddSection}>
+          <Text {...styles.coverageAddTitle}>
+            + ADD PROVINCE COVERAGE
+          </Text>
+          <HStack {...styles.coverageAddInputs}>
+            <VStack {...styles.inputCol}>
+              <HStack {...styles.labelCol}>
+                <Text {...styles.label}>{t('profile.provinceLabel', 'Province')}</Text>
+                <Text {...styles.redAsteriskSmall}> *</Text>
+              </HStack>
+              <Select
+                options={provinceOptions}
+                value={selectedProvinceId}
+                onChange={(val) => setSelectedProvinceId(val)}
+                placeholder={t('profile.selectProvincePlaceholder', 'Select province')}
+                disabled={loadingProvinces}
+              />
+            </VStack>
 
-          <VStack {...styles.inputCol}>
-            <HStack {...styles.labelCol}>
-              <Text {...styles.label}>{t('profile.siteFieldLabel', 'Site Field')}</Text>
-              <Text {...styles.redAsteriskSmall}> *</Text>
-            </HStack>
-            <Select
-              options={siteOptions}
-              value={selectedSiteIds}
-              onChange={handleSiteChange}
-              placeholder={t('profile.selectSitesPlaceholder', selectedProvinceId ? 'Select site' : 'Select province first')}
-              multiple={true}
-              disabled={loadingSites || !selectedProvinceId}
-            />
-          </VStack>
-        </HStack>
+            <VStack {...styles.inputCol}>
+              <HStack {...styles.labelCol}>
+                <Text {...styles.label}>{t('profile.siteFieldLabel', 'Site Field')}</Text>
+                <Text {...styles.redAsteriskSmall}> *</Text>
+              </HStack>
+              <Select
+                options={siteOptions}
+                value={selectedSiteIds}
+                onChange={handleSiteChange}
+                placeholder={t('profile.selectSitesPlaceholder', selectedProvinceId ? 'Select site' : 'Select province first')}
+                multiple={true}
+                disabled={loadingSites || !selectedProvinceId}
+              />
+            </VStack>
+          </HStack>
 
-        <HStack {...styles.actionButtonRow}>
-          <Button
-            onPress={handleAddCoverage}
-            isDisabled={!selectedProvinceId || selectedSiteIds.length === 0}  
-            {...(selectedProvinceId ? styles.addButtonActive : styles.addButtonDisabled)}
-          >
-            <ButtonIcon as={LucideIcon} name="Plus" {...styles.plusIconSmall} />
-            <ButtonText>{t('profile.addProvince', 'Add Province')}</ButtonText>
-          </Button>
-        </HStack>
-      </VStack>
+          <HStack {...styles.actionButtonRow}>
+            <Button
+              onPress={handleAddCoverage}
+              isDisabled={!selectedProvinceId || selectedSiteIds.length === 0}
+              {...(selectedProvinceId ? styles.addButtonActive : styles.addButtonDisabled)}
+            >
+              <ButtonIcon as={LucideIcon} name="Plus" {...styles.plusIconSmall} />
+              <ButtonText>{t('profile.addProvince', 'Add Province')}</ButtonText>
+            </Button>
+          </HStack>
+        </VStack>
       )}
     </VStack>
   );

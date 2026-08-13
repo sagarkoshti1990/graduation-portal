@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { VStack, HStack, Text, Box, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable, Input, InputField } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -89,7 +89,16 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   t,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  
+
+  const categoryOptions = useMemo(() => {
+    return CATEGORY_OPTIONS.filter(opt => {
+      if (selectedCategory && opt.value === selectedCategory) {
+        return true;
+      }
+      return !value.some(item => item.categoryName === opt.value);
+    });
+  }, [value, selectedCategory]);
+
   // Training state
   const [socialEmpowerment, setSocialEmpowerment] = useState<string[]>([]);
   const [financialInclusion, setFinancialInclusion] = useState<string[]>([]);
@@ -294,101 +303,101 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 )}
               </HStack>
 
-            {/* Render Category Details */}
-            {item.categoryName === 'Training / Sessions' && item.trainingData && (
-              <VStack {...styles.subCategoriesContainer}>
-                <Text {...styles.specificTrainingTitle}>Specific Training Areas:</Text>
-                
-                {item.trainingData.socialEmpowerment.length > 0 && (
-                  <VStack {...styles.subCategoryCol}>
-                    <Text {...styles.cardFieldLabel}>Social Empowerment Sessions</Text>
-                    <HStack {...styles.badgeRow}>
-                      {item.trainingData.socialEmpowerment.map((s, idx) => (
-                        <Badge key={idx} {...styles.blueBadge}>
-                          <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
-                        </Badge>
-                      ))}
-                    </HStack>
-                  </VStack>
-                )}
+              {/* Render Category Details */}
+              {item.categoryName === 'Training / Sessions' && item.trainingData && (
+                <VStack {...styles.subCategoriesContainer}>
+                  <Text {...styles.specificTrainingTitle}>Specific Training Areas:</Text>
 
-                {item.trainingData.financialInclusion.length > 0 && (
-                  <VStack {...styles.subCategoryCol}>
-                    <Text {...styles.cardFieldLabel}>Financial Inclusion Sessions</Text>
-                    <HStack {...styles.badgeRow}>
-                      {item.trainingData.financialInclusion.map((s, idx) => (
-                        <Badge key={idx} {...styles.blueBadge}>
-                          <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
-                        </Badge>
-                      ))}
-                    </HStack>
-                  </VStack>
-                )}
+                  {item.trainingData.socialEmpowerment.length > 0 && (
+                    <VStack {...styles.subCategoryCol}>
+                      <Text {...styles.cardFieldLabel}>Social Empowerment Sessions</Text>
+                      <HStack {...styles.badgeRow}>
+                        {item.trainingData.socialEmpowerment.map((s, idx) => (
+                          <Badge key={idx} {...styles.blueBadge}>
+                            <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
+                          </Badge>
+                        ))}
+                      </HStack>
+                    </VStack>
+                  )}
 
-                {item.trainingData.livelihoods.length > 0 && (
-                  <VStack {...styles.subCategoryCol}>
-                    <Text {...styles.cardFieldLabel}>Livelihoods Sessions</Text>
-                    <HStack {...styles.badgeRow}>
-                      {item.trainingData.livelihoods.map((s, idx) => (
-                        <Badge key={idx} {...styles.blueBadge}>
-                          <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
-                        </Badge>
-                      ))}
-                    </HStack>
-                  </VStack>
-                )}
-              </VStack>
-            )}
+                  {item.trainingData.financialInclusion.length > 0 && (
+                    <VStack {...styles.subCategoryCol}>
+                      <Text {...styles.cardFieldLabel}>Financial Inclusion Sessions</Text>
+                      <HStack {...styles.badgeRow}>
+                        {item.trainingData.financialInclusion.map((s, idx) => (
+                          <Badge key={idx} {...styles.blueBadge}>
+                            <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
+                          </Badge>
+                        ))}
+                      </HStack>
+                    </VStack>
+                  )}
 
-            {item.categoryName === 'Linkage to Additional Services' && item.linkageData && (
-              <VStack {...styles.subCategoriesContainer}>
-                {item.linkageData.specialAttention.length > 0 && (
-                  <VStack {...styles.subCategoryCol}>
-                    <Text {...styles.cardFieldLabel}>Special Attention Tags</Text>
-                    <HStack {...styles.badgeRow}>
-                      {item.linkageData.specialAttention.map((s, idx) => (
-                        <Badge key={idx} {...styles.purpleBadge}>
-                          <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
-                        </Badge>
-                      ))}
-                    </HStack>
-                  </VStack>
-                )}
+                  {item.trainingData.livelihoods.length > 0 && (
+                    <VStack {...styles.subCategoryCol}>
+                      <Text {...styles.cardFieldLabel}>Livelihoods Sessions</Text>
+                      <HStack {...styles.badgeRow}>
+                        {item.trainingData.livelihoods.map((s, idx) => (
+                          <Badge key={idx} {...styles.blueBadge}>
+                            <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
+                          </Badge>
+                        ))}
+                      </HStack>
+                    </VStack>
+                  )}
+                </VStack>
+              )}
 
-                {item.linkageData.immediateAttention.length > 0 && (
-                  <VStack {...styles.subCategoryCol}>
-                    <Text {...styles.cardFieldLabel}>Immediate Attention Tags</Text>
-                    <HStack {...styles.badgeRow}>
-                      {item.linkageData.immediateAttention.map((s, idx) => (
-                        <Badge key={idx} {...styles.purpleBadge}>
-                          <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
-                        </Badge>
-                      ))}
-                    </HStack>
-                  </VStack>
-                )}
-              </VStack>
-            )}
+              {item.categoryName === 'Linkage to Additional Services' && item.linkageData && (
+                <VStack {...styles.subCategoriesContainer}>
+                  {item.linkageData.specialAttention.length > 0 && (
+                    <VStack {...styles.subCategoryCol}>
+                      <Text {...styles.cardFieldLabel}>Special Attention Tags</Text>
+                      <HStack {...styles.badgeRow}>
+                        {item.linkageData.specialAttention.map((s, idx) => (
+                          <Badge key={idx} {...styles.purpleBadge}>
+                            <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
+                          </Badge>
+                        ))}
+                      </HStack>
+                    </VStack>
+                  )}
 
-            {item.categoryName === 'Assets' && item.assetsData && (
-              <VStack {...styles.subCategoryCol} {...styles.detailsCol}>
-                <Text {...styles.cardFieldLabel}>Asset Types Offered:</Text>
-                <HStack {...styles.badgeRow}>
-                  {item.assetsData.assetTypes.map((s, idx) => (
-                    <Badge key={idx} {...styles.greenBadge}>
-                      <BadgeText {...styles.greenBadgeText}>{s}</BadgeText>
-                    </Badge>
-                  ))}
-                </HStack>
-              </VStack>
-            )}
+                  {item.linkageData.immediateAttention.length > 0 && (
+                    <VStack {...styles.subCategoryCol}>
+                      <Text {...styles.cardFieldLabel}>Immediate Attention Tags</Text>
+                      <HStack {...styles.badgeRow}>
+                        {item.linkageData.immediateAttention.map((s, idx) => (
+                          <Badge key={idx} {...styles.purpleBadge}>
+                            <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
+                          </Badge>
+                        ))}
+                      </HStack>
+                    </VStack>
+                  )}
+                </VStack>
+              )}
 
-            {item.categoryName === 'Others' && item.othersData && (
-              <VStack {...styles.detailsCol}>
-                <Text {...styles.cardFieldLabel}>Details</Text>
-                <Text {...styles.detailsText}>{item.othersData}</Text>
-              </VStack>
-            )}
+              {item.categoryName === 'Assets' && item.assetsData && (
+                <VStack {...styles.subCategoryCol} {...styles.detailsCol}>
+                  <Text {...styles.cardFieldLabel}>Asset Types Offered:</Text>
+                  <HStack {...styles.badgeRow}>
+                    {item.assetsData.assetTypes.map((s, idx) => (
+                      <Badge key={idx} {...styles.greenBadge}>
+                        <BadgeText {...styles.greenBadgeText}>{s}</BadgeText>
+                      </Badge>
+                    ))}
+                  </HStack>
+                </VStack>
+              )}
+
+              {item.categoryName === 'Others' && item.othersData && (
+                <VStack {...styles.detailsCol}>
+                  <Text {...styles.cardFieldLabel}>Details</Text>
+                  <Text {...styles.detailsText}>{item.othersData}</Text>
+                </VStack>
+              )}
             </VStack>
           </Pressable>
         ))}
@@ -396,152 +405,152 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
       {/* Edit Form */}
       {isEdit && (
-      <VStack {...styles.coverageAddSection}>
-        <Text {...styles.addSupportCategoryTitle}>
-          + ADD SUPPORT CATEGORY
-        </Text>
-        <VStack {...styles.categorySelectCol}>
-          <HStack {...styles.labelCol}>
-            <Text {...styles.label}>{t('profile.supportCategoryOffered', 'Support Category Offered')}</Text>
-            <Text {...styles.redAsteriskSmall}> *</Text>
-          </HStack>
-          <Select
-            options={CATEGORY_OPTIONS}
-            value={selectedCategory}
-            onChange={(val) => {
-              handleSelectCategory(val);
-            }}
-            placeholder={t('profile.selectCategoryPlaceholder', 'Select Support Category')}
-          />
-        </VStack>
-
-        {/* select Training / Sessions category */}
-        {selectedCategory === 'Training / Sessions' && (
-          <VStack {...styles.trainingAreaBox}>
-            <Text {...styles.trainingAreaTitle}>
-              Specific Training Areas
-            </Text>
-            <VStack {...styles.trainingAreaFieldCol}>
-              <Text {...styles.trainingAreaLabel}>
-                {t('profile.socialEmpowerment', 'Social Empowerment Sessions')}
-              </Text>
-              <Select
-                options={SOCIAL_EMPOWERMENT_OPTS}
-                value={socialEmpowerment}
-                onChange={setSocialEmpowerment}
-                placeholder={t('profile.selectSocialEmpowerment', 'Select social empowerment sessions...')}
-                multiple={true}
-              />
-            </VStack>
-
-            <VStack {...styles.trainingAreaFieldCol}>
-              <Text {...styles.trainingAreaLabel}>
-                {t('profile.financialInclusion', 'Financial Inclusion Sessions')}
-              </Text>
-              <Select
-                options={FINANCIAL_INCLUSION_OPTS}
-                value={financialInclusion}
-                onChange={setFinancialInclusion}
-                placeholder={t('profile.selectFinancialInclusion', 'Select financial inclusion sessions...')}
-                multiple={true}
-              />
-            </VStack>
-
-            <VStack {...styles.trainingAreaFieldCol}>
-              <Text {...styles.trainingAreaLabel}>
-                {t('profile.livelihoods', 'Livelihoods Sessions')}
-              </Text>
-              <Select
-                options={LIVELIHOODS_OPTS}
-                value={livelihoods}
-                onChange={setLivelihoods}
-                placeholder={t('profile.selectLivelihoods', 'Select livelihoods sessions...')}
-                multiple={true}
-              />
-            </VStack>
+        <VStack {...styles.coverageAddSection}>
+          <Text {...styles.addSupportCategoryTitle}>
+            + ADD SUPPORT CATEGORY
+          </Text>
+          <VStack {...styles.categorySelectCol}>
+            <HStack {...styles.labelCol}>
+              <Text {...styles.label}>{t('profile.supportCategoryOffered', 'Support Category Offered')}</Text>
+              <Text {...styles.redAsteriskSmall}> *</Text>
+            </HStack>
+            <Select
+              options={categoryOptions}
+              value={selectedCategory}
+              onChange={(val) => {
+                handleSelectCategory(val);
+              }}
+              placeholder={t('profile.selectCategoryPlaceholder', 'Select Support Category')}
+            />
           </VStack>
-        )}
 
-        {/* select Linkage to Additional Services category */}
-        {selectedCategory === 'Linkage to Additional Services' && (
-          <VStack {...styles.linkageAreaBox}>
-            <VStack {...styles.linkageAreaFieldCol}>
-              <Text {...styles.linkageAreaLabel}>
-                {t('profile.specialAttention', 'Special Attention Tags')}
+          {/* select Training / Sessions category */}
+          {selectedCategory === 'Training / Sessions' && (
+            <VStack {...styles.trainingAreaBox}>
+              <Text {...styles.trainingAreaTitle}>
+                Specific Training Areas
               </Text>
-              <Select
-                options={SPECIAL_ATTENTION_OPTS}
-                value={specialAttention}
-                onChange={setSpecialAttention}
-                placeholder={t('profile.selectSpecialAttention', 'Select special attention tags...')}
-                multiple={true}
-              />
-            </VStack>
+              <VStack {...styles.trainingAreaFieldCol}>
+                <Text {...styles.trainingAreaLabel}>
+                  {t('profile.socialEmpowerment', 'Social Empowerment Sessions')}
+                </Text>
+                <Select
+                  options={SOCIAL_EMPOWERMENT_OPTS}
+                  value={socialEmpowerment}
+                  onChange={setSocialEmpowerment}
+                  placeholder={t('profile.selectSocialEmpowerment', 'Select social empowerment sessions...')}
+                  multiple={true}
+                />
+              </VStack>
 
-            <VStack {...styles.linkageAreaFieldCol}>
-              <Text {...styles.linkageAreaLabel}>
-                {t('profile.immediateAttention', 'Immediate Attention Tags')}
-              </Text>
-              <Select
-                options={IMMEDIATE_ATTENTION_OPTS}
-                value={immediateAttention}
-                onChange={setImmediateAttention}
-                placeholder={t('profile.selectImmediateAttention', 'Select immediate attention tags...')}
-                multiple={true}
-              />
-            </VStack>
-          </VStack>
-        )}
+              <VStack {...styles.trainingAreaFieldCol}>
+                <Text {...styles.trainingAreaLabel}>
+                  {t('profile.financialInclusion', 'Financial Inclusion Sessions')}
+                </Text>
+                <Select
+                  options={FINANCIAL_INCLUSION_OPTS}
+                  value={financialInclusion}
+                  onChange={setFinancialInclusion}
+                  placeholder={t('profile.selectFinancialInclusion', 'Select financial inclusion sessions...')}
+                  multiple={true}
+                />
+              </VStack>
 
-        {/* select Assets category */}
-        {selectedCategory === 'Assets' && (
-          <VStack {...styles.assetsAreaBox}>
+              <VStack {...styles.trainingAreaFieldCol}>
+                <Text {...styles.trainingAreaLabel}>
+                  {t('profile.livelihoods', 'Livelihoods Sessions')}
+                </Text>
+                <Select
+                  options={LIVELIHOODS_OPTS}
+                  value={livelihoods}
+                  onChange={setLivelihoods}
+                  placeholder={t('profile.selectLivelihoods', 'Select livelihoods sessions...')}
+                  multiple={true}
+                />
+              </VStack>
+            </VStack>
+          )}
+
+          {/* select Linkage to Additional Services category */}
+          {selectedCategory === 'Linkage to Additional Services' && (
+            <VStack {...styles.linkageAreaBox}>
+              <VStack {...styles.linkageAreaFieldCol}>
+                <Text {...styles.linkageAreaLabel}>
+                  {t('profile.specialAttention', 'Special Attention Tags')}
+                </Text>
+                <Select
+                  options={SPECIAL_ATTENTION_OPTS}
+                  value={specialAttention}
+                  onChange={setSpecialAttention}
+                  placeholder={t('profile.selectSpecialAttention', 'Select special attention tags...')}
+                  multiple={true}
+                />
+              </VStack>
+
+              <VStack {...styles.linkageAreaFieldCol}>
+                <Text {...styles.linkageAreaLabel}>
+                  {t('profile.immediateAttention', 'Immediate Attention Tags')}
+                </Text>
+                <Select
+                  options={IMMEDIATE_ATTENTION_OPTS}
+                  value={immediateAttention}
+                  onChange={setImmediateAttention}
+                  placeholder={t('profile.selectImmediateAttention', 'Select immediate attention tags...')}
+                  multiple={true}
+                />
+              </VStack>
+            </VStack>
+          )}
+
+          {/* select Assets category */}
+          {selectedCategory === 'Assets' && (
+            <VStack {...styles.assetsAreaBox}>
               <Text {...styles.assetsAreaLabel}>
                 {t('profile.assetTypes', 'Asset Types Offered')}
-            </Text>
-            <Select
-              options={ASSETS_OPTS}
-              value={assetTypes}
+              </Text>
+              <Select
+                options={ASSETS_OPTS}
+                value={assetTypes}
                 onChange={setAssetTypes}
-              placeholder={t('profile.selectAssetTypes', 'Select asset types...')}
-              multiple={true}
-            />
-          </VStack>
-        )}
-
-        {/* select Others category */}
-        {selectedCategory === 'Others' && (
-          <VStack {...styles.othersAreaCol}>
-            <Text {...styles.label}>{t('profile.otherDetails', 'Other Support Details')}</Text>
-            <Input {...styles.textInput}>
-              <InputField
-                placeholder={t('profile.otherDetailsPlaceholder', 'Enter custom support offerings')}
-                value={othersText}
-                onChangeText={setOthersText}
+                placeholder={t('profile.selectAssetTypes', 'Select asset types...')}
+                multiple={true}
               />
-            </Input>
-          </VStack>
-        )}
+            </VStack>
+          )}
 
-        <HStack {...styles.actionButtonRow}>
-          <Button
-            onPress={handleAddCategory}
-            isDisabled={isAddDisabled()}
-            {...(isAddDisabled() ? styles.addCategoryButtonDisabled : styles.addCategoryButtonActive)}
-          >
-            <ButtonIcon
-              as={LucideIcon}
-              name="Plus"
-              {...(isAddDisabled() ? styles.addCategoryButtonIconDisabled : styles.addCategoryButtonIconActive)}
-            />
-            <ButtonText
-              {...(isAddDisabled() ? styles.addCategoryButtonTextDisabled : styles.addCategoryButtonTextActive)}
+          {/* select Others category */}
+          {selectedCategory === 'Others' && (
+            <VStack {...styles.othersAreaCol}>
+              <Text {...styles.label}>{t('profile.otherDetails', 'Other Support Details')}</Text>
+              <Input {...styles.textInput}>
+                <InputField
+                  placeholder={t('profile.otherDetailsPlaceholder', 'Enter custom support offerings')}
+                  value={othersText}
+                  onChangeText={setOthersText}
+                />
+              </Input>
+            </VStack>
+          )}
+
+          <HStack {...styles.actionButtonRow}>
+            <Button
+              onPress={handleAddCategory}
+              isDisabled={isAddDisabled()}
+              {...(isAddDisabled() ? styles.addCategoryButtonDisabled : styles.addCategoryButtonActive)}
             >
-              {t('profile.addCategory', 'Add Category')}
-            </ButtonText>
-          </Button>
-        </HStack>
-      </VStack>
+              <ButtonIcon
+                as={LucideIcon}
+                name="Plus"
+                {...(isAddDisabled() ? styles.addCategoryButtonIconDisabled : styles.addCategoryButtonIconActive)}
+              />
+              <ButtonText
+                {...(isAddDisabled() ? styles.addCategoryButtonTextDisabled : styles.addCategoryButtonTextActive)}
+              >
+                {t('profile.addCategory', 'Add Category')}
+              </ButtonText>
+            </Button>
+          </HStack>
+        </VStack>
       )}
     </VStack>
   );
