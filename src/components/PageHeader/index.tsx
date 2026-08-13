@@ -11,8 +11,8 @@ import { pageHeaderStyles } from './Styles';
 export interface PageHeaderProps {
   /** Back button text */
   backButtonText?: string;
-  /** Main title text */
-  title?: string;
+  /** Main title text or node */
+  title?: React.ReactNode;
   _title?: any;
   /** Subtitle text displayed below the title */
   subtitle?: string;
@@ -71,9 +71,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             }
             <VStack {...pageHeaderStyles.textSection}>
               {title && (
-                <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground" {..._title}>
-                  {title}
-                </Text>
+                typeof title === 'string' ? (
+                  <Text {...TYPOGRAPHY.h4} fontWeight="$normal" lineHeight="$lg" color="$textForeground" {..._title}>
+                    {title}
+                  </Text>
+                ) : (
+                  title
+                )
               )}
               {subtitle && (
                 <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground"  {..._subtitle}>

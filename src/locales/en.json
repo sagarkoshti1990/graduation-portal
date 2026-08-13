@@ -2198,12 +2198,14 @@
       "observation": "Observation",
       "template": "Develop Intervention Plan",
       "participants": "Participants",
+      "sessions-support": "Sessions & Support",
       "project": "Project",
       "home": "Home"
     },
     "menu": {
       "home": "Home",
       "dashboard": "Dashboard",
+      "sessionsSupport": "Sessions & Support",
       "myProfile": "My Profile",
       "serviceProviders": "Service Providers"
     }

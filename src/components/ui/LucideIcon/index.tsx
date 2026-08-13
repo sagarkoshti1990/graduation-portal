@@ -51,6 +51,8 @@ import {
   Info,
   Key,
   LayoutDashboard,
+  LifeBuoy,
+  HelpCircle,
   LoaderCircle,
   Link2,
   ListChecks,
@@ -90,7 +92,8 @@ import {
   MessageSquare,
   Copy,
   CircleCheckBig,
-  Video
+  Video,
+  Wrench
 } from 'lucide-react-native';
 import { theme } from '@config/theme';
 
@@ -161,6 +164,8 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   Info,
   Key,
   LayoutDashboard,
+  LifeBuoy,
+  HelpCircle,
   LoaderCircle,
   Link2,
   ListChecks,
@@ -200,7 +205,8 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   MessageSquare,
   Copy,
   CircleCheckBig,
-  Video
+  Video,
+  Wrench
 };
 
 /**
