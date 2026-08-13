@@ -2,7 +2,12 @@ export const AssignUsersStyles = {
     tableCardStyles: {
       size: 'md',
       variant: 'outline',
-      mt: '$6',
+      px: '$4',
+      py: '$5',
+      "$md-px": '$6',
+      "$md-py": '$6',
+      mt: '$4',
+      "$md-mt": '$6',
       borderRadius: '$2xl',
     },
     tableTitleText: {
