@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, Pressable, Text, VStack } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
-import SPTitleHeader from '@components/Header/SPTitleHeader';
+import PageHeader from '@components/PageHeader';
 import { REQUEST_SUPPORT_OPTIONS } from '@constants/SUPPORT_PROVIDER_CARDS';
 import styles from './styles';
 
@@ -29,9 +29,9 @@ const SessionsSupportScreen: React.FC = () => {
 
   return (
     <VStack {...styles.container}>
-      <SPTitleHeader
+      <PageHeader
         title={titleNode}
-        subTitle={t('lc.sessionsSupport.subtitle', {
+        subtitle={t('lc.sessionsSupport.subtitle', {
           defaultValue: 'Browse sessions, additional services, and assets available in your province and site',
         })}
         rightSection={

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Card, Container, HStack, Loader, Text, VStack, useAlert } from '@ui';
-import SPTitleHeader from '@components/Header/SPTitleHeader';
+import PageHeader from '@components/PageHeader';
 import { useNavigation } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA, CREATE_SESSION_HIDE_FIELDS } from '@constants/TRAINING_FORM_SCHEMA';
@@ -213,10 +213,10 @@ const CreateSessionScreen = (): React.JSX.Element => {
 
   return (
     <VStack flex={1}>
-      <SPTitleHeader
+      <PageHeader
         title={headerTitle}
         backButtonText={t('supportProvider.createSupport.changeType', 'Change Type')}
-        onNavigateBack={handleBackPress}
+        onBackPress={handleBackPress}
       />
       <Container py="$6">
         <Card borderRadius="$2xl" bg="$white">

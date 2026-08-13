@@ -8,7 +8,7 @@ const SPTitleHeader = ({
   onNavigateBack,
   rightSection,
 }: {
-  title: string | React.ReactNode;
+  title: string;
   subTitle?: string;
   backButtonText?: string;
   onNavigateBack?: () => void;
