@@ -16,7 +16,7 @@ import {
   ScrollView,
 } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
-import type { ParticipantAttendanceItem } from '../../../../../constants/SUPPORT_OFFERINGS_MOCK';
+import type { ParticipantAttendanceItem } from '../../../../../types/supportOfferingsTypes';
 import styles from '../../styles';
 
 interface SessionCompleteModalProps {
@@ -25,7 +25,7 @@ interface SessionCompleteModalProps {
   sessionTitle: string;
   expectedParticipantsCount: number;
   initialParticipants?: ParticipantAttendanceItem[];
-  onConfirmComplete: (presentCount: number) => void;
+  onConfirmComplete: (selectedParticipantIds: string[]) => void;
 }
 
 const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
@@ -41,11 +41,11 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
     initialParticipants.length > 0
       ? initialParticipants
       : Array.from({ length: expectedParticipantsCount || 6 }).map((_, idx) => ({
-          id: String(idx + 1),
-          name: `Participant ${idx + 1}`,
-          lcName: 'LC: Thandiwe Ndlovu',
-          isPresent: false,
-        }))
+        id: String(idx + 1),
+        name: `Participant ${idx + 1}`,
+        lcName: 'LC: Thandiwe Ndlovu',
+        isPresent: false,
+      }))
   );
 
   const markedPresentCount = participants.filter((p) => p.isPresent).length;
@@ -64,13 +64,22 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
     setParticipants((prev) => prev.map((p) => ({ ...p, isPresent: false })));
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleConfirm = () => {
-    onConfirmComplete(markedPresentCount);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const selectedIds = participants
+      .filter((p) => p.isPresent)
+      .map((p) => String(p.id));
+    onConfirmComplete(selectedIds);
     onClose();
   };
 
   const handleSkip = () => {
-    onConfirmComplete(0);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    onConfirmComplete([]);
     onClose();
   };
 
