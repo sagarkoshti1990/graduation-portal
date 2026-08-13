@@ -216,7 +216,7 @@ export default {
     },
   } as const,
   outlineActionBtnText: {
-    fontSize: 12 as const,
+    fontSize: '$xs !important',
     lineHeight: 14 as const,
     fontWeight: '$normal' as const,
     color: '$textPrimary' as const,
@@ -239,7 +239,7 @@ export default {
     },
   } as const,
   detailsBtnText: {
-    fontSize: 12,
+    fontSize: '$xs !important',
     lineHeight: 14 as const,
     fontWeight: '$normal' as const,
     color: '$white' as const,
@@ -262,7 +262,7 @@ export default {
     },
   } as const,
   completeActionBtnText: {
-    fontSize: 12 as const,
+    fontSize: '$xs !important',
     lineHeight: 14 as const,
     fontWeight: '$normal' as const,
     color: '$white' as const,
@@ -285,7 +285,7 @@ export default {
     },
   } as const,
   confirmAttendanceBtnText: {
-    fontSize: 12 as const,
+    fontSize: '$xs !important',
     lineHeight: 14 as const,
     fontWeight: '$normal' as const,
     color: '$white' as const,

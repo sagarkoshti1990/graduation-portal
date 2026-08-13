@@ -12,7 +12,7 @@ import {
   Button,
   ButtonText,
   ButtonIcon,
-  ButtonSpinner,
+  Spinner,
 } from '@ui';
 import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -687,12 +687,15 @@ export default function TrainingCard({
       ))}
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">
-          <Button onPress={onLoadMoreItems} disabled={isLoadingMore}>
-            <ButtonText>
-              {t('supportProvider.supportOfferings.buttonTexts.loadMoreSessions', 'Load More Sessions')}
-            </ButtonText>
-            {isLoadingMore && <ButtonSpinner mr="$2" color="$white" />}
-          </Button>
+          {!isLoadingMore ? (
+            <Button onPress={onLoadMoreItems}>
+              <ButtonText>
+                {t('supportProvider.supportOfferings.buttonTexts.loadMoreSessions', 'Load More Sessions')}
+              </ButtonText>
+            </Button>
+          ) : (
+            <Spinner />
+          )}
         </Box>
       )}
     </VStack>
