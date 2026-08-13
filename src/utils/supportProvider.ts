@@ -42,7 +42,7 @@ export function valueMapping(formValues: any, isReverseMapping: boolean = false,
   return {
     ...formValues,
     categories: [formValues.categories],
-    province: [formValues.province],
+    provinces: [formValues.provinces],
     recommended_for: recommendedForPayload,
     start_date: moment(formValues.start_date).unix(),
     end_date: moment(formValues.end_date).unix(),

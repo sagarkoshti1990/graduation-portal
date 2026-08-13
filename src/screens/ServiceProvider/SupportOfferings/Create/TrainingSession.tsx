@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Container, Loader, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -20,6 +20,7 @@ import {
 import NotFound from '@components/NotFound';
 import { valueMapping } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import logger from '@utils/logger';
 
 
 // Icon shown next to each delivery mode option in the format-type pill selector
@@ -33,7 +34,7 @@ const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute<any>();
   const modeType: String = route.params?.type;
-  const sessionId = route.params?.id || route.params?.sessionId;
+  const sessionId = route.params?.id;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -57,8 +58,7 @@ const App = (): React.JSX.Element => {
     }
   };
 
-  useEffect(() => {
-    const init = async () => {
+    const init = useCallback(async () => {
       try {
         const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
           getProvincesList(),
@@ -72,7 +72,7 @@ const App = (): React.JSX.Element => {
         setDeliveryModes(getDeliveryModeOptions);
 
         // Fetch session data via getSessionDetails API when in Copy or Edit mode
-        if (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) {
+        if (sessionId && (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT)) {
           const rawResponse = await getSessionDetails(sessionId);
           const rawData = rawResponse?.result;
           if (rawData) {
@@ -81,21 +81,28 @@ const App = (): React.JSX.Element => {
           }
         }
       } catch (error: any) {
-        console.error('Error loading form data:', error);
+        logger.error('Error loading form data:', error);
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
       } finally {
         setIsLoading(false);
       }
-    };
+    },[sessionId, modeType]);
 
-    init();
-  }, [sessionId, modeType]);
+  useFocusEffect(
+    useCallback(() => {
+      init();
+      return () => {
+        setIsLoading(true);
+        setValues({});
+      };
+    }, [init])
+  );
 
   const handleFieldChange = useCallback(
     (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
-        if (name === 'province') next.site = '';
+        if (name === 'provinces') next.sites = '';
         if (name === 'categories') {
           next.idp_training_task = '';
           next.title = '';
@@ -106,7 +113,7 @@ const App = (): React.JSX.Element => {
         return next;
       });
     },
-    [pillers]
+    []
   );
 
   useEffect(() => {
@@ -124,7 +131,7 @@ const App = (): React.JSX.Element => {
           const res = await getSessionTypesByPillar(pillarCode);
           setSessionTypes(res || []);
         } catch (err) {
-          console.error('Error fetching session types:', err);
+          logger.error('Error fetching session types:', err);
           setSessionTypes([]);
         }
       } else {
@@ -133,26 +140,26 @@ const App = (): React.JSX.Element => {
     };
 
     init();
-  }, [values.categories]);
+  }, [values.categories, pillers]);
 
 
   useEffect(() => {
     const init = async () => {
-      if (!values.province) {
+      if (!values.provinces) {
         setSites([]);
         return;
       }
       try {
-        const res = await getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 });
+        const res = await getSitesByProvince({ provinceId: values.provinces});
         setSites(res.result?.data || []);
       } catch (err) {
-        console.error('Error fetching sites:', err);
+        logger.error('Error fetching sites:', err);
         setSites([]);
       }
     };
 
     init();
-  }, [values.province]);
+  }, [values.provinces]);
 
   const optionsMap = useMemo(() => {
     const provinceOpts =
@@ -190,7 +197,7 @@ const App = (): React.JSX.Element => {
         icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
       })),
     };
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, values.categories]);
+  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes]);
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
@@ -214,7 +221,7 @@ const App = (): React.JSX.Element => {
       // @ts-ignore
       navigation.navigate('opportunities');
     } catch (error: any) {
-      console.error('Error saving training session:', error);
+      logger.error('Error saving training session:', error);
       // Show specific API error message if available, otherwise generic message
       const errMsg =
         error?.data?.message ||

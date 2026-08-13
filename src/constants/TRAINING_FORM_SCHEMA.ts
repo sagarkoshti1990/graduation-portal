@@ -26,7 +26,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'province',
+                name: 'provinces',
                 type: 'select',
                 required: true,
                 label: { key: 'province', fallback: 'Province' },
@@ -43,7 +43,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 ],
               },
               {
-                name: 'site',
+                name: 'sites',
                 type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
@@ -53,8 +53,8 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   fallback: 'Select site',
                 },
                 optionsSource: 'sites',
-                dependsOn: 'province',
-                disabledWhen: { field: 'province', empty: true },
+                dependsOn: 'provinces',
+                disabledWhen: { field: 'provinces', empty: true },
                 validation: [
                   {
                     rule: 'required',
@@ -519,7 +519,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               {
                 fields: [
                   {
-                    name: 'province',
+                    name: 'provinces',
                     type: 'view',
                     label: { key: 'province', fallback: 'Province' },
                     optionsSource: 'provinces',
@@ -528,7 +528,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
               {
                   fields: [
                   {
-                    name: 'site',
+                    name: 'sites',
                     type: 'view',
                     label: { key: 'site', fallback: 'Site' },
                     optionsSource: 'sites',
