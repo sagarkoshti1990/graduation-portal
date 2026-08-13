@@ -45,3 +45,37 @@ export const DEFAULT_SESSION_CONFIG = {
   SESSION_TYPE: 'Public',
 } as const;
 
+export const REQUEST_SUPPORT_OPTIONS = [
+  {
+    id: 'training',
+    icon: 'Calendar',
+    title: 'Session or Training',
+    description: 'Request a training session',
+    route: 'sessions-support/request',
+  },
+  {
+    id: 'additional-services',
+    icon: 'Wrench',
+    title: 'Additional Service',
+    description: 'Request a support service',
+    route: 'create-additional-service',
+  },
+  {
+    id: 'assets',
+    icon: 'Box',
+    title: 'Asset',
+    description: 'Request equipment or resources',
+    route: 'create-asset',
+  },
+];
+
+export const CERTIFICATE_OPTIONS = [
+  { value: 'true', label: 'Yes' },
+  { value: 'false', label: 'No' },
+] as const;
+
+export const RECURRING_OPTIONS = [
+  { value: 'true', label: 'Yes — recurring session' },
+  { value: 'false', label: 'No — one-off session' },
+] as const;
+

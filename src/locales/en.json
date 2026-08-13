@@ -2198,14 +2198,29 @@
       "observation": "Observation",
       "template": "Develop Intervention Plan",
       "participants": "Participants",
+      "sessions-support": "Sessions & Support",
       "project": "Project",
       "home": "Home"
     },
     "menu": {
       "home": "Home",
       "dashboard": "Dashboard",
+      "sessionsSupport": "Sessions & Support",
       "myProfile": "My Profile",
       "serviceProviders": "Service Providers"
+    },
+    "sessionsSupport": {
+      "subtitle": "Browse sessions, additional services, and assets available in your province and site",
+      "createSession": "Create A Session",
+      "requestSupport": "Request Support"
+    },
+    "createSession": {
+      "title": "Create a Session",
+      "badge": "Training Session"
+    },
+    "requestSession": {
+      "title": "Request a Session",
+      "badge": "Training Session"
     }
   },
   "template": {
