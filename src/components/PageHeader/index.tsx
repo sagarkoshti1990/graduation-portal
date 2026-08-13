@@ -11,7 +11,7 @@ import { pageHeaderStyles } from './Styles';
 export interface PageHeaderProps {
   /** Back button text */
   backButtonText?: string;
-  /** Main title text*/
+  /** Main title text */
   title?: string;
   _title?: any;
   /** Subtitle text displayed below the title */
