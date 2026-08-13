@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
   USERS_LIST: `${prefix}/user/v1/account/search`,  // Search users for user management
   DEACTIVATE_USER: `user/v1/admin/deactivateUser`,
   ORG_ADMIN_UPDATE_USER: `${prefix}/user/v1/org-admin/updateUser`,
+  UPDATE_USER: `${prefix}/user/v1/user/update`,
   CREATE_USER: `${prefix}/user/v1/tenant/accountCreate`,
   GET_SIGNED_URL: `${prefix}/user/v1/cloud-services/file/getSignedUrl`,
   BULK_USER_CREATE: `${prefix}/user/v1/tenant/bulkUserCreate`,
