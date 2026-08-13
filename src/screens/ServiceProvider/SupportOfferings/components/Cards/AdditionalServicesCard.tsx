@@ -11,6 +11,7 @@ import {
   useAlert,
   Button,
   ButtonText,
+  ButtonSpinner,
 } from '@ui';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -148,12 +149,14 @@ interface AdditionalServicesCardProps {
   items: ServiceItem[];
   isShowLoadMore: boolean;
   onLoadMoreItems: () => void;
+  isLoadingMore?: boolean;
 }
 
 export default function AdditionalServicesCard({
   items = [],
   isShowLoadMore,
   onLoadMoreItems,
+  isLoadingMore = false,
 }: AdditionalServicesCardProps): React.ReactElement {
   const { t } = useLanguage();
 
@@ -164,7 +167,8 @@ export default function AdditionalServicesCard({
       ))}
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">
-          <Button onPress={onLoadMoreItems}>
+          <Button onPress={onLoadMoreItems} disabled={isLoadingMore}>
+            {isLoadingMore && <ButtonSpinner mr="$2" color="$white" />}
             <ButtonText>{t('common.loadMore', 'Load More')}</ButtonText>
           </Button>
         </Box>

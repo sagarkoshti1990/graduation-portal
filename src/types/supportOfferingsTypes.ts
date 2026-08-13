@@ -3,6 +3,10 @@ import type { ProvinceEntity, SiteEntity } from './Users';
 export interface MaterialItem {
   name: string;
   info?: string;
+  link?: string;
+  sourcePath?: string;
+  type?: string;
+  size?: number;
 }
 
 export interface ParticipantAttendanceItem {

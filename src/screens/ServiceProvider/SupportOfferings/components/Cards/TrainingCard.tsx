@@ -12,14 +12,17 @@ import {
   Button,
   ButtonText,
   ButtonIcon,
+  ButtonSpinner,
 } from '@ui';
 import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import { completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
+import { uploadFiles } from '../../../../../project-player/services/projectPlayerService';
 import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
 import type { MaterialItem, TrainingSessionItem } from '../../../../../types/supportOfferingsTypes';
 import SessionCompleteModal from '../modals/SessionCompleteModal';
+import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
 import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
 
@@ -51,7 +54,7 @@ const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
   if (deliveryMode === 'hybrid') {
     return {
       label: 'Hybrid',
-      icon: 'Users',
+      icon: 'MapPin',
       bg: '$purple50',
       border: '$purple200',
       color: '$purple600',
@@ -105,11 +108,40 @@ const getStatusColors = (status: string) => {
 };
 
 const formatResourceName = (file: MaterialItem) => {
+  if (file.size) {
+    const sizeStr = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${file.name} (${sizeStr})`;
+  }
   const match = file.info?.match(/(\d+(?:\.\d+)?\s*(?:MB|KB|GB|B))/i);
   if (match && !file.name.includes(match[1])) {
     return `${file.name} (${match[1]})`;
   }
-  return file.name;
+  return file.name || 'File';
+};
+
+const uploadFile = async (file: any) => {
+  const entityId = `trainingSession-${Date.now()}`;
+
+  const uploaded = await uploadFiles(entityId, [
+    { ...file, size: file.size ?? 0 },
+  ]);
+
+  const url = uploaded?.data?.[0]?.url;
+
+  if (!url) {
+    throw new Error(`Failed to upload file: ${file.name}`);
+  }
+
+  const data = uploaded?.data?.[0];
+  const [f, s] = data?.type?.split('/') || [];
+
+  return {
+    name: data?.name,
+    link: data?.url,
+    sourcePath: data?.sourcePath,
+    type: s || f,
+    size: data?.size,
+  };
 };
 
 // ---------- Card ----------
@@ -128,11 +160,21 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const [files, setFiles] = useState<MaterialItem[]>(initialItem.materials || []);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isAttendanceConfirmed, setIsAttendanceConfirmed] = useState<boolean>(() => {
+    const raw = initialItem as any;
+    if (raw.is_attendance_confirmed || raw.attendance_confirmed) return true;
+    const initialExpected = initialItem.seats_limit || 0;
+    const initialRemaining = initialItem.seats_remaining;
+    if (
+      (initialItem.status === 'Completed' || initialItem.status === 'COMPLETED') &&
+      initialRemaining !== undefined &&
+      initialExpected - initialRemaining > 0
+    ) {
+      return true;
+    }
+    return false;
+  });
 
-  useEffect(() => {
-    setItem(initialItem);
-    setFiles(initialItem.materials || []);
-  }, [initialItem]);
 
   const displayDate = item.start_date
     ? moment(
@@ -207,11 +249,17 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const expectedParticipants = item.seats_limit || 0;
   const confirmedPresent =
     (item.seats_limit || 0) - (item.seats_remaining || 0);
-  const participantsDisplay = `${confirmedPresent} / ${expectedParticipants}`;
+  const participantsDisplay = `${confirmedPresent} / ${expectedParticipants} participants`;
 
-  // Location & Link from meeting_info
-  const locationValue = item.meeting_info?.location || '';
-  const linkValue = item.meeting_info?.link || '';
+  // Location & Link dynamically from meeting_info_details or meeting_info
+  const locationValue =
+    (item as any).meeting_info_details?.location ||
+    item.meeting_info?.location ||
+    '';
+  const linkValue =
+    (item as any).meeting_info_details?.link ||
+    item.meeting_info?.link ||
+    '';
 
   const orgName =
     (typeof item.organization === 'object'
@@ -223,7 +271,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const descriptionText = item.description || item.notes || '';
 
   const handleCopySession = () => {
-    navigation.navigate('form-training-session' as never, { type: FORM_MODE.COPY, id: item.id } as never);
+    (navigation as any).navigate('form-training-session', { type: FORM_MODE.COPY, id: item.id });
   };
 
   /*
@@ -241,12 +289,17 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
         mentees: selectedParticipantIds,
       });
 
+      const hasMarkedAttendance = selectedParticipantIds.length > 0;
+      setIsAttendanceConfirmed(hasMarkedAttendance);
+
       setItem((prev) => {
         const prevLimit = prev.seats_limit || 0;
         return {
           ...prev,
           status: 'Completed',
-          seats_remaining: Math.max(0, prevLimit - selectedParticipantIds.length),
+          seats_remaining: hasMarkedAttendance
+            ? Math.max(0, prevLimit - selectedParticipantIds.length)
+            : prev.seats_remaining,
           completionNotes:
             prev.completionNotes ||
             t(
@@ -276,7 +329,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   };
 
   /*
-   * Keep upload functionality
+   * Upload functionality via uploadFiles API
    */
   const handleUploadPress = async () => {
     try {
@@ -291,33 +344,10 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
       if (!selectedFiles || selectedFiles.length === 0) return;
 
-      const newMaterials: MaterialItem[] = selectedFiles.map((file) => {
-        const name =
-          file.name || file.fileName || 'Untitled File';
+      const uploadPromises = selectedFiles.map((file) => uploadFile(file));
+      const uploadedResults = await Promise.all(uploadPromises);
 
-        const sizeBytes =
-          file.size || file.fileSize || 0;
-
-        const sizeStr =
-          sizeBytes > 0
-            ? `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
-            : 'Unknown size';
-
-        const ext =
-          name.split('.').pop()?.toUpperCase() || 'FILE';
-
-        const dateStr = new Date()
-          .toISOString()
-          .split('T')[0]
-          .replace(/-/g, '/');
-
-        return {
-          name,
-          info: `${ext} • ${sizeStr} • Uploaded ${dateStr}`,
-        };
-      });
-
-      setFiles((prev) => [...prev, ...newMaterials]);
+      setFiles((prev) => [...prev, ...uploadedResults]);
 
       showAlert(
         'success',
@@ -325,122 +355,88 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
           'supportProvider.supportOfferings.cards.alerts.materialUploaded'
         )
       );
-    } catch (err) {
-      // User cancelled picker or error occurred
+    } catch (err: any) {
+      console.error('Error uploading material:', err);
+      showAlert(
+        'error',
+        err?.message || 'Failed to upload file. Please try again.'
+      );
     }
   };
+
+  useEffect(() => {
+    setItem(initialItem);
+    setFiles(initialItem.materials || []);
+    const raw = initialItem as any;
+    const isConf =
+      !!raw.is_attendance_confirmed ||
+      !!raw.attendance_confirmed ||
+      ((initialItem.status === 'Completed' || initialItem.status === 'COMPLETED') &&
+        initialItem.seats_remaining !== undefined &&
+        initialItem.seats_limit !== undefined &&
+        initialItem.seats_limit - initialItem.seats_remaining > 0);
+    setIsAttendanceConfirmed(isConf);
+  }, [initialItem]);
 
   return (
     <Box {...styles.cardContainer}>
       <VStack {...styles.cardFullVStack}>
-
-        {/* =========================
-            ROW 1 - TITLE & BADGES
-        ========================== */}
-
+        {/* ROW 1 - TITLE & BADGES */}
         <HStack {...styles.headerTopHStack}>
           <HStack {...styles.headerTitleBadgeHStack}>
-            <Text {...styles.cardHeaderTitleText}>
-              {item.title}
-            </Text>
+            <Text {...styles.cardHeaderTitleText}>{item.title}</Text>
 
-            <Badge
-              {...styles.badgeContainer(
-                statusColors.bg,
-                statusColors.border
-              )}
-            >
+            <Badge {...styles.badgeContainer(statusColors.bg, statusColors.border)}>
               <HStack {...styles.badgeContentHStack}>
-                <LucideIcon
-                  name={statusColors.icon}
-                  {...styles.badgeIconProps(
-                    statusColors.text
-                  )}
-                />
-
-                <BadgeText
-                  {...styles.badgeText(
-                    statusColors.text
-                  )}
-                >
-                  {currentStatus}
-                </BadgeText>
+                <LucideIcon name={statusColors.icon} {...styles.badgeIconProps(statusColors.text)} />
+                <BadgeText {...styles.badgeText(statusColors.text)}>{currentStatus}</BadgeText>
               </HStack>
             </Badge>
           </HStack>
 
-          <Badge
-            {...styles.deliveryBadgeContainer(
-              deliveryBadge.bg,
-              deliveryBadge.border
-            )}
-          >
+          <Badge {...styles.deliveryBadgeContainer(deliveryBadge.bg, deliveryBadge.border)}>
             <HStack {...styles.badgeContentHStack}>
-              <LucideIcon
-                name={deliveryBadge.icon}
-                {...styles.badgeIconProps(
-                  deliveryBadge.color
-                )}
-              />
-
-              <BadgeText
-                {...styles.deliveryBadgeText(
-                  deliveryBadge.color
-                )}
-              >
-                {deliveryBadge.label}
-              </BadgeText>
+              <LucideIcon name={deliveryBadge.icon} {...styles.badgeIconProps(deliveryBadge.color)} />
+              <BadgeText {...styles.deliveryBadgeText(deliveryBadge.color)}>{deliveryBadge.label}</BadgeText>
             </HStack>
           </Badge>
         </HStack>
 
-        {/* =========================
-            ROW 2 - METADATA
-        ========================== */}
-
+        {/* ROW 2 - METADATA */}
         <HStack {...styles.headerMetaHStack}>
-
           <HStack {...styles.trainingMetaItemHStack}>
-            <LucideIcon
-              name="Calendar"
-              {...styles.cardMetaIconProps}
-            />
-
-            <Text {...styles.cardMetaSmText}>
-              {dateTime}
-            </Text>
+            <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
+            <Text {...styles.cardMetaSmText}>{dateTime}</Text>
           </HStack>
 
           {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
             <HStack {...styles.trainingMetaItemHStack}>
-              <LucideIcon
-                name="MapPin"
-                {...styles.cardMetaIconProps}
-              />
-
-              <Text {...styles.cardMetaSmText}>
-                {locationValue || '-'}
-              </Text>
+              <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
+              <Text {...styles.cardMetaSmText}>{locationValue || '-'}</Text>
             </HStack>
           )}
 
+          {(deliveryMode === 'online' || deliveryMode === 'hybrid') && (
+            <Pressable
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                if (linkValue) openExternalLink(linkValue);
+              }}
+            >
+              <HStack {...styles.trainingMetaItemHStack}>
+                <LucideIcon name="Video" {...styles.cardMetaIconProps} />
+                <Text {...styles.headerLinkText}>{linkValue || '-'}</Text>
+              </HStack>
+            </Pressable>
+          )}
+
           <HStack {...styles.trainingMetaItemHStack}>
-            <LucideIcon
-              name="Users"
-              {...styles.cardMetaIconProps}
-            />
-
-            <Text {...styles.cardMetaSmText}>
-              {participantsDisplay}
-            </Text>
+            <LucideIcon name="Users" {...styles.cardMetaIconProps} />
+            <Text {...styles.cardMetaSmText}>{participantsDisplay}</Text>
           </HStack>
-
         </HStack>
 
-        {/* =========================
-            ROW 3 - NOTES / DESCRIPTION
-        ========================== */}
-
+        {/* ROW 3 - NOTES / DESCRIPTION */}
         {descriptionText ? (
           <Box {...styles.notesBox}>
             <Text {...styles.notesText} numberOfLines={2} ellipsizeMode="tail">
@@ -449,285 +445,128 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
           </Box>
         ) : null}
 
-        {/* =========================
-            ROW 4 - PROVIDER + ACTIONS
-        ========================== */}
-
+        {/* ROW 4 - ACTIONS */}
         <HStack {...styles.requestedByRowHStack}>
-
           {/* <Text {...styles.cardRequestedByText}>
-            {t(
-              'supportProvider.supportOfferings.cards.providedBy',
-              'Provided by:'
-            )}{' '}
+            {t('supportProvider.supportOfferings.cards.providedBy','Provided by:')}{' '}
+            <Text {...styles.cardRequestedByOrgText}>{orgName}</Text>
+            {provinceName ? (<Text {...styles.cardRequestedByProvinceText}>{` • ${provinceName}`}</Text>) : null}</Text> */}
 
-            <Text {...styles.cardRequestedByOrgText}>
-              {orgName}
-            </Text>
-
-            {provinceName ? (
-              <Text {...styles.cardRequestedByProvinceText}>
-                {` • ${provinceName}`}
-              </Text>
-            ) : null}
-          </Text> */}
-
-          <HStack
-            {...styles.badgeContentHStack}
-          >
-
+          <HStack {...styles.badgeContentHStack}>
             {/* DRAFT */}
             {currentStatus === 'Draft' ? (
               <>
-                <Button
-                  variant="outline"
-                  {...styles.outlineActionBtn}
-                  onPress={() => {
-                    (navigation as any).navigate(
-                      'form-training-session',
-                      {
-                        sessionId: item.id,
-                        type: FORM_MODE.EDIT,
-                      }
-                    );
-                  }}
-                >
-                  <ButtonText
-                    {...styles.outlineActionBtnText}
-                  >
-                    {t('common.edit', 'Edit')}
-                  </ButtonText>
+                <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { sessionId: item.id, type: FORM_MODE.EDIT, }); }}>
+                  <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
                 </Button>
 
-                <Button
-                  variant="solid"
-                  {...styles.detailsBtn}
-                  onPress={() =>
-                    setIsExpanded((prev) => !prev)
-                  }
-                >
-                  <ButtonText
-                    {...styles.detailsBtnText}
-                  >
+                {canCopy && (
+                  <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
+                    <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
+                    <ButtonText {...styles.outlineActionBtnText}>
+                      {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
+                    </ButtonText>
+                  </Button>
+                )}
+
+                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
+                  <ButtonText {...styles.detailsBtnText}>
                     {isExpanded
-                      ? t(
-                        'supportProvider.supportOfferings.cards.hideDetails',
-                        'Hide Details'
-                      )
-                      : t(
-                        'supportProvider.supportOfferings.cards.viewDetails',
-                        'View Details'
-                      )}
+                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
                   </ButtonText>
                 </Button>
               </>
             ) : currentStatus === 'In progress' ? (
-
               /* IN PROGRESS */
               <>
-                <Button
-                  variant="solid"
-                  {...styles.completeActionBtn}
-                  onPress={() =>
-                    setIsCompleteModalOpen(true)
-                  }
-                  disabled={isCompleting}
-                >
-                  <ButtonIcon
-                    as={LucideIcon}
-                    name="CheckCircle"
-                    {...styles.cardWhiteIconProps}
-                  />
-
-                  <ButtonText
-                    {...styles.completeActionBtnText}
-                  >
-                    {t(
-                      'supportProvider.supportOfferings.cards.complete',
-                      'Complete'
-                    )}
+                <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
+                  <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
+                  <ButtonText {...styles.completeActionBtnText}>
+                    {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
                   </ButtonText>
                 </Button>
 
-                <Button
-                  variant="solid"
-                  {...styles.detailsBtn}
-                  onPress={() =>
-                    setIsExpanded((prev) => !prev)
-                  }
-                >
-                  <ButtonText
-                    {...styles.detailsBtnText}
-                  >
+                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
+                  <ButtonText {...styles.detailsBtnText}>
                     {isExpanded
-                      ? t(
-                        'supportProvider.supportOfferings.cards.hideDetails',
-                        'Hide Details'
-                      )
-                      : t(
-                        'supportProvider.supportOfferings.cards.viewDetails',
-                        'View Details'
-                      )}
+                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
                   </ButtonText>
                 </Button>
               </>
-
             ) : (
-
               /* UPCOMING / COMPLETED */
               <>
                 {canCopy && (
-                  <Button
-                    variant="outlineghost"
-                    {...styles.outlineActionBtn}
-                    onPress={handleCopySession}
-                  >
-                    <ButtonIcon
-                      as={LucideIcon}
-                      name="Copy"
-                      {...styles.cardCopyIconProps}
-                    />
-
-                    <ButtonText
-                      {...styles.outlineActionBtnText}
-                    >
-                      {t(
-                        'supportProvider.supportOfferings.cards.copySession',
-                        'Copy Session'
-                      )}
+                  <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
+                    <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
+                    <ButtonText {...styles.outlineActionBtnText}>
+                      {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
                     </ButtonText>
                   </Button>
                 )}
 
-                {deliveryMode === 'hybrid' && (
-                  <Button
-                    variant="solid"
-                    {...styles.confirmAttendanceBtn}
-                    onPress={() => setIsCompleteModalOpen(true)}
-                  >
-                    <ButtonText {...styles.confirmAttendanceBtnText}>
-                      {t(
-                        'supportProvider.supportOfferings.cards.confirmAttendance',
-                        'Confirm Attendance'
-                      )}
+                {currentStatus === 'Completed' && !isAttendanceConfirmed && (
+                  <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
+                    <ButtonText {...styles.outlineActionBtnText}>
+                      {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
                     </ButtonText>
                   </Button>
                 )}
 
-                <Button
-                  variant="solid"
-                  {...styles.detailsBtn}
-                  onPress={() =>
-                    setIsExpanded((prev) => !prev)
-                  }
-                >
-                  <ButtonText
-                    {...styles.detailsBtnText}
-                  >
+                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
+                  <ButtonText {...styles.detailsBtnText}>
                     {isExpanded
-                      ? t(
-                        'supportProvider.supportOfferings.cards.hideDetails',
-                        'Hide Details'
-                      )
-                      : t(
-                        'supportProvider.supportOfferings.cards.viewDetails',
-                        'View Details'
-                      )}
+                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
                   </ButtonText>
                 </Button>
               </>
             )}
-
           </HStack>
         </HStack>
 
-        {/* =========================
-            ACCORDION CONTENT
-        ========================== */}
-
+        {/* ACCORDION CONTENT */}
         {isExpanded && (
           <VStack {...styles.expandedContentVStack}>
-
             {/* LOCATION / LINK */}
+            <VStack {...styles.sectionVStack}>
+              <Text {...styles.cardSectionTitleText}>
+                {deliveryMode === 'online'
+                  ? t('supportProvider.supportOfferings.cards.link', 'Link')
+                  : t('supportProvider.supportOfferings.cards.location', 'Location')}
+              </Text>
 
-            {(deliveryMode === 'offline' ||
-              deliveryMode === 'hybrid' ||
-              (deliveryMode === 'online' && linkValue)) && (
-                <VStack {...styles.sectionVStack}>
-
-                  <Text {...styles.cardSectionTitleText}>
-                    {t(
-                      'supportProvider.supportOfferings.cards.location',
-                      'Location'
-                    )}
-                  </Text>
-
-                  {/* Link: Online or Hybrid */}
-                  {(deliveryMode === 'online' || deliveryMode === 'hybrid') &&
-                    linkValue ? (
-                    <HStack {...styles.virtualLinkHStack}>
-                      <LucideIcon
-                        name="Video"
-                        {...styles.cardPrimaryIconProps}
-                      />
-
-                      <Text {...styles.cardPrimaryLinkText}>
-                        {linkValue}
-                      </Text>
-                    </HStack>
-                  ) : null}
-
-                  {/* Physical Location: Offline or Hybrid */}
-                  {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
-                    <HStack {...styles.virtualLinkHStack}>
-                      <LucideIcon
-                        name="MapPin"
-                        {...styles.cardMetaIconProps}
-                      />
-
-                      <Text {...styles.cardLocationValueText}>
-                        {locationValue || '-'}
-                      </Text>
-                    </HStack>
-                  )}
-
-                </VStack>
+              {(deliveryMode === 'online' || deliveryMode === 'hybrid') && (
+                <Pressable onPress={(e) => { e?.stopPropagation?.(); if (linkValue) openExternalLink(linkValue); }}  >
+                  <HStack {...styles.virtualLinkHStack}>
+                    <LucideIcon name="Video" {...styles.cardPrimaryIconProps} />
+                    <Text {...styles.cardPrimaryLinkText}>{linkValue || '-'}</Text>
+                  </HStack>
+                </Pressable>
               )}
 
-            {/* =========================
-                ATTENDANCE
-            ========================== */}
+              {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
+                <HStack {...styles.virtualLinkHStack}>
+                  <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
+                  <Text {...styles.cardLocationValueText}>{locationValue || '-'}</Text>
+                </HStack>
+              )}
+            </VStack>
 
+            {/* ATTENDANCE */}
             <VStack {...styles.sectionVStack}>
-
-              <HStack
-                justifyContent="space-between"
-                alignItems="center"
-                width="100%"
-              >
+              <HStack justifyContent="space-between" alignItems="center" width="100%">
                 <Text {...styles.cardSectionTitleText}>
-                  {t(
-                    'supportProvider.supportOfferings.cards.attendance',
-                    'Attendance'
-                  )}
+                  {t('supportProvider.supportOfferings.cards.attendance', 'Attendance')}
                 </Text>
 
-                {deliveryMode === 'hybrid' && (
-                  <Button
-                    variant="solid"
-                    {...styles.confirmAttendanceBtn}
-                    onPress={() => setIsCompleteModalOpen(true)}
-                  >
-                    <ButtonIcon
-                      as={LucideIcon}
-                      name="Check"
-                      {...styles.cardWhiteIconProps}
-                    />
+                {currentStatus === 'Completed' && !isAttendanceConfirmed && (
+                  <Button variant="solid"  {...styles.confirmAttendanceBtn} onPress={() => setIsCompleteModalOpen(true)}  >
+                    <ButtonIcon as={LucideIcon} name="Check" {...styles.cardWhiteIconProps} />
                     <ButtonText {...styles.confirmAttendanceBtnText}>
-                      {t(
-                        'supportProvider.supportOfferings.cards.confirmAttendance',
-                        'Confirm Attendance'
-                      )}
+                      {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
                     </ButtonText>
                   </Button>
                 )}
@@ -735,274 +574,90 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
               <Box {...styles.attendanceBox}>
                 <HStack {...styles.attendanceRowHStack}>
-
-                  <VStack
-                    {...styles.attendanceItemVStack}
-                  >
-                    <Text {...styles.cardMetaText}>
-                      {t(
-                        'supportProvider.supportOfferings.cards.expectedParticipants',
-                        'Expected Participants'
-                      )}
+                  <VStack {...styles.attendanceItemVStack}>
+                    <Text {...styles.attendanceLabelText}>
+                      {t('supportProvider.supportOfferings.cards.expectedParticipants', 'Expected Participants')}
                     </Text>
-
-                    <Text
-                      {...styles.cardValueBoldText}
-                    >
-                      {expectedParticipants}
-                    </Text>
+                    <Text {...styles.cardValueBoldText}>{expectedParticipants}</Text>
                   </VStack>
 
-                  <VStack
-                    {...styles.attendanceItemVStack}
-                  >
-                    <Text {...styles.cardMetaText}>
-                      {t(
-                        'supportProvider.supportOfferings.cards.confirmedPresent',
-                        'Confirmed Present'
-                      )}
+                  <VStack {...styles.attendanceItemVStack}>
+                    <Text {...styles.attendanceLabelText}>
+                      {t('supportProvider.supportOfferings.cards.confirmedPresent', 'Confirmed Present')}
                     </Text>
 
-                    {currentStatus === 'Completed' ? (
-                      <HStack
-                        {...styles.badgeContentHStack}
-                      >
-                        <Text
-                          {...styles.cardSuccessBoldText}
-                        >
-                          {confirmedPresent}
-                        </Text>
-
-                        <LucideIcon
-                          name="CheckCircle"
-                          {...styles.cardSuccessIconProps}
-                        />
+                    {confirmedPresent > 0 ? (
+                      <HStack {...styles.badgeContentHStack}>
+                        <Text {...styles.cardSuccessBoldText}>{confirmedPresent}</Text>
+                        <LucideIcon name="CheckCircle" {...styles.cardSuccessIconProps} />
                       </HStack>
                     ) : (
                       <Text {...styles.cardMetaSmText}>
-                        {confirmedPresent > 0
-                          ? confirmedPresent
-                          : currentStatus === 'In progress'
-                            ? '--'
-                            : t(
-                              'supportProvider.supportOfferings.cards.notConfirmed',
-                              'Not Confirmed'
-                            )}
+                        {t('supportProvider.supportOfferings.cards.notConfirmed', 'Not Confirmed')}
                       </Text>
                     )}
                   </VStack>
-
                 </HStack>
               </Box>
             </VStack>
 
-            {/* =========================
-                SESSION RESOURCES
-            ========================== */}
-
-            {files.length > 0 && (
+            {/* SESSION MATERIALS */}
+            {(currentStatus !== 'Completed' || files.length > 0) && (
               <VStack {...styles.sectionVStack}>
+                <HStack {...styles.materialsHeaderHStack}>
+                  <Text {...styles.cardSectionTitleText}>
+                    {t('supportProvider.supportOfferings.cards.sessionMaterials', 'Session Materials')}
+                  </Text>
 
-                <Text {...styles.cardSectionTitleText}>
-                  {t(
-                    'supportProvider.supportOfferings.cards.sessionResources',
-                    'Session Resources'
-                  )}
-                </Text>
-
-                <VStack {...styles.filesListVStack}>
-                  {files.map((file, idx) => (
-                    <Box
-                      key={idx}
-                      {...styles.resourceCard}
-                    >
-                      <HStack
-                        {...styles.fileCardOuterHStack}
-                      >
-
-                        <HStack
-                          {...styles.fileCardInnerHStack}
-                        >
-                          <LucideIcon
-                            name="FileText"
-                            {...styles.cardFileTextIconProps}
-                          />
-
-                          <Text
-                            {...styles.resourceFileNameText}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {formatResourceName(file)}
-                          </Text>
-                        </HStack>
-
-                        <Pressable
-                          onPress={() =>
-                            showAlert(
-                              'info',
-                              t(
-                                'supportProvider.supportOfferings.cards.alerts.downloading',
-                                {
-                                  name: file.name,
-                                }
-                              )
-                            )
-                          }
-                          {...styles.iconPressablePadding}
-                        >
-                          <HStack
-                            {...styles.badgeContentHStack}
-                          >
-                            <LucideIcon
-                              name="Download"
-                              {...styles.cardPrimaryIconProps}
-                            />
-
-                            <Text
-                              {...styles.downloadLinkText}
-                            >
-                              {t(
-                                'common.download',
-                                'Download'
-                              )}
-                            </Text>
-                          </HStack>
-                        </Pressable>
-
+                  {currentStatus !== 'Completed' && (
+                    <Pressable {...styles.uploadMaterialBtn} onPress={handleUploadPress}>
+                      <HStack {...styles.badgeContentHStack}>
+                        <LucideIcon name="Upload" {...styles.cardMetaIconProps} />
+                        <Text {...styles.cardMetaText} fontWeight="$bold">
+                          {t('supportProvider.supportOfferings.cards.uploadMaterial', 'Upload Material')}
+                        </Text>
                       </HStack>
-                    </Box>
-                  ))}
-                </VStack>
-              </VStack>
-            )}
-
-            {/* =========================
-                COMPLETION / SESSION NOTES
-            ========================== */}
-
-            {(currentStatus === 'Completed'
-              ? item.completionNotes || item.notes || item.description
-              : item.notes || item.description) && (
-                <VStack {...styles.sectionVStack}>
-
-                  <Text {...styles.cardSectionTitleText}>
-                    {currentStatus === 'Completed'
-                      ? t(
-                        'supportProvider.supportOfferings.cards.completionNotes',
-                        'Completion Notes'
-                      )
-                      : t(
-                        'supportProvider.supportOfferings.cards.sessionNotes',
-                        'Session Notes'
-                      )}
-                  </Text>
-
-                  <Box {...styles.notesBox}>
-                    <Text
-                      {...styles.cardDescriptionText}
-                    >
-                      {currentStatus === 'Completed'
-                        ? item.completionNotes || item.notes || item.description
-                        : item.notes || item.description}
-                    </Text>
-                  </Box>
-
-                </VStack>
-              )}
-
-            {/* =========================
-                UPLOAD MATERIAL
-            ========================== */}
-
-            {currentStatus !== 'Completed' && (
-              <VStack {...styles.sectionVStack}>
-
-                <HStack
-                  {...styles.materialsHeaderHStack}
-                >
-                  <Text {...styles.cardSectionTitleText}>
-                    {t(
-                      'supportProvider.supportOfferings.cards.sessionMaterials',
-                      'Session Materials'
-                    )}
-                  </Text>
-
-                  <Pressable
-                    {...styles.uploadMaterialBtn}
-                    onPress={handleUploadPress}
-                  >
-                    <HStack
-                      {...styles.badgeContentHStack}
-                    >
-                      <LucideIcon
-                        name="Upload"
-                        {...styles.cardMetaIconProps}
-                      />
-
-                      <Text
-                        {...styles.cardMetaText}
-                        fontWeight="$bold"
-                      >
-                        {t(
-                          'supportProvider.supportOfferings.cards.uploadMaterial',
-                          'Upload Material'
-                        )}
-                      </Text>
-                    </HStack>
-                  </Pressable>
+                    </Pressable>
+                  )}
                 </HStack>
 
+                {files.length > 0 && (
+                  <VStack {...styles.filesListVStack}>
+                    {files.map((file, idx) => (
+                      <Box key={idx} {...styles.resourceCard}>
+                        <HStack {...styles.fileCardOuterHStack}>
+                          <HStack {...styles.fileCardInnerHStack}>
+                            <LucideIcon name="FileText" {...styles.cardFileTextIconProps} />
+                            <Text {...styles.resourceFileNameText} numberOfLines={1} ellipsizeMode="tail">
+                              {formatResourceName(file)}
+                            </Text>
+                          </HStack>
+
+                          <Pressable onPress={() => showAlert('info', t('supportProvider.supportOfferings.cards.alerts.downloading', { name: file.name }))}  {...styles.iconPressablePadding}>
+                            <HStack {...styles.badgeContentHStack}>
+                              <LucideIcon name="Download" {...styles.cardPrimaryIconProps} />
+                              <Text {...styles.downloadLinkText}>{t('common.download', 'Download')}</Text>
+                            </HStack>
+                          </Pressable>
+                        </HStack>
+                      </Box>
+                    ))}
+                  </VStack>
+                )}
               </VStack>
             )}
-
-            {/* =========================
-                SESSION COMPLETE
-            ========================== */}
-
-            {currentStatus === 'In progress' && (
-              <HStack {...styles.sessionCompleteHStack}>
-                <Button
-                  variant="solid"
-                  {...styles.completeActionBtn}
-                  onPress={() => setIsCompleteModalOpen(true)}
-                  disabled={isCompleting}
-                >
-                  <ButtonIcon
-                    as={LucideIcon}
-                    name="CheckCircle"
-                    {...styles.cardWhiteIconProps}
-                  />
-
-                  <ButtonText {...styles.completeActionBtnText}>
-                    {t(
-                      'supportProvider.supportOfferings.cards.complete',
-                      'Complete'
-                    )}
-                  </ButtonText>
-                </Button>
-              </HStack>
-            )}
-
           </VStack>
         )}
       </VStack>
 
-      {/* =========================
-          SESSION COMPLETE MODAL
-      ========================== */}
-
+      {/* SESSION COMPLETE MODAL */}
       <SessionCompleteModal
         isOpen={isCompleteModalOpen}
-        onClose={() =>
-          setIsCompleteModalOpen(false)
-        }
+        onClose={() => setIsCompleteModalOpen(false)}
         sessionTitle={item.title}
         expectedParticipantsCount={expectedParticipants}
         initialParticipants={item.participantList}
-        onConfirmComplete={
-          handleConfirmSessionComplete
-        }
+        onConfirmComplete={handleConfirmSessionComplete}
       />
     </Box>
   );
@@ -1014,12 +669,14 @@ interface TrainingCardProps {
   items: TrainingSessionItem[];
   isShowLoadMore: boolean;
   onLoadMoreItems: () => void;
+  isLoadingMore?: boolean;
 }
 
 export default function TrainingCard({
   items = [],
   isShowLoadMore,
   onLoadMoreItems,
+  isLoadingMore = false,
 }: TrainingCardProps): React.ReactElement {
   const { t } = useLanguage();
 
@@ -1030,10 +687,11 @@ export default function TrainingCard({
       ))}
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">
-          <Button onPress={onLoadMoreItems}>
+          <Button onPress={onLoadMoreItems} disabled={isLoadingMore}>
             <ButtonText>
               {t('supportProvider.supportOfferings.buttonTexts.loadMoreSessions', 'Load More Sessions')}
             </ButtonText>
+            {isLoadingMore && <ButtonSpinner mr="$2" color="$white" />}
           </Button>
         </Box>
       )}

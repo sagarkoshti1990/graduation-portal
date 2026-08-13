@@ -335,6 +335,7 @@ export default {
     borderRadius: '$lg',
     width: '100%' as const,
     marginTop: '$1' as const,
+    marginBottom: '$0.5' as const,
   } as const,
   notesText: {
     fontSize: '$sm',
@@ -393,6 +394,7 @@ export default {
     fontWeight: '$bold' as const,
     color: '$textPrimary' as const,
     marginTop: '$1' as const,
+    space: 'md' as const,
   } as const,
   cardValueBoldText: {
     fontSize: '$sm' as const,
@@ -410,9 +412,25 @@ export default {
     color: '$success600' as const,
   } as const,
   cardPrimaryLinkText: {
-    fontSize: '$xs' as const,
+    fontSize: 12 as const,
     color: '$blue600' as const,
-    textDecorationLine: 'underline' as const,
+    textDecorationLine: 'none' as const,
+    sx: {
+      ':hover': {
+        textDecorationLine: 'underline' as const,
+      },
+    },
+  } as const,
+  headerLinkText: {
+    fontSize: 12 as const,
+    color: '$textSecondary' as const,
+    textDecorationLine: 'none' as const,
+    sx: {
+      ':hover': {
+        color: '$blue600' as const,
+        textDecorationLine: 'underline' as const,
+      },
+    },
   } as const,
   cardBtnSecondaryText: {
     fontSize: '$xs' as const,
@@ -438,14 +456,12 @@ export default {
     bg,
     borderWidth: 1,
     borderColor: border || 'transparent',
-    paddingTop: 1 as const,
-    paddingBottom: 1 as const,
     paddingLeft: 8 as const,
     paddingRight: 8 as const,
     borderRadius: '$full' as const,
   }),
   badgeText: (color: string) => ({
-    fontSize: 11 as const,
+    fontSize: 12 as const,
     color,
     fontWeight: '$medium' as const,
     textTransform: 'none' as const,
@@ -454,14 +470,12 @@ export default {
     bg,
     borderWidth: 1,
     borderColor: border,
-    paddingTop: 2 as const,
-    paddingBottom: 2 as const,
     paddingLeft: 8 as const,
     paddingRight: 8 as const,
     borderRadius: '$full' as const,
   }),
   deliveryBadgeText: (color: string) => ({
-    fontSize: 11 as const,
+    fontSize: 12 as const,
     color,
     fontWeight: '$medium' as const,
     textTransform: 'none' as const,
@@ -591,15 +605,20 @@ export default {
   attendanceRowHStack: {
     justifyContent: 'flex-start' as const,
     alignItems: 'flex-start' as const,
-    space: '2xl' as const,
+    gap: 16,
     flexWrap: 'wrap' as const,
     width: '100%' as const,
-    marginTop: '$2' as const,
+    marginTop: '$0' as const,
   } as const,
   attendanceItemVStack: {
     space: 'xs' as const,
     minWidth: 160,
-    marginTop: '$1' as const,
+    marginTop: '$0' as const,
+  } as const,
+  attendanceLabelText: {
+    fontSize: 12 as const,
+    color: '$textSecondary' as const,
+    fontWeight: '$normal' as const,
   } as const,
   materialsHeaderHStack: {
     justifyContent: 'space-between' as const,

@@ -10,11 +10,7 @@ import TrainingCard from './components/Cards/TrainingCard';
 import AdditionalServicesCard from './components/Cards/AdditionalServicesCard';
 import AssetCard from './components/Cards/AssetCard';
 import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
-import {
-  getTrainingSessions,
-  getAdditionalServices,
-  getAssets,
-} from '../../../services/SupportOfferingsServices/supportOfferingsService';
+import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
 
 export const STATUS_OPTIONS = [
@@ -40,13 +36,9 @@ export const STATUS_OPTIONS = [
   },
 ];
 
-const DEFAULT_PROVINCE_OPTIONS = [
-  { label: 'All Provinces', value: 'all-provinces' },
-];
+const DEFAULT_PROVINCE_OPTIONS = [{ label: 'All Provinces', value: 'all-provinces' }];
 
-const DEFAULT_SITE_OPTIONS = [
-  { label: 'All Sites', value: 'all-sites' },
-];
+const DEFAULT_SITE_OPTIONS = [{ label: 'All Sites', value: 'all-sites' },];
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -54,10 +46,8 @@ const App = (): React.JSX.Element => {
   const [activeTab, setActiveTab] = useState('sessions');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
-
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
   const [siteOptions, setSiteOptions] = useState(DEFAULT_SITE_OPTIONS);
-
   // Listing state
   const [items, setItems] = useState<any[]>([]);
   const [page, setPage] = useState<number>(1);
@@ -70,32 +60,46 @@ const App = (): React.JSX.Element => {
     assets: 0,
   });
 
-  // Fetch counts dynamically for each tab category
-  useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        const [sessionsData, servicesData, assetsData] = await Promise.all([
-          getTrainingSessions({}),
-          getAdditionalServices({}),
-          getAssets({}),
-        ]);
-
-        setCounts({
-          sessions: sessionsData?.result?.count ?? sessionsData?.total ?? sessionsData?.result?.data?.length ?? 0,
-          additional_services: (servicesData as any)?.result?.count ?? (servicesData as any)?.total ?? (Array.isArray(servicesData) ? servicesData.length : 0),
-          assets: (assetsData as any)?.result?.count ?? (assetsData as any)?.total ?? (Array.isArray(assetsData) ? assetsData.length : 0),
-        });
-      } catch (err) {
-        console.error('Error fetching tab counts:', err);
-      }
-    };
-    fetchCounts();
-  }, []);
-
   const tabs = [
     { key: 'sessions', label: 'Trainings & Sessions', count: counts.sessions, icon: 'GraduationCap' },
     { key: 'additional_services', label: 'Additional Services', count: counts.additional_services, icon: 'Briefcase' },
     { key: 'assets', label: 'Assets', count: counts.assets, icon: 'Box' },
+  ];
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+  };
+
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
+  };
+
+  const isShowLoadMore = items.length < total && items.length > 0;
+  const onLoadMoreItems = () => {
+    setPage((prevPage) => prevPage + 1);
+  };
+
+
+  const filterOptions = [
+    { type: 'search', attr: 'search', placeholderKey: 'admin.filters.searchOfferingsPlaceholder' },
+    {
+      type: 'select',
+      attr: 'status',
+      placeholder: 'All Statuses',
+      data: STATUS_OPTIONS,
+    },
+    {
+      type: 'select',
+      attr: 'province',
+      placeholder: 'All Provinces',
+      data: provinceOptions,
+    },
+    {
+      type: 'select',
+      attr: 'site',
+      placeholder: 'All Sites',
+      data: siteOptions,
+    },
   ];
 
   // Fetch dynamic provinces from API
@@ -260,43 +264,6 @@ const App = (): React.JSX.Element => {
     };
   }, [activeTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
 
-  const handleTabChange = (key: string) => {
-    setActiveTab(key);
-  };
-
-  const handleFilterChange = (newFilters: Record<string, any>) => {
-    setFilters(newFilters);
-  };
-
-  const isShowLoadMore = items.length < total && items.length > 0;
-
-  const onLoadMoreItems = () => {
-    setPage((prevPage) => prevPage + 1);
-  };
-
-
-  const filterOptions = [
-    { type: 'search', attr: 'search', placeholderKey: 'admin.filters.searchOfferingsPlaceholder' },
-    {
-      type: 'select',
-      attr: 'status',
-      placeholder: 'All Statuses',
-      data: STATUS_OPTIONS,
-    },
-    {
-      type: 'select',
-      attr: 'province',
-      placeholder: 'All Provinces',
-      data: provinceOptions,
-    },
-    {
-      type: 'select',
-      attr: 'site',
-      placeholder: 'All Sites',
-      data: siteOptions,
-    },
-  ];
-
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -345,6 +312,7 @@ const App = (): React.JSX.Element => {
               items={items}
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
+              isLoadingMore={_loading && page > 1}
             />
           )}
 
@@ -353,6 +321,7 @@ const App = (): React.JSX.Element => {
               items={items}
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
+              isLoadingMore={_loading && page > 1}
             />
           )}
 
@@ -361,6 +330,7 @@ const App = (): React.JSX.Element => {
               items={items}
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
+              isLoadingMore={_loading && page > 1}
             />
           )}
         </VStack>
