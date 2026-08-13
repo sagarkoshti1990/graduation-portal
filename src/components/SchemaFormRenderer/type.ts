@@ -38,7 +38,11 @@ export interface VisibleWhenFlag {
 
 export interface DisabledWhenCondition {
   field: string;
-  empty: boolean;
+  /** Disable when the referenced field's value is empty/absent. */
+  empty?: boolean;
+  /** Disable when the referenced field's value matches this, per `operator` (default `===`). */
+  value?: number | string | boolean;
+  operator?: VisibleIfOperator;
 }
 
 /** Comparison operator supported by a field's `visibleIf` conditions. */

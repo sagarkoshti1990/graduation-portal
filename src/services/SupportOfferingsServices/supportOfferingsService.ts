@@ -1,254 +1,157 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
-import supportOfferingsData from './mockData/supportOfferings.json';
-import {
-  TrainingSessionItem,
-  ServiceItem,
-  AssetItem,
-  FilterParams,
-} from '../../constants/SUPPORT_OFFERINGS_MOCK';
-
-
-const sessions: TrainingSessionItem[] = [...supportOfferingsData.mockTrainings] as TrainingSessionItem[];
+import type { ServiceItem, AssetItem, FilterParams } from '../../types/supportOfferingsTypes';
 
 /**
- * Helper to dynamically compute status based on session date vs current date
+ * Fetches the created mentoring sessions list from the backend for the Support Offerings screen.
  */
-export const getDynamicStatusFromDate = (
-  dateStr?: string
-): 'Upcoming' | 'In progress' | 'Completed' => {
-  if (!dateStr) return 'Upcoming';
-
-  const sessionDate = new Date(dateStr);
-  if (isNaN(sessionDate.getTime())) {
-    return 'Upcoming';
+const getSupportOfferingsList = async (
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    province?: string;
+    site?: string;
   }
+): Promise<any> => {
+  try {
+    const {
+      page,
+      limit,
+      status,
+      search,
+      province,
+      site,
+    } = params || {};
 
-  const today = new Date();
+    let apiStatus = '';
+    if (status === 'Draft') {
+      apiStatus = 'DRAFT';
+    } else if (status === 'Completed') {
+      apiStatus = 'COMPLETED';
+    } else if (status === 'Upcoming' || status === 'In progress') {
+      apiStatus = 'PUBLISHED';
+    } else if (status && status !== 'all-statuses') {
+      apiStatus = status.toUpperCase();
+    }
 
-  // Reset time portions for accurate day comparison
-  const sessionDay = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate());
-  const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const queryParams = new URLSearchParams();
 
-  if (sessionDay.getTime() > currentDay.getTime()) {
-    return 'Upcoming';
-  } else if (sessionDay.getTime() === currentDay.getTime()) {
-    return 'In progress';
-  } else {
-    return 'Completed';
+    if (page !== undefined && page !== null) {
+      queryParams.append('page', page.toString());
+    }
+
+    if (limit !== undefined && limit !== null) {
+      queryParams.append('limit', limit.toString());
+    }
+
+    if (apiStatus) {
+      queryParams.append('status', apiStatus);
+    }
+
+    if (search?.trim()) {
+      queryParams.append('search', search.trim());
+    }
+
+    if (province && province !== 'all-provinces') {
+      queryParams.append('province', province);
+    }
+
+    if (site && site !== 'all-sites') {
+      queryParams.append('site', site);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString
+      ? `${API_ENDPOINTS.SUPPORT_OFFERINGS_SESSIONS}?${queryString}`
+      : API_ENDPOINTS.SUPPORT_OFFERINGS_SESSIONS;
+
+    const response = await api.get(endpoint);
+
+    const data = response.data?.result?.data || [];
+    const totalCount =
+      response.data?.result?.count ??
+      response.data?.result?.total ??
+      response.data?.total ??
+      response.data?.count ??
+      data.length;
+
+    return {
+      ...response.data,
+      result: {
+        ...response.data?.result,
+        data,
+      },
+      total: totalCount,
+    };
+  } catch (error) {
+    console.error('Error fetching support offerings:', error);
+    throw error;
   }
 };
 
 /**
  * Fetch Training Sessions
  */
-export const getTrainingSessions = async (params: FilterParams): Promise<TrainingSessionItem[]> => {
+export const getTrainingSessions = async (
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    province?: string;
+    site?: string;
+  }
+): Promise<any> => {
+  let responseData: any = {
+    result: { data: [] },
+    total: 0,
+  };
+
   try {
-    if (API_ENDPOINTS && (API_ENDPOINTS as any).SUPPORT_OFFERINGS_SESSIONS) {
-      const response = await api.get((API_ENDPOINTS as any).SUPPORT_OFFERINGS_SESSIONS, { params });
-      if (response.data) {
-        return response.data.map((item: TrainingSessionItem) => ({
-          ...item,
-          status: item.date ? getDynamicStatusFromDate(item.date) : item.status,
-        }));
-      }
-    }
+    responseData = await getSupportOfferingsList(params);
   } catch (error) {
-    console.warn('Backend API endpoint unavailable, using local mock dataset for Training Sessions:', error);
-  }
-
-  const { searchQuery, statusFilter, provinceFilter, siteFilter, draftStatusFilter, provincesList = [], sitesList = [] } = params || {};
-
-  let list = sessions.map((item) => {
-    if (item.status === 'Draft') {
-      return item;
-    }
-    return {
-      ...item,
-      status: item.date ? getDynamicStatusFromDate(item.date) : item.status,
+    console.warn('Backend API endpoint unavailable for Training Sessions:', error);
+    responseData = {
+      result: { data: [] },
+      total: 0,
     };
-  });
-
-  if (searchQuery && searchQuery.trim() !== '') {
-    const q = searchQuery.toLowerCase().trim();
-    list = list.filter((item) => {
-      return (
-        item.title?.toLowerCase().includes(q) ||
-        item.requestedBy?.toLowerCase().includes(q) ||
-        item.location?.toLowerCase().includes(q) ||
-        item.notes?.toLowerCase().includes(q)
-      );
-    });
   }
 
-  if (provinceFilter && provinceFilter !== 'all-provinces') {
-    const selectedProvName = provincesList.find((p) => p._id === provinceFilter)?.name;
-    const targetProv = (selectedProvName || provinceFilter).toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemProv = (item.province || '').toLowerCase().replace(/[\s-_]/g, '');
-      const itemReq = (item.requestedBy || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemProv === targetProv || itemProv.includes(targetProv) || itemReq.includes(targetProv);
-    });
-  }
-
-  if (siteFilter && siteFilter !== 'all-sites') {
-    const selectedSiteName = sitesList.find((s) => s._id === siteFilter)?.name;
-    const targetSite = (selectedSiteName || siteFilter).toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemSite = (item.siteKey || '').toLowerCase().replace(/[\s-_]/g, '');
-      const itemReq = (item.requestedBy || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemSite === targetSite || itemSite.includes(targetSite) || itemReq.includes(targetSite);
-    });
-  }
-
-  if (statusFilter && statusFilter !== 'all-statuses') {
-    list = list.filter((item) => item.status === statusFilter);
-  }
-
-  if (draftStatusFilter === 'Draft') {
-    list = list.filter((item) => item.status === 'Draft');
-  } else if (draftStatusFilter === 'Published') {
-    list = list.filter((item) => item.status !== 'Draft');
-  }
-
-  return list;
+  return responseData;
 };
 
 /**
  * Fetch Additional Services
  */
-export const getAdditionalServices = async (params: FilterParams): Promise<ServiceItem[]> => {
-  try {
-    if (API_ENDPOINTS && (API_ENDPOINTS as any).SUPPORT_OFFERINGS_SERVICES) {
-      const response = await api.get((API_ENDPOINTS as any).SUPPORT_OFFERINGS_SERVICES, { params });
-      if (response.data) {
-        return response.data;
-      }
-    }
-  } catch (error) {
-    console.warn('Backend API endpoint unavailable, using local mock dataset for Additional Services:', error);
-  }
-
-  const { searchQuery, statusFilter, provinceFilter, siteFilter, provincesList = [], sitesList = [] } = params || {};
-
-  const rawServices = (supportOfferingsData.mockServices || []) as ServiceItem[];
-  let list = [...rawServices];
-
-  if (searchQuery && searchQuery.trim() !== '') {
-    const q = searchQuery.toLowerCase().trim();
-    list = list.filter((item) => {
-      return (
-        item.title?.toLowerCase().includes(q) ||
-        item.description?.toLowerCase().includes(q) ||
-        item.location?.toLowerCase().includes(q) ||
-        item.hubOffice?.toLowerCase().includes(q) ||
-        item.site?.toLowerCase().includes(q)
-      );
-    });
-  }
-
-  if (provinceFilter && provinceFilter !== 'all-provinces') {
-    const selectedProvName = provincesList.find((p) => p._id === provinceFilter)?.name;
-    const targetProv = (selectedProvName || provinceFilter).toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemProv = (item.province || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemProv === targetProv || itemProv.includes(targetProv);
-    });
-  }
-
-  if (siteFilter && siteFilter !== 'all-sites') {
-    const selectedSiteName = sitesList.find((s) => s._id === siteFilter)?.name;
-    const targetSite = (selectedSiteName || siteFilter).toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemSiteKey = (item.siteKey || '').toLowerCase().replace(/[\s-_]/g, '');
-      const itemSite = (item.site || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemSiteKey === targetSite || itemSiteKey.includes(targetSite) || itemSite.includes(targetSite);
-    });
-  }
-
-  if (statusFilter && statusFilter !== 'all-statuses') {
-    list = list.filter((item) => item.status === statusFilter);
-  }
-
-  return list;
+export const getAdditionalServices = async (params?: FilterParams): Promise<ServiceItem[]> => {
+  return [];
 };
 
 /**
  * Fetch Assets
  */
-export const getAssets = async (params: FilterParams): Promise<AssetItem[]> => {
-  try {
-    if (API_ENDPOINTS && (API_ENDPOINTS as any).SUPPORT_OFFERINGS_ASSETS) {
-      const response = await api.get((API_ENDPOINTS as any).SUPPORT_OFFERINGS_ASSETS, { params });
-      if (response.data) {
-        return response.data;
-      }
-    }
-  } catch (error) {
-    console.warn('Backend API endpoint unavailable, using local mock dataset for Assets:', error);
-  }
-
-  const { searchQuery, statusFilter, provinceFilter, siteFilter, provincesList = [], sitesList = [] } = params || {};
-
-  const rawAssets = (supportOfferingsData.mockAssets || []) as AssetItem[];
-  let list = [...rawAssets];
-
-  if (searchQuery && searchQuery.trim() !== '') {
-    const q = searchQuery.toLowerCase().trim();
-    list = list.filter((item) => {
-      return (
-        item.title?.toLowerCase().includes(q) ||
-        item.description?.toLowerCase().includes(q) ||
-        item.type?.toLowerCase().includes(q) ||
-        item.sector?.toLowerCase().includes(q) ||
-        item.location?.toLowerCase().includes(q)
-      );
-    });
-  }
-
-  if (provinceFilter && provinceFilter !== 'all-provinces') {
-    const selectedProvName = provincesList.find((p) => p._id === provinceFilter)?.name;
-    const targetProv = (selectedProvName || provinceFilter).toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemProv = (item.province || '').toLowerCase().replace(/[\s-_]/g, '');
-      const itemLoc = (item.location || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemProv === targetProv || itemProv.includes(targetProv) || itemLoc.includes(targetProv);
-    });
-  }
-
-  if (siteFilter && siteFilter !== 'all-sites') {
-    const selectedSiteName = sitesList.find((s) => s._id === siteFilter)?.name;
-    const targetSite = (selectedSiteName || siteFilter).toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemSiteKey = (item.siteKey || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemSiteKey === targetSite || itemSiteKey.includes(targetSite);
-    });
-  }
-
-  if (statusFilter && statusFilter !== 'all-statuses') {
-    list = list.filter((item) => item.status === statusFilter);
-  }
-
-  return list;
+export const getAssets = async (params?: FilterParams): Promise<AssetItem[]> => {
+  return [];
 };
 
 /**
  * Complete Training Session API
  */
 export const completeTrainingSession = async (
-  sessionId: string,
-  data: { presentCount: number }
+  sessionId: string | number,
+  payload: { mentees: string[] } | string[] | any
 ): Promise<any> => {
-  try {
-    const endpoint = (API_ENDPOINTS as any).SUPPORT_OFFERINGS_COMPLETE_SESSION
-      ? (API_ENDPOINTS as any).SUPPORT_OFFERINGS_COMPLETE_SESSION(sessionId)
-      : `/api/user/v1/support-offerings/sessions/${sessionId}/complete`;
-    const response = await api.post(endpoint, data);
-    return response.data;
-  } catch (error) {
-    console.warn('Backend API endpoint unavailable for completeTrainingSession, returning fallback response:', error);
-    return { success: true, sessionId, presentCount: data.presentCount };
-  }
+  const mentees = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.mentees)
+      ? payload.mentees
+      : [];
+
+  const endpoint = API_ENDPOINTS.SUPPORT_OFFERINGS_COMPLETE_SESSION(sessionId);
+  const response = await api.post(endpoint, { mentees });
+  return response.data;
 };
 
 /**
@@ -267,10 +170,20 @@ export const saveTrainingSession = async (
 };
 
 /**
- * Get a single training session by ID
+ * Get a single training session by its ID
  */
 export const getTrainingSessionById = async (
-  id: number
-): Promise<TrainingSessionItem | undefined> => {
-  return sessions.find((s) => s.id === id);
+  sessionId: string | number
+): Promise<any> => {
+  try {
+    const listRes = await getSupportOfferingsList({ limit: 100 });
+    const sessions = listRes?.result?.data || [];
+    const matched = sessions.find((s: any) => String(s.id) === String(sessionId) || String(s._id) === String(sessionId));
+    return matched || null;
+  } catch (error) {
+    console.error('Error fetching training session by id:', error);
+    return null;
+  }
 };
+
+

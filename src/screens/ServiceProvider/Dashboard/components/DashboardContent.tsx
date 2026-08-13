@@ -11,7 +11,7 @@ import {
   getAssets,
 } from '../../../../services/SupportOfferingsServices/supportOfferingsService';
 import { getProvincesList } from '../../../../services/usersService';
-import type { TrainingSessionItem, AssetItem } from '../../../../constants/SUPPORT_OFFERINGS_MOCK';
+import type { TrainingSessionItem, AssetItem } from '../../../../types/supportOfferingsTypes';
 import styles from '../styles';
 
 // Utility to format numbers with commas e.g. 5760000 -> "5,760,000"
@@ -50,7 +50,7 @@ const DashboardContent: React.FC = () => {
         ]);
 
         if (isMounted) {
-          setTrainings(trainingsData || []);
+          setTrainings(trainingsData?.result?.data || []);
           setServices(servicesData || []);
           setAssets(assetsData || []);
           setProvincesList(provData || []);
@@ -453,41 +453,53 @@ const DashboardContent: React.FC = () => {
 
               {/* Sessions List */}
               <VStack {...styles.upcomingListVStack}>
-                {upcomingSessions.slice(0, 3).map((session) => (
-                  <Box key={session.id} {...styles.sessionCardd}>
-                    <VStack {...styles.titleVStack}>
-                      <Text {...styles.sessionTitle}>{session.title}</Text>
+                {upcomingSessions.slice(0, 3).map((session) => {
+                  const sDate = session.start_date
+                    ? new Date(
+                        typeof session.start_date === 'number' || !isNaN(Number(session.start_date))
+                          ? Number(session.start_date) * 1000
+                          : session.start_date
+                      ).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : '--';
+                  const sLimit = session.seats_limit || 0;
+                  const sRemaining = session.seats_remaining || 0;
+                  const sPresent = Math.max(0, sLimit - sRemaining);
+                  const loc = session.meeting_info?.location || (session.provinces && session.provinces[0]) || '-';
 
-                      <HStack {...styles.legendLabelRow}>
-                        <LucideIcon name="Calendar" {...styles.sessionIcon} />
-                        <Text {...styles.sessionMeta}>
-                          {session.date} • {session.time}
-                        </Text>
-                      </HStack>
+                  return (
+                    <Box key={session.id} {...styles.sessionCardd}>
+                      <VStack {...styles.titleVStack}>
+                        <Text {...styles.sessionTitle}>{session.title}</Text>
 
-                      <HStack {...styles.legendLabelRow}>
-                        <LucideIcon name="Users" {...styles.sessionIcon} />
-                        <Text {...styles.sessionMeta}>{session.participants}</Text>
-                      </HStack>
+                        <HStack {...styles.legendLabelRow}>
+                          <LucideIcon name="Calendar" {...styles.sessionIcon} />
+                          <Text {...styles.sessionMeta}>{sDate}</Text>
+                        </HStack>
 
-                      <HStack {...styles.legendLabelRow}>
-                        <LucideIcon name="MapPin" {...styles.sessionIcon} />
-                        <Text {...styles.sessionMeta}>{session.location || session.province}</Text>
-                      </HStack>
-                    </VStack>
-                  </Box>
-                ))}
+                        <HStack {...styles.legendLabelRow}>
+                          <LucideIcon name="Users" {...styles.sessionIcon} />
+                          <Text {...styles.sessionMeta}>{`${sPresent} / ${sLimit} participants`}</Text>
+                        </HStack>
+
+                        <HStack {...styles.legendLabelRow}>
+                          <LucideIcon name="MapPin" {...styles.sessionIcon} />
+                          <Text {...styles.sessionMeta}>{loc}</Text>
+                        </HStack>
+                      </VStack>
+                    </Box>
+                  );
+                })}
               </VStack>
 
-            {/* View All Sessions Button */}
-            <Button
-              {...styles.viewAllBtn}
-              onPress={() => navigation.navigate('opportunities' as never)}
-            >
-              <ButtonText {...styles.viewAllBtnText}>
-                {t('supportProvider.dashboard.viewAllSessions', 'View All Sessions')}
-              </ButtonText>
-            </Button>
+              {/* View All Sessions Button */}
+              <Button
+                {...styles.viewAllBtn}
+                onPress={() => navigation.navigate('opportunities' as never)}
+              >
+                <ButtonText {...styles.viewAllBtnText}>
+                  {t('supportProvider.dashboard.viewAllSessions', 'View All Sessions')}
+                </ButtonText>
+              </Button>
             </VStack>
 
           </VStack>
