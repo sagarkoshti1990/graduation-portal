@@ -25,6 +25,7 @@ import SessionCompleteModal from '../modals/SessionCompleteModal';
 import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
 import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { RequestFooter } from '../../../../SessionsSupport/RequestorFooter';
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
   const rawMode = (
@@ -148,10 +149,17 @@ const uploadFile = async (file: any) => {
 
 interface CardProps {
   item: TrainingSessionItem;
-  isSessionsSupport?: boolean;
+  isRequestor?: boolean;
+  onViewDetails?: (item: TrainingSessionItem) => void;
+  onAssignSession?: (item: TrainingSessionItem) => void;
 }
 
-const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => {
+const Card: React.FC<CardProps> = ({
+  item: initialItem,
+  isRequestor,
+  onViewDetails,
+  onAssignSession,
+}) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const navigation = useNavigation();
@@ -380,12 +388,12 @@ const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => 
   }, [initialItem]);
 
   return (
-    <Box {...(isSessionsSupport ? styles.supportCardContainer(false) : styles.cardContainer)}>
+    <Box {...styles.cardContainer}>
       <VStack {...styles.cardFullVStack}>
         {/* ROW 1 - TITLE & BADGES */}
-        <HStack {...(isSessionsSupport ? styles.supportRow1 : styles.headerTopHStack)}>
-          <HStack {...(isSessionsSupport ? styles.supportRow1Left : styles.headerTitleBadgeHStack)}>
-            <Text {...(isSessionsSupport ? styles.supportTitle : styles.cardHeaderTitleText)}>{item.title}</Text>
+        <HStack {...styles.headerTopHStack}>
+          <HStack {...styles.headerTitleBadgeHStack}>
+            <Text {...styles.cardHeaderTitleText}>{item.title}</Text>
 
             <Badge {...styles.badgeContainer(statusColors.bg, statusColors.border)}>
               <HStack {...styles.badgeContentHStack}>
@@ -404,29 +412,20 @@ const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => 
         </HStack>
 
         {/* ROW 2 - METADATA */}
-        <HStack {...(isSessionsSupport ? styles.supportRow2 : styles.headerMetaHStack)}>
-          {isSessionsSupport && (
-            <HStack {...styles.trainingMetaItemHStack}>
-              <LucideIcon name="Hash" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaSmText}>
-                {(item as any).externalId || (item as any).externalID || item.id || (item as any)._id || '-'}
-              </Text>
-            </HStack>
-          )}
-
+        <HStack {...styles.headerMetaHStack}>
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
             <Text {...styles.cardMetaSmText}>{dateTime}</Text>
           </HStack>
 
-          {(isSessionsSupport || deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
+          {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
             <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>{locationValue || '-'}</Text>
             </HStack>
           )}
 
-          {!isSessionsSupport && (deliveryMode === 'online' || deliveryMode === 'hybrid') && (
+          {(deliveryMode === 'online' || deliveryMode === 'hybrid') && (
             <Pressable
               onPress={(e) => {
                 e?.stopPropagation?.();
@@ -448,49 +447,26 @@ const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => 
 
         {/* ROW 3 - NOTES / DESCRIPTION */}
         {descriptionText ? (
-          <Box {...(isSessionsSupport ? styles.supportDescriptionBox : styles.notesBox)}>
-            <Text {...(isSessionsSupport ? styles.supportDescriptionText : styles.notesText)} numberOfLines={2} ellipsizeMode="tail">
+          <Box {...styles.notesBox}>
+            <Text {...styles.notesText} numberOfLines={2} ellipsizeMode="tail">
               {descriptionText}
             </Text>
           </Box>
         ) : null}
 
         {/* ROW 4 - ACTIONS */}
-        <HStack {...(isSessionsSupport ? styles.supportRow4 : styles.requestedByRowHStack)}>
-          {isSessionsSupport ? (
-            <Text {...styles.cardRequestedByText}>
-              {t('supportProvider.supportOfferings.cards.providedBy', 'Provided by:')}{' '}
-              <Text {...styles.cardRequestedByOrgText} fontWeight="700">{orgName}</Text>
-              {provinceName ? (<Text {...styles.cardRequestedByProvinceText}>{` • ${provinceName}`}</Text>) : null}
-            </Text>
-          ) : null}
-
-          <HStack {...(isSessionsSupport ? styles.supportRow4Right : styles.badgeContentHStack)}>
-            {isSessionsSupport ? (
-              <>
-                <Button
-                  variant={"outlineghost" as any}
-                  {...styles.supportOutlineGhostBtn}
-                  onPress={() => { }}
-                >
-                  <ButtonText {...(styles.supportOutlineGhostBtnText as any)}>
-                    {t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
-                  </ButtonText>
-                </Button>
-
-                <Button
-                  variant="solid"
-                  {...styles.detailsBtn}
-                  onPress={() => { }}
-                >
-                  <ButtonText {...(styles.supportAssignBtnText as any)}>
-                    {t('supportProvider.supportOfferings.cards.assignSession', 'Assign Session')}
-                  </ButtonText>
-                </Button>
-              </>
-            ) : (
-              /* DRAFT */
-              currentStatus === 'Draft' ? (
+        {isRequestor ? (
+          <RequestFooter
+            orgName={orgName}
+            provinceName={provinceName}
+            onViewDetails={() => onViewDetails?.(item)}
+            onAssignSession={() => onAssignSession?.(item)}
+          />
+        ) : (
+          <HStack {...styles.requestedByRowHStack}>
+            <HStack {...styles.badgeContentHStack}>
+              {/* DRAFT */}
+              {currentStatus === 'Draft' ? (
                 <>
                   <Button variant={"outlineghost" as any} {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { sessionId: item.id, type: FORM_MODE.EDIT, }); }}>
                     <ButtonText {...(styles.outlineActionBtnText as any)}>{t('common.edit', 'Edit')}</ButtonText>
@@ -559,13 +535,13 @@ const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => 
                     </ButtonText>
                   </Button>
                 </>
-              )
-            )}
+              )}
+            </HStack>
           </HStack>
-        </HStack>
+        )}
 
         {/* ACCORDION CONTENT */}
-        {!isSessionsSupport && isExpanded && (
+        {!isRequestor && isExpanded && (
           <VStack {...styles.expandedContentVStack}>
             {/* LOCATION / LINK */}
             <VStack {...styles.sectionVStack}>
@@ -702,12 +678,14 @@ const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => 
 
 // ---------- ListCard ----------
 
-interface TrainingCardProps {
+export interface TrainingCardProps {
   items: TrainingSessionItem[];
-  isShowLoadMore: boolean;
-  onLoadMoreItems: () => void;
+  isShowLoadMore?: boolean;
+  onLoadMoreItems?: () => void;
   isLoadingMore?: boolean;
-  isSessionsSupport?: boolean;
+  isRequestor?: boolean;
+  onViewDetails?: (item: TrainingSessionItem) => void;
+  onAssignSession?: (item: TrainingSessionItem) => void;
 }
 
 export default function TrainingCard({
@@ -715,14 +693,22 @@ export default function TrainingCard({
   isShowLoadMore,
   onLoadMoreItems,
   isLoadingMore = false,
-  isSessionsSupport = false,
+  isRequestor = false,
+  onViewDetails,
+  onAssignSession,
 }: TrainingCardProps): React.ReactElement {
   const { t } = useLanguage();
 
   return (
     <VStack {...styles.listContainer}>
       {items.map((item) => (
-        <Card key={item.id} item={item} isSessionsSupport={isSessionsSupport} />
+        <Card
+          key={item.id}
+          item={item}
+          isRequestor={isRequestor}
+          onViewDetails={onViewDetails}
+          onAssignSession={onAssignSession}
+        />
       ))}
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">

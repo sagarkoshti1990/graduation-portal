@@ -13,33 +13,14 @@ import { getProvincesList, getSitesByProvince } from '../../../services/usersSer
 import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
 import logger from '@utils/logger';
+import {
+  DEFAULT_PROVINCE_OPTIONS,
+  DEFAULT_SITE_OPTIONS,
+  getSupportOfferingTabs,
+  STATUS_OPTIONS,
+} from '@constants/SUPPORT_PROVIDER_CARDS';
 
-export const STATUS_OPTIONS = [
-  {
-    labelKey: 'supportProvider.supportOfferings.statusOptions.allStatuses',
-    value: 'all-statuses',
-  },
-  {
-    labelKey: 'supportProvider.supportOfferings.statusOptions.upcoming',
-    value: 'Upcoming',
-  },
-  {
-    labelKey: 'supportProvider.supportOfferings.statusOptions.inProgress',
-    value: 'In progress',
-  },
-  {
-    labelKey: 'supportProvider.supportOfferings.statusOptions.completed',
-    value: 'Completed',
-  },
-  {
-    labelKey: 'supportProvider.supportOfferings.statusOptions.draft',
-    value: 'Draft',
-  },
-];
-
-const DEFAULT_PROVINCE_OPTIONS = [{ label: 'All Provinces', value: 'all-provinces' }];
-
-const DEFAULT_SITE_OPTIONS = [{ label: 'All Sites', value: 'all-sites' },];
+export { STATUS_OPTIONS };
 
 const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: boolean; isSessionsSupport?: boolean } = {}): React.JSX.Element => {
   const navigation = useNavigation();
@@ -62,18 +43,9 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
     assets: 0,
   });
 
-  const tabs = [
-    { key: 'sessions', label: t('supportProvider.supportOfferings.tabs.trainings', 'Trainings & Sessions'), count: counts.sessions, icon: 'GraduationCap' },
-    { key: 'additional_services', label: t('supportProvider.supportOfferings.tabs.additionalServices', 'Additional Services'), count: counts.additional_services, icon: 'Briefcase' },
-    { key: 'assets', label: t('supportProvider.supportOfferings.tabs.assets', 'Assets'), count: counts.assets, icon: 'Box' },
-  ];
+  const tabs = getSupportOfferingTabs(t, counts);
 
-  const subTabs = [
-    { key: 'browse_sessions', label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions') },
-    { key: 'my_requests', label: t('lc.sessionsSupport.tabs.myRequests', 'My Requests') },
-    { key: 'my_sessions', label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions') },
-    { key: 'history', label: t('lc.sessionsSupport.tabs.history', 'History') },
-  ];
+  const subTabs = tabs.find((tab) => tab.key === activeTab)?.children || [];
 
   const displayTabs = isSessionsSupport
     ? tabs.map((tab) => ({
@@ -379,7 +351,6 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
-              isSessionsSupport={isSessionsSupport}
             />
           )}
 
