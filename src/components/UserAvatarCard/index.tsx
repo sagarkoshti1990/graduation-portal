@@ -482,7 +482,8 @@ const UserAvatarCard = ({
               getRowKey={(item: any) => item.value}
               isLoading={isLoading}
               emptyMessage="common.noDataFound"
-              responsive={true}
+              responsive={false}
+              minWidth={600}
               onRowClick={(item: any) => {
                 // Toggle checkbox selection on row click
                 setSelectedLCs((prev) => {
@@ -535,7 +536,8 @@ const UserAvatarCard = ({
               getRowKey={(item: any) => item.value}
               isLoading={isLoading}
               emptyMessage="common.noDataFound"
-              responsive={true}
+              responsive={false}
+              minWidth={600}
               onRowClick={(item: any) => {
                 // Toggle checkbox selection on row click
                 setSelectedLCs((prev) => {

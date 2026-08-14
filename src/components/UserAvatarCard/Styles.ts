@@ -1,8 +1,12 @@
 export const AssignUsersStyles = {
     coverCardStyles: {
-     padding: '$6',
+     px: '$4',
+     py: '$5',
+     "$md-px": '$6',
+     "$md-py": '$6',
      borderRadius: '$2xl',
-     mt: '$6',
+     mt: '$4',
+     "$md-mt": '$6',
      backgroundColor: '$white',
     },
     cardStyles: {
@@ -10,7 +14,8 @@ export const AssignUsersStyles = {
       variant: 'outline',
       backgroundColor: '$bgPrimary/5',
       borderColor: '$bgPrimaryBorder/5',
-      mt: '$6',
+      mt: '$4',
+      "$md-mt": '$6',
       flexDirection: 'row',
       alignItems: 'center',
       gap: '$3',

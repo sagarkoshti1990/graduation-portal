@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Card, Container, Loader, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
@@ -6,11 +6,10 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
-import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
+import { getProvincesList } from '../../../../services/usersService';
 import {
   getSessionCategories,
   getRecommendedFor,
-  getSessionTypesByPillar,
   getDeliveryModes,
   createSession,
   getSessionDetails,
@@ -20,6 +19,7 @@ import NotFound from '@components/NotFound';
 import { uploadService, valueMapping } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
 import logger from '@utils/logger';
+import { useTrainingFormOptions } from '@hooks';
 
 
 // Icon shown next to each delivery mode option in the format-type pill selector
@@ -36,15 +36,22 @@ const App = (): React.JSX.Element => {
   const sessionId = route.params?.id;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [sites, setSites] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
-  const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const [lodingButton,setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
+
+  const { optionsMap } = useTrainingFormOptions({
+    values,
+    provinces,
+    pillers,
+    targetAudience,
+    deliveryModes,
+    deliveryModeIcons: DELIVERY_MODE_ICONS,
+  });
 
   const getHeaderTitle = () => {
     switch (modeType) {
@@ -116,89 +123,6 @@ const App = (): React.JSX.Element => {
     []
   );
 
-  useEffect(() => {
-    const init = async () => {
-      if (!values.categories) {
-        setSessionTypes([]);
-        return;
-      }
-      const selectedPillarObj = pillers.find(
-        p => p.value === values.categories || p.label === values.categories
-      );
-      const pillarCode = (selectedPillarObj?.value || values.categories).toLowerCase();
-      if (pillarCode) {
-        try {
-          const res = await getSessionTypesByPillar(pillarCode);
-          setSessionTypes(res || []);
-        } catch (err) {
-          logger.error('Error fetching session types:', err);
-          setSessionTypes([]);
-        }
-      } else {
-        setSessionTypes([]);
-      }
-    };
-
-    init();
-  }, [values.categories, pillers]);
-
-
-  useEffect(() => {
-    const init = async () => {
-      if (!values.provinces) {
-        setSites([]);
-        return;
-      }
-      try {
-        const res = await getSitesByProvince({ provinceId: values.provinces});
-        setSites(res.result?.data || []);
-      } catch (err) {
-        logger.error('Error fetching sites:', err);
-        setSites([]);
-      }
-    };
-
-    init();
-  }, [values.provinces]);
-
-  const optionsMap = useMemo(() => {
-    const provinceOpts =
-      provinces && provinces.length > 0
-        ? provinces.map((p: any) => ({
-          value: p._id || p.id || p.name,
-          label: p.name || p.label,
-        }))
-        : [];
-
-    const siteOpts = sites
-      ? sites.map((s: any) => ({
-        value: s._id || s.id || s.name,
-        label: s.name || s.label,
-      }))
-      : [];
-
-    return {
-      provinces: provinceOpts,
-      sites: siteOpts,
-      pillars: pillers,
-      sessionTypes: sessionTypes,
-      targetAudienceOptions: targetAudience,
-      certificateOptions: [
-        { value: 'true', label: 'Yes' },
-        { value: 'false', label: 'No' },
-      ],
-      recurringOptions: [
-        { value: 'true', label: 'Yes — recurring session' },
-        { value: 'false', label: 'No — one-off session' },
-      ],
-      formatOptions: deliveryModes.map((mode) => ({
-        value: mode.value,
-        label: mode.label,
-        icon: DELIVERY_MODE_ICONS[mode.value?.toLowerCase()] || 'MapPin',
-      })),
-    };
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes]);
-
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
       setValues(formValues);
@@ -265,7 +189,7 @@ const App = (): React.JSX.Element => {
       <Container {...styles.container}>
         <Card borderRadius={"$2xl"} bg="$white">
           <SchemaFormRenderer
-            schema={TRAINING_FORM_SCHEMA}
+            schema={TRAINING_FORM_SCHEMA()}
             optionsMap={optionsMap}
             values={values}
             t={t}

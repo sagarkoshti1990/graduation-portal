@@ -58,6 +58,16 @@ export const LC_MENU_OPTIONS: MenuItemData[] = [
     route: 'dashboard', // Navigation route for dashboard menu item
     isComingSoon: true,
   },
+  // {
+  //   key: 'sessions-support',
+  //   label: 'lc.menu.sessionsSupport',
+  //   textValue: 'sessions-support',
+  //   iconName: 'LifeBuoy',
+  //   iconSizeValue: 16,
+  //   iconColor: theme.tokens.colors.textForegroundColor,
+  //   showDividerAfter: false,
+  //   route: 'sessions-support',
+  // },
   {
     key: 'myProfile',
     label: 'lc.menu.myProfile',

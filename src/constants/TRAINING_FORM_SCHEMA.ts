@@ -1,6 +1,6 @@
 import type { FormSection } from '@components/SchemaFormRenderer/type';
 
-export const TRAINING_SESSION_SCHEMA: FormSection[] = [
+export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
   // ─── Tab 1: Session Details ───────────────────────────────────────────────
   {
     type: 'tab',
@@ -25,7 +25,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
         rows: [
           {
             fields: [
-              {
+              ...(hideFileds.includes('provinces') ? [] : [{
                 name: 'provinces',
                 type: 'select',
                 required: true,
@@ -41,8 +41,8 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
-              {
+              }]),
+              ...(hideFileds.includes('sites') ? [] : [{
                 name: 'sites',
                 type: 'multiselect',
                 required: true,
@@ -64,12 +64,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('categories') ? [] : [{
                 name: 'categories',
                 type: 'pillselect',
                 required: true,
@@ -84,12 +84,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('idp_training_task') ? [] : [{
                 name: 'idp_training_task',
                 type: 'select',
                 required: true,
@@ -110,12 +110,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('sessionTypeOther') ? [] : [{
                 name: 'sessionTypeOther',
                 type: 'text',
                 required: true,
@@ -136,12 +136,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('description') ? [] : [{
                 name: 'description',
                 type: 'textarea',
                 required: true,
@@ -162,12 +162,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('learning_objectives') ? [] : [{
                 name: 'learning_objectives',
                 type: 'textarea',
                 required: false,
@@ -178,12 +178,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 placeholder: {
                   fallback: 'List the key learning outcomes, one per line...',
                 },
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('recommended_for') ? [] : [{
                 name: 'recommended_for',
                 type: 'pillselect',
                 required: true,
@@ -198,12 +198,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('certificate_provided') ? [] : [{
                 name: 'certificate_provided',
                 type: 'pillselect',
                 required: true,
@@ -221,12 +221,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('max_capacity') ? [] : [{
                 name: 'max_capacity',
                 type: 'text',
                 required: true,
@@ -242,8 +242,8 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
-              {
+              }]),
+              ...(hideFileds.includes('can_be_copied') ? [] : [{
                 name: 'can_be_copied',
                 type: 'select',
                 required: false,
@@ -253,12 +253,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 },
                 optionsSource: 'recurringOptions',
                 defaultValue: 'Yes',
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('resources') ? [] : [{
                 name: 'resources',
                 type: 'file',
                 multiple: true,
@@ -294,7 +294,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   key: 'supportProvider.trainingSession.step1.uploadPrompt',
                   fallback: 'Click to upload PDF / DOC',
                 },
-              },
+              }]),
             ],
           },
         ],
@@ -323,7 +323,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
         rows: [
           {
             fields: [
-              {
+              ...(hideFileds.includes('start_date') ? [] : [{
                 name: 'start_date',
                 type: 'datetime',
                 required: true,
@@ -356,12 +356,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     }
                   }
                 ],
-              },
+              }]),
             ]
           },
           {
-            fields: [    
-              {
+            fields: [
+              ...(hideFileds.includes('end_date') ? [] : [{
                 name: 'end_date',
                 type: 'datetime',
                 required: true,
@@ -394,12 +394,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     }
                   }
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('delivery_mode') ? [] : [{
                 name: 'delivery_mode',
                 type: 'pillselect',
                 required: true,
@@ -414,12 +414,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('location') ? [] : [{
                 name: 'location',
                 type: 'text',
                 required: true,
@@ -437,12 +437,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
           {
             fields: [
-              {
+              ...(hideFileds.includes('meeting_link') ? [] : [{
                 name: 'meeting_link',
                 type: 'text',
                 required: true,
@@ -460,7 +460,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     },
                   },
                 ],
-              },
+              }]),
             ],
           },
         ],
@@ -468,7 +468,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
     ],
   },
 
-  // // ─── Tab 2: Review Tab ─────────────────────────────────────────────
+  // // ─── Tab 3: Review Tab ─────────────────────────────────────────────
   {
     type: 'tab',
     id: 'review',
@@ -518,38 +518,38 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             rows: [
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('provinces') ? [] : [{
                     name: 'provinces',
                     type: 'view',
                     label: { key: 'province', fallback: 'Province' },
                     optionsSource: 'provinces',
-                  }],
-              },
-              {
-                  fields: [
-                  {
-                    name: 'sites',
-                    type: 'view',
-                    label: { key: 'site', fallback: 'Site' },
-                    optionsSource: 'sites',
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('sites') ? [] : [{
+                    name: 'sites',
+                    type: 'view',
+                    label: { key: 'site', fallback: 'Site' },
+                    optionsSource: 'sites',
+                  }]),
+                ],
+              },
+              {
+                fields: [
+                  ...(hideFileds.includes('categories') ? [] : [{
                     name: 'categories',
                     type: 'view',
                     required: true,
                     label: { key: 'pillar', fallback: 'Pillar' },
                     optionsSource: 'pillars',
-                    
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('idp_training_task') ? [] : [{
                     name: 'idp_training_task',
                     type: 'view',
                     required: true,
@@ -558,23 +558,23 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Training / Session Type',
                     },
                     optionsSource: 'sessionTypes',
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('recommended_for') ? [] : [{
                     name: 'recommended_for',
                     type: 'view',
                     required: true,
                     label: { key: 'targetAudience', fallback: 'Target Audience' },
                     optionsSource: 'targetAudienceOptions',
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('can_be_copied') ? [] : [{
                     name: 'can_be_copied',
                     type: 'view',
                     label: {
@@ -582,12 +582,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Recurring Session',
                     },
                     optionsSource: 'recurringOptions'
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('certificate_provided') ? [] : [{
                     name: 'certificate_provided',
                     type: 'view',
                     label: {
@@ -595,18 +595,18 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       fallback: 'Certificate Provided',
                     },
                     optionsSource: 'certificateOptions',
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('max_capacity') ? [] : [{
                     name: 'max_capacity',
                     type: 'view',
                     label: { key: 'maxCapacity', fallback: 'Maximum Capacity' },
-                  },
+                  }]),
                 ],
-          },
+              },
             ],
           },
           {
@@ -619,7 +619,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
             rows: [
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('start_date') ? [] : [{
                     type: 'view',
                     name: 'start_date',
                     displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
@@ -627,12 +627,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       key: 'supportProvider.trainingSession.step3.startLabel',
                       fallback: 'Start Date & Time',
                     },
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('end_date') ? [] : [{
                     type: 'view',
                     name: 'end_date',
                     displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
@@ -640,24 +640,24 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                       key: 'supportProvider.trainingSession.step3.endLabel',
                       fallback: 'End Date & Time',
                     },
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('delivery_mode') ? [] : [{
                     type: 'view',
                     name: 'delivery_mode',
                     label: {
                       key: 'supportProvider.trainingSession.step3.formatLabel',
                       fallback: 'Format',
                     },
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('location') ? [] : [{
                     type: 'view',
                     name: 'location',
                     label: {
@@ -667,12 +667,12 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     visibleIf: [
                       { name: 'delivery_mode', value: 'online', operator: '!=' },
                     ],
-                  },
+                  }]),
                 ],
               },
               {
                 fields: [
-                  {
+                  ...(hideFileds.includes('meeting_link') ? [] : [{
                     type: 'view',
                     name: 'meeting_link',
                     label: {
@@ -682,7 +682,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                     visibleIf: [
                       { name: 'delivery_mode', value: 'offline', operator: '!=' },
                     ],
-                  },
+                  }]),
                 ],
               },
             ],
@@ -691,6 +691,47 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
       },
     ],
   },
+] as FormSection[]);
+
+// ─── Field visibility presets ────────────────────────────────────────────────
+// "Request a Session" flow only needs the core fields; everything else is
+// filled in / managed elsewhere, so we hide it from that form.
+export const REQUEST_SESSION_HIDE_FIELDS: string[] = [
+  'sessionTypeOther',
+  'recommended_for',
+  'certificate_provided',
+  'max_capacity',
+  'can_be_copied',
+  'resources',
+  'delivery_mode',
+  'location',
+  'meeting_link',
 ];
+
+// "Create" (Service Provider) flow keeps everything else as-is; only the
+// recurring-session toggle is hidden.
+export const CREATE_SESSION_HIDE_FIELDS: string[] = [
+  'can_be_copied',
+  'recommended_for',
+  'certificate_provided'
+];
+
+export const schema = (
+  { role, hideFileds }: { role?: string; hideFileds?: string[] } = {}
+): FormSection[] => {
+  if (hideFileds) {
+    return TRAINING_SESSION_SCHEMA(hideFileds);
+  }
+
+  if (role === 'request') {
+    return TRAINING_SESSION_SCHEMA(REQUEST_SESSION_HIDE_FIELDS);
+  }
+
+    if (role === 'create') {
+    return TRAINING_SESSION_SCHEMA(CREATE_SESSION_HIDE_FIELDS);
+  }
+
+  return TRAINING_SESSION_SCHEMA([]);
+};
 
 export const TRAINING_FORM_SCHEMA = TRAINING_SESSION_SCHEMA;
