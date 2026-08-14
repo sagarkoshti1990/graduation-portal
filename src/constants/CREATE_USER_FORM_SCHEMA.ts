@@ -27,7 +27,7 @@ const CONTAINER_STYLE = {
 
 export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   {
-    type:"section",
+    type: "section",
     id: 'personalInformation',
     icon: 'User',
     title: { key: 'personalInformation', fallback: 'Personal Information' },
@@ -86,7 +86,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               {
                 rule: 'required',
-                message: {key: 'errors.nationalIdRequired', fallback: 'National ID is required'},
+                message: { key: 'errors.nationalIdRequired', fallback: 'National ID is required' },
               },
             ],
           },
@@ -98,7 +98,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             type: 'group',
             required: false,
             label: { key: 'phoneNumber', fallback: 'Phone Number' },
-            _input: INPUT_STYLE,
             fields: [
               {
                 name: 'countryCode',
@@ -115,6 +114,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
                 placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
+                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -137,6 +137,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'select',
                 required: false,
                 label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
+                _input: INPUT_STYLE,
                 defaultValue: '+27',
                 optionsSource: 'countryCodes',
                 searchable: true,
@@ -147,6 +148,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
                 placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
+                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -164,7 +166,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
-    type:"section",
+    type: "section",
     id: 'roleAndPermissions',
     icon: 'Shield',
     title: { key: 'roleAndPermissions', fallback: 'Role & Permissions' },
@@ -191,7 +193,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
-    type:"section",
+    type: "section",
     id: 'additionalInformation',
     icon: 'FileText',
     title: { key: 'additionalInformation', fallback: 'Additional Information' },
@@ -275,7 +277,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
   },
 
   {
-    type:"section",
+    type: "section",
     id: 'geographicAssignment',
     icon: 'MapPin',
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },
@@ -291,6 +293,12 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             label: { key: 'province', fallback: 'Province' },
             placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
             optionsSource: 'provinces',
+            visibleIf: [
+              { name: "roleId", operator: "!=", value: process.env.LC_ROLE_ID }
+            ],
+            validation: [
+              { rule: 'required', message: { key: 'errors.provinceRequired', fallback: 'Province is required' } },
+            ],
           },
           {
             name: 'siteId',
@@ -302,6 +310,43 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'sitePlaceholder', fallback: 'Select province first' },
             placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
             optionsSource: 'sites',
+            visibleIf: [
+              { name: "roleId", operator: "!=", value: process.env.LC_ROLE_ID }
+            ],
+            validation: [
+              { rule: 'required', message: { key: 'errors.siteRequired', fallback: 'Site is required' } },
+            ],
+          },
+          {
+            name: 'provinceId',
+            type: 'select',
+            required: true,
+            label: { key: 'province', fallback: 'Province' },
+            placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
+            optionsSource: 'provinces',
+            visibleIf: [
+              { name: "roleId", operator: "===", value: process.env.LC_ROLE_ID }
+            ],
+            validation: [
+              { rule: 'required', message: { key: 'errors.provinceRequired', fallback: 'Province is required' } },
+            ],
+          },
+          {
+            name: 'siteId',
+            type: 'select',
+            required: true,
+            dependsOn: 'provinceId',
+            disabledWhen: { field: 'provinceId', empty: true },
+            label: { key: 'site', fallback: 'Site' },
+            placeholder: { key: 'sitePlaceholder', fallback: 'Select province first' },
+            placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
+            optionsSource: 'sites',
+            visibleIf: [
+              { name: "roleId", operator: "===", value: process.env.LC_ROLE_ID }
+            ],
+            validation: [
+              { rule: 'required', message: { key: 'errors.siteRequired', fallback: 'Site is required' } },
+            ],
           },
         ],
       },
