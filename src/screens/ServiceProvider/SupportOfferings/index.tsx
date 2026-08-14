@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, VStack } from '@ui';
 import styles from './styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TabButton } from '@components/Tabs';
 import FilterButton from '@components/Filter';
@@ -12,6 +12,7 @@ import AssetCard from './components/Cards/AssetCard';
 import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
 import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
+import logger from '@utils/logger';
 
 export const STATUS_OPTIONS = [
   {
@@ -78,7 +79,6 @@ const App = (): React.JSX.Element => {
   const onLoadMoreItems = () => {
     setPage((prevPage) => prevPage + 1);
   };
-
 
   const filterOptions = [
     { type: 'search', attr: 'search', placeholderKey: 'admin.filters.searchOfferingsPlaceholder' },
@@ -201,68 +201,59 @@ const App = (): React.JSX.Element => {
   }, [activeTab, filters.search, filters.status, filters.province, filters.site]);
 
   // Fetch listing data
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const params = {
-          page,
-          limit,
-          search: filters.search,
-          status: filters.status,
-          province: filters.province,
-          site: filters.site,
-        };
+  const fetchData = useCallback(async () => {  
+    try {
+      setLoading(true);
+      const params = {
+        filters,
+        page,
+        limit,
+      };
 
-        let fetchedData: any[] = [];
-        let totalCount = 0;
+      let fetchedData: any[] = [];
+      let totalCount = 0;
 
-        if (activeTab === 'sessions') {
-          const res = await getTrainingSessions(params);
-          fetchedData = res?.result?.data || [];
-          totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
-          setCounts((prev) => ({ ...prev, sessions: totalCount }));
-        } else if (activeTab === 'additional_services') {
-          const res = await getAdditionalServices(params);
-          fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
-          totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
-          setCounts((prev) => ({ ...prev, additional_services: totalCount }));
-        } else if (activeTab === 'assets') {
-          const res = await getAssets(params);
-          fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
-          totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
-          setCounts((prev) => ({ ...prev, assets: totalCount }));
-        }
-
-        if (isMounted) {
-          if (page === 1) {
-            setItems(fetchedData);
-          } else {
-            setItems((prev) => [...prev, ...fetchedData]);
-          }
-          setTotal(totalCount);
-        }
-      } catch (err) {
-        console.error('Error fetching offerings list:', err);
-        if (isMounted) {
-          if (page === 1) {
-            setItems([]);
-            setTotal(0);
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (activeTab === 'sessions') {
+        const res = await getTrainingSessions(params);
+        fetchedData = res?.result?.data || [];
+        totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
+        setCounts((prev) => ({ ...prev, sessions: totalCount }));
+      } else if (activeTab === 'additional_services') {
+        const res = await getAdditionalServices(params);
+        fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
+        totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
+        setCounts((prev) => ({ ...prev, additional_services: totalCount }));
+      } else if (activeTab === 'assets') {
+        const res = await getAssets(params);
+        fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
+        totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
+        setCounts((prev) => ({ ...prev, assets: totalCount }));
       }
-    };
+      if (page === 1) {
+        setItems(fetchedData);
+      } else {
+        setItems((prev) => [...prev, ...fetchedData]);
+      }
+      setTotal(totalCount);
+    } catch (err) {
+      logger.error('Error fetching offerings list:', err);
+      if (page === 1) {
+        setItems([]);
+        setTotal(0);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, filters, page, limit]);
 
-    fetchData();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+      return () => {
+        setLoading(true);
+      };
+    }, [fetchData])
+  );
 
   return (
     <VStack flex={1}>

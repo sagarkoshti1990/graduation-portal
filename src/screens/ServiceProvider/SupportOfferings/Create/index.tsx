@@ -10,6 +10,15 @@ import SupportCard from './components/SupportCard';
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
+  
+  const handleBackPress = () => {
+    if (navigation.canGoBack && navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // @ts-ignore
+      navigation.navigate('opportunities');
+    }
+  }
 
   return (
     <VStack flex={1} bg="$backgroundLight50">
@@ -17,7 +26,7 @@ const App = (): React.JSX.Element => {
         title={t('supportProvider.createSupport.title', 'Create New Support')}
         subTitle={t('supportProvider.createSupport.subtitle', 'Choose the type of support you want to create')}
         backButtonText={t('common.backToDashboard', ' Back to Dashboard')}
-        onNavigateBack={() => navigation.goBack()}
+        onNavigateBack={handleBackPress}
       />
       <Container {...styles.container}>
         <HStack

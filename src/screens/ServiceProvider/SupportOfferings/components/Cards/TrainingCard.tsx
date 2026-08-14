@@ -456,7 +456,8 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             {/* DRAFT */}
             {currentStatus === 'Draft' ? (
               <>
-                <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { sessionId: item.id, type: FORM_MODE.EDIT, }); }}>
+              {/* @ts-ignore */}
+                <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
                   <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
                 </Button>
 

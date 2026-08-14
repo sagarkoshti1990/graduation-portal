@@ -1,25 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Card, Container, Loader, VStack, useAlert } from '@ui';
 import styles from '../styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
-import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
-import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
+import { getProvincesList } from '../../../../services/usersService';
 import {
   getSessionCategories,
   getRecommendedFor,
-  getSessionTypesByPillar,
   getDeliveryModes,
   createSession,
   getSessionDetails,
   MentoringOption,
 } from '../../../../services/mentoringService';
 import NotFound from '@components/NotFound';
-import { valueMapping } from '@utils/supportProvider';
+import { uploadService, valueMapping } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import logger from '@utils/logger';
 import { useTrainingFormOptions } from '@hooks';
 
 
@@ -34,7 +33,7 @@ const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute<any>();
   const modeType: String = route.params?.type;
-  const sessionId = route.params?.id || route.params?.sessionId;
+  const sessionId = route.params?.id;
   const { t } = useLanguage();
   const [provinces, setProvinces] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
@@ -42,6 +41,7 @@ const App = (): React.JSX.Element => {
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [lodingButton,setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
 
   const { optionsMap } = useTrainingFormOptions({
@@ -65,8 +65,7 @@ const App = (): React.JSX.Element => {
     }
   };
 
-  useEffect(() => {
-    const init = async () => {
+    const init = useCallback(async () => {
       try {
         const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
           getProvincesList(),
@@ -80,7 +79,7 @@ const App = (): React.JSX.Element => {
         setDeliveryModes(getDeliveryModeOptions);
 
         // Fetch session data via getSessionDetails API when in Copy or Edit mode
-        if (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT) {
+        if (sessionId && (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT)) {
           const rawResponse = await getSessionDetails(sessionId);
           const rawData = rawResponse?.result;
           if (rawData) {
@@ -89,21 +88,28 @@ const App = (): React.JSX.Element => {
           }
         }
       } catch (error: any) {
-        console.error('Error loading form data:', error);
+        logger.error('Error loading form data:', error);
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
       } finally {
         setIsLoading(false);
       }
-    };
+    },[sessionId, modeType]);
 
-    init();
-  }, [sessionId, modeType]);
+  useFocusEffect(
+    useCallback(() => {
+      init();
+      return () => {
+        setIsLoading(true);
+        setValues({});
+      };
+    }, [init])
+  );
 
   const handleFieldChange = useCallback(
     (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
-        if (name === 'province') next.site = '';
+        if (name === 'provinces') next.sites = '';
         if (name === 'categories') {
           next.idp_training_task = '';
           next.title = '';
@@ -114,12 +120,13 @@ const App = (): React.JSX.Element => {
         return next;
       });
     },
-    [pillers]
+    []
   );
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
       setValues(formValues);
+      setLodingButton(isDraft ? "saveDraft" : "submit")
       const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
 
       if (modeType === 'edit') {
@@ -139,13 +146,15 @@ const App = (): React.JSX.Element => {
       // @ts-ignore
       navigation.navigate('opportunities');
     } catch (error: any) {
-      console.error('Error saving training session:', error);
+      logger.error('Error saving training session:', error);
       // Show specific API error message if available, otherwise generic message
       const errMsg =
         error?.data?.message ||
         error?.message ||
         t('supportProvider.createSupport.training.errors.saveFailed', 'Something went wrong while saving. Please try again.');
       showAlert('error', errMsg);
+    } finally {
+      setLodingButton(false);
     }
   };
 
@@ -187,26 +196,10 @@ const App = (): React.JSX.Element => {
             onFieldChange={handleFieldChange}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
-            uploadService={async (file) => {
-              const entityId = `trainingSession-${Date.now()}`;
-              const uploaded = await uploadFiles(entityId, [
-                { ...file, size: file.size ?? 0 },
-              ]);
-              const url = uploaded?.data?.[0]?.url;
-              if (!url) {
-                throw new Error(`Failed to upload file: ${file.name}`);
-              }
-              const data = uploaded?.data?.[0];
-              const [f, s] = data?.type.split("/");
-              return {
-                name: data?.name,
-                link: data?.url,
-                sourcePath: data?.sourcePath,
-                type: s || f,
-                size: data?.size
-              }
-            }}
-            submitButtonProps={{ bg: "green", icon: "Check" }}
+            lodingButton={lodingButton}
+            uploadService={uploadService}
+            saveDraftButtonProps={{ _icon: { color: "$textForeground" } }}
+            submitButtonProps={{ bg: "green", icon: "Check", _icon: { color: "$white" } }}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
           />
         </Card>
