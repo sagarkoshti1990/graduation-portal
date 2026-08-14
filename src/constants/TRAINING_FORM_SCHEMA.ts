@@ -125,7 +125,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 },
                 placeholder: { fallback: 'Describe this session...' },
                 visibleIf: [
-                  { name: 'sessionType', value: 'other', operator: '===' },
+                  { name: 'idp_training_task', value: 'custom', operator: '===' },
                 ],
                 validation: [
                   {
@@ -328,7 +328,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 type: 'datetime',
                 required: true,
                 label: { key: 'start_date', fallback: 'Start Date & Time' },
-                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                placeholder: { fallback: 'dd-mm-yyyy hh:mm' },
                 validation: [
                   {
                     rule: 'required',
@@ -366,7 +366,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 type: 'datetime',
                 required: true,
                 label: { key: 'end_date', fallback: 'End Date & Time' },
-                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                placeholder: { fallback: 'dd-mm-yyyy hh:mm' },
                 validation: [
                   {
                     rule: 'required',
@@ -622,7 +622,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   {
                     type: 'view',
                     name: 'start_date',
-                    displayFormat: 'dateFormat@DD/MM/YYYY hh:mm A',
+                    displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
                     label: {
                       key: 'supportProvider.trainingSession.step3.startLabel',
                       fallback: 'Start Date & Time',
@@ -635,7 +635,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                   {
                     type: 'view',
                     name: 'end_date',
-                    displayFormat: 'dateFormat@DD/MM/YYYY hh:mm A',
+                    displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
                     label: {
                       key: 'supportProvider.trainingSession.step3.endLabel',
                       fallback: 'End Date & Time',
@@ -674,7 +674,7 @@ export const TRAINING_SESSION_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'link',
+                    name: 'meeting_link',
                     label: {
                       key: 'meetingLink',
                       fallback: 'Meeting Link',

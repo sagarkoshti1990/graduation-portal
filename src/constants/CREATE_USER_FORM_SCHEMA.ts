@@ -98,6 +98,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             type: 'group',
             required: false,
             label: { key: 'phoneNumber', fallback: 'Phone Number' },
+            _input: INPUT_STYLE,
             fields: [
               {
                 name: 'countryCode',
@@ -114,7 +115,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
                 placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
@@ -137,7 +137,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'select',
                 required: false,
                 label: { key: 'alternativeCountryCode', fallback: 'Alt Country Code' },
-                _input: INPUT_STYLE,
                 defaultValue: '+27',
                 optionsSource: 'countryCodes',
                 searchable: true,
@@ -148,7 +147,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
                 placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
-                _input: INPUT_STYLE,
                 inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {

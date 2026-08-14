@@ -7,7 +7,6 @@ import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
-import { uploadFiles } from '../../../../project-player/services/projectPlayerService';
 import {
   getSessionCategories,
   getRecommendedFor,
@@ -18,7 +17,7 @@ import {
   MentoringOption,
 } from '../../../../services/mentoringService';
 import NotFound from '@components/NotFound';
-import { valueMapping } from '@utils/supportProvider';
+import { uploadService, valueMapping } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
 import logger from '@utils/logger';
 
@@ -44,6 +43,7 @@ const App = (): React.JSX.Element => {
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [lodingButton,setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
 
   const getHeaderTitle = () => {
@@ -202,6 +202,7 @@ const App = (): React.JSX.Element => {
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
       setValues(formValues);
+      setLodingButton(isDraft ? "saveDraft" : "submit")
       const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
 
       if (modeType === 'edit') {
@@ -228,6 +229,8 @@ const App = (): React.JSX.Element => {
         error?.message ||
         t('supportProvider.createSupport.training.errors.saveFailed', 'Something went wrong while saving. Please try again.');
       showAlert('error', errMsg);
+    } finally {
+      setLodingButton(false);
     }
   };
 
@@ -269,26 +272,10 @@ const App = (): React.JSX.Element => {
             onFieldChange={handleFieldChange}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
-            uploadService={async (file) => {
-              const entityId = `trainingSession-${Date.now()}`;
-              const uploaded = await uploadFiles(entityId, [
-                { ...file, size: file.size ?? 0 },
-              ]);
-              const url = uploaded?.data?.[0]?.url;
-              if (!url) {
-                throw new Error(`Failed to upload file: ${file.name}`);
-              }
-              const data = uploaded?.data?.[0];
-              const [f, s] = data?.type.split("/");
-              return {
-                name: data?.name,
-                link: data?.url,
-                sourcePath: data?.sourcePath,
-                type: s || f,
-                size: data?.size
-              }
-            }}
-            submitButtonProps={{ bg: "green", icon: "Check" }}
+            lodingButton={lodingButton}
+            uploadService={uploadService}
+            saveDraftButtonProps={{ _icon: { color: "$textForeground" } }}
+            submitButtonProps={{ bg: "green", icon: "Check", _icon: { color: "$white" } }}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
           />
         </Card>
