@@ -44,6 +44,7 @@ import {
   ProgressFilledTrack,
   ButtonIcon,
   Image,
+  Spinner,
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -207,6 +208,7 @@ export interface SchemaFormRendererProps {
   continueButtonProps?: any;
   saveDraftButtonProps?: any;
   submitButtonProps?: any;
+  lodingButton?: any;
 }
 
 /**
@@ -1128,6 +1130,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <HStack
         {...(styles.input as any)}
+        {...(field._input as any)}
         isInvalid={!!combinedError}
         isDisabled={isFieldDisabled}
         alignItems="center"
@@ -1614,7 +1617,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         : {})}
     >
       {field.icon && (
-        <Box pr="$2">
+        <Box pl="$3">
           <LucideIcon
             name={field.icon as any}
             size={16}
@@ -1954,12 +1957,12 @@ const StepProgress: React.FC<{
         <Text {...TYPOGRAPHY.bodySmall} color="$textForeground">
           {t('common.progress', 'Progress')}
         </Text>
-        <Text {...TYPOGRAPHY.bodySmall} color="$primary500" fontWeight="$bold">
+        <Text {...TYPOGRAPHY.bodySmall} color="$progressBarFillColor" fontWeight="$bold">
           {displayPercent}%
         </Text>
       </HStack>
       <Progress value={percent} w="$full" h="$1.5" bg="$progressBarBackground">
-        <ProgressFilledTrack bg="$primary500" />
+        <ProgressFilledTrack bg="$progressBarFillColor" />
       </Progress>
     </VStack>
   );
@@ -1987,6 +1990,7 @@ const StepFooter: React.FC<{
   continueButtonProps?: any;
   saveDraftButtonProps?: any;
   submitButtonProps?: any;
+  lodingButton?: string;
 }> = memo(({
   isFirstStep,
   isLastStep,
@@ -2009,6 +2013,7 @@ const StepFooter: React.FC<{
   continueButtonProps,
   saveDraftButtonProps,
   submitButtonProps,
+  lodingButton
 }) => (
   <HStack
     space="sm"
@@ -2034,21 +2039,36 @@ const StepFooter: React.FC<{
           variant="outlineghost"
           {...saveDraftButtonProps}
           onPress={onSaveDraft}
-          isDisabled={disabled}
+          isDisabled={disabled || !!lodingButton}
         >
-          <ButtonIcon as={LucideIcon} name={saveDraftButtonProps?.icon || "FileText"} />
+          {lodingButton === "saveDraft" ? 
+            <Spinner color="$primary500" {...saveDraftButtonProps?._icon}/> :
+            <ButtonIcon as={LucideIcon} name={saveDraftButtonProps?.icon || "FileText"}
+              {...saveDraftButtonProps?._icon}
+            />
+           }
           <ButtonText>{saveDraftButtonText ?? t('common.saveDraft', 'Save Draft')}</ButtonText>
         </Button>
       )}
       {(showContinueButton ?? true) && !isLastStep && (
-        <Button {...continueButtonProps} onPress={onContinue} isDisabled={disabled}>
+        <Button {...continueButtonProps} onPress={onContinue} isDisabled={disabled || !!lodingButton}>
           <ButtonText>{continueButtonText ?? t('common.continue', 'Continue')}</ButtonText>
-          <ButtonIcon as={LucideIcon} name={continueButtonProps?.icon || "ArrowRight"} />
+          {lodingButton === "continue" ? 
+            <Spinner color="$primary500" {...continueButtonProps?._icon} /> :
+            <ButtonIcon as={LucideIcon} name={continueButtonProps?.icon || "ArrowRight"}
+              {...continueButtonProps?._icon}
+            />
+          }
         </Button>
       )}
       {(showSubmitButton ?? true) && isLastStep && (
-        <Button {...submitButtonProps} onPress={onSubmit} isDisabled={disabled}>
-          <ButtonIcon as={LucideIcon} name={submitButtonProps?.icon || "FileText"} />
+        <Button {...submitButtonProps} onPress={onSubmit} isDisabled={disabled || !!lodingButton}>
+          {lodingButton === "submit" ? 
+            <Spinner color="$primary500" {...submitButtonProps?._icon} /> :
+            <ButtonIcon as={LucideIcon} name={submitButtonProps?.icon || "FileText"}
+              {...submitButtonProps?._icon} 
+            />
+          }
           <ButtonText>{submitButtonText ?? t('common.submit', 'Submit')}</ButtonText>
         </Button>
       )}
@@ -2199,6 +2219,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   continueButtonProps,
   saveDraftButtonProps,
   submitButtonProps,
+  lodingButton,
 }) => {
   // Caller-supplied `onFieldChange` can't be assumed referentially stable —
   // wrap it once so every child that receives it keeps the same identity
@@ -2551,6 +2572,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
           continueButtonProps={continueButtonProps}
           saveDraftButtonProps={saveDraftButtonProps}
           submitButtonProps={submitButtonProps}
+          lodingButton={lodingButton}
         />
 
         <ValidationPopup

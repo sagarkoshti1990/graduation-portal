@@ -894,7 +894,7 @@ return (
       title="admin.menu.assignUsers"
       description={isSupervisor ? "admin.assignUsers.assignParticipantsToLCsDescription" : "admin.assignUsersDescription"}
       bottom={!isSupervisor && (
-        <HStack space="md" alignItems="center">
+        <HStack space="md" alignItems="center" flexWrap="wrap" gap="$2">
           <Button
             {...(activeTab === 'LC_TO_SUPERVISOR'
               ? titleHeaderStyles.solidButton
@@ -984,7 +984,8 @@ return (
                     getRowKey={(item: any) => item.value}
                     isLoading={isLoadingMappedLCs}
                     emptyMessage="common.noDataFound"
-                    responsive={true}
+                    responsive={false}
+                    minWidth={800}
                     pagination={{
                       enabled: true,
                       pageSize: mappedLCsPageSize,
@@ -1110,7 +1111,8 @@ return (
                     getRowKey={(item: any) => item.value}
                     isLoading={isLoadingMappedParticipants}
                     emptyMessage="common.noDataFound"
-                    responsive={true}
+                    responsive={false}
+                    minWidth={800}
                     pagination={{
                       enabled: true,
                       pageSize: mappedParticipantsPageSize,

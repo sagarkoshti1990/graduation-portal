@@ -25,8 +25,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
         rows: [
           {
             fields: [
-              ...(hideFileds.includes('province') ? [] : [{
-                name: 'province',
+              ...(hideFileds.includes('provinces') ? [] : [{
+                name: 'provinces',
                 type: 'select',
                 required: true,
                 label: { key: 'province', fallback: 'Province' },
@@ -42,8 +42,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                   },
                 ],
               }]),
-              ...(hideFileds.includes('site') ? [] : [{
-                name: 'site',
+              ...(hideFileds.includes('sites') ? [] : [{
+                name: 'sites',
                 type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
@@ -53,8 +53,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                   fallback: 'Select site',
                 },
                 optionsSource: 'sites',
-                dependsOn: 'province',
-                disabledWhen: { field: 'province', empty: true },
+                dependsOn: 'provinces',
+                disabledWhen: { field: 'provinces', empty: true },
                 validation: [
                   {
                     rule: 'required',
@@ -125,7 +125,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                 },
                 placeholder: { fallback: 'Describe this session...' },
                 visibleIf: [
-                  { name: 'sessionType', value: 'other', operator: '===' },
+                  { name: 'idp_training_task', value: 'custom', operator: '===' },
                 ],
                 validation: [
                   {
@@ -328,7 +328,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                 type: 'datetime',
                 required: true,
                 label: { key: 'start_date', fallback: 'Start Date & Time' },
-                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                placeholder: { fallback: 'dd-mm-yyyy hh:mm' },
                 validation: [
                   {
                     rule: 'required',
@@ -366,7 +366,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                 type: 'datetime',
                 required: true,
                 label: { key: 'end_date', fallback: 'End Date & Time' },
-                placeholder: { fallback: 'DD/MM/YYYY HH:MM' },
+                placeholder: { fallback: 'dd-mm-yyyy hh:mm' },
                 validation: [
                   {
                     rule: 'required',
@@ -518,8 +518,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
             rows: [
               {
                 fields: [
-                  ...(hideFileds.includes('province') ? [] : [{
-                    name: 'province',
+                  ...(hideFileds.includes('provinces') ? [] : [{
+                    name: 'provinces',
                     type: 'view',
                     label: { key: 'province', fallback: 'Province' },
                     optionsSource: 'provinces',
@@ -528,8 +528,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('site') ? [] : [{
-                    name: 'site',
+                  ...(hideFileds.includes('sites') ? [] : [{
+                    name: 'sites',
                     type: 'view',
                     label: { key: 'site', fallback: 'Site' },
                     optionsSource: 'sites',
@@ -622,7 +622,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                   ...(hideFileds.includes('start_date') ? [] : [{
                     type: 'view',
                     name: 'start_date',
-                    displayFormat: 'dateFormat@DD/MM/YYYY hh:mm A',
+                    displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
                     label: {
                       key: 'supportProvider.trainingSession.step3.startLabel',
                       fallback: 'Start Date & Time',
@@ -635,7 +635,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                   ...(hideFileds.includes('end_date') ? [] : [{
                     type: 'view',
                     name: 'end_date',
-                    displayFormat: 'dateFormat@DD/MM/YYYY hh:mm A',
+                    displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
                     label: {
                       key: 'supportProvider.trainingSession.step3.endLabel',
                       fallback: 'End Date & Time',
@@ -674,7 +674,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                 fields: [
                   ...(hideFileds.includes('meeting_link') ? [] : [{
                     type: 'view',
-                    name: 'link',
+                    name: 'meeting_link',
                     label: {
                       key: 'meetingLink',
                       fallback: 'Meeting Link',

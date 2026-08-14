@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, VStack } from '@ui';
 import styles from './styles';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
 import { TabButton } from '@components/Tabs';
 import FilterButton from '@components/Filter';
@@ -12,6 +12,7 @@ import AssetCard from './components/Cards/AssetCard';
 import { getProvincesList, getSitesByProvince } from '../../../services/usersService';
 import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
+import logger from '@utils/logger';
 
 export const STATUS_OPTIONS = [
   {
@@ -94,7 +95,6 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
   const onLoadMoreItems = () => {
     setPage((prevPage) => prevPage + 1);
   };
-
 
   const filterOptions = [
     { type: 'search', attr: 'search', placeholderKey: 'admin.filters.searchOfferingsPlaceholder' },
@@ -232,8 +232,8 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
           isSessionsSupport,
         };
 
-        let fetchedData: any[] = [];
-        let totalCount = 0;
+      let fetchedData: any[] = [];
+      let totalCount = 0;
 
         if (activeTab === 'sessions') {
           if (isSessionsSupport && activeSubTab !== 'browse_sessions') {
