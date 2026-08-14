@@ -6,14 +6,7 @@ import type { ServiceItem, AssetItem, FilterParams } from '../../types/supportOf
  * Fetches the created mentoring sessions list from the backend for the Support Offerings screen.
  */
 const getSupportOfferingsList = async (
-  params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    search?: string;
-    province?: string;
-    site?: string;
-  }
+  params?: any
 ): Promise<any> => {
   try {
     const {
@@ -21,8 +14,8 @@ const getSupportOfferingsList = async (
       limit,
       status,
       search,
-      province,
-      site,
+      provinces,
+      sites,
     } = params || {};
 
     let apiStatus = '';
@@ -30,8 +23,10 @@ const getSupportOfferingsList = async (
       apiStatus = 'DRAFT';
     } else if (status === 'Completed') {
       apiStatus = 'COMPLETED';
-    } else if (status === 'Upcoming' || status === 'In progress') {
-      apiStatus = 'PUBLISHED';
+    } else if (status === 'Upcoming') {
+      apiStatus = 'UPCOMING';
+    } else if (status === 'In progress') {
+      apiStatus = 'PUBLISHED,LIVE';
     } else if (status && status !== 'all-statuses') {
       apiStatus = status.toUpperCase();
     }
@@ -54,12 +49,12 @@ const getSupportOfferingsList = async (
       queryParams.append('search', search.trim());
     }
 
-    if (province && province !== 'all-provinces') {
-      queryParams.append('province', province);
+    if (provinces && provinces !== 'all-provinces') {
+      queryParams.append('provinces', provinces);
     }
 
-    if (site && site !== 'all-sites') {
-      queryParams.append('site', site);
+    if (sites && sites !== 'all-sites') {
+      queryParams.append('sites', sites);
     }
 
     const queryString = queryParams.toString();
@@ -95,20 +90,13 @@ const getSupportOfferingsList = async (
  * Fetch Training Sessions
  */
 export const getTrainingSessions = async (
-  params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    search?: string;
-    province?: string;
-    site?: string;
-  }
+  params?: any
 ): Promise<any> => {
   let responseData: any = {
     result: { data: [] },
     total: 0,
   };
-
+  
   try {
     responseData = await getSupportOfferingsList(params);
   } catch (error) {

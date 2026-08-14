@@ -29,13 +29,25 @@ export function valueMapping(
       }
     }
     return {
-      ...formValues,
+      // ...formValues,
+      title: formValues?.title,
+      provinces: formValues?.provinces,
+      sites: formValues?.sites,
       categories: formValues.categories?.[0],
       idp_training_task: formValues.idp_training_task,
+      sessionTypeOther: formValues.idp_training_task === "custom" ? formValues?.title : "",
+      description: formValues?.description,
+      learning_objectives: formValues?.learning_objectives,
       recommended_for,
       certificate_provided: `${formValues.certificate_provided}`,
+      seats_limit: formValues?.seats_limit,
       can_be_copied: `${formValues.can_be_copied}`,
-      max_capacity: formValues.seats_limit,
+      resources: formValues?.resources,
+      // delivery_mode: formValues.delivery_mode?.value || formValues.delivery_mode,
+      // meeting_link: formValues.meeting_info?.meeting_link,
+      // location: formValues.meeting_info?.location,
+      // start_date: moment(formValues.start_date).format('DD-MM-YYYY HH:mm'),
+      // end_date: moment(formValues.end_date).format('DD-MM-YYYY HH:mm'),
     };
   }
 
@@ -59,12 +71,12 @@ export function valueMapping(
     recommended_for: recommendedForPayload,
     start_date: moment(formValues.start_date).unix(),
     end_date: moment(formValues.end_date).unix(),
-    certificate_provided: formValues.certificate_provided === true,
-    can_be_copied: formValues.can_be_copied === true,
+    certificate_provided: formValues.certificate_provided === "true",
+    can_be_copied: formValues.can_be_copied === "true",
     time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     session_type: 'Public',
     status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
-    max_capacity: formValues.max_capacity,
+    seats_limit: formValues.seats_limit,
     meeting_info: {
       link: formValues.meeting_link,
       location: formValues.location,
@@ -91,3 +103,58 @@ export const uploadService = async (file : any) => {
     size: data?.size,
   };
 };
+
+export function buildTrainingFormOptionsMap({
+  provinces = [],
+  sites = [],
+  pillers = [],
+  sessionTypes = [],
+  targetAudience = [],
+  deliveryModes = [],
+  deliveryModeIcons = {},
+}: {
+  provinces?: any[];
+  sites?: any[];
+  pillers?: any[];
+  sessionTypes?: any[];
+  targetAudience?: any[];
+  deliveryModes?: any[];
+  deliveryModeIcons?: Record<string, string>;
+}) {
+  const provinceOpts =
+    Array.isArray(provinces) && provinces.length > 0
+      ? provinces.map((p: any) => ({
+          value: p._id || p.id || p.name,
+          label: p.name || p.label,
+        }))
+      : [];
+
+  const siteOpts =
+    Array.isArray(sites) && sites.length > 0
+      ? sites.map((s: any) => ({
+          value: s._id || s.id || s.name,
+          label: s.name || s.label,
+        }))
+      : [];
+
+  return {
+    provinces: provinceOpts,
+    sites: siteOpts,
+    pillars: Array.isArray(pillers) ? pillers : [],
+    sessionTypes: Array.isArray(sessionTypes) ? sessionTypes : [],
+    targetAudienceOptions: Array.isArray(targetAudience) ? targetAudience : [],
+    certificateOptions: [
+      { value: 'true', label: 'Yes' },
+      { value: 'false', label: 'No' },
+    ],
+    recurringOptions: [
+      { value: 'true', label: 'Yes — recurring session' },
+      { value: 'false', label: 'No — one-off session' },
+    ],
+    formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode: any) => ({
+      value: mode.value,
+      label: mode.label,
+      icon: deliveryModeIcons[mode.value?.toLowerCase()] || 'MapPin',
+    })),
+  };
+}
