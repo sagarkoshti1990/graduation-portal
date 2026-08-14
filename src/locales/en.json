@@ -2436,9 +2436,9 @@
       "subtitle": "Manage all published support — training sessions, services, and assets",
       "createNew": "Create New",
       "tabs": {
-        "trainingsAndSessions": "Trainings & Sessions ({{count}})",
-        "additionalServices": "Additional Services ({{count}})",
-        "assets": "Assets ({{count}})"
+        "trainingsAndSessions": "Trainings & Sessions",
+        "additionalServices": "Additional Services",
+        "assets": "Assets"
       },
       "filters": {
         "allStatuses": "All Statuses",

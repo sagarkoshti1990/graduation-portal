@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, Pressable, Text, VStack } from '@ui';
+import { Box, Button, ButtonIcon, ButtonText, HStack, LucideIcon, Pressable, Text, VStack } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import PageHeader from '@components/PageHeader';
 import { REQUEST_SUPPORT_OPTIONS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import SupportOfferings from '../ServiceProvider/SupportOfferings';
 import styles from './styles';
 
 const SessionsSupportScreen: React.FC = () => {
@@ -30,8 +31,9 @@ const SessionsSupportScreen: React.FC = () => {
   return (
     <VStack {...styles.container}>
       <PageHeader
-        title={titleNode}
+        title={titleNode as any}
         subtitle={t('lc.sessionsSupport.subtitle')}
+        _css={styles.pageHeaderCss}
         rightSection={
           <Box {...styles.rightSectionBox}>
             <HStack {...styles.rightSectionHStack}>
@@ -95,13 +97,7 @@ const SessionsSupportScreen: React.FC = () => {
           </Box>
         }
       />
-      <Container {...styles.contentContainer}>
-        <VStack {...styles.contentVStack}>
-          <Text {...styles.comingSoonText}>
-            {t('common.comingSoon', { defaultValue: 'Content coming soon...' })}
-          </Text>
-        </VStack>
-      </Container>
+      <SupportOfferings hideHeader={true} isSessionsSupport={true} />
     </VStack>
   );
 };

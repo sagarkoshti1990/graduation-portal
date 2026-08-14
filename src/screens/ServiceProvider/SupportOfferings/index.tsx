@@ -40,10 +40,11 @@ const DEFAULT_PROVINCE_OPTIONS = [{ label: 'All Provinces', value: 'all-province
 
 const DEFAULT_SITE_OPTIONS = [{ label: 'All Sites', value: 'all-sites' },];
 
-const App = (): React.JSX.Element => {
+const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: boolean; isSessionsSupport?: boolean } = {}): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('sessions');
+  const [activeSubTab, setActiveSubTab] = useState('browse_sessions');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
@@ -61,10 +62,25 @@ const App = (): React.JSX.Element => {
   });
 
   const tabs = [
-    { key: 'sessions', label: 'Trainings & Sessions', count: counts.sessions, icon: 'GraduationCap' },
-    { key: 'additional_services', label: 'Additional Services', count: counts.additional_services, icon: 'Briefcase' },
-    { key: 'assets', label: 'Assets', count: counts.assets, icon: 'Box' },
+    { key: 'sessions', label: t('supportProvider.supportOfferings.tabs.trainings', 'Trainings & Sessions'), count: counts.sessions, icon: 'GraduationCap' },
+    { key: 'additional_services', label: t('supportProvider.supportOfferings.tabs.additionalServices', 'Additional Services'), count: counts.additional_services, icon: 'Briefcase' },
+    { key: 'assets', label: t('supportProvider.supportOfferings.tabs.assets', 'Assets'), count: counts.assets, icon: 'Box' },
   ];
+
+  const subTabs = [
+    { key: 'browse_sessions', label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions') },
+    { key: 'my_requests', label: t('lc.sessionsSupport.tabs.myRequests', 'My Requests') },
+    { key: 'my_sessions', label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions') },
+    { key: 'history', label: t('lc.sessionsSupport.tabs.history', 'History') },
+  ];
+
+  const displayTabs = isSessionsSupport
+    ? tabs.map((tab) => ({
+      ...tab,
+      count: undefined,
+      icon: tab.key === 'sessions' ? 'Calendar' : tab.key === 'additional_services' ? 'Wrench' : 'Box',
+    }))
+    : tabs;
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -198,7 +214,7 @@ const App = (): React.JSX.Element => {
   // Reset page when tab or filters change
   useEffect(() => {
     setPage(1);
-  }, [activeTab, filters.search, filters.status, filters.province, filters.site]);
+  }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site]);
 
   // Fetch listing data
   useEffect(() => {
@@ -213,15 +229,21 @@ const App = (): React.JSX.Element => {
           status: filters.status,
           province: filters.province,
           site: filters.site,
+          isSessionsSupport,
         };
 
         let fetchedData: any[] = [];
         let totalCount = 0;
 
         if (activeTab === 'sessions') {
-          const res = await getTrainingSessions(params);
-          fetchedData = res?.result?.data || [];
-          totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
+          if (isSessionsSupport && activeSubTab !== 'browse_sessions') {
+            fetchedData = [];
+            totalCount = 0;
+          } else {
+            const res = await getTrainingSessions(params);
+            fetchedData = res?.result?.data || [];
+            totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
+          }
           setCounts((prev) => ({ ...prev, sessions: totalCount }));
         } else if (activeTab === 'additional_services') {
           const res = await getAdditionalServices(params);
@@ -262,57 +284,102 @@ const App = (): React.JSX.Element => {
     return () => {
       isMounted = false;
     };
-  }, [activeTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
+  }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
 
   return (
     <VStack flex={1}>
-      <SPTitleHeader
-        title={t('supportProvider.supportOfferings.title')}
-        subTitle={t('supportProvider.supportOfferings.subtitle')}
-        rightSection={
-          <Button
-            onPress={() => navigation.navigate('create-opportunity' as never)}
-          >
-            <ButtonIcon as={LucideIcon} name={'Plus'} />
-            <ButtonText>{t('supportProvider.supportOfferings.createNew')}</ButtonText>
-          </Button>
-        }
-      />
-      <Box {...styles.tabBarBox}>
+      {!hideHeader && (
+        <SPTitleHeader
+          title={t('supportProvider.supportOfferings.title')}
+          subTitle={t('supportProvider.supportOfferings.subtitle')}
+          rightSection={
+            <Button
+              onPress={() => navigation.navigate('create-opportunity' as never)}
+            >
+              <ButtonIcon as={LucideIcon} name={'Plus'} />
+              <ButtonText>{t('supportProvider.supportOfferings.createNew')}</ButtonText>
+            </Button>
+          }
+        />
+      )}
+      <Box {...(isSessionsSupport ? styles.sessionSupportTabBox : styles.tabBarBox)}>
         <Container {...styles.container} py="$0">
-          <HStack alignItems="center" space="sm">
-            {tabs.map((tab) => (
-              <TabButton
-                key={tab.key}
-                tab={tab}
-                isActive={activeTab === tab.key}
-                onPress={handleTabChange}
-                _text={styles.tabTextProps}
-                _container={styles.tabButtonContainer}
-                iconSize={16}
-              />
-            ))}
-          </HStack>
+          {isSessionsSupport ? (
+            <Box {...styles.sessionSupportTabWrapper}>
+              {displayTabs.map((tab) => (
+                <TabButton
+                  key={tab.key}
+                  tab={tab}
+                  isActive={activeTab === tab.key}
+                  onPress={handleTabChange}
+                  variant="ButtonTab"
+                  _text={styles.tabTextProps}
+                  _container={{
+                    ...styles.tabButtonContainer,
+                    borderRadius: activeTab === tab.key ? 50 : 0,
+                  }}
+                  iconSize={16}
+                />
+              ))}
+            </Box>
+          ) : (
+            <HStack alignItems="center" space="sm">
+              {tabs.map((tab) => (
+                <TabButton
+                  key={tab.key}
+                  tab={tab}
+                  isActive={activeTab === tab.key}
+                  onPress={handleTabChange}
+                  _text={styles.tabTextProps}
+                  _container={styles.tabButtonContainer}
+                  iconSize={16}
+                />
+              ))}
+            </HStack>
+          )}
         </Container>
       </Box>
 
+      {isSessionsSupport && (
+        <Box {...styles.sessionSupportSubTabBarBox}>
+          <Container {...styles.container} py="$0">
+            <HStack alignItems="center" space="sm">
+              {subTabs.map((tab) => (
+                <TabButton
+                  key={tab.key}
+                  tab={tab}
+                  isActive={activeSubTab === tab.key}
+                  onPress={(key) => setActiveSubTab(key)}
+                  _text={styles.tabTextProps}
+                  _container={styles.tabButtonContainer}
+                  iconSize={16}
+                />
+              ))}
+            </HStack>
+          </Container>
+        </Box>
+      )}
+
       <Container {...styles.container}>
         <VStack {...styles.contentContainer}>
-          <FilterButton
-            data={filterOptions}
-            onFilterChange={handleFilterChange}
-            showClearButton={false}
-            hideTitleHeader={true}
-            _container={styles.filterContainer}
-            _input={styles.filterInputProps}
-          />
+          {activeTab === 'sessions' && (!isSessionsSupport || activeSubTab === 'browse_sessions') && (
+            <FilterButton
+              data={filterOptions}
+              onFilterChange={handleFilterChange}
+              showClearButton={false}
+              hideTitleHeader={true}
+              _container={styles.filterContainer}
+              _input={styles.filterInputProps}
+            />
+          )}
 
-          {activeTab === 'sessions' && (
+          {activeTab === 'sessions' && (!isSessionsSupport || activeSubTab === 'browse_sessions') && (
             <TrainingCard
               items={items}
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
+              isSessionsSupport={isSessionsSupport}
             />
           )}
 

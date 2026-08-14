@@ -148,9 +148,10 @@ const uploadFile = async (file: any) => {
 
 interface CardProps {
   item: TrainingSessionItem;
+  isSessionsSupport?: boolean;
 }
 
-const Card: React.FC<CardProps> = ({ item: initialItem }) => {
+const Card: React.FC<CardProps> = ({ item: initialItem, isSessionsSupport }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const navigation = useNavigation();
@@ -379,12 +380,12 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   }, [initialItem]);
 
   return (
-    <Box {...styles.cardContainer}>
+    <Box {...(isSessionsSupport ? styles.supportCardContainer(false) : styles.cardContainer)}>
       <VStack {...styles.cardFullVStack}>
         {/* ROW 1 - TITLE & BADGES */}
-        <HStack {...styles.headerTopHStack}>
-          <HStack {...styles.headerTitleBadgeHStack}>
-            <Text {...styles.cardHeaderTitleText}>{item.title}</Text>
+        <HStack {...(isSessionsSupport ? styles.supportRow1 : styles.headerTopHStack)}>
+          <HStack {...(isSessionsSupport ? styles.supportRow1Left : styles.headerTitleBadgeHStack)}>
+            <Text {...(isSessionsSupport ? styles.supportTitle : styles.cardHeaderTitleText)}>{item.title}</Text>
 
             <Badge {...styles.badgeContainer(statusColors.bg, statusColors.border)}>
               <HStack {...styles.badgeContentHStack}>
@@ -403,20 +404,29 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
         </HStack>
 
         {/* ROW 2 - METADATA */}
-        <HStack {...styles.headerMetaHStack}>
+        <HStack {...(isSessionsSupport ? styles.supportRow2 : styles.headerMetaHStack)}>
+          {isSessionsSupport && (
+            <HStack {...styles.trainingMetaItemHStack}>
+              <LucideIcon name="Hash" {...styles.cardMetaIconProps} />
+              <Text {...styles.cardMetaSmText}>
+                {(item as any).externalId || (item as any).externalID || item.id || (item as any)._id || '-'}
+              </Text>
+            </HStack>
+          )}
+
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
             <Text {...styles.cardMetaSmText}>{dateTime}</Text>
           </HStack>
 
-          {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
+          {(isSessionsSupport || deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
             <HStack {...styles.trainingMetaItemHStack}>
               <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
               <Text {...styles.cardMetaSmText}>{locationValue || '-'}</Text>
             </HStack>
           )}
 
-          {(deliveryMode === 'online' || deliveryMode === 'hybrid') && (
+          {!isSessionsSupport && (deliveryMode === 'online' || deliveryMode === 'hybrid') && (
             <Pressable
               onPress={(e) => {
                 e?.stopPropagation?.();
@@ -438,97 +448,124 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
         {/* ROW 3 - NOTES / DESCRIPTION */}
         {descriptionText ? (
-          <Box {...styles.notesBox}>
-            <Text {...styles.notesText} numberOfLines={2} ellipsizeMode="tail">
+          <Box {...(isSessionsSupport ? styles.supportDescriptionBox : styles.notesBox)}>
+            <Text {...(isSessionsSupport ? styles.supportDescriptionText : styles.notesText)} numberOfLines={2} ellipsizeMode="tail">
               {descriptionText}
             </Text>
           </Box>
         ) : null}
 
         {/* ROW 4 - ACTIONS */}
-        <HStack {...styles.requestedByRowHStack}>
-          {/* <Text {...styles.cardRequestedByText}>
-            {t('supportProvider.supportOfferings.cards.providedBy','Provided by:')}{' '}
-            <Text {...styles.cardRequestedByOrgText}>{orgName}</Text>
-            {provinceName ? (<Text {...styles.cardRequestedByProvinceText}>{` • ${provinceName}`}</Text>) : null}</Text> */}
+        <HStack {...(isSessionsSupport ? styles.supportRow4 : styles.requestedByRowHStack)}>
+          {isSessionsSupport ? (
+            <Text {...styles.cardRequestedByText}>
+              {t('supportProvider.supportOfferings.cards.providedBy', 'Provided by:')}{' '}
+              <Text {...styles.cardRequestedByOrgText} fontWeight="700">{orgName}</Text>
+              {provinceName ? (<Text {...styles.cardRequestedByProvinceText}>{` • ${provinceName}`}</Text>) : null}
+            </Text>
+          ) : null}
 
-          <HStack {...styles.badgeContentHStack}>
-            {/* DRAFT */}
-            {currentStatus === 'Draft' ? (
+          <HStack {...(isSessionsSupport ? styles.supportRow4Right : styles.badgeContentHStack)}>
+            {isSessionsSupport ? (
               <>
-                <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { sessionId: item.id, type: FORM_MODE.EDIT, }); }}>
-                  <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
-                </Button>
-
-                {canCopy && (
-                  <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
-                    <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
-                    <ButtonText {...styles.outlineActionBtnText}>
-                      {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
-                    </ButtonText>
-                  </Button>
-                )}
-
-                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
-                  <ButtonText {...styles.detailsBtnText}>
-                    {isExpanded
-                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
-                  </ButtonText>
-                </Button>
-              </>
-            ) : currentStatus === 'In progress' ? (
-              /* IN PROGRESS */
-              <>
-                <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
-                  <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
-                  <ButtonText {...styles.completeActionBtnText}>
-                    {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
+                <Button
+                  variant={"outlineghost" as any}
+                  {...styles.supportOutlineGhostBtn}
+                  onPress={() => { }}
+                >
+                  <ButtonText {...(styles.supportOutlineGhostBtnText as any)}>
+                    {t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
                   </ButtonText>
                 </Button>
 
-                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
-                  <ButtonText {...styles.detailsBtnText}>
-                    {isExpanded
-                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
+                <Button
+                  variant="solid"
+                  {...styles.detailsBtn}
+                  onPress={() => { }}
+                >
+                  <ButtonText {...(styles.supportAssignBtnText as any)}>
+                    {t('supportProvider.supportOfferings.cards.assignSession', 'Assign Session')}
                   </ButtonText>
                 </Button>
               </>
             ) : (
-              /* UPCOMING / COMPLETED */
-              <>
-                {canCopy && (
-                  <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
-                    <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
-                    <ButtonText {...styles.outlineActionBtnText}>
-                      {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
+              /* DRAFT */
+              currentStatus === 'Draft' ? (
+                <>
+                  <Button variant={"outlineghost" as any} {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { sessionId: item.id, type: FORM_MODE.EDIT, }); }}>
+                    <ButtonText {...(styles.outlineActionBtnText as any)}>{t('common.edit', 'Edit')}</ButtonText>
+                  </Button>
+
+                  {canCopy && (
+                    <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
+                      <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
+                      <ButtonText {...(styles.outlineActionBtnText as any)}>
+                        {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
+                      </ButtonText>
+                    </Button>
+                  )}
+
+                  <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
+                    <ButtonText {...(styles.detailsBtnText as any)}>
+                      {isExpanded
+                        ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                        : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
                     </ButtonText>
                   </Button>
-                )}
-
-                {currentStatus === 'Completed' && !isAttendanceConfirmed && (
-                  <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
-                    <ButtonText {...styles.outlineActionBtnText}>
-                      {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
+                </>
+              ) : currentStatus === 'In progress' ? (
+                /* IN PROGRESS */
+                <>
+                  <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
+                    <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
+                    <ButtonText {...(styles.completeActionBtnText as any)}>
+                      {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
                     </ButtonText>
                   </Button>
-                )}
 
-                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
-                  <ButtonText {...styles.detailsBtnText}>
-                    {isExpanded
-                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
-                  </ButtonText>
-                </Button>
-              </>
+                  <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
+                    <ButtonText {...(styles.detailsBtnText as any)}>
+                      {isExpanded
+                        ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                        : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
+                    </ButtonText>
+                  </Button>
+                </>
+              ) : (
+                /* UPCOMING / COMPLETED */
+                <>
+                  {canCopy && (
+                    <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
+                      <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
+                      <ButtonText {...(styles.outlineActionBtnText as any)}>
+                        {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
+                      </ButtonText>
+                    </Button>
+                  )}
+
+                  {currentStatus === 'Completed' && !isAttendanceConfirmed && (
+                    <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
+                      <ButtonText {...(styles.outlineActionBtnText as any)}>
+                        {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
+                      </ButtonText>
+                    </Button>
+                  )}
+
+                  <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
+                    <ButtonText {...(styles.detailsBtnText as any)}>
+                      {isExpanded
+                        ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                        : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
+                    </ButtonText>
+                  </Button>
+                </>
+              )
             )}
           </HStack>
         </HStack>
 
         {/* ACCORDION CONTENT */}
-        {isExpanded && (
+        {!isSessionsSupport && isExpanded && (
           <VStack {...styles.expandedContentVStack}>
             {/* LOCATION / LINK */}
             <VStack {...styles.sectionVStack}>
@@ -565,7 +602,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                 {currentStatus === 'Completed' && !isAttendanceConfirmed && (
                   <Button variant="solid"  {...styles.confirmAttendanceBtn} onPress={() => setIsCompleteModalOpen(true)}  >
                     <ButtonIcon as={LucideIcon} name="Check" {...styles.cardWhiteIconProps} />
-                    <ButtonText {...styles.confirmAttendanceBtnText}>
+                    <ButtonText {...(styles.confirmAttendanceBtnText as any)}>
                       {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
                     </ButtonText>
                   </Button>
@@ -670,6 +707,7 @@ interface TrainingCardProps {
   isShowLoadMore: boolean;
   onLoadMoreItems: () => void;
   isLoadingMore?: boolean;
+  isSessionsSupport?: boolean;
 }
 
 export default function TrainingCard({
@@ -677,13 +715,14 @@ export default function TrainingCard({
   isShowLoadMore,
   onLoadMoreItems,
   isLoadingMore = false,
+  isSessionsSupport = false,
 }: TrainingCardProps): React.ReactElement {
   const { t } = useLanguage();
 
   return (
     <VStack {...styles.listContainer}>
       {items.map((item) => (
-        <Card key={item.id} item={item} />
+        <Card key={item.id} item={item} isSessionsSupport={isSessionsSupport} />
       ))}
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">

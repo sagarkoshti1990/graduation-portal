@@ -2,6 +2,10 @@ export const sessionsSupportStyles = {
   container: {
     flex: 1,
   },
+  pageHeaderCss: {
+    zIndex: 10,
+    position: 'relative' as const,
+  },
   headerTitleHStack: {
     alignItems: 'center',
     space: 'sm',
