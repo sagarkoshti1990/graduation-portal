@@ -209,7 +209,13 @@ const SessionsSupportScreen: React.FC = () => {
   // Reset page when tab or filters change
   useEffect(() => {
     setPage(1);
-  }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site, filters.pathway, filters.format]);
+  }, [activeTab, filters.search, filters.status, filters.province, filters.site, filters.pathway, filters.format]);
+
+  // Reset page and filters when active sub-tab changes
+  useEffect(() => {
+    setPage(1);
+    setFilters({});
+  }, [activeSubTab]);
 
   // Fetch listing data
   useEffect(() => {
@@ -408,18 +414,7 @@ const SessionsSupportScreen: React.FC = () => {
 
       <Container {...supportOfferingsStyles.container}>
         <VStack {...supportOfferingsStyles.contentContainer}>
-          {activeTab === 'sessions' && activeSubTab === 'browse_sessions' && (
-            <FilterButton
-              data={filterOptions}
-              onFilterChange={handleFilterChange}
-              showClearButton={false}
-              hideTitleHeader={true}
-              _container={supportOfferingsStyles.filterContainer}
-              _input={supportOfferingsStyles.filterInputProps}
-            />
-          )}
-
-          {activeTab === 'sessions' && activeSubTab !== 'browse_sessions' && (
+          {activeSubTab === 'browse_sessions' && (
             <RequestorFilter
               filters={filters}
               onFilterChange={handleFilterChange}

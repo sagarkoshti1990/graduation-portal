@@ -76,7 +76,6 @@ export const RequestorFilter: React.FC<RequestorFilterProps> = ({
         onSearch={handleSearch}
         defaultValue={filters.search || ''}
       />
-      <Box {...styles.requestorFilterRow} />
       <FilterButton
         data={configData}
         onFilterChange={handleDropdownChange}
