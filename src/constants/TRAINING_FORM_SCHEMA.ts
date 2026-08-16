@@ -226,8 +226,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('max_capacity') ? [] : [{
-                name: 'max_capacity',
+              ...(hideFileds.includes('seats_limit') ? [] : [{
+                name: 'seats_limit',
                 type: 'text',
                 required: true,
                 label: { key: 'maxCapacity', fallback: 'Maximum Capacity' },
@@ -600,8 +600,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('max_capacity') ? [] : [{
-                    name: 'max_capacity',
+                  ...(hideFileds.includes('seats_limit') ? [] : [{
+                    name: 'seats_limit',
                     type: 'view',
                     label: { key: 'maxCapacity', fallback: 'Maximum Capacity' },
                   }]),
@@ -700,7 +700,7 @@ export const REQUEST_SESSION_HIDE_FIELDS: string[] = [
   'sessionTypeOther',
   'recommended_for',
   'certificate_provided',
-  'max_capacity',
+  'seats_limit',
   'can_be_copied',
   'resources',
   'delivery_mode',
