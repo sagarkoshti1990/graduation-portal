@@ -1,6 +1,6 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
 
-export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSection[] => ([
+export const ADDITIONAL_SERVICES_SCHEMA = (): FormSection[] => ([
   // ─── Tab 1: Service Details ───────────────────────────────────────────────
   {
     type: 'tab',
@@ -88,14 +88,16 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
             ],
           },
           {
-            fields: [
-              ...(hideFileds.includes('idp_additional_services_tasks') ? [] : [{
-                name: 'idp_additional_services_tasks',
-                type: 'pillmultiselect',
-                label: { key: 'servicesCategory', fallback: 'Tags' },
-                optionsSource: 'sessionTypes',
-                dependsOn: 'categories',
-              } as FormField]),
+            fields: [{
+              name: 'idp_additional_services_tasks',
+              type: 'pillmultiselect',
+              label: { key: 'servicesCategory', fallback: 'Tags' },
+              optionsSource: 'sessionTypes',
+              dependsOn: 'categories',
+              visibleIf: [
+                { name: 'categories', value: 'other_attention', operator: '!=' },
+              ]
+            }
             ],
           },
           {
@@ -391,7 +393,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                   {
                     name: 'start_date',
                     type: 'view',
-                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    displayFormat: "dateFormat@DD-MM-YYYY hh:mm A",
                     label: { key: 'startDate', fallback: 'Start Date' },
                   },
                   // {
@@ -406,7 +408,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                   {
                     name: 'end_date',
                     type: 'view',
-                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    displayFormat: "dateFormat@DD-MM-YYYY hh:mm A",
                     label: { key: 'endDate', fallback: 'End Date' },
                   },
                   // {
