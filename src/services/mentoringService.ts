@@ -94,6 +94,22 @@ export const createSession = async (payload: any): Promise<any> => {
 };
 
 /**
+ * Create Mentoring Request Session
+ * Endpoint: POST /mentoring/v1/requestSessions/create
+ *
+ * @param payload - Request session payload
+ * @returns A promise resolving to the API response
+ */
+export const requestSession = async (payload: any): Promise<any> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.REQUEST_SESSION_CREATE, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+/**
  * Get Mentoring Session details by ID
  * Endpoint: GET /mentoring/v1/sessions/details/:sessionId?get_mentees=true
  */

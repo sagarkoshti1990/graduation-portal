@@ -7,11 +7,13 @@ import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { ADDITIONAL_SERVICES_FORM_SCHEMA,tabs } from '@constants/ADDITIONAL_SERVICES_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getProvincesList, getSitesByProvince } from '../../../../services/usersService';
+import { useRequireProfileCompletion } from '@hooks';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  useRequireProfileCompletion();
 
   const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);

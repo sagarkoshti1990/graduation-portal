@@ -1259,11 +1259,38 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <PillOptionsRow
         options={rawOptions}
-        isSelected={optionValue => selectedValues.includes(optionValue)}
-        onToggle={optionValue => {
-          const next = selectedValues.includes(optionValue)
-            ? selectedValues.filter(v => v !== optionValue)
-            : [...selectedValues, optionValue];
+        isSelected={optVal => {
+          const optObj = rawOptions.find(o => o.value === optVal || o.label === optVal);
+          const targetVal = optObj?.value || optVal;
+          const targetLabel = optObj?.label || optVal;
+          return selectedValues.some(
+            v =>
+              v === targetVal ||
+              v === targetLabel ||
+              v.toLowerCase() === targetVal.toLowerCase() ||
+              v.toLowerCase() === targetLabel.toLowerCase()
+          );
+        }}
+        onToggle={optVal => {
+          const optObj = rawOptions.find(o => o.value === optVal || o.label === optVal);
+          const targetVal = optObj?.value || optVal;
+          const targetLabel = optObj?.label || optVal;
+          const isSel = selectedValues.some(
+            v =>
+              v === targetVal ||
+              v === targetLabel ||
+              v.toLowerCase() === targetVal.toLowerCase() ||
+              v.toLowerCase() === targetLabel.toLowerCase()
+          );
+          const next = isSel
+            ? selectedValues.filter(
+                v =>
+                  v !== targetVal &&
+                  v !== targetLabel &&
+                  v.toLowerCase() !== targetVal.toLowerCase() &&
+                  v.toLowerCase() !== targetLabel.toLowerCase()
+              )
+            : [...selectedValues, targetVal];
           onChange(field.name || '', next);
         }}
         isDisabled={isDisabled}

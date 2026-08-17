@@ -8,11 +8,13 @@ import { ASSET_FORM_SCHEMA } from '@constants/ASSET_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
 import { getProjectCategoryList } from '../../../../services/projectService';
+import { useRequireProfileCompletion } from '@hooks';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  useRequireProfileCompletion();
   
   const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);

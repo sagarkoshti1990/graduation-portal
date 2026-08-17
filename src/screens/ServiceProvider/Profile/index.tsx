@@ -23,6 +23,7 @@ import {
   getProvincesList,
   getSitesByProvince,
 } from '../../../services/usersService';
+import { getMentoringEntities } from '../../../services/mentoringService';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
 import { BASIC_INFO_SCHEMA } from './constants/profileSchema/BASIC_INFO_SCHEMA';
 import { CONTACT_PERSON_SCHEMA } from './constants/profileSchema/CONTACT_PERSON_SCHEMA';
@@ -52,21 +53,30 @@ const OrganizationProfile = (): React.JSX.Element => {
   
   const [saving, setSaving] = useState(false);
 
-  // Options map for select fields
+  // Options map state for select fields
+  const [providerTypeOptions, setProviderTypeOptions] = useState<{ value: string; label: string }[]>([]);
+
   const optionsMap = {
-    organizationTypes: [
-      { value: 'NGO', label: 'NGO' },
-      { value: 'Government agency', label: 'Government agency' },
-      { value: 'Private company', label: 'Private company' },
-      { value: 'Training provider', label: 'Training provider' },
-      { value: 'Service provider', label: 'Service provider' },
-      { value: 'Financial institution', label: 'Financial institution' },
-      { value: 'Others', label: 'Others' },
-    ],
+    organizationTypes: providerTypeOptions,
   };
 
-  // Fetches and parses the logged-in user's organization profile on mount.
+  // Fetches dynamic options & logged-in user's organization profile on mount.
   useEffect(() => {
+    // Fetch dynamic provider_type options from mentoring API
+    getMentoringEntities({ value: 'provider_type' })
+      .then((res: any[]) => {
+        if (res && res.length > 0) {
+          const formatted = res.map((item: any) => ({
+            value: item.value || item.label || item.name || item,
+            label: item.label || item.name || item.value || item,
+          }));
+          setProviderTypeOptions(formatted);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching provider_type options:', err);
+      });
+
     if (!user?.id) {
       const emptyValues = {
         name: user?.name || '',
@@ -127,6 +137,15 @@ const OrganizationProfile = (): React.JSX.Element => {
         if (!Array.isArray(orgType)) {
           orgType = [];
         }
+
+        // Clean values to remove any placeholder/label string leakage
+        orgType = orgType.filter(
+          (t: any) =>
+            t &&
+            typeof t === 'string' &&
+            t.toLowerCase() !== 'provider type' &&
+            t.toLowerCase() !== 'organization type'
+        );
 
         const mapped = {
           name: getField('about') || getField('name') || user?.name || '',
@@ -291,11 +310,16 @@ try {
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
     provinces,
     sites,
+    provinceCoverage,
     supportCategories,
     meta: {
       organizationType: values.organizationType,
       agreementMoU: resolvedValues.agreementMoU,
       organisationCredentials: resolvedValues.organisationCredentials,
+      provinces,
+      sites,
+      provinceCoverage,
+      supportCategories,
     },
   };
 

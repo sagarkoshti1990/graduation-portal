@@ -43,4 +43,8 @@ export const API_ENDPOINTS = {
   MENTORING_CREATE_SESSION: `${prefix}/mentoring/v1/sessions/update?notifyUser=false`,
   MENTORING_UPDATE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/update/${sessionId}`,
   MENTORING_DETAILS_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/details/${sessionId}?get_mentees=true`,
+  // Session requests raised against a Service Provider's mentoring sessions.
+  // status query param must be one or more of REQUESTED, ACCEPTED, REJECTED, EXPIRED
+  REQUEST_SESSIONS_LIST: `${prefix}/mentoring/v1/requestSessions/list`,
+  REQUEST_SESSION_CREATE: `${prefix}/mentoring/v1/requestSessions/create`,
 };

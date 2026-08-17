@@ -151,6 +151,23 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     }
   };
 
+  const [editingProvinceId, setEditingProvinceId] = useState<string | null>(null);
+
+  const handleEditCard = (item: CoverageItem) => {
+    setEditingProvinceId(item.provinceId);
+    const matchProv = provinces.find(
+      (p: any) =>
+        (p._id || p.id) === item.provinceId ||
+        p.externalId === item.provinceId ||
+        (p.name && item.provinceName && p.name.toLowerCase() === item.provinceName.toLowerCase())
+    );
+    if (matchProv) {
+      setSelectedProvinceId(matchProv._id || matchProv.id || matchProv.externalId);
+    } else {
+      setSelectedProvinceId(item.provinceId);
+    }
+  };
+
   const handleAddCoverage = () => {
     if (!selectedProvinceId || selectedSiteIds.length === 0) return;
 
@@ -166,9 +183,9 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     const newSiteNames = selectedSitesObjects.map((s: any) => s.name || s.metaInformation?.name || '');
     const newSiteIds = selectedSitesObjects.map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id);
 
-    // Check if this province is already added
+    // Check if this province is already added or currently being edited
     const existingIndex = value.findIndex(item =>
-      item.provinceId === provinceExtId ||
+      item.provinceId === (editingProvinceId || provinceExtId) ||
       item.provinceId === selectedProvince?._id ||
       (provinceName && item.provinceName?.toLowerCase() === provinceName.toLowerCase())
     );
@@ -193,6 +210,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 
     onChange(nextValue);
     setSelectedProvinceId('');
+    setEditingProvinceId(null);
     setSites([]);
     setSelectedSiteIds([]);
   };
@@ -204,6 +222,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     const selectedExtId = selectedProv?.externalId || selectedProv?.metaInformation?.externalId || selectedProv?._id;
     if (provinceId === selectedProvinceId || provinceId === selectedExtId) {
       setSelectedProvinceId('');
+      setEditingProvinceId(null);
       setSites([]);
       setSelectedSiteIds([]);
     }
@@ -232,16 +251,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
             key={item.provinceId}
             onPress={() => {
               if (isEdit) {
-                const matchProv = provinces.find(
-                  p =>
-                    (p.externalId && p.externalId === item.provinceId) ||
-                    (p._id && p._id === item.provinceId) ||
-                    (p.metaInformation?.externalId && p.metaInformation.externalId === item.provinceId) ||
-                    (p.name && item.provinceName && p.name.toLowerCase() === item.provinceName.toLowerCase())
-                );
-                if (matchProv) {
-                  setSelectedProvinceId(matchProv._id || matchProv.id || matchProv.externalId);
-                }
+                handleEditCard(item);
               }
             }}
           >
@@ -259,9 +269,14 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
                   </Badge>
                 </HStack>
                 {isEdit && (
-                  <Pressable onPress={() => handleDeleteCard(item.provinceId)}>
-                    <LucideIcon name="Trash2" {...styles.trashIcon} />
-                  </Pressable>
+                  <HStack style={{ gap: 12, alignItems: 'center' }}>
+                    <Pressable onPress={() => handleEditCard(item)}>
+                      <LucideIcon name="Pencil" {...styles.trashIcon} />
+                    </Pressable>
+                    <Pressable onPress={() => handleDeleteCard(item.provinceId)}>
+                      <LucideIcon name="Trash2" {...styles.trashIcon} />
+                    </Pressable>
+                  </HStack>
                 )}
               </HStack>
 
@@ -282,7 +297,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
       {isEdit && (
         <VStack {...styles.coverageAddSection}>
           <Text {...styles.coverageAddTitle}>
-            + ADD PROVINCE COVERAGE
+            {editingProvinceId ? 'EDIT PROVINCE COVERAGE' : '+ ADD PROVINCE COVERAGE'}
           </Text>
           <HStack {...styles.coverageAddInputs}>
             <VStack {...styles.inputCol}>
@@ -295,7 +310,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
                 value={selectedProvinceId}
                 onChange={(val) => setSelectedProvinceId(val)}
                 placeholder={t('profile.selectProvincePlaceholder', 'Select province')}
-                disabled={loadingProvinces}
+                disabled={loadingProvinces || !!editingProvinceId}
               />
             </VStack>
 
@@ -322,7 +337,7 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
               {...(selectedProvinceId ? styles.addButtonActive : styles.addButtonDisabled)}
             >
               <ButtonIcon as={LucideIcon} name="Plus" {...styles.plusIconSmall} />
-              <ButtonText>{t('profile.addProvince', 'Add Province')}</ButtonText>
+              <ButtonText>{editingProvinceId ? t('profile.updateProvince', 'Update Province') : t('profile.addProvince', 'Add Province')}</ButtonText>
             </Button>
           </HStack>
         </VStack>

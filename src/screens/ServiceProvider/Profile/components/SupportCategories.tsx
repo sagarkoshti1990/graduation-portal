@@ -297,9 +297,14 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   </Badge>
                 </HStack>
                 {isEdit && (
-                  <Pressable onPress={() => handleDeleteCategory(item.id)}>
-                    <LucideIcon name="Trash2" {...styles.trashIcon} />
-                  </Pressable>
+                  <HStack style={{ gap: 12, alignItems: 'center' }}>
+                    <Pressable onPress={() => handleSelectCategory(item.categoryName)}>
+                      <LucideIcon name="Pencil" {...styles.trashIcon} />
+                    </Pressable>
+                    <Pressable onPress={() => handleDeleteCategory(item.id)}>
+                      <LucideIcon name="Trash2" {...styles.trashIcon} />
+                    </Pressable>
+                  </HStack>
                 )}
               </HStack>
 
@@ -407,7 +412,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
       {isEdit && (
         <VStack {...styles.coverageAddSection}>
           <Text {...styles.addSupportCategoryTitle}>
-            + ADD SUPPORT CATEGORY
+            {value.some(item => item.categoryName === selectedCategory) ? 'EDIT SUPPORT CATEGORY' : '+ ADD SUPPORT CATEGORY'}
           </Text>
           <VStack {...styles.categorySelectCol}>
             <HStack {...styles.labelCol}>
@@ -421,6 +426,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 handleSelectCategory(val);
               }}
               placeholder={t('profile.selectCategoryPlaceholder', 'Select Support Category')}
+              disabled={value.some(item => item.categoryName === selectedCategory)}
             />
           </VStack>
 
@@ -546,7 +552,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               <ButtonText
                 {...(isAddDisabled() ? styles.addCategoryButtonTextDisabled : styles.addCategoryButtonTextActive)}
               >
-                {t('profile.addCategory', 'Add Category')}
+                {value.some(item => item.categoryName === selectedCategory) ? t('profile.updateCategory', 'Update Category') : t('profile.addCategory', 'Add Category')}
               </ButtonText>
             </Button>
           </HStack>
