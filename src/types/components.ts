@@ -140,7 +140,7 @@ export interface ModalProps extends Omit<ComponentProps<typeof GluestackModalTyp
   // Body props - This is the only part that changes per requirement
   children: ReactNode; // Flexible body content
   // Footer props - Either use footerContent (custom) or button texts (simple buttons)
-  footerContent?: ReactNode; // Optional custom footer - only shows if provided
+  footerContent?: any; // Optional custom footer - only shows if provided
   // Simple footer buttons (if provided, footer will be shown with these buttons)
   cancelButtonText?: string | ReactNode; // Cancel button text (if provided, cancel button will be shown)
   confirmButtonText?: string | ReactNode; // Confirm button text (if provided, confirm button will be shown)
