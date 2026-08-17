@@ -1153,6 +1153,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         paddingLeft={0}
         height={40}
         width="100%"
+        {...(!!combinedError && {
+          borderWidth: 1,
+          borderColor: '$red500',
+        })}
       >
         {subFields.map((subField, idx) => (
           <React.Fragment key={subField.name || subField.label.key}>
@@ -1167,7 +1171,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             <FieldRenderer
               field={subField}
               value={subField.name ? values[subField.name] ?? '' : ''}
-              error={subField.name ? errors[subField.name] : undefined}
+              // error={subField.name ? errors[subField.name] : undefined}
               errors={errors}
               onChange={onChange}
               disabled={isFieldDisabled || !!subField.disabled}
@@ -1231,6 +1235,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         <Select
           {...(isNested ? {} : styles.select)}
           {...resolvedInputProps}
+          {...(!!error && {
+            borderWidth: 1,
+            borderColor: '$red500',
+          })}
           options={options}
           value={value}
           onChange={(val: string | string[], label?: any) =>
@@ -1502,6 +1510,10 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         <DatePicker
           {...styles.input}
           {...resolvedInputProps}
+          {...(!!error && {
+            borderWidth: 1,
+            borderColor: '$red500',
+          })}
           mode={field.type}
           placeholder={placeholder || 'YYYY-MM-DD'}
           value={displayValue}

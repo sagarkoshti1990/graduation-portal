@@ -246,6 +246,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'required', message: { key: 'errors.dobRequired', fallback: 'Date of birth is required' } },
               { rule: 'dateNotInFuture', message: { key: 'errors.dobFuture', fallback: 'Date of birth cannot be in the future' } },
+              {
+                rule: 'minAge',
+                value: 18,
+                message: {
+                  key: 'errors.dobMinAge',
+                  fallback: 'User must be at least 18 years old',
+                },
+              },
             ],
           },
         ],
@@ -338,11 +346,9 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
             optionsSource: 'provinces',
             visibleIf: [
-              { name: "roleId", operator: "!=", value: process.env.LC_ROLE_ID }
+              { name: 'isParticipant', operator: '!=', value: 'true' }
             ],
-            validation: [
-              { rule: 'required', message: { key: 'errors.provinceRequired', fallback: 'Province is required' } },
-            ],
+            validation: [],
           },
           {
             name: 'siteId',
@@ -355,11 +361,9 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
             optionsSource: 'sites',
             visibleIf: [
-              { name: "roleId", operator: "!=", value: process.env.LC_ROLE_ID }
+              { name: 'isParticipant', operator: '!=', value: 'true' }
             ],
-            validation: [
-              { rule: 'required', message: { key: 'errors.siteRequired', fallback: 'Site is required' } },
-            ],
+            validation: [],
           },
           {
             name: 'provinceId',
@@ -369,7 +373,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
             optionsSource: 'provinces',
             visibleIf: [
-              { name: "roleId", operator: "===", value: process.env.LC_ROLE_ID }
+              { name: 'isParticipant', operator: '===', value: 'true' }
             ],
             validation: [
               { rule: 'required', message: { key: 'errors.provinceRequired', fallback: 'Province is required' } },
@@ -386,7 +390,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
             optionsSource: 'sites',
             visibleIf: [
-              { name: "roleId", operator: "===", value: process.env.LC_ROLE_ID }
+              { name: 'isParticipant', operator: '===', value: 'true' }
             ],
             validation: [
               { rule: 'required', message: { key: 'errors.siteRequired', fallback: 'Site is required' } },
