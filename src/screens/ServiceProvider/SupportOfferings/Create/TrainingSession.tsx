@@ -41,7 +41,7 @@ const App = (): React.JSX.Element => {
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [lodingButton,setLodingButton] = useState<false | "saveDraft" | "submit">(false);
+  const [lodingButton, setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
 
   const { optionsMap } = useTrainingFormOptions({
@@ -65,35 +65,35 @@ const App = (): React.JSX.Element => {
     }
   };
 
-    const init = useCallback(async () => {
-      try {
-        const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
-          getProvincesList(),
-          getSessionCategories(),
-          getRecommendedFor(),
-          getDeliveryModes(),
-        ]);
-        setProvinces(result);
-        setPillers(getCategories);
-        setTargetAudience(getTarget);
-        setDeliveryModes(getDeliveryModeOptions);
+  const init = useCallback(async () => {
+    try {
+      const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
+        getProvincesList(),
+        getSessionCategories(),
+        getRecommendedFor(),
+        getDeliveryModes(),
+      ]);
+      setProvinces(result);
+      setPillers(getCategories);
+      setTargetAudience(getTarget);
+      setDeliveryModes(getDeliveryModeOptions);
 
-        // Fetch session data via getSessionDetails API when in Copy or Edit mode
-        if (sessionId && (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT)) {
-          const rawResponse = await getSessionDetails(sessionId);
-          const rawData = rawResponse?.result;
-          if (rawData) {
-            const formattedValues: any = valueMapping(rawData, true); // Reverse mapping to form values
-            setValues(formattedValues);
-          }
+      // Fetch session data via getSessionDetails API when in Copy or Edit mode
+      if (sessionId && (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT)) {
+        const rawResponse = await getSessionDetails(sessionId);
+        const rawData = rawResponse?.result;
+        if (rawData) {
+          const formattedValues: any = valueMapping(rawData, true, {}, 'training'); // Reverse mapping to form values
+          setValues(formattedValues);
         }
-      } catch (error: any) {
-        logger.error('Error loading form data:', error);
-        showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
-      } finally {
-        setIsLoading(false);
       }
-    },[sessionId, modeType]);
+    } catch (error: any) {
+      logger.error('Error loading form data:', error);
+      showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, modeType]);
 
   useFocusEffect(
     useCallback(() => {
@@ -137,10 +137,10 @@ const App = (): React.JSX.Element => {
       }
 
       const successMsg = isDraft
-        ? t('supportProvider.createSupport.training.alerts.draftSaved', 'Draft saved successfully!')
+        ? t('supportProvider.supportOfferings.cards.alerts.draftSaved', 'Support offering saved as draft!')
         : modeType === FORM_MODE.COPY
-          ? t('supportProvider.createSupport.training.alerts.sessionCopied', 'Training session copied successfully!')
-          : t('supportProvider.createSupport.training.alerts.sessionSaved', 'Training session saved successfully!');
+          ? t('supportProvider.supportOfferings.cards.alerts.supportCopied', 'Support copied successfully!')
+          : t('supportProvider.supportOfferings.cards.alerts.supportPublished', 'Support published successfully!');
 
       showAlert('success', successMsg);
       // @ts-ignore

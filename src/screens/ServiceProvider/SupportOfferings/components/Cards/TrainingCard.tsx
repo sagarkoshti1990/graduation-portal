@@ -71,7 +71,7 @@ const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
 
 const getStatusColors = (status: string) => {
   switch (status) {
-    case 'Draft':
+    case 'DRAFT':
       return {
         bg: '$backgroundLight100',
         border: '$borderColor',
@@ -79,7 +79,7 @@ const getStatusColors = (status: string) => {
         icon: 'FileText',
       };
 
-    case 'Upcoming':
+    case 'UPCOMING':
       return {
         bg: '$blue50',
         border: '$blue200',
@@ -87,8 +87,7 @@ const getStatusColors = (status: string) => {
         icon: 'Clock',
       };
 
-    case 'In progress':
-    case 'In Progress':
+    case 'LIVE':
       return {
         bg: '$observationTaskBg',
         border: '#fde68a',
@@ -96,7 +95,7 @@ const getStatusColors = (status: string) => {
         icon: 'AlertCircle',
       };
 
-    case 'Completed':
+    case 'COMPLETED':
     default:
       return {
         bg: '$success50',
@@ -204,11 +203,11 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
   const getStatus = () => {
     if (item.status === 'DRAFT' || item.status === 'Draft') {
-      return 'Draft';
+      return 'DRAFT';
     }
 
     if (item.status === 'COMPLETED' || item.status === 'Completed') {
-      return 'Completed';
+      return 'COMPLETED';
     }
 
     if (item.start_date) {
@@ -218,23 +217,23 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
           ? Number(item.start_date) * 1000
           : new Date(item.start_date).getTime();
 
-      const today = new Date();
-      const sessionDate = new Date(startMs);
+      const endMs = item.end_date
+        ? (typeof item.end_date === 'number' || !isNaN(Number(item.end_date))
+          ? Number(item.end_date) * 1000
+          : new Date(item.end_date).getTime())
+        : undefined;
 
-      const isToday =
-        sessionDate.getDate() === today.getDate() &&
-        sessionDate.getMonth() === today.getMonth() &&
-        sessionDate.getFullYear() === today.getFullYear();
+      const nowMs = Date.now();
 
-      if (sessionDate.getTime() > today.getTime() && !isToday) {
-        return 'Upcoming';
+      if (endMs !== undefined && nowMs > endMs) {
+        return 'COMPLETED';
       }
 
-      if (isToday) {
-        return 'In progress';
+      if (nowMs < startMs) {
+        return 'UPCOMING';
       }
 
-      return 'Completed';
+      return 'LIVE';
     }
 
     return item.status || 'Upcoming';
@@ -456,7 +455,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             {/* DRAFT */}
             {currentStatus === 'Draft' ? (
               <>
-              {/* @ts-ignore */}
+                {/* @ts-ignore */}
                 <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
                   <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
                 </Button>

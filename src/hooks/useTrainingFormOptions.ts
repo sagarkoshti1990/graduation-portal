@@ -53,12 +53,12 @@ export function useTrainingFormOptions({
   // Fetch sites when province changes
   useEffect(() => {
     const init = async () => {
-      if (!values.province) {
+      if (!values.provinces) {
         setSites([]);
         return;
       }
       try {
-        const res = await getSitesByProvince({ provinceId: values.province, page: 1, limit: 100 });
+        const res = await getSitesByProvince({ provinceId: values.provinces, page: 1, limit: 100 });
         setSites(res.result?.data || []);
       } catch (err) {
         console.error('Error fetching sites:', err);
@@ -67,7 +67,7 @@ export function useTrainingFormOptions({
     };
 
     init();
-  }, [values.province]);
+  }, [values.provinces]);
 
   const optionsMap = useMemo(() => {
     return buildTrainingFormOptionsMap({

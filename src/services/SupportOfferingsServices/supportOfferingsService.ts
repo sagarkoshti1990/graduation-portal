@@ -1,42 +1,30 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
 import type { ServiceItem, AssetItem, FilterParams } from '../../types/supportOfferingsTypes';
+import { encodeSearchText } from '../../utils/helper';
 
 /**
  * Fetches the created mentoring sessions list from the backend for the Support Offerings screen.
  */
 const getSupportOfferingsList = async (
-  params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    search?: string;
-    province?: string;
-    site?: string;
-  }
+  params: any,
+  offeringType: string = 'training'
 ): Promise<any> => {
   try {
-    const {
-      page,
-      limit,
-      status,
-      search,
-      province,
-      site,
-    } = params || {};
+    const filters = params?.filters || {};
+    const { page, limit } = params;
 
-    let apiStatus = '';
-    if (status === 'Draft') {
-      apiStatus = 'DRAFT';
-    } else if (status === 'Completed') {
-      apiStatus = 'COMPLETED';
-    } else if (status === 'Upcoming' || status === 'In progress') {
-      apiStatus = 'PUBLISHED';
-    } else if (status && status !== 'all-statuses') {
-      apiStatus = status.toUpperCase();
-    }
+    const { status, search, province, site } = filters;
+
+    const apiStatus = (status && status !== 'all-statuses') ? status.toUpperCase() : '';
 
     const queryParams = new URLSearchParams();
+
+    queryParams.append('support_offering_type', offeringType);
+
+    if (apiStatus) {
+      queryParams.append('status', apiStatus);
+    }
 
     if (page !== undefined && page !== null) {
       queryParams.append('page', page.toString());
@@ -46,20 +34,20 @@ const getSupportOfferingsList = async (
       queryParams.append('limit', limit.toString());
     }
 
-    if (apiStatus) {
-      queryParams.append('status', apiStatus);
-    }
-
     if (search?.trim()) {
-      queryParams.append('search', search.trim());
+      // Backend base64-decodes `search` before using it (see pagination
+      // middleware), so it must be sent base64-encoded — otherwise plain
+      // text gets mis-decoded into garbage bytes and can incorrectly trip
+      // the backend's "Invalid search text" special-character check.
+      queryParams.append('search', encodeSearchText(search.trim()));
     }
 
     if (province && province !== 'all-provinces') {
-      queryParams.append('province', province);
+      queryParams.append('provinces', province);
     }
 
     if (site && site !== 'all-sites') {
-      queryParams.append('site', site);
+      queryParams.append('sites', site);
     }
 
     const queryString = queryParams.toString();
@@ -95,14 +83,7 @@ const getSupportOfferingsList = async (
  * Fetch Training Sessions
  */
 export const getTrainingSessions = async (
-  params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    search?: string;
-    province?: string;
-    site?: string;
-  }
+  params: any
 ): Promise<any> => {
   let responseData: any = {
     result: { data: [] },
@@ -110,7 +91,7 @@ export const getTrainingSessions = async (
   };
 
   try {
-    responseData = await getSupportOfferingsList(params);
+    responseData = await getSupportOfferingsList(params, 'training');
   } catch (error) {
     console.warn('Backend API endpoint unavailable for Training Sessions:', error);
     responseData = {
@@ -125,8 +106,23 @@ export const getTrainingSessions = async (
 /**
  * Fetch Additional Services
  */
-export const getAdditionalServices = async (params?: FilterParams): Promise<ServiceItem[]> => {
-  return [];
+export const getAdditionalServices = async (params?: any): Promise<any> => {
+  let responseData: any = {
+    result: { data: [] },
+    total: 0,
+  };
+
+  try {
+    responseData = await getSupportOfferingsList(params, 'additional_service');
+  } catch (error) {
+    console.warn('Backend API endpoint unavailable for Training Sessions:', error);
+    responseData = {
+      result: { data: [] },
+      total: 0,
+    };
+  }
+
+  return responseData;
 };
 
 /**
