@@ -35,13 +35,25 @@ export function valueMapping(
       }
     }
     return {
-      ...formValues,
+      // ...formValues,
+      title: formValues?.title,
+      provinces: formValues?.provinces,
+      sites: formValues?.sites,
       categories: formValues.categories?.[0],
       idp_training_task: formValues.idp_training_task,
+      sessionTypeOther: formValues.idp_training_task === "custom" ? formValues?.title : "",
+      description: formValues?.description,
+      learning_objectives: formValues?.learning_objectives,
       recommended_for,
       certificate_provided: `${formValues.certificate_provided}`,
+      seats_limit: formValues?.seats_limit,
       can_be_copied: `${formValues.can_be_copied}`,
-      max_capacity: formValues.seats_limit,
+      resources: formValues?.resources,
+      // delivery_mode: formValues.delivery_mode?.value || formValues.delivery_mode,
+      // meeting_link: formValues.meeting_info?.meeting_link,
+      // location: formValues.meeting_info?.location,
+      // start_date: moment(formValues.start_date).format('DD-MM-YYYY HH:mm'),
+      // end_date: moment(formValues.end_date).format('DD-MM-YYYY HH:mm'),
     };
   }
 
@@ -75,14 +87,13 @@ export function valueMapping(
     categories: [formValues.categories],
     provinces: [formValues.provinces],
     recommended_for: recommendedForPayload,
-    start_date: startDate,
-    end_date: endDate,
-    certificate_provided: formValues.certificate_provided === true,
-    can_be_copied: formValues.can_be_copied === true,
-    type: 'Public',
-    support_offering_type: effectiveFormType,
+    start_date: moment(formValues.start_date).unix(),
+    end_date: moment(formValues.end_date).unix(),
+    certificate_provided: formValues.certificate_provided === "true",
+    can_be_copied: formValues.can_be_copied === "true",
+    session_type: 'Public',
     status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
-    seats_limit: formValues.max_capacity,
+    seats_limit: formValues.seats_limit,
     meeting_info: {
       link: formValues?.meeting_link,
       location: formValues?.location,
@@ -125,10 +136,10 @@ export function buildTrainingFormOptionsMap({
     pillars: pillers,
     sessionTypes: sessionTypes,
     targetAudienceOptions: targetAudience,
-    formatOptions: deliveryModes.map((mode: any) => ({
+    formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode: any) => ({
       value: mode.value,
       label: mode.label,
-      icon: deliveryModeIcons[mode.value],
+      icon: deliveryModeIcons[mode.value?.toLowerCase()] || 'MapPin',
     })),
     certificateOptions: [...CERTIFICATE_OPTIONS],
     recurringOptions: [...RECURRING_OPTIONS],

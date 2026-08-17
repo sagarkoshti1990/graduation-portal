@@ -204,7 +204,10 @@ const App = (): React.JSX.Element => {
     try {
       setLoading(true);
       const params = {
-        filters,
+        search:filters.search,
+        status: filters.status,
+        provinces: filters.province,
+        sites: filters.site,
         page,
         limit,
       };
@@ -243,7 +246,7 @@ const App = (): React.JSX.Element => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, filters, page, limit]);
+  }, [activeTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
 
   useFocusEffect(
     useCallback(() => {

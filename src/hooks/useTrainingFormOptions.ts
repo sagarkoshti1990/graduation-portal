@@ -58,7 +58,7 @@ export function useTrainingFormOptions({
         return;
       }
       try {
-        const res = await getSitesByProvince({ provinceId: values.provinces, page: 1, limit: 100 });
+        const res = await getSitesByProvince({ provinceId: values.provinces });
         setSites(res.result?.data || []);
       } catch (err) {
         console.error('Error fetching sites:', err);

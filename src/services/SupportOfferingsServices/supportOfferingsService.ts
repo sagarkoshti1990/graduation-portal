@@ -11,10 +11,8 @@ const getSupportOfferingsList = async (
   offeringType: string = 'training'
 ): Promise<any> => {
   try {
-    const filters = params?.filters || {};
-    const { page, limit } = params;
-
-    const { status, search, province, site } = filters;
+    console.log(params);
+    const { page, limit, status, search, provinces, sites } = params;
 
     const apiStatus = (status && status !== 'all-statuses') ? status.toUpperCase() : '';
 
@@ -42,12 +40,12 @@ const getSupportOfferingsList = async (
       queryParams.append('search', encodeSearchText(search.trim()));
     }
 
-    if (province && province !== 'all-provinces') {
-      queryParams.append('provinces', province);
+    if (provinces && provinces !== 'all-provinces') {
+      queryParams.append('provinces', provinces);
     }
 
-    if (site && site !== 'all-sites') {
-      queryParams.append('sites', site);
+    if (sites && sites !== 'all-sites') {
+      queryParams.append('sites', sites);
     }
 
     const queryString = queryParams.toString();
@@ -83,7 +81,7 @@ const getSupportOfferingsList = async (
  * Fetch Training Sessions
  */
 export const getTrainingSessions = async (
-  params: any
+  params?: any
 ): Promise<any> => {
   let responseData: any = {
     result: { data: [] },
