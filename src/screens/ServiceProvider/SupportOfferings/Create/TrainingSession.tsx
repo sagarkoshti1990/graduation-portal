@@ -151,7 +151,7 @@ const App = (): React.JSX.Element => {
       const errMsg =
         error?.data?.message ||
         error?.message ||
-        t('supportProvider.createSupport.training.errors.saveFailed', 'Something went wrong while saving. Please try again.');
+        t('supportProvider.createSupport.errors.saveFailed', 'Something went wrong while saving. Please try again.');
       showAlert('error', errMsg);
     } finally {
       setLodingButton(false);
