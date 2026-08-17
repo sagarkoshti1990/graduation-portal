@@ -11,7 +11,6 @@ const getSupportOfferingsList = async (
   offeringType: string = 'training'
 ): Promise<any> => {
   try {
-    console.log(params);
     const { page, limit, status, search, provinces, sites } = params;
 
     const apiStatus = (status && status !== 'all-statuses') ? status.toUpperCase() : '';
@@ -33,10 +32,7 @@ const getSupportOfferingsList = async (
     }
 
     if (search?.trim()) {
-      // Backend base64-decodes `search` before using it (see pagination
-      // middleware), so it must be sent base64-encoded — otherwise plain
-      // text gets mis-decoded into garbage bytes and can incorrectly trip
-      // the backend's "Invalid search text" special-character check.
+      // Must be sent base64-encoded 
       queryParams.append('search', encodeSearchText(search.trim()));
     }
 
