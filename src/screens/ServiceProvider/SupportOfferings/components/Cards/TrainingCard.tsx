@@ -70,6 +70,7 @@ const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
 };
 
 const getStatusColors = (status: string) => {
+  status = status.toUpperCase();
   switch (status) {
     case 'DRAFT':
       return {
@@ -201,13 +202,14 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const deliveryMode = getDeliveryMode(item);
   const deliveryBadge = getDeliveryBadge(deliveryMode);
 
-  const getStatus = () => {
-    if (item.status === 'DRAFT' || item.status === 'Draft') {
-      return 'DRAFT';
+  const formatStatus = () => {
+    const thisStatus = item.status.toUpperCase();
+    if (thisStatus === 'DRAFT') {
+      return 'Draft';
     }
 
-    if (item.status === 'COMPLETED' || item.status === 'Completed') {
-      return 'COMPLETED';
+    if (thisStatus === 'COMPLETED') {
+      return 'Completed';
     }
 
     if (item.start_date) {
@@ -226,21 +228,21 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
       const nowMs = Date.now();
 
       if (endMs !== undefined && nowMs > endMs) {
-        return 'COMPLETED';
+        return 'Completed';
       }
 
       if (nowMs < startMs) {
-        return 'UPCOMING';
+        return 'Upcoming';
       }
 
-      return 'LIVE';
+      return 'In Progress';
     }
 
     return item.status || 'Upcoming';
   };
-
-  const currentStatus = getStatus();
-  const statusColors = getStatusColors(currentStatus);
+  const currentStatus = item.status.toUpperCase();
+  const statusTag = formatStatus();
+  const statusColors = getStatusColors(item.status);
 
   const canCopy = !!item.can_be_copied;
 
@@ -388,7 +390,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             <Badge {...styles.badgeContainer(statusColors.bg, statusColors.border)}>
               <HStack {...styles.badgeContentHStack}>
                 <LucideIcon name={statusColors.icon} {...styles.badgeIconProps(statusColors.text)} />
-                <BadgeText {...styles.badgeText(statusColors.text)}>{currentStatus}</BadgeText>
+                <BadgeText {...styles.badgeText(statusColors.text)}>{statusTag}</BadgeText>
               </HStack>
             </Badge>
           </HStack>
@@ -453,7 +455,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
           <HStack {...styles.badgeContentHStack}>
             {/* DRAFT */}
-            {currentStatus === 'Draft' ? (
+            {currentStatus === 'DRAFT' ? (
               <>
                 {/* @ts-ignore */}
                 <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
@@ -477,7 +479,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   </ButtonText>
                 </Button>
               </>
-            ) : currentStatus === 'In progress' ? (
+            ) : currentStatus === 'LIVE' ? (
               /* IN PROGRESS */
               <>
                 <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
@@ -507,7 +509,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   </Button>
                 )}
 
-                {currentStatus === 'Completed' && !isAttendanceConfirmed && (
+                {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
                   <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
                     <ButtonText {...styles.outlineActionBtnText}>
                       {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
@@ -562,7 +564,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   {t('supportProvider.supportOfferings.cards.attendance', 'Attendance')}
                 </Text>
 
-                {currentStatus === 'Completed' && !isAttendanceConfirmed && (
+                {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
                   <Button variant="solid"  {...styles.confirmAttendanceBtn} onPress={() => setIsCompleteModalOpen(true)}  >
                     <ButtonIcon as={LucideIcon} name="Check" {...styles.cardWhiteIconProps} />
                     <ButtonText {...styles.confirmAttendanceBtnText}>
@@ -602,14 +604,14 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             </VStack>
 
             {/* SESSION MATERIALS */}
-            {(currentStatus !== 'Completed' || files.length > 0) && (
+            {(currentStatus !== 'COMPLETED' || files.length > 0) && (
               <VStack {...styles.sectionVStack}>
                 <HStack {...styles.materialsHeaderHStack}>
                   <Text {...styles.cardSectionTitleText}>
                     {t('supportProvider.supportOfferings.cards.sessionMaterials', 'Session Materials')}
                   </Text>
 
-                  {currentStatus !== 'Completed' && (
+                  {currentStatus !== 'COMPLETED' && (
                     <Pressable {...styles.uploadMaterialBtn} onPress={handleUploadPress}>
                       <HStack {...styles.badgeContentHStack}>
                         <LucideIcon name="Upload" {...styles.cardMetaIconProps} />
