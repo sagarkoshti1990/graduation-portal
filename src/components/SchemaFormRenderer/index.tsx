@@ -155,7 +155,7 @@ export interface SchemaFormRendererProps {
   /** Current field errors keyed by field name */
   errors?: Record<string, string>;
   /** Called when any field value changes */
-  onFieldChange?: (name: string, value: any, other?:any) => void;
+  onFieldChange?: (name: string, value: any, other?: any) => void;
   /** Resolved options for every optionsSource key referenced in the schema */
   optionsMap?: OptionsMap;
   /** Global disabled state (e.g. while form is submitting) */
@@ -547,6 +547,22 @@ function applyRule(
       break;
     }
 
+    case 'minAge': {
+      if (!val) break;
+      const normalized = val.replace(/_/g, '-').replace(/\//g, '-');
+      const birthDate = new Date(normalized);
+      if (!isNaN(birthDate.getTime())) {
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age < Number(rule.value)) return msg;
+      }
+      break;
+    }
+
     // Only applicable to date/datetime fields — a schema author putting this
     // on any other field type is a no-op, not a crash.
     case 'dateCompare': {
@@ -655,8 +671,8 @@ function toFilePreviewItems(value: any): FilePreviewItem[] {
   const items: (FileAsset | string)[] = Array.isArray(value)
     ? value
     : value
-    ? [value]
-    : [];
+      ? [value]
+      : [];
 
   return items.map((item, index) => {
     if (typeof item === 'string') {
@@ -980,7 +996,7 @@ interface FieldRendererProps {
   value: any;
   error?: string;
   errors: Record<string, string>;
-  onChange: (name: string, value: any, other?:any) => void;
+  onChange: (name: string, value: any, other?: any) => void;
   disabled: boolean;
   optionsMap: OptionsMap;
   values: Record<string, any>;
@@ -1004,7 +1020,7 @@ interface FieldRendererProps {
 const PillOptionsRow: React.FC<{
   options: { value: string; label: string }[];
   isSelected: (value: string) => boolean;
-  onToggle: (value: string, other?:any) => void;
+  onToggle: (value: string, other?: any) => void;
   isDisabled: boolean;
   /** pillmultiselect only — shows a checked/unchecked checkbox beside each pill's label. */
   isMulti?: boolean;
@@ -1019,8 +1035,8 @@ const PillOptionsRow: React.FC<{
           onPress={() => onToggle(option.value, option)}
           flex={1}
           px="$3"
-          py={isMulti ? "$2" :"$2.5"}
-          borderRadius={isMulti ? "$xl" :"$2xl"}
+          py={isMulti ? "$2" : "$2.5"}
+          borderRadius={isMulti ? "$xl" : "$2xl"}
           borderWidth={1}
           borderColor={selected ? '$primary500' : '$borderColor'}
           bg={selected ? '$bgPrimary/5' : 'transparent'}
@@ -1217,7 +1233,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           {...resolvedInputProps}
           options={options}
           value={value}
-          onChange={(val: string | string[],label?:any) =>
+          onChange={(val: string | string[], label?: any) =>
             onChange(field.name || '', val, { label })
           }
           placeholder={activePlaceholder}
@@ -1289,7 +1305,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
           multiple
           options={options}
           value={selectedValues}
-          onChange={(vals: string | string[], other?:any) =>
+          onChange={(vals: string | string[], other?: any) =>
             onChange(field.name || '', Array.isArray(vals) ? vals : [], other)
           }
           placeholder={placeholder}
@@ -1305,9 +1321,9 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     const isDisabled = isFieldDisabled || !!field.isReadOnly;
     const subLabelText = field.subLabel
       ? t(
-          `admin.users.createUser.${field.subLabel.key}`,
-          field.subLabel.fallback,
-        )
+        `admin.users.createUser.${field.subLabel.key}`,
+        field.subLabel.fallback,
+      )
       : undefined;
 
     const isMultiple = !!field.multiple;
@@ -1316,8 +1332,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     const existingItems: (FileAsset | string)[] = Array.isArray(value)
       ? value
       : value
-      ? [value]
-      : [];
+        ? [value]
+        : [];
     const previewItems = toFilePreviewItems(value);
 
     // Applies OS-level file filtering only for valid MIME types (when supported).
@@ -1370,8 +1386,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       previewItems.length === 0
         ? placeholder || t('common.clickToUpload', 'Click to upload')
         : isMultiple
-        ? t('common.addMoreFiles', 'Add more files')
-        : previewItems[0].name;
+          ? t('common.addMoreFiles', 'Add more files')
+          : previewItems[0].name;
 
     return (
       <VStack space="xs">
@@ -1497,7 +1513,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
               ? new Date()
               : undefined
           }
-          minimumDate = {
+          minimumDate={
             field.validation?.some(r => r.rule === 'dateNotInPast')
               ? new Date(new Date().setDate(new Date().getDate() - 1))
               : undefined
@@ -1609,11 +1625,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
       alignItems={field.icon ? 'center' : undefined}
       {...(isNested
         ? {
-            borderColor: 'transparent',
-            bg: 'transparent',
-            flex: 1,
-            variant: 'outline',
-          }
+          borderColor: 'transparent',
+          bg: 'transparent',
+          flex: 1,
+          variant: 'outline',
+        }
         : {})}
     >
       {field.icon && (
@@ -1655,7 +1671,7 @@ interface NodeRenderContext {
   optionsMap: OptionsMap;
   mode: string;
   t: (key: string, fallback?: string) => string;
-  onFieldChange: (name: string, value: any, other?:any) => void;
+  onFieldChange: (name: string, value: any, other?: any) => void;
   disabled: boolean;
   visibilityGroups: Record<string, boolean>;
   toggleVisibilityGroup: (group: string) => void;
@@ -1773,9 +1789,9 @@ const TabGroupRenderer: React.FC<{
         {tabs.map(tab => {
           const subTitleText = tab.subTitle
             ? ctx.t(
-                `admin.users.createUser.${tab.subTitle.key}`,
-                tab.subTitle.fallback,
-              )
+              `admin.users.createUser.${tab.subTitle.key}`,
+              tab.subTitle.fallback,
+            )
             : undefined;
           return (
             <TabsTabPanel key={tab.id} value={tab.id} {...tab._container}>
@@ -1804,9 +1820,9 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = mem
   const titleText = nodeTitleText(node, ctx.t);
   const subTitleText = node.subTitle
     ? ctx.t(
-        `admin.users.createUser.${node.subTitle.key}`,
-        node.subTitle.fallback,
-      )
+      `admin.users.createUser.${node.subTitle.key}`,
+      node.subTitle.fallback,
+    )
     : undefined;
 
   return (
@@ -1944,7 +1960,7 @@ const StepProgress: React.FC<{
 }> = memo(({ total, completed, t }) => {
   const percent = total > 0 ? (completed / total) * 100 : 100;
   const displayPercent = Math.ceil((percent * 10) / 10);
-  
+
   return (
     <VStack
       space="xs"
@@ -2041,19 +2057,19 @@ const StepFooter: React.FC<{
           onPress={onSaveDraft}
           isDisabled={disabled || !!lodingButton}
         >
-          {lodingButton === "saveDraft" ? 
-            <Spinner color="$primary500" {...saveDraftButtonProps?._icon}/> :
+          {lodingButton === "saveDraft" ?
+            <Spinner color="$primary500" {...saveDraftButtonProps?._icon} /> :
             <ButtonIcon as={LucideIcon} name={saveDraftButtonProps?.icon || "FileText"}
               {...saveDraftButtonProps?._icon}
             />
-           }
+          }
           <ButtonText>{saveDraftButtonText ?? t('common.saveDraft', 'Save Draft')}</ButtonText>
         </Button>
       )}
       {(showContinueButton ?? true) && !isLastStep && (
         <Button {...continueButtonProps} onPress={onContinue} isDisabled={disabled || !!lodingButton}>
           <ButtonText>{continueButtonText ?? t('common.continue', 'Continue')}</ButtonText>
-          {lodingButton === "continue" ? 
+          {lodingButton === "continue" ?
             <Spinner color="$primary500" {...continueButtonProps?._icon} /> :
             <ButtonIcon as={LucideIcon} name={continueButtonProps?.icon || "ArrowRight"}
               {...continueButtonProps?._icon}
@@ -2063,10 +2079,10 @@ const StepFooter: React.FC<{
       )}
       {(showSubmitButton ?? true) && isLastStep && (
         <Button {...submitButtonProps} onPress={onSubmit} isDisabled={disabled || !!lodingButton}>
-          {lodingButton === "submit" ? 
+          {lodingButton === "submit" ?
             <Spinner color="$primary500" {...submitButtonProps?._icon} /> :
             <ButtonIcon as={LucideIcon} name={submitButtonProps?.icon || "FileText"}
-              {...submitButtonProps?._icon} 
+              {...submitButtonProps?._icon}
             />
           }
           <ButtonText>{submitButtonText ?? t('common.submit', 'Submit')}</ButtonText>
@@ -2518,9 +2534,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   if (isMultiStep) {
     const stepSubTitleText = activeTab?.subTitle
       ? t(
-          `admin.users.createUser.${activeTab.subTitle.key}`,
-          activeTab.subTitle.fallback,
-        )
+        `admin.users.createUser.${activeTab.subTitle.key}`,
+        activeTab.subTitle.fallback,
+      )
       : undefined;
 
     return (
@@ -2657,7 +2673,7 @@ interface FieldType {
   errors?: Record<string, string>;
   optionsMap?: OptionsMap;
   mode?: string;
-  onFieldChange?: (name: string, value: any, other?:any) => void;
+  onFieldChange?: (name: string, value: any, other?: any) => void;
   disabled?: boolean;
   visibilityGroups?: Record<string, boolean>;
   toggleVisibilityGroup?: (group: string) => void;
@@ -2764,7 +2780,7 @@ const HintDisplay: React.FC<{
           <LucideIcon name="Info" size={16} color="$primary500" />
         </Box>
         <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" flex={1}>
-          {hint}
+          {t(hint)}
         </Text>
       </HStack>
     );
@@ -2792,6 +2808,7 @@ const HintDisplay: React.FC<{
             name={iconName as any}
             size={16}
             color={config?.iconColor || config.textColor}
+            {...hint?._icon}
           />
         </Box>
         <VStack space="xs" flex={1}>
@@ -2800,13 +2817,14 @@ const HintDisplay: React.FC<{
               {...TYPOGRAPHY.bodySmall}
               color={config.textColor}
               fontWeight="$medium"
+              {...hint?._title}
             >
               {titleText}
             </Text>
           )}
           {!!hint.bullets?.length && (
             <VStack space="xs">
-              {hint.bullets.map((bullet, index) => (
+              {hint.bullets.map((bullet: any, index: number) => (
                 <HStack
                   key={bullet.key ?? index}
                   space="xs"
@@ -2846,9 +2864,9 @@ function formatFieldValueForDisplay(
   optionsMap: OptionsMap,
 ): string {
   const resolveLabel = (v: any): string => {
-    if(filed?.displayFormat) {
-      const [type,format] = filed?.displayFormat?.split("@")
-      if(type === "dateFormat") {
+    if (filed?.displayFormat) {
+      const [type, format] = filed?.displayFormat?.split("@")
+      if (type === "dateFormat") {
         return moment(v).format(format)
       }
     }
@@ -2894,9 +2912,9 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
 
   const label = targetField?.label
     ? t(
-        `admin.users.createUser.${targetField.label.key}`,
-        targetField.label.fallback,
-      )
+      `admin.users.createUser.${targetField.label.key}`,
+      targetField.label.fallback,
+    )
     : field.name ?? '-';
 
   let rawValue = field.name ? values[field.name] : undefined;

@@ -45,6 +45,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'namePlaceholder', fallback: 'Enter Name' },
             validation: [
               { rule: 'required', message: { key: 'errors.nameRequired', fallback: 'Name is required' } },
+              {
+                rule: 'minLength',
+                value: 2,
+                message: {
+                  key: 'errors.nameMin',
+                  fallback: 'Name must be at least 2 characters',
+                },
+              },
               { rule: 'maxLength', value: 100, message: { key: 'errors.nameMax', fallback: 'Name is too long' } },
             ],
           },
@@ -82,11 +90,22 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             label: { key: 'nationalId', fallback: 'National ID' },
             placeholder: { key: 'nationalIdPlaceholder', fallback: 'Enter National ID' },
-            inputProps: { keyboardType: 'numeric' },
+            inputProps: { keyboardType: 'numeric', maxLength: 20 },
             validation: [
               {
                 rule: 'required',
-                message: { key: 'errors.nationalIdRequired', fallback: 'National ID is required' },
+                message: {
+                  key: 'errors.nationalIdRequired',
+                  fallback: 'National ID is required',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[0-9]{20}$',
+                message: {
+                  key: 'errors.nationalIdInvalid',
+                  fallback: 'National ID must be exactly 20 digits',
+                },
               },
             ],
           },
@@ -96,8 +115,10 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
         fields: [
           {
             type: 'group',
+            name: 'phoneNumber',
             required: false,
             label: { key: 'phoneNumber', fallback: 'Phone Number' },
+            _input: INPUT_STYLE,
             fields: [
               {
                 name: 'countryCode',
@@ -114,13 +135,12 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
                 placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-                _input: INPUT_STYLE,
-                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{10}$',
-                    message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                    value: '^[0-9]{9}$',
+                    message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid only 9-digits phone number' },
                   },
                 ],
               },
@@ -128,6 +148,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
           },
           {
             type: 'group',
+            name: 'alternativePhone',
             required: false,
             label: { key: 'alternativePhone', fallback: 'Alt Phone Number' },
             _input: INPUT_STYLE,
@@ -149,12 +170,12 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
                 placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
                 _input: INPUT_STYLE,
-                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{10}$',
-                    message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid 10-digit phone number' },
+                    value: '^[0-9]{9}$',
+                    message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid only 9-digits phone number' },
                   },
                 ],
               },
@@ -239,9 +260,26 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             visibleWhen: { flag: 'isSupervisorOrLC' },
             label: { key: 'employeeId', fallback: 'Employee ID' },
-            placeholder: { key: 'employeeIdPlaceholder', fallback: 'Enter Employee ID' },
+            placeholder: {
+              key: 'employeeIdPlaceholder',
+              fallback: 'Enter Employee ID',
+            },
             validation: [
-              { rule: 'required', message: { key: 'errors.employeeIdRequired', fallback: 'Employee ID is required' } },
+              {
+                rule: 'required',
+                message: {
+                  key: 'errors.employeeIdRequired',
+                  fallback: 'Employee ID is required',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[A-Z]{3}[0-9]{5}$',
+                message: {
+                  key: 'errors.employeeIdInvalid',
+                  fallback: 'Enter a valid Employee ID (e.g. ADM00001)',
+                },
+              },
             ],
           },
         ],
@@ -283,6 +321,12 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },
     _title: TITLE_STYLE,
     _container: CONTAINER_STYLE,
+    hint: {
+      type: 'info', icon: "Lock",
+      _icon: { color: "$danger500" },
+      _title: { color: "$text200" },
+      title: { fallback: 'A temporary password will be generated for the account. The user must reset this password before they can log in for the first time.' }
+    },
     rows: [
       {
         fields: [
@@ -362,20 +406,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
             ],
-          },
-        ],
-      },
-      {
-        fields: [
-          {
-            name: 'tempPasswordNote',
-            type: 'note',
-            required: false,
-            icon: 'Info',
-            label: {
-              key: 'tempPasswordNote',
-              fallback: 'A temporary password will be generated for the account. The user must reset this password before they can log in for the first time.',
-            },
           },
         ],
       },

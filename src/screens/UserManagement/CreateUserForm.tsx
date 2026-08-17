@@ -67,13 +67,13 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   }, [isOpen, initialValues]);
 
   const optionsMap = useMemo(() => mapFiltersToOptionsMap({
-        roles,
-        genders,
-        provinces,
-        sites: formSites,
-        organisations,
-        positions,
-        countryCodes,
+    roles,
+    genders,
+    provinces,
+    sites: formSites,
+    organisations,
+    positions,
+    countryCodes,
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
@@ -105,8 +105,12 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       showAlert('success', t('admin.users.createUser.success') || 'User created successfully.', { placement: 'bottom' });
       onSuccess();
     } catch (error: any) {
-      const errMsg = (error as any)?.data?.message || (error as any)?.message || t('admin.users.createUser.error') || 'Failed to create user.';
-      showAlert('error', errMsg, { placement: 'bottom' });
+      let errMsg = t('admin.users.createUser.error') || 'Failed to create user.';
+      let type: "error" | "warning" = "error"
+      if (error?.statusCode === 406) {
+        type = 'warning';
+      }
+      showAlert(type, errMsg, { placement: 'bottom' });
     } finally {
       setIsSubmitting(false);
     }
@@ -149,6 +153,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             bg: '$faintBlue',
           }}
           firstNameRef={firstNameRef}
+        // onSubmit={handleSubmit}
         />
         <VStack space="md" width="100%">
           <HStack space="md" justifyContent="flex-end">
