@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { VStack, HStack, Button, ButtonText, Modal, Badge, BadgeText, Text, LucideIcon, } from '@ui';
+import { VStack, HStack, Button, ButtonText, Modal, Badge, BadgeText, Text, LucideIcon, Spinner } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { FormField, FORM_FIELD_TYPES } from '@components/SchemaFormRenderer/type';
@@ -67,13 +67,13 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   }, [isOpen, initialValues]);
 
   const optionsMap = useMemo(() => mapFiltersToOptionsMap({
-        roles,
-        genders,
-        provinces,
-        sites: formSites,
-        organisations,
-        positions,
-        countryCodes,
+    roles,
+    genders,
+    provinces,
+    sites: formSites,
+    organisations,
+    positions,
+    countryCodes,
   }), [roles, genders, provinces, formSites, organisations, positions, countryCodes]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
@@ -83,10 +83,22 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
         next.username = value;
       }
       if (name === 'provinceId') next.siteId = '';
+      if (name === 'roleId') {
+        const selectedRole = roles.find((r: any) => r.id.toString() === value);
+        const roleTitle = (selectedRole?.title || '').toLowerCase();
+        next.isParticipant = roleTitle === 'user' ? 'true' : 'false';
+      }
       return next;
     });
-    setErrors(prev => ({ ...prev, [name]: '' }));
-  }, []);
+    setErrors(prev => {
+      const next = { ...prev, [name]: '' };
+      if (name === 'roleId') {
+        next.provinceId = '';
+        next.siteId = '';
+      }
+      return next;
+    });
+  }, [roles]);
 
   const handleSubmit = async () => {
     const validationErrs = validateSchema(CREATE_USER_FORM_SCHEMA, values, optionsMap);
@@ -105,13 +117,25 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       showAlert('success', t('admin.users.createUser.success') || 'User created successfully.', { placement: 'bottom' });
       onSuccess();
     } catch (error: any) {
-      const errMsg = (error as any)?.data?.message || (error as any)?.message || t('admin.users.createUser.error') || 'Failed to create user.';
-      showAlert('error', errMsg, { placement: 'bottom' });
+      let errMsg = error?.message || t('admin.users.createUser.error') || 'Failed to create user.';
+      let type: "error" | "warning" = "error"
+      if (error?.statusCode === 406 || error?.statusCode === 422) {
+        type = 'warning';
+      }
+      //console.log(error?.data, error?.error, error?.statusCode, "errorssagarold")
+      showAlert(type, errMsg, { placement: 'bottom' });
+      setErrors({
+        ...errors,
+        [error?.data?.error?.[0]?.param]:
+          error?.data?.error?.[0]?.msg ||
+          error?.data?.error?.[0]?.message,
+      });
+      //setErrors({ ...errors, [error?.data?.error?.[0]?.param]: error?.data?.error?.[0]?.message })
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  //console.log(errors, "errorssagar")
   const firstNameRef = useRef<any>(null);
 
   useEffect(() => {
@@ -134,7 +158,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       closeOnOverlayClick={!isSubmitting}
       style={{ zIndex: 9999 }}
     >
-      <VStack space="md" width="100%">
+      <VStack space="md" width="100%" px="$1">
         <SchemaFormRenderer
           schema={CREATE_USER_FORM_SCHEMA}
           values={values}
@@ -149,6 +173,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
             bg: '$faintBlue',
           }}
           firstNameRef={firstNameRef}
+        // onSubmit={handleSubmit}
         />
         <VStack space="md" width="100%">
           <HStack space="md" justifyContent="flex-end">
@@ -156,8 +181,9 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               <ButtonText {...TYPOGRAPHY.bodySmall}>{t('admin.users.createUser.cancel') || 'Cancel'}</ButtonText>
             </Button>
             <Button variant="solid" action="primary" onPress={handleSubmit} isDisabled={isSubmitting}>
+              {isSubmitting && <Spinner size="small" color="$white" mr="$2" />}
               <ButtonText color="$white" {...TYPOGRAPHY.bodySmall}>
-                {isSubmitting ? (t('common.submitting') || 'Submitting...') : (t('admin.users.createUser.create') || 'Create User')}
+                {isSubmitting ? 'Submitting...' : (t('admin.users.createUser.create') || 'Create User')}
               </ButtonText>
             </Button>
           </HStack>

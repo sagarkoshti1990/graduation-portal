@@ -1460,6 +1460,8 @@
           "positionRequired": "Position is required.",
           "employeeIdRequired": "Employee ID is required.",
           "employeeIdInvalid": "Employee ID must be 3 letters followed by 5 digits (e.g. ADM00001).",
+          "nationalIdRequired": "National ID is required.",
+          "nationalIdInvalid": "20 digits only required",
           "genderRequired": "Gender is required.",
           "dobRequired": "Date of Birth is required.",
           "usernameRequired": "Username is required.",
