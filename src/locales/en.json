@@ -2475,7 +2475,10 @@
         "locationLabel": "Location: {{location}}",
         "hub": "Hub: {{hub}}",
         "alerts": {
-          "sessionCopied": "Session copied successfully!",
+          "draftSaved": "Support offering saved as draft!",
+          "supportPublished": "Support published successfully!",
+          "sessionSaved": "Session saved successfully!",
+          "supportCopied": "Support copied successfully!",
           "sessionCompleted": "Session marked as completed successfully!",
           "materialUploaded": "Material uploaded successfully!",
           "downloading": "Downloading {{name}}...",
@@ -2528,6 +2531,9 @@
           "title": "Assets",
           "description": "Cash, in-kind, or voucher support for livelihood activities."
         }
+      },
+      "errors": {
+        "saveFailed": "Something went wrong while saving. Please try again."
       }
     },
     "supportRequests": {

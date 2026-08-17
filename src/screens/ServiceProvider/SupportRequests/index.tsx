@@ -123,8 +123,8 @@ const App = (): React.JSX.Element => {
     try {
       const res = await getSupportRequests({
         tab: activeTab as any,
-        province: filters.province,
-        site: filters.site,
+        provinces: filters.province,
+        sites: filters.site,
         search: filters.search,
       });
       if (res?.data) {

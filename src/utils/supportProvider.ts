@@ -1,12 +1,18 @@
 import { LC_ROLES, PARTICIPANT } from '@constants/ROLES';
+import { CERTIFICATE_OPTIONS, RECURRING_OPTIONS } from '@constants/SUPPORT_PROVIDER_CARDS';
 import moment from 'moment';
 import { uploadFiles } from '../project-player/services/projectPlayerService';
+
+export type SupportOfferingFormType = 'training' | 'additional_service' | 'asset' | string;
 
 export function valueMapping(
   formValues: any,
   isReverseMapping: boolean = false,
-  optionMap: any = {},
+  optionsMap: any,
+  formType: SupportOfferingFormType = 'training',
 ): any {
+  const effectiveFormType: SupportOfferingFormType = formType || 'training';
+
   if (isReverseMapping) {
     let recommended_for = '';
     if (
@@ -52,12 +58,23 @@ export function valueMapping(
   }
 
   let recommendedForPayload: string[] = [];
-  if (Array.isArray(formValues.recommended_for)) {
+  if (effectiveFormType === 'additional_service' || effectiveFormType === 'asset') {
+    recommendedForPayload = ['user'];
+  } else if (Array.isArray(formValues.recommended_for)) {
     recommendedForPayload = formValues.recommended_for;
   } else if (formValues.recommended_for === 'both') {
     recommendedForPayload = ['org_admin', 'user'];
   } else if (formValues.recommended_for) {
     recommendedForPayload = [formValues.recommended_for];
+  }
+
+  let startDate, endDate;
+  if (effectiveFormType === 'training') {
+    startDate = formValues.start_date ? moment(formValues.start_date).unix() : undefined;
+    endDate = formValues.end_date ? moment(formValues.end_date).unix() : undefined;
+  } else {
+    startDate = formValues.start_date ? moment(formValues.start_date).unix() : moment().unix();
+    endDate = formValues.end_date ? moment(formValues.end_date).unix() : moment().add(2, 'years').unix();
   }
 
   return {
@@ -66,6 +83,7 @@ export function valueMapping(
       formValues?.idp_training_task === 'custom'
         ? formValues?.sessionTypeOther
         : formValues?.title,
+    delivery_mode: formValues.delivery_mode || 'offline',
     categories: [formValues.categories],
     provinces: [formValues.provinces],
     recommended_for: recommendedForPayload,
@@ -73,18 +91,62 @@ export function valueMapping(
     end_date: moment(formValues.end_date).unix(),
     certificate_provided: formValues.certificate_provided === "true",
     can_be_copied: formValues.can_be_copied === "true",
-    time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     session_type: 'Public',
     status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
     seats_limit: formValues.seats_limit,
     meeting_info: {
-      link: formValues.meeting_link,
-      location: formValues.location,
+      link: formValues?.meeting_link,
+      location: formValues?.location,
     },
   };
 }
 
-export const uploadService = async (file : any) => {
+interface TrainingFormOptionsMapParams {
+  provinces?: any[];
+  sites?: any[];
+  pillers?: any[];
+  sessionTypes?: any[];
+  targetAudience?: any[];
+  deliveryModes?: any[];
+  deliveryModeIcons?: Record<string, string>;
+}
+
+/**
+ * Builds the `optionsMap` consumed by SchemaFormRenderer for the training
+ * session form, keyed by each field's `optionsSource` (see TRAINING_FORM_SCHEMA.ts).
+ */
+export function buildTrainingFormOptionsMap({
+  provinces = [],
+  sites = [],
+  pillers = [],
+  sessionTypes = [],
+  targetAudience = [],
+  deliveryModes = [],
+  deliveryModeIcons = {},
+}: TrainingFormOptionsMapParams): Record<string, { value: string; label: string }[]> {
+  return {
+    provinces: provinces.map((province: any) => ({
+      value: province._id,
+      label: province.name,
+    })),
+    sites: sites.map((site: any) => ({
+      value: site._id,
+      label: site.name,
+    })),
+    pillars: pillers,
+    sessionTypes: sessionTypes,
+    targetAudienceOptions: targetAudience,
+    formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode: any) => ({
+      value: mode.value,
+      label: mode.label,
+      icon: deliveryModeIcons[mode.value?.toLowerCase()] || 'MapPin',
+    })),
+    certificateOptions: [...CERTIFICATE_OPTIONS],
+    recurringOptions: [...RECURRING_OPTIONS],
+  };
+}
+
+export const uploadService = async (file: any) => {
   const entityId = `trainingSession-${Date.now()}`;
   const uploaded = await uploadFiles(entityId, [
     { ...file, size: file.size ?? 0 },
@@ -103,58 +165,3 @@ export const uploadService = async (file : any) => {
     size: data?.size,
   };
 };
-
-export function buildTrainingFormOptionsMap({
-  provinces = [],
-  sites = [],
-  pillers = [],
-  sessionTypes = [],
-  targetAudience = [],
-  deliveryModes = [],
-  deliveryModeIcons = {},
-}: {
-  provinces?: any[];
-  sites?: any[];
-  pillers?: any[];
-  sessionTypes?: any[];
-  targetAudience?: any[];
-  deliveryModes?: any[];
-  deliveryModeIcons?: Record<string, string>;
-}) {
-  const provinceOpts =
-    Array.isArray(provinces) && provinces.length > 0
-      ? provinces.map((p: any) => ({
-          value: p._id || p.id || p.name,
-          label: p.name || p.label,
-        }))
-      : [];
-
-  const siteOpts =
-    Array.isArray(sites) && sites.length > 0
-      ? sites.map((s: any) => ({
-          value: s._id || s.id || s.name,
-          label: s.name || s.label,
-        }))
-      : [];
-
-  return {
-    provinces: provinceOpts,
-    sites: siteOpts,
-    pillars: Array.isArray(pillers) ? pillers : [],
-    sessionTypes: Array.isArray(sessionTypes) ? sessionTypes : [],
-    targetAudienceOptions: Array.isArray(targetAudience) ? targetAudience : [],
-    certificateOptions: [
-      { value: 'true', label: 'Yes' },
-      { value: 'false', label: 'No' },
-    ],
-    recurringOptions: [
-      { value: 'true', label: 'Yes — recurring session' },
-      { value: 'false', label: 'No — one-off session' },
-    ],
-    formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode: any) => ({
-      value: mode.value,
-      label: mode.label,
-      icon: deliveryModeIcons[mode.value?.toLowerCase()] || 'MapPin',
-    })),
-  };
-}

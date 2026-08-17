@@ -536,3 +536,51 @@ export const formatDateString = (dateStr: string): string => {
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 };
+
+/**
+ * Base64-encodes a plain string for use as a `search` query param.
+ *
+ * The mentoring backend's pagination middleware always base64-decodes the
+ * `search` query param before using it, so callers are required to
+ * base64-encode search text before sending it (otherwise plain text gets
+ * mis-decoded and can trip the backend's special-character validation).
+ *
+ * Uses `btoa` on web; falls back to a manual Latin-1 byte encoder on native
+ * (Hermes doesn't provide `btoa`).
+ */
+export const encodeSearchText = (input: string): string => {
+  if (typeof btoa === 'function') {
+    try {
+      return btoa(input);
+    } catch {
+      // fall through to manual encode (e.g. input has chars outside Latin-1)
+    }
+  }
+
+  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  let i = 0;
+
+  for (; i + 3 <= input.length; i += 3) {
+    const b1 = input.charCodeAt(i) & 0xff;
+    const b2 = input.charCodeAt(i + 1) & 0xff;
+    const b3 = input.charCodeAt(i + 2) & 0xff;
+    result +=
+      CHARS[b1 >> 2] +
+      CHARS[((b1 & 3) << 4) | (b2 >> 4)] +
+      CHARS[((b2 & 15) << 2) | (b3 >> 6)] +
+      CHARS[b3 & 63];
+  }
+
+  const remaining = input.length - i;
+  if (remaining === 1) {
+    const b1 = input.charCodeAt(i) & 0xff;
+    result += CHARS[b1 >> 2] + CHARS[(b1 & 3) << 4] + '==';
+  } else if (remaining === 2) {
+    const b1 = input.charCodeAt(i) & 0xff;
+    const b2 = input.charCodeAt(i + 1) & 0xff;
+    result += CHARS[b1 >> 2] + CHARS[((b1 & 3) << 4) | (b2 >> 4)] + CHARS[(b2 & 15) << 2] + '=';
+  }
+
+  return result;
+};

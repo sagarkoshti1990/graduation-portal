@@ -1,37 +1,27 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
 import type { ServiceItem, AssetItem, FilterParams } from '../../types/supportOfferingsTypes';
+import { encodeSearchText } from '../../utils/helper';
 
 /**
  * Fetches the created mentoring sessions list from the backend for the Support Offerings screen.
  */
 const getSupportOfferingsList = async (
-  params?: any
+  params: any,
+  offeringType: string = 'training'
 ): Promise<any> => {
   try {
-    const {
-      page,
-      limit,
-      status,
-      search,
-      provinces,
-      sites,
-    } = params || {};
+    const { page, limit, status, search, provinces, sites } = params;
 
-    let apiStatus = '';
-    if (status === 'Draft') {
-      apiStatus = 'DRAFT';
-    } else if (status === 'Completed') {
-      apiStatus = 'COMPLETED';
-    } else if (status === 'Upcoming') {
-      apiStatus = 'UPCOMING';
-    } else if (status === 'In progress') {
-      apiStatus = 'PUBLISHED,LIVE';
-    } else if (status && status !== 'all-statuses') {
-      apiStatus = status.toUpperCase();
-    }
+    const apiStatus = (status && status !== 'all-statuses') ? status.toUpperCase() : '';
 
     const queryParams = new URLSearchParams();
+
+    queryParams.append('support_offering_type', offeringType);
+
+    if (apiStatus) {
+      queryParams.append('status', apiStatus);
+    }
 
     if (page !== undefined && page !== null) {
       queryParams.append('page', page.toString());
@@ -41,12 +31,9 @@ const getSupportOfferingsList = async (
       queryParams.append('limit', limit.toString());
     }
 
-    if (apiStatus) {
-      queryParams.append('status', apiStatus);
-    }
-
     if (search?.trim()) {
-      queryParams.append('search', search.trim());
+      // Must be sent base64-encoded 
+      queryParams.append('search', encodeSearchText(search.trim()));
     }
 
     if (provinces && provinces !== 'all-provinces') {
@@ -96,9 +83,9 @@ export const getTrainingSessions = async (
     result: { data: [] },
     total: 0,
   };
-  
+
   try {
-    responseData = await getSupportOfferingsList(params);
+    responseData = await getSupportOfferingsList(params, 'training');
   } catch (error) {
     console.warn('Backend API endpoint unavailable for Training Sessions:', error);
     responseData = {
@@ -113,8 +100,23 @@ export const getTrainingSessions = async (
 /**
  * Fetch Additional Services
  */
-export const getAdditionalServices = async (params?: FilterParams): Promise<ServiceItem[]> => {
-  return [];
+export const getAdditionalServices = async (params?: any): Promise<any> => {
+  let responseData: any = {
+    result: { data: [] },
+    total: 0,
+  };
+
+  try {
+    responseData = await getSupportOfferingsList(params, 'additional_service');
+  } catch (error) {
+    console.warn('Backend API endpoint unavailable for Training Sessions:', error);
+    responseData = {
+      result: { data: [] },
+      total: 0,
+    };
+  }
+
+  return responseData;
 };
 
 /**
