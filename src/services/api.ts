@@ -230,7 +230,7 @@ api.interceptors.request.use(
       //   data: config.data,
       // });
 
-      config.headers['time_zone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
+      config.headers['timeZone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
 
       return config;
     } catch (error) {

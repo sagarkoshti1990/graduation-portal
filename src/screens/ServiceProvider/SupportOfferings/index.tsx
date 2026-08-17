@@ -13,14 +13,33 @@ import { getProvincesList, getSitesByProvince } from '../../../services/usersSer
 import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
 import logger from '@utils/logger';
-import {
-  DEFAULT_PROVINCE_OPTIONS,
-  DEFAULT_SITE_OPTIONS,
-  getSupportOfferingTabs,
-  STATUS_OPTIONS,
-} from '@constants/SUPPORT_PROVIDER_CARDS';
 
-export { STATUS_OPTIONS };
+export const STATUS_OPTIONS = [
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.allStatuses',
+    value: 'all-statuses',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.upcoming',
+    value: 'Upcoming',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.inProgress',
+    value: 'In progress',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.completed',
+    value: 'Completed',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.draft',
+    value: 'Draft',
+  },
+];
+
+const DEFAULT_PROVINCE_OPTIONS = [{ label: 'All Provinces', value: 'all-provinces' }];
+
+const DEFAULT_SITE_OPTIONS = [{ label: 'All Sites', value: 'all-sites' },];
 
 const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: boolean; isSessionsSupport?: boolean } = {}): React.JSX.Element => {
   const navigation = useNavigation();
@@ -43,9 +62,18 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
     assets: 0,
   });
 
-  const tabs = getSupportOfferingTabs(t, counts);
+  const tabs = [
+    { key: 'sessions', label: t('supportProvider.supportOfferings.tabs.trainings', 'Trainings & Sessions'), count: counts.sessions, icon: 'GraduationCap' },
+    { key: 'additional_services', label: t('supportProvider.supportOfferings.tabs.additionalServices', 'Additional Services'), count: counts.additional_services, icon: 'Briefcase' },
+    { key: 'assets', label: t('supportProvider.supportOfferings.tabs.assets', 'Assets'), count: counts.assets, icon: 'Box' },
+  ];
 
-  const subTabs = tabs.find((tab) => tab.key === activeTab)?.children || [];
+  const subTabs = [
+    { key: 'browse_sessions', label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions') },
+    { key: 'my_requests', label: t('lc.sessionsSupport.tabs.myRequests', 'My Requests') },
+    { key: 'my_sessions', label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions') },
+    { key: 'history', label: t('lc.sessionsSupport.tabs.history', 'History') },
+  ];
 
   const displayTabs = isSessionsSupport
     ? tabs.map((tab) => ({
@@ -189,74 +217,59 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
   }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site]);
 
   // Fetch listing data
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const params = {
-          page,
-          limit,
-          search: filters.search,
-          status: filters.status,
-          province: filters.province,
-          site: filters.site,
-          isSessionsSupport,
-        };
+  const fetchData = useCallback(async () => {  
+    try {
+      setLoading(true);
+      const params = {
+        filters,
+        page,
+        limit,
+      };
 
       let fetchedData: any[] = [];
       let totalCount = 0;
 
-        if (activeTab === 'sessions') {
-          if (isSessionsSupport && activeSubTab !== 'browse_sessions') {
-            fetchedData = [];
-            totalCount = 0;
-          } else {
-            const res = await getTrainingSessions(params);
-            fetchedData = res?.result?.data || [];
-            totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
-          }
-          setCounts((prev) => ({ ...prev, sessions: totalCount }));
-        } else if (activeTab === 'additional_services') {
-          const res = await getAdditionalServices(params);
-          fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
-          totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
-          setCounts((prev) => ({ ...prev, additional_services: totalCount }));
-        } else if (activeTab === 'assets') {
-          const res = await getAssets(params);
-          fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
-          totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
-          setCounts((prev) => ({ ...prev, assets: totalCount }));
-        }
-
-        if (isMounted) {
-          if (page === 1) {
-            setItems(fetchedData);
-          } else {
-            setItems((prev) => [...prev, ...fetchedData]);
-          }
-          setTotal(totalCount);
-        }
-      } catch (err) {
-        console.error('Error fetching offerings list:', err);
-        if (isMounted) {
-          if (page === 1) {
-            setItems([]);
-            setTotal(0);
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (activeTab === 'sessions') {
+        const res = await getTrainingSessions(params);
+        fetchedData = res?.result?.data || [];
+        totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
+        setCounts((prev) => ({ ...prev, sessions: totalCount }));
+      } else if (activeTab === 'additional_services') {
+        const res = await getAdditionalServices(params);
+        fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
+        totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
+        setCounts((prev) => ({ ...prev, additional_services: totalCount }));
+      } else if (activeTab === 'assets') {
+        const res = await getAssets(params);
+        fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
+        totalCount = (res as any)?.result?.count ?? (res as any)?.total ?? (res as any)?.count ?? fetchedData.length;
+        setCounts((prev) => ({ ...prev, assets: totalCount }));
       }
-    };
+      if (page === 1) {
+        setItems(fetchedData);
+      } else {
+        setItems((prev) => [...prev, ...fetchedData]);
+      }
+      setTotal(totalCount);
+    } catch (err) {
+      logger.error('Error fetching offerings list:', err);
+      if (page === 1) {
+        setItems([]);
+        setTotal(0);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, filters, page, limit]);
 
-    fetchData();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+      return () => {
+        setLoading(true);
+      };
+    }, [fetchData])
+  );
 
   return (
     <VStack flex={1}>
@@ -351,6 +364,7 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
+              isSessionsSupport={isSessionsSupport}
             />
           )}
 

@@ -71,8 +71,9 @@ const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
 };
 
 const getStatusColors = (status: string) => {
+  status = status.toUpperCase();
   switch (status) {
-    case 'Draft':
+    case 'DRAFT':
       return {
         bg: '$backgroundLight100',
         border: '$borderColor',
@@ -80,7 +81,7 @@ const getStatusColors = (status: string) => {
         icon: 'FileText',
       };
 
-    case 'Upcoming':
+    case 'UPCOMING':
       return {
         bg: '$blue50',
         border: '$blue200',
@@ -88,8 +89,7 @@ const getStatusColors = (status: string) => {
         icon: 'Clock',
       };
 
-    case 'In progress':
-    case 'In Progress':
+    case 'LIVE':
       return {
         bg: '$observationTaskBg',
         border: '#fde68a',
@@ -97,7 +97,7 @@ const getStatusColors = (status: string) => {
         icon: 'AlertCircle',
       };
 
-    case 'Completed':
+    case 'COMPLETED':
     default:
       return {
         bg: '$success50',
@@ -211,12 +211,13 @@ const Card: React.FC<CardProps> = ({
   const deliveryMode = getDeliveryMode(item);
   const deliveryBadge = getDeliveryBadge(deliveryMode);
 
-  const getStatus = () => {
-    if (item.status === 'DRAFT' || item.status === 'Draft') {
+  const formatStatus = () => {
+    const thisStatus = item.status.toUpperCase();
+    if (thisStatus === 'DRAFT') {
       return 'Draft';
     }
 
-    if (item.status === 'COMPLETED' || item.status === 'Completed') {
+    if (thisStatus === 'COMPLETED') {
       return 'Completed';
     }
 
@@ -227,30 +228,30 @@ const Card: React.FC<CardProps> = ({
           ? Number(item.start_date) * 1000
           : new Date(item.start_date).getTime();
 
-      const today = new Date();
-      const sessionDate = new Date(startMs);
+      const endMs = item.end_date
+        ? (typeof item.end_date === 'number' || !isNaN(Number(item.end_date))
+          ? Number(item.end_date) * 1000
+          : new Date(item.end_date).getTime())
+        : undefined;
 
-      const isToday =
-        sessionDate.getDate() === today.getDate() &&
-        sessionDate.getMonth() === today.getMonth() &&
-        sessionDate.getFullYear() === today.getFullYear();
+      const nowMs = Date.now();
 
-      if (sessionDate.getTime() > today.getTime() && !isToday) {
+      if (endMs !== undefined && nowMs > endMs) {
+        return 'Completed';
+      }
+
+      if (nowMs < startMs) {
         return 'Upcoming';
       }
 
-      if (isToday) {
-        return 'In progress';
-      }
-
-      return 'Completed';
+      return 'In Progress';
     }
 
     return item.status || 'Upcoming';
   };
-
-  const currentStatus = getStatus();
-  const statusColors = getStatusColors(currentStatus);
+  const currentStatus = item.status.toUpperCase();
+  const statusTag = formatStatus();
+  const statusColors = getStatusColors(item.status);
 
   const canCopy = !!item.can_be_copied;
 
@@ -398,7 +399,7 @@ const Card: React.FC<CardProps> = ({
             <Badge {...styles.badgeContainer(statusColors.bg, statusColors.border)}>
               <HStack {...styles.badgeContentHStack}>
                 <LucideIcon name={statusColors.icon} {...styles.badgeIconProps(statusColors.text)} />
-                <BadgeText {...styles.badgeText(statusColors.text)}>{currentStatus}</BadgeText>
+                <BadgeText {...styles.badgeText(statusColors.text)}>{statusTag}</BadgeText>
               </HStack>
             </Badge>
           </HStack>
@@ -575,7 +576,7 @@ const Card: React.FC<CardProps> = ({
                   {t('supportProvider.supportOfferings.cards.attendance', 'Attendance')}
                 </Text>
 
-                {currentStatus === 'Completed' && !isAttendanceConfirmed && (
+                {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
                   <Button variant="solid"  {...styles.confirmAttendanceBtn} onPress={() => setIsCompleteModalOpen(true)}  >
                     <ButtonIcon as={LucideIcon} name="Check" {...styles.cardWhiteIconProps} />
                     <ButtonText {...(styles.confirmAttendanceBtnText as any)}>
@@ -615,14 +616,14 @@ const Card: React.FC<CardProps> = ({
             </VStack>
 
             {/* SESSION MATERIALS */}
-            {(currentStatus !== 'Completed' || files.length > 0) && (
+            {(currentStatus !== 'COMPLETED' || files.length > 0) && (
               <VStack {...styles.sectionVStack}>
                 <HStack {...styles.materialsHeaderHStack}>
                   <Text {...styles.cardSectionTitleText}>
                     {t('supportProvider.supportOfferings.cards.sessionMaterials', 'Session Materials')}
                   </Text>
 
-                  {currentStatus !== 'Completed' && (
+                  {currentStatus !== 'COMPLETED' && (
                     <Pressable {...styles.uploadMaterialBtn} onPress={handleUploadPress}>
                       <HStack {...styles.badgeContentHStack}>
                         <LucideIcon name="Upload" {...styles.cardMetaIconProps} />

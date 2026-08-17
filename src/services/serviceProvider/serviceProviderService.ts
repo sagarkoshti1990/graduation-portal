@@ -30,8 +30,8 @@ export interface SupportRequestItem {
 
 export interface SupportRequestsFilterParams {
   tab?: 'sessions' | 'additional_services' | 'assets' | 'declined';
-  province?: string;
-  site?: string;
+  provinces?: string;
+  sites?: string;
   search?: string;
 }
 
@@ -158,8 +158,8 @@ export const getSupportRequests = async (
     declined: mockStore.declined.length,
     pendingTotal: mockStore.sessions.length + mockStore.additional_services.length + mockStore.assets.length,
     overdueTotal: mockStore.sessions.filter(i => (i.overdueDays || 0) > 0).length +
-                  mockStore.additional_services.filter(i => (i.overdueDays || 0) > 0).length +
-                  mockStore.assets.filter(i => (i.overdueDays || 0) > 0).length,
+      mockStore.additional_services.filter(i => (i.overdueDays || 0) > 0).length +
+      mockStore.assets.filter(i => (i.overdueDays || 0) > 0).length,
   };
 
   return {
