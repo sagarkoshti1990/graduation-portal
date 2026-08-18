@@ -49,12 +49,21 @@ export function valueMapping(
   const { province, site, ...restFormValues } = formValues;
 
   if (formValues.isRequestSession) {
+    // The actual form fields are the plural `provinces` (single-select) and
+    // `sites` (multi-select) - see TRAINING_FORM_SCHEMA. `province`/`site`
+    // (singular) are only ever set by RequestSession's handleFieldChange as
+    // a province mirror/reset and are NOT where the selected sites live, so
+    // read the real fields here instead (falling back to the singular ones
+    // for back-compat) or every request went out with sites/requestees empty.
+    const resolvedProvince = formValues.provinces ?? province;
+    const resolvedSites = formValues.sites ?? site;
+
     // Requesting a session only needs a handful of fields, plus a few technical
     // fields the backend requires to accept the request (title/agenda/requestees/status).
     return {
       support_offering_type: formValues.support_offering_type || 'training_session',
-      provinces: [province],
-      sites: Array.isArray(site) ? site : (site ? [site] : []),
+      provinces: Array.isArray(resolvedProvince) ? resolvedProvince : [resolvedProvince],
+      sites: Array.isArray(resolvedSites) ? resolvedSites : (resolvedSites ? [resolvedSites] : []),
       categories: [formValues.categories],
       idp_training_task: formValues.idp_training_task,
       description: formValues.description,

@@ -81,19 +81,19 @@ const RequestSessionScreen = (): React.JSX.Element => {
     const rawProv = next.province || next.provinces;
     const provId = Array.isArray(rawProv) ? rawProv[0] : rawProv;
     const rawSite = next.site || next.sites;
-    const siteId = Array.isArray(rawSite) ? rawSite[0] : rawSite;
+    const siteIds = Array.isArray(rawSite) ? rawSite.filter(Boolean) : (rawSite ? [rawSite] : []);
     const categoryId = next.idp_training_task;
 
     // Require ALL three selections (Province, Site, and Training/Session Type) before fetching eligible mentors
-    if (!provId || !siteId || !categoryId) {
+    if (!provId || siteIds.length === 0 || !categoryId) {
       setMentorIds([]);
       return;
     }
 
-    console.log('[RequestSession] Triggering getMentorsList with complete selection:', { provId, siteId, category: categoryId });
+    console.log('[RequestSession] Triggering getMentorsList with complete selection:', { provId, siteIds, category: categoryId });
     getMentorsList({
       provinceId: provId,
-      siteId,
+      siteIds,
       category: categoryId,
     }).then((ids) => {
       console.log('[RequestSession] Mentors eligible for current selection:', ids);
@@ -103,6 +103,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
 
   const handleFieldChange = useCallback(
     (name: string, value: string, other?: any) => {
+      console.log(`[RequestSession] Field changed -> "${name}":`, value, other ? { other } : '');
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
         if (name === 'provinces' || name === 'province') {
@@ -117,6 +118,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
         if (name === 'idp_training_task') {
           next.title = other?.label;
         }
+        console.log('[RequestSession] Form values after change:', next);
         return next;
       });
     },
@@ -125,31 +127,42 @@ const RequestSessionScreen = (): React.JSX.Element => {
 
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
+      console.log('[RequestSession] handleSave called. Raw formValues:', formValues);
       setValues(formValues);
 
-      // Fetch mentors for the selected province
+      // Fetch eligible mentors matching province, site, and category selection
       const rawProv = formValues.province || formValues.provinces;
       const provId = Array.isArray(rawProv) ? rawProv[0] : rawProv;
-      const mentorsRes = await getUsersList({
-        type: 'mentor',
-        role: 'mentor',
-        limit: 100,
-        province: provId,
-      });
-      const usersData = mentorsRes?.result?.data || (Array.isArray(mentorsRes?.result) ? mentorsRes.result : []);
-      const activeMentorIds = usersData
-        .map((u: any) => u.id ?? u._id ?? u.user_id ?? u.userId)
-        .filter((id: any) => id !== undefined && id !== null && id !== '');
+      const rawSite = formValues.site || formValues.sites;
+      const siteIds = Array.isArray(rawSite) ? rawSite.filter(Boolean) : (rawSite ? [rawSite] : []);
+      const categoryId = formValues.idp_training_task;
 
-      const requestees = (activeMentorIds || []).map(id => String(id));
-      console.log('[RequestSession] Final requestees list:', requestees);
+      console.log('[RequestSession] Selection used for mentor matching:', {
+        provinceId: provId,
+        siteIds,
+        category: categoryId,
+      });
+
+      let eligibleMentorIds = await getMentorsList({
+        provinceId: provId,
+        siteIds,
+        category: categoryId,
+      });
+
+      const requestees = (eligibleMentorIds || []).map(id => String(id));
+      console.log('[RequestSession] Eligible mentor IDs returned by getMentorsList:', eligibleMentorIds);
+      console.log('[RequestSession] Final requestees (as strings) going into payload:', requestees);
+
+      if (requestees.length === 0) {
+        console.warn('[RequestSession] ⚠️ No mentor matched this province/site/category combination — requestees will be empty!');
+      }
 
       const payload: any = valueMapping(
         { ...formValues, requestees, isDraft, isRequestSession: true },
         false,
         optionsMap
       );
-      console.log('[RequestSession] Submitting payload:', payload);
+      console.log('[RequestSession] Final payload being submitted to requestSession API:', JSON.stringify(payload, null, 2));
 
       await requestSession(payload);
 
