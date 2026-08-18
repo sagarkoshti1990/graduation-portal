@@ -15,7 +15,7 @@ export const theme = {
       info100: '#0ea5e9',
       warning500: '#fe9a00',
       purple500: '#9810fa',
-      blue500:'#155dfc',
+      blue500: '#155dfc',
       accent100: '#fafbfc',
       accent200: '#f1f5f9',
       accent300: '#22c55e',
@@ -97,26 +97,26 @@ export const theme = {
       onboardingFormBtnBg: '#F2F2F2',
       onboardingFormBtnBgHover: '#E5E5E5',
       onboardingFormBtnText: '#374151',
-      observationTaskBg: '#FFFBEB',        
-      observationTaskBorder: '#F59E0B',    
-      addedToPlanBg: '#DCFCE7',            
-      addedToPlanBorder: '#BBF7D0',        
-      optionalBadgeBg: '#DBEAFE',          
-      optionalBadgeText: '#1e40af',        
-      socialProtectionBg: '#FFF5F5',       
-      hoverPink: '#fef2f2',                
-      warningIconColor: '#ca8a04',         
-      infoIconColor: '#0284c7',            
-      stylesCardBg: '#F6F7FB',             
-      pillarSocialEmpowerment: '#9333ea',  
-      pillarLivelihoods: '#15803d',        
-      pillarFinancialInclusion: '#1d4ed8', 
-      pillarSocialProtection: '#f97316',   
-      borderColor : '#e2e8f0',
-      'bgPrimary/5' : '#F9F4F5',
-      'bgPrimaryBorder/5' : '#E9D5DA',
-      'bgPrimary/10' : '#8B28421A',
-      'bgPrimary/30' : '#f9fafb4d',
+      observationTaskBg: '#FFFBEB',
+      observationTaskBorder: '#F59E0B',
+      addedToPlanBg: '#DCFCE7',
+      addedToPlanBorder: '#BBF7D0',
+      optionalBadgeBg: '#DBEAFE',
+      optionalBadgeText: '#1e40af',
+      socialProtectionBg: '#FFF5F5',
+      hoverPink: '#fef2f2',
+      warningIconColor: '#ca8a04',
+      infoIconColor: '#0284c7',
+      stylesCardBg: '#F6F7FB',
+      pillarSocialEmpowerment: '#9333ea',
+      pillarLivelihoods: '#15803d',
+      pillarFinancialInclusion: '#1d4ed8',
+      pillarSocialProtection: '#f97316',
+      borderColor: '#e2e8f0',
+      'bgPrimary/5': '#F9F4F5',
+      'bgPrimaryBorder/5': '#E9D5DA',
+      'bgPrimary/10': '#8B28421A',
+      'bgPrimary/30': '#f9fafb4d',
       previewBackground: '#E2E8F0',
       // Preview mode - accordion
       socialProtectionAccordionBg: '#fff1f2',
@@ -148,7 +148,7 @@ export const theme = {
     sizes: {
       ...((gluestackConfig.tokens as any).sizes || {}),
       container: {
-        0: '100%',    
+        0: '100%',
         sm: '540px',
         md: '720px',
         lg: '960px',
@@ -252,7 +252,67 @@ export const theme = {
                 color: "$white !important",
                 fontWeight: "$medium !important",
               },
+            },
           },
+        },
+      },
+    },
+    Input: {
+      ...gluestackConfig.components.Input,
+      theme: {
+        ...gluestackConfig.components.Input.theme,
+        variants: {
+          ...gluestackConfig.components.Input.theme.variants,
+          variant: {
+            ...gluestackConfig.components.Input.theme.variants.variant,
+            outline: {
+              ...gluestackConfig.components.Input.theme.variants.variant.outline,
+              // existing styles
+              [":invalid"]: {
+                ...gluestackConfig.components.Input.theme.variants.variant.outline[":invalid"],
+                _web: {
+                  boxShadow: "0 0 0 1px $error700",
+                  // boxShadow: '0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280;',
+                },
+              },
+              [":focus"]: {
+                ...gluestackConfig.components.Input.theme.variants.variant.outline[":focus"],
+                _web: {
+                  boxShadow: '0 0 0 3px color-mix(in oklab, #8b2842 50%, transparent)',
+                  borderColor: '$primary500 !important',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    Textarea: {
+      ...gluestackConfig.components.Textarea,
+      theme: {
+        ...gluestackConfig.components.Textarea.theme,
+        variants: {
+          ...gluestackConfig.components.Textarea.theme.variants,
+          variant: {
+            ...gluestackConfig.components.Textarea.theme.variants.variant,
+            default: {
+              ...gluestackConfig.components.Textarea.theme.variants.variant.default,
+              // existing styles
+              [":invalid"]: {
+                ...gluestackConfig.components.Textarea.theme.variants.variant.default[":invalid"],
+                _web: {
+                  boxShadow: "0 0 0 1px $error700",
+                  // boxShadow: '0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280;',
+                },
+              },
+              [":focus"]: {
+                ...gluestackConfig.components.Textarea.theme.variants.variant.default[":focus"],
+                _web: {
+                  boxShadow: '0 0 0 3px color-mix(in oklab, #8b2842 50%, transparent)',
+                  borderColor: '$primary500 !important',
+                },
+              },
+            },
           },
         },
       },

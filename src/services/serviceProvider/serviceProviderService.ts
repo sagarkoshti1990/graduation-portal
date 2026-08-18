@@ -31,8 +31,8 @@ export interface SupportRequestItem {
 
 export interface SupportRequestsFilterParams {
   tab?: 'sessions' | 'additional_services' | 'assets' | 'declined';
-  province?: string;
-  site?: string;
+  provinces?: string;
+  sites?: string;
   search?: string;
 }
 

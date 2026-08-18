@@ -1,39 +1,6 @@
-import type { FormSection } from '@components/SchemaFormRenderer/type';
+import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
 
-export const tabs = [
-  {
-    parent: "Special Attention",
-    value: 'GBV',
-    label:'GBV',
-  },
-  {
-    parent: "Special Attention",
-    value: 'Mental Health',
-    label:'Mental Health',
-  },
-  {
-    parent: "Special Attention",
-    value: 'Substance Abuse',
-    label:'Substance Abuse',
-  },
-  {
-    parent: "Immediate Attention",
-    value: 'Food',
-    label:'Food',
-  },
-  {
-    parent: "Immediate Attention",
-    value: 'Health',
-    label:'Health',
-  },
-  {
-    parent: "Immediate Attention",
-    value: 'Municipal Indigent Programs',
-    label:'Municipal Indigent Programs',
-  },
-]
-
-export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
+export const ADDITIONAL_SERVICES_SCHEMA = (): FormSection[] => ([
   // ─── Tab 1: Service Details ───────────────────────────────────────────────
   {
     type: 'tab',
@@ -59,7 +26,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'province',
+                name: 'provinces',
                 type: 'select',
                 required: true,
                 label: { key: 'province', fallback: 'Province' },
@@ -76,7 +43,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 ],
               },
               {
-                name: 'site',
+                name: 'sites',
                 type: 'multiselect',
                 required: true,
                 label: { key: 'site', fallback: 'Site' },
@@ -86,8 +53,8 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                   fallback: 'Select site',
                 },
                 optionsSource: 'sites',
-                dependsOn: 'province',
-                disabledWhen: { field: 'province', empty: true },
+                dependsOn: 'provinces',
+                disabledWhen: { field: 'provinces', empty: true },
                 validation: [
                   {
                     rule: 'required',
@@ -103,11 +70,11 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'servicesCategory',
+                name: 'categories',
                 type: 'pillselect',
                 required: true,
                 label: { key: 'servicesCategory', fallback: 'Services Category' },
-                optionsSource: 'servicesCategories',
+                optionsSource: 'pillars',
                 validation: [
                   {
                     rule: 'required',
@@ -121,22 +88,22 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
             ],
           },
           {
-            fields: [
-              {
-                name: 'tags',
-                type: 'pillmultiselect',
-                label: { key: 'servicesCategory', fallback: 'Tags' },
-                optionsSource: 'tags',
-                visibleIf: [
-                  { name: 'servicesCategory', value: 'Other', operator: '!=' },
-                ]
-              },
+            fields: [{
+              name: 'idp_additional_services_tasks',
+              type: 'pillmultiselect',
+              label: { key: 'servicesCategory', fallback: 'Tags' },
+              optionsSource: 'sessionTypes',
+              dependsOn: 'categories',
+              visibleIf: [
+                { name: 'categories', value: 'other_attention', operator: '!=' },
+              ]
+            }
             ],
           },
           {
             fields: [
               {
-                name: 'servicesTitle',
+                name: 'title',
                 type: 'text',
                 required: true,
                 label: { key: 'servicesTitle', fallback: 'Services Title' },
@@ -156,7 +123,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'servicesDescription',
+                name: 'description',
                 type: 'textarea',
                 required: true,
                 label: { key: 'servicesDescription', fallback: 'Services Description' },
@@ -188,7 +155,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'startDate',
+                name: 'start_date',
                 type: 'datetime',
                 required: false,
                 label: { key: 'startDate', fallback: 'Start Date' },
@@ -204,7 +171,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                   {
                     rule: "dateCompare",
                     value: {
-                      field: "endDate",
+                      field: "end_date",
                       operator: "<="
                     },
                     message: {
@@ -239,7 +206,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'endDate',
+                name: 'end_date',
                 type: 'datetime',
                 required: false,
                 label: { key: 'endDate', fallback: 'End Date' },
@@ -255,7 +222,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                   {
                     rule: "dateCompare",
                     value: {
-                      field: "startDate",
+                      field: "start_date",
                       operator: ">="
                     },
                     message: {
@@ -290,7 +257,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'serviceLocation',
+                name: 'location',
                 type: 'text',
                 required: false,
                 label: { key: 'serviceLocation', fallback: 'Location where service is provided' },
@@ -301,7 +268,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
           {
             fields: [
               {
-                name: 'eligibilityCriteria',
+                name: 'learning_objectives',
                 type: 'textarea',
                 required: false,
                 label: { key: 'eligibilityCriteria', fallback: 'Eligibility Criteria' },
@@ -364,7 +331,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'province',
+                    name: 'provinces',
                     optionsSource: 'provinces',
                     label: {
                       key: 'province',
@@ -377,7 +344,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'site',
+                    name: 'sites',
                     optionsSource: 'sites',
                     label: {
                       key: 'site',
@@ -390,7 +357,8 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'servicesCategory',
+                    name: 'categories',
+                    optionsSource: 'pillars',
                     label: {
                       key: 'servicesCategory',
                       fallback: 'Category',
@@ -402,7 +370,8 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
                 fields: [
                   {
                     type: 'view',
-                    name: 'tags',
+                    name: 'idp_additional_services_tasks',
+                    optionsSource: 'sessionTypes',
                     label: {
                       key: 'servicesCategory',
                       fallback: 'Tags',
@@ -413,7 +382,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
               {
                 fields: [
                   {
-                    name: 'servicesTitle',
+                    name: 'title',
                     type: 'view',
                     label: { key: 'servicesTitle', fallback: 'Title' },
                   },
@@ -422,9 +391,9 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
               {
                 fields: [
                   {
-                    name: 'startDate',
+                    name: 'start_date',
                     type: 'view',
-                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    displayFormat: "dateFormat@DD-MM-YYYY hh:mm A",
                     label: { key: 'startDate', fallback: 'Start Date' },
                   },
                   // {
@@ -437,9 +406,9 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
               {
                 fields: [
                   {
-                    name: 'endDate',
+                    name: 'end_date',
                     type: 'view',
-                    displayFormat: "dateFormat@DD/MM/YYYY hh:mm A",
+                    displayFormat: "dateFormat@DD-MM-YYYY hh:mm A",
                     label: { key: 'endDate', fallback: 'End Date' },
                   },
                   // {
@@ -452,7 +421,7 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
               {
                 fields: [
                   {
-                    name: 'serviceLocation',
+                    name: 'location',
                     type: 'view',
                     label: { key: 'serviceLocation', fallback: 'Location' },
                   },
@@ -464,6 +433,6 @@ export const ADDITIONAL_SERVICES_SCHEMA: FormSection[] = [
       },
     ],
   },
-];
+]);
 
 export const ADDITIONAL_SERVICES_FORM_SCHEMA = ADDITIONAL_SERVICES_SCHEMA;

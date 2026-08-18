@@ -240,7 +240,14 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     setIsStatusUpdating(true);
     try {
       const {newFiles, existingToSend} = filterNewFiles(files, task?.attachments);
-      const targetStatus = isOnboardingTask ? (files.length > 0 ? TASK_STATUS.COMPLETED : TASK_STATUS.TO_DO) : TASK_STATUS.COMPLETED;
+      let targetStatus = task?.status ?? TASK_STATUS.TO_DO;
+      if (isOnboardingTask) {
+        targetStatus = files.length > 0
+          ? TASK_STATUS.COMPLETED
+          : TASK_STATUS.TO_DO;
+      } else if (files.length > 0) {
+        targetStatus = TASK_STATUS.COMPLETED;
+      }
       const data = await handleStatusChange(
         { taskId: task._id, parentIndex, index, referenceId: task.referenceId, isOnboardingTask },
           targetStatus,
@@ -249,7 +256,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
       );
       if (!isNetworkOffline()) await updateEntityFile(data);
     } finally { setIsStatusUpdating(false); }
-  }, [task._id, task.referenceId, parentIndex, index, task?.attachments, isOnboardingTask, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
+  }, [task._id, task.referenceId, parentIndex, index,task?.status, task?.attachments, isOnboardingTask, handleStatusChange, uploadConfig.maxFiles, updateEntityFile]);
 
   const handleCloseUploadModal = useCallback(() => setShowUploadModal(false), []);
   const handleClosePreviewModal = useCallback(() => setShowPreviewModal(false), []);

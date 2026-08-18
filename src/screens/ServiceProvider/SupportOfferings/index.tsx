@@ -21,19 +21,19 @@ export const STATUS_OPTIONS = [
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.upcoming',
-    value: 'Upcoming',
+    value: 'UPCOMING',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.inProgress',
-    value: 'In progress',
+    value: 'LIVE',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.completed',
-    value: 'Completed',
+    value: 'COMPLETED',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.draft',
-    value: 'Draft',
+    value: 'DRAFT',
   },
 ];
 
@@ -114,7 +114,7 @@ const App = (): React.JSX.Element => {
             { label: 'All Provinces', value: 'all-provinces' },
             ...provincesData.map((p: any) => ({
               label: p.metaInformation?.name || p.name || p.title || p.label,
-              value: p.externalId || p._id || p.id || p.value,
+              value: p._id || p.id || p.value,
             })),
           ];
           setProvinceOptions(dynamicProvinces);
@@ -172,7 +172,6 @@ const App = (): React.JSX.Element => {
                 s.title ||
                 s.label,
               value:
-                s.externalId ||
                 s._id ||
                 s.id ||
                 s.value,
@@ -201,7 +200,7 @@ const App = (): React.JSX.Element => {
   }, [activeTab, filters.search, filters.status, filters.province, filters.site]);
 
   // Fetch listing data
-  const fetchData = useCallback(async () => {  
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const params = {

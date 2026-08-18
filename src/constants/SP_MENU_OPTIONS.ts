@@ -53,6 +53,7 @@ export const SP_MENU_OPTIONS: MenuItemData[] = [
 // Mentoring entity type keys used to fetch dropdown options from the API
 export const MENTORING_ENTITY_TYPES = {
   SESSION_CATEGORIES: 'session_categories',
+  ADDITIONAL_SERVICE_CATEGORIES: 'service_categories',
   RECOMMENDED_FOR: 'recommended_for',
   DELIVERY_MODE: 'delivery_mode',
   CERTIFICATE_PROVIDED: 'certificate_provided',

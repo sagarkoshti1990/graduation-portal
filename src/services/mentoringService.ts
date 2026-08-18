@@ -121,3 +121,10 @@ export const getSessionDetails = async (sessionId: string | number): Promise<any
     return { error: error.response.data };
   }
 };
+
+/**
+ * Get Additional Service categories list
+ */
+export const getAdditionalServiceCategories = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.ADDITIONAL_SERVICE_CATEGORIES });
+};
