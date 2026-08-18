@@ -9,19 +9,20 @@ export interface FieldCompareValue {
 
 export interface ValidationRule {
   rule:
-    | 'required'
-    | 'email'
-    | 'minLength'
-    | 'maxLength'
-    | 'pattern'
-    | 'matchField'
-    | 'dateNotInFuture'
-    | 'dateNotInPast'
-    | 'fileType'
-    | 'fileCount'
-    | 'fileSize'
-    | 'dateCompare'
-    | 'timeCompare';
+  | 'required'
+  | 'email'
+  | 'minLength'
+  | 'maxLength'
+  | 'pattern'
+  | 'matchField'
+  | 'dateNotInFuture'
+  | 'dateNotInPast'
+  | 'fileType'
+  | 'fileCount'
+  | 'fileSize'
+  | 'dateCompare'
+  | 'timeCompare'
+  | 'minAge';
   /**
    * Numeric/string payload depending on rule (minLength value, pattern string,
    * field name); `fileType` takes a string array of allowed MIME types;
@@ -73,6 +74,8 @@ export interface HintObject {
   icon?: string;
   title?: { key?: string; fallback: string };
   bullets?: HintBullet[];
+  _icon?: any;
+  _title?: any;
 }
 
 /** A simple helper string, or a richer info/warning/danger/success banner */

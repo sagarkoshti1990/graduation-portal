@@ -725,6 +725,7 @@ const closeProfileModal = useCallback(() => {
         isMobile={isMobile}
         t={t}
         mode={profileMode}
+        onEdit={() => setProfileMode('edit')}
       />
 
       {/* Reset Password Modal */}

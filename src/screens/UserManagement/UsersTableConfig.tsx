@@ -69,12 +69,12 @@ export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
 /**
  * Status Badge Component
  */
-const StatusBadge: React.FC<{ status?: string,user?:any, roles:any[] }> = ({ status, user, roles }) => {
+const StatusBadge: React.FC<{ status?: string, user?: any, roles: any[] }> = ({ status, user, roles }) => {
   const isActive = user?.userDetails?.status?.toLowerCase() === 'active';
   const arr = [USER_STATUS.ACTIVE];
-  const isParticipant = PARTICIPANT.find((item:string) => roles.find(subItem => item === subItem?.role?.title))
-  
-  if(isParticipant && arr.includes(user?.userDetails?.status)) {
+  const isParticipant = PARTICIPANT.find((item: string) => roles.find(subItem => item === subItem?.role?.title))
+
+  if (isParticipant && arr.includes(user?.userDetails?.status)) {
     return <StatusBadge1 {...{ status, user }} />
   }
   return (
@@ -147,7 +147,7 @@ const getCustomTrigger = (triggerProps: any) => (
  */
 const getUserMenuItems = (
   _t: (key: string) => string,
-  canDeactivate: {canDeactivate:boolean,isParticipantRole:boolean}
+  canDeactivate: { canDeactivate: boolean, isParticipantRole: boolean }
 ): MenuItemData[] => {
   const items: MenuItemData[] = [
     {
@@ -200,7 +200,7 @@ const getUserMenuItems = (
       color: "$error600",
     });
   }
-  
+
   return items;
 };
 
@@ -225,31 +225,31 @@ const ActionsColumn: React.FC<{
     const roleLabels = (user as any)?.user_organizations?.[0]?.roles?.map(
       (role: any) => role?.role?.label?.toLowerCase()
     ) || [];
-    
+
     // Check if any role label is "admin" or "brac admin"
     const hasAdminLabel = roleLabels.some(
-      (label: string) => 
-        label === 'admin' || 
-        label === 'brac admin' || 
+      (label: string) =>
+        label === 'admin' ||
+        label === 'brac admin' ||
         label?.includes('admin')
     );
-    
+
     // Also check role.title for 'admin'
     const roleTitles = (user as any)?.user_organizations?.[0]?.roles?.map(
       (role: any) => role?.role?.title?.toLowerCase()
     ) || [];
-    
+
     const hasAdminTitle = roleTitles.some(
       (title: string) => title === 'admin'
     );
-    
+
     // Check direct role property as fallback
     const directRole = (user as any)?.role?.toLowerCase();
     const hasDirectAdminRole = directRole === 'admin' || directRole === 'brac admin' || directRole?.includes('admin');
     const isParticipantRole = roleLabels?.includes('participant');
-    
+
     const isTargetUserAdminData = hasAdminLabel || hasAdminTitle || hasDirectAdminRole || user?.status?.toLowerCase() === 'inactive';
-    return {isTargetUserAdmin:isTargetUserAdminData,isParticipantRole}
+    return { isTargetUserAdmin: isTargetUserAdminData, isParticipantRole }
   })();
 
   const handleMenuSelect = (key: string) => {
@@ -278,7 +278,7 @@ const ActionsColumn: React.FC<{
 
   // Only show Deactivate if current user is Admin AND target user is NOT Admin
   const canDeactivate = isAdmin && !isTargetUserAdmin.isTargetUserAdmin;
-  const menuItems = getUserMenuItems(t, {canDeactivate,isParticipantRole:isTargetUserAdmin.isParticipantRole});
+  const menuItems = getUserMenuItems(t, { canDeactivate, isParticipantRole: isTargetUserAdmin.isParticipantRole });
 
   return (
     <Menu
@@ -300,159 +300,154 @@ export const getUsersColumns = (handlers?: {
   onResetPassword?: (user: AdminUserManagementData) => void;
   onDeactivate?: (user: AdminUserManagementData) => void;
 }): ColumnDef<AdminUserManagementData>[] => [
-  {
-    key: 'id',
-    label: 'admin.users.id',
-    flex: 1.5,
-    render: (user) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.nameText}>
-        {user.id}
-      </Text>
-    ),
-    mobileConfig: {
-      leftRank: 1,
-      showLabel: false,
-    },
-  },
-  {
-    key: 'name',
-    label: 'admin.users.name',
-    flex: 1.5,
-    render: (user) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.nameText}>
-        {user.name}
-      </Text>
-    ),
-    mobileConfig: {
-      rightRank: 1,
-      showLabel: false,
-    },
-  },
-  {
-    key: 'email',
-    label: 'admin.users.email',
-    flex: 2.5,
-    render: (user) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.emailText} width={"100%"}>
-        {user.email}
-      </Text>
-    ),
-    mobileConfig: {
-      fullWidthRank: 1,
-      showLabel: false,
-    },
-  },
-  {
-    key: 'role',
-    label: 'admin.users.role',
-    flex: 1.2,
-    render: (user) => {
-      // Extract all roles from user_organizations
-      const roles = user?.user_organizations?.[0]?.roles?.map((role: any) => role.role.label) || [];
-
-      // If no roles found, show "-"
-      if (roles.length === 0) {
-        return <Text {...TYPOGRAPHY.paragraph}>-</Text>;
-      }
-
-      // Render separate badges for each role
-      return (
-        <HStack space="xs" flexWrap="wrap">
-          {roles.map((roleLabel: string, index: number) => (
-            <RoleBadge key={`${roleLabel}-${index}`} role={roleLabel} />
-          ))}
-        </HStack>
-      );
-    },
-    mobileConfig: {
-      rightRank: 1,
-      showLabel: false,
-    },
-  },
-  {
-    key: 'status',
-    label: 'admin.users.status',
-    flex: 1.6,
-    render: (user) => <StatusBadge roles={user?.user_organizations?.[0]?.roles} status={user?.extra?.status} user={{userDetails:{status:user?.status}}} />,
-    mobileConfig: {
-      rightRank: 2,
-      showLabel: false,
-    },
-  },
-  {
-    key: 'province',
-    label: 'admin.users.province',
-    flex: 1.2,
-    render: (user: any) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.provinceText}>
-        {user?.province?.label || '-'}
-      </Text>
-    ),
-    mobileConfig: {
-      leftRank: 3,
-      showLabel: false,
-    },
-  },
-  {
-    key: 'site',
-    label: 'admin.users.site',
-    flex: 1.2,
-    render: (user: any) => (
-      <Text {...TYPOGRAPHY.paragraph} {...styles.districtText}>
-        {user?.site?.label || user?.site || '-'}
-      </Text>
-    ),
-    mobileConfig: {
-      rightRank: 3,
-      showLabel: false,
-    },
-  },
-  // {
-  //   key: 'lastLogin',
-  //   label: 'admin.users.lastLogin',
-  //   flex: 1.2,
-  //   render: (user) => (
-  //     <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>
-  //       -
-  //     </Text>
-  //   ),
-  //   mobileConfig: {
-  //     leftRank: 5,
-  //     showLabel: false,
-  //   },
-  // },
-  {
-    key: 'details',
-    label: 'admin.users.details',
-    flex: 1.5,
-    render: (user: any) =>
-      user?.details ? (
-        <DetailsCell details={user.details} />
-      ) : (
-        <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>-</Text>
+    {
+      key: 'id',
+      label: 'admin.users.id',
+      flex: 1.5,
+      render: (user) => (
+        <Text {...TYPOGRAPHY.paragraph} {...styles.nameText}>
+          {user.id}
+        </Text>
       ),
-    mobileConfig: {
-      leftRank: 4,
-      showLabel: false,
+      mobileConfig: {
+        leftRank: 1,
+        showLabel: false,
+      },
     },
-  },
-  {
-    key: 'actions',
-    label: 'admin.users.actions',
-    flex: 0.8,
-    render: (user) => (
-      <ActionsColumn 
-        user={user} 
-        onViewProfile={handlers?.onViewProfile}
-        onEdit={handlers?.onEdit}
-        onResetPassword={handlers?.onResetPassword}
-        onDeactivate={handlers?.onDeactivate}
-      />
-    ),
-    mobileConfig: {
-      fullWidthRank: 2,
-      showLabel: false,
+    {
+      key: 'name',
+      label: 'admin.users.name',
+      flex: 1.5,
+      render: (user) => (
+        <Text {...TYPOGRAPHY.paragraph} {...styles.nameText}>
+          {user.name}
+        </Text>
+      ),
+      mobileConfig: {
+        rightRank: 1,
+        showLabel: false,
+      },
     },
-  },
-];
+    {
+      key: 'email',
+      label: 'admin.users.email',
+      flex: 2.5,
+      render: (user) => (
+        <Text {...TYPOGRAPHY.paragraph} {...styles.emailText} width={"100%"}>
+          {user.email}
+        </Text>
+      ),
+      mobileConfig: {
+        fullWidthRank: 1,
+        showLabel: false,
+      },
+    },
+    {
+      key: 'role',
+      label: 'admin.users.role',
+      flex: 1.2,
+      render: (user) => {
+        const roles = user?.user_organizations?.[0]?.roles?.map(
+          (role: any) => role?.role?.label || role?.role?.title
+        ) || [];
+
+        return (
+          <HStack space="xs" flexWrap="wrap">
+            {roles.map((roleLabel: string, index: number) => (
+              <RoleBadge key={`${roleLabel}-${index}`} role={roleLabel} />
+            ))}
+          </HStack>
+        );
+      },
+      mobileConfig: {
+        rightRank: 1,
+        showLabel: false,
+      },
+    },
+    {
+      key: 'status',
+      label: 'admin.users.status',
+      flex: 1.6,
+      render: (user) => <StatusBadge roles={user?.user_organizations?.[0]?.roles} status={user?.extra?.status} user={{ userDetails: { status: user?.status } }} />,
+      mobileConfig: {
+        rightRank: 2,
+        showLabel: false,
+      },
+    },
+    {
+      key: 'province',
+      label: 'admin.users.province',
+      flex: 1.2,
+      render: (user: any) => (
+        <Text {...TYPOGRAPHY.paragraph} {...styles.provinceText}>
+          {user?.province?.label || '-'}
+        </Text>
+      ),
+      mobileConfig: {
+        leftRank: 3,
+        showLabel: false,
+      },
+    },
+    {
+      key: 'site',
+      label: 'admin.users.site',
+      flex: 1.2,
+      render: (user: any) => (
+        <Text {...TYPOGRAPHY.paragraph} {...styles.districtText}>
+          {user?.site?.label || user?.site || '-'}
+        </Text>
+      ),
+      mobileConfig: {
+        rightRank: 3,
+        showLabel: false,
+      },
+    },
+    // {
+    //   key: 'lastLogin',
+    //   label: 'admin.users.lastLogin',
+    //   flex: 1.2,
+    //   render: (user) => (
+    //     <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>
+    //       -
+    //     </Text>
+    //   ),
+    //   mobileConfig: {
+    //     leftRank: 5,
+    //     showLabel: false,
+    //   },
+    // },
+    {
+      key: 'details',
+      label: 'admin.users.details',
+      flex: 1.5,
+      render: (user: any) =>
+        user?.details ? (
+          <DetailsCell details={user.details} />
+        ) : (
+          <Text {...TYPOGRAPHY.paragraph} {...styles.lastLoginText}>-</Text>
+        ),
+      mobileConfig: {
+        leftRank: 4,
+        showLabel: false,
+      },
+    },
+    {
+      key: 'actions',
+      label: 'admin.users.actions',
+      flex: 0.8,
+      render: (user) => (
+        <ActionsColumn
+          user={user}
+          onViewProfile={handlers?.onViewProfile}
+          onEdit={handlers?.onEdit}
+          onResetPassword={handlers?.onResetPassword}
+          onDeactivate={handlers?.onDeactivate}
+        />
+      ),
+      mobileConfig: {
+        fullWidthRank: 2,
+        showLabel: false,
+      },
+    },
+  ];
 

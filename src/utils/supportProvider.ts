@@ -87,8 +87,8 @@ export function valueMapping(
     categories: [formValues.categories],
     provinces: [formValues.provinces],
     recommended_for: recommendedForPayload,
-    start_date: moment(formValues.start_date).unix(),
-    end_date: moment(formValues.end_date).unix(),
+    start_date: startDate,
+    end_date: endDate,
     certificate_provided: formValues.certificate_provided === "true",
     can_be_copied: formValues.can_be_copied === "true",
     session_type: 'Public',
@@ -98,6 +98,7 @@ export function valueMapping(
       link: formValues?.meeting_link,
       location: formValues?.location,
     },
+    support_offering_type: effectiveFormType
   };
 }
 
