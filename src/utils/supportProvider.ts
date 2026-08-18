@@ -49,6 +49,12 @@ export function valueMapping(
       seats_limit: formValues?.seats_limit,
       can_be_copied: `${formValues.can_be_copied}`,
       max_capacity: formValues.seats_limit,
+      resources: formValues?.resources,
+      // delivery_mode: formValues.delivery_mode?.value || formValues.delivery_mode,
+      // meeting_link: formValues.meeting_info?.meeting_link,
+      // location: formValues.meeting_info?.location,
+      // start_date: moment(formValues.start_date).format('DD-MM-YYYY HH:mm'),
+      // end_date: moment(formValues.end_date).format('DD-MM-YYYY HH:mm'),
     };
   }
 
@@ -110,9 +116,7 @@ export function requestSessionPayloadMapping(formValues: any, optionMap: any = {
     support_offering_type: formValues.support_offering_type || 'training_session',
     provinces: Array.isArray(resolvedProvince) ? resolvedProvince : [resolvedProvince],
     sites: Array.isArray(resolvedSites) ? resolvedSites : (resolvedSites ? [resolvedSites] : []),
-    categories: formValues.categories
-      ? (Array.isArray(formValues.categories) ? formValues.categories.filter(Boolean) : [formValues.categories])
-      : (formValues.idp_training_task ? [formValues.idp_training_task] : []),
+    categories: [formValues.categories],
     idp_training_task: formValues.idp_training_task,
     description: formValues.description,
     learning_objectives: formValues.learning_objectives,
@@ -133,7 +137,7 @@ export function requestSessionPayloadMapping(formValues: any, optionMap: any = {
   };
 }
 
-export const uploadService = async (file : any) => {
+export const uploadService = async (file: any) => {
   const entityId = `trainingSession-${Date.now()}`;
   const uploaded = await uploadFiles(entityId, [
     { ...file, size: file.size ?? 0 },
@@ -152,3 +156,47 @@ export const uploadService = async (file : any) => {
     size: data?.size,
   };
 };
+interface TrainingFormOptionsMapParams {
+  provinces?: any[];
+  sites?: any[];
+  pillers?: any[];
+  sessionTypes?: any[];
+  targetAudience?: any[];
+  deliveryModes?: any[];
+  deliveryModeIcons?: Record<string, string>;
+}
+
+/**
+ * Builds the `optionsMap` consumed by SchemaFormRenderer for the training
+ * session form, keyed by each field's `optionsSource` (see TRAINING_FORM_SCHEMA.ts).
+ */
+export function buildTrainingFormOptionsMap({
+  provinces = [],
+  sites = [],
+  pillers = [],
+  sessionTypes = [],
+  targetAudience = [],
+  deliveryModes = [],
+  deliveryModeIcons = {},
+}: TrainingFormOptionsMapParams): Record<string, { value: string; label: string }[]> {
+  return {
+    provinces: provinces.map((province: any) => ({
+      value: province._id,
+      label: province.name,
+    })),
+    sites: sites.map((site: any) => ({
+      value: site._id,
+      label: site.name,
+    })),
+    pillars: pillers,
+    sessionTypes: sessionTypes,
+    targetAudienceOptions: targetAudience,
+    formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode: any) => ({
+      value: mode.value,
+      label: mode.label,
+      icon: deliveryModeIcons[mode.value?.toLowerCase()] || 'MapPin',
+    })),
+    certificateOptions: [...CERTIFICATE_OPTIONS],
+    recurringOptions: [...RECURRING_OPTIONS],
+  };
+}
