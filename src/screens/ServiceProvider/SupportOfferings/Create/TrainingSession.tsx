@@ -171,8 +171,7 @@ const App = (): React.JSX.Element => {
     return (
       <NotFound
         message={t(
-          'supportProvider.createSupport.errors.incompleteWarning',
-          'Please Complete your Profile before proceeding.'
+          'supportProvider.createSupport.errors.incompleteWarning'
         )}
       />
     );
