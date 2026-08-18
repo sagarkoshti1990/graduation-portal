@@ -42,12 +42,37 @@ export function valueMapping(
       certificate_provided: `${formValues.certificate_provided}`,
       seats_limit: formValues?.seats_limit,
       can_be_copied: `${formValues.can_be_copied}`,
-      resources: formValues?.resources,
-      // delivery_mode: formValues.delivery_mode?.value || formValues.delivery_mode,
-      // meeting_link: formValues.meeting_info?.meeting_link,
-      // location: formValues.meeting_info?.location,
-      // start_date: moment(formValues.start_date).format('DD-MM-YYYY HH:mm'),
-      // end_date: moment(formValues.end_date).format('DD-MM-YYYY HH:mm'),
+      max_capacity: formValues.seats_limit,
+    };
+  }
+
+  const { province, site, ...restFormValues } = formValues;
+
+  if (formValues.isRequestSession) {
+    // Requesting a session only needs a handful of fields, plus a few technical
+    // fields the backend requires to accept the request (title/agenda/requestees/status).
+    return {
+      support_offering_type: formValues.support_offering_type || 'training_session',
+      provinces: [province],
+      sites: Array.isArray(site) ? site : (site ? [site] : []),
+      categories: [formValues.categories],
+      idp_training_task: formValues.idp_training_task,
+      description: formValues.description,
+      learning_objectives: formValues.learning_objectives,
+      start_date: moment(formValues.start_date).unix(),
+      end_date: moment(formValues.end_date).unix(),
+      title: formValues.title,
+      agenda: formValues.description,
+      requestees: formValues.requestees || [],
+      status: formValues.isDraft ? 'DRAFT' : 'Requested',
+      time_zone: 'Asia/Kolkata',
+      can_be_copied: false,
+      certificate_provided: false,
+      delivery_mode: formValues.delivery_mode || 'offline',
+      meeting_info: {
+        link: formValues.meeting_link || '',
+        location: formValues.location || '',
+      },
     };
   }
 

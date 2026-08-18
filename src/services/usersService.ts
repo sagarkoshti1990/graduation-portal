@@ -12,6 +12,7 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import { ROLE_NAMES } from '@constants/ROLES';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
+import { getUserProfile } from './authenticationService';
 
 /**
  * Get users list for table view
@@ -78,6 +79,228 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
   } catch (error: any) {
     // Error is already handled by axios interceptor
     throw error;
+  }
+};
+
+/**
+ * Reads a single value (or comma-separated string, or array of strings/option
+ * objects) off a mentor's profile meta and normalizes it into a Set of ids,
+ * so it can be checked against a selected province/site/category id.
+ */
+const toIdSet = (val: any): Set<string> => {
+  const result = new Set<string>();
+
+  const extract = (item: any) => {
+    if (item === undefined || item === null || item === '') return;
+    if (typeof item === 'object') {
+      if (item.value) result.add(String(item.value));
+      if (item._id) result.add(String(item._id));
+      if (item.id) result.add(String(item.id));
+      if (item.label) result.add(String(item.label));
+      if (item.name) result.add(String(item.name));
+    } else {
+      result.add(String(item));
+    }
+  };
+
+  if (Array.isArray(val)) {
+    val.forEach(extract);
+  } else if (typeof val === 'string' && val.includes(',')) {
+    val.split(',').forEach((s) => extract(s.trim()));
+  } else if (val) {
+    extract(val);
+  }
+
+  return result;
+};
+
+/**
+ * Get mentors list, filtered by what the mentor's own profile declares they're
+ * available for - their Coverage (province/site) and Support Categories Offered
+ * (specific training areas) - not just a province query param.
+ *
+ * Uses POST /user/v1/account/search?tenant_code=brac&type=mentor&role=mentor to
+ * get candidate mentors for the province, then reads each candidate's own
+ * profile (GET /user/v1/account/profile/:id) to confirm they actually cover the
+ * selected site and offer the selected training type before including them.
+ *
+ * @param filters.provinceId - Province ID the session is being requested for
+ * @param filters.siteId - Optional site ID the session is being requested for
+ * @param filters.category - Optional training type / specific training area (idp_training_task)
+ * @returns Array of mentor user IDs (as strings) eligible for this request
+ */
+export const getMentorsList = async (
+  filters?: string | { provinceId?: string; siteId?: string; category?: string }
+): Promise<Array<string | number>> => {
+  // Back-compat: callers used to pass provinceId directly as a string.
+  const { provinceId, siteId, category } =
+    typeof filters === 'string' ? { provinceId: filters, siteId: undefined, category: undefined } : filters || {};
+
+  try {
+    if (!provinceId) return [];
+
+    console.log('[getMentorsList] Calling getUsersList for provinceId:', provinceId);
+    const response = await getUsersList({
+      type: 'mentor',
+      role: 'mentor',
+      limit: 100,
+      province: provinceId,
+    });
+
+    const usersData = response?.result?.data || (Array.isArray(response?.result) ? response.result : []);
+    console.log('[getMentorsList] Candidate mentors from search:', usersData);
+
+    const candidateIds = usersData
+      .map((u: any) => u.id ?? u._id ?? u.user_id ?? u.userId)
+      .filter((id: any) => id !== undefined && id !== null && id !== '');
+
+    if (candidateIds.length === 0) return [];
+
+    // Confirm eligibility against each candidate's own profile - the search
+    // endpoint above doesn't return site/category coverage, only their own
+    // profile does.
+    const profiles = await Promise.all(
+      candidateIds.map((id: any) => getUserProfile(String(id)).catch(() => null))
+    );
+
+    const matchingIds = candidateIds.filter((_id: any, index: number) => {
+      const profile = profiles[index];
+      if (!profile) return false;
+
+      const getProfileField = (key: string) => {
+        const val =
+          profile[key] ??
+          profile?.meta?.[key] ??
+          profile?.extra?.[key] ??
+          profile?.user_metadata?.[key] ??
+          profile?.userDetails?.[key] ??
+          profile?.userDetails?.meta?.[key] ??
+          profile?.userDetails?.extra?.[key] ??
+          profile?.custom_entity_text?.[key] ??
+          profile?.organizations?.[0]?.metaInformation?.[key] ??
+          profile?.organizations?.[0]?.meta?.[key] ??
+          profile?.organizations?.[0]?.[key] ??
+          profile?.metaInformation?.[key];
+        return val;
+      };
+
+      // Extract provinceCoverage array / object / JSON string
+      const rawCov = getProfileField('provinceCoverage') ?? getProfileField('province') ?? getProfileField('provinces');
+      // Extract supportCategories array / object / JSON string
+      const rawCat =
+        getProfileField('supportCategories') ??
+        getProfileField('specificTrainingAreas') ??
+        getProfileField('training_areas') ??
+        getProfileField('categories') ??
+        getProfileField('support_categories') ??
+        getProfileField('offeredCategories');
+      // Extract siteCoverage array / object / JSON string
+      const rawSites = getProfileField('siteCoverage') ?? getProfileField('sites') ?? getProfileField('site');
+
+      console.log(`[getMentorsList] Candidate #${_id} profile dump:`, {
+        rawCov,
+        rawSites,
+        rawCat,
+        profileObj: profile,
+      });
+
+      const mentorProvinces = toIdSet(rawCov);
+      const mentorSites = toIdSet(rawSites);
+      
+      // Extract all strings/values from rawCat (handles array of strings, array of objects, single object, or JSON strings)
+      let catStrings: string[] = [];
+      try {
+        const parsedCat = typeof rawCat === 'string' ? JSON.parse(rawCat) : rawCat;
+        if (Array.isArray(parsedCat)) {
+          parsedCat.forEach((item: any) => {
+            if (typeof item === 'string') catStrings.push(item);
+            else if (item && typeof item === 'object') {
+              if (item.value) catStrings.push(String(item.value));
+              if (item.label) catStrings.push(String(item.label));
+              if (item.name) catStrings.push(String(item.name));
+              if (item.id) catStrings.push(String(item.id));
+              if (item._id) catStrings.push(String(item._id));
+            }
+          });
+        } else if (parsedCat && typeof parsedCat === 'object') {
+          if (parsedCat.value) catStrings.push(String(parsedCat.value));
+          if (parsedCat.label) catStrings.push(String(parsedCat.label));
+          if (parsedCat.name) catStrings.push(String(parsedCat.name));
+          Object.values(parsedCat).forEach((val: any) => {
+            if (typeof val === 'string') catStrings.push(val);
+            else if (Array.isArray(val)) {
+              val.forEach((sub: any) => {
+                if (typeof sub === 'string') catStrings.push(sub);
+                else if (sub && typeof sub === 'object') {
+                  if (sub.value) catStrings.push(String(sub.value));
+                  if (sub.label) catStrings.push(String(sub.label));
+                  if (sub.name) catStrings.push(String(sub.name));
+                }
+              });
+            }
+          });
+        }
+      } catch {
+        catStrings = Array.from(toIdSet(rawCat));
+      }
+
+      // Verify Province Coverage if present
+      if (provinceId && mentorProvinces.size > 0) {
+        let matchProvince = false;
+        mentorProvinces.forEach((p) => {
+          if (p === String(provinceId) || p.toLowerCase() === String(provinceId).toLowerCase()) {
+            matchProvince = true;
+          }
+        });
+        if (!matchProvince) {
+          console.log(`[getMentorsList] Candidate #${_id} rejected on province check`);
+          return false;
+        }
+      }
+
+      // Verify Site Coverage if specified and mentor profile has explicit sites defined
+      if (siteId && mentorSites.size > 0) {
+        let matchSite = false;
+        mentorSites.forEach((s) => {
+          if (s === String(siteId) || s.toLowerCase() === String(siteId).toLowerCase()) {
+            matchSite = true;
+          }
+        });
+        if (!matchSite) {
+          console.log(`[getMentorsList] Candidate #${_id} rejected on site check:`, { siteId, mentorSites: Array.from(mentorSites) });
+          return false;
+        }
+      }
+
+      // Verify Support Categories Offered if specified and mentor profile has explicit categories defined
+      if (category && catStrings.length > 0) {
+        const catStr = String(category).toLowerCase().replace(/_/g, '').replace(/-/g, '').replace(/\s+/g, '');
+        let matchesCategory = false;
+        catStrings.forEach((val) => {
+          const valStr = String(val).toLowerCase().replace(/_/g, '').replace(/-/g, '').replace(/\s+/g, '');
+          if (
+            valStr === catStr ||
+            catStr.includes(valStr) ||
+            valStr.includes(catStr)
+          ) {
+            matchesCategory = true;
+          }
+        });
+        if (!matchesCategory) {
+          console.log(`[getMentorsList] Candidate #${_id} rejected on category check:`, { category, catStrings });
+          return false;
+        }
+      }
+
+      console.log(`[getMentorsList] Candidate #${_id} MATCHED successfully!`);
+      return true;
+    });
+
+    console.log('[getMentorsList] Mentor IDs eligible after profile-based filtering:', matchingIds);
+    return matchingIds;
+  } catch (error) {
+    console.error('Error fetching mentors list:', error);
+    return [];
   }
 };
 

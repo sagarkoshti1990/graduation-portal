@@ -1,3 +1,4 @@
+import moment from 'moment';
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
 import supportRequestsMock from './mockData/supportRequests.json';
@@ -91,7 +92,100 @@ const saveMockStore = (store: Record<string, SupportRequestItem[]>) => {
 const mockStore: Record<string, SupportRequestItem[]> = loadMockStore();
 
 /**
- * Fetch support requests list filtered by tab, province, site, and search term
+ * Maps a raw record from GET /mentoring/v1/requestSessions/list into the
+ * SupportRequestItem shape consumed by the Support Requests cards.
+ * Field names are defensive/fallback-based since the QA dataset currently
+ * has no populated records to confirm the exact response schema against.
+ */
+const mapRequestSessionItem = (
+  item: any,
+  tab: 'sessions' | 'declined'
+): SupportRequestItem => {
+  const session = item.session || item.session_details || {};
+  const rawRequestedAt = item.created_at ?? item.requested_at ?? item.createdAt;
+  const rawStartDate = session.start_date ?? item.start_date;
+
+  const toMoment = (value: any) => {
+    if (!value) return null;
+    const num = Number(value);
+    const isEpochSeconds = !Number.isNaN(num) && String(value).length <= 10;
+    return moment(isEpochSeconds ? num * 1000 : value);
+  };
+
+  const requestedMoment = toMoment(rawRequestedAt);
+  const startMoment = toMoment(rawStartDate);
+  const overdueDays = item.overdue_days ?? (requestedMoment
+    ? Math.max(0, moment().diff(requestedMoment, 'days'))
+    : 0);
+
+  return {
+    id: item.id ?? item._id ?? item.request_id,
+    type: tab,
+    category: session.category || item.category || item.idp_training_task || 'Training Session',
+    title: item.title || session.title || item.taskDetails?.title || item.name || 'Untitled Session',
+    coach: item.user?.name || item.requester_name || item.mentee_name || session.mentor_name || '-',
+    hub: item.site?.name || item.hub || (Array.isArray(session.sites) ? session.sites[0] : undefined) || '-',
+    location: session.meeting_info?.location || session.location || item.location || '-',
+    site: item.site?.name || item.site || (Array.isArray(item.meta?.sites) ? item.meta.sites[0] : undefined),
+    province: item.province?.name || item.province || (Array.isArray(item.meta?.provinces) ? item.meta.provinces[0] : undefined),
+    participants: item.participants_count ?? session.seats_remaining ?? 1,
+    participantsCount: item.participants_count ?? session.seats_remaining ?? 1,
+    preferredDate: startMoment ? startMoment.format('DD MMM YYYY') : '-',
+    preferredTime: startMoment ? startMoment.format('hh:mm A') : '-',
+    status: tab === 'declined' ? 'Declined' : 'pending',
+    requestedDate: requestedMoment ? requestedMoment.format('DD MMM YYYY') : '-',
+    overdueDays,
+    declineReason: item.reason || item.decline_reason,
+    declineDetails: item.details || item.decline_details,
+  } as SupportRequestItem;
+};
+
+/**
+ * Applies province/site/search filters to a support requests list on the client,
+ * since /requestSessions/list does not currently accept those as query params.
+ */
+const applySupportRequestFilters = (
+  list: SupportRequestItem[],
+  { province, site, search }: { province?: string; site?: string; search?: string }
+): SupportRequestItem[] => {
+  let filtered = list;
+
+  if (province && province !== 'all-provinces') {
+    const targetProv = province.toLowerCase().replace(/[\s-_]/g, '');
+    filtered = filtered.filter((item) => {
+      const itemProv = (item.province || '').toLowerCase().replace(/[\s-_]/g, '');
+      return itemProv === targetProv || itemProv.includes(targetProv) || targetProv.includes(itemProv);
+    });
+  }
+
+  if (site && site !== 'all-sites') {
+    const targetSite = site.toLowerCase().replace(/[\s-_]/g, '');
+    filtered = filtered.filter((item) => {
+      const itemSite = (item.site || '').toLowerCase().replace(/[\s-_]/g, '');
+      return itemSite === targetSite || itemSite.includes(targetSite) || targetSite.includes(itemSite);
+    });
+  }
+
+  if (search && search.trim() !== '') {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.coach.toLowerCase().includes(q) ||
+        (item.category && item.category.toLowerCase().includes(q))
+    );
+  }
+
+  return filtered;
+};
+
+/**
+ * Fetch support requests list filtered by tab, province, site, and search term.
+ *
+ * `sessions` and `declined` tabs are backed by the real
+ * GET /mentoring/v1/requestSessions/list API (status=REQUESTED / REJECTED
+ * respectively). `additional_services` and `assets` tabs still use the local
+ * mock dataset until an equivalent API is available for them.
  */
 export const getSupportRequests = async (
   params?: SupportRequestsFilterParams
@@ -107,59 +201,78 @@ export const getSupportRequests = async (
     overdueTotal: number;
   };
 }> => {
+  const { tab = 'sessions', province, site, search } = params || {};
+
+  let sessionsData: SupportRequestItem[] | null = null;
+  let declinedData: SupportRequestItem[] | null = null;
+  let sessionsCount = mockStore.sessions.length;
+  let declinedCount = mockStore.declined.length;
+  let sessionsOverdueCount = mockStore.sessions.filter(i => (i.overdueDays || 0) > 0).length;
+
   try {
-    if (API_ENDPOINTS && (API_ENDPOINTS as any).SERVICE_PROVIDER_REQUESTS) {
-      const response = await api.get((API_ENDPOINTS as any).SERVICE_PROVIDER_REQUESTS, {
-        params,
+    if (tab === 'sessions') {
+      const requestedRes = await api.get(API_ENDPOINTS.REQUEST_SESSIONS_LIST, {
+        params: { status: 'REQUESTED' },
       });
-      if (response.data) {
-        return response.data;
+      if (requestedRes?.data?.responseCode === 'OK') {
+        const resObj = requestedRes.data.result;
+        const rawList = Array.isArray(resObj) ? resObj : (resObj?.data || []);
+        const mapped: SupportRequestItem[] = rawList.map((item: any) => mapRequestSessionItem(item, 'sessions'));
+        sessionsData = mapped;
+        sessionsCount = resObj?.count ?? (Array.isArray(resObj) ? resObj.length : mapped.length);
+        sessionsOverdueCount = mapped.filter(i => (i.overdueDays || 0) > 0).length;
+      }
+    } else if (tab === 'declined') {
+      const rejectedRes = await api.get(API_ENDPOINTS.REQUEST_SESSIONS_LIST, {
+        params: { status: 'REJECTED' },
+      });
+      if (rejectedRes?.data?.responseCode === 'OK') {
+        const resObj = rejectedRes.data.result;
+        const rawList = Array.isArray(resObj) ? resObj : (resObj?.data || []);
+        const mapped: SupportRequestItem[] = rawList.map((item: any) => mapRequestSessionItem(item, 'declined'));
+        declinedData = mapped;
+        declinedCount = resObj?.count ?? (Array.isArray(resObj) ? resObj.length : mapped.length);
       }
     }
   } catch (error) {
-    console.warn('Backend API endpoint unavailable, using local mock dataset for Support Requests:', error);
+    console.warn('[SupportRequests] Failed to fetch session requests:', error);
   }
 
-  // Mock Data fallback & filtering logic
-  const { tab = 'sessions', province, site, search } = params || {};
+  const additionalServicesList = [...mockStore.additional_services];
+  const assetsList = [...mockStore.assets];
 
-  let list: SupportRequestItem[] = [...(mockStore[tab] || [])];
-
-  if (province && province !== 'all-provinces') {
-    const targetProv = province.toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemProv = (item.province || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemProv === targetProv || itemProv.includes(targetProv) || targetProv.includes(itemProv);
-    });
+  let list: SupportRequestItem[];
+  switch (tab) {
+    case 'sessions':
+      list = sessionsData ?? [...mockStore.sessions];
+      break;
+    case 'declined':
+      list = declinedData ?? [...mockStore.declined];
+      break;
+    case 'additional_services':
+      list = additionalServicesList;
+      break;
+    case 'assets':
+      list = assetsList;
+      break;
+    default:
+      list = [];
   }
 
-  if (site && site !== 'all-sites') {
-    const targetSite = site.toLowerCase().replace(/[\s-_]/g, '');
-    list = list.filter((item) => {
-      const itemSite = (item.site || '').toLowerCase().replace(/[\s-_]/g, '');
-      return itemSite === targetSite || itemSite.includes(targetSite) || targetSite.includes(itemSite);
-    });
-  }
+  list = applySupportRequestFilters(list, { province, site, search });
 
-  if (search && search.trim() !== '') {
-    const q = search.toLowerCase();
-    list = list.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.coach.toLowerCase().includes(q) ||
-        (item.category && item.category.toLowerCase().includes(q))
-    );
-  }
+  const overdueTotal =
+    sessionsOverdueCount +
+    additionalServicesList.filter(i => (i.overdueDays || 0) > 0).length +
+    assetsList.filter(i => (i.overdueDays || 0) > 0).length;
 
   const counts = {
-    sessions: mockStore.sessions.length,
-    additional_services: mockStore.additional_services.length,
-    assets: mockStore.assets.length,
-    declined: mockStore.declined.length,
-    pendingTotal: mockStore.sessions.length + mockStore.additional_services.length + mockStore.assets.length,
-    overdueTotal: mockStore.sessions.filter(i => (i.overdueDays || 0) > 0).length +
-                  mockStore.additional_services.filter(i => (i.overdueDays || 0) > 0).length +
-                  mockStore.assets.filter(i => (i.overdueDays || 0) > 0).length,
+    sessions: sessionsCount,
+    additional_services: additionalServicesList.length,
+    assets: assetsList.length,
+    declined: declinedCount,
+    pendingTotal: sessionsCount + additionalServicesList.length + assetsList.length,
+    overdueTotal,
   };
 
   return {

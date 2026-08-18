@@ -5,14 +5,14 @@ import { useNavigation } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA, REQUEST_SESSION_HIDE_FIELDS } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
-import { getSitesByProvince, getProvincesList } from '../../../services/usersService';
+import { getSitesByProvince, getProvincesList, getMentorsList, getUsersList } from '../../../services/usersService';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
 import {
   getSessionCategories,
   getRecommendedFor,
   getSessionTypesByPillar,
   getDeliveryModes,
-  createSession,
+  requestSession,
   MentoringOption,
 } from '../../../services/mentoringService';
 import { valueMapping } from '@utils/supportProvider';
@@ -72,11 +72,44 @@ const RequestSessionScreen = (): React.JSX.Element => {
     init();
   }, []);
 
+  const [mentorIds, setMentorIds] = useState<Array<string | number>>([]);
+
+  // Re-fetch mentors, filtered by each mentor's own profile (Coverage + Support
+  // Categories Offered) against the province/site/training-type currently
+  // selected on the request form.
+  const refreshMentors = useCallback((next: Record<string, any>) => {
+    const rawProv = next.province || next.provinces;
+    const provId = Array.isArray(rawProv) ? rawProv[0] : rawProv;
+    const rawSite = next.site || next.sites;
+    const siteId = Array.isArray(rawSite) ? rawSite[0] : rawSite;
+    const categoryId = next.idp_training_task;
+
+    // Require ALL three selections (Province, Site, and Training/Session Type) before fetching eligible mentors
+    if (!provId || !siteId || !categoryId) {
+      setMentorIds([]);
+      return;
+    }
+
+    console.log('[RequestSession] Triggering getMentorsList with complete selection:', { provId, siteId, category: categoryId });
+    getMentorsList({
+      provinceId: provId,
+      siteId,
+      category: categoryId,
+    }).then((ids) => {
+      console.log('[RequestSession] Mentors eligible for current selection:', ids);
+      setMentorIds(ids);
+    });
+  }, []);
+
   const handleFieldChange = useCallback(
     (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
-        if (name === 'province') next.site = '';
+        if (name === 'provinces' || name === 'province') {
+          next.province = value;
+          next.site = '';
+          next.sites = [];
+        }
         if (name === 'categories') {
           next.idp_training_task = '';
           next.title = '';
@@ -93,9 +126,32 @@ const RequestSessionScreen = (): React.JSX.Element => {
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
       setValues(formValues);
-      const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
 
-      await createSession(payload);
+      // Fetch mentors for the selected province
+      const rawProv = formValues.province || formValues.provinces;
+      const provId = Array.isArray(rawProv) ? rawProv[0] : rawProv;
+      const mentorsRes = await getUsersList({
+        type: 'mentor',
+        role: 'mentor',
+        limit: 100,
+        province: provId,
+      });
+      const usersData = mentorsRes?.result?.data || (Array.isArray(mentorsRes?.result) ? mentorsRes.result : []);
+      const activeMentorIds = usersData
+        .map((u: any) => u.id ?? u._id ?? u.user_id ?? u.userId)
+        .filter((id: any) => id !== undefined && id !== null && id !== '');
+
+      const requestees = (activeMentorIds || []).map(id => String(id));
+      console.log('[RequestSession] Final requestees list:', requestees);
+
+      const payload: any = valueMapping(
+        { ...formValues, requestees, isDraft, isRequestSession: true },
+        false,
+        optionsMap
+      );
+      console.log('[RequestSession] Submitting payload:', payload);
+
+      await requestSession(payload);
 
       const successMsg = isDraft
         ? t('supportProvider.createSupport.training.alerts.draftSaved', 'Draft saved successfully!')
@@ -104,7 +160,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
       showAlert('success', successMsg);
       navigation.navigate('sessions-support' as never);
     } catch (error: any) {
-      console.error('Error saving training session:', error);
+      console.error('Error saving training session request:', error);
       const errMsg =
         error?.data?.message ||
         error?.message ||
