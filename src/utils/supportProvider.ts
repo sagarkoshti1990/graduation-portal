@@ -86,9 +86,7 @@ export function valueMapping(
       formValues?.idp_training_task === 'custom'
         ? formValues?.sessionTypeOther
         : formValues?.title,
-    categories: formValues.categories
-      ? (Array.isArray(formValues.categories) ? formValues.categories.filter(Boolean) : [formValues.categories])
-      : (formValues.idp_training_task ? [formValues.idp_training_task] : []),
+    categories: [formValues.categories],
     delivery_mode: formValues.delivery_mode || 'offline',
     provinces: [formValues.provinces],
     recommended_for: recommendedForPayload,
