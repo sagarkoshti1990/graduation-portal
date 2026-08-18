@@ -17,6 +17,7 @@ import logger from '@utils/logger';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { uploadService, valueMapping } from '@utils/supportProvider';
 import { useTrainingFormOptions } from '@hooks';
+import NotFound from '@components/NotFound';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -127,7 +128,14 @@ const App = (): React.JSX.Element => {
   }
 
   if (isProfileComplete === false) {
-    return <NotFound message="Please Complete your Profile before proceeding." />;
+    return (
+      <NotFound
+        message={t(
+          'supportProvider.createSupport.errors.incompleteWarning',
+          'Please Complete your Profile before proceeding.'
+        )}
+      />
+    );
   }
 
   return (

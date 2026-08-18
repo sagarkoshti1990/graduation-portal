@@ -168,7 +168,14 @@ const App = (): React.JSX.Element => {
   }
 
   if (isProfileComplete === false) {
-    return <NotFound message="Please Complete your Profile before proceeding." />;
+    return (
+      <NotFound
+        message={t(
+          'supportProvider.createSupport.errors.incompleteWarning',
+          'Please Complete your Profile before proceeding.'
+        )}
+      />
+    );
   }
 
   if (isLoading) {

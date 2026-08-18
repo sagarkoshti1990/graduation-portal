@@ -32,7 +32,7 @@ export const SupportCard: React.FC<FeatureCardProps> = ({ card }) => {
       showAlert(
         'error',
         t(
-          'profile.incompleteWarning',
+          'supportProvider.createSupport.errors.incompleteWarning',
           'Please Complete your Profile before proceeding.',
         ),
       );
