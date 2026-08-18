@@ -107,7 +107,7 @@ export interface DatePickerProps {
   mode?: DatePickerMode;
   value?: string;
   defaultValue?: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   placeholder?: string;
   maximumDate?: Date;
   minimumDate?: Date;
@@ -120,6 +120,13 @@ export interface DatePickerProps {
   hourFormat?: 12 | 24;
   displayFormat?: string;
   apiFormat?: string;
+  // Alias for `apiFormat` — the value committed via `onChange`. Independent of
+  // `displayFormat`, which only controls what's shown in the input/trigger.
+  valueFormat?: string;
+  // 'popup' (default): floating calendar, existing behavior. 'modal': same
+  // calendar content rendered inside the shared centered `<Modal>` (already
+  // used natively) instead of the web floating popup.
+  popupMode?: 'popup' | 'modal';
   locale?: string;
   color?: DatePickerColor;
   theme?: Partial<DatePickerTheme>;
@@ -174,6 +181,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
   hourFormat = 12,
   displayFormat,
   apiFormat,
+  valueFormat,
+  popupMode = 'popup',
   locale,
   color,
   theme: themeOverride,
@@ -190,6 +199,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   // Use controlled state if provided, otherwise use internal state
   const showPicker = controlledIsOpen !== undefined ? controlledIsOpen : internalShowPicker;
+
+  // Native always presents via the shared `<Modal>` already; on web, only
+  // `popupMode="modal"` opts into it instead of the default floating popup.
+  const usesModalContainer = popupMode === 'modal' || Platform.OS !== 'web';
+  const usesWebFloatingPopup = Platform.OS === 'web' && !usesModalContainer;
 
   const setShowPicker = (newValue: boolean) => {
     if (controlledIsOpen !== undefined && onOpenChange) {
@@ -272,7 +286,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   useEffect(() => {
     if (controlledIsOpen !== undefined) {
       // If controlled, sync internal state (for position calculation, etc.)
-      if (controlledIsOpen && Platform.OS === 'web') {
+      if (controlledIsOpen && usesWebFloatingPopup) {
         setCalendarPosition(computePosition());
       }
     }
@@ -282,7 +296,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   // Corrects the estimated position against the popup's real rendered size —
   // runs synchronously before paint, so a wrong first guess never flashes.
   useLayoutEffect(() => {
-    if (Platform.OS !== 'web' || !showPicker) return;
+    if (!usesWebFloatingPopup || !showPicker) return;
     const popupDom = resolveDom(calendarPopupRef.current);
     if (popupDom) {
       const popupRect = popupDom.getBoundingClientRect();
@@ -301,11 +315,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const emitChange = (newValue: string) => {
     if (!isControlled) setInternalValue(newValue);
-    onChange(newValue);
+    onChange?.(newValue);
   };
 
   // ---- formats / locale / theme ----
-  const effectiveApiFormat = apiFormat ?? DEFAULT_API_FORMATS[mode];
+  const effectiveApiFormat = apiFormat ?? valueFormat ?? DEFAULT_API_FORMATS[mode];
   const effectiveDisplayFormat = displayFormat ?? getDefaultDisplayFormat(mode, hourFormat);
   const effectiveLocale = locale ?? currentLanguage;
 
@@ -352,7 +366,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const handleCancel = () => {
     const snapshot = openSnapshotRef.current;
-    emitChange(snapshot ? formatDate(snapshot, effectiveApiFormat, monthNamesShort) : '');
+    const revertValue = snapshot ? formatDate(snapshot, effectiveApiFormat, monthNamesShort) : '';
+    // Only emit if the picker's live selection actually diverged from what was
+    // open — cancelling without touching anything shouldn't re-notify the parent.
+    if (revertValue !== (currentValue ?? '')) {
+      emitChange(revertValue);
+    }
     closePicker();
   };
 
@@ -380,9 +399,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableMinimumDate = useMemo(() => minimumDate, [minimumDateTime]);
 
-  // Update position on scroll/resize (web only)
+  // Update position on scroll/resize (web floating popup only)
   useEffect(() => {
-    if (Platform.OS === 'web' && showPicker) {
+    if (usesWebFloatingPopup && showPicker) {
       const updatePosition = () => {
         setCalendarPosition(computePosition());
       };
@@ -399,10 +418,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPicker]);
 
-  // Handle click outside / Escape to close (all platforms)
+  // Handle click outside / Escape to close (web floating popup only — the
+  // shared `<Modal>` used for native and `popupMode="modal"` already has its
+  // own overlay-click/Escape handling).
   useEffect(() => {
     if (showPicker) {
-      if (Platform.OS === 'web') {
+      if (usesWebFloatingPopup) {
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
           const target = event.target as HTMLElement;
           if (!target) return;
@@ -430,19 +451,24 @@ const DatePicker: React.FC<DatePickerProps> = ({
           }
         };
 
-        // Use a longer delay and bubble phase to allow date selection to complete first
+        // Capture phase: react-native-web's Pressable (the trigger button,
+        // or any other button elsewhere on the page) can stop propagation
+        // before a click bubbles up to `document`, which silently defeated
+        // this listener for clicks on any button — only truly empty/backdrop
+        // space would close the popup. Capture fires before that can happen.
+        // The `contains(target)` check above still protects in-popup date
+        // selection either way, so this doesn't affect that.
         const timeoutId = setTimeout(() => {
-          // Use bubble phase (false) instead of capture (true) to let date selection fire first
-          document.addEventListener('click', handleClickOutside, false);
-          document.addEventListener('touchend', handleClickOutside, false);
-          document.addEventListener('keydown', handleKeyDown, false);
+          document.addEventListener('click', handleClickOutside, true);
+          document.addEventListener('touchend', handleClickOutside, true);
+          document.addEventListener('keydown', handleKeyDown, true);
         }, 300);
 
         return () => {
           clearTimeout(timeoutId);
-          document.removeEventListener('click', handleClickOutside, false);
-          document.removeEventListener('touchend', handleClickOutside, false);
-          document.removeEventListener('keydown', handleKeyDown, false);
+          document.removeEventListener('click', handleClickOutside, true);
+          document.removeEventListener('touchend', handleClickOutside, true);
+          document.removeEventListener('keydown', handleKeyDown, true);
         };
       }
     }
@@ -453,7 +479,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const handleToggle = () => {
     if (isDisabled || disabled || isReadOnly) return;
     const newState = !showPicker;
-    if (newState && Platform.OS === 'web') {
+    if (newState && usesWebFloatingPopup) {
       // Calculate position before showing
       setCalendarPosition(computePosition());
     }
@@ -506,7 +532,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const calendarContentStyle = datePickerStyles.getCalendarContentStyle(Platform.OS, calendarPosition);
   const webCalendarContent =
-    Platform.OS === 'web' && showPicker ? (
+    usesWebFloatingPopup && showPicker ? (
       <Box
         ref={calendarPopupRef}
         {...mergeStyle(calendarContentStyle as any, styles?.popup)}
@@ -568,15 +594,15 @@ const DatePicker: React.FC<DatePickerProps> = ({
         {errorMessage ? <Text {...datePickerStyles.errorText}>{errorMessage}</Text> : null}
       </Box>
 
-      {/* Web: portal the popup to document.body so it overlaps everything else. */}
-      {Platform.OS === 'web' && ReactDOM && webCalendarContent
+      {/* Web popup mode: portal the popup to document.body so it overlaps everything else. */}
+      {usesWebFloatingPopup && ReactDOM && webCalendarContent
         ? ReactDOM.createPortal(webCalendarContent, document.body)
         : null}
 
-      {/* Native: a real Modal instead of an absolutely-positioned popup — reliable
-          touch handling/overlay dismissal instead of the ad hoc giant backdrop this
-          used to render, and matches this app's existing Modal usage elsewhere. */}
-      {Platform.OS !== 'web' && (
+      {/* Native, and web with popupMode="modal": the same shared centered
+          Modal — reliable touch handling/overlay dismissal instead of an
+          absolutely-positioned popup, reusing this app's existing Modal. */}
+      {usesModalContainer && (
         <Modal
           isOpen={showPicker}
           onClose={stableClosePicker}
