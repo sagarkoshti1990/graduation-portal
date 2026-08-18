@@ -38,7 +38,7 @@ jobs:
           echo "${{ secrets.QA_ENV_BRAC }}" > .env
 
       - name: Install dependencies
-        run: npm ci   # ci, not install — deterministic, respects lockfile
+        run: npm install --legacy-peer-deps   # ci, not install — deterministic, respects lockfile
 
       - name: Build
         run: npm run build
