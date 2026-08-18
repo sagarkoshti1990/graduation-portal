@@ -77,26 +77,7 @@ const OrganizationProfile = (): React.JSX.Element => {
         console.error('Error fetching provider_type options:', err);
       }
 
-      if (!user?.id) {
-        const emptyValues = {
-          name: user?.name || '',
-          organizationType: [],
-          contactPersonName: user?.name || '',
-          contactEmail: user?.email || '',
-          contactPhone: user?.phone || '',
-          phone_code: user?.phone_code || '27',
-          agreementMoU: null,
-          organisationCredentials: null,
-        };
-
-        setValues(emptyValues);
-        setOriginalValues(emptyValues);
-        setProvinceCoverage([]);
-        setOriginalProvinceCoverage([]);
-        setSupportCategories(DEFAULT_CATEGORIES);
-        setOriginalSupportCategories(DEFAULT_CATEGORIES);
-        return;
-      }
+      if (!user?.id) return;
 
       try {
         const res = await getUserProfile(user.id);
@@ -301,16 +282,10 @@ try {
     email: values.contactEmail,
     phone: values.contactPhone,
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
-    provinces,
-    sites,
-    provinceCoverage,
-    supportCategories,
     meta: {
       organizationType: values.organizationType,
       agreementMoU: resolvedValues.agreementMoU,
       organisationCredentials: resolvedValues.organisationCredentials,
-      provinces,
-      sites,
       provinceCoverage,
       supportCategories,
     },
