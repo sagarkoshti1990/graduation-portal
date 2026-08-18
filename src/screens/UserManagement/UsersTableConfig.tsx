@@ -348,11 +348,9 @@ export const getUsersColumns = (handlers?: {
       flex: 1.2,
       render: (user) => {
         const roles = user?.user_organizations?.[0]?.roles?.map(
-          (role: any) => role.role.label
+          (role: any) => role?.role?.label || role?.role?.title
         ) || [];
-        if (!roles.includes('Mentor')) {
-          roles.push('Mentor');
-        }
+
         return (
           <HStack space="xs" flexWrap="wrap">
             {roles.map((roleLabel: string, index: number) => (

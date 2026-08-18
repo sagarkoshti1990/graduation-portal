@@ -240,9 +240,9 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             required: true,
             zIndex: 999,
             label: { key: 'dob', fallback: 'DOB' },
-            placeholder: { fallback: 'YYYY-MM-DD' },
+            placeholder: { fallback: 'DD/MM/YYYY' },
             valueFormat: 'YYYY_MM_DD',
-            displayFormat: 'YYYY-MM-DD',
+            displayFormat: 'dateFormat@DD/MM/YYYY',
             validation: [
               { rule: 'required', message: { key: 'errors.dobRequired', fallback: 'Date of birth is required' } },
               { rule: 'dateNotInFuture', message: { key: 'errors.dobFuture', fallback: 'Date of birth cannot be in the future' } },

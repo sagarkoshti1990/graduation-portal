@@ -1602,6 +1602,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
         isReadOnly={field.isReadOnly}
       >
         <FastTextareaInput
+          {...(styles.input as any)}
           {...resolvedInputProps}
           ref={field.autoFocus ? autoFocusRef : undefined}
           placeholder={placeholder}
@@ -2879,6 +2880,9 @@ function formatFieldValueForDisplay(
     if (filed?.displayFormat) {
       const [type, format] = filed?.displayFormat?.split("@")
       if (type === "dateFormat") {
+        if (filed?.valueFormat) {
+          return moment(v, filed?.valueFormat).format(format)
+        }
         return moment(v).format(format)
       }
     }
