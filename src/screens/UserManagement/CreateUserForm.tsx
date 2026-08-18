@@ -7,7 +7,7 @@ import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRender
 import { createUser, getSitesByProvince } from '../../services/usersService';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import type { AdminUserManagementData } from '@app-types/Users';
-import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
+import { CREATE_USER_FORM_SCHEMA, INPUT_STYLE } from '@constants/CREATE_USER_FORM_SCHEMA';
 
 interface CreateUserFormProps {
   isOpen: boolean;
@@ -167,11 +167,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
           optionsMap={optionsMap}
           disabled={isSubmitting}
           t={t}
-          _input={{
-            variant: 'outline' as const,
-            size: 'sm' as const,
-            bg: '$faintBlue',
-          }}
+          _input={INPUT_STYLE}
           firstNameRef={firstNameRef}
         // onSubmit={handleSubmit}
         />

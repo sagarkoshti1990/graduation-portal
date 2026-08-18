@@ -2651,7 +2651,7 @@ export const RenderRow = memo(
           field.type === FORM_FIELD_TYPES.GROUP &&
           field.fields
         ) {
-          return field.fields;
+          return field;
         }
 
         return [field];
@@ -2872,25 +2872,37 @@ const HintDisplay: React.FC<{
  * isn't duplicated.
  */
 function formatFieldValueForDisplay(
-  rawValue: any,
-  filed: FormField | undefined,
+  values: any,
+  field: (FormField & { fields?: FormField[] }) | undefined,
   optionsMap: OptionsMap,
 ): string {
+
+  let rawValue = field?.name ? values[field?.name] : undefined;
+  if (!isValuePresent(rawValue) && field?.defaultValue) {
+    rawValue = field.defaultValue;
+  }
+  
   const resolveLabel = (v: any): string => {
-    if (filed?.displayFormat) {
-      const [type, format] = filed?.displayFormat?.split("@")
+    if (field?.displayFormat) {
+      const [type, format] = field?.displayFormat?.split("@")
       if (type === "dateFormat") {
-        if (filed?.valueFormat) {
-          return moment(v, filed?.valueFormat).format(format)
+        if (field?.valueFormat) {
+          return moment(v, field?.valueFormat).format(format)
         }
         return moment(v).format(format)
       }
     }
-    const option = filed?.optionsSource
-      ? optionsMap[filed?.optionsSource]?.find(o => o.value === v)
+    const option = field?.optionsSource
+      ? optionsMap[field?.optionsSource]?.find(o => o.value === v)
       : undefined;
     return option?.label || String(v);
   };
+
+  if(field?.type === FORM_FIELD_TYPES.GROUP) {
+    let newValue:string[] = []
+    field?.fields?.forEach((item:FormField | undefined) => newValue.push(item?.name && values[item?.name] ? resolveLabel(values[item?.name]) : '-'))
+    return newValue.join(" ")
+  }
 
   if (Array.isArray(rawValue)) {
     if (rawValue.length === 0) return '-';
@@ -2933,13 +2945,8 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
     )
     : field.name ?? '-';
 
-  let rawValue = field.name ? values[field.name] : undefined;
-  if (!isValuePresent(rawValue) && targetField?.defaultValue) {
-    rawValue = targetField.defaultValue;
-  }
-
   const displayValue = formatFieldValueForDisplay(
-    rawValue,
+    values,
     targetField,
     optionsMap,
   );
@@ -3126,7 +3133,7 @@ const FieldContainer = memo(
       }
 
       const displayValue = formatFieldValueForDisplay(
-        value,
+        values,
         field,
         optionsMap,
       );
