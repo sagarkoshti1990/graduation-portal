@@ -98,6 +98,7 @@ export function valueMapping(
       link: formValues?.meeting_link,
       location: formValues?.location,
     },
+    support_offering_type: effectiveFormType
   };
 }
 
