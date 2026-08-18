@@ -146,7 +146,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
-
+  
   return (
     <Modal
       isOpen={isOpen}
@@ -358,7 +358,7 @@ export const mapFormValuesToPayload = (
   };
 
   if (values.dob && values.dob.trim()) {
-    payload.dob = values.dob.replace(/[\/\-]/g, '');
+    payload.dob = values.dob.replace(/[\/\-]/g, '_');
   }
   if (values.gender && values.gender.trim()) {
     payload.gender = values.gender;

@@ -60,7 +60,7 @@ export const styles = {
   roleColors: {
     'BRAC admin': '$error600' as const,
     Supervisor: '$primary500' as const,
-    Mentor: '$warning500' as const,
+    mentor: '$warning500' as const,
     'Linkage Champion': '$textMutedForeground' as const,
     Participant: '$white' as const,
   },
