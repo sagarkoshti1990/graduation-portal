@@ -138,15 +138,6 @@ const OrganizationProfile = (): React.JSX.Element => {
           orgType = [];
         }
 
-        // Clean values to remove any placeholder/label string leakage
-        orgType = orgType.filter(
-          (t: any) =>
-            t &&
-            typeof t === 'string' &&
-            t.toLowerCase() !== 'provider type' &&
-            t.toLowerCase() !== 'organization type'
-        );
-
         const mapped = {
           name: getField('about') || getField('name') || user?.name || '',
           organizationType: orgType,
