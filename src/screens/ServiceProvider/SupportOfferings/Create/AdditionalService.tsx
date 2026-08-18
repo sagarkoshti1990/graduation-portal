@@ -7,13 +7,14 @@ import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { ADDITIONAL_SERVICES_FORM_SCHEMA,tabs } from '@constants/ADDITIONAL_SERVICES_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getProvincesList, getSitesByProvince } from '../../../../services/usersService';
-import { useRequireProfileCompletion } from '@hooks';
+import { useProfileCompletion } from '@hooks';
+import NotFound from '@components/NotFound';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  useRequireProfileCompletion();
+  const { isProfileComplete } = useProfileCompletion();
 
   const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
@@ -84,7 +85,6 @@ const App = (): React.JSX.Element => {
 
   const handleSaveDraft = useCallback(async (formValues: any) => {
     try {
-      console.log('Saving draft with payload:', formValues);
       showAlert(
         'success',
         'supportProvider.additionalServicesForm.draftSuccessMessage',
@@ -102,6 +102,10 @@ const App = (): React.JSX.Element => {
       // @ts-ignore
       navigation.navigate('create-opportunity');
     }
+  }
+
+  if (isProfileComplete === false) {
+    return <NotFound message="Please Complete your Profile before proceeding." />;
   }
 
   return (

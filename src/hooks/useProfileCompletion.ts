@@ -6,98 +6,67 @@ import { useAlert } from '@ui';
 
 export const useProfileCompletion = () => {
   const { user } = useAuth();
-  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(true);
-  const [checkingProfile, setCheckingProfile] = useState<boolean>(true);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
+  const getField = (data: any, key: string) => {
+    const paths = [
+      data,
+      data?.meta,
+      data?.extra,
+      data?.userDetails,
+      data?.userDetails?.meta,
+      data?.userDetails?.extra,
+      data?.custom_entity_text,
+    ];
+    for (const p of paths) {
+      if (p?.[key] != null) return p[key];
+    }
+    return null;
+  };
+
+  const toArray = (val: any): any[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
 
   useEffect(() => {
     let isMounted = true;
     const checkCompletion = async () => {
       if (!user?.id) {
-        if (isMounted) {
-          setIsProfileComplete(false);
-          setCheckingProfile(false);
-        }
+        if (isMounted) setIsProfileComplete(false);
         return;
       }
 
       try {
-        setCheckingProfile(true);
-        const res: any = await getUserProfile(user.id);
-        const profileData = res || {};
+        const profileData = (await getUserProfile(user.id)) || {};
 
-        const getField = (key: string, fallback: any = null) => {
-          const val =
-            profileData[key] ??
-            profileData?.meta?.[key] ??
-            profileData?.extra?.[key] ??
-            profileData?.userDetails?.[key] ??
-            profileData?.userDetails?.meta?.[key] ??
-            profileData?.userDetails?.extra?.[key] ??
-            profileData?.custom_entity_text?.[key];
-          return val === undefined || val === null ? fallback : val;
-        };
-
-        const rawCov = getField('provinceCoverage', []);
-        const rawCat = getField('supportCategories', []);
-
-        let cov = [];
-        if (rawCov) {
-          if (typeof rawCov === 'object') cov = rawCov;
-          else {
-            try { cov = JSON.parse(rawCov); } catch { cov = []; }
-          }
-        }
-
-        let cat = [];
-        if (rawCat) {
-          if (typeof rawCat === 'object') cat = rawCat;
-          else {
-            try { cat = JSON.parse(rawCat); } catch { cat = []; }
-          }
-        }
-
-        const hasCoverage = Array.isArray(cov) && cov.length > 0;
-        const hasCategories = Array.isArray(cat) && cat.length > 0;
+        const cov = toArray(getField(profileData, 'provinceCoverage'));
+        const cat = toArray(getField(profileData, 'supportCategories'));
 
         if (isMounted) {
-          setIsProfileComplete(hasCoverage && hasCategories);
+          setIsProfileComplete(cov.length > 0 && cat.length > 0);
         }
       } catch (err) {
         console.error('Error checking profile completion:', err);
         if (isMounted) setIsProfileComplete(false);
-      } finally {
-        if (isMounted) setCheckingProfile(false);
       }
     };
 
     checkCompletion();
-
     return () => {
       isMounted = false;
     };
   }, [user?.id]);
 
-  return { isProfileComplete, checkingProfile };
-};
-
-export const useRequireProfileCompletion = () => {
-  const { t } = useLanguage();
-  const { showAlert } = useAlert();
-  const { isProfileComplete, checkingProfile } = useProfileCompletion();
-
-  useEffect(() => {
-    if (!checkingProfile && !isProfileComplete) {
-      showAlert(
-        'error',
-        t(
-          'profile.incompleteWarning',
-          'Please Complete your Profile before proceeding.',
-        ),
-      );
-    }
-  }, [checkingProfile, isProfileComplete]);
-
-  return { isProfileComplete, checkingProfile };
+  return { isProfileComplete };
 };
 
 

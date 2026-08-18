@@ -25,9 +25,9 @@ export const SupportCard: React.FC<FeatureCardProps> = ({ card }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const { title, description, icon, color, navigationUrl } = card;
-  const { isProfileComplete, checkingProfile } = useProfileCompletion();
+  const { isProfileComplete } = useProfileCompletion();
 
-  const isDisabled = !checkingProfile && !isProfileComplete;
+  const isDisabled = isProfileComplete === false;
 
   const handlePress = () => {
     if (isDisabled) {

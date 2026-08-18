@@ -19,7 +19,7 @@ import NotFound from '@components/NotFound';
 import { uploadService, valueMapping } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
 import logger from '@utils/logger';
-import { useTrainingFormOptions, useRequireProfileCompletion } from '@hooks';
+import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
 
 // Icon shown next to each delivery mode option in the format-type pill selector
 const DELIVERY_MODE_ICONS: Record<string, string> = {
@@ -42,7 +42,7 @@ const App = (): React.JSX.Element => {
   const [isLoading, setIsLoading] = useState(true);
   const [lodingButton,setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
-  useRequireProfileCompletion();
+  const { isProfileComplete } = useProfileCompletion();
 
   const { optionsMap } = useTrainingFormOptions({
     values,
@@ -165,6 +165,10 @@ const App = (): React.JSX.Element => {
       // @ts-ignore
       navigation.navigate('create-opportunity');
     }
+  }
+
+  if (isProfileComplete === false) {
+    return <NotFound message="Please Complete your Profile before proceeding." />;
   }
 
   if (isLoading) {

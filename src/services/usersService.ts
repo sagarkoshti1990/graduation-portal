@@ -177,30 +177,14 @@ export const getMentorsList = async (
   const category = parsed.category;
 
   try {
-    console.log('[getMentorsList] ▶ Called with raw filters:', { provinceId, siteIds, category });
-
     if (!provinceId) {
-      console.warn('[getMentorsList] No provinceId provided — returning empty mentor list.');
       return [];
     }
 
     // Selected province/sites are mongo _ids; mentor profiles store externalId
     // codes, so resolve them once up front.
     const { provinceCode, siteCodes } = await resolveExternalIds(provinceId, siteIds);
-    console.log('[getMentorsList] ID resolution (form _id -> profile externalId code):');
-    console.log(`  provinceId (_id): "${provinceId}"  ->  provinceCode: "${provinceCode}"`);
-    siteIds.forEach((sid, i) => console.log(`  siteId[${i}] (_id): "${sid}"  ->  siteCode: "${siteCodes[i]}"`));
-    console.log('  category (idp_training_task):', category);
 
-    // NOTE: deliberately NOT passing `province` here. That filter matches
-    // against a mentor's basic `meta.province` (a plain demographic field, set
-    // during participant-style onboarding) - it has nothing to do with the
-    // Organisation Profile's `meta.provinceCoverage`, which is where a mentor
-    // actually declares which provinces/sites they cover. Passing it silently
-    // excluded every org-profile mentor (confirmed live: it excluded both
-    // Ganesh and Siyu, who both have `provinceCoverage` set but no top-level
-    // `meta.province`). Province/site/category matching is instead done fully
-    // below, against each candidate's own profile.
     const response = await getUsersList({
       type: 'mentor',
       role: 'mentor',
@@ -212,15 +196,6 @@ export const getMentorsList = async (
       .map((u: any) => u.id ?? u._id ?? u.user_id ?? u.userId)
       .filter((id: any) => id !== undefined && id !== null && id !== '');
 
-    console.log(`[getMentorsList] Total mentor candidates (unfiltered by province at search level):`, candidateIds.length);
-    console.table(
-      usersData.map((u: any) => ({
-        id: u.id ?? u._id ?? u.user_id ?? u.userId,
-        name: u.name,
-        email: u.email,
-      }))
-    );
-
     if (candidateIds.length === 0) return [];
 
     // Confirm eligibility against each candidate's own profile - the search
@@ -230,21 +205,13 @@ export const getMentorsList = async (
       candidateIds.map((id: any) => getUserProfile(String(id)).catch(() => null))
     );
 
-    const checkLog: Array<Record<string, any>> = [];
-
     const matchingIds = candidateIds.filter((_id: any, index: number) => {
       const profile = profiles[index];
-      const candidateName = profile?.name || profile?.email || `User #${_id}`;
 
       if (!profile) {
-        console.log(`❌ Candidate #${_id} REJECTED: Could not fetch profile.`);
-        checkLog.push({ id: _id, name: candidateName, matched: false, reason: 'profile fetch failed' });
         return false;
       }
 
-      // provinceCoverage/supportCategories live under `meta` (confirmed against
-      // a live GET /user/v1/user/read/:id response); keep a couple of legacy
-      // fallback locations for resilience against older/different profile shapes.
       const rawCoverage: MentorCoverageEntry[] =
         profile?.meta?.provinceCoverage ?? profile?.provinceCoverage ?? profile?.extra?.provinceCoverage ?? [];
       const rawCategories: MentorSupportCategory[] =
@@ -253,9 +220,6 @@ export const getMentorsList = async (
       const coverage = Array.isArray(rawCoverage) ? rawCoverage : [];
       const categories = Array.isArray(rawCategories) ? rawCategories : [];
 
-      // Flatten every training-area/pillar array (socialEmpowerment,
-      // financialInclusion, livelihoods, etc.) across all categories into one
-      // list of offered labels, e.g. "Parenting Skills Training".
       const offeredLabels: string[] = [];
       categories.forEach((cat) => {
         [cat.trainingData, cat.linkageData, cat.assetsData].forEach((group) => {
@@ -268,31 +232,18 @@ export const getMentorsList = async (
         if (cat.othersData) offeredLabels.push(String(cat.othersData));
       });
 
-      console.log(`\n🔍 --- [Filter Check] Evaluating Mentor Candidate: ${candidateName} (ID: ${_id}) ---`);
-      console.log('[Filter Check] Mentor province/site coverage:', JSON.stringify(coverage));
-      console.log('[Filter Check] Mentor offered training areas:', offeredLabels);
-
       const hasCoverage = coverage.length > 0;
       const hasCategories = offeredLabels.length > 0;
 
       if (!hasCoverage && !hasCategories) {
-        const reason = 'incomplete profile (no coverage/categories configured)';
-        console.log(`❌ Candidate ${candidateName} (${_id}) REJECTED: ${reason}.`);
-        checkLog.push({ id: _id, name: candidateName, matched: false, reason });
         return false;
       }
 
-      // Province + site coverage: find a coverage entry for the selected
-      // province, then (if sites were selected) require it to cover every
-      // selected site.
       if (provinceCode) {
         const matchingEntry = coverage.find(
           (entry) => normalize(entry.provinceId) === normalize(provinceCode)
         );
         if (!matchingEntry) {
-          const reason = `province mismatch: required "${provinceCode}", mentor has ${JSON.stringify(coverage.map((c) => c.provinceId))}`;
-          console.log(`❌ Candidate ${candidateName} (${_id}) REJECTED on Province Check: ${reason}`);
-          checkLog.push({ id: _id, name: candidateName, matched: false, reason });
           return false;
         }
 
@@ -300,15 +251,11 @@ export const getMentorsList = async (
           const mentorSiteCodes = (matchingEntry.siteIds || []).map(normalize);
           const missing = siteCodes.filter((sc) => !mentorSiteCodes.includes(normalize(sc)));
           if (missing.length > 0) {
-            const reason = `site mismatch: missing ${JSON.stringify(missing)}, mentor covers ${JSON.stringify(matchingEntry.siteIds)}`;
-            console.log(`❌ Candidate ${candidateName} (${_id}) REJECTED on Site Check: ${reason}`);
-            checkLog.push({ id: _id, name: candidateName, matched: false, reason });
             return false;
           }
         }
       }
 
-      // Support Categories Offered / specific training area
       if (category) {
         const catNorm = normalize(category);
         const matchesCategory = offeredLabels.some((label) => {
@@ -316,21 +263,13 @@ export const getMentorsList = async (
           return labelNorm === catNorm || catNorm.includes(labelNorm) || labelNorm.includes(catNorm);
         });
         if (!matchesCategory) {
-          const reason = `category mismatch: required "${category}", mentor offers ${JSON.stringify(offeredLabels)}`;
-          console.log(`❌ Candidate ${candidateName} (${_id}) REJECTED on Category Check: ${reason}`);
-          checkLog.push({ id: _id, name: candidateName, matched: false, reason });
           return false;
         }
       }
 
-      console.log(`✅ Candidate ${candidateName} (${_id}) PASSED ALL CHECKS & MATCHED!`);
-      checkLog.push({ id: _id, name: candidateName, matched: true, reason: 'all checks passed' });
       return true;
     });
 
-    console.log('[getMentorsList] ▼ Summary of all candidates checked:');
-    console.table(checkLog);
-    console.log('[getMentorsList] ✅ Mentor IDs eligible after profile-based filtering:', matchingIds);
     return matchingIds;
   } catch (error) {
     console.error('Error fetching mentors list:', error);
@@ -652,7 +591,6 @@ export const resetPassword = async (
   params: ResetPasswordRequest
 ): Promise<ResetPasswordResponse> => {
   try {
-    console.log('Reset password called for user:', params.username);
     // TODO: Replace this with actual API call when endpoint is available
     // Example:
     // const response = await api.post<ResetPasswordResponse>(
@@ -670,7 +608,6 @@ export const resetPassword = async (
         updatedAt: new Date().toISOString(),
       },
     };
-    console.log('Password reset successful (static response)');
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     return staticResponse;

@@ -62,9 +62,10 @@ const OrganizationProfile = (): React.JSX.Element => {
 
   // Fetches dynamic options & logged-in user's organization profile on mount.
   useEffect(() => {
-    // Fetch dynamic provider_type options from mentoring API
-    getMentoringEntities({ value: 'provider_type' })
-      .then((res: any[]) => {
+    const loadProfileData = async () => {
+      // Fetch dynamic provider_type options from mentoring API
+      try {
+        const res: any = await getMentoringEntities({ value: 'provider_type' });
         if (res && res.length > 0) {
           const formatted = res.map((item: any) => ({
             value: item.value || item.label || item.name || item,
@@ -72,34 +73,33 @@ const OrganizationProfile = (): React.JSX.Element => {
           }));
           setProviderTypeOptions(formatted);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching provider_type options:', err);
-      });
+      }
 
-    if (!user?.id) {
-      const emptyValues = {
-        name: user?.name || '',
-        organizationType: [],
-        contactPersonName: user?.name || '',
-        contactEmail: user?.email || '',
-        contactPhone: user?.phone || '',
-        phone_code: user?.phone_code || '27',
-        agreementMoU: null,
-        organisationCredentials: null,
-      };
+      if (!user?.id) {
+        const emptyValues = {
+          name: user?.name || '',
+          organizationType: [],
+          contactPersonName: user?.name || '',
+          contactEmail: user?.email || '',
+          contactPhone: user?.phone || '',
+          phone_code: user?.phone_code || '27',
+          agreementMoU: null,
+          organisationCredentials: null,
+        };
 
-      setValues(emptyValues);
-      setOriginalValues(emptyValues);
-      setProvinceCoverage([]);
-      setOriginalProvinceCoverage([]);
-      setSupportCategories(DEFAULT_CATEGORIES);
-      setOriginalSupportCategories(DEFAULT_CATEGORIES);
-      return;
-    }
+        setValues(emptyValues);
+        setOriginalValues(emptyValues);
+        setProvinceCoverage([]);
+        setOriginalProvinceCoverage([]);
+        setSupportCategories(DEFAULT_CATEGORIES);
+        setOriginalSupportCategories(DEFAULT_CATEGORIES);
+        return;
+      }
 
-    getUserProfile(user.id)
-      .then((res: any) => {
+      try {
+        const res = await getUserProfile(user.id);
         // Don't overwrite unsaved changes while editing
         if (mode === 'edit') {
           return;
@@ -213,10 +213,12 @@ const OrganizationProfile = (): React.JSX.Element => {
         setOriginalProvinceCoverage(cov);
         setSupportCategories(cat);
         setOriginalSupportCategories(cat);
-      })
-      .catch((err: any) => {
+      } catch (err: any) {
         console.error('Error fetching org profile:', err);
-      });
+      }
+    };
+
+    loadProfileData();
   }, [user?.id]);
 
   // Updates a form field value and clears its validation error.

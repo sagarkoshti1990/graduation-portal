@@ -1259,38 +1259,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <PillOptionsRow
         options={rawOptions}
-        isSelected={optVal => {
-          const optObj = rawOptions.find(o => o.value === optVal || o.label === optVal);
-          const targetVal = optObj?.value || optVal;
-          const targetLabel = optObj?.label || optVal;
-          return selectedValues.some(
-            v =>
-              v === targetVal ||
-              v === targetLabel ||
-              v.toLowerCase() === targetVal.toLowerCase() ||
-              v.toLowerCase() === targetLabel.toLowerCase()
-          );
-        }}
+        isSelected={optVal => selectedValues.includes(optVal)}
         onToggle={optVal => {
-          const optObj = rawOptions.find(o => o.value === optVal || o.label === optVal);
-          const targetVal = optObj?.value || optVal;
-          const targetLabel = optObj?.label || optVal;
-          const isSel = selectedValues.some(
-            v =>
-              v === targetVal ||
-              v === targetLabel ||
-              v.toLowerCase() === targetVal.toLowerCase() ||
-              v.toLowerCase() === targetLabel.toLowerCase()
-          );
-          const next = isSel
-            ? selectedValues.filter(
-                v =>
-                  v !== targetVal &&
-                  v !== targetLabel &&
-                  v.toLowerCase() !== targetVal.toLowerCase() &&
-                  v.toLowerCase() !== targetLabel.toLowerCase()
-              )
-            : [...selectedValues, targetVal];
+          const next = selectedValues.includes(optVal)
+            ? selectedValues.filter(v => v !== optVal)
+            : [...selectedValues, optVal];
           onChange(field.name || '', next);
         }}
         isDisabled={isDisabled}

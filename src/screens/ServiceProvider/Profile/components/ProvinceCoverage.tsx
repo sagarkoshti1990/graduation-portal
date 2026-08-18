@@ -157,14 +157,11 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     setEditingProvinceId(item.provinceId);
     const matchProv = provinces.find(
       (p: any) =>
-        (p._id || p.id) === item.provinceId ||
-        p.externalId === item.provinceId ||
+        p._id === item.provinceId ||
         (p.name && item.provinceName && p.name.toLowerCase() === item.provinceName.toLowerCase())
     );
     if (matchProv) {
-      setSelectedProvinceId(matchProv._id || matchProv.id || matchProv.externalId);
-    } else {
-      setSelectedProvinceId(item.provinceId);
+      setSelectedProvinceId(matchProv._id);
     }
   };
 
@@ -297,7 +294,9 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
       {isEdit && (
         <VStack {...styles.coverageAddSection}>
           <Text {...styles.coverageAddTitle}>
-            {editingProvinceId ? 'EDIT PROVINCE COVERAGE' : '+ ADD PROVINCE COVERAGE'}
+            {editingProvinceId
+              ? t('profile.editProvinceCoverage', 'EDIT PROVINCE COVERAGE')
+              : t('profile.addProvinceCoverage', '+ ADD PROVINCE COVERAGE')}
           </Text>
           <HStack {...styles.coverageAddInputs}>
             <VStack {...styles.inputCol}>
