@@ -82,29 +82,16 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
   }
 };
 
-/**
- * Normalizes a string for loose comparison: lowercase, strip spaces/underscores/dashes.
- * Lets e.g. "parenting_skills_training" match the profile's "Parenting Skills Training".
- */
-const normalize = (val: any): string =>
-  String(val ?? '').toLowerCase().replace(/[\s_-]+/g, '');
+// Normalizes string for comparison
+const normalize = (val: any): string => String(val ?? '').toLowerCase().trim();
 
-/**
- * A mentor's organisation-profile Coverage entry, as actually stored under
- * `user.meta.provinceCoverage` (confirmed against GET /user/v1/user/read/:id).
- * `provinceId`/`siteIds` here are entity **externalId codes** (e.g. "SA-G",
- * "SA-G-RF"), NOT the entity's mongo `_id` - see resolveExternalIds below.
- */
+// Mentor profile province coverage entry
 interface MentorCoverageEntry {
   provinceId?: string;
   siteIds?: string[];
 }
 
-/**
- * A mentor's organisation-profile Support Categories entry, as stored under
- * `user.meta.supportCategories`. Training areas are grouped by pillar inside
- * `trainingData`; we flatten every pillar's array into one list of labels.
- */
+// Mentor profile support categories entry
 interface MentorSupportCategory {
   trainingData?: Record<string, string[]>;
   linkageData?: Record<string, string[]>;
@@ -112,13 +99,7 @@ interface MentorSupportCategory {
   othersData?: string;
 }
 
-/**
- * The request form's province/site select values are entity mongo `_id`s
- * (see buildTrainingFormOptionsMap), but mentor profiles store coverage using
- * the entity's `externalId` code instead. Resolve the selected province `_id`
- * to its `externalId`, and each selected site `_id` to its `externalId`, so
- * they can be compared against a mentor's `provinceCoverage`.
- */
+// Resolves form mongo _ids to mentor profile externalId codes
 const resolveExternalIds = async (
   provinceId?: string,
   siteIds?: string[]
@@ -143,20 +124,7 @@ const resolveExternalIds = async (
 };
 
 /**
- * Get mentors list, filtered by what the mentor's own organisation profile
- * declares they're available for - their Coverage (province + sites) and
- * Support Categories Offered (specific training areas) - not just a province
- * query param.
- *
- * Uses POST /user/v1/account/search?tenant_code=brac&type=mentor&role=mentor to
- * get candidate mentors for the province, then reads each candidate's own
- * profile (GET /user/v1/user/read/:id) to confirm they actually cover every
- * selected site and offer the selected training type before including them.
- *
- * @param filters.provinceId - Province entity _id selected on the request form
- * @param filters.siteIds - Site entity _ids selected on the request form (multi-select)
- * @param filters.category - Training type / specific training area (idp_training_task)
- * @returns Array of mentor user IDs (as strings) eligible for this request
+ * Get mentors list filtered by province, site coverage, and support categories.
  */
 export const getMentorsList = async (
   filters?: string | { provinceId?: string; siteId?: string; siteIds?: string[]; category?: string }
@@ -205,9 +173,9 @@ export const getMentorsList = async (
       }
 
       const rawCoverage: MentorCoverageEntry[] =
-        profile?.meta?.provinceCoverage ?? profile?.provinceCoverage ?? profile?.extra?.provinceCoverage ?? [];
+        profile?.meta?.provinceCoverage ?? [];
       const rawCategories: MentorSupportCategory[] =
-        profile?.meta?.supportCategories ?? profile?.supportCategories ?? profile?.extra?.supportCategories ?? [];
+        profile?.meta?.supportCategories;
 
       const coverage = Array.isArray(rawCoverage) ? rawCoverage : [];
       const categories = Array.isArray(rawCategories) ? rawCategories : [];
