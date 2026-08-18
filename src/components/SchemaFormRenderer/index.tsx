@@ -2651,9 +2651,6 @@ export const RenderRow = memo(
           field.type === FORM_FIELD_TYPES.GROUP &&
           field.fields
         ) {
-          if (field.name === 'phoneNumber' || field.name === 'alternativePhone') {
-            return [field];
-          }
           return field.fields;
         }
 
@@ -3128,23 +3125,11 @@ const FieldContainer = memo(
         return null;
       }
 
-      let displayValue = formatFieldValueForDisplay(
+      const displayValue = formatFieldValueForDisplay(
         value,
         field,
         optionsMap,
       );
-
-      if (field.type === FORM_FIELD_TYPES.GROUP) {
-        if (field.name === 'phoneNumber') {
-          const code = values.countryCode || '';
-          const num = values.phoneNumber || '';
-          displayValue = num ? (code ? `${code} ${num}` : num) : '-';
-        } else if (field.name === 'alternativePhone') {
-          const code = values.alternativePhoneCode || '';
-          const num = values.alternativePhone || '';
-          displayValue = num ? (code ? `${code} ${num}` : num) : '-';
-        }
-      }
 
       return (
         <VStack
