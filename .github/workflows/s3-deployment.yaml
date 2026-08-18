@@ -41,7 +41,7 @@ jobs:
         run: npm install --legacy-peer-deps   # ci, not install — deterministic, respects lockfile
 
       - name: Build
-        run: npm run build
+        run: npm run build:web
 
       # =========================
       # AWS Authentication (OIDC — no static keys)
