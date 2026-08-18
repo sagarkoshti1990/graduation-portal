@@ -11,10 +11,10 @@ import { FormSection } from "@components/SchemaFormRenderer/type";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const INPUT_STYLE = {
+export const INPUT_STYLE = {
   variant: 'outline' as const,
   size: 'sm' as const,
-  bg: '$faintBlue',
+  bg: '$bgSidebar',
 } as const;
 
 const TITLE_STYLE = {

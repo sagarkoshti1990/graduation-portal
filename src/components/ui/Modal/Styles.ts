@@ -34,7 +34,7 @@ export const commonModalWebStyles = {
  */
 export const commonModalContentStyles = {
   borderRadius: '$xl' as const,
-  bg: '$bgSidebar' as const,
+  bg: '$white' as const,
   shadowColor: '$black' as const,
   shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 0.2,
