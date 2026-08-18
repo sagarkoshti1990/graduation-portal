@@ -75,9 +75,8 @@ const RequestSessionScreen = (): React.JSX.Element => {
     (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
-        if (name === 'provinces' || name === 'province') {
-          next.province = value;
-          next.site = '';
+        if (name === 'provinces') {
+          next.provinces = value;
           next.sites = [];
         }
         if (name === 'categories') {
@@ -98,10 +97,8 @@ const RequestSessionScreen = (): React.JSX.Element => {
       setValues(formValues);
 
       // Fetch eligible mentors matching province, site, and category selection
-      const rawProv = formValues.province || formValues.provinces;
-      const provId = Array.isArray(rawProv) ? rawProv[0] : rawProv;
-      const rawSite = formValues.site || formValues.sites;
-      const siteIds = Array.isArray(rawSite) ? rawSite.filter(Boolean) : (rawSite ? [rawSite] : []);
+      const provId = Array.isArray(formValues.provinces) ? formValues.provinces[0] : formValues.provinces;
+      const siteIds = [].concat(formValues.sites || []).filter(Boolean);
       const categoryId = formValues.idp_training_task;
 
       let eligibleMentorIds = await getMentorsList({

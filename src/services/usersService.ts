@@ -24,14 +24,6 @@ import { getUserProfile } from './authenticationService';
 export const getUsersList = async (params: UserSearchParams): Promise<UserSearchResponse> => {
   try {
     const {
-      // NOTE: must be the plain `process.env.KEY` form, not optional-chained
-      // (`process?.env?.KEY`) - webpack's DefinePlugin only does a literal
-      // text/AST match on `process.env.TENANT_CODE_NAME` and replaces it with
-      // the built value; optional chaining is a different expression that it
-      // doesn't match, so it survives into the bundle and throws
-      // `ReferenceError: process is not defined` in the browser (there's no
-      // `process` polyfill on web) - which is what was silently killing every
-      // getUsersList/getMentorsList call.
       tenant_code = process.env.TENANT_CODE_NAME || 'brac',
       type = ROLE_NAMES.USER,
       page = 1,

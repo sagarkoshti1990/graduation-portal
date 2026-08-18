@@ -156,6 +156,7 @@ export const uploadService = async (file: any) => {
     size: data?.size,
   };
 };
+
 interface TrainingFormOptionsMapParams {
   provinces?: any[];
   sites?: any[];
