@@ -52,15 +52,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const editSchema = useMemo(
     () =>
-      CREATE_USER_FORM_SCHEMA.map(section => ({
-        ...section,
-        rows: section.rows.map(row => ({
-          ...row,
-          fields: row.fields.map(field =>
-            field.name === 'roleId' ? { ...field, disabled: mode === 'edit' } : field
-          ),
-        })),
-      })),
+      CREATE_USER_FORM_SCHEMA.map(section => {
+        const { hint, ...sectionWithoutHint } = section;
+        return {
+          ...sectionWithoutHint,
+          ...(mode === 'edit' && { hint }),
+          rows: section.rows.map(row => ({
+            ...row,
+            fields: row.fields.map(field =>
+              field.name === 'roleId'
+                ? { ...field, disabled: mode === 'edit' }
+                : field
+            ),
+          })),
+        };
+      }),
     [mode],
   );
 
@@ -405,7 +411,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     //   </VStack>
     // }
     >
-      <VStack space="md" width="100%">
+      <VStack space="md" width="100%" px="$1">
         {/* Content */}
         {profileLoading ? (
           <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" py="$4">

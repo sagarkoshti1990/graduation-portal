@@ -101,10 +101,10 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               },
               {
                 rule: 'pattern',
-                value: '^[0-9]{20}$',
+                value: '^[0-9]{1,20}$',
                 message: {
                   key: 'errors.nationalIdInvalid',
-                  fallback: 'National ID must be exactly 20 digits',
+                  fallback: 'National ID must contain only digits and can be up to 20 digits',
                 },
               },
             ],
@@ -134,13 +134,13 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'tel',
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
-                placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
+                placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 0000' },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{9}$',
-                    message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid only 9-digits phone number' },
+                    value: '^[0-9]{9,10}$',
+                    message: { key: 'errors.phoneInvalid', fallback: 'Phone number must be 9 or 10 digits' },
                   },
                 ],
               },
@@ -168,14 +168,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'tel',
                 required: false,
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
-                placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
+                placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 0000' },
                 _input: INPUT_STYLE,
-                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{9}$',
-                    message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid only 9-digits phone number' },
+                    value: '^[0-9]{9,10}$',
+                    message: { key: 'errors.altPhoneInvalid', fallback: 'Alt phone number must be 9 or 10 digits' },
                   },
                 ],
               },
@@ -259,39 +259,39 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
         ],
       },
 
-      {
-        visibleWhen: { flag: 'isSupervisorOrLC' },
-        fields: [
-          {
-            name: 'employee_id',
-            type: 'text',
-            required: true,
-            visibleWhen: { flag: 'isSupervisorOrLC' },
-            label: { key: 'employeeId', fallback: 'Employee ID' },
-            placeholder: {
-              key: 'employeeIdPlaceholder',
-              fallback: 'Enter Employee ID',
-            },
-            validation: [
-              {
-                rule: 'required',
-                message: {
-                  key: 'errors.employeeIdRequired',
-                  fallback: 'Employee ID is required',
-                },
-              },
-              {
-                rule: 'pattern',
-                value: '^[A-Z]{3}[0-9]{5}$',
-                message: {
-                  key: 'errors.employeeIdInvalid',
-                  fallback: 'Enter a valid Employee ID (e.g. ADM00001)',
-                },
-              },
-            ],
-          },
-        ],
-      },
+      // {
+      //   visibleWhen: { flag: 'isSupervisorOrLC' },
+      //   fields: [
+      //     {
+      //       name: 'employee_id',
+      //       type: 'text',
+      //       required: true,
+      //       visibleWhen: { flag: 'isSupervisorOrLC' },
+      //       label: { key: 'employeeId', fallback: 'Employee ID' },
+      //       placeholder: {
+      //         key: 'employeeIdPlaceholder',
+      //         fallback: 'Enter Employee ID',
+      //       },
+      //       validation: [
+      //         {
+      //           rule: 'required',
+      //           message: {
+      //             key: 'errors.employeeIdRequired',
+      //             fallback: 'Employee ID is required',
+      //           },
+      //         },
+      //         {
+      //           rule: 'pattern',
+      //           value: '^[A-Z]{3}[0-9]{5}$',
+      //           message: {
+      //             key: 'errors.employeeIdInvalid',
+      //             fallback: 'Enter a valid Employee ID (e.g. ADM00001)',
+      //           },
+      //         },
+      //       ],
+      //     },
+      //   ],
+      // },
       {
         visibleWhen: { flag: 'isSupervisorOrLC' },
         fields: [
