@@ -1283,11 +1283,11 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
     return (
       <PillOptionsRow
         options={rawOptions}
-        isSelected={optVal => selectedValues.includes(optVal)}
-        onToggle={optVal => {
-          const next = selectedValues.includes(optVal)
-            ? selectedValues.filter(v => v !== optVal)
-            : [...selectedValues, optVal];
+        isSelected={optionValue => selectedValues.includes(optionValue)}
+        onToggle={optionValue => {
+          const next = selectedValues.includes(optionValue)
+            ? selectedValues.filter(v => v !== optionValue)
+            : [...selectedValues, optionValue];
           onChange(field.name || '', next);
         }}
         isDisabled={isDisabled}
