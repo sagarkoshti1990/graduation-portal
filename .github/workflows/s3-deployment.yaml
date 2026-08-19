@@ -19,7 +19,6 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: production   # optional: gate this with required reviewers if you have GH environments set up
     concurrency:
       group: s3-deploy-brac
       cancel-in-progress: false   # never cancel a mid-flight S3 sync/invalidation
