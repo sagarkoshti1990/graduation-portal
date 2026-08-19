@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
 import { TRAINING_FORM_SCHEMA, REQUEST_SESSION_HIDE_FIELDS } from '@constants/TRAINING_FORM_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
-import { getSitesByProvince, getProvincesList, getMentorsList } from '../../../services/usersService';
+import { getSitesByProvince, getProvincesList } from '../../../services/usersService';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
 import {
   getSessionCategories,
@@ -73,6 +73,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
 
   const handleFieldChange = useCallback(
     (name: string, value: string, other?: any) => {
+      console.log(`[RequestSession] field changed -> "${name}":`, value, other ? { other } : '');
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
         if (name === 'provinces') {
@@ -96,21 +97,8 @@ const RequestSessionScreen = (): React.JSX.Element => {
     try {
       setValues(formValues);
 
-      // Fetch eligible mentors matching province, site, and category selection
-      const provId = Array.isArray(formValues.provinces) ? formValues.provinces[0] : formValues.provinces;
-      const siteIds = [].concat(formValues.sites || []).filter(Boolean);
-      const categoryId = formValues.idp_training_task;
-
-      let eligibleMentorIds = await getMentorsList({
-        provinceId: provId,
-        siteIds,
-        category: categoryId,
-      });
-
-      const requestees = (eligibleMentorIds || []).map(id => String(id));
-
       const payload: any = requestSessionPayloadMapping(
-        { ...formValues, requestees, isDraft },
+        { ...formValues, isDraft },
         optionsMap
       );
 

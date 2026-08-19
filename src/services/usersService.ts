@@ -83,63 +83,7 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
   }
 };
 
-/**
- * Get mentors list filtered by province, site coverage, and support categories.
- */
-export const getMentorsList = async (filters: {
-  provinceId?: string;
-  siteIds?: string[];
-  category?: string;
-} = {}): Promise<Array<string | number>> => {
-  const { provinceId, siteIds = [], category } = filters;
-  if (!provinceId) return [];
 
-  try {
-    const response = await getUsersList({ type: 'mentor', role: 'mentor', limit: 100 });
-    const rawList = response?.result?.data || [];
-    const candidateIds = rawList.map((u: any) => u.id ?? u._id).filter(Boolean);
-
-    if (candidateIds.length === 0) return [];
-
-    const profiles = await Promise.all(
-      candidateIds.map((id: any) => getUserProfile(id).catch(() => null))
-    );
-
-    const matchingIds = candidateIds.filter((_id: any, index: number) => {
-      const profile = profiles[index];
-      if (!profile) return false;
-
-      const coverage = profile.meta?.provinceCoverage || [];
-      const categories = profile.meta?.supportCategories || [];
-
-      // Check Province match (flexible string check)
-      const matchingCoverage = coverage.find((entry: any) => String(entry.provinceId) === String(provinceId));
-      if (!matchingCoverage) return false;
-
-      // Check Sites match (flexible string check)
-      if (siteIds.length > 0) {
-        const mentorSiteIds = (matchingCoverage.siteIds || []).map(String);
-        const hasMatchingSite = siteIds.some((sid) => mentorSiteIds.includes(String(sid)));
-        if (!hasMatchingSite) return false;
-      }
-
-      // Check Category match (Dynamic JSON string search)
-      if (category) {
-        const hasCategory = categories.some((cat: any) =>
-          JSON.stringify(cat).includes(`"${category}"`)
-        );
-        if (!hasCategory) return false;
-      }
-
-      return true;
-    });
-
-    return matchingIds;
-  } catch (error) {
-    logger.error('Error fetching mentors list:', error);
-    return [];
-  }
-};
 
 /**
  * Get user roles list for filter dropdown - Dynamic role filter from API
