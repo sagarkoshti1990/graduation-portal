@@ -13,6 +13,7 @@ import { ROLE_NAMES } from '@constants/ROLES';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import { getUserProfile } from './authenticationService';
+import logger from '@utils/logger';
 
 /**
  * Get users list for table view
@@ -24,7 +25,7 @@ import { getUserProfile } from './authenticationService';
 export const getUsersList = async (params: UserSearchParams): Promise<UserSearchResponse> => {
   try {
     const {
-      tenant_code = process?.env?.TENANT_CODE_NAME || 'brac',
+      tenant_code = process.env.TENANT_CODE_NAME || 'brac',
       type = ROLE_NAMES.USER,
       page = 1,
       limit = 20,
@@ -82,149 +83,52 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
   }
 };
 
-// Normalizes string for comparison
-const normalize = (val: any): string => String(val ?? '').toLowerCase().trim();
-
-// Mentor profile province coverage entry
-interface MentorCoverageEntry {
-  provinceId?: string;
-  siteIds?: string[];
-}
-
-// Mentor profile support categories entry
-interface MentorSupportCategory {
-  trainingData?: Record<string, string[]>;
-  linkageData?: Record<string, string[]>;
-  assetsData?: Record<string, string[]>;
-  othersData?: string;
-}
-
-// Resolves form mongo _ids to mentor profile externalId codes
-const resolveExternalIds = async (
-  provinceId?: string,
-  siteIds?: string[]
-): Promise<{ provinceCode?: string; siteCodes: string[] }> => {
-  if (!provinceId) return { provinceCode: undefined, siteCodes: [] };
-
-  const provinces = await getProvincesList().catch(() => []);
-  const provinceEntity = (provinces || []).find((p: any) => String(p._id) === String(provinceId));
-  const provinceCode = provinceEntity?.externalId || provinceEntity?._id || provinceId;
-
-  let siteCodes: string[] = [];
-  if (Array.isArray(siteIds) && siteIds.length > 0) {
-    const sitesRes = await getSitesByProvince({ provinceId }).catch(() => null);
-    const siteEntities = sitesRes?.result?.data || [];
-    siteCodes = siteIds.map((sid) => {
-      const siteEntity = siteEntities.find((s: any) => String(s._id) === String(sid));
-      return siteEntity?.externalId || siteEntity?._id || sid;
-    });
-  }
-
-  return { provinceCode, siteCodes };
-};
-
 /**
  * Get mentors list filtered by province, site coverage, and support categories.
  */
-export const getMentorsList = async (
-  filters?: string | { provinceId?: string; siteId?: string; siteIds?: string[]; category?: string }
-): Promise<Array<string | number>> => {
-  // Back-compat: callers used to pass provinceId directly as a string, or a single siteId.
-  const parsed =
-    typeof filters === 'string' ? { provinceId: filters, siteIds: undefined, category: undefined } : filters || {};
-  const provinceId = parsed.provinceId;
-  const siteIds = parsed.siteIds ?? (parsed.siteId ? [parsed.siteId] : []);
-  const category = parsed.category;
+export const getMentorsList = async (filters: {
+  provinceId?: string;
+  siteIds?: string[];
+  category?: string;
+} = {}): Promise<Array<string | number>> => {
+  const { provinceId, siteIds = [], category } = filters;
+  if (!provinceId) return [];
 
   try {
-    if (!provinceId) {
-      return [];
-    }
-
-    // Selected province/sites are mongo _ids; mentor profiles store externalId
-    // codes, so resolve them once up front.
-    const { provinceCode, siteCodes } = await resolveExternalIds(provinceId, siteIds);
-
-    const response = await getUsersList({
-      type: 'mentor',
-      role: 'mentor',
-      limit: 100,
-    });
-
-    const usersData = response?.result?.data || (Array.isArray(response?.result) ? response.result : []);
-    const candidateIds = usersData
-      .map((u: any) => u.id ?? u._id ?? u.user_id ?? u.userId)
-      .filter((id: any) => id !== undefined && id !== null && id !== '');
+    const response = await getUsersList({ type: 'mentor', role: 'mentor', limit: 100 });
+    const rawList = response?.result?.data || [];
+    const candidateIds = rawList.map((u: any) => u.id ?? u._id).filter(Boolean);
 
     if (candidateIds.length === 0) return [];
 
-    // Confirm eligibility against each candidate's own profile - the search
-    // endpoint above doesn't return site/category coverage, only their own
-    // profile does.
     const profiles = await Promise.all(
-      candidateIds.map((id: any) => getUserProfile(String(id)).catch(() => null))
+      candidateIds.map((id: any) => getUserProfile(id).catch(() => null))
     );
 
     const matchingIds = candidateIds.filter((_id: any, index: number) => {
       const profile = profiles[index];
+      if (!profile) return false;
 
-      if (!profile) {
-        return false;
+      const coverage = profile.meta?.provinceCoverage || [];
+      const categories = profile.meta?.supportCategories || [];
+
+      // Check Province match (flexible string check)
+      const matchingCoverage = coverage.find((entry: any) => String(entry.provinceId) === String(provinceId));
+      if (!matchingCoverage) return false;
+
+      // Check Sites match (flexible string check)
+      if (siteIds.length > 0) {
+        const mentorSiteIds = (matchingCoverage.siteIds || []).map(String);
+        const hasMatchingSite = siteIds.some((sid) => mentorSiteIds.includes(String(sid)));
+        if (!hasMatchingSite) return false;
       }
 
-      const rawCoverage: MentorCoverageEntry[] =
-        profile?.meta?.provinceCoverage ?? [];
-      const rawCategories: MentorSupportCategory[] =
-        profile?.meta?.supportCategories;
-
-      const coverage = Array.isArray(rawCoverage) ? rawCoverage : [];
-      const categories = Array.isArray(rawCategories) ? rawCategories : [];
-
-      const offeredLabels: string[] = [];
-      categories.forEach((cat) => {
-        [cat.trainingData, cat.linkageData, cat.assetsData].forEach((group) => {
-          if (group && typeof group === 'object') {
-            Object.values(group).forEach((arr) => {
-              if (Array.isArray(arr)) arr.forEach((v) => offeredLabels.push(String(v)));
-            });
-          }
-        });
-        if (cat.othersData) offeredLabels.push(String(cat.othersData));
-      });
-
-      const hasCoverage = coverage.length > 0;
-      const hasCategories = offeredLabels.length > 0;
-
-      if (!hasCoverage && !hasCategories) {
-        return false;
-      }
-
-      if (provinceCode) {
-        const matchingEntry = coverage.find(
-          (entry) => normalize(entry.provinceId) === normalize(provinceCode)
-        );
-        if (!matchingEntry) {
-          return false;
-        }
-
-        if (siteCodes.length > 0) {
-          const mentorSiteCodes = (matchingEntry.siteIds || []).map(normalize);
-          const missing = siteCodes.filter((sc) => !mentorSiteCodes.includes(normalize(sc)));
-          if (missing.length > 0) {
-            return false;
-          }
-        }
-      }
-
+      // Check Category match (Dynamic JSON string search)
       if (category) {
-        const catNorm = normalize(category);
-        const matchesCategory = offeredLabels.some((label) => {
-          const labelNorm = normalize(label);
-          return labelNorm === catNorm || catNorm.includes(labelNorm) || labelNorm.includes(catNorm);
-        });
-        if (!matchesCategory) {
-          return false;
-        }
+        const hasCategory = categories.some((cat: any) =>
+          JSON.stringify(cat).includes(`"${category}"`)
+        );
+        if (!hasCategory) return false;
       }
 
       return true;
@@ -232,7 +136,7 @@ export const getMentorsList = async (
 
     return matchingIds;
   } catch (error) {
-    console.error('Error fetching mentors list:', error);
+    logger.error('Error fetching mentors list:', error);
     return [];
   }
 };

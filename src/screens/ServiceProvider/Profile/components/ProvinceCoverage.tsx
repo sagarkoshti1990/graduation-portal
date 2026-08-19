@@ -58,31 +58,28 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 
         // Check if this province is already in value to pre-populate selected sites
         const selectedProvince = provinces.find(
-          p => (p._id || p.id) === selectedProvinceId || p.externalId === selectedProvinceId
+          p => String(p._id || p.id) === String(selectedProvinceId)
         );
-        const provinceExtId = selectedProvince?.externalId || selectedProvince?.metaInformation?.externalId || selectedProvince?._id || selectedProvinceId;
+        const resolvedProvinceId = selectedProvince?._id || selectedProvince?.id || selectedProvinceId;
         const provinceName = selectedProvince?.name || selectedProvince?.metaInformation?.name || '';
 
         const existing = value.find(
           item =>
-            item.provinceId === provinceExtId ||
-            item.provinceId === selectedProvince?._id ||
+            String(item.provinceId) === String(resolvedProvinceId) ||
             (provinceName && item.provinceName?.toLowerCase() === provinceName.toLowerCase())
         );
 
         if (existing) {
           const matchedSiteIds = sitesList
             .filter((s: any) => {
-              const sExtId = s.externalId || s.metaInformation?.externalId || s._id || s.id;
-              const sMongoId = s._id || s.id;
+              const resolvedSiteId = s._id || s.id;
               const sName = s.name || s.metaInformation?.name;
               return (
-                existing.siteIds?.includes(sExtId) ||
-                existing.siteIds?.includes(sMongoId) ||
+                existing.siteIds?.includes(resolvedSiteId) ||
                 (sName && existing.siteNames?.includes(sName))
               );
             })
-            .map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id);
+            .map((s: any) => s._id || s.id);
           setSelectedSiteIds(matchedSiteIds);
         } else {
           setSelectedSiteIds([]);
@@ -96,28 +93,16 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
   const provinceOptions = useMemo(() => {
     return provinces
       .filter((p: any) => {
-        const pId = p._id || p.id || p.externalId || '';
-        const pExtId = p.externalId || p.metaInformation?.externalId || p._id || '';
+        const pId = p._id || p.id || '';
         const pName = p.name || p.metaInformation?.name || '';
 
-        // If it's the currently selected province, keep it in the options
-        if (
-          selectedProvinceId &&
-          (pId === selectedProvinceId ||
-            pExtId === selectedProvinceId ||
-            p._id === selectedProvinceId ||
-            p.id === selectedProvinceId)
-        ) {
+        if (selectedProvinceId && String(pId) === String(selectedProvinceId)) {
           return true;
         }
 
-        // Check if already exists in added coverages (value)
         const exists = value.some((item) => {
           return (
-            (pId && item.provinceId === pId) ||
-            (pExtId && item.provinceId === pExtId) ||
-            (p._id && item.provinceId === p._id) ||
-            (p.id && item.provinceId === p.id) ||
+            (pId && String(item.provinceId) === String(pId)) ||
             (pName && item.provinceName && item.provinceName.toLowerCase() === pName.toLowerCase())
           );
         });
@@ -125,21 +110,21 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
         return !exists;
       })
       .map((p: any) => ({
-        value: p._id || p.id || p.externalId || '',
+        value: p._id || p.id || '',
         label: p.name || p.metaInformation?.name || '',
       }));
   }, [provinces, value, selectedProvinceId]);
 
   const siteOptions = useMemo(() => {
     return sites.map((s: any) => ({
-      value: s.externalId || s.metaInformation?.externalId || s._id || s.id || '',
+      value: s._id || s.id || '',
       label: s.name || s.metaInformation?.name || '',
     }));
   }, [sites]);
 
   const handleSiteChange = (selectedValues: string[]) => {
     if (selectedValues.includes('Select All')) {
-      const regularOptions = sites.map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id || '');
+      const regularOptions = sites.map((s: any) => s._id || s.id || '');
       const allAlreadySelected = regularOptions.every(val => selectedValues.includes(val));
       if (allAlreadySelected) {
         setSelectedSiteIds([]);
@@ -157,11 +142,11 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     setEditingProvinceId(item.provinceId);
     const matchProv = provinces.find(
       (p: any) =>
-        p._id === item.provinceId ||
+        String(p._id || p.id) === String(item.provinceId) ||
         (p.name && item.provinceName && p.name.toLowerCase() === item.provinceName.toLowerCase())
     );
     if (matchProv) {
-      setSelectedProvinceId(matchProv._id);
+      setSelectedProvinceId(matchProv._id || matchProv.id);
     }
   };
 
@@ -169,36 +154,33 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     if (!selectedProvinceId || selectedSiteIds.length === 0) return;
 
     const selectedProvince: any = provinces.find(
-      (p: any) => (p._id || p.id) === selectedProvinceId || p.externalId === selectedProvinceId
+      (p: any) => String(p._id || p.id) === String(selectedProvinceId)
     );
-    const provinceExtId = selectedProvince?.externalId || selectedProvince?.metaInformation?.externalId || selectedProvince?._id || selectedProvinceId;
+    const resolvedProvinceId = selectedProvince?._id || selectedProvince?.id || selectedProvinceId;
     const provinceName = selectedProvince?.name || selectedProvince?.metaInformation?.name || '';
 
     const selectedSitesObjects = sites.filter((s: any) =>
-      selectedSiteIds.includes(s.externalId || s.metaInformation?.externalId || s._id || s.id)
+      selectedSiteIds.includes(s._id || s.id)
     );
     const newSiteNames = selectedSitesObjects.map((s: any) => s.name || s.metaInformation?.name || '');
-    const newSiteIds = selectedSitesObjects.map((s: any) => s.externalId || s.metaInformation?.externalId || s._id || s.id);
+    const newSiteIds = selectedSitesObjects.map((s: any) => s._id || s.id);
 
-    // Check if this province is already added or currently being edited
     const existingIndex = value.findIndex(item =>
-      item.provinceId === (editingProvinceId || provinceExtId) ||
-      item.provinceId === selectedProvince?._id ||
+      String(item.provinceId) === String(editingProvinceId || resolvedProvinceId) ||
       (provinceName && item.provinceName?.toLowerCase() === provinceName.toLowerCase())
     );
 
     let nextValue = [...value];
     if (existingIndex > -1) {
-      // Replace existing coverage card with updated values
       nextValue[existingIndex] = {
-        provinceId: provinceExtId,
+        provinceId: resolvedProvinceId,
         provinceName: provinceName || nextValue[existingIndex].provinceName,
         siteIds: newSiteIds,
         siteNames: newSiteNames,
       };
     } else {
       nextValue.push({
-        provinceId: provinceExtId,
+        provinceId: resolvedProvinceId,
         provinceName,
         siteIds: newSiteIds,
         siteNames: newSiteNames,

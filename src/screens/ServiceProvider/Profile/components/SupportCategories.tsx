@@ -38,48 +38,43 @@ const CATEGORY_OPTIONS = [
 ];
 
 const SOCIAL_EMPOWERMENT_OPTS = [
-  { value: 'Select All (4)', label: 'Select All (4)' },
-  { value: 'Personal Mastery Training', label: 'Personal Mastery Training' },
-  { value: 'Parenting Skills Training', label: 'Parenting Skills Training' },
-  { value: 'GBV Awareness Session', label: 'GBV Awareness Session' },
-  { value: 'Substance Abuse Awareness Session', label: 'Substance Abuse Awareness Session' },
+  { value: 'personal_mastery_training', label: 'Personal Mastery Training' },
+  { value: 'parenting_skills_training', label: 'Parenting Skills Training' },
+  { value: 'gbv_awareness_session', label: 'GBV Awareness Session' },
+  { value: 'substance_abuse_awareness_session', label: 'Substance Abuse Awareness Session' },
 ];
 
 const FINANCIAL_INCLUSION_OPTS = [
-  { value: 'Financial Literacy Training', label: 'Financial Literacy Training' },
+  { value: 'financial_literacy_training', label: 'Financial Literacy Training' },
 ];
 
 const LIVELIHOODS_OPTS = [
-  { value: 'Select All (8)', label: 'Select All (8)' },
-  { value: 'Generate Your Business Idea Training', label: 'Generate Your Business Idea Training' },
-  { value: 'Start Your Business Training', label: 'Start Your Business Training' },
-  { value: 'Diversification Strategy', label: 'Diversification Strategy' },
-  { value: 'Market Growth Strategy', label: 'Market Growth Strategy' },
-  { value: 'Livelihood Specific Training', label: 'Livelihood Specific Training' },
-  { value: 'Job Readiness Training', label: 'Job Readiness Training' },
-  { value: 'Technical/Vocational Training', label: 'Technical/Vocational Training' },
-  { value: 'Work Placement', label: 'Work Placement' },
+  { value: 'generate_your_business_idea_training', label: 'Generate Your Business Idea Training' },
+  { value: 'start_your_business_training', label: 'Start Your Business Training' },
+  { value: 'diversification_strategy', label: 'Diversification Strategy' },
+  { value: 'market_growth_strategy', label: 'Market Growth Strategy' },
+  { value: 'livelihood_specific_training', label: 'Livelihood Specific Training' },
+  { value: 'job_readiness_training', label: 'Job Readiness Training' },
+  { value: 'technical_vocational_training', label: 'Technical/Vocational Training' },
+  { value: 'work_placement', label: 'Work Placement' },
 ];
 
 const SPECIAL_ATTENTION_OPTS = [
-  { value: 'Select All (3)', label: 'Select All (3)' },
-  { value: 'GBV', label: 'GBV' },
-  { value: 'Mental Health', label: 'Mental Health' },
-  { value: 'Substance Abuse', label: 'Substance Abuse' },
+  { value: 'gbv', label: 'GBV' },
+  { value: 'mental_health', label: 'Mental Health' },
+  { value: 'substance_abuse', label: 'Substance Abuse' },
 ];
 
 const IMMEDIATE_ATTENTION_OPTS = [
-  { value: 'Select All (3)', label: 'Select All (3)' },
-  { value: 'Food', label: 'Food' },
-  { value: 'Health', label: 'Health' },
-  { value: 'Municipal Indigent Programs', label: 'Municipal Indigent Programs' },
+  { value: 'food', label: 'Food' },
+  { value: 'health', label: 'Health' },
+  { value: 'municipal_indigent_programs', label: 'Municipal Indigent Programs' },
 ];
 
 const ASSETS_OPTS = [
-  { value: 'Select All (3)', label: 'Select All (3)' },
-  { value: 'Cash', label: 'Cash' },
-  { value: 'In-kind', label: 'In-kind' },
-  { value: 'Voucher', label: 'Voucher' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'in_kind', label: 'In-kind' },
+  { value: 'voucher', label: 'Voucher' },
 ];
 
 export const SupportCategories: React.FC<SupportCategoriesProps> = ({
