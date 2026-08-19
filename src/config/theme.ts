@@ -1,5 +1,5 @@
 import { config as gluestackConfig } from '@gluestack-ui/config';
-console.log(gluestackConfig.components.Input.theme.variants.variant.outline, "sagar asd")
+
 export const theme = {
   ...gluestackConfig,
   tokens: {

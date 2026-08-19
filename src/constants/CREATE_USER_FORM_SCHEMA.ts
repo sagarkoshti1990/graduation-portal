@@ -44,7 +44,13 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             label: { key: 'name', fallback: 'Name' },
             placeholder: { key: 'namePlaceholder', fallback: 'Enter Name' },
             validation: [
-              { rule: 'required', message: { key: 'errors.nameRequired', fallback: 'Name is required' } },
+              {
+                rule: 'required',
+                message: {
+                  key: 'errors.nameRequired',
+                  fallback: 'Name is required',
+                },
+              },
               {
                 rule: 'minLength',
                 value: 2,
@@ -53,16 +59,31 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                   fallback: 'Name must be at least 2 characters',
                 },
               },
-              { rule: 'maxLength', value: 100, message: { key: 'errors.nameMax', fallback: 'Name is too long' } },
               {
-                rule: 'pattern',
-                value: "^[a-zA-Z'-]+(?: [a-zA-Z'-]+)*$",
+                rule: 'maxLength',
+                value: 100,
                 message: {
-                  key: 'errors.nameInvalid',
-                  fallback: 'Name can contain only letters, spaces, hyphens, and apostrophes',
+                  key: 'errors.nameMax',
+                  fallback: 'Name is too long',
                 },
               },
-            ],
+              {
+                rule: 'pattern',
+                value: '^[A-Z][a-z]*(?: [A-Z][a-z]*)*$',
+                message: {
+                  key: 'errors.nameFormat',
+                  fallback: 'Each name must start with a capital letter',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[A-Z][a-z]*(?:[ \'-][A-Z][a-z]*)*$',
+                message: {
+                  key: 'errors.nameFormat',
+                  fallback: 'Each name must start with a capital letter',
+                },
+              },
+            ]
           },
           {
             name: 'email',
@@ -269,14 +290,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 message: {
                   key: 'errors.dobMinAge',
                   fallback: 'User must be at least 18 years old',
-                },
-              },
-              {
-                rule: 'pattern',
-                value: '^(19|20)\\d\\d[-_](0[1-9]|1[012])[-_](0[1-9]|[12][0-9]|3[01])$',
-                message: {
-                  key: 'errors.dobInvalid',
-                  fallback: 'Date of birth must be a valid date in YYYY-MM-DD format',
                 },
               },
             ],
