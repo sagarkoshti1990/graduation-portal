@@ -263,6 +263,200 @@ export const sessionsSupportStyles = {
     paddingLeft: 16,
     paddingRight: 16,
   } as const,
+  emptyStateContainer: {
+    borderWidth: 1,
+    borderColor: '$borderLight200',
+    borderRadius: 16,
+    py: '$10',
+    px: '$4',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    bg: '$white',
+  },
+  emptyStateVStack: {
+    alignItems: 'center' as const,
+    space: 'md' as const,
+  },
+  emptyStateIconContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    w: '$12',
+    h: '$12',
+  },
+  emptyStateTitle: {
+    fontSize: '$md',
+    fontWeight: '$semibold' as const,
+    color: '$textPrimary',
+    textAlign: 'center' as const,
+  },
+  emptyStateDescription: {
+    fontSize: '$sm',
+    color: '$textSecondary',
+    textAlign: 'center' as const,
+  },
+  // AssignParticipantsModal styles
+  assignParticipantsFooterContainer: {
+    space: 'md' as const,
+    justifyContent: 'flex-end' as const,
+    width: '100%' as const,
+  },
+  assignParticipantsCancelButton: {
+    variant: 'outline' as const,
+    borderColor: '$borderColor',
+    bg: '$white',
+    borderRadius: '$lg',
+    px: '$5',
+    py: '$2.5',
+  },
+  assignParticipantsCancelButtonText: {
+    color: '$textForegroundColor',
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+  },
+  assignParticipantsConfirmButton: {
+    bg: '$primary500',
+    borderRadius: '$lg',
+    px: '$5',
+    py: '$2.5',
+  },
+  assignParticipantsConfirmButtonText: {
+    color: '$white',
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+  },
+  assignParticipantsModalBodyProps: {
+    flex: 1,
+    overflow: 'hidden' as const,
+  },
+  assignParticipantsContentVStack: {
+    space: 'md' as const,
+    width: '100%' as const,
+  },
+  assignParticipantsSearchInput: {
+    variant: 'outline' as const,
+    size: 'md' as const,
+    borderColor: '$borderColor',
+    borderRadius: 10,
+    bg: '$white',
+    alignItems: 'center' as const,
+    px: '$3',
+    mb: '$2',
+  },
+  assignParticipantsCountHeaderHStack: {
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    px: '$1',
+  },
+  assignParticipantsCountLeftHStack: {
+    alignItems: 'center' as const,
+    space: 'xs' as const,
+  },
+  assignParticipantsCountLeftText: {
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+    color: '$textMuted',
+  },
+  assignParticipantsCountRightHStack: {
+    alignItems: 'center' as const,
+    space: 'sm' as const,
+  },
+  assignParticipantsCountRightText: {
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+    color: '$textMuted',
+  },
+  assignParticipantsClearAllText: {
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+    color: '$primary500',
+  },
+  assignParticipantsFlatList: {
+    maxHeight: 320,
+    width: '100%' as const,
+  },
+  assignParticipantsFlatListContent: {
+    paddingBottom: 16,
+  },
+  assignParticipantsCard: {
+    borderWidth: 1,
+    borderRadius: '$xl',
+    p: '$3.5',
+    bg: '$white',
+  },
+  assignParticipantsCardStyle: {
+    marginBottom: 8,
+  },
+  assignParticipantsCheckboxBase: {
+    width: 20,
+    height: 20,
+    borderRadius: 9999,
+    borderWidth: 2,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  assignParticipantsAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    bg: '$backgroundLight100',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  assignParticipantsAvatarText: {
+    fontSize: '$xs',
+    fontWeight: '$bold' as const,
+    color: '$textPrimary',
+  },
+  assignParticipantsInfoVStack: {
+    flex: 1,
+    space: 'xs' as const,
+  },
+  assignParticipantsNameText: {
+    fontSize: '$sm',
+    fontWeight: '$semibold',
+    color: '$textPrimary',
+  },
+  assignParticipantsMetaHStack: {
+    alignItems: 'center' as const,
+    space: 'xs' as const,
+  },
+  assignParticipantsMetaText: {
+    fontSize: '$xs',
+    color: '$textSecondary',
+  },
+  assignParticipantsBadge: {
+    borderWidth: 1,
+    borderRadius: '$full',
+    px: '$2',
+    py: '$0.5',
+  },
+  assignParticipantsBadgeText: {
+    fontSize: '$xs',
+    fontWeight: '$medium',
+  },
+  assignParticipantsLoadingContainer: {
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    py: '$10',
+    width: '100%' as const,
+  },
+  assignParticipantsEmptyContainer: {
+    py: '$10',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    px: '$6',
+  },
+  assignParticipantsEmptyText: {
+    mt: '$3',
+    fontSize: '$sm',
+    fontWeight: '$medium',
+    color: '$textMutedForeground',
+    textAlign: 'center' as const,
+  },
+  assignParticipantsFooterLoadingContainer: {
+    py: '$4',
+    alignItems: 'center' as const,
+  },
 } as const;
 
 export default sessionsSupportStyles;

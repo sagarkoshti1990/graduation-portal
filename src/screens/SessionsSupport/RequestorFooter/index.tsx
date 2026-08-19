@@ -6,9 +6,10 @@ import styles from '../styles';
 
 interface RequestFooterProps {
   item: any;
+  onAssignSession?: (item: any) => void;
 }
 
-export const RequestFooter: React.FC<RequestFooterProps> = ({ item }) => {
+export const RequestFooter: React.FC<RequestFooterProps> = ({ item, onAssignSession }) => {
   const { t } = useLanguage();
   const navigation = useNavigation();
 
@@ -23,8 +24,12 @@ export const RequestFooter: React.FC<RequestFooterProps> = ({ item }) => {
     navigation.navigate('SessionDetails', { sessionId });
   }
   const handleAssignSession = () => {
-    // @ts-ignore
-    navigation.navigate('AssignSession', { sessionId });
+    if (onAssignSession) {
+      onAssignSession(item);
+    } else {
+      // @ts-ignore
+      navigation.navigate('AssignSession', { sessionId });
+    }
   }
 
   return (

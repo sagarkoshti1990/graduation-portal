@@ -2215,7 +2215,11 @@
       "subtitle": "Browse sessions, additional services, and assets available in your province and site",
       "createSession": "Create A Session",
       "requestSupport": "Request Support",
-      "sessionsFound": "sessions found"
+      "sessionsFound": "sessions found",
+      "emptyState": {
+        "title": "No history yet",
+        "description": "Completed support will appear here"
+      }
     },
     "createSession": {
       "title": "Create a Session",

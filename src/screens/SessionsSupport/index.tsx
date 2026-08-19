@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, Pressable, Text, VStack } from '@ui';
+import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, Pressable, Text, VStack, useAlert } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import PageHeader from '@components/PageHeader';
@@ -24,11 +24,31 @@ import { RequestorFilter } from './RequestorFilter';
 import styles from './styles';
 import supportOfferingsStyles from '../ServiceProvider/SupportOfferings/styles';
 import { RequestFooter } from './RequestorFooter';
+import AssignParticipantsModal from './components/modals/AssignParticipantsModal';
 
 const SessionsSupportScreen: React.FC = () => {
   const { t } = useLanguage();
   const navigation = useNavigation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const { showAlert } = useAlert();
+
+  const handleAssignSessionClick = (item: any) => {
+    setSelectedSession(item);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleConfirmAssignment = (selectedIds: string[]) => {
+    showAlert(
+      'success',
+      t(
+        'lc.sessionsSupport.alerts.assignSuccess',
+        { count: selectedIds.length },
+        `${selectedIds.length} participant(s) assigned to session successfully.`
+      )
+    );
+  };
 
   // Listing state, filters, and tabs reused from SupportOfferings logic
   const [activeTab, setActiveTab] = useState('sessions');
@@ -221,6 +241,9 @@ const SessionsSupportScreen: React.FC = () => {
 
   // Fetch listing data
   useEffect(() => {
+    if (activeSubTab !== 'browse_sessions') {
+      return;
+    }
     let isMounted = true;
     const fetchData = async () => {
       try {
@@ -420,7 +443,7 @@ const SessionsSupportScreen: React.FC = () => {
 
       <Container {...supportOfferingsStyles.container}>
         <VStack {...supportOfferingsStyles.contentContainer}>
-          {activeSubTab === 'browse_sessions' && (
+          {activeSubTab === 'browse_sessions' ? (
             <>
               <RequestorFilter
                 filters={filters}
@@ -434,42 +457,63 @@ const SessionsSupportScreen: React.FC = () => {
               <Text {...styles.sessionsFoundText}>
                 {total} {t('lc.sessionsSupport.sessionsFound')}
               </Text>
+
+              {activeTab === 'sessions' && (
+                <TrainingCard
+                  items={items}
+                  isShowLoadMore={isShowLoadMore}
+                  onLoadMoreItems={onLoadMoreItems}
+                  isLoadingMore={_loading && page > 1}
+                  _card={{
+                    footer: (item: any) => (
+                      <RequestFooter item={item} onAssignSession={handleAssignSessionClick} />
+                    )
+                  }}
+                />
+              )}
+
+              {activeTab === 'additional_services' && (
+                <AdditionalServicesCard
+                  items={items}
+                  isShowLoadMore={isShowLoadMore}
+                  onLoadMoreItems={onLoadMoreItems}
+                  isLoadingMore={_loading && page > 1}
+                />
+              )}
+
+              {activeTab === 'assets' && (
+                <AssetCard
+                  items={items}
+                  isShowLoadMore={isShowLoadMore}
+                  onLoadMoreItems={onLoadMoreItems}
+                  isLoadingMore={_loading && page > 1}
+                />
+              )}
             </>
-          )}
-
-          {activeTab === 'sessions' && (
-            <TrainingCard
-              items={items}
-              isShowLoadMore={isShowLoadMore}
-              onLoadMoreItems={onLoadMoreItems}
-              isLoadingMore={_loading && page > 1}
-              _card={{
-                footer: (item: any) => (
-                  <RequestFooter item={item} />
-                )
-              }}
-            />
-          )}
-
-          {activeTab === 'additional_services' && (
-            <AdditionalServicesCard
-              items={items}
-              isShowLoadMore={isShowLoadMore}
-              onLoadMoreItems={onLoadMoreItems}
-              isLoadingMore={_loading && page > 1}
-            />
-          )}
-
-          {activeTab === 'assets' && (
-            <AssetCard
-              items={items}
-              isShowLoadMore={isShowLoadMore}
-              onLoadMoreItems={onLoadMoreItems}
-              isLoadingMore={_loading && page > 1}
-            />
+          ) : (
+            <Box {...styles.emptyStateContainer}>
+              <VStack {...styles.emptyStateVStack}>
+                <Box {...styles.emptyStateIconContainer}>
+                  <LucideIcon name="Clock" size={30} color="$textMutedForeground" />
+                </Box>
+                <Text {...styles.emptyStateTitle}>
+                  {t('lc.sessionsSupport.emptyState.title', 'No history yet')}
+                </Text>
+                <Text {...styles.emptyStateDescription}>
+                  {t('lc.sessionsSupport.emptyState.description', 'Completed support will appear here')}
+                </Text>
+              </VStack>
+            </Box>
           )}
         </VStack>
       </Container>
+
+      <AssignParticipantsModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        session={selectedSession}
+        onConfirm={handleConfirmAssignment}
+      />
     </VStack>
   );
 };

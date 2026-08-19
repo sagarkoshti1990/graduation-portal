@@ -1,6 +1,8 @@
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
 import { encodeSearchText } from '../../utils/helper';
+import { getParticipantsList } from '../participantService';
+import type { ParticipantSearchParams, ParticipantSearchResponse } from '@app-types/participant';
 
 export const getRequestSessionsList = async (params: any): Promise<any> => {
   try {
@@ -46,4 +48,10 @@ export const getRequestSessionsList = async (params: any): Promise<any> => {
     console.error('Error fetching request sessions:', error);
     throw error;
   }
+};
+
+export const getParticipants = async (
+  params: ParticipantSearchParams
+): Promise<ParticipantSearchResponse> => {
+  return getParticipantsList(params);
 };
