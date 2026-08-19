@@ -73,7 +73,6 @@ const RequestSessionScreen = (): React.JSX.Element => {
 
   const handleFieldChange = useCallback(
     (name: string, value: string, other?: any) => {
-      console.log(`[RequestSession] field changed -> "${name}":`, value, other ? { other } : '');
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
         if (name === 'provinces') {

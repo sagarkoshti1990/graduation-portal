@@ -12,8 +12,6 @@ import { API_ENDPOINTS } from './apiEndpoints';
 import { ROLE_NAMES } from '@constants/ROLES';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
-import { getUserProfile } from './authenticationService';
-import logger from '@utils/logger';
 
 /**
  * Get users list for table view
@@ -82,8 +80,6 @@ export const getUsersList = async (params: UserSearchParams): Promise<UserSearch
     throw error;
   }
 };
-
-
 
 /**
  * Get user roles list for filter dropdown - Dynamic role filter from API
