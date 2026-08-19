@@ -1,22 +1,31 @@
 import React from 'react';
 import { HStack, Text, Button, ButtonText } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useNavigation } from '@react-navigation/native';
 import styles from '../styles';
 
 interface RequestFooterProps {
-  orgName: string;
-  provinceName?: string;
-  onViewDetails: () => void;
-  onAssignSession: () => void;
+  item: any;
 }
 
-export const RequestFooter: React.FC<RequestFooterProps> = ({
-  orgName,
-  provinceName,
-  onViewDetails,
-  onAssignSession,
-}) => {
+export const RequestFooter: React.FC<RequestFooterProps> = ({ item }) => {
   const { t } = useLanguage();
+  const navigation = useNavigation();
+
+  const sessionId = item?.id || item?._id || '';
+  const orgName = (typeof item?.organization === 'object'
+    ? item.organization?.name || item.organization?.organization_code
+    : item?.organization) || item?.organization_code || '';
+  const provinceName = (Array.isArray(item?.provinces) ? item.provinces[0] : item?.provinces) || '';
+
+  const handleViewDetails = () => {
+    // @ts-ignore
+    navigation.navigate('SessionDetails', { sessionId });
+  }
+  const handleAssignSession = () => {
+    // @ts-ignore
+    navigation.navigate('AssignSession', { sessionId });
+  }
 
   return (
     <HStack {...styles.requestorFooter}>
@@ -34,7 +43,7 @@ export const RequestFooter: React.FC<RequestFooterProps> = ({
         <Button
           variant={"outlineghost" as any}
           {...styles.requestorFooterViewDetailsButton}
-          onPress={onViewDetails}
+          onPress={handleViewDetails}
         >
           <ButtonText {...(styles.requestorFooterViewDetailsText as any)}>
             {t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
@@ -44,7 +53,7 @@ export const RequestFooter: React.FC<RequestFooterProps> = ({
         <Button
           variant="solid"
           {...styles.requestorFooterAssignButton}
-          onPress={onAssignSession}
+          onPress={handleAssignSession}
         >
           <ButtonText {...(styles.requestorFooterAssignText as any)}>
             {t('supportProvider.supportOfferings.cards.assignSession', 'Assign Session')}

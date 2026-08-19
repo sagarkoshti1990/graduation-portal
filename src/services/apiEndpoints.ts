@@ -43,4 +43,5 @@ export const API_ENDPOINTS = {
   MENTORING_CREATE_SESSION: `${prefix}/mentoring/v1/sessions/update?notifyUser=false`,
   MENTORING_UPDATE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/update/${sessionId}`,
   MENTORING_DETAILS_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/details/${sessionId}?get_mentees=true`,
+  REQUEST_SESSIONS_LIST: `${prefix}/mentoring/v1/sessions/list?`
 };

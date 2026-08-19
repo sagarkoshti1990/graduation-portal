@@ -2214,7 +2214,8 @@
     "sessionsSupport": {
       "subtitle": "Browse sessions, additional services, and assets available in your province and site",
       "createSession": "Create A Session",
-      "requestSupport": "Request Support"
+      "requestSupport": "Request Support",
+      "sessionsFound": "sessions found"
     },
     "createSession": {
       "title": "Create a Session",

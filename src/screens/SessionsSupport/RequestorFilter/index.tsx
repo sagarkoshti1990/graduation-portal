@@ -67,8 +67,8 @@ export const RequestorFilter: React.FC<RequestorFilterProps> = ({
       search: searchQuery,
       ...dropdownFilters,
     });
-    console.log(configData, 'configDataconfigDataconfigData')
-  }, [searchQuery, dropdownFilters, onFilterChange]);
+  }, [searchQuery, dropdownFilters]);
+
   return (
     <VStack {...styles.requestorFilterContainer}>
       <SearchBar

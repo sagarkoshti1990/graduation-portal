@@ -170,7 +170,9 @@ export const sessionsSupportStyles = {
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
     width: '100%' as const,
-    marginTop: '$2' as const,
+    borderTopWidth: 1,
+    borderTopColor: '$borderColor',
+    paddingTop: '$2' as any,
   },
   requestorFooterText: {
     fontSize: '$xs' as const,
@@ -239,6 +241,28 @@ export const sessionsSupportStyles = {
     fontWeight: '$semibold' as const,
     color: '$white' as const,
   },
+  sessionsFoundText: {
+    fontSize: '$sm',
+    color: '$textSecondary',
+    fontWeight: '$medium',
+    marginTop: '$2',
+    marginBottom: '$1',
+    marginLeft: '$2'
+  },
+  sessionSupportSubTabBarBox: {
+    bg: 'transparent',
+  } as const,
+  subTabBarBorderWrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: '$borderLight100',
+    width: '100%',
+  } as const,
+  subTabButtonContainer: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingLeft: 16,
+    paddingRight: 16,
+  } as const,
 } as const;
 
 export default sessionsSupportStyles;

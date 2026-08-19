@@ -25,7 +25,6 @@ import SessionCompleteModal from '../modals/SessionCompleteModal';
 import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
 import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
-import { RequestFooter } from '../../../../SessionsSupport/RequestorFooter';
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
   const rawMode = (
@@ -149,16 +148,12 @@ const uploadFile = async (file: any) => {
 
 interface CardProps {
   item: TrainingSessionItem;
-  isRequestor?: boolean;
-  onViewDetails?: (item: TrainingSessionItem) => void;
-  onAssignSession?: (item: TrainingSessionItem) => void;
+  footer?: (item: any) => React.ReactNode;
 }
 
 const Card: React.FC<CardProps> = ({
   item: initialItem,
-  isRequestor,
-  onViewDetails,
-  onAssignSession,
+  footer
 }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
@@ -183,7 +178,6 @@ const Card: React.FC<CardProps> = ({
     }
     return false;
   });
-
 
   const displayDate = item.start_date
     ? moment(
@@ -392,7 +386,7 @@ const Card: React.FC<CardProps> = ({
     <Box {...styles.cardContainer}>
       <VStack {...styles.cardFullVStack}>
         {/* ROW 1 - TITLE & BADGES */}
-        <HStack {...styles.headerTopHStack}>
+        <HStack {...(footer ? styles.supportRow1 : styles.headerTopHStack)}>
           <HStack {...styles.headerTitleBadgeHStack}>
             <Text {...styles.cardHeaderTitleText}>{item.title}</Text>
 
@@ -456,13 +450,8 @@ const Card: React.FC<CardProps> = ({
         ) : null}
 
         {/* ROW 4 - ACTIONS */}
-        {isRequestor ? (
-          <RequestFooter
-            orgName={orgName}
-            provinceName={provinceName}
-            onViewDetails={() => onViewDetails?.(item)}
-            onAssignSession={() => onAssignSession?.(item)}
-          />
+        {footer ? (
+          footer(item)
         ) : (
           <HStack {...styles.requestedByRowHStack}>
             <HStack {...styles.badgeContentHStack}>
@@ -542,7 +531,7 @@ const Card: React.FC<CardProps> = ({
         )}
 
         {/* ACCORDION CONTENT */}
-        {!isRequestor && isExpanded && (
+        {!footer && isExpanded && (
           <VStack {...styles.expandedContentVStack}>
             {/* LOCATION / LINK */}
             <VStack {...styles.sectionVStack}>
@@ -684,9 +673,7 @@ export interface TrainingCardProps {
   isShowLoadMore?: boolean;
   onLoadMoreItems?: () => void;
   isLoadingMore?: boolean;
-  isRequestor?: boolean;
-  onViewDetails?: (item: TrainingSessionItem) => void;
-  onAssignSession?: (item: TrainingSessionItem) => void;
+  _card?: any;
 }
 
 export default function TrainingCard({
@@ -694,9 +681,7 @@ export default function TrainingCard({
   isShowLoadMore,
   onLoadMoreItems,
   isLoadingMore = false,
-  isRequestor = false,
-  onViewDetails,
-  onAssignSession,
+  _card,
 }: TrainingCardProps): React.ReactElement {
   const { t } = useLanguage();
 
@@ -706,9 +691,7 @@ export default function TrainingCard({
         <Card
           key={item.id}
           item={item}
-          isRequestor={isRequestor}
-          onViewDetails={onViewDetails}
-          onAssignSession={onAssignSession}
+          {..._card}
         />
       ))}
       {isShowLoadMore && (

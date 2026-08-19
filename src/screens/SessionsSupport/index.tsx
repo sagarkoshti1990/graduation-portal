@@ -16,12 +16,14 @@ import AdditionalServicesCard from '../ServiceProvider/SupportOfferings/componen
 import AssetCard from '../ServiceProvider/SupportOfferings/components/Cards/AssetCard';
 import { getProvincesList, getSitesByProvince } from '../../services/usersService';
 import { getTrainingSessions, getAdditionalServices, getAssets } from '../../services/SupportOfferingsServices/supportOfferingsService';
+import { getRequestSessionsList } from '../../services/SessionSupportServices/sessionRequestorService';
 import type { ProvinceEntity } from '@app-types/Users';
 import { getSessionCategories, getDeliveryModes } from '../../services/mentoringService';
 import { DEFAULT_PATHWAY_OPTIONS, DEFAULT_FORMAT_OPTIONS } from '../../constants/REQUESTOR_CONSTANTS';
 import { RequestorFilter } from './RequestorFilter';
 import styles from './styles';
 import supportOfferingsStyles from '../ServiceProvider/SupportOfferings/styles';
+import { RequestFooter } from './RequestorFooter';
 
 const SessionsSupportScreen: React.FC = () => {
   const { t } = useLanguage();
@@ -239,7 +241,9 @@ const SessionsSupportScreen: React.FC = () => {
         let totalCount = 0;
 
         if (activeTab === 'sessions') {
-          const res = await getTrainingSessions(params);
+          const res = activeSubTab === 'browse_sessions'
+            ? await getRequestSessionsList(params)
+            : await getTrainingSessions(params);
           fetchedData = res?.result?.data || [];
           totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
           setCounts((prev) => ({ ...prev, sessions: totalCount }));
@@ -393,21 +397,23 @@ const SessionsSupportScreen: React.FC = () => {
       </Box>
 
       {subTabs.length > 0 && (
-        <Box {...supportOfferingsStyles.sessionSupportSubTabBarBox}>
+        <Box {...styles.sessionSupportSubTabBarBox}>
           <Container {...supportOfferingsStyles.container} py="$0">
-            <HStack alignItems="center" space="sm">
-              {subTabs.map((tab) => (
-                <TabButton
-                  key={tab.key}
-                  tab={tab}
-                  isActive={activeSubTab === tab.key}
-                  onPress={(key) => setActiveSubTab(key)}
-                  _text={supportOfferingsStyles.tabTextProps}
-                  _container={supportOfferingsStyles.tabButtonContainer}
-                  iconSize={16}
-                />
-              ))}
-            </HStack>
+            <Box {...styles.subTabBarBorderWrapper}>
+              <HStack alignItems="center" space="sm">
+                {subTabs.map((tab) => (
+                  <TabButton
+                    key={tab.key}
+                    tab={tab}
+                    isActive={activeSubTab === tab.key}
+                    onPress={(key) => setActiveSubTab(key)}
+                    _text={supportOfferingsStyles.tabTextProps}
+                    _container={styles.subTabButtonContainer}
+                    iconSize={16}
+                  />
+                ))}
+              </HStack>
+            </Box>
           </Container>
         </Box>
       )}
@@ -415,15 +421,20 @@ const SessionsSupportScreen: React.FC = () => {
       <Container {...supportOfferingsStyles.container}>
         <VStack {...supportOfferingsStyles.contentContainer}>
           {activeSubTab === 'browse_sessions' && (
-            <RequestorFilter
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              provinceOptions={provinceOptions}
-              siteOptions={siteOptions}
-              pathwayOptions={pathwayOptions}
-              formatOptions={formatOptions}
-              shouldDisableSite={!filters.province || filters.province === 'all-provinces'}
-            />
+            <>
+              <RequestorFilter
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                provinceOptions={provinceOptions}
+                siteOptions={siteOptions}
+                pathwayOptions={pathwayOptions}
+                formatOptions={formatOptions}
+                shouldDisableSite={!filters.province || filters.province === 'all-provinces'}
+              />
+              <Text {...styles.sessionsFoundText}>
+                {total} {t('lc.sessionsSupport.sessionsFound')}
+              </Text>
+            </>
           )}
 
           {activeTab === 'sessions' && (
@@ -432,9 +443,11 @@ const SessionsSupportScreen: React.FC = () => {
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
-              isRequestor={activeSubTab !== 'browse_sessions'}
-              onViewDetails={() => {}}
-              onAssignSession={() => {}}
+              _card={{
+                footer: (item: any) => (
+                  <RequestFooter item={item} />
+                )
+              }}
             />
           )}
 

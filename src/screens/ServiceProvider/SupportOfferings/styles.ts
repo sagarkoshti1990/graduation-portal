@@ -788,10 +788,9 @@ export default {
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
     width: '100%' as const,
-    paddingBottom: 12,
+    paddingBottom: '$3',
     borderBottomWidth: 1,
     borderBottomColor: '$borderColor',
-    marginBottom: 12,
   } as const,
   supportRow1Left: {
     flexDirection: 'row' as const,
