@@ -54,6 +54,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 },
               },
               { rule: 'maxLength', value: 100, message: { key: 'errors.nameMax', fallback: 'Name is too long' } },
+              {
+                rule: 'pattern',
+                value: "^[a-zA-Z'-]+(?: [a-zA-Z'-]+)*$",
+                message: {
+                  key: 'errors.nameInvalid',
+                  fallback: 'Name can contain only letters, spaces, hyphens, and apostrophes',
+                },
+              },
             ],
           },
           {
@@ -67,6 +75,8 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             validation: [
               { rule: 'required', message: { key: 'errors.emailRequired', fallback: 'Email address is required' } },
               { rule: 'email', message: { key: 'errors.emailInvalid', fallback: 'Enter a valid email address' } },
+              { rule: 'maxLength', value: 254, message: { key: 'errors.emailLength', fallback: 'Email address is too long', } },
+              { rule: 'pattern', value: '^\\S(?:.*\\S)?$', message: { key: 'errors.emailSpaces', fallback: 'Email must not start or end with spaces', } },
             ],
           },
         ],
@@ -81,7 +91,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { fallback: 'Enter username' },
             validation: [
               { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
-              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
+              {
+                rule: 'pattern',
+                value: '^(?![0-9]+$)[A-Za-z0-9_.@]+$',
+                message: {
+                  key: 'errors.usernameInvalid',
+                  fallback: 'Username can contain only letters, numbers, underscores, dots, and @',
+                },
+              },
             ],
           },
           {
@@ -254,6 +271,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                   fallback: 'User must be at least 18 years old',
                 },
               },
+              {
+                rule: 'pattern',
+                value: '^(19|20)\\d\\d[-_](0[1-9]|1[012])[-_](0[1-9]|[12][0-9]|3[01])$',
+                message: {
+                  key: 'errors.dobInvalid',
+                  fallback: 'Date of birth must be a valid date in YYYY-MM-DD format',
+                },
+              },
             ],
           },
         ],
@@ -407,8 +432,20 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             icon: 'MapPin',
             label: { key: 'address', fallback: 'Address' },
             placeholder: { key: 'addressPlaceholder', fallback: 'Enter address' },
+            _input: {
+              borderWidth: '1 !important',
+              height: "auto",
+            },
             validation: [
               { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
+              {
+                rule: 'pattern',
+                value: '^(?=.*[a-zA-Z0-9])[a-zA-Z0-9\\s,.\\/\\-\\#\\\'&()[\\]]+$',
+                message: {
+                  key: 'errors.addressInvalid',
+                  fallback: 'Address must contain at least one letter or number, and only allowed characters',
+                },
+              },
             ],
           },
         ],

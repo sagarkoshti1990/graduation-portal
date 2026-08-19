@@ -1,5 +1,5 @@
 import { config as gluestackConfig } from '@gluestack-ui/config';
-console.log(gluestackConfig.components.Input.theme.variants.variant.outline,"sagar asd")
+console.log(gluestackConfig.components.Input.theme.variants.variant.outline, "sagar asd")
 export const theme = {
   ...gluestackConfig,
   tokens: {
@@ -272,22 +272,22 @@ export const theme = {
               [":invalid"]: {
                 ...gluestackConfig.components.Input.theme.variants.variant.outline[":invalid"],
                 _web: {
-                  boxShadow: "0 0 0 1px $error700",
+                  boxShadow: "0 0 0 1px $red500",
                   // boxShadow: '0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280;',
                 },
-                [":focus"] : {
+                [":focus"]: {
                   ...gluestackConfig.components.Input.theme.variants.variant.outline[":invalid"][":focus"],
                   _web: {
                     // boxShadow: '0 0 0 1px color-mix(in oklab, $error700 100%, transparent)',
-                    boxShadow: "0 0 0 1px $error700",
-                    borderColor: '$error700 !important',
+                    boxShadow: "0 0 0 1px $red500",
+                    borderColor: '$red500 !important',
                   },
-                  [":hover"] : {
+                  [":hover"]: {
                     ...gluestackConfig.components.Input.theme.variants.variant.outline[":invalid"][":focus"][":hover"],
                     _web: {
                       // boxShadow: '0 0 0 1px color-mix(in oklab, $error700 100%, transparent)',
-                      boxShadow: "0 0 0 1px $error700",
-                      borderColor: '$error700 !important',
+                      boxShadow: "0 0 0 1px $red500",
+                      borderColor: '$red500 !important',
                     },
                   }
                 }
@@ -296,8 +296,8 @@ export const theme = {
                 ...gluestackConfig.components.Input.theme.variants.variant.outline[":focus"],
                 _web: {
                   // boxShadow: '0 0 0 1px color-mix(in oklab, $error700 100%, transparent)',
-                  boxShadow: "0 0 0 1px $error700",
-                  borderColor: '$error700 !important',
+                  boxShadow: "0 0 0 1px $red500",
+                  borderColor: '$red500 !important',
                 },
               },
             },
@@ -319,22 +319,22 @@ export const theme = {
               [":invalid"]: {
                 ...gluestackConfig.components.Textarea.theme.variants.variant.default[":invalid"],
                 _web: {
-                  boxShadow: "0 0 0 1px $error700",
+                  boxShadow: "0 0 0 1px $red500",
                   // boxShadow: '0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280, 0 0 #8b284280;',
                 },
-                [":focus"] : {
+                [":focus"]: {
                   ...gluestackConfig.components.Textarea.theme.variants.variant.default[":invalid"][":focus"],
                   _web: {
-                    // boxShadow: '0 0 0 1px color-mix(in oklab, $error700 100%, transparent)',
-                    boxShadow: "0 0 0 1px $error700",
-                    borderColor: '$error700 !important',
+                    // boxShadow: '0 0 0 1px color-mix(in oklab, $red500 100%, transparent)',
+                    boxShadow: "0 0 0 1px $red500",
+                    borderColor: '$red500 !important',
                   },
-                  [":hover"] : {
+                  [":hover"]: {
                     ...gluestackConfig.components.Textarea.theme.variants.variant.default[":invalid"][":focus"][":hover"],
                     _web: {
-                      // boxShadow: '0 0 0 1px color-mix(in oklab, $error700 100%, transparent)',
-                      boxShadow: "0 0 0 1px $error700",
-                      borderColor: '$error700 !important',
+                      // boxShadow: '0 0 0 1px color-mix(in oklab, $red500 100%, transparent)',
+                      boxShadow: "0 0 0 1px $red500",
+                      borderColor: '$red500 !important',
                     },
                   }
                 }
@@ -342,8 +342,8 @@ export const theme = {
               [":focus"]: {
                 ...gluestackConfig.components.Textarea.theme.variants.variant.default[":focus"],
                 _web: {
-                  boxShadow: '0 0 0 1px color-mix(in oklab, $error700 100%, transparent)',
-                  borderColor: '$error700 !important',
+                  boxShadow: '0 0 0 1px color-mix(in oklab, $red500 100%, transparent)',
+                  borderColor: '$red500 !important',
                 },
               },
             },
