@@ -24,7 +24,7 @@ import type { MaterialItem, TrainingSessionItem } from '../../../../../types/sup
 import SessionCompleteModal from '../modals/SessionCompleteModal';
 import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
-import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
   const rawMode = (
@@ -204,11 +204,11 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
   const formatStatus = () => {
     const thisStatus = item.status.toUpperCase();
-    if (thisStatus === 'DRAFT') {
+    if (thisStatus === SESSION_STATUS.DRAFT) {
       return 'Draft';
     }
 
-    if (thisStatus === 'COMPLETED') {
+    if (thisStatus === SESSION_STATUS.PUBLISHED) {
       return 'Completed';
     }
 
@@ -244,7 +244,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   const statusTag = formatStatus();
   const statusColors = getStatusColors(item.status);
 
-  const canCopy = !!item.can_be_copied;
+  const canCopy = !!item.can_be_copied && currentStatus !== SESSION_STATUS.DRAFT;
 
   // Expected participants and confirmed present dynamically from seats_limit and seats_remaining
   const expectedParticipants = item.seats_limit || 0;
@@ -611,7 +611,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                     {t('supportProvider.supportOfferings.cards.sessionMaterials', 'Session Materials')}
                   </Text>
 
-                  {currentStatus !== 'COMPLETED' && (
+                  {/* {currentStatus !== 'COMPLETED' && (
                     <Pressable {...styles.uploadMaterialBtn} onPress={handleUploadPress}>
                       <HStack {...styles.badgeContentHStack}>
                         <LucideIcon name="Upload" {...styles.cardMetaIconProps} />
@@ -620,7 +620,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                         </Text>
                       </HStack>
                     </Pressable>
-                  )}
+                  )} */}
                 </HStack>
 
                 {files.length > 0 && (
