@@ -13,6 +13,7 @@ import { getProvincesList, getSitesByProvince } from '../../../services/usersSer
 import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
 import logger from '@utils/logger';
+import { getSessionDetails } from '../../../services/mentoringService';
 
 export const STATUS_OPTIONS = [
   {
@@ -257,6 +258,20 @@ const App = (): React.JSX.Element => {
     }, [fetchData])
   );
 
+  const handleGetDetails = async(item:any) => {
+    const { result } = await getSessionDetails(item.id);
+    setItems(prevItems =>
+      prevItems.map((subItem:any) =>
+        subItem.id === item.id
+          ? {
+              ...subItem,
+              materials: result?.resources,
+            }
+          : subItem
+      )
+    );
+  }
+  
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -306,6 +321,9 @@ const App = (): React.JSX.Element => {
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
+              _card={{
+                getItemDetails: handleGetDetails
+              }}
             />
           )}
 

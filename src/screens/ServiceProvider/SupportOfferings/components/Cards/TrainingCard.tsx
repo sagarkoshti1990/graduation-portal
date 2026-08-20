@@ -18,13 +18,14 @@ import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import { completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
-import { uploadFiles } from '../../../../../project-player/services/projectPlayerService';
-import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
+// import { uploadFiles } from '../../../../../project-player/services/projectPlayerService';
+// import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
 import type { MaterialItem, TrainingSessionItem } from '../../../../../types/supportOfferingsTypes';
 import SessionCompleteModal from '../modals/SessionCompleteModal';
 import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
 import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { openDownload } from "@utils/helper";
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
   const rawMode = (
@@ -119,45 +120,45 @@ const formatResourceName = (file: MaterialItem) => {
   return file.name || 'File';
 };
 
-const uploadFile = async (file: any) => {
-  const entityId = `trainingSession-${Date.now()}`;
+// const uploadFile = async (file: any) => {
+//   const entityId = `trainingSession-${Date.now()}`;
 
-  const uploaded = await uploadFiles(entityId, [
-    { ...file, size: file.size ?? 0 },
-  ]);
+//   const uploaded = await uploadFiles(entityId, [
+//     { ...file, size: file.size ?? 0 },
+//   ]);
 
-  const url = uploaded?.data?.[0]?.url;
+//   const url = uploaded?.data?.[0]?.url;
 
-  if (!url) {
-    throw new Error(`Failed to upload file: ${file.name}`);
-  }
+//   if (!url) {
+//     throw new Error(`Failed to upload file: ${file.name}`);
+//   }
 
-  const data = uploaded?.data?.[0];
-  const [f, s] = data?.type?.split('/') || [];
+//   const data = uploaded?.data?.[0];
+//   const [f, s] = data?.type?.split('/') || [];
 
-  return {
-    name: data?.name,
-    link: data?.url,
-    sourcePath: data?.sourcePath,
-    type: s || f,
-    size: data?.size,
-  };
-};
+//   return {
+//     name: data?.name,
+//     link: data?.url,
+//     sourcePath: data?.sourcePath,
+//     type: s || f,
+//     size: data?.size,
+//   };
+// };
 
 // ---------- Card ----------
 
 interface CardProps {
   item: TrainingSessionItem;
+  getItemDetails?: ( item: any ) => void
 }
 
-const Card: React.FC<CardProps> = ({ item: initialItem }) => {
+const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const navigation = useNavigation();
 
   const [item, setItem] = useState<TrainingSessionItem>(initialItem);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [files, setFiles] = useState<MaterialItem[]>(initialItem.materials || []);
+  const [files, setFiles] = useState<MaterialItem[] | null>(null);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isAttendanceConfirmed, setIsAttendanceConfirmed] = useState<boolean>(() => {
@@ -208,7 +209,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
       return 'Draft';
     }
 
-    if (thisStatus === SESSION_STATUS.PUBLISHED) {
+    if (thisStatus === SESSION_STATUS.COMPLETED) {
       return 'Completed';
     }
 
@@ -242,7 +243,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   };
   const currentStatus = item.status.toUpperCase();
   const statusTag = formatStatus();
-  const statusColors = getStatusColors(item.status);
+  const statusColors = getStatusColors(statusTag);
 
   const canCopy = !!item.can_be_copied && currentStatus !== SESSION_STATUS.DRAFT;
 
@@ -262,13 +263,6 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
     item.meeting_info?.link ||
     '';
 
-  const orgName =
-    (typeof item.organization === 'object'
-      ? item.organization?.name || item.organization?.organization_code
-      : item.organization) ||
-    item.organization_code ||
-    '';
-  const provinceName = (item.provinces && item.provinces[0]) || '';
   const descriptionText = item.description || item.notes || '';
 
   const handleCopySession = () => {
@@ -332,42 +326,42 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
   /*
    * Upload functionality via uploadFiles API
    */
-  const handleUploadPress = async () => {
-    try {
-      const selectedFiles = await openFilePicker({
-        allowMultiSelection: true,
-        type: [
-          'application/pdf',
-          'image/*',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ],
-      });
+  // const handleUploadPress = async () => {
+  //   try {
+  //     const selectedFiles = await openFilePicker({
+  //       allowMultiSelection: true,
+  //       type: [
+  //         'application/pdf',
+  //         'image/*',
+  //         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  //       ],
+  //     });
 
-      if (!selectedFiles || selectedFiles.length === 0) return;
+  //     if (!selectedFiles || selectedFiles.length === 0) return;
 
-      const uploadPromises = selectedFiles.map((file) => uploadFile(file));
-      const uploadedResults = await Promise.all(uploadPromises);
+  //     const uploadPromises = selectedFiles.map((file) => uploadFile(file));
+  //     const uploadedResults = await Promise.all(uploadPromises);
 
-      setFiles((prev) => [...prev, ...uploadedResults]);
+  //     setFiles((prev) => [...prev, ...uploadedResults]);
 
-      showAlert(
-        'success',
-        t(
-          'supportProvider.supportOfferings.cards.alerts.materialUploaded'
-        )
-      );
-    } catch (err: any) {
-      console.error('Error uploading material:', err);
-      showAlert(
-        'error',
-        err?.message || 'Failed to upload file. Please try again.'
-      );
-    }
-  };
+  //     showAlert(
+  //       'success',
+  //       t(
+  //         'supportProvider.supportOfferings.cards.alerts.materialUploaded'
+  //       )
+  //     );
+  //   } catch (err: any) {
+  //     console.error('Error uploading material:', err);
+  //     showAlert(
+  //       'error',
+  //       err?.message || 'Failed to upload file. Please try again.'
+  //     );
+  //   }
+  // };
 
   useEffect(() => {
     setItem(initialItem);
-    setFiles(initialItem.materials || []);
+    setFiles(initialItem?.materials || null);
     const raw = initialItem as any;
     const isConf =
       !!raw.is_attendance_confirmed ||
@@ -455,82 +449,63 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
 
           <HStack {...styles.badgeContentHStack}>
             {/* DRAFT */}
-            {currentStatus === 'DRAFT' ? (
-              <>
+            {currentStatus === 'DRAFT' && (
+              <Button
+                // @ts-ignore
+                variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
                 {/* @ts-ignore */}
-                <Button variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
-                  <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
-                </Button>
-
-                {canCopy && (
-                  <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
-                    <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
-                    <ButtonText {...styles.outlineActionBtnText}>
-                      {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
-                    </ButtonText>
-                  </Button>
-                )}
-
-                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
-                  <ButtonText {...styles.detailsBtnText}>
-                    {isExpanded
-                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
-                  </ButtonText>
-                </Button>
-              </>
-            ) : currentStatus === 'LIVE' ? (
-              /* IN PROGRESS */
-              <>
-                <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
-                  <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
-                  <ButtonText {...styles.completeActionBtnText}>
-                    {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
-                  </ButtonText>
-                </Button>
-
-                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
-                  <ButtonText {...styles.detailsBtnText}>
-                    {isExpanded
-                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
-                  </ButtonText>
-                </Button>
-              </>
-            ) : (
-              /* UPCOMING / COMPLETED */
-              <>
-                {canCopy && (
-                  <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
-                    <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
-                    <ButtonText {...styles.outlineActionBtnText}>
-                      {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
-                    </ButtonText>
-                  </Button>
-                )}
-
-                {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
-                  <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
-                    <ButtonText {...styles.outlineActionBtnText}>
-                      {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
-                    </ButtonText>
-                  </Button>
-                )}
-
-                <Button variant="solid" {...styles.detailsBtn} onPress={() => setIsExpanded((prev) => !prev)}>
-                  <ButtonText {...styles.detailsBtnText}>
-                    {isExpanded
-                      ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                      : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
-                  </ButtonText>
-                </Button>
-              </>
+                <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
+              </Button>
             )}
+            {/* IN PROGRESS */}
+            {currentStatus === 'LIVE' && (
+              <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
+                <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
+                {/* @ts-ignore */}
+                <ButtonText {...styles.completeActionBtnText}>
+                  {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
+                </ButtonText>
+              </Button>
+            )}
+            {/* UPCOMING / COMPLETED */}
+            {canCopy && (
+              <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
+                <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
+                {/* @ts-ignore */}
+                <ButtonText {...styles.outlineActionBtnText}>
+                  {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
+                </ButtonText>
+              </Button>
+            )}
+
+            {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
+              <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
+                {/* @ts-ignore */}
+                <ButtonText {...styles.outlineActionBtnText}>
+                  {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
+                </ButtonText>
+              </Button>
+            )}
+
+            <Button variant="solid" {...styles.detailsBtn}
+              onPress={async () => {
+                if(!files) {
+                  await getItemDetails?.(item)
+                }
+              }}
+            >
+              {/* @ts-ignore */}
+              <ButtonText {...styles.detailsBtnText}>
+                {!!files
+                  ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
+                  : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
+              </ButtonText>
+            </Button>
           </HStack>
         </HStack>
 
         {/* ACCORDION CONTENT */}
-        {isExpanded && (
+        {!!files && (
           <VStack {...styles.expandedContentVStack}>
             {/* LOCATION / LINK */}
             <VStack {...styles.sectionVStack}>
@@ -604,7 +579,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
             </VStack>
 
             {/* SESSION MATERIALS */}
-            {(currentStatus !== 'COMPLETED' || files.length > 0) && (
+            {(currentStatus !== 'COMPLETED' || files?.length > 0) && (
               <VStack {...styles.sectionVStack}>
                 <HStack {...styles.materialsHeaderHStack}>
                   <Text {...styles.cardSectionTitleText}>
@@ -623,9 +598,9 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                   )} */}
                 </HStack>
 
-                {files.length > 0 && (
+                {files?.length > 0 && (
                   <VStack {...styles.filesListVStack}>
-                    {files.map((file, idx) => (
+                    {files?.map((file, idx) => (
                       <Box key={idx} {...styles.resourceCard}>
                         <HStack {...styles.fileCardOuterHStack}>
                           <HStack {...styles.fileCardInnerHStack}>
@@ -635,7 +610,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem }) => {
                             </Text>
                           </HStack>
 
-                          <Pressable onPress={() => showAlert('info', t('supportProvider.supportOfferings.cards.alerts.downloading', { name: file.name }))}  {...styles.iconPressablePadding}>
+                          <Pressable onPress={() => openDownload(file?.link || "")}  {...styles.iconPressablePadding}>
                             <HStack {...styles.badgeContentHStack}>
                               <LucideIcon name="Download" {...styles.cardPrimaryIconProps} />
                               <Text {...styles.downloadLinkText}>{t('common.download', 'Download')}</Text>
@@ -672,6 +647,7 @@ interface TrainingCardProps {
   isShowLoadMore: boolean;
   onLoadMoreItems: () => void;
   isLoadingMore?: boolean;
+  _card?: any
 }
 
 export default function TrainingCard({
@@ -679,13 +655,14 @@ export default function TrainingCard({
   isShowLoadMore,
   onLoadMoreItems,
   isLoadingMore = false,
+  _card
 }: TrainingCardProps): React.ReactElement {
   const { t } = useLanguage();
 
   return (
     <VStack {...styles.listContainer}>
       {items.map((item) => (
-        <Card key={item.id} item={item} />
+        <Card key={item.id} {..._card} item={item} />
       ))}
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">

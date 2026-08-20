@@ -38,6 +38,7 @@ export type FormModeType = typeof FORM_MODE[keyof typeof FORM_MODE];
 export const SESSION_STATUS = {
   DRAFT: 'DRAFT',
   PUBLISHED: 'PUBLISHED',
+  COMPLETED: "Completed"
 } as const;
 
 export const DEFAULT_SESSION_CONFIG = {
