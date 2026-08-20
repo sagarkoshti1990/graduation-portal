@@ -53,6 +53,18 @@ export const isAssetCategory = (cat?: string) => {
   return cat === SUPPORT_CATEGORIES.ASSET;
 };
 
+  // Dynamic Options fetched directly from API/DB, grouped into a single state object
+  type OptionItem = { value: string; label: string };
+  interface CategoryOptionsState {
+    categoryOpts: OptionItem[];
+    socialEmpowermentOpts: OptionItem[];
+    financialInclusionOpts: OptionItem[];
+    livelihoodsOpts: OptionItem[];
+    specialAttentionOpts: OptionItem[];
+    immediateAttentionOpts: OptionItem[];
+    assetTypesOpts: OptionItem[];
+  }
+  
 export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   value = [],
   onChange,
@@ -61,48 +73,17 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
-  // Dynamic Options fetched directly from API/DB, grouped into a single state object
-  type OptionItem = { value: string; label: string };
-  interface CategoryOptionsState {
-    category: OptionItem[];
-    socialEmpowerment: OptionItem[];
-    financialInclusion: OptionItem[];
-    livelihoods: OptionItem[];
-    specialAttention: OptionItem[];
-    immediateAttention: OptionItem[];
-    assetTypes: OptionItem[];
-  }
-  const [optionsState, setOptionsState] = useState<CategoryOptionsState>({
-    category: [],
-    socialEmpowerment: [],
-    financialInclusion: [],
-    livelihoods: [],
-    specialAttention: [],
-    immediateAttention: [],
-    assetTypes: [],
-  });
-  const {
-    category: categoryOpts,
-    socialEmpowerment: socialEmpowermentOpts,
-    financialInclusion: financialInclusionOpts,
-    livelihoods: livelihoodsOpts,
-    specialAttention: specialAttentionOpts,
-    immediateAttention: immediateAttentionOpts,
-    assetTypes: assetTypesOpts,
-  } = optionsState;
-
-  const formatOptions = (
-    res: PromiseSettledResult<any[]>,
-    fallback: OptionItem[] = []
-  ) => {
-    if (res.status === 'fulfilled' && Array.isArray(res.value) && res.value.length > 0) {
-      return res.value.map((item: any) => ({
-        value: item.value,
-        label: item.label,
-      }));
-    }
-    return fallback;
+  const initialOptionsState: CategoryOptionsState = {
+    categoryOpts: [],
+    socialEmpowermentOpts: [],
+    financialInclusionOpts: [],
+    livelihoodsOpts: [],
+    specialAttentionOpts: [],
+    immediateAttentionOpts: [],
+    assetTypesOpts: [],
   };
+
+  const [optionsState, setOptionsState] = useState<CategoryOptionsState>(initialOptionsState);
 
   // Tracks which option groups have already been fetched, so we never re-fetch the same group twice
   const fetchedGroupsRef = useRef<{ category: boolean; training: boolean; linkage: boolean; asset: boolean }>({
@@ -124,7 +105,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         fetchedGroupsRef.current.category = true;
         setOptionsState(prev => ({
           ...prev,
-          category: formatOptions({ status: 'fulfilled', value: catRes } as PromiseSettledResult<any[]>),
+          categoryOpts: catRes || [],
         }));
       } catch (err) {
         console.error('Error fetching support categories from API:', err);
@@ -147,7 +128,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
     const fetchTrainingOptions = async () => {
       if (fetchedGroupsRef.current.training) return;
       try {
-        const [socialRes, finRes, livRes] = await Promise.allSettled([
+        const [socialRes, finRes, livRes] = await Promise.all([
           getSocialEmpowermentOptions(),
           getFinancialInclusionOptions(),
           getLivelihoodsOptions(),
@@ -156,9 +137,9 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         fetchedGroupsRef.current.training = true;
         setOptionsState(prev => ({
           ...prev,
-          socialEmpowerment: formatOptions(socialRes),
-          financialInclusion: formatOptions(finRes),
-          livelihoods: formatOptions(livRes),
+          socialEmpowermentOpts: socialRes || [],
+          financialInclusionOpts: finRes || [],
+          livelihoodsOpts: livRes || [],
         }));
       } catch (err) {
         console.error('Error fetching training options from API:', err);
@@ -168,7 +149,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
     const fetchLinkageOptions = async () => {
       if (fetchedGroupsRef.current.linkage) return;
       try {
-        const [specRes, immRes] = await Promise.allSettled([
+        const [specRes, immRes] = await Promise.all([
           getSpecialAttentionOptions(),
           getImmediateAttentionOptions(),
         ]);
@@ -176,8 +157,8 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         fetchedGroupsRef.current.linkage = true;
         setOptionsState(prev => ({
           ...prev,
-          specialAttention: formatOptions(specRes),
-          immediateAttention: formatOptions(immRes),
+          specialAttentionOpts: specRes || [],
+          immediateAttentionOpts: immRes || [],
         }));
       } catch (err) {
         console.error('Error fetching linkage options from API:', err);
@@ -192,7 +173,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         fetchedGroupsRef.current.asset = true;
         setOptionsState(prev => ({
           ...prev,
-          assetTypes: formatOptions({ status: 'fulfilled', value: assetRes } as PromiseSettledResult<any[]>),
+          assetTypesOpts: assetRes || [],
         }));
       } catch (err) {
         console.error('Error fetching asset type options from API:', err);
@@ -213,13 +194,13 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   }, [selectedCategory]);
 
   const categoryOptions = useMemo(() => {
-    return categoryOpts.filter(opt => {
+    return optionsState.categoryOpts.filter(opt => {
       if (selectedCategory && opt.value === selectedCategory) {
         return true;
       }
       return !value.some(item => item.categoryName === opt.value);
     });
-  }, [value, selectedCategory, categoryOpts]);
+  }, [value, selectedCategory, optionsState.categoryOpts]);
 
   // Helper to resolve option label from value
   const getOptionLabel = (val: string, optionsList: { value: string; label: string }[]) => {
@@ -401,7 +382,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               <HStack {...styles.cardHeader}>
                 <HStack {...styles.supportCategoryHeader}>
                   <Text {...styles.cardTitleText}>
-                    {getOptionLabel(item.categoryName, categoryOpts)}
+                    {getOptionLabel(item.categoryName, optionsState.categoryOpts)}
                   </Text>
                   <Badge {...styles.offeredBadge}>
                     <BadgeText {...styles.redBadgeText}>Offered</BadgeText>
@@ -430,7 +411,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.trainingData.socialEmpowerment.map((s, idx) => (
                           <Badge key={idx} {...styles.blueBadge}>
-                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, socialEmpowermentOpts)}</BadgeText>
+                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, optionsState.socialEmpowermentOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -443,7 +424,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.trainingData.financialInclusion.map((s, idx) => (
                           <Badge key={idx} {...styles.blueBadge}>
-                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, financialInclusionOpts)}</BadgeText>
+                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, optionsState.financialInclusionOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -456,7 +437,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.trainingData.livelihoods.map((s, idx) => (
                           <Badge key={idx} {...styles.blueBadge}>
-                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, livelihoodsOpts)}</BadgeText>
+                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, optionsState.livelihoodsOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -473,7 +454,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.linkageData.specialAttention.map((s, idx) => (
                           <Badge key={idx} {...styles.purpleBadge}>
-                            <BadgeText {...styles.purpleBadgeText}>{getOptionLabel(s, specialAttentionOpts)}</BadgeText>
+                            <BadgeText {...styles.purpleBadgeText}>{getOptionLabel(s, optionsState.specialAttentionOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -486,7 +467,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.linkageData.immediateAttention.map((s, idx) => (
                           <Badge key={idx} {...styles.purpleBadge}>
-                            <BadgeText {...styles.purpleBadgeText}>{getOptionLabel(s, immediateAttentionOpts)}</BadgeText>
+                            <BadgeText {...styles.purpleBadgeText}>{getOptionLabel(s, optionsState.immediateAttentionOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -501,7 +482,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   <HStack {...styles.badgeRow}>
                     {item.assetsData.assetTypes.map((s, idx) => (
                       <Badge key={idx} {...styles.greenBadge}>
-                        <BadgeText {...styles.greenBadgeText}>{getOptionLabel(s, assetTypesOpts)}</BadgeText>
+                        <BadgeText {...styles.greenBadgeText}>{getOptionLabel(s, optionsState.assetTypesOpts)}</BadgeText>
                       </Badge>
                     ))}
                   </HStack>
@@ -545,7 +526,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.socialEmpowerment', 'Social Empowerment Sessions')}
                 </Text>
                 <Select
-                  options={socialEmpowermentOpts}
+                  options={optionsState.socialEmpowermentOpts}
                   value={socialEmpowerment}
                   onChange={setSocialEmpowerment}
                   placeholder={t('profile.selectSocialEmpowerment', 'Select social empowerment sessions...')}
@@ -558,7 +539,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.financialInclusion', 'Financial Inclusion Sessions')}
                 </Text>
                 <Select
-                  options={financialInclusionOpts}
+                  options={optionsState.financialInclusionOpts}
                   value={financialInclusion}
                   onChange={setFinancialInclusion}
                   placeholder={t('profile.selectFinancialInclusion', 'Select financial inclusion sessions...')}
@@ -571,7 +552,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.livelihoods', 'Livelihoods Sessions')}
                 </Text>
                 <Select
-                  options={livelihoodsOpts}
+                  options={optionsState.livelihoodsOpts}
                   value={livelihoods}
                   onChange={setLivelihoods}
                   placeholder={t('profile.selectLivelihoods', 'Select livelihoods sessions...')}
@@ -589,7 +570,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.specialAttention', 'Special Attention Tags')}
                 </Text>
                 <Select
-                  options={specialAttentionOpts}
+                  options={optionsState.specialAttentionOpts}
                   value={specialAttention}
                   onChange={setSpecialAttention}
                   placeholder={t('profile.selectSpecialAttention', 'Select special attention tags...')}
@@ -602,7 +583,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.immediateAttention', 'Immediate Attention Tags')}
                 </Text>
                 <Select
-                  options={immediateAttentionOpts}
+                  options={optionsState.immediateAttentionOpts}
                   value={immediateAttention}
                   onChange={setImmediateAttention}
                   placeholder={t('profile.selectImmediateAttention', 'Select immediate attention tags...')}
@@ -619,7 +600,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 {t('profile.assetTypes', 'Asset Types Offered')}
               </Text>
               <Select
-                options={assetTypesOpts}
+                options={optionsState.assetTypesOpts}
                 value={assetTypes}
                 onChange={setAssetTypes}
                 placeholder={t('profile.selectAssetTypes', 'Select asset types...')}
