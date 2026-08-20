@@ -149,10 +149,12 @@ const formatResourceName = (file: MaterialItem) => {
 
 interface CardProps {
   item: TrainingSessionItem;
-  getItemDetails?: ( item: any ) => void
+  getItemDetails?: ( item: any ) => void;
+  provinces?: any[];
+  sites?: any[];
 }
 
-const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails }) => {
+const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, provinces, sites }) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const navigation = useNavigation();
@@ -175,30 +177,6 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails }) => {
     }
     return false;
   });
-
-
-  const displayDate = item.start_date
-    ? moment(
-      typeof item.start_date === 'number' || !isNaN(Number(item.start_date))
-        ? Number(item.start_date) * 1000
-        : item.start_date
-    ).format('ddd, D MMM YYYY')
-    : '--';
-
-  const displayTime =
-    item.start_date && item.end_date
-      ? `${moment(
-        typeof item.start_date === 'number' || !isNaN(Number(item.start_date))
-          ? Number(item.start_date) * 1000
-          : item.start_date
-      ).format('HH:mm')} - ${moment(
-        typeof item.end_date === 'number' || !isNaN(Number(item.end_date))
-          ? Number(item.end_date) * 1000
-          : item.end_date
-      ).format('HH:mm')}`
-      : '';
-
-  const dateTime = displayTime ? `${displayDate}, ${displayTime}` : displayDate;
 
   const deliveryMode = getDeliveryMode(item);
   const deliveryBadge = getDeliveryBadge(deliveryMode);
@@ -401,15 +379,22 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails }) => {
         <HStack {...styles.headerMetaHStack}>
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="Calendar" {...styles.cardMetaIconProps} />
-            <Text {...styles.cardMetaSmText}>{dateTime}</Text>
+            <Text {...styles.cardMetaSmText}>
+              {/* @ts-ignore */}
+              {moment.unix(item.start_date).format('ddd, D MMM YYYY HH:mm')} -
+              {/* @ts-ignore */}
+              {moment.unix(item.end_date).format('HH:mm')}
+            </Text>
           </HStack>
-
-          {(deliveryMode === 'offline' || deliveryMode === 'hybrid') && (
-            <HStack {...styles.trainingMetaItemHStack}>
-              <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
-              <Text {...styles.cardMetaSmText}>{locationValue || '-'}</Text>
-            </HStack>
-          )}
+          <HStack {...styles.trainingMetaItemHStack}>
+            <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
+            <Text {...styles.cardMetaSmText}>{provinces?.find((e:any) => e._id === item.provinces?.[0])?.name || '-'}</Text>
+            {item?.sites && 
+              <Text {...styles.cardMetaSmText}>
+                {sites?.filter((e:any) => item?.sites?.includes(e._id))?.map(e => e.name).join(", ") || '-'}
+              </Text>
+            }
+          </HStack>
 
           {(deliveryMode === 'online' || deliveryMode === 'hybrid') && (
             <Pressable

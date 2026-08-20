@@ -49,6 +49,7 @@ const App = (): React.JSX.Element => {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
+  const [allSiteOptions, setAllSiteOptions] = useState();
   const [siteOptions, setSiteOptions] = useState(DEFAULT_SITE_OPTIONS);
   // Listing state
   const [items, setItems] = useState<any[]>([]);
@@ -111,6 +112,8 @@ const App = (): React.JSX.Element => {
         const provincesData = await getProvincesList();
         if (isMounted && provincesData && provincesData.length > 0) {
           setProvincesList(provincesData);
+          const {result : {data}} = await getSitesByProvince();
+          setAllSiteOptions(data || []);
           const dynamicProvinces = [
             { label: 'All Provinces', value: 'all-provinces' },
             ...provincesData.map((p: any) => ({
@@ -144,19 +147,9 @@ const App = (): React.JSX.Element => {
       }
 
       try {
-        const selectedProvinceObj = provincesList.find(
-          (p: any) =>
-            p.externalId === selectedProv ||
-            p._id === selectedProv ||
-            p.name?.toLowerCase() === selectedProv?.toLowerCase()
-        );
-
-        const provinceIdParam = selectedProvinceObj
-          ? selectedProvinceObj._id || selectedProvinceObj.externalId
-          : selectedProv;
 
         const res = await getSitesByProvince({
-          provinceId: provinceIdParam,
+          provinceId: selectedProv,
           page: 1,
           limit: 100,
         });
@@ -271,7 +264,7 @@ const App = (): React.JSX.Element => {
       )
     );
   }
-  
+  console.log(allSiteOptions);
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -322,7 +315,9 @@ const App = (): React.JSX.Element => {
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
               _card={{
-                getItemDetails: handleGetDetails
+                getItemDetails: handleGetDetails,
+                provinces : provincesList,
+                sites: allSiteOptions
               }}
             />
           )}
