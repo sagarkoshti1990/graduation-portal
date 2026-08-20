@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { VStack, HStack, Text, Box, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable, Input, InputField } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
@@ -61,72 +61,156 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
-  // Dynamic Options States fetched directly from API/DB
-  const [categoryOpts, setCategoryOpts] = useState<{ value: string; label: string }[]>([]);
-  const [socialEmpowermentOpts, setSocialEmpowermentOpts] = useState<{ value: string; label: string }[]>([]);
-  const [financialInclusionOpts, setFinancialInclusionOpts] = useState<{ value: string; label: string }[]>([]);
-  const [livelihoodsOpts, setLivelihoodsOpts] = useState<{ value: string; label: string }[]>([]);
-  const [specialAttentionOpts, setSpecialAttentionOpts] = useState<{ value: string; label: string }[]>([]);
-  const [immediateAttentionOpts, setImmediateAttentionOpts] = useState<{ value: string; label: string }[]>([]);
-  const [assetTypesOpts, setAssetTypesOpts] = useState<{ value: string; label: string }[]>([]);
+  // Dynamic Options fetched directly from API/DB, grouped into a single state object
+  type OptionItem = { value: string; label: string };
+  interface CategoryOptionsState {
+    category: OptionItem[];
+    socialEmpowerment: OptionItem[];
+    financialInclusion: OptionItem[];
+    livelihoods: OptionItem[];
+    specialAttention: OptionItem[];
+    immediateAttention: OptionItem[];
+    assetTypes: OptionItem[];
+  }
+  const [optionsState, setOptionsState] = useState<CategoryOptionsState>({
+    category: [],
+    socialEmpowerment: [],
+    financialInclusion: [],
+    livelihoods: [],
+    specialAttention: [],
+    immediateAttention: [],
+    assetTypes: [],
+  });
+  const {
+    category: categoryOpts,
+    socialEmpowerment: socialEmpowermentOpts,
+    financialInclusion: financialInclusionOpts,
+    livelihoods: livelihoodsOpts,
+    specialAttention: specialAttentionOpts,
+    immediateAttention: immediateAttentionOpts,
+    assetTypes: assetTypesOpts,
+  } = optionsState;
 
-  // Fetch Category (support_offering_type) and Sub-category Options from API on mount
+  const formatOptions = (
+    res: PromiseSettledResult<any[]>,
+    fallback: OptionItem[] = []
+  ) => {
+    if (res.status === 'fulfilled' && Array.isArray(res.value) && res.value.length > 0) {
+      return res.value.map((item: any) => ({
+        value: item.value,
+        label: item.label,
+      }));
+    }
+    return fallback;
+  };
+
+  // Tracks which option groups have already been fetched, so we never re-fetch the same group twice
+  const fetchedGroupsRef = useRef<{ category: boolean; training: boolean; linkage: boolean; asset: boolean }>({
+    category: false,
+    training: false,
+    linkage: false,
+    asset: false,
+  });
+
+  // Fetch only the main Category (support_offering_type) list on mount - it's needed to render the select
   useEffect(() => {
     let isMounted = true;
 
-    const fetchAllCategoryOptions = async () => {
+    const fetchCategoryOptions = async () => {
+      if (fetchedGroupsRef.current.category) return;
       try {
-        const [
-          catRes,
-          socialRes,
-          finRes,
-          livRes,
-          specRes,
-          immRes,
-          assetRes,
-        ] = await Promise.allSettled([
-          getSupportCategories(),
-          getSocialEmpowermentOptions(),
-          getFinancialInclusionOptions(),
-          getLivelihoodsOptions(),
-          getSpecialAttentionOptions(),
-          getImmediateAttentionOptions(),
-          getAssetTypesOptions(),
-        ]);
-
+        const catRes = await getSupportCategories();
         if (!isMounted) return;
-
-        const formatOptions = (
-          res: PromiseSettledResult<any[]>,
-          fallback: { value: string; label: string }[] = []
-        ) => {
-          if (res.status === 'fulfilled' && Array.isArray(res.value) && res.value.length > 0) {
-            return res.value.map((item: any) => ({
-              value: item.value,
-              label: item.label,
-            }));
-          }
-          return fallback;
-        };
-
-        setCategoryOpts(formatOptions(catRes));
-        setSocialEmpowermentOpts(formatOptions(socialRes));
-        setFinancialInclusionOpts(formatOptions(finRes));
-        setLivelihoodsOpts(formatOptions(livRes));
-        setSpecialAttentionOpts(formatOptions(specRes));
-        setImmediateAttentionOpts(formatOptions(immRes));
-        setAssetTypesOpts(formatOptions(assetRes));
+        fetchedGroupsRef.current.category = true;
+        setOptionsState(prev => ({
+          ...prev,
+          category: formatOptions({ status: 'fulfilled', value: catRes } as PromiseSettledResult<any[]>),
+        }));
       } catch (err) {
-        console.error('Error fetching support category options from API:', err);
+        console.error('Error fetching support categories from API:', err);
       }
     };
 
-    fetchAllCategoryOptions();
+    fetchCategoryOptions();
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // Fetch sub-category options lazily - only when the matching category is actually selected,
+  // and only once per group (cached in optionsState afterwards).
+  useEffect(() => {
+    if (!selectedCategory) return;
+    let isMounted = true;
+
+    const fetchTrainingOptions = async () => {
+      if (fetchedGroupsRef.current.training) return;
+      try {
+        const [socialRes, finRes, livRes] = await Promise.allSettled([
+          getSocialEmpowermentOptions(),
+          getFinancialInclusionOptions(),
+          getLivelihoodsOptions(),
+        ]);
+        if (!isMounted) return;
+        fetchedGroupsRef.current.training = true;
+        setOptionsState(prev => ({
+          ...prev,
+          socialEmpowerment: formatOptions(socialRes),
+          financialInclusion: formatOptions(finRes),
+          livelihoods: formatOptions(livRes),
+        }));
+      } catch (err) {
+        console.error('Error fetching training options from API:', err);
+      }
+    };
+
+    const fetchLinkageOptions = async () => {
+      if (fetchedGroupsRef.current.linkage) return;
+      try {
+        const [specRes, immRes] = await Promise.allSettled([
+          getSpecialAttentionOptions(),
+          getImmediateAttentionOptions(),
+        ]);
+        if (!isMounted) return;
+        fetchedGroupsRef.current.linkage = true;
+        setOptionsState(prev => ({
+          ...prev,
+          specialAttention: formatOptions(specRes),
+          immediateAttention: formatOptions(immRes),
+        }));
+      } catch (err) {
+        console.error('Error fetching linkage options from API:', err);
+      }
+    };
+
+    const fetchAssetOptions = async () => {
+      if (fetchedGroupsRef.current.asset) return;
+      try {
+        const assetRes = await getAssetTypesOptions();
+        if (!isMounted) return;
+        fetchedGroupsRef.current.asset = true;
+        setOptionsState(prev => ({
+          ...prev,
+          assetTypes: formatOptions({ status: 'fulfilled', value: assetRes } as PromiseSettledResult<any[]>),
+        }));
+      } catch (err) {
+        console.error('Error fetching asset type options from API:', err);
+      }
+    };
+
+    if (isTrainingCategory(selectedCategory)) {
+      fetchTrainingOptions();
+    } else if (isLinkageCategory(selectedCategory)) {
+      fetchLinkageOptions();
+    } else if (isAssetCategory(selectedCategory)) {
+      fetchAssetOptions();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCategory]);
 
   const categoryOptions = useMemo(() => {
     return categoryOpts.filter(opt => {
