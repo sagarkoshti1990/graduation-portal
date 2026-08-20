@@ -1,8 +1,14 @@
 import { FeatureCardData } from '@app-types/components';
 
+export const SUPPORT_CATEGORIES = {
+  TRAINING: 'training',
+  ADDITIONAL_SERVICE: 'additional_service',
+  ASSET: 'asset',
+} as const;
+
 export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
   {
-    id: 'training',
+    id: SUPPORT_CATEGORIES.TRAINING,
     color: '#0284C7', // Blue color
     icon: 'GraduationCap',
     title: 'supportProvider.createSupport.cards.training.title',
@@ -10,7 +16,7 @@ export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
     navigationUrl: 'form-training-session',
   },
   {
-    id: 'additional-services',
+    id: SUPPORT_CATEGORIES.ADDITIONAL_SERVICE,
     color: '#7C3AED', // Purple color
     icon: 'Briefcase',
     title: 'supportProvider.createSupport.cards.additionalServices.title',
@@ -18,7 +24,7 @@ export const SUPPORT_PROVIDER_CARDS: FeatureCardData[] = [
     navigationUrl: 'create-additional-service',
   },
   {
-    id: 'assets',
+    id: SUPPORT_CATEGORIES.ASSET,
     color: '#16A34A', // Green color
     icon: 'Package',
     title: 'supportProvider.createSupport.cards.assets.title',
@@ -47,21 +53,21 @@ export const DEFAULT_SESSION_CONFIG = {
 
 export const REQUEST_SUPPORT_OPTIONS = [
   {
-    id: 'training',
+    id: SUPPORT_CATEGORIES.TRAINING,
     icon: 'Calendar',
     title: 'Session or Training',
     description: 'Request a training session',
     route: 'sessions-support/request',
   },
   {
-    id: 'additional-services',
+    id: SUPPORT_CATEGORIES.ADDITIONAL_SERVICE,
     icon: 'Wrench',
     title: 'Additional Service',
     description: 'Request a support service',
     route: 'create-additional-service',
   },
   {
-    id: 'assets',
+    id: SUPPORT_CATEGORIES.ASSET,
     icon: 'Box',
     title: 'Asset',
     description: 'Request equipment or resources',
