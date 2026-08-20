@@ -72,15 +72,7 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 value: '^[A-Z][a-z]*(?: [A-Z][a-z]*)*$',
                 message: {
                   key: 'errors.nameFormat',
-                  fallback: 'Each name must start with a capital letter',
-                },
-              },
-              {
-                rule: 'pattern',
-                value: '^[A-Z][a-z]*(?:[ \'-][A-Z][a-z]*)*$',
-                message: {
-                  key: 'errors.nameFormat',
-                  fallback: 'Each name must start with a capital letter',
+                  fallback: 'Name must start with a capital letter; numbers and symbols are not allowed',
                 },
               },
             ]
@@ -94,10 +86,44 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'emailPlaceholder', fallback: 'user@skillssa.co.za' },
             inputProps: { keyboardType: 'email-address', autoCapitalize: 'none' },
             validation: [
-              { rule: 'required', message: { key: 'errors.emailRequired', fallback: 'Email address is required' } },
-              { rule: 'email', message: { key: 'errors.emailInvalid', fallback: 'Enter a valid email address' } },
-              { rule: 'maxLength', value: 254, message: { key: 'errors.emailLength', fallback: 'Email address is too long', } },
-              { rule: 'pattern', value: '^\\S(?:.*\\S)?$', message: { key: 'errors.emailSpaces', fallback: 'Email must not start or end with spaces', } },
+              {
+                rule: 'required',
+                message: {
+                  key: 'errors.emailRequired',
+                  fallback: 'Email address is required',
+                },
+              },
+              {
+                rule: 'email',
+                message: {
+                  key: 'errors.emailInvalid',
+                  fallback: 'Enter a valid email address',
+                },
+              },
+              {
+                rule: 'maxLength',
+                value: 254,
+                message: {
+                  key: 'errors.emailLength',
+                  fallback: 'Email address is too long',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^\\S(?:.*\\S)?$',
+                message: {
+                  key: 'errors.emailSpaces',
+                  fallback: 'Email must not start or end with spaces',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[A-Za-z]',
+                message: {
+                  key: 'errors.emailFirstLetter',
+                  fallback: 'Email must start with a letter',
+                },
+              },
             ],
           },
         ],
