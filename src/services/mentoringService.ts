@@ -128,3 +128,59 @@ export const getSessionDetails = async (sessionId: string | number): Promise<any
 export const getAdditionalServiceCategories = async (): Promise<MentoringOption[]> => {
   return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.ADDITIONAL_SERVICE_CATEGORIES });
 };
+
+/**
+ * Get Support Categories list
+ */
+export const getSupportCategories = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.SUPPORT_OFFERING_TYPE });
+};
+
+/**
+ * Get Social Empowerment options
+ */
+export const getSocialEmpowermentOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.SOCIAL_EMPOWERMENT });
+};
+
+/**
+ * Get Financial Inclusion options
+ */
+export const getFinancialInclusionOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.FINANCIAL_INCLUSION });
+};
+
+/**
+ * Get Livelihoods options
+ */
+export const getLivelihoodsOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.LIVELIHOODS });
+};
+
+/**
+ * Get Special Attention tags options
+ */
+export const getSpecialAttentionOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.SPECIAL_ATTENTION });
+};
+
+/**
+ * Get Immediate Attention tags options
+ */
+export const getImmediateAttentionOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.IMMEDIATE_ATTENTION });
+};
+
+/**
+ * Get Asset Types options
+ */
+export const getAssetTypesOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.ASSET_TYPES });
+};
+
+/**
+ * Get Provider Type options
+ */
+export const getProviderTypeOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.PROVIDER_TYPE });
+};

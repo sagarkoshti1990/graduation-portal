@@ -23,7 +23,9 @@ import {
   getProvincesList,
   getSitesByProvince,
 } from '../../../services/usersService';
-import { getMentoringEntities } from '../../../services/mentoringService';
+import { getProviderTypeOptions } from '../../../services/mentoringService';
+import { MENTORING_ENTITY_TYPES } from '@constants/SP_MENU_OPTIONS';
+import { SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
 import { BASIC_INFO_SCHEMA } from './constants/profileSchema/BASIC_INFO_SCHEMA';
 import { CONTACT_PERSON_SCHEMA } from './constants/profileSchema/CONTACT_PERSON_SCHEMA';
@@ -65,11 +67,11 @@ const OrganizationProfile = (): React.JSX.Element => {
     const loadProfileData = async () => {
       // Fetch dynamic provider_type options from mentoring API
       try {
-        const res: any = await getMentoringEntities({ value: 'provider_type' });
+        const res: any = await getProviderTypeOptions();
         if (res && res.length > 0) {
           const formatted = res.map((item: any) => ({
-            value: item.value || item.label || item.name || item,
-            label: item.label || item.name || item.value || item,
+            value: item.value,
+            label: item.label
           }));
           setProviderTypeOptions(formatted);
         }
@@ -137,15 +139,23 @@ const OrganizationProfile = (): React.JSX.Element => {
           ),
         };
 
-        const rawCov = getField('provinceCoverage', []);
+        const rawProvinces = getField('provinces', []);
+        const rawSites = getField('sites', []);
+        const rawCov = getField('provinceCoverage', null);
         const rawCat = getField(
           'supportCategories',
           DEFAULT_CATEGORIES,
         );
 
-        let cov = [];
+        let cov: CoverageItem[] = [];
 
-        if (rawCov) {
+        if (Array.isArray(rawProvinces) && rawProvinces.length > 0) {
+          const siteIds = Array.isArray(rawSites) ? rawSites : [];
+          cov = rawProvinces.map((pId: string) => ({
+            provinceId: String(pId),
+            siteIds,
+          }));
+        } else if (rawCov) {
           if (typeof rawCov === 'object') {
             cov = rawCov;
           } else {
@@ -161,22 +171,45 @@ const OrganizationProfile = (): React.JSX.Element => {
           cov = [];
         }
 
-        let cat = DEFAULT_CATEGORIES;
+        let cat: any[] = [];
 
-        if (rawCat) {
-          if (typeof rawCat === 'object') {
-            cat = rawCat;
-          } else {
-            try {
-              cat = JSON.parse(rawCat);
-            } catch {
-              cat = DEFAULT_CATEGORIES;
-            }
+        if (rawCat && Array.isArray(rawCat) && rawCat.length > 0) {
+          cat = rawCat;
+        } else if (rawCat && typeof rawCat === 'string') {
+          try {
+            cat = JSON.parse(rawCat);
+          } catch {
+            cat = [];
           }
         }
 
-        if (!Array.isArray(cat)) {
-          cat = DEFAULT_CATEGORIES;
+        if (!Array.isArray(cat) || cat.length === 0) {
+          const rawCategories = getField('categories', []);
+          if (Array.isArray(rawCategories) && rawCategories.length > 0) {
+            cat = rawCategories.map((cName: string) => {
+              const item: any = {
+                id: `${cName}-${Date.now()}`,
+                categoryName: cName,
+              };
+              if (cName === SUPPORT_CATEGORIES.ASSET) {
+                item.assetsData = { assetTypes: getField(MENTORING_ENTITY_TYPES.ASSET_TYPES, []) };
+              } else if (cName === SUPPORT_CATEGORIES.ADDITIONAL_SERVICE) {
+                item.linkageData = {
+                  specialAttention: getField(MENTORING_ENTITY_TYPES.SPECIAL_ATTENTION, []),
+                  immediateAttention: getField(MENTORING_ENTITY_TYPES.IMMEDIATE_ATTENTION, []),
+                };
+              } else if (cName === SUPPORT_CATEGORIES.TRAINING) {
+                item.trainingData = {
+                  livelihoods: getField(MENTORING_ENTITY_TYPES.LIVELIHOODS, []),
+                  socialEmpowerment: getField(MENTORING_ENTITY_TYPES.SOCIAL_EMPOWERMENT, []),
+                  financialInclusion: getField(MENTORING_ENTITY_TYPES.FINANCIAL_INCLUSION, []),
+                };
+              }
+              return item;
+            });
+          } else {
+            cat = [];
+          }
         }
 
         setValues(mapped);
@@ -276,6 +309,62 @@ try {
     ),
   );
 
+  const categories = Array.from(
+    new Set(
+      supportCategories
+        .map(item => item.categoryName)
+        .filter(Boolean),
+    ),
+  );
+
+  const livelihoods = Array.from(
+    new Set(
+      supportCategories
+        .flatMap(item => item.trainingData?.livelihoods)
+        .filter(Boolean),
+    ),
+  );
+
+  const social_empowerment = Array.from(
+    new Set(
+      supportCategories
+        .flatMap(item => item.trainingData?.socialEmpowerment)
+        .filter(Boolean),
+    ),
+  );
+
+  const financial_inclusion = Array.from(
+    new Set(
+      supportCategories
+        .flatMap(item => item.trainingData?.financialInclusion)
+        .filter(Boolean),
+    ),
+  );
+
+  const special_attention = Array.from(
+    new Set(
+      supportCategories
+        .flatMap(item => item.linkageData?.specialAttention)
+        .filter(Boolean),
+    ),
+  );
+
+  const immediate_attention = Array.from(
+    new Set(
+      supportCategories
+        .flatMap(item => item.linkageData?.immediateAttention)
+        .filter(Boolean),
+    ),
+  );
+
+  const asset_types = Array.from(
+    new Set(
+      supportCategories
+        .flatMap(item => item.assetsData?.assetTypes)
+        .filter(Boolean),
+    ),
+  );
+
   const payload = {
     name: values.contactPersonName,
     about: values.name,
@@ -283,11 +372,18 @@ try {
     phone: values.contactPhone,
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
     meta: {
+      provinces,
+      sites,
+      categories,
+      livelihoods,
+      social_empowerment,
+      financial_inclusion,
+      special_attention,
+      immediate_attention,
+      asset_types,
       organizationType: values.organizationType,
       agreementMoU: resolvedValues.agreementMoU,
       organisationCredentials: resolvedValues.organisationCredentials,
-      provinceCoverage,
-      supportCategories,
     },
   };
 
