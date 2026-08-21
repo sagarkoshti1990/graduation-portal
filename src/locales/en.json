@@ -2214,7 +2214,21 @@
     "sessionsSupport": {
       "subtitle": "Browse sessions, additional services, and assets available in your province and site",
       "createSession": "Create A Session",
-      "requestSupport": "Request Support"
+      "requestSupport": "Request New Support",
+      "sessionsFound": "sessions found",
+      "mySessionCard": {
+        "assignParticipants": "Assign Participants",
+        "manageSession": "Manage Session",
+        "participants": "participants"
+      },
+      "mySessionsDescription": "Sessions created and conducted by you.",
+      "emptyState": {
+        "title": "No history yet",
+        "description": "Completed support will appear here"
+      },
+      "alerts": {
+        "assignSuccess": "{{count}} participant(s) assigned to session successfully."
+      }
     },
     "createSession": {
       "title": "Create a Session",
@@ -2410,6 +2424,11 @@
     "taskConflictReasonEvidence": "Online evidence differs from the offline evidence.",
     "taskConflictReasonMultiple": "Multiple differences detected."
   },
+  "schemaformrenderer": {
+    "file" : {
+      "fileSize" : "Max {{ size }} MB"
+    }
+  },
   "supportProvider": {
     "header": {
       "gblPartnerPlatform": "GBL Partner Platform"
@@ -2438,9 +2457,9 @@
       "subtitle": "Manage all published support — training sessions, services, and assets",
       "createNew": "Create New",
       "tabs": {
-        "trainingsAndSessions": "Trainings & Sessions ({{count}})",
-        "additionalServices": "Additional Services ({{count}})",
-        "assets": "Assets ({{count}})"
+        "trainingsAndSessions": "Trainings & Sessions",
+        "additionalServices": "Additional Services",
+        "assets": "Assets"
       },
       "filters": {
         "allStatuses": "All Statuses",
@@ -2455,6 +2474,8 @@
         "draft": "Draft"
       },
       "cards": {
+        "hideDetails": "Hide Details",
+        "viewDetails": "View Details",
         "requestedBy": "Requested by: {{name}}",
         "copySession": "Copy Session",
         "copyOffering": "Copy Offering",

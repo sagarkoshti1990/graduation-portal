@@ -44,6 +44,17 @@ export type FormModeType = typeof FORM_MODE[keyof typeof FORM_MODE];
 export const SESSION_STATUS = {
   DRAFT: 'DRAFT',
   PUBLISHED: 'PUBLISHED',
+  COMPLETED: "COMPLETED",
+  LIVE: "LIVE"
+} as const;
+
+export const SESSION_STATUS_LABEL = {
+  DRAFT: "Draft",
+  PUBLISHED: "Published",
+  COMPLETED: "Completed",
+  UPCOMING: "Upcoming",
+  IN_PROGRESS: "In progress",
+  LIVE: "In progress"
 } as const;
 
 export const DEFAULT_SESSION_CONFIG = {
@@ -84,4 +95,107 @@ export const RECURRING_OPTIONS = [
   { value: 'true', label: 'Yes — recurring session' },
   { value: 'false', label: 'No — one-off session' },
 ] as const;
+
+export const STATUS_OPTIONS = [
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.allStatuses',
+    value: 'all-statuses',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.upcoming',
+    value: 'Upcoming',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.inProgress',
+    value: 'In progress',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.completed',
+    value: 'Completed',
+  },
+  {
+    labelKey: 'supportProvider.supportOfferings.statusOptions.draft',
+    value: 'Draft',
+  },
+];
+
+export const DEFAULT_PROVINCE_OPTIONS = [{ label: 'All Provinces', value: 'all-provinces' }];
+
+export const DEFAULT_SITE_OPTIONS = [{ label: 'All Sites', value: 'all-sites' }];
+
+export const getSupportOfferingTabs = (t: any, counts: any) => [
+  {
+    key: 'sessions',
+    label: t(
+      'supportProvider.supportOfferings.tabs.trainings',
+      'Trainings & Sessions'
+    ),
+    count: counts.sessions,
+    icon: 'GraduationCap',
+    children: [
+      {
+        key: 'browse_sessions',
+        label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions'),
+      },
+      {
+        key: 'my_requests',
+        label: t('lc.sessionsSupport.tabs.myRequests', 'My Requests'),
+      },
+      {
+        key: 'my_sessions',
+        label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions'),
+      },
+      {
+        key: 'history',
+        label: t('lc.sessionsSupport.tabs.history', 'History'),
+      },
+    ],
+  },
+  {
+    key: 'additional_services',
+    label: t(
+      'supportProvider.supportOfferings.tabs.additionalServices',
+      'Additional Services'
+    ),
+    count: counts.additional_services,
+    icon: 'Briefcase',
+    children: [
+      {
+        key: 'browse_sessions',
+        label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions'),
+      },
+      {
+        key: 'my_sessions',
+        label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions'),
+      },
+      {
+        key: 'history',
+        label: t('lc.sessionsSupport.tabs.history', 'History'),
+      },
+    ],
+  },
+  {
+    key: 'assets',
+    label: t(
+      'supportProvider.supportOfferings.tabs.assets',
+      'Assets'
+    ),
+    count: counts.assets,
+    icon: 'Box',
+    children: [
+      {
+        key: 'browse_sessions',
+        label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions'),
+      },
+      {
+        key: 'my_sessions',
+        label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions'),
+      },
+      {
+        key: 'history',
+        label: t('lc.sessionsSupport.tabs.history', 'History'),
+      },
+    ],
+  },
+];
 
