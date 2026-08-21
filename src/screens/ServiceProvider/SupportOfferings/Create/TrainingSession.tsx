@@ -42,8 +42,8 @@ const App = (): React.JSX.Element => {
   const [isLoading, setIsLoading] = useState(true);
   const [lodingButton, setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
-  const { isProfileComplete, isCardAllowed, allowedSubOptions } = useProfileCompletion();
-  const isAllowed = Boolean(isProfileComplete && isCardAllowed(SUPPORT_CATEGORIES.TRAINING));
+  const { isCardAllowed, allowedSubOptions } = useProfileCompletion();
+  const isAllowed = Boolean( isCardAllowed(SUPPORT_CATEGORIES.TRAINING));
 
   const { optionsMap } = useTrainingFormOptions({
     values,
@@ -169,7 +169,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  if (modeType === FORM_MODE.CREATE && !isProfileComplete && !isAllowed) {
+  if (modeType === FORM_MODE.CREATE && !isAllowed) {
     return (
       <NotFound
         message={t(

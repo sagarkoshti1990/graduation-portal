@@ -27,8 +27,8 @@ const App = (): React.JSX.Element => {
 
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  const { isProfileComplete, isCardAllowed } = useProfileCompletion();
-  const isAllowed = Boolean(isProfileComplete && isCardAllowed(SUPPORT_CATEGORIES.ADDITIONAL_SERVICE));
+  const { isCardAllowed } = useProfileCompletion();
+  const isAllowed = Boolean(isCardAllowed(SUPPORT_CATEGORIES.ADDITIONAL_SERVICE));
 
   const [provinces, setProvinces] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
@@ -128,7 +128,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  if (modeType === FORM_MODE.CREATE && isProfileComplete !== null && !isAllowed) {
+  if (modeType === FORM_MODE.CREATE && !isAllowed) {
     return (
       <NotFound
         message={t(

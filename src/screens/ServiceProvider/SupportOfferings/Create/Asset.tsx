@@ -16,8 +16,8 @@ const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  const { isProfileComplete, isCardAllowed } = useProfileCompletion();
-  const isAllowed = Boolean(isProfileComplete && isCardAllowed(SUPPORT_CATEGORIES.ASSET));
+  const { isCardAllowed } = useProfileCompletion();
+  const isAllowed = Boolean(isCardAllowed(SUPPORT_CATEGORIES.ASSET));
   
   const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
@@ -161,7 +161,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  if (!isProfileComplete && !isAllowed) {
+  if (!isAllowed) {
     return (
       <NotFound
         message={t(
