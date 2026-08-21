@@ -1327,6 +1327,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // ── File Upload ───────────────────────────────────────────────────────────────
   if (field.type === FORM_FIELD_TYPES.FILE) {
+    const maxFileSize = field.validation?.find(r => r.rule === 'fileSize')?.value || 0
     const isDisabled = isFieldDisabled || !!field.isReadOnly;
     const subLabelText = field.subLabel
       ? t(
@@ -1427,14 +1428,15 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             >
               {triggerLabel}
             </Text>
-
-            <Text
-              {...TYPOGRAPHY.caption}
-              color="$gray300"
-              textAlign="center"
-            >
-              Max 10 MB
-            </Text>
+            {maxFileSize && 
+              <Text
+                {...TYPOGRAPHY.caption}
+                color="$gray300"
+                textAlign="center"
+              >
+                {t('schemaformrenderer.file.fileSize', { size: maxFileSize })}
+              </Text>
+            }
           </VStack>
         </Pressable>
 

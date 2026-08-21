@@ -264,7 +264,7 @@ const App = (): React.JSX.Element => {
       )
     );
   }
-  console.log(allSiteOptions);
+  
   return (
     <VStack flex={1}>
       <SPTitleHeader

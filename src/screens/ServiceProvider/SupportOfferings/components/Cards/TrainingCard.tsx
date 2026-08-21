@@ -476,14 +476,16 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
               onPress={async () => {
                 if(!files) {
                   await getItemDetails?.(item)
+                } else {
+                  setFiles(null);
                 }
               }}
             >
               {/* @ts-ignore */}
               <ButtonText {...styles.detailsBtnText}>
                 {!!files
-                  ? t('supportProvider.supportOfferings.cards.hideDetails', 'Hide Details')
-                  : t('supportProvider.supportOfferings.cards.viewDetails', 'View Details')}
+                  ? t('supportProvider.supportOfferings.cards.hideDetails')
+                  : t('supportProvider.supportOfferings.cards.viewDetails')}
               </ButtonText>
             </Button>
           </HStack>
