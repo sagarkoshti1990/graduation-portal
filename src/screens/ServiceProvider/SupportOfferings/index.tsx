@@ -13,6 +13,7 @@ import { getProvincesList, getSitesByProvince } from '../../../services/usersSer
 import { getTrainingSessions, getAdditionalServices, getAssets, } from '../../../services/SupportOfferingsServices/supportOfferingsService';
 import type { ProvinceEntity } from '@app-types/Users';
 import logger from '@utils/logger';
+import { getSessionDetails } from '../../../services/mentoringService';
 
 export const STATUS_OPTIONS = [
   {
@@ -49,6 +50,7 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
+  const [allSiteOptions, setAllSiteOptions] = useState();
   const [siteOptions, setSiteOptions] = useState(DEFAULT_SITE_OPTIONS);
   // Listing state
   const [items, setItems] = useState<any[]>([]);
@@ -126,6 +128,8 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
         const provincesData = await getProvincesList();
         if (isMounted && provincesData && provincesData.length > 0) {
           setProvincesList(provincesData);
+          const { result: { data } } = await getSitesByProvince();
+          setAllSiteOptions(data || []);
           const dynamicProvinces = [
             { label: 'All Provinces', value: 'all-provinces' },
             ...provincesData.map((p: any) => ({
@@ -159,19 +163,9 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
       }
 
       try {
-        const selectedProvinceObj = provincesList.find(
-          (p: any) =>
-            p.externalId === selectedProv ||
-            p._id === selectedProv ||
-            p.name?.toLowerCase() === selectedProv?.toLowerCase()
-        );
-
-        const provinceIdParam = selectedProvinceObj
-          ? selectedProvinceObj._id || selectedProvinceObj.externalId
-          : selectedProv;
 
         const res = await getSitesByProvince({
-          provinceId: provinceIdParam,
+          provinceId: selectedProv,
           page: 1,
           limit: 100,
         });
@@ -217,7 +211,7 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
   }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site]);
 
   // Fetch listing data
-  const fetchData = useCallback(async () => {  
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -270,6 +264,20 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
       };
     }, [fetchData])
   );
+
+  const handleGetDetails = async (item: any) => {
+    const { result } = await getSessionDetails(item.id);
+    setItems(prevItems =>
+      prevItems.map((subItem: any) =>
+        subItem.id === item.id
+          ? {
+            ...subItem,
+            materials: result?.resources,
+          }
+          : subItem
+      )
+    );
+  }
 
   return (
     <VStack flex={1}>
@@ -364,7 +372,11 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
               isShowLoadMore={isShowLoadMore}
               onLoadMoreItems={onLoadMoreItems}
               isLoadingMore={_loading && page > 1}
-              isSessionsSupport={isSessionsSupport}
+              _card={{
+                getItemDetails: handleGetDetails,
+                provinces: provincesList,
+                sites: allSiteOptions
+              }}
             />
           )}
 

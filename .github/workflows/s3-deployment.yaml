@@ -19,7 +19,6 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: production   # optional: gate this with required reviewers if you have GH environments set up
     concurrency:
       group: s3-deploy-brac
       cancel-in-progress: false   # never cancel a mid-flight S3 sync/invalidation
@@ -38,10 +37,10 @@ jobs:
           echo "${{ secrets.QA_ENV_BRAC }}" > .env
 
       - name: Install dependencies
-        run: npm ci   # ci, not install — deterministic, respects lockfile
+        run: npm install --legacy-peer-deps   # ci, not install — deterministic, respects lockfile
 
       - name: Build
-        run: npm run build
+        run: npm run build:web
 
       # =========================
       # AWS Authentication (OIDC — no static keys)

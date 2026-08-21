@@ -12,10 +12,10 @@ import {
   getRecommendedFor,
   getSessionTypesByPillar,
   getDeliveryModes,
-  createSession,
+  requestSession,
   MentoringOption,
 } from '../../../services/mentoringService';
-import { valueMapping } from '@utils/supportProvider';
+import { requestSessionPayloadMapping } from '@utils/supportProvider';
 import { useTrainingFormOptions } from '@hooks';
 import styles from '../styles';
 
@@ -62,7 +62,6 @@ const RequestSessionScreen = (): React.JSX.Element => {
         setTargetAudience(resTarget.status === 'fulfilled' ? resTarget.value || [] : []);
         setDeliveryModes(resDeliveryModes.status === 'fulfilled' ? resDeliveryModes.value || [] : []);
       } catch (error: any) {
-        console.error('Error loading form data:', error);
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
       } finally {
         setIsLoading(false);
@@ -76,7 +75,10 @@ const RequestSessionScreen = (): React.JSX.Element => {
     (name: string, value: string, other?: any) => {
       setValues((prev: Record<string, any>) => {
         const next = { ...prev, [name]: value };
-        if (name === 'province') next.site = '';
+        if (name === 'provinces') {
+          next.provinces = value;
+          next.sites = [];
+        }
         if (name === 'categories') {
           next.idp_training_task = '';
           next.title = '';
@@ -93,9 +95,13 @@ const RequestSessionScreen = (): React.JSX.Element => {
   const handleSave = async (formValues: any, isDraft: boolean) => {
     try {
       setValues(formValues);
-      const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
 
-      await createSession(payload);
+      const payload: any = requestSessionPayloadMapping(
+        { ...formValues, isDraft },
+        optionsMap
+      );
+
+      await requestSession(payload);
 
       const successMsg = isDraft
         ? t('supportProvider.createSupport.training.alerts.draftSaved', 'Draft saved successfully!')
@@ -104,7 +110,6 @@ const RequestSessionScreen = (): React.JSX.Element => {
       showAlert('success', successMsg);
       navigation.navigate('sessions-support' as never);
     } catch (error: any) {
-      console.error('Error saving training session:', error);
       const errMsg =
         error?.data?.message ||
         error?.message ||

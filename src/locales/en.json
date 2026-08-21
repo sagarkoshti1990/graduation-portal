@@ -2424,6 +2424,11 @@
     "taskConflictReasonEvidence": "Online evidence differs from the offline evidence.",
     "taskConflictReasonMultiple": "Multiple differences detected."
   },
+  "schemaformrenderer": {
+    "file" : {
+      "fileSize" : "Max {{ size }} MB"
+    }
+  },
   "supportProvider": {
     "header": {
       "gblPartnerPlatform": "GBL Partner Platform"
@@ -2469,6 +2474,8 @@
         "draft": "Draft"
       },
       "cards": {
+        "hideDetails": "Hide Details",
+        "viewDetails": "View Details",
         "requestedBy": "Requested by: {{name}}",
         "copySession": "Copy Session",
         "copyOffering": "Copy Offering",
@@ -2549,7 +2556,8 @@
         }
       },
       "errors": {
-        "saveFailed": "Something went wrong while saving. Please try again."
+        "saveFailed": "Something went wrong while saving. Please try again.",
+        "incompleteWarning": "Please Complete your Profile before proceeding."
       }
     },
     "supportRequests": {

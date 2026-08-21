@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { VStack, HStack, Button, ButtonText, Modal, Text } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
-import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
+import { CREATE_USER_FORM_SCHEMA, INPUT_STYLE } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer, { validateSchema, } from '@components/SchemaFormRenderer';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince, updateOrgAdminUser, } from '../../services/usersService';
@@ -52,15 +52,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const editSchema = useMemo(
     () =>
-      CREATE_USER_FORM_SCHEMA.map(section => ({
-        ...section,
-        rows: section.rows.map(row => ({
-          ...row,
-          fields: row.fields.map(field =>
-            field.name === 'roleId' ? { ...field, disabled: mode === 'edit' } : field
-          ),
-        })),
-      })),
+      CREATE_USER_FORM_SCHEMA.map(section => {
+        const { hint, ...sectionWithoutHint } = section;
+        return {
+          ...sectionWithoutHint,
+          ...(mode === 'edit' && { hint }),
+          rows: section.rows.map(row => ({
+            ...row,
+            fields: row.fields.map(field =>
+              field.name === 'roleId'
+                ? { ...field, disabled: mode === 'edit' }
+                : field
+            ),
+          })),
+        };
+      }),
     [mode],
   );
 
@@ -405,7 +411,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     //   </VStack>
     // }
     >
-      <VStack space="md" width="100%">
+      <VStack space="md" width="100%" px="$1">
         {/* Content */}
         {profileLoading ? (
           <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" py="$4">
@@ -423,11 +429,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               mode={mode}
               isMobile={isMobile}
               t={t}
-              _input={{
-                variant: 'outline' as const,
-                size: 'sm' as const,
-                bg: '$faintBlue',
-              }}
+              _input={INPUT_STYLE}
             />
           </VStack>
         )}

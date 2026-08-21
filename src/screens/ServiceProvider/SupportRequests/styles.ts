@@ -626,7 +626,7 @@ export default {
     space: 'xs',
   } as const,
   coachInfoVStack1: {
-    bg:'$red100',
+    bg:'$gray100',
     borderRadius: '$lg',
     p: '$3',
   } as const,

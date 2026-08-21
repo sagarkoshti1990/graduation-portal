@@ -395,7 +395,6 @@ export const resetPassword = async (
   params: ResetPasswordRequest
 ): Promise<ResetPasswordResponse> => {
   try {
-    console.log('Reset password called for user:', params.username);
     // TODO: Replace this with actual API call when endpoint is available
     // Example:
     // const response = await api.post<ResetPasswordResponse>(
@@ -413,7 +412,6 @@ export const resetPassword = async (
         updatedAt: new Date().toISOString(),
       },
     };
-    console.log('Password reset successful (static response)');
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     return staticResponse;

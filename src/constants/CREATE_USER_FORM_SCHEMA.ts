@@ -11,10 +11,10 @@ import { FormSection } from "@components/SchemaFormRenderer/type";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const INPUT_STYLE = {
+export const INPUT_STYLE = {
   variant: 'outline' as const,
   size: 'sm' as const,
-  bg: '$faintBlue',
+  bg: '$bgSidebar',
 } as const;
 
 const TITLE_STYLE = {
@@ -44,7 +44,13 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             label: { key: 'name', fallback: 'Name' },
             placeholder: { key: 'namePlaceholder', fallback: 'Enter Name' },
             validation: [
-              { rule: 'required', message: { key: 'errors.nameRequired', fallback: 'Name is required' } },
+              {
+                rule: 'required',
+                message: {
+                  key: 'errors.nameRequired',
+                  fallback: 'Name is required',
+                },
+              },
               {
                 rule: 'minLength',
                 value: 2,
@@ -53,8 +59,23 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                   fallback: 'Name must be at least 2 characters',
                 },
               },
-              { rule: 'maxLength', value: 100, message: { key: 'errors.nameMax', fallback: 'Name is too long' } },
-            ],
+              {
+                rule: 'maxLength',
+                value: 100,
+                message: {
+                  key: 'errors.nameMax',
+                  fallback: 'Name is too long',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[A-Z][a-z]*(?: [A-Z][a-z]*)*$',
+                message: {
+                  key: 'errors.nameFormat',
+                  fallback: 'Name must start with a capital letter; numbers and symbols are not allowed',
+                },
+              },
+            ]
           },
           {
             name: 'email',
@@ -65,8 +86,44 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'emailPlaceholder', fallback: 'user@skillssa.co.za' },
             inputProps: { keyboardType: 'email-address', autoCapitalize: 'none' },
             validation: [
-              { rule: 'required', message: { key: 'errors.emailRequired', fallback: 'Email address is required' } },
-              { rule: 'email', message: { key: 'errors.emailInvalid', fallback: 'Enter a valid email address' } },
+              {
+                rule: 'required',
+                message: {
+                  key: 'errors.emailRequired',
+                  fallback: 'Email address is required',
+                },
+              },
+              {
+                rule: 'email',
+                message: {
+                  key: 'errors.emailInvalid',
+                  fallback: 'Enter a valid email address',
+                },
+              },
+              {
+                rule: 'maxLength',
+                value: 254,
+                message: {
+                  key: 'errors.emailLength',
+                  fallback: 'Email address is too long',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^\\S(?:.*\\S)?$',
+                message: {
+                  key: 'errors.emailSpaces',
+                  fallback: 'Email must not start or end with spaces',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[A-Za-z]',
+                message: {
+                  key: 'errors.emailFirstLetter',
+                  fallback: 'Email must start with a letter',
+                },
+              },
             ],
           },
         ],
@@ -81,7 +138,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { fallback: 'Enter username' },
             validation: [
               { rule: 'required', message: { key: 'errors.usernameRequired', fallback: 'Username is required' } },
-              { rule: 'minLength', value: 3, message: { key: 'errors.usernameMin', fallback: 'Username must be at least 3 characters' } },
+              {
+                rule: 'pattern',
+                value: '^(?![0-9]+$)[A-Za-z0-9_.@]+$',
+                message: {
+                  key: 'errors.usernameInvalid',
+                  fallback: 'Username can contain only letters, numbers, underscores, dots, and @',
+                },
+              },
             ],
           },
           {
@@ -101,10 +165,10 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               },
               {
                 rule: 'pattern',
-                value: '^[0-9]{20}$',
+                value: '^[0-9]{1,20}$',
                 message: {
                   key: 'errors.nationalIdInvalid',
-                  fallback: 'National ID must be exactly 20 digits',
+                  fallback: 'National ID must contain only digits and can be up to 20 digits',
                 },
               },
             ],
@@ -134,13 +198,13 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'tel',
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
-                placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 000' },
-                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
+                placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 0000' },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{9}$',
-                    message: { key: 'errors.phoneInvalid', fallback: 'Enter a valid only 9-digits phone number' },
+                    value: '^[0-9]{9,10}$',
+                    message: { key: 'errors.phoneInvalid', fallback: 'Phone number must be 9 or 10 digits' },
                   },
                 ],
               },
@@ -168,14 +232,14 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 type: 'tel',
                 required: false,
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
-                placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 000' },
+                placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 0000' },
                 _input: INPUT_STYLE,
-                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{9}$',
-                    message: { key: 'errors.altPhoneInvalid', fallback: 'Enter a valid only 9-digits phone number' },
+                    value: '^[0-9]{9,10}$',
+                    message: { key: 'errors.altPhoneInvalid', fallback: 'Alt phone number must be 9 or 10 digits' },
                   },
                 ],
               },
@@ -259,39 +323,39 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
         ],
       },
 
-      {
-        visibleWhen: { flag: 'isSupervisorOrLC' },
-        fields: [
-          {
-            name: 'employee_id',
-            type: 'text',
-            required: true,
-            visibleWhen: { flag: 'isSupervisorOrLC' },
-            label: { key: 'employeeId', fallback: 'Employee ID' },
-            placeholder: {
-              key: 'employeeIdPlaceholder',
-              fallback: 'Enter Employee ID',
-            },
-            validation: [
-              {
-                rule: 'required',
-                message: {
-                  key: 'errors.employeeIdRequired',
-                  fallback: 'Employee ID is required',
-                },
-              },
-              {
-                rule: 'pattern',
-                value: '^[A-Z]{3}[0-9]{5}$',
-                message: {
-                  key: 'errors.employeeIdInvalid',
-                  fallback: 'Enter a valid Employee ID (e.g. ADM00001)',
-                },
-              },
-            ],
-          },
-        ],
-      },
+      // {
+      //   visibleWhen: { flag: 'isSupervisorOrLC' },
+      //   fields: [
+      //     {
+      //       name: 'employee_id',
+      //       type: 'text',
+      //       required: true,
+      //       visibleWhen: { flag: 'isSupervisorOrLC' },
+      //       label: { key: 'employeeId', fallback: 'Employee ID' },
+      //       placeholder: {
+      //         key: 'employeeIdPlaceholder',
+      //         fallback: 'Enter Employee ID',
+      //       },
+      //       validation: [
+      //         {
+      //           rule: 'required',
+      //           message: {
+      //             key: 'errors.employeeIdRequired',
+      //             fallback: 'Employee ID is required',
+      //           },
+      //         },
+      //         {
+      //           rule: 'pattern',
+      //           value: '^[A-Z]{3}[0-9]{5}$',
+      //           message: {
+      //             key: 'errors.employeeIdInvalid',
+      //             fallback: 'Enter a valid Employee ID (e.g. ADM00001)',
+      //           },
+      //         },
+      //       ],
+      //     },
+      //   ],
+      // },
       {
         visibleWhen: { flag: 'isSupervisorOrLC' },
         fields: [
@@ -407,8 +471,20 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             icon: 'MapPin',
             label: { key: 'address', fallback: 'Address' },
             placeholder: { key: 'addressPlaceholder', fallback: 'Enter address' },
+            _input: {
+              borderWidth: '1 !important',
+              height: "auto",
+            },
             validation: [
               { rule: 'maxLength', value: 255, message: { key: 'errors.addressMax', fallback: 'Address is too long' } },
+              {
+                rule: 'pattern',
+                value: '^(?=.*[a-zA-Z0-9])[a-zA-Z0-9\\s,.\\/\\-\\#\\\'&()[\\]]+$',
+                message: {
+                  key: 'errors.addressInvalid',
+                  fallback: 'Address must contain at least one letter or number, and only allowed characters',
+                },
+              },
             ],
           },
         ],

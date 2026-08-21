@@ -8,11 +8,14 @@ import { ASSET_FORM_SCHEMA } from '@constants/ASSET_SCHEMA';
 import { useLanguage } from '@contexts/LanguageContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
 import { getProjectCategoryList } from '../../../../services/projectService';
+import { useProfileCompletion } from '@hooks';
+import NotFound from '@components/NotFound';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const { isProfileComplete } = useProfileCompletion();
   
   const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
@@ -137,7 +140,6 @@ const App = (): React.JSX.Element => {
 
   const handleSaveDraft = useCallback(async (formValues: any) => {
     try {
-      console.log('Saving draft with payload:', formValues);
       showAlert(
         'success',
         'supportProvider.assetForm.draftSuccessMessage',
@@ -155,6 +157,16 @@ const App = (): React.JSX.Element => {
       // @ts-ignore
       navigation.navigate('create-opportunity');
     }
+  }
+
+  if (isProfileComplete === false) {
+    return (
+      <NotFound
+        message={t(
+          'supportProvider.createSupport.errors.incompleteWarning'
+        )}
+      />
+    );
   }
 
   return (

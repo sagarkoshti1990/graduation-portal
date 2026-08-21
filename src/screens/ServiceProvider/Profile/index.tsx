@@ -23,6 +23,7 @@ import {
   getProvincesList,
   getSitesByProvince,
 } from '../../../services/usersService';
+import { getMentoringEntities } from '../../../services/mentoringService';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
 import { BASIC_INFO_SCHEMA } from './constants/profileSchema/BASIC_INFO_SCHEMA';
 import { CONTACT_PERSON_SCHEMA } from './constants/profileSchema/CONTACT_PERSON_SCHEMA';
@@ -52,44 +53,34 @@ const OrganizationProfile = (): React.JSX.Element => {
   
   const [saving, setSaving] = useState(false);
 
-  // Options map for select fields
+  // Options map state for select fields
+  const [providerTypeOptions, setProviderTypeOptions] = useState<{ value: string; label: string }[]>([]);
+
   const optionsMap = {
-    organizationTypes: [
-      { value: 'NGO', label: 'NGO' },
-      { value: 'Government agency', label: 'Government agency' },
-      { value: 'Private company', label: 'Private company' },
-      { value: 'Training provider', label: 'Training provider' },
-      { value: 'Service provider', label: 'Service provider' },
-      { value: 'Financial institution', label: 'Financial institution' },
-      { value: 'Others', label: 'Others' },
-    ],
+    organizationTypes: providerTypeOptions,
   };
 
-  // Fetches and parses the logged-in user's organization profile on mount.
+  // Fetches dynamic options & logged-in user's organization profile on mount.
   useEffect(() => {
-    if (!user?.id) {
-      const emptyValues = {
-        name: user?.name || '',
-        organizationType: [],
-        contactPersonName: user?.name || '',
-        contactEmail: user?.email || '',
-        contactPhone: user?.phone || '',
-        phone_code: user?.phone_code || '27',
-        agreementMoU: null,
-        organisationCredentials: null,
-      };
+    const loadProfileData = async () => {
+      // Fetch dynamic provider_type options from mentoring API
+      try {
+        const res: any = await getMentoringEntities({ value: 'provider_type' });
+        if (res && res.length > 0) {
+          const formatted = res.map((item: any) => ({
+            value: item.value || item.label || item.name || item,
+            label: item.label || item.name || item.value || item,
+          }));
+          setProviderTypeOptions(formatted);
+        }
+      } catch (err) {
+        console.error('Error fetching provider_type options:', err);
+      }
 
-      setValues(emptyValues);
-      setOriginalValues(emptyValues);
-      setProvinceCoverage([]);
-      setOriginalProvinceCoverage([]);
-      setSupportCategories(DEFAULT_CATEGORIES);
-      setOriginalSupportCategories(DEFAULT_CATEGORIES);
-      return;
-    }
+      if (!user?.id) return;
 
-    getUserProfile(user.id)
-      .then((res: any) => {
+      try {
+        const res = await getUserProfile(user.id);
         // Don't overwrite unsaved changes while editing
         if (mode === 'edit') {
           return;
@@ -194,10 +185,12 @@ const OrganizationProfile = (): React.JSX.Element => {
         setOriginalProvinceCoverage(cov);
         setSupportCategories(cat);
         setOriginalSupportCategories(cat);
-      })
-      .catch((err: any) => {
+      } catch (err: any) {
         console.error('Error fetching org profile:', err);
-      });
+      }
+    };
+
+    loadProfileData();
   }, [user?.id]);
 
   // Updates a form field value and clears its validation error.
@@ -289,13 +282,12 @@ try {
     email: values.contactEmail,
     phone: values.contactPhone,
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
-    provinces,
-    sites,
-    supportCategories,
     meta: {
       organizationType: values.organizationType,
       agreementMoU: resolvedValues.agreementMoU,
       organisationCredentials: resolvedValues.organisationCredentials,
+      provinceCoverage,
+      supportCategories,
     },
   };
 

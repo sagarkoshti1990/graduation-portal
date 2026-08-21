@@ -64,6 +64,7 @@ import {
 } from './type';
 import { formatFileSize } from '../../project-player/utils/taskUtils';
 import moment from 'moment';
+import Styles from './Styles';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -1326,6 +1327,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // ── File Upload ───────────────────────────────────────────────────────────────
   if (field.type === FORM_FIELD_TYPES.FILE) {
+    const maxFileSize = field.validation?.find(r => r.rule === 'fileSize')?.value || 0
     const isDisabled = isFieldDisabled || !!field.isReadOnly;
     const subLabelText = field.subLabel
       ? t(
@@ -1426,51 +1428,26 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             >
               {triggerLabel}
             </Text>
-
-            <Text
-              {...TYPOGRAPHY.caption}
-              color="$gray300"
-              textAlign="center"
-            >
-              Max 10 MB
-            </Text>
+            {maxFileSize && 
+              <Text
+                {...TYPOGRAPHY.caption}
+                color="$gray300"
+                textAlign="center"
+              >
+                {t('schemaformrenderer.file.fileSize', { size: maxFileSize })}
+              </Text>
+            }
           </VStack>
         </Pressable>
 
         {previewItems.length > 0 && (
-          <VStack space="xs">
-            {previewItems.map(item => (
-              <HStack
-                key={item.key}
-                space="sm"
-                alignItems="center"
-                borderWidth={1}
-                borderColor="$borderColor"
-                borderRadius="$xl"
-                p="$2.5"
-                justifyContent='space-between'
-              >
-                <HStack space='md'>
-                  {item.isImage && item.previewUri ? (
-                    <Image
-                      source={{ uri: item.previewUri }}
-                      alt={item.name}
-                      width={32}
-                      height={32}
-                      borderRadius={4}
-                    />
-                  ) : (
-                    <Box bg="$primary300" p="$2.5" borderRadius="$xl">
-                      <LucideIcon name="FileText" size={20} color="$primary500" />
-                    </Box>
-                  )}
-                  <VStack>
-                    <Text
-                      {...TYPOGRAPHY.bodySmall}
-                      color="$textForeground"
-                      flex={1}
-                      numberOfLines={1}
-                    >
+          <VStack {...Styles.filesListVStack}>
+            {previewItems.map((item: any, idx) => (
+              <Box key={idx} {...styles.resourceCard}>
+                <HStack {...styles.fileCardOuterHStack}>
+                  <HStack {...styles.fileCardInnerHStack}>
+                    <LucideIcon name="FileText" {...styles.cardFileTextIconProps} />
+                    <Text {...styles.resourceFileNameText} numberOfLines={1} ellipsizeMode="tail">
                       {item.name}
                     </Text>
                     <Text
@@ -1481,12 +1458,12 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
                     >
                       {formatFileSize(item?.raw?.size || 0)}
                     </Text>
-                  </VStack>
+                  </HStack>
+                  <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
+                    <LucideIcon name="X" size={16} color="$textMutedForeground" />
+                  </Pressable>
                 </HStack>
-                <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
-                  <LucideIcon name="X" size={16} color="$textMutedForeground" />
-                </Pressable>
-              </HStack>
+              </Box>
             ))}
           </VStack>
         )}
@@ -2651,7 +2628,7 @@ export const RenderRow = memo(
           field.type === FORM_FIELD_TYPES.GROUP &&
           field.fields
         ) {
-          return field.fields;
+          return field;
         }
 
         return [field];
@@ -2872,25 +2849,37 @@ const HintDisplay: React.FC<{
  * isn't duplicated.
  */
 function formatFieldValueForDisplay(
-  rawValue: any,
-  filed: FormField | undefined,
+  values: any,
+  field: (FormField & { fields?: FormField[] }) | undefined,
   optionsMap: OptionsMap,
 ): string {
+
+  let rawValue = field?.name ? values[field?.name] : undefined;
+  if (!isValuePresent(rawValue) && field?.defaultValue) {
+    rawValue = field.defaultValue;
+  }
+  
   const resolveLabel = (v: any): string => {
-    if (filed?.displayFormat) {
-      const [type, format] = filed?.displayFormat?.split("@")
+    if (field?.displayFormat) {
+      const [type, format] = field?.displayFormat?.split("@")
       if (type === "dateFormat") {
-        if (filed?.valueFormat) {
-          return moment(v, filed?.valueFormat).format(format)
+        if (field?.valueFormat) {
+          return moment(v, field?.valueFormat).format(format)
         }
         return moment(v).format(format)
       }
     }
-    const option = filed?.optionsSource
-      ? optionsMap[filed?.optionsSource]?.find(o => o.value === v)
+    const option = field?.optionsSource
+      ? optionsMap[field?.optionsSource]?.find(o => o.value === v)
       : undefined;
     return option?.label || String(v);
   };
+
+  if(field?.type === FORM_FIELD_TYPES.GROUP) {
+    let newValue:string[] = []
+    field?.fields?.forEach((item:FormField | undefined) => newValue.push(item?.name && values[item?.name] ? resolveLabel(values[item?.name]) : '-'))
+    return newValue.join(" ")
+  }
 
   if (Array.isArray(rawValue)) {
     if (rawValue.length === 0) return '-';
@@ -2933,13 +2922,8 @@ const ViewFieldDisplay: React.FC<ViewFieldDisplayProps> = memo(({
     )
     : field.name ?? '-';
 
-  let rawValue = field.name ? values[field.name] : undefined;
-  if (!isValuePresent(rawValue) && targetField?.defaultValue) {
-    rawValue = targetField.defaultValue;
-  }
-
   const displayValue = formatFieldValueForDisplay(
-    rawValue,
+    values,
     targetField,
     optionsMap,
   );
@@ -3126,7 +3110,7 @@ const FieldContainer = memo(
       }
 
       const displayValue = formatFieldValueForDisplay(
-        value,
+        values,
         field,
         optionsMap,
       );

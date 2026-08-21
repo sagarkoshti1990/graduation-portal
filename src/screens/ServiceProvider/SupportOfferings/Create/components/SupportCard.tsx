@@ -1,10 +1,11 @@
 import React from 'react';
-import { Box, Text, Pressable, LucideIcon } from '@ui';
+import { Box, Text, Pressable, LucideIcon, useAlert } from '@ui';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
 import { FeatureCardProps } from '@app-types/components';
 import styles from '../../styles';
 import { FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { useProfileCompletion } from '@hooks';
 
 const getIconBgColor = (color: string): string => {
   switch (color) {
@@ -22,19 +23,33 @@ const getIconBgColor = (color: string): string => {
 export const SupportCard: React.FC<FeatureCardProps> = ({ card }) => {
   const navigation = useNavigation();
   const { t } = useLanguage();
+  const { showAlert } = useAlert();
   const { title, description, icon, color, navigationUrl } = card;
+  const { isProfileComplete } = useProfileCompletion();
+
+  const handlePress = () => {
+    if (!isProfileComplete) {
+      showAlert(
+        'error',
+        t(
+          'supportProvider.createSupport.errors.incompleteWarning'
+        ),
+      );
+      return;
+    }
+    if (!navigationUrl) return;
+    if (navigationUrl === 'form-training-session') {
+      navigation.navigate(navigationUrl as never, { type: FORM_MODE.CREATE } as never);
+    } else {
+      navigation.navigate(navigationUrl as never);
+    }
+  };
 
   return (
     <Pressable
       {...styles.pressable}
-      onPress={() => {
-        if (!navigationUrl) return;
-        if (navigationUrl === 'form-training-session') {
-          navigation.navigate(navigationUrl as never, { type: FORM_MODE.CREATE } as never);
-        } else {
-          navigation.navigate(navigationUrl as never);
-        }
-      }}
+      opacity={!isProfileComplete ? 0.5 : 1}
+      onPress={handlePress}
     >
       {/* Icon Circle */}
       <Box

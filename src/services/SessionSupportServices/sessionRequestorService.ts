@@ -41,11 +41,11 @@ export const getRequestSessionsList = async (params: any): Promise<any> => {
       queryParams.append('delivery_mode', format);
     }
 
-    const endpoint = `${API_ENDPOINTS.REQUEST_SESSIONS_LIST}?${queryParams.toString()}`;
+    const endpoint = `${API_ENDPOINTS.USER_SESSIONS_LIST}?${queryParams.toString()}`;
     const response = await api.get(endpoint);
     return response.data;
   } catch (error) {
-    console.error('Error fetching request sessions:', error);
+    console.error('Error fetching user sessions:', error);
     throw error;
   }
 };

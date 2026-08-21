@@ -48,6 +48,7 @@ export function valueMapping(
       certificate_provided: `${formValues.certificate_provided}`,
       seats_limit: formValues?.seats_limit,
       can_be_copied: `${formValues.can_be_copied}`,
+      max_capacity: formValues.seats_limit,
       resources: formValues?.resources,
       // delivery_mode: formValues.delivery_mode?.value || formValues.delivery_mode,
       // meeting_link: formValues.meeting_info?.meeting_link,
@@ -56,6 +57,8 @@ export function valueMapping(
       // end_date: moment(formValues.end_date).format('DD-MM-YYYY HH:mm'),
     };
   }
+
+  const { province, site, ...restFormValues } = formValues;
 
   let recommendedForPayload: string[] = [];
   if (effectiveFormType === 'additional_service' || effectiveFormType === 'asset') {
@@ -83,8 +86,8 @@ export function valueMapping(
       formValues?.idp_training_task === 'custom'
         ? formValues?.sessionTypeOther
         : formValues?.title,
-    delivery_mode: formValues.delivery_mode || 'offline',
     categories: [formValues.categories],
+    delivery_mode: formValues.delivery_mode || 'offline',
     provinces: [formValues.provinces],
     recommended_for: recommendedForPayload,
     start_date: startDate,
@@ -101,6 +104,56 @@ export function valueMapping(
     support_offering_type: effectiveFormType
   };
 }
+
+export function requestSessionPayloadMapping(formValues: any, optionMap: any = {}): any {
+  const { province, site } = formValues;
+  const resolvedProvince = formValues.provinces ?? province;
+  const resolvedSites = formValues.sites ?? site;
+
+  return {
+    support_offering_type: formValues.support_offering_type || 'training_session',
+    provinces: Array.isArray(resolvedProvince) ? resolvedProvince : [resolvedProvince],
+    sites: Array.isArray(resolvedSites) ? resolvedSites : (resolvedSites ? [resolvedSites] : []),
+    categories: [formValues.categories],
+    idp_training_task: formValues.idp_training_task,
+    description: formValues.description,
+    learning_objectives: formValues.learning_objectives,
+    start_date: moment(formValues.start_date).unix(),
+    end_date: moment(formValues.end_date).unix(),
+    title: formValues.title,
+    agenda: formValues.description,
+    requestees: formValues.requestees || [],
+    status: formValues.isDraft ? 'DRAFT' : 'Requested',
+    time_zone: 'Asia/Kolkata',
+    can_be_copied: false,
+    certificate_provided: false,
+    delivery_mode: formValues.delivery_mode || 'offline',
+    meeting_info: {
+      link: formValues.meeting_link || '',
+      location: formValues.location || '',
+    },
+  };
+}
+
+export const uploadService = async (file: any) => {
+  const entityId = `trainingSession-${Date.now()}`;
+  const uploaded = await uploadFiles(entityId, [
+    { ...file, size: file.size ?? 0 },
+  ]);
+  const url = uploaded?.data?.[0]?.url;
+  if (!url) {
+    throw new Error(`Failed to upload file: ${file.name}`);
+  }
+  const data = uploaded?.data?.[0];
+  const [f, s] = data?.type.split('/');
+  return {
+    name: data?.name,
+    link: data?.url,
+    sourcePath: data?.sourcePath,
+    type: s || f,
+    size: data?.size,
+  };
+};
 
 interface TrainingFormOptionsMapParams {
   provinces?: any[];
@@ -146,23 +199,3 @@ export function buildTrainingFormOptionsMap({
     recurringOptions: [...RECURRING_OPTIONS],
   };
 }
-
-export const uploadService = async (file: any) => {
-  const entityId = `trainingSession-${Date.now()}`;
-  const uploaded = await uploadFiles(entityId, [
-    { ...file, size: file.size ?? 0 },
-  ]);
-  const url = uploaded?.data?.[0]?.url;
-  if (!url) {
-    throw new Error(`Failed to upload file: ${file.name}`);
-  }
-  const data = uploaded?.data?.[0];
-  const [f, s] = data?.type.split('/');
-  return {
-    name: data?.name,
-    link: data?.url,
-    sourcePath: data?.sourcePath,
-    type: s || f,
-    size: data?.size,
-  };
-};

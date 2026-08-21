@@ -26,6 +26,7 @@ const App = (): React.JSX.Element => {
 
   const { t } = useLanguage();
   const { showAlert } = useAlert();
+  const { isProfileComplete } = useProfileCompletion();
 
   const [provinces, setProvinces] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
@@ -123,6 +124,16 @@ const App = (): React.JSX.Element => {
       // @ts-ignore
       navigation.navigate('create-opportunity');
     }
+  }
+
+  if (isProfileComplete === false) {
+    return (
+      <NotFound
+        message={t(
+          'supportProvider.createSupport.errors.incompleteWarning'
+        )}
+      />
+    );
   }
 
   return (
