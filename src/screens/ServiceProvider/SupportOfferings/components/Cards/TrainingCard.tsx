@@ -24,7 +24,7 @@ import type { MaterialItem, TrainingSessionItem } from '../../../../../types/sup
 import SessionCompleteModal from '../modals/SessionCompleteModal';
 import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
-import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { FORM_MODE, SESSION_STATUS, SESSION_STATUS_LABEL } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { openDownload } from "@utils/helper";
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
@@ -71,9 +71,8 @@ const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
 };
 
 const getStatusColors = (status: string) => {
-  status = status.toUpperCase();
   switch (status) {
-    case 'DRAFT':
+    case SESSION_STATUS_LABEL.DRAFT:
       return {
         bg: '$backgroundLight100',
         border: '$borderColor',
@@ -81,7 +80,7 @@ const getStatusColors = (status: string) => {
         icon: 'FileText',
       };
 
-    case 'UPCOMING':
+    case SESSION_STATUS_LABEL.UPCOMING:
       return {
         bg: '$blue50',
         border: '$blue200',
@@ -89,7 +88,7 @@ const getStatusColors = (status: string) => {
         icon: 'Clock',
       };
 
-    case 'LIVE':
+    case SESSION_STATUS_LABEL.IN_PROGRESS:
       return {
         bg: '$observationTaskBg',
         border: '#fde68a',
@@ -97,7 +96,7 @@ const getStatusColors = (status: string) => {
         icon: 'AlertCircle',
       };
 
-    case 'COMPLETED':
+    case SESSION_STATUS_LABEL.COMPLETED:
     default:
       return {
         bg: '$success50',
@@ -149,12 +148,19 @@ const formatResourceName = (file: MaterialItem) => {
 
 interface CardProps {
   item: TrainingSessionItem;
-  getItemDetails?: ( item: any ) => void;
+  getItemDetails?: (item: any) => void;
   provinces?: any[];
   sites?: any[];
+  footer?: (item: any) => React.ReactNode;
 }
 
-const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, provinces, sites }) => {
+const Card: React.FC<CardProps> = ({
+  item: initialItem,
+  getItemDetails,
+  provinces,
+  sites,
+  footer
+}) => {
   const { t } = useLanguage();
   const { showAlert } = useAlert();
   const navigation = useNavigation();
@@ -169,7 +175,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
     const initialExpected = initialItem.seats_limit || 0;
     const initialRemaining = initialItem.seats_remaining;
     if (
-      (initialItem.status === 'Completed' || initialItem.status === 'COMPLETED') &&
+      (initialItem.status === SESSION_STATUS.COMPLETED) &&
       initialRemaining !== undefined &&
       initialExpected - initialRemaining > 0
     ) {
@@ -184,11 +190,11 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
   const formatStatus = () => {
     const thisStatus = item.status.toUpperCase();
     if (thisStatus === SESSION_STATUS.DRAFT) {
-      return 'Draft';
+      return SESSION_STATUS_LABEL.DRAFT;
     }
 
     if (thisStatus === SESSION_STATUS.COMPLETED) {
-      return 'Completed';
+      return SESSION_STATUS_LABEL.COMPLETED;
     }
 
     if (item.start_date) {
@@ -207,17 +213,17 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
       const nowMs = Date.now();
 
       if (endMs !== undefined && nowMs > endMs) {
-        return 'Completed';
+        return SESSION_STATUS_LABEL.COMPLETED;
       }
 
       if (nowMs < startMs) {
-        return 'Upcoming';
+        return SESSION_STATUS_LABEL.UPCOMING;
       }
 
-      return 'In Progress';
+      return SESSION_STATUS_LABEL.IN_PROGRESS;
     }
 
-    return item.status || 'Upcoming';
+    return item.status || SESSION_STATUS_LABEL.UPCOMING;
   };
   const currentStatus = item.status.toUpperCase();
   const statusTag = formatStatus();
@@ -269,7 +275,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
         const prevLimit = prev.seats_limit || 0;
         return {
           ...prev,
-          status: 'Completed',
+          status: SESSION_STATUS.COMPLETED,
           seats_remaining: hasMarkedAttendance
             ? Math.max(0, prevLimit - selectedParticipantIds.length)
             : prev.seats_remaining,
@@ -344,7 +350,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
     const isConf =
       !!raw.is_attendance_confirmed ||
       !!raw.attendance_confirmed ||
-      ((initialItem.status === 'Completed' || initialItem.status === 'COMPLETED') &&
+      ((initialItem.status === SESSION_STATUS.COMPLETED) &&
         initialItem.seats_remaining !== undefined &&
         initialItem.seats_limit !== undefined &&
         initialItem.seats_limit - initialItem.seats_remaining > 0);
@@ -355,7 +361,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
     <Box {...styles.cardContainer}>
       <VStack {...styles.cardFullVStack}>
         {/* ROW 1 - TITLE & BADGES */}
-        <HStack {...styles.headerTopHStack}>
+        <HStack {...(footer ? styles.supportRow1 : styles.headerTopHStack)}>
           <HStack {...styles.headerTitleBadgeHStack}>
             <Text {...styles.cardHeaderTitleText}>{item.title}</Text>
 
@@ -388,10 +394,10 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
           </HStack>
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
-            <Text {...styles.cardMetaSmText}>{provinces?.find((e:any) => e._id === item.provinces?.[0])?.name || '-'}</Text>
-            {item?.sites && 
+            <Text {...styles.cardMetaSmText}>{provinces?.find((e: any) => e._id === item.provinces?.[0] || e._id === item?.meta?.provinces?.[0])?.name || '-'}</Text>
+            {!!(item?.sites || item?.meta?.sites) &&
               <Text {...styles.cardMetaSmText}>
-                {sites?.filter((e:any) => item?.sites?.includes(e._id))?.map(e => e.name).join(", ") || '-'}
+                {sites?.filter((e: any) => item?.sites?.includes(e._id) || item?.meta?.sites?.includes(e._id))?.map(e => e.name).join(", ") || '-'}
               </Text>
             }
           </HStack>
@@ -426,73 +432,72 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
         ) : null}
 
         {/* ROW 4 - ACTIONS */}
-        <HStack {...styles.requestedByRowHStack}>
-          {/* <Text {...styles.cardRequestedByText}>
-            {t('supportProvider.supportOfferings.cards.providedBy','Provided by:')}{' '}
-            <Text {...styles.cardRequestedByOrgText}>{orgName}</Text>
-            {provinceName ? (<Text {...styles.cardRequestedByProvinceText}>{` • ${provinceName}`}</Text>) : null}</Text> */}
+        {footer ? (
+          footer(item)
+        ) : (
+          <HStack {...styles.requestedByRowHStack}>
+            <HStack {...styles.badgeContentHStack}>
+              {/* DRAFT */}
+              {currentStatus === SESSION_STATUS.DRAFT && (
+                <Button
+                  // @ts-ignore
+                  variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
+                  {/* @ts-ignore */}
+                  <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
+                </Button>
+              )}
+              {/* IN PROGRESS */}
+              {currentStatus === SESSION_STATUS.LIVE || currentStatus === SESSION_STATUS_LABEL.IN_PROGRESS && (
+                <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
+                  <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
+                  {/* @ts-ignore */}
+                  <ButtonText {...styles.completeActionBtnText}>
+                    {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
+                  </ButtonText>
+                </Button>
+              )}
+              {/* UPCOMING / COMPLETED */}
+              {canCopy && (
+                <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
+                  <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
+                  {/* @ts-ignore */}
+                  <ButtonText {...styles.outlineActionBtnText}>
+                    {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
+                  </ButtonText>
+                </Button>
+              )}
 
-          <HStack {...styles.badgeContentHStack}>
-            {/* DRAFT */}
-            {currentStatus === 'DRAFT' && (
-              <Button
-                // @ts-ignore
-                variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
+              {currentStatus === SESSION_STATUS.COMPLETED && !isAttendanceConfirmed && (
+                <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
+                  {/* @ts-ignore */}
+                  <ButtonText {...styles.outlineActionBtnText}>
+                    {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
+                  </ButtonText>
+                </Button>
+              )}
+
+              <Button variant="solid" {...styles.detailsBtn}
+                onPress={async () => {
+                  if (!files) {
+                    await getItemDetails?.(item)
+                  } else {
+                    setFiles(null);
+                  }
+                }}
+              >
                 {/* @ts-ignore */}
-                <ButtonText {...styles.outlineActionBtnText}>{t('common.edit', 'Edit')}</ButtonText>
-              </Button>
-            )}
-            {/* IN PROGRESS */}
-            {currentStatus === 'LIVE' && (
-              <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
-                <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
-                {/* @ts-ignore */}
-                <ButtonText {...styles.completeActionBtnText}>
-                  {t('supportProvider.supportOfferings.cards.complete', 'Complete')}
+                <ButtonText {...styles.detailsBtnText}>
+                  {!!files
+                    ? t('supportProvider.supportOfferings.cards.hideDetails')
+                    : t('supportProvider.supportOfferings.cards.viewDetails')}
                 </ButtonText>
               </Button>
-            )}
-            {/* UPCOMING / COMPLETED */}
-            {canCopy && (
-              <Button variant="outline" {...styles.outlineActionBtn} onPress={handleCopySession}>
-                <ButtonIcon as={LucideIcon} name="Copy" {...styles.cardCopyIconProps} />
-                {/* @ts-ignore */}
-                <ButtonText {...styles.outlineActionBtnText}>
-                  {t('supportProvider.supportOfferings.cards.copySession', 'Copy Session')}
-                </ButtonText>
-              </Button>
-            )}
-
-            {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
-              <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
-                {/* @ts-ignore */}
-                <ButtonText {...styles.outlineActionBtnText}>
-                  {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
-                </ButtonText>
-              </Button>
-            )}
-
-            <Button variant="solid" {...styles.detailsBtn}
-              onPress={async () => {
-                if(!files) {
-                  await getItemDetails?.(item)
-                } else {
-                  setFiles(null);
-                }
-              }}
-            >
-              {/* @ts-ignore */}
-              <ButtonText {...styles.detailsBtnText}>
-                {!!files
-                  ? t('supportProvider.supportOfferings.cards.hideDetails')
-                  : t('supportProvider.supportOfferings.cards.viewDetails')}
-              </ButtonText>
-            </Button>
+            </HStack >
           </HStack>
-        </HStack>
+        )}
 
         {/* ACCORDION CONTENT */}
-        {!!files && (
+        {!footer && !!files && (
           <VStack {...styles.expandedContentVStack}>
             {/* LOCATION / LINK */}
             <VStack {...styles.sectionVStack}>
@@ -526,10 +531,10 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
                   {t('supportProvider.supportOfferings.cards.attendance', 'Attendance')}
                 </Text>
 
-                {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
+                {currentStatus === SESSION_STATUS.COMPLETED && !isAttendanceConfirmed && (
                   <Button variant="solid"  {...styles.confirmAttendanceBtn} onPress={() => setIsCompleteModalOpen(true)}  >
                     <ButtonIcon as={LucideIcon} name="Check" {...styles.cardWhiteIconProps} />
-                    <ButtonText {...styles.confirmAttendanceBtnText}>
+                    <ButtonText {...(styles.confirmAttendanceBtnText as any)}>
                       {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
                     </ButtonText>
                   </Button>
@@ -566,7 +571,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
             </VStack>
 
             {/* SESSION MATERIALS */}
-            {(currentStatus !== 'COMPLETED' || files?.length > 0) && (
+            {(currentStatus !== SESSION_STATUS.COMPLETED || files?.length > 0) && (
               <VStack {...styles.sectionVStack}>
                 <HStack {...styles.materialsHeaderHStack}>
                   <Text {...styles.cardSectionTitleText}>
@@ -611,11 +616,12 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
               </VStack>
             )}
           </VStack>
-        )}
-      </VStack>
+        )
+        }
+      </VStack >
 
       {/* SESSION COMPLETE MODAL */}
-      <SessionCompleteModal
+      < SessionCompleteModal
         isOpen={isCompleteModalOpen}
         onClose={() => setIsCompleteModalOpen(false)}
         sessionTitle={item.title}
@@ -623,16 +629,16 @@ const Card: React.FC<CardProps> = ({ item: initialItem, getItemDetails, province
         initialParticipants={item.participantList}
         onConfirmComplete={handleConfirmSessionComplete}
       />
-    </Box>
+    </Box >
   );
 };
 
 // ---------- ListCard ----------
 
-interface TrainingCardProps {
+export interface TrainingCardProps {
   items: TrainingSessionItem[];
-  isShowLoadMore: boolean;
-  onLoadMoreItems: () => void;
+  isShowLoadMore?: boolean;
+  onLoadMoreItems?: () => void;
   isLoadingMore?: boolean;
   _card?: any
 }

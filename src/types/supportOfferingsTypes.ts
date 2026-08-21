@@ -65,6 +65,7 @@ export interface TrainingSessionItem {
   delivery_mode?: DeliveryModeObject | string;
   materials?: MaterialItem[];
   participantList?: ParticipantAttendanceItem[];
+  meta?: any;
 }
 
 export interface ServiceItem {

@@ -22,19 +22,19 @@ export const STATUS_OPTIONS = [
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.upcoming',
-    value: 'UPCOMING',
+    value: 'Upcoming',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.inProgress',
-    value: 'LIVE',
+    value: 'live',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.completed',
-    value: 'COMPLETED',
+    value: 'Completed',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.draft',
-    value: 'DRAFT',
+    value: 'Draft',
   },
 ];
 
@@ -64,9 +64,9 @@ const App = (): React.JSX.Element => {
   });
 
   const tabs = [
-    { key: 'sessions', label: 'Trainings & Sessions', count: counts.sessions, icon: 'GraduationCap' },
-    { key: 'additional_services', label: 'Additional Services', count: counts.additional_services, icon: 'Briefcase' },
-    { key: 'assets', label: 'Assets', count: counts.assets, icon: 'Box' },
+    { key: 'sessions', label: t('supportProvider.supportOfferings.tabs.trainings', 'Trainings & Sessions'), count: counts.sessions, icon: 'GraduationCap' },
+    { key: 'additional_services', label: t('supportProvider.supportOfferings.tabs.additionalServices', 'Additional Services'), count: counts.additional_services, icon: 'Briefcase' },
+    { key: 'assets', label: t('supportProvider.supportOfferings.tabs.assets', 'Assets'), count: counts.assets, icon: 'Box' },
   ];
 
   const handleTabChange = (key: string) => {
@@ -112,7 +112,7 @@ const App = (): React.JSX.Element => {
         const provincesData = await getProvincesList();
         if (isMounted && provincesData && provincesData.length > 0) {
           setProvincesList(provincesData);
-          const {result : {data}} = await getSitesByProvince();
+          const { result: { data } } = await getSitesByProvince();
           setAllSiteOptions(data || []);
           const dynamicProvinces = [
             { label: 'All Provinces', value: 'all-provinces' },
@@ -198,7 +198,7 @@ const App = (): React.JSX.Element => {
     try {
       setLoading(true);
       const params = {
-        search:filters.search,
+        search: filters.search,
         status: filters.status,
         provinces: filters.province,
         sites: filters.site,
@@ -251,20 +251,20 @@ const App = (): React.JSX.Element => {
     }, [fetchData])
   );
 
-  const handleGetDetails = async(item:any) => {
+  const handleGetDetails = async (item: any) => {
     const { result } = await getSessionDetails(item.id);
     setItems(prevItems =>
-      prevItems.map((subItem:any) =>
+      prevItems.map((subItem: any) =>
         subItem.id === item.id
           ? {
-              ...subItem,
-              materials: result?.resources,
-            }
+            ...subItem,
+            materials: result?.resources,
+          }
           : subItem
       )
     );
   }
-  
+
   return (
     <VStack flex={1}>
       <SPTitleHeader
@@ -316,7 +316,7 @@ const App = (): React.JSX.Element => {
               isLoadingMore={_loading && page > 1}
               _card={{
                 getItemDetails: handleGetDetails,
-                provinces : provincesList,
+                provinces: provincesList,
                 sites: allSiteOptions
               }}
             />
