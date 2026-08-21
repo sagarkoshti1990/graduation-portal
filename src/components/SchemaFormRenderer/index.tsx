@@ -64,6 +64,7 @@ import {
 } from './type';
 import { formatFileSize } from '../../project-player/utils/taskUtils';
 import moment from 'moment';
+import Styles from './Styles';
 
 // ─── Local FastInputField ─────────────────────────────────────────────────────
 // Inlined here to avoid a circular import from the parent screen module.
@@ -1326,6 +1327,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // ── File Upload ───────────────────────────────────────────────────────────────
   if (field.type === FORM_FIELD_TYPES.FILE) {
+    const maxFileSize = field.validation?.find(r => r.rule === 'fileSize')?.value || 0
     const isDisabled = isFieldDisabled || !!field.isReadOnly;
     const subLabelText = field.subLabel
       ? t(
@@ -1426,51 +1428,26 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             >
               {triggerLabel}
             </Text>
-
-            <Text
-              {...TYPOGRAPHY.caption}
-              color="$gray300"
-              textAlign="center"
-            >
-              Max 10 MB
-            </Text>
+            {maxFileSize && 
+              <Text
+                {...TYPOGRAPHY.caption}
+                color="$gray300"
+                textAlign="center"
+              >
+                {t('schemaformrenderer.file.fileSize', { size: maxFileSize })}
+              </Text>
+            }
           </VStack>
         </Pressable>
 
         {previewItems.length > 0 && (
-          <VStack space="xs">
-            {previewItems.map(item => (
-              <HStack
-                key={item.key}
-                space="sm"
-                alignItems="center"
-                borderWidth={1}
-                borderColor="$borderColor"
-                borderRadius="$xl"
-                p="$2.5"
-                justifyContent='space-between'
-              >
-                <HStack space='md'>
-                  {item.isImage && item.previewUri ? (
-                    <Image
-                      source={{ uri: item.previewUri }}
-                      alt={item.name}
-                      width={32}
-                      height={32}
-                      borderRadius={4}
-                    />
-                  ) : (
-                    <Box bg="$primary300" p="$2.5" borderRadius="$xl">
-                      <LucideIcon name="FileText" size={20} color="$primary500" />
-                    </Box>
-                  )}
-                  <VStack>
-                    <Text
-                      {...TYPOGRAPHY.bodySmall}
-                      color="$textForeground"
-                      flex={1}
-                      numberOfLines={1}
-                    >
+          <VStack {...Styles.filesListVStack}>
+            {previewItems.map((item: any, idx) => (
+              <Box key={idx} {...styles.resourceCard}>
+                <HStack {...styles.fileCardOuterHStack}>
+                  <HStack {...styles.fileCardInnerHStack}>
+                    <LucideIcon name="FileText" {...styles.cardFileTextIconProps} />
+                    <Text {...styles.resourceFileNameText} numberOfLines={1} ellipsizeMode="tail">
                       {item.name}
                     </Text>
                     <Text
@@ -1481,12 +1458,12 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
                     >
                       {formatFileSize(item?.raw?.size || 0)}
                     </Text>
-                  </VStack>
+                  </HStack>
+                  <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
+                    <LucideIcon name="X" size={16} color="$textMutedForeground" />
+                  </Pressable>
                 </HStack>
-                <Pressable onPress={() => handleRemove(item.raw)} disabled={isDisabled}>
-                  <LucideIcon name="X" size={16} color="$textMutedForeground" />
-                </Pressable>
-              </HStack>
+              </Box>
             ))}
           </VStack>
         )}
