@@ -14,9 +14,10 @@ import {
   createSession
 } from '../../../../services/mentoringService';
 import logger from '@utils/logger';
-import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { FORM_MODE, SESSION_STATUS, SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { uploadService, valueMapping } from '@utils/supportProvider';
-import { useTrainingFormOptions } from '@hooks';
+import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
+import NotFound from '@components/NotFound';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -26,7 +27,8 @@ const App = (): React.JSX.Element => {
 
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  const { isProfileComplete } = useProfileCompletion();
+  const { isProfileComplete, isCardAllowed } = useProfileCompletion();
+  const isAllowed = Boolean(isProfileComplete && isCardAllowed(SUPPORT_CATEGORIES.ADDITIONAL_SERVICE));
 
   const [provinces, setProvinces] = useState<any[]>([]);
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
@@ -126,7 +128,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  if (isProfileComplete === false) {
+  if (modeType === FORM_MODE.CREATE && isProfileComplete !== null && !isAllowed) {
     return (
       <NotFound
         message={t(
