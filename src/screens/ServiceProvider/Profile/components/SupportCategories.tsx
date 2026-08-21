@@ -16,20 +16,24 @@ import {
 
 import { SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 
+// Sub-option entries can be plain ids (freshly selected from the <Select>) or
+// full { value, label } option objects (as returned by the mentoring API).
+export type OptionValue = string | { value: string; label: string };
+
 export interface SupportCategoryItem {
   id: string;
   categoryName: string;
   trainingData?: {
-    socialEmpowerment: string[];
-    financialInclusion: string[];
-    livelihoods: string[];
+    socialEmpowerment: OptionValue[];
+    financialInclusion: OptionValue[];
+    livelihoods: OptionValue[];
   };
   linkageData?: {
-    specialAttention: string[];
-    immediateAttention: string[];
+    specialAttention: OptionValue[];
+    immediateAttention: OptionValue[];
   };
   assetsData?: {
-    assetTypes: string[];
+    assetTypes: OptionValue[];
   };
   othersData?: string;
 }
@@ -202,10 +206,20 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
     });
   }, [value, selectedCategory, optionsState.categoryOpts]);
 
-  // Helper to resolve option label from value
-  const getOptionLabel = (val: string, optionsList: { value: string; label: string }[]) => {
-    const found = optionsList.find(opt => opt.value === val || opt.label === val);
-    return found ? found.label : val;
+  // Helper to resolve the display label for an entry that may already be a
+  // full { value, label } option object, or just a plain id/label string.
+  const getOptionLabel = (entry: OptionValue, optionsList: { value: string; label: string }[]) => {
+    if (entry && typeof entry === 'object') {
+      return entry.label ?? entry.value ?? '';
+    }
+    const found = optionsList.find(opt => opt.value === entry || opt.label === entry);
+    return found ? found.label : entry;
+  };
+
+  // Helper to resolve the plain id/value for an entry, used for React keys
+  // and for feeding the (string-based) <Select> control when editing.
+  const getOptionValue = (entry: OptionValue): string => {
+    return entry && typeof entry === 'object' ? entry.value : entry;
   };
 
   // Training state
@@ -237,24 +251,28 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
     setSelectedCategory(catName);
     const existing = value.find(item => item.categoryName === catName);
     if (existing) {
+      // The <Select multiple> control works with plain ids, so unwrap any
+      // { value, label } option objects back down to their id here.
+      const toIds = (arr?: OptionValue[]) => (arr || []).map(getOptionValue);
+
       if (isTrainingCategory(catName)) {
-        setSocialEmpowerment(existing.trainingData?.socialEmpowerment || []);
-        setFinancialInclusion(existing.trainingData?.financialInclusion || []);
-        setLivelihoods(existing.trainingData?.livelihoods || []);
+        setSocialEmpowerment(toIds(existing.trainingData?.socialEmpowerment));
+        setFinancialInclusion(toIds(existing.trainingData?.financialInclusion));
+        setLivelihoods(toIds(existing.trainingData?.livelihoods));
         setSpecialAttention([]);
         setImmediateAttention([]);
         setAssetTypes([]);
         setOthersText('');
       } else if (isLinkageCategory(catName)) {
-        setSpecialAttention(existing.linkageData?.specialAttention || []);
-        setImmediateAttention(existing.linkageData?.immediateAttention || []);
+        setSpecialAttention(toIds(existing.linkageData?.specialAttention));
+        setImmediateAttention(toIds(existing.linkageData?.immediateAttention));
         setSocialEmpowerment([]);
         setFinancialInclusion([]);
         setLivelihoods([]);
         setAssetTypes([]);
         setOthersText('');
       } else if (isAssetCategory(catName)) {
-        setAssetTypes(existing.assetsData?.assetTypes || []);
+        setAssetTypes(toIds(existing.assetsData?.assetTypes));
         setSocialEmpowerment([]);
         setFinancialInclusion([]);
         setLivelihoods([]);

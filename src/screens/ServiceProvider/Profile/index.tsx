@@ -23,7 +23,12 @@ import {
   getProvincesList,
   getSitesByProvince,
 } from '../../../services/usersService';
-import { getProviderTypeOptions } from '../../../services/mentoringService';
+import {
+  getProviderTypeOptions,
+  getMentoringProfile,
+  createMentoringProfile,
+  updateMentoringProfile,
+} from '../../../services/mentoringService';
 import { MENTORING_ENTITY_TYPES } from '@constants/SP_MENU_OPTIONS';
 import { SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { uploadFiles } from '../../../project-player/services/projectPlayerService';
@@ -53,6 +58,7 @@ const OrganizationProfile = (): React.JSX.Element => {
   const [supportCategories, setSupportCategories] = useState<SupportCategoryItem[]>([]);
   const [originalSupportCategories, setOriginalSupportCategories] = useState<SupportCategoryItem[]>([]);
   
+  const [profileExists, setProfileExists] = useState<boolean>(true);
   const [saving, setSaving] = useState(false);
 
   // Options map state for select fields
@@ -82,23 +88,39 @@ const OrganizationProfile = (): React.JSX.Element => {
       if (!user?.id) return;
 
       try {
-        const res = await getUserProfile(user.id);
+        let profile: any = {};
+        try {
+          const mentoringProfileRes = await getMentoringProfile();
+          console.log("Rohit Testing " + JSON.stringify(mentoringProfileRes));
+          if (mentoringProfileRes?.result) {
+            console.log("mentoringProfileRes", mentoringProfileRes.result);
+            profile = mentoringProfileRes.result
+            setProfileExists(true);
+            console.log('Mentoring profile fetched successfully:', profile);
+          }
+        } catch (mErr: any) {
+          console.warn('Mentoring profile check error:', mErr);
+          if (mErr?.response?.status === 404) {
+            setProfileExists(false);
+            showAlert('warning', t('profile.mentorNotFound', 'Mentor profile not found. Please create your profile.'));
+          }
+        }
+
+        // Fallback to user service profile if mentoring profile data is empty
+        if (!profile || Object.keys(profile).length === 0) {
+          const res = await getUserProfile(user.id);
+          profile = res || {};
+        }
+
         // Don't overwrite unsaved changes while editing
         if (mode === 'edit') {
           return;
         }
 
-        const profileData = res || {};
-
         const getField = (key: string, fallback: any = '') => {
-          const val =
-            profileData[key] ??
-            profileData?.meta?.[key] ??
-            profileData?.extra?.[key] ??
-            profileData?.userDetails?.[key] ??
-            profileData?.userDetails?.meta?.[key] ??
-            profileData?.userDetails?.extra?.[key] ??
-            profileData?.custom_entity_text?.[key];
+          const val = profile?.[key];
+
+          console.log("Rohit Printing " + JSON.stringify(val));
 
           if (val === undefined || val === null) {
             return fallback;
@@ -371,6 +393,7 @@ try {
     email: values.contactEmail,
     phone: values.contactPhone,
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
+    provider_type: values.organizationType,
     meta: {
       provinces,
       sites,
@@ -381,16 +404,31 @@ try {
       special_attention,
       immediate_attention,
       asset_types,
-      organizationType: values.organizationType,
+      // organizationType: values.organizationType,
       agreementMoU: resolvedValues.agreementMoU,
       organisationCredentials: resolvedValues.organisationCredentials,
     },
   };
 
-  await updateUser(user?.id || '', payload);
+  console.log("Rohit Payload " + JSON.stringify(payload));
 
-    showAlert('success',t('profile.saveSuccess', 'Profile updated successfully.'),)
-    setMode('preview');
+  try {
+    if (profileExists) {
+      await updateMentoringProfile(payload);
+    } else {
+      await createMentoringProfile(payload);
+      setProfileExists(true);
+    }
+  } catch (mentoringErr: any) {
+    console.error('Error calling mentoring profile API:', mentoringErr);
+    if (mentoringErr?.response?.status === 404) {
+      await createMentoringProfile(payload);
+      setProfileExists(true);
+    }
+  }
+
+  showAlert('success', t('profile.saveSuccess', 'Profile updated successfully.'));
+  setMode('preview');
 
     setOriginalValues(values);
     setOriginalProvinceCoverage(provinceCoverage);

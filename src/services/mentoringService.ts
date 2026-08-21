@@ -184,3 +184,45 @@ export const getAssetTypesOptions = async (): Promise<MentoringOption[]> => {
 export const getProviderTypeOptions = async (): Promise<MentoringOption[]> => {
   return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.PROVIDER_TYPE });
 };
+
+/**
+ * Read Mentoring Profile for current logged-in user
+ * Endpoint: GET /mentoring/v1/profile/read
+ */
+export const getMentoringProfile = async (): Promise<any> => {
+  try {
+    const response = await api.get(API_ENDPOINTS.MENTORING_PROFILE_READ);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching mentoring profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create Mentoring Profile
+ * Endpoint: POST /mentoring/v1/profile/create
+ */
+export const createMentoringProfile = async (payload: any): Promise<any> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.MENTORING_PROFILE_CREATE, payload);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating mentoring profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update Mentoring Profile
+ * Endpoint: POST /mentoring/v1/profile/update
+ */
+export const updateMentoringProfile = async (payload: any): Promise<any> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.MENTORING_PROFILE_UPDATE, payload);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating mentoring profile:', error);
+    throw error;
+  }
+};

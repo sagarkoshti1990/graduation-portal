@@ -40,11 +40,13 @@ export const API_ENDPOINTS = {
   SUPPORT_OFFERINGS_COMPLETE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/complete/${sessionId}`,
   SUPPORT_OFFERINGS_SESSIONS: `${prefix}/mentoring/v1/mentors/createdSessions`,
   MENTORING_READ_ENTITY_TYPE: `${prefix}/mentoring/v1/entity-type/read`,
+  MENTORING_PROFILE_READ: `${prefix}/mentoring/v1/profile/read`,
+  MENTORING_PROFILE_CREATE: `${prefix}/mentoring/v1/profile/create`,
+  MENTORING_PROFILE_UPDATE: `${prefix}/mentoring/v1/profile/update`,
   MENTORING_CREATE_SESSION: `${prefix}/mentoring/v1/sessions/update?notifyUser=false`,
   MENTORING_UPDATE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/update/${sessionId}`,
   MENTORING_DETAILS_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/details/${sessionId}?get_mentees=true`,
-  // Session requests raised against a Service Provider's mentoring sessions.
-  // status query param must be one or more of REQUESTED, ACCEPTED, REJECTED, EXPIRED
   REQUEST_SESSIONS_LIST: `${prefix}/mentoring/v1/requestSessions/list`,
   REQUEST_SESSION_CREATE: `${prefix}/mentoring/v1/requestSessions/create`,
+  REQUEST_SESSIONS_ACCEPT: `${prefix}/mentoring/v1/requestSessions/accept?SkipValidation=true`,
 };
