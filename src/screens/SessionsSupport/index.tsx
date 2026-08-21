@@ -79,6 +79,7 @@ const SessionsSupportScreen: React.FC = () => {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
+  const [allSiteOptions, setAllSiteOptions] = useState();
   const [siteOptions, setSiteOptions] = useState(DEFAULT_SITE_OPTIONS);
   const [pathwayOptions, setPathwayOptions] = useState(DEFAULT_PATHWAY_OPTIONS);
   const [formatOptions, setFormatOptions] = useState(DEFAULT_FORMAT_OPTIONS);
@@ -151,6 +152,8 @@ const SessionsSupportScreen: React.FC = () => {
         if (isMounted) {
           if (provincesData && provincesData.length > 0) {
             setProvincesList(provincesData);
+            const { result: { data } } = await getSitesByProvince();
+            setAllSiteOptions(data || []);
             const dynamicProvinces = [
               { label: 'All Provinces', value: 'all-provinces' },
               ...provincesData.map((p: any) => ({
@@ -489,7 +492,9 @@ const SessionsSupportScreen: React.FC = () => {
                   _card={{
                     footer: (item: any) => (
                       <RequestFooter item={item} onAssignSession={handleAssignSessionClick} />
-                    )
+                    ),
+                    provinces: provincesList,
+                    sites: allSiteOptions
                   }}
                 />
               )}

@@ -71,9 +71,8 @@ const getDeliveryBadge = (deliveryMode: 'offline' | 'online' | 'hybrid') => {
 };
 
 const getStatusColors = (status: string) => {
-  status = status.toUpperCase();
   switch (status) {
-    case 'DRAFT':
+    case SESSION_STATUS_LABEL.DRAFT:
       return {
         bg: '$backgroundLight100',
         border: '$borderColor',
@@ -81,7 +80,7 @@ const getStatusColors = (status: string) => {
         icon: 'FileText',
       };
 
-    case 'UPCOMING':
+    case SESSION_STATUS_LABEL.UPCOMING:
       return {
         bg: '$blue50',
         border: '$blue200',
@@ -89,7 +88,7 @@ const getStatusColors = (status: string) => {
         icon: 'Clock',
       };
 
-    case 'LIVE':
+    case SESSION_STATUS_LABEL.IN_PROGRESS:
       return {
         bg: '$observationTaskBg',
         border: '#fde68a',
@@ -97,7 +96,7 @@ const getStatusColors = (status: string) => {
         icon: 'AlertCircle',
       };
 
-    case 'COMPLETED':
+    case SESSION_STATUS_LABEL.COMPLETED:
     default:
       return {
         bg: '$success50',
@@ -395,10 +394,10 @@ const Card: React.FC<CardProps> = ({
           </HStack>
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
-            <Text {...styles.cardMetaSmText}>{provinces?.find((e: any) => e._id === item.provinces?.[0])?.name || '-'}</Text>
-            {item?.sites &&
+            <Text {...styles.cardMetaSmText}>{provinces?.find((e: any) => e._id === item.provinces?.[0] || e._id === item?.meta?.provinces?.[0])?.name || '-'}</Text>
+            {item?.sites || item?.meta?.sites &&
               <Text {...styles.cardMetaSmText}>
-                {sites?.filter((e: any) => item?.sites?.includes(e._id))?.map(e => e.name).join(", ") || '-'}
+                {sites?.filter((e: any) => item?.sites?.includes(e._id) || item?.meta?.sites?.includes(e._id))?.map(e => e.name).join(", ") || '-'}
               </Text>
             }
           </HStack>
@@ -439,7 +438,7 @@ const Card: React.FC<CardProps> = ({
           <HStack {...styles.requestedByRowHStack}>
             <HStack {...styles.badgeContentHStack}>
               {/* DRAFT */}
-              {currentStatus === 'Draft' && (
+              {currentStatus === SESSION_STATUS.DRAFT && (
                 <Button
                   // @ts-ignore
                   variant="outlineghost" {...styles.outlineActionBtn} onPress={() => { (navigation as any).navigate('form-training-session', { id: item.id, type: FORM_MODE.EDIT, }); }}>
@@ -448,7 +447,7 @@ const Card: React.FC<CardProps> = ({
                 </Button>
               )}
               {/* IN PROGRESS */}
-              {currentStatus === 'LIVE' && (
+              {currentStatus === SESSION_STATUS.LIVE || currentStatus === SESSION_STATUS_LABEL.IN_PROGRESS && (
                 <Button variant="solid" {...styles.completeActionBtn} onPress={() => setIsCompleteModalOpen(true)} disabled={isCompleting}  >
                   <ButtonIcon as={LucideIcon} name="CheckCircle" {...styles.cardWhiteIconProps} />
                   {/* @ts-ignore */}
@@ -468,7 +467,7 @@ const Card: React.FC<CardProps> = ({
                 </Button>
               )}
 
-              {currentStatus === 'COMPLETED' && !isAttendanceConfirmed && (
+              {currentStatus === SESSION_STATUS.COMPLETED && !isAttendanceConfirmed && (
                 <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={() => setIsCompleteModalOpen(true)}  >
                   {/* @ts-ignore */}
                   <ButtonText {...styles.outlineActionBtnText}>

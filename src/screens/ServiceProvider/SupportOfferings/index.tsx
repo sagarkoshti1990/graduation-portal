@@ -26,7 +26,7 @@ export const STATUS_OPTIONS = [
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.inProgress',
-    value: 'In progress',
+    value: 'live',
   },
   {
     labelKey: 'supportProvider.supportOfferings.statusOptions.completed',
@@ -215,7 +215,10 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
     try {
       setLoading(true);
       const params = {
-        filters,
+        search: filters.search,
+        status: filters.status,
+        provinces: filters.province,
+        sites: filters.site,
         page,
         limit,
       };
@@ -254,7 +257,7 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
     } finally {
       setLoading(false);
     }
-  }, [activeTab, filters, page, limit]);
+  }, [activeTab, filters.search, filters.status, filters.province, filters.site, page, limit]);
 
   useFocusEffect(
     useCallback(() => {
