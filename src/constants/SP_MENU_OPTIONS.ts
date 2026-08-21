@@ -57,4 +57,12 @@ export const MENTORING_ENTITY_TYPES = {
   RECOMMENDED_FOR: 'recommended_for',
   DELIVERY_MODE: 'delivery_mode',
   CERTIFICATE_PROVIDED: 'certificate_provided',
+  SUPPORT_OFFERING_TYPE: 'support_offering_type',
+  SOCIAL_EMPOWERMENT: 'social_empowerment',
+  FINANCIAL_INCLUSION: 'financial_inclusion',
+  LIVELIHOODS: 'livelihoods',
+  SPECIAL_ATTENTION: 'special_attention',
+  IMMEDIATE_ATTENTION: 'immediate_attention',
+  ASSET_TYPES: 'asset_types',
+  PROVIDER_TYPE: 'provider_type',
 } as const;

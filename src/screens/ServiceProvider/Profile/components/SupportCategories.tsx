@@ -1,24 +1,39 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { VStack, HStack, Text, Box, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable, Input, InputField } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import styles from '../styles';
+import {
+  getSupportCategories,
+  getSocialEmpowermentOptions,
+  getFinancialInclusionOptions,
+  getLivelihoodsOptions,
+  getSpecialAttentionOptions,
+  getImmediateAttentionOptions,
+  getAssetTypesOptions,
+} from '../../../../services/mentoringService';
+
+import { SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
+
+// Sub-option entries can be plain ids (freshly selected from the <Select>) or
+// full { value, label } option objects (as returned by the mentoring API).
+export type OptionValue = string | { value: string; label: string };
 
 export interface SupportCategoryItem {
   id: string;
   categoryName: string;
   trainingData?: {
-    socialEmpowerment: string[];
-    financialInclusion: string[];
-    livelihoods: string[];
+    socialEmpowerment: OptionValue[];
+    financialInclusion: OptionValue[];
+    livelihoods: OptionValue[];
   };
   linkageData?: {
-    specialAttention: string[];
-    immediateAttention: string[];
+    specialAttention: OptionValue[];
+    immediateAttention: OptionValue[];
   };
   assetsData?: {
-    assetTypes: string[];
+    assetTypes: OptionValue[];
   };
   othersData?: string;
 }
@@ -30,53 +45,30 @@ interface SupportCategoriesProps {
   t: any;
 }
 
-const CATEGORY_OPTIONS = [
-  { value: 'Training / Sessions', label: 'Training / Sessions' },
-  { value: 'Linkage to Additional Services', label: 'Linkage to Additional Services' },
-  { value: 'Assets', label: 'Assets' },
-  { value: 'Others', label: 'Others' },
-];
+export const isTrainingCategory = (cat?: string) => {
+  return cat === SUPPORT_CATEGORIES.TRAINING;
+};
 
-const SOCIAL_EMPOWERMENT_OPTS = [
-  { value: 'personal_mastery_training', label: 'Personal Mastery Training' },
-  { value: 'parenting_skills_training', label: 'Parenting Skills Training' },
-  { value: 'gbv_awareness_session', label: 'GBV Awareness Session' },
-  { value: 'substance_abuse_awareness_session', label: 'Substance Abuse Awareness Session' },
-];
+export const isLinkageCategory = (cat?: string) => {
+  return cat === SUPPORT_CATEGORIES.ADDITIONAL_SERVICE;
+};
 
-const FINANCIAL_INCLUSION_OPTS = [
-  { value: 'financial_literacy_training', label: 'Financial Literacy Training' },
-];
+export const isAssetCategory = (cat?: string) => {
+  return cat === SUPPORT_CATEGORIES.ASSET;
+};
 
-const LIVELIHOODS_OPTS = [
-  { value: 'generate_your_business_idea_training', label: 'Generate Your Business Idea Training' },
-  { value: 'start_your_business_training', label: 'Start Your Business Training' },
-  { value: 'diversification_strategy', label: 'Diversification Strategy' },
-  { value: 'market_growth_strategy', label: 'Market Growth Strategy' },
-  { value: 'livelihood_specific_training', label: 'Livelihood Specific Training' },
-  { value: 'job_readiness_training', label: 'Job Readiness Training' },
-  { value: 'technical_vocational_training', label: 'Technical/Vocational Training' },
-  { value: 'work_placement', label: 'Work Placement' },
-];
-
-const SPECIAL_ATTENTION_OPTS = [
-  { value: 'gbv', label: 'GBV' },
-  { value: 'mental_health', label: 'Mental Health' },
-  { value: 'substance_abuse', label: 'Substance Abuse' },
-];
-
-const IMMEDIATE_ATTENTION_OPTS = [
-  { value: 'food', label: 'Food' },
-  { value: 'health', label: 'Health' },
-  { value: 'municipal_indigent_programs', label: 'Municipal Indigent Programs' },
-];
-
-const ASSETS_OPTS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'in_kind', label: 'In-kind' },
-  { value: 'voucher', label: 'Voucher' },
-];
-
+  // Dynamic Options fetched directly from API/DB, grouped into a single state object
+  type OptionItem = { value: string; label: string };
+  interface CategoryOptionsState {
+    categoryOpts: OptionItem[];
+    socialEmpowermentOpts: OptionItem[];
+    financialInclusionOpts: OptionItem[];
+    livelihoodsOpts: OptionItem[];
+    specialAttentionOpts: OptionItem[];
+    immediateAttentionOpts: OptionItem[];
+    assetTypesOpts: OptionItem[];
+  }
+  
 export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   value = [],
   onChange,
@@ -85,14 +77,150 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
+  const initialOptionsState: CategoryOptionsState = {
+    categoryOpts: [],
+    socialEmpowermentOpts: [],
+    financialInclusionOpts: [],
+    livelihoodsOpts: [],
+    specialAttentionOpts: [],
+    immediateAttentionOpts: [],
+    assetTypesOpts: [],
+  };
+
+  const [optionsState, setOptionsState] = useState<CategoryOptionsState>(initialOptionsState);
+
+  // Tracks which option groups have already been fetched, so we never re-fetch the same group twice
+  const fetchedGroupsRef = useRef<{ category: boolean; training: boolean; linkage: boolean; asset: boolean }>({
+    category: false,
+    training: false,
+    linkage: false,
+    asset: false,
+  });
+
+  // Fetch only the main Category (support_offering_type) list on mount - it's needed to render the select
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchCategoryOptions = async () => {
+      if (fetchedGroupsRef.current.category) return;
+      try {
+        const catRes = await getSupportCategories();
+        if (!isMounted) return;
+        fetchedGroupsRef.current.category = true;
+        setOptionsState(prev => ({
+          ...prev,
+          categoryOpts: catRes || [],
+        }));
+      } catch (err) {
+        console.error('Error fetching support categories from API:', err);
+      }
+    };
+
+    fetchCategoryOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Fetch sub-category options lazily - only when the matching category is actually selected,
+  // and only once per group (cached in optionsState afterwards).
+  useEffect(() => {
+    if (!selectedCategory) return;
+    let isMounted = true;
+
+    const fetchTrainingOptions = async () => {
+      if (fetchedGroupsRef.current.training) return;
+      try {
+        const [socialRes, finRes, livRes] = await Promise.all([
+          getSocialEmpowermentOptions(),
+          getFinancialInclusionOptions(),
+          getLivelihoodsOptions(),
+        ]);
+        if (!isMounted) return;
+        fetchedGroupsRef.current.training = true;
+        setOptionsState(prev => ({
+          ...prev,
+          socialEmpowermentOpts: socialRes || [],
+          financialInclusionOpts: finRes || [],
+          livelihoodsOpts: livRes || [],
+        }));
+      } catch (err) {
+        console.error('Error fetching training options from API:', err);
+      }
+    };
+
+    const fetchLinkageOptions = async () => {
+      if (fetchedGroupsRef.current.linkage) return;
+      try {
+        const [specRes, immRes] = await Promise.all([
+          getSpecialAttentionOptions(),
+          getImmediateAttentionOptions(),
+        ]);
+        if (!isMounted) return;
+        fetchedGroupsRef.current.linkage = true;
+        setOptionsState(prev => ({
+          ...prev,
+          specialAttentionOpts: specRes || [],
+          immediateAttentionOpts: immRes || [],
+        }));
+      } catch (err) {
+        console.error('Error fetching linkage options from API:', err);
+      }
+    };
+
+    const fetchAssetOptions = async () => {
+      if (fetchedGroupsRef.current.asset) return;
+      try {
+        const assetRes = await getAssetTypesOptions();
+        if (!isMounted) return;
+        fetchedGroupsRef.current.asset = true;
+        setOptionsState(prev => ({
+          ...prev,
+          assetTypesOpts: assetRes || [],
+        }));
+      } catch (err) {
+        console.error('Error fetching asset type options from API:', err);
+      }
+    };
+
+    if (isTrainingCategory(selectedCategory)) {
+      fetchTrainingOptions();
+    } else if (isLinkageCategory(selectedCategory)) {
+      fetchLinkageOptions();
+    } else if (isAssetCategory(selectedCategory)) {
+      fetchAssetOptions();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCategory]);
+
   const categoryOptions = useMemo(() => {
-    return CATEGORY_OPTIONS.filter(opt => {
+    return optionsState.categoryOpts.filter(opt => {
       if (selectedCategory && opt.value === selectedCategory) {
         return true;
       }
       return !value.some(item => item.categoryName === opt.value);
     });
-  }, [value, selectedCategory]);
+  }, [value, selectedCategory, optionsState.categoryOpts]);
+
+  // Helper to resolve the display label for an entry that may already be a
+  // full { value, label } option object, or just a plain id/label string.
+  const getOptionLabel = (entry: OptionValue, optionsList: { value: string; label: string }[]) => {
+    if (entry && typeof entry === 'object') {
+      return entry.label ?? entry.value ?? '';
+    }
+    const found = optionsList.find(opt => opt.value === entry || opt.label === entry);
+    return found ? found.label : entry;
+  };
+
+  // Helper to resolve the plain id/value for an entry, used for React keys
+  // and for feeding the (string-based) <Select> control when editing.
+  const getOptionValue = (entry: OptionValue): string => {
+    return entry && typeof entry === 'object' ? entry.value : entry;
+  };
 
   // Training state
   const [socialEmpowerment, setSocialEmpowerment] = useState<string[]>([]);
@@ -123,38 +251,34 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
     setSelectedCategory(catName);
     const existing = value.find(item => item.categoryName === catName);
     if (existing) {
-      if (catName === 'Training / Sessions') {
-        setSocialEmpowerment(existing.trainingData?.socialEmpowerment || []);
-        setFinancialInclusion(existing.trainingData?.financialInclusion || []);
-        setLivelihoods(existing.trainingData?.livelihoods || []);
+      // The <Select multiple> control works with plain ids, so unwrap any
+      // { value, label } option objects back down to their id here.
+      const toIds = (arr?: OptionValue[]) => (arr || []).map(getOptionValue);
+
+      if (isTrainingCategory(catName)) {
+        setSocialEmpowerment(toIds(existing.trainingData?.socialEmpowerment));
+        setFinancialInclusion(toIds(existing.trainingData?.financialInclusion));
+        setLivelihoods(toIds(existing.trainingData?.livelihoods));
         setSpecialAttention([]);
         setImmediateAttention([]);
         setAssetTypes([]);
         setOthersText('');
-      } else if (catName === 'Linkage to Additional Services') {
-        setSpecialAttention(existing.linkageData?.specialAttention || []);
-        setImmediateAttention(existing.linkageData?.immediateAttention || []);
+      } else if (isLinkageCategory(catName)) {
+        setSpecialAttention(toIds(existing.linkageData?.specialAttention));
+        setImmediateAttention(toIds(existing.linkageData?.immediateAttention));
         setSocialEmpowerment([]);
         setFinancialInclusion([]);
         setLivelihoods([]);
         setAssetTypes([]);
         setOthersText('');
-      } else if (catName === 'Assets') {
-        setAssetTypes(existing.assetsData?.assetTypes || []);
+      } else if (isAssetCategory(catName)) {
+        setAssetTypes(toIds(existing.assetsData?.assetTypes));
         setSocialEmpowerment([]);
         setFinancialInclusion([]);
         setLivelihoods([]);
         setSpecialAttention([]);
         setImmediateAttention([]);
         setOthersText('');
-      } else if (catName === 'Others') {
-        setOthersText(existing.othersData || '');
-        setSocialEmpowerment([]);
-        setFinancialInclusion([]);
-        setLivelihoods([]);
-        setSpecialAttention([]);
-        setImmediateAttention([]);
-        setAssetTypes([]);
       }
     } else {
       resetFormState();
@@ -174,27 +298,24 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         categoryName: selectedCategory,
       };
 
-      if (selectedCategory === 'Training / Sessions') {
+      if (isTrainingCategory(selectedCategory)) {
         if (socialEmpowerment.length === 0 && financialInclusion.length === 0 && livelihoods.length === 0) return;
         updatedItem.trainingData = {
           socialEmpowerment,
           financialInclusion,
           livelihoods,
         };
-      } else if (selectedCategory === 'Linkage to Additional Services') {
+      } else if (isLinkageCategory(selectedCategory)) {
         if (specialAttention.length === 0 && immediateAttention.length === 0) return;
         updatedItem.linkageData = {
           specialAttention,
           immediateAttention,
         };
-      } else if (selectedCategory === 'Assets') {
+      } else if (isAssetCategory(selectedCategory)) {
         if (assetTypes.length === 0) return;
         updatedItem.assetsData = {
           assetTypes,
         };
-      } else if (selectedCategory === 'Others') {
-        if (!othersText.trim()) return;
-        updatedItem.othersData = othersText.trim();
       }
 
       nextValue[existingIndex] = updatedItem;
@@ -204,27 +325,24 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         categoryName: selectedCategory,
       };
 
-      if (selectedCategory === 'Training / Sessions') {
+      if (isTrainingCategory(selectedCategory)) {
         if (socialEmpowerment.length === 0 && financialInclusion.length === 0 && livelihoods.length === 0) return;
         newItem.trainingData = {
           socialEmpowerment,
           financialInclusion,
           livelihoods,
         };
-      } else if (selectedCategory === 'Linkage to Additional Services') {
+      } else if (isLinkageCategory(selectedCategory)) {
         if (specialAttention.length === 0 && immediateAttention.length === 0) return;
         newItem.linkageData = {
           specialAttention,
           immediateAttention,
         };
-      } else if (selectedCategory === 'Assets') {
+      } else if (isAssetCategory(selectedCategory)) {
         if (assetTypes.length === 0) return;
         newItem.assetsData = {
           assetTypes,
         };
-      } else if (selectedCategory === 'Others') {
-        if (!othersText.trim()) return;
-        newItem.othersData = othersText.trim();
       }
 
       nextValue.push(newItem);
@@ -248,17 +366,14 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
 
   const isAddDisabled = () => {
     if (!selectedCategory) return true;
-    if (selectedCategory === 'Training / Sessions') {
+    if (isTrainingCategory(selectedCategory)) {
       return socialEmpowerment.length === 0 && financialInclusion.length === 0 && livelihoods.length === 0;
     }
-    if (selectedCategory === 'Linkage to Additional Services') {
+    if (isLinkageCategory(selectedCategory)) {
       return specialAttention.length === 0 && immediateAttention.length === 0;
     }
-    if (selectedCategory === 'Assets') {
+    if (isAssetCategory(selectedCategory)) {
       return assetTypes.length === 0;
-    }
-    if (selectedCategory === 'Others') {
-      return !othersText.trim();
     }
     return true;
   };
@@ -285,7 +400,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               <HStack {...styles.cardHeader}>
                 <HStack {...styles.supportCategoryHeader}>
                   <Text {...styles.cardTitleText}>
-                    {item.categoryName}
+                    {getOptionLabel(item.categoryName, optionsState.categoryOpts)}
                   </Text>
                   <Badge {...styles.offeredBadge}>
                     <BadgeText {...styles.redBadgeText}>Offered</BadgeText>
@@ -304,7 +419,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
               </HStack>
 
               {/* Render Category Details */}
-              {item.categoryName === 'Training / Sessions' && item.trainingData && (
+              {isTrainingCategory(item.categoryName) && item.trainingData && (
                 <VStack {...styles.subCategoriesContainer}>
                   <Text {...styles.specificTrainingTitle}>Specific Training Areas:</Text>
 
@@ -314,7 +429,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.trainingData.socialEmpowerment.map((s, idx) => (
                           <Badge key={idx} {...styles.blueBadge}>
-                            <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
+                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, optionsState.socialEmpowermentOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -327,7 +442,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.trainingData.financialInclusion.map((s, idx) => (
                           <Badge key={idx} {...styles.blueBadge}>
-                            <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
+                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, optionsState.financialInclusionOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -340,7 +455,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.trainingData.livelihoods.map((s, idx) => (
                           <Badge key={idx} {...styles.blueBadge}>
-                            <BadgeText {...styles.blueBadgeText}>{s}</BadgeText>
+                            <BadgeText {...styles.blueBadgeText}>{getOptionLabel(s, optionsState.livelihoodsOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -349,7 +464,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 </VStack>
               )}
 
-              {item.categoryName === 'Linkage to Additional Services' && item.linkageData && (
+              {isLinkageCategory(item.categoryName) && item.linkageData && (
                 <VStack {...styles.subCategoriesContainer}>
                   {item.linkageData.specialAttention.length > 0 && (
                     <VStack {...styles.subCategoryCol}>
@@ -357,7 +472,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.linkageData.specialAttention.map((s, idx) => (
                           <Badge key={idx} {...styles.purpleBadge}>
-                            <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
+                            <BadgeText {...styles.purpleBadgeText}>{getOptionLabel(s, optionsState.specialAttentionOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -370,7 +485,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                       <HStack {...styles.badgeRow}>
                         {item.linkageData.immediateAttention.map((s, idx) => (
                           <Badge key={idx} {...styles.purpleBadge}>
-                            <BadgeText {...styles.purpleBadgeText}>{s}</BadgeText>
+                            <BadgeText {...styles.purpleBadgeText}>{getOptionLabel(s, optionsState.immediateAttentionOpts)}</BadgeText>
                           </Badge>
                         ))}
                       </HStack>
@@ -379,23 +494,16 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                 </VStack>
               )}
 
-              {item.categoryName === 'Assets' && item.assetsData && (
+              {isAssetCategory(item.categoryName) && item.assetsData && (
                 <VStack {...styles.subCategoryCol} {...styles.detailsCol}>
                   <Text {...styles.cardFieldLabel}>Asset Types Offered:</Text>
                   <HStack {...styles.badgeRow}>
                     {item.assetsData.assetTypes.map((s, idx) => (
                       <Badge key={idx} {...styles.greenBadge}>
-                        <BadgeText {...styles.greenBadgeText}>{s}</BadgeText>
+                        <BadgeText {...styles.greenBadgeText}>{getOptionLabel(s, optionsState.assetTypesOpts)}</BadgeText>
                       </Badge>
                     ))}
                   </HStack>
-                </VStack>
-              )}
-
-              {item.categoryName === 'Others' && item.othersData && (
-                <VStack {...styles.detailsCol}>
-                  <Text {...styles.cardFieldLabel}>Details</Text>
-                  <Text {...styles.detailsText}>{item.othersData}</Text>
                 </VStack>
               )}
             </VStack>
@@ -426,7 +534,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
           </VStack>
 
           {/* select Training / Sessions category */}
-          {selectedCategory === 'Training / Sessions' && (
+          {isTrainingCategory(selectedCategory) && (
             <VStack {...styles.trainingAreaBox}>
               <Text {...styles.trainingAreaTitle}>
                 Specific Training Areas
@@ -436,7 +544,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.socialEmpowerment', 'Social Empowerment Sessions')}
                 </Text>
                 <Select
-                  options={SOCIAL_EMPOWERMENT_OPTS}
+                  options={optionsState.socialEmpowermentOpts}
                   value={socialEmpowerment}
                   onChange={setSocialEmpowerment}
                   placeholder={t('profile.selectSocialEmpowerment', 'Select social empowerment sessions...')}
@@ -449,7 +557,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.financialInclusion', 'Financial Inclusion Sessions')}
                 </Text>
                 <Select
-                  options={FINANCIAL_INCLUSION_OPTS}
+                  options={optionsState.financialInclusionOpts}
                   value={financialInclusion}
                   onChange={setFinancialInclusion}
                   placeholder={t('profile.selectFinancialInclusion', 'Select financial inclusion sessions...')}
@@ -462,7 +570,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.livelihoods', 'Livelihoods Sessions')}
                 </Text>
                 <Select
-                  options={LIVELIHOODS_OPTS}
+                  options={optionsState.livelihoodsOpts}
                   value={livelihoods}
                   onChange={setLivelihoods}
                   placeholder={t('profile.selectLivelihoods', 'Select livelihoods sessions...')}
@@ -473,14 +581,14 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
           )}
 
           {/* select Linkage to Additional Services category */}
-          {selectedCategory === 'Linkage to Additional Services' && (
+          {isLinkageCategory(selectedCategory) && (
             <VStack {...styles.linkageAreaBox}>
               <VStack {...styles.linkageAreaFieldCol}>
                 <Text {...styles.linkageAreaLabel}>
                   {t('profile.specialAttention', 'Special Attention Tags')}
                 </Text>
                 <Select
-                  options={SPECIAL_ATTENTION_OPTS}
+                  options={optionsState.specialAttentionOpts}
                   value={specialAttention}
                   onChange={setSpecialAttention}
                   placeholder={t('profile.selectSpecialAttention', 'Select special attention tags...')}
@@ -493,7 +601,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
                   {t('profile.immediateAttention', 'Immediate Attention Tags')}
                 </Text>
                 <Select
-                  options={IMMEDIATE_ATTENTION_OPTS}
+                  options={optionsState.immediateAttentionOpts}
                   value={immediateAttention}
                   onChange={setImmediateAttention}
                   placeholder={t('profile.selectImmediateAttention', 'Select immediate attention tags...')}
@@ -504,32 +612,18 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
           )}
 
           {/* select Assets category */}
-          {selectedCategory === 'Assets' && (
+          {isAssetCategory(selectedCategory) && (
             <VStack {...styles.assetsAreaBox}>
               <Text {...styles.assetsAreaLabel}>
                 {t('profile.assetTypes', 'Asset Types Offered')}
               </Text>
               <Select
-                options={ASSETS_OPTS}
+                options={optionsState.assetTypesOpts}
                 value={assetTypes}
                 onChange={setAssetTypes}
                 placeholder={t('profile.selectAssetTypes', 'Select asset types...')}
                 multiple={true}
               />
-            </VStack>
-          )}
-
-          {/* select Others category */}
-          {selectedCategory === 'Others' && (
-            <VStack {...styles.othersAreaCol}>
-              <Text {...styles.label}>{t('profile.otherDetails', 'Other Support Details')}</Text>
-              <Input {...styles.textInput}>
-                <InputField
-                  placeholder={t('profile.otherDetailsPlaceholder', 'Enter custom support offerings')}
-                  value={othersText}
-                  onChangeText={setOthersText}
-                />
-              </Input>
             </VStack>
           )}
 

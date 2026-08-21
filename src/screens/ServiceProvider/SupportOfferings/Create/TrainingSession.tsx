@@ -17,7 +17,7 @@ import {
 } from '../../../../services/mentoringService';
 import NotFound from '@components/NotFound';
 import { uploadService, valueMapping } from '@utils/supportProvider';
-import { FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { FORM_MODE, SESSION_STATUS, SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import logger from '@utils/logger';
 import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
 
@@ -42,7 +42,8 @@ const App = (): React.JSX.Element => {
   const [isLoading, setIsLoading] = useState(true);
   const [lodingButton, setLodingButton] = useState<false | "saveDraft" | "submit">(false);
   const { showAlert } = useAlert();
-  const { isProfileComplete } = useProfileCompletion();
+  const { isCardAllowed, allowedSubOptions } = useProfileCompletion();
+  const isAllowed = Boolean( isCardAllowed(SUPPORT_CATEGORIES.TRAINING));
 
   const { optionsMap } = useTrainingFormOptions({
     values,
@@ -51,6 +52,7 @@ const App = (): React.JSX.Element => {
     targetAudience,
     deliveryModes,
     deliveryModeIcons: DELIVERY_MODE_ICONS,
+    allowedSubOptions,
   });
 
   const getHeaderTitle = () => {
@@ -167,7 +169,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  if (isProfileComplete === false) {
+  if (modeType === FORM_MODE.CREATE && !isAllowed) {
     return (
       <NotFound
         message={t(

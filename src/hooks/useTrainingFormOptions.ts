@@ -10,6 +10,7 @@ interface UseTrainingFormOptionsParams {
   targetAudience?: MentoringOption[];
   deliveryModes?: MentoringOption[];
   deliveryModeIcons?: Record<string, string>;
+  allowedSubOptions?: Record<string, string[]>;
 }
 
 export function useTrainingFormOptions({
@@ -19,9 +20,12 @@ export function useTrainingFormOptions({
   targetAudience = [],
   deliveryModes = [],
   deliveryModeIcons = {},
+  allowedSubOptions,
 }: UseTrainingFormOptionsParams) {
   const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
   const [sites, setSites] = useState<any[]>([]);
+  // Only allow user to select selected Sub options in Profile
+  const filteredPillers = allowedSubOptions ? pillers.filter((p) => (allowedSubOptions[p.value]?.length ?? 0) > 0) : pillers;
 
   // Fetch session types when categories/pillar changes
   useEffect(() => {
@@ -37,7 +41,9 @@ export function useTrainingFormOptions({
       if (pillarCode) {
         try {
           const res = await getSessionTypesByPillar(pillarCode);
-          setSessionTypes(res || []);
+          const allowedIds = allowedSubOptions?.[pillarCode];
+          const filtered = allowedIds ? (res || []).filter((r) => allowedIds.includes(r.value)) : res;
+          setSessionTypes(filtered || []);
         } catch (err) {
           console.error('Error fetching session types:', err);
           setSessionTypes([]);
@@ -48,7 +54,7 @@ export function useTrainingFormOptions({
     };
 
     init();
-  }, [values.categories, pillers]);
+  }, [values.categories, pillers, allowedSubOptions]);
 
   // Fetch sites when province changes
   useEffect(() => {
@@ -73,13 +79,13 @@ export function useTrainingFormOptions({
     return buildTrainingFormOptionsMap({
       provinces,
       sites,
-      pillers,
+      pillers: filteredPillers,
       sessionTypes,
       targetAudience,
       deliveryModes,
       deliveryModeIcons,
     });
-  }, [provinces, sites, pillers, sessionTypes, targetAudience, deliveryModes, deliveryModeIcons]);
+  }, [provinces, sites, filteredPillers, sessionTypes, targetAudience, deliveryModes, deliveryModeIcons]);
 
   return {
     sessionTypes,

@@ -10,12 +10,14 @@ import { getSitesByProvince, getProvincesList } from '../../../../services/users
 import { getProjectCategoryList } from '../../../../services/projectService';
 import { useProfileCompletion } from '@hooks';
 import NotFound from '@components/NotFound';
+import { SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const { showAlert } = useAlert();
-  const { isProfileComplete } = useProfileCompletion();
+  const { isCardAllowed } = useProfileCompletion();
+  const isAllowed = Boolean(isCardAllowed(SUPPORT_CATEGORIES.ASSET));
   
   const [provinces, setProvinces] = useState<any[]>([]);
   const [dynamicSites, setDynamicSites] = useState<any[]>([]);
@@ -159,7 +161,7 @@ const App = (): React.JSX.Element => {
     }
   }
 
-  if (isProfileComplete === false) {
+  if (!isAllowed) {
     return (
       <NotFound
         message={t(
