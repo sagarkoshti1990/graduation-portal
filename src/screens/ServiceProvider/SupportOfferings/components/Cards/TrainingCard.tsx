@@ -395,7 +395,7 @@ const Card: React.FC<CardProps> = ({
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="MapPin" {...styles.cardMetaIconProps} />
             <Text {...styles.cardMetaSmText}>{provinces?.find((e: any) => e._id === item.provinces?.[0] || e._id === item?.meta?.provinces?.[0])?.name || '-'}</Text>
-            {item?.sites || item?.meta?.sites &&
+            {!!(item?.sites || item?.meta?.sites) &&
               <Text {...styles.cardMetaSmText}>
                 {sites?.filter((e: any) => item?.sites?.includes(e._id) || item?.meta?.sites?.includes(e._id))?.map(e => e.name).join(", ") || '-'}
               </Text>

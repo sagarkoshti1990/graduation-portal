@@ -42,11 +42,10 @@ const DEFAULT_PROVINCE_OPTIONS = [{ label: 'All Provinces', value: 'all-province
 
 const DEFAULT_SITE_OPTIONS = [{ label: 'All Sites', value: 'all-sites' },];
 
-const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: boolean; isSessionsSupport?: boolean } = {}): React.JSX.Element => {
+const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('sessions');
-  const [activeSubTab, setActiveSubTab] = useState('browse_sessions');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
@@ -69,21 +68,6 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
     { key: 'additional_services', label: t('supportProvider.supportOfferings.tabs.additionalServices', 'Additional Services'), count: counts.additional_services, icon: 'Briefcase' },
     { key: 'assets', label: t('supportProvider.supportOfferings.tabs.assets', 'Assets'), count: counts.assets, icon: 'Box' },
   ];
-
-  const subTabs = [
-    { key: 'browse_sessions', label: t('lc.sessionsSupport.tabs.browseSessions', 'Browse Sessions') },
-    { key: 'my_requests', label: t('lc.sessionsSupport.tabs.myRequests', 'My Requests') },
-    { key: 'my_sessions', label: t('lc.sessionsSupport.tabs.mySessions', 'My Sessions') },
-    { key: 'history', label: t('lc.sessionsSupport.tabs.history', 'History') },
-  ];
-
-  const displayTabs = isSessionsSupport
-    ? tabs.map((tab) => ({
-      ...tab,
-      count: undefined,
-      icon: tab.key === 'sessions' ? 'Calendar' : tab.key === 'additional_services' ? 'Wrench' : 'Box',
-    }))
-    : tabs;
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -134,7 +118,7 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
             { label: 'All Provinces', value: 'all-provinces' },
             ...provincesData.map((p: any) => ({
               label: p.metaInformation?.name || p.name || p.title || p.label,
-              value: p.externalId || p._id || p.id || p.value,
+              value: p._id || p.id || p.value,
             })),
           ];
           setProvinceOptions(dynamicProvinces);
@@ -182,7 +166,6 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
                 s.title ||
                 s.label,
               value:
-                s.externalId ||
                 s._id ||
                 s.id ||
                 s.value,
@@ -208,7 +191,7 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
   // Reset page when tab or filters change
   useEffect(() => {
     setPage(1);
-  }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site]);
+  }, [activeTab, filters.search, filters.status, filters.province, filters.site]);
 
   // Fetch listing data
   const fetchData = useCallback(async () => {
@@ -284,92 +267,48 @@ const App = ({ hideHeader = false, isSessionsSupport = false }: { hideHeader?: b
 
   return (
     <VStack flex={1}>
-      {!hideHeader && (
-        <SPTitleHeader
-          title={t('supportProvider.supportOfferings.title')}
-          subTitle={t('supportProvider.supportOfferings.subtitle')}
-          rightSection={
-            <Button
-              onPress={() => navigation.navigate('create-opportunity' as never)}
-            >
-              <ButtonIcon as={LucideIcon} name={'Plus'} />
-              <ButtonText>{t('supportProvider.supportOfferings.createNew')}</ButtonText>
-            </Button>
-          }
-        />
-      )}
-      <Box {...(isSessionsSupport ? styles.sessionSupportTabBox : styles.tabBarBox)}>
+      <SPTitleHeader
+        title={t('supportProvider.supportOfferings.title')}
+        subTitle={t('supportProvider.supportOfferings.subtitle')}
+        rightSection={
+          <Button
+            onPress={() => navigation.navigate('create-opportunity' as never)}
+          >
+            <ButtonIcon as={LucideIcon} name={'Plus'} />
+            <ButtonText>{t('supportProvider.supportOfferings.createNew')}</ButtonText>
+          </Button>
+        }
+      />
+      <Box {...styles.tabBarBox}>
         <Container {...styles.container} py="$0">
-          {isSessionsSupport ? (
-            <Box {...styles.sessionSupportTabWrapper}>
-              {displayTabs.map((tab) => (
-                <TabButton
-                  key={tab.key}
-                  tab={tab}
-                  isActive={activeTab === tab.key}
-                  onPress={handleTabChange}
-                  variant="ButtonTab"
-                  _text={styles.tabTextProps}
-                  _container={{
-                    ...styles.tabButtonContainer,
-                    borderRadius: activeTab === tab.key ? 50 : 0,
-                  }}
-                  iconSize={16}
-                />
-              ))}
-            </Box>
-          ) : (
-            <HStack alignItems="center" space="sm">
-              {tabs.map((tab) => (
-                <TabButton
-                  key={tab.key}
-                  tab={tab}
-                  isActive={activeTab === tab.key}
-                  onPress={handleTabChange}
-                  _text={styles.tabTextProps}
-                  _container={styles.tabButtonContainer}
-                  iconSize={16}
-                />
-              ))}
-            </HStack>
-          )}
+          <HStack alignItems="center" space="sm">
+            {tabs.map((tab) => (
+              <TabButton
+                key={tab.key}
+                tab={tab}
+                isActive={activeTab === tab.key}
+                onPress={handleTabChange}
+                _text={styles.tabTextProps}
+                _container={styles.tabButtonContainer}
+                iconSize={16}
+              />
+            ))}
+          </HStack>
         </Container>
       </Box>
 
-      {isSessionsSupport && (
-        <Box {...styles.sessionSupportSubTabBarBox}>
-          <Container {...styles.container} py="$0">
-            <HStack alignItems="center" space="sm">
-              {subTabs.map((tab) => (
-                <TabButton
-                  key={tab.key}
-                  tab={tab}
-                  isActive={activeSubTab === tab.key}
-                  onPress={(key) => setActiveSubTab(key)}
-                  _text={styles.tabTextProps}
-                  _container={styles.tabButtonContainer}
-                  iconSize={16}
-                />
-              ))}
-            </HStack>
-          </Container>
-        </Box>
-      )}
-
       <Container {...styles.container}>
         <VStack {...styles.contentContainer}>
-          {activeTab === 'sessions' && (!isSessionsSupport || activeSubTab === 'browse_sessions') && (
-            <FilterButton
-              data={filterOptions}
-              onFilterChange={handleFilterChange}
-              showClearButton={false}
-              hideTitleHeader={true}
-              _container={styles.filterContainer}
-              _input={styles.filterInputProps}
-            />
-          )}
+          <FilterButton
+            data={filterOptions}
+            onFilterChange={handleFilterChange}
+            showClearButton={false}
+            hideTitleHeader={true}
+            _container={styles.filterContainer}
+            _input={styles.filterInputProps}
+          />
 
-          {activeTab === 'sessions' && (!isSessionsSupport || activeSubTab === 'browse_sessions') && (
+          {activeTab === 'sessions' && (
             <TrainingCard
               items={items}
               isShowLoadMore={isShowLoadMore}
