@@ -96,14 +96,29 @@ const CreateSessionScreen = (): React.JSX.Element => {
       setValues(formValues);
       const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
 
-      await createSession(payload);
+      const result = await createSession(payload);
 
       const successMsg = isDraft
         ? t('supportProvider.createSupport.training.alerts.draftSaved', 'Draft saved successfully!')
         : t('supportProvider.createSupport.training.alerts.sessionSaved', 'Training session saved successfully!');
 
       showAlert('success', successMsg);
-      navigation.navigate('sessions-support' as never);
+
+      // Build a session object from the form values to immediately show in My Sessions
+      const newSession = {
+        id: result?.data?._id || result?.data?.id || result?._id || result?.id || `local-${Date.now()}`,
+        title: formValues.title || formValues.idp_training_task_label || '',
+        status: isDraft ? 'DRAFT' : 'UPCOMING',
+        start_date: formValues.start_date,
+        end_date: formValues.end_date,
+        seats_limit: formValues.max_participants || formValues.seats_limit,
+        seats_remaining: formValues.max_participants || formValues.seats_limit,
+        delivery_mode: formValues.delivery_mode,
+        ...formValues,
+      };
+
+      // Navigate back and pass the new session as a param
+      (navigation as any).navigate('sessions-support', { newSession });
     } catch (error: any) {
       console.error('Error saving training session:', error);
       const errMsg =

@@ -27,10 +27,24 @@ export const sessionsSupportStyles = {
   createSessionBtn: {
     variant: 'outline' as const,
     bg: '$white',
-    borderColor: '$borderColor',
+    // borderColor: '$borderColor',
     px: '$4',
     py: '$2.5',
     borderRadius: '$lg',
+    gap: '$1.5',
+    shadowColor: '$black',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    sx: {
+      _hover: {
+        borderColor: '$borderColor !important',
+      },
+      _focus: {
+        borderColor: '$borderColor !important',
+      },
+    },
   },
   createSessionBtnText: {
     color: '$textForegroundColor',
@@ -456,6 +470,119 @@ export const sessionsSupportStyles = {
   assignParticipantsFooterLoadingContainer: {
     py: '$4',
     alignItems: 'center' as const,
+  },
+
+  // My Session Card styles
+  mySessionCard: {
+    bg: '$white',
+    borderWidth: 1,
+    borderColor: '$borderLight200',
+    borderRadius: 16,
+    px: '$4' as const,
+    py: '$4' as const,
+    width: '100%' as const,
+    shadowColor: '$black' as const,
+    shadowOffset: { width: 0, height: 2 } as const,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+    sx: {
+      _hover: {
+        borderColor: '$primary500 !important',
+      },
+      _focus: {
+        borderColor: '$primary500 !important',
+      },
+    },
+  },
+  mySessionsDescriptionText: {
+    fontSize: '$sm',
+    color: '$textSecondary',
+    fontWeight: '$normal' as const,
+    paddingBottom: '$3' as const,
+  },
+  mySessionCardVStack: {
+    space: 'md' as const,
+    width: '100%' as const,
+  },
+  mySessionCardHeaderRow: {
+    alignItems: 'flex-start' as const,
+    justifyContent: 'space-between' as const,
+    width: '100%' as const,
+    space: 'sm' as const,
+  },
+  mySessionCardTitle: {
+    fontSize: '$md',
+    fontWeight: '700' as const,
+    color: '$textPrimary',
+    lineHeight: '$md',
+    flexShrink: 1,
+  },
+  mySessionCardMetaRow: {
+    flexWrap: 'wrap' as const,
+    alignItems: 'center' as const,
+    gap: '$4' as const,
+  },
+  mySessionCardMetaItem: {
+    alignItems: 'center' as const,
+    space: 'xs' as const,
+  },
+  mySessionCardMetaText: {
+    fontSize: '$xs',
+    color: '$textSecondary',
+  },
+  mySessionCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '$borderLight100',
+    paddingTop: '$3' as any,
+    justifyContent: 'flex-end' as const,
+    alignItems: 'center' as const,
+    space: 'sm' as const,
+  },
+  mySessionCardAssignBtn: {
+    borderColor: '$borderColor',
+    bg: '$white',
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 32,
+    minHeight: 32,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  mySessionCardAssignBtnText: {
+    color: '$textPrimary',
+    fontSize: '$xs !important',
+    fontWeight: '$normal',
+    lineHeight: 12,
+  },
+  mySessionCardManageBtn: {
+    bg: '$primary500',
+    borderRadius: 10,
+    height: 32,
+    minHeight: 32,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  mySessionCardManageBtnText: {
+    color: '$white',
+    fontSize: '$xs !important',
+    fontWeight: '$normal',
+    lineHeight: 12,
+  },
+  mySessionCardStatusBadgeText: {
+    fontSize: '$xs !important',
+    fontWeight: '$medium !important',
+    lineHeight: '12px !important',
+    textTransform: 'none' as const,
+  },
+  // My Sessions list container
+  mySessionsListVStack: {
+    space: 'md' as const,
+    width: '100%' as const,
   },
 } as const;
 

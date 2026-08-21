@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, ButtonIcon, ButtonText, Container, HStack, LucideIcon, Pressable, Text, VStack, useAlert } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import PageHeader from '@components/PageHeader';
 import {
   REQUEST_SUPPORT_OPTIONS,
@@ -25,13 +25,16 @@ import styles from './styles';
 import supportOfferingsStyles from '../ServiceProvider/SupportOfferings/styles';
 import { RequestFooter } from './RequestorFooter';
 import AssignParticipantsModal from './components/modals/AssignParticipantsModal';
+import LcMySessionTab from './components/LcMySessionTab';
 
 const SessionsSupportScreen: React.FC = () => {
   const { t } = useLanguage();
   const navigation = useNavigation();
+  const route = useRoute() as any;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [mySessions, setMySessions] = useState<any[]>([]);
   const { showAlert } = useAlert();
 
   const handleAssignSessionClick = (item: any) => {
@@ -53,6 +56,26 @@ const SessionsSupportScreen: React.FC = () => {
   // Listing state, filters, and tabs reused from SupportOfferings logic
   const [activeTab, setActiveTab] = useState('sessions');
   const [activeSubTab, setActiveSubTab] = useState('browse_sessions');
+
+  // Capture newly created session from navigation params (passed back by CreateSession)
+  useEffect(() => {
+    const params = route?.params as any;
+    if (params?.newSession) {
+      setMySessions((prev) => {
+        // Avoid duplicates by id
+        const id = params.newSession.id || params.newSession._id;
+        if (id && prev.some((s) => (s.id || s._id) === id)) return prev;
+        return [params.newSession, ...prev];
+      });
+      // Switch to My Sessions tab so the user sees the new session
+      setActiveTab('sessions');
+      setActiveSubTab('my_sessions');
+      // Clear the param so re-visits don't re-add it
+      navigation.setParams({ newSession: undefined } as any);
+    }
+  }, [route?.params]);
+
+
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [provincesList, setProvincesList] = useState<ProvinceEntity[]>([]);
   const [provinceOptions, setProvinceOptions] = useState(DEFAULT_PROVINCE_OPTIONS);
@@ -264,12 +287,17 @@ const SessionsSupportScreen: React.FC = () => {
         let totalCount = 0;
 
         if (activeTab === 'sessions') {
-          const res = activeSubTab === 'browse_sessions'
-            ? await getRequestSessionsList(params)
-            : await getTrainingSessions(params);
-          fetchedData = res?.result?.data || [];
-          totalCount = res?.result?.count ?? res?.total ?? res?.count ?? (res?.result?.total ?? fetchedData.length);
+          let result;
+          if (activeSubTab === 'browse_sessions') {
+            result = await getRequestSessionsList(params);
+          } else {
+            result = await getTrainingSessions(params);
+          }
+
+          fetchedData = result?.result?.data || [];
+          totalCount = result?.result?.count ?? result?.total ?? result?.count ?? (result?.result?.total ?? fetchedData.length);
           setCounts((prev) => ({ ...prev, sessions: totalCount }));
+
         } else if (activeTab === 'additional_services') {
           const res = await getAdditionalServices(params);
           fetchedData = Array.isArray(res) ? res : (res as any)?.result?.data || [];
@@ -336,19 +364,13 @@ const SessionsSupportScreen: React.FC = () => {
         rightSection={
           <Box {...styles.rightSectionBox}>
             <HStack {...styles.rightSectionHStack}>
-              <Button
-                {...styles.createSessionBtn}
-                onPress={() => navigation.navigate('sessions-support/create' as never)}
-              >
+              <Button {...styles.createSessionBtn} onPress={() => navigation.navigate('sessions-support/create' as never)}>
                 <ButtonIcon as={LucideIcon} name="Plus" size={16} color="$textForegroundColor" />
                 <ButtonText {...styles.createSessionBtnText}>
                   {t('lc.sessionsSupport.createSession')}
                 </ButtonText>
               </Button>
-              <Button
-                {...styles.requestSupportBtn}
-                onPress={() => setIsDropdownOpen(prev => !prev)}
-              >
+              <Button {...styles.requestSupportBtn} onPress={() => setIsDropdownOpen(prev => !prev)}>
                 <ButtonIcon as={LucideIcon} name="Plus" size={16} color="$white" />
                 <ButtonText {...styles.requestSupportBtnText}>
                   {t('lc.sessionsSupport.requestSupport')}
@@ -490,6 +512,32 @@ const SessionsSupportScreen: React.FC = () => {
                 />
               )}
             </>
+          ) : activeSubTab === 'my_sessions' ? (
+            mySessions.length > 0 ? (
+              <VStack {...styles.mySessionsListVStack}>
+                {mySessions.map((session, idx) => (
+                  <LcMySessionTab
+                    key={session.id || session._id || idx}
+                    item={session}
+                    isFirst={idx === 0}
+                  />
+                ))}
+              </VStack>
+            ) : (
+              <Box {...styles.emptyStateContainer}>
+                <VStack {...styles.emptyStateVStack}>
+                  <Box {...styles.emptyStateIconContainer}>
+                    <LucideIcon name="Clock" size={30} color="$textMutedForeground" />
+                  </Box>
+                  <Text {...styles.emptyStateTitle}>
+                    {t('lc.sessionsSupport.emptyState.title', 'No history yet')}
+                  </Text>
+                  <Text {...styles.emptyStateDescription}>
+                    {t('lc.sessionsSupport.emptyState.description', 'Completed support will appear here')}
+                  </Text>
+                </VStack>
+              </Box>
+            )
           ) : (
             <Box {...styles.emptyStateContainer}>
               <VStack {...styles.emptyStateVStack}>
