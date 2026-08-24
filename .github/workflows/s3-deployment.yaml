@@ -63,7 +63,7 @@ jobs:
             --exclude "index.html"
 
           # index.html must never be long-cached, or you'll serve stale app shells
-          aws s3 cp ./build/index.html s3://${{ env.S3_BUCKET }}/index.html \
+          aws s3 cp ./dist/index.html s3://${{ env.S3_BUCKET }}/index.html \
             --cache-control "no-cache,no-store,must-revalidate"
 
       # =========================
