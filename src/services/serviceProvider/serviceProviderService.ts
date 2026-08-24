@@ -45,9 +45,16 @@ export interface SupportRequestsFilterParams {
 
 export interface AcceptAndSchedulePayload {
   requestId: string | number;
+  province?: string;
+  category?: string;
+  title?: string;
+  description?: string;
+  targetAudience?: string;
   date: string;
   time: string;
   duration: string;
+  delivery_mode?: string;
+  capacity?: string;
   location: string;
   meetingLink?: string;
   notes?: string;
@@ -138,26 +145,26 @@ const mapRequestSessionItem = (
     ? Math.max(0, moment().diff(requestedMoment, 'days'))
     : 0);
 
-  const provinceId = Array.isArray(meta.provinces) ? meta.provinces[0] : undefined;
-  const siteId = Array.isArray(meta.sites) ? meta.sites[0] : undefined;
-  const provinceName = provinceMap[provinceId] || item.province?.name || (typeof item.province === 'string' ? item.province : undefined);
+  const provinceId = meta.provinces?.[0];
+  const siteIds: string[] = Array.isArray(meta.sites) ? meta.sites : [];
+  const provinceName = provinceMap[provinceId];
+  const siteNames = siteIds.map((id) => siteMap[id] || id).join(', ');
 
   const participantsCount = item.participants_count ?? session.seats_remaining ?? (Array.isArray(item.requestees) ? item.requestees.length : undefined) ?? 1;
 
-  const title = item.title || session.title || item.taskDetails?.title || item.name || 'Untitled Session';
+  const title = item.title;
 
   return {
     id: item.id ?? item._id ?? item.request_id,
     type: tab,
-    category: session.category || item.category || title,
+    category: title,
     title,
     coach: item.user_details?.name || item.user?.name || item.requester_name || item.mentee_name || session.mentor_name || '-',
-    hub: item.hub || (provinceName ? `BRAC ${provinceName} Hub` : (siteMap[siteId] || item.site?.name || '-')),
+    hub: provinceName,
     location: meta.meeting_info?.location || session.meeting_info?.location || session.location || item.location || '-',
-    site: siteMap[siteId] || item.site?.name || item.site || siteId,
     province: provinceName || provinceId,
-    // participants: participantsCount,
-    participantsCount,
+    site: siteNames || undefined,
+    participants: participantsCount,
     preferredDate: startMoment ? startMoment.format('DD MMM YYYY') : '-',
     preferredTime: startMoment ? startMoment.format('hh:mm A') : '-',
     status: tab === 'declined' ? 'Declined' : 'pending',
