@@ -29,7 +29,7 @@ interface WorkshopRequest {
   preferredTime: string;
   preferredDate: string;
   location: string;
-  provinces?: string;
+  province?: string;
 }
 
 interface CardProps {
@@ -126,7 +126,7 @@ function Card({
             <HStack {...cardStyles.cardSubMetaItem}>
               <LucideIcon name="MapPin" {...cardStyles.iconDetailText} />
               <Text {...cardStyles.cardDetailText}>
-                {item?.provinces || 'N/A'}
+                {item?.province || 'N/A'}
               </Text>
             </HStack>
           </VStack>

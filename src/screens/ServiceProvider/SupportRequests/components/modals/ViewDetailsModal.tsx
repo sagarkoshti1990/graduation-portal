@@ -157,23 +157,19 @@ export default function ViewDetailsModal({
                 </Text>
               </HStack>
 
-              {email && (
-                <HStack {...modalStyles.coachInfoRow}>
-                  <LucideIcon name="Mail" {...modalStyles.iconContact} />
-                  <Text {...modalStyles.textContact}>
-                    {email}
-                  </Text>
-                </HStack>
-              )}
+              <HStack {...modalStyles.coachInfoRow}>
+                <LucideIcon name="Mail" {...modalStyles.iconContact} />
+                <Text {...modalStyles.textContact}>
+                  {email || '-'}
+                </Text>
+              </HStack>
 
-              {phone && (
-                <HStack {...modalStyles.coachInfoRow}>
-                  <LucideIcon name="Phone" {...modalStyles.iconContact} />
-                  <Text {...modalStyles.textContact}>
-                    {phone}
-                  </Text>
-                </HStack>
-              )}
+              <HStack {...modalStyles.coachInfoRow}>
+                <LucideIcon name="Phone" {...modalStyles.iconContact} />
+                <Text {...modalStyles.textContact}>
+                  {phone || '-'}
+                </Text>
+              </HStack>
             </VStack>
           </Box>
         </VStack>
