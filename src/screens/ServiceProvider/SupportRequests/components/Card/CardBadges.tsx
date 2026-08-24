@@ -22,7 +22,7 @@ export const CardBadges: React.FC<CardBadgesProps> = ({ overdueDays, status = 'P
           <HStack {...cardStyles.badgeRow}>
             <LucideIcon name="AlertCircle" {...cardStyles.badgeIconOverdue} />
             <Text {...cardStyles.badgeTextOverdue}>
-              {t(`${BASE_PATH}.cardBadges.overdue`)} ({overdueDays} {t(`${BASE_PATH}.cardBadges.days`)})
+              {t(`${BASE_PATH}.cardBadges.overdue`)} ({overdueDays > 7 ? '7+' : overdueDays} {t(`${BASE_PATH}.cardBadges.days`)})
             </Text>
           </HStack>
         </Box>

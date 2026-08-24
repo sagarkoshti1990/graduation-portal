@@ -2,6 +2,7 @@ import moment from 'moment';
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
 import supportRequestsMock from './mockData/supportRequests.json';
+import { getProvincesList, getAllSites } from '../usersService';
 
 export interface SupportRequestItem {
   id: string | number;
@@ -27,6 +28,12 @@ export interface SupportRequestItem {
   overdueDays?: number;
   declineReason?: string;
   declineDetails?: string;
+  hub?: string;
+  email?: string;
+  phone?: string;
+  justification?: string;
+  participantDetails?: string;
+  raw?: any;
 }
 
 export interface SupportRequestsFilterParams {
@@ -38,13 +45,30 @@ export interface SupportRequestsFilterParams {
 
 export interface AcceptAndSchedulePayload {
   requestId: string | number;
+  province?: string;
+  category?: string;
+  title?: string;
+  description?: string;
+  targetAudience?: string;
   date: string;
   time: string;
   duration: string;
+  delivery_mode?: string;
+  capacity?: string;
   location: string;
   meetingLink?: string;
   notes?: string;
+  raw?: any;
 }
+
+/** Duration option values (as used by ACCEPT_AND_SCHEDULE_FORM_SCHEMA) -> hours to add to start_date. */
+const DURATION_HOURS: Record<string, number> = {
+  '1_hour': 1,
+  '1.5_hours': 1.5,
+  '2_hours': 2,
+  '3_hours': 3,
+  full_day: 8,
+};
 
 export interface RequestInfoPayload {
   requestId: string | number;
@@ -99,9 +123,12 @@ const mockStore: Record<string, SupportRequestItem[]> = loadMockStore();
  */
 const mapRequestSessionItem = (
   item: any,
-  tab: 'sessions' | 'declined'
+  tab: 'sessions' | 'declined',
+  provinceMap: Record<string, string> = {},
+  siteMap: Record<string, string> = {}
 ): SupportRequestItem => {
   const session = item.session || item.session_details || {};
+  const meta = item.meta || {};
   const rawRequestedAt = item.created_at ?? item.requested_at ?? item.createdAt;
   const rawStartDate = session.start_date ?? item.start_date;
 
@@ -118,18 +145,26 @@ const mapRequestSessionItem = (
     ? Math.max(0, moment().diff(requestedMoment, 'days'))
     : 0);
 
+  const provinceId = meta.provinces?.[0];
+  const siteIds: string[] = Array.isArray(meta.sites) ? meta.sites : [];
+  const provinceName = provinceMap[provinceId];
+  const siteNames = siteIds.map((id) => siteMap[id] || id).join(', ');
+
+  const participantsCount = item.participants_count ?? session.seats_remaining ?? (Array.isArray(item.requestees) ? item.requestees.length : undefined) ?? 1;
+
+  const title = item.title;
+
   return {
     id: item.id ?? item._id ?? item.request_id,
     type: tab,
-    category: session.category || item.category || item.idp_training_task || 'Training Session',
-    title: item.title || session.title || item.taskDetails?.title || item.name || 'Untitled Session',
-    coach: item.user?.name || item.requester_name || item.mentee_name || session.mentor_name || '-',
-    hub: item.site?.name || item.hub || (Array.isArray(session.sites) ? session.sites[0] : undefined) || '-',
-    location: session.meeting_info?.location || session.location || item.location || '-',
-    site: item.site?.name || item.site || (Array.isArray(item.meta?.sites) ? item.meta.sites[0] : undefined),
-    province: item.province?.name || item.province || (Array.isArray(item.meta?.provinces) ? item.meta.provinces[0] : undefined),
-    participants: item.participants_count ?? session.seats_remaining ?? 1,
-    participantsCount: item.participants_count ?? session.seats_remaining ?? 1,
+    category: title,
+    title,
+    coach: item.user_details?.name || item.user?.name || item.requester_name || item.mentee_name || session.mentor_name || '-',
+    hub: provinceName,
+    location: meta.meeting_info?.location || session.meeting_info?.location || session.location || item.location || '-',
+    province: provinceName || provinceId,
+    site: siteNames || undefined,
+    participants: participantsCount,
     preferredDate: startMoment ? startMoment.format('DD MMM YYYY') : '-',
     preferredTime: startMoment ? startMoment.format('hh:mm A') : '-',
     status: tab === 'declined' ? 'Declined' : 'pending',
@@ -137,6 +172,10 @@ const mapRequestSessionItem = (
     overdueDays,
     declineReason: item.reason || item.decline_reason,
     declineDetails: item.details || item.decline_details,
+    justification: meta.learning_objectives || item.agenda || undefined,
+    email: item.user_details?.email || item.user?.email || undefined,
+    phone: item.user_details?.phone || item.user?.phone || undefined,
+    raw: item,
   } as SupportRequestItem;
 };
 
@@ -179,6 +218,28 @@ const applySupportRequestFilters = (
   return filtered;
 };
 
+let provinceMapCache: Record<string, string> | null = null;
+let siteMapCache: Record<string, string> | null = null;
+
+const getProvinceAndSiteMaps = async (): Promise<{
+  provinceMap: Record<string, string>;
+  siteMap: Record<string, string>;
+}> => {
+  if (provinceMapCache && siteMapCache) {
+    return { provinceMap: provinceMapCache, siteMap: siteMapCache };
+  }
+  try {
+    const [provinces, sites] = await Promise.all([getProvincesList(), getAllSites()]);
+    provinceMapCache = Object.fromEntries((provinces || []).map((p: any) => [p._id, p.name]));
+    siteMapCache = Object.fromEntries((sites || []).map((s: any) => [s._id, s.name]));
+  } catch (error) {
+    console.warn('[SupportRequests] Failed to fetch province/site names:', error);
+    provinceMapCache = provinceMapCache || {};
+    siteMapCache = siteMapCache || {};
+  }
+  return { provinceMap: provinceMapCache || {}, siteMap: siteMapCache || {} };
+};
+
 /**
  * Fetch support requests list filtered by tab, province, site, and search term.
  *
@@ -201,7 +262,7 @@ export const getSupportRequests = async (
     overdueTotal: number;
   };
 }> => {
-  const { tab = 'sessions', province, site, search } = params || {};
+  const { tab = 'sessions', provinces: province, sites: site, search } = params || {};
 
   let sessionsData: SupportRequestItem[] | null = null;
   let declinedData: SupportRequestItem[] | null = null;
@@ -210,28 +271,34 @@ export const getSupportRequests = async (
   let sessionsOverdueCount = mockStore.sessions.filter(i => (i.overdueDays || 0) > 0).length;
 
   try {
-    if (tab === 'sessions') {
-      const requestedRes = await api.get(API_ENDPOINTS.REQUEST_SESSIONS_LIST, {
-        params: { status: 'REQUESTED' },
-      });
-      if (requestedRes?.data?.responseCode === 'OK') {
-        const resObj = requestedRes.data.result;
-        const rawList = Array.isArray(resObj) ? resObj : (resObj?.data || []);
-        const mapped: SupportRequestItem[] = rawList.map((item: any) => mapRequestSessionItem(item, 'sessions'));
-        sessionsData = mapped;
-        sessionsCount = resObj?.count ?? (Array.isArray(resObj) ? resObj.length : mapped.length);
-        sessionsOverdueCount = mapped.filter(i => (i.overdueDays || 0) > 0).length;
-      }
-    } else if (tab === 'declined') {
-      const rejectedRes = await api.get(API_ENDPOINTS.REQUEST_SESSIONS_LIST, {
-        params: { status: 'REJECTED' },
-      });
-      if (rejectedRes?.data?.responseCode === 'OK') {
-        const resObj = rejectedRes.data.result;
-        const rawList = Array.isArray(resObj) ? resObj : (resObj?.data || []);
-        const mapped: SupportRequestItem[] = rawList.map((item: any) => mapRequestSessionItem(item, 'declined'));
-        declinedData = mapped;
-        declinedCount = resObj?.count ?? (Array.isArray(resObj) ? resObj.length : mapped.length);
+    if (tab === 'sessions' || tab === 'declined') {
+      const { provinceMap, siteMap } = await getProvinceAndSiteMaps();
+
+      if (tab === 'sessions') {
+        const requestedRes = await api.get(API_ENDPOINTS.REQUEST_SESSIONS_LIST, {
+          params: { status: 'REQUESTED' },
+        });
+        if (requestedRes?.data?.responseCode === 'OK') {
+          const resObj = requestedRes.data.result;
+          const rawList = Array.isArray(resObj) ? resObj : (resObj?.data || []);
+          const mapped: SupportRequestItem[] = rawList.map((item: any) =>
+            mapRequestSessionItem(item, 'sessions', provinceMap, siteMap));
+          sessionsData = mapped;
+          sessionsCount = resObj?.count ?? (Array.isArray(resObj) ? resObj.length : mapped.length);
+          sessionsOverdueCount = mapped.filter(i => (i.overdueDays || 0) > 0).length;
+        }
+      } else {
+        const rejectedRes = await api.get(API_ENDPOINTS.REQUEST_SESSIONS_LIST, {
+          params: { status: 'REJECTED' },
+        });
+        if (rejectedRes?.data?.responseCode === 'OK') {
+          const resObj = rejectedRes.data.result;
+          const rawList = Array.isArray(resObj) ? resObj : (resObj?.data || []);
+          const mapped: SupportRequestItem[] = rawList.map((item: any) =>
+            mapRequestSessionItem(item, 'declined', provinceMap, siteMap));
+          declinedData = mapped;
+          declinedCount = resObj?.count ?? (Array.isArray(resObj) ? resObj.length : mapped.length);
+        }
       }
     }
   } catch (error) {
