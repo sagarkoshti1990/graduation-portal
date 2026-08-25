@@ -44,6 +44,7 @@
     "offline": "Offline Mode",
     "online": "Online",
     "selectOption": "Select an option",
+    "selectAll": "Select All",
     "selectAtLeastOneOption": "Select At Least One Option",
     "placeholder": "Search users, templates, logs...",
     "actions": "Actions",
@@ -56,6 +57,14 @@
     "showMonthlyTrend": "Show Monthly Trend",
     "serverError500": "Something went wrong. Try again.",
     "somethingWentWrong": "Something went wrong. Try again."
+  },
+  "datePicker": {
+    "today": "Today",
+    "now": "Now",
+    "done": "Done",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "selectDateTime": "Select date & time"
   },
   "projectPlayer": {
     "onboarding": "Onboarding the",
@@ -1285,6 +1294,7 @@
       "province": "Province",
       "district": "District",
       "searchPlaceholder": "Search by name",
+      "searchOfferingsPlaceholder": "Search by Offerings...",
       "searchParticipantsPlaceholder": "Search participants",
       "allRoles": "All Roles",
       "admin": "Admin",
@@ -1396,7 +1406,7 @@
       "low": "Low",
       "createUser": {
         "title": "Create New User",
-        "description": "Add a new user to the system. Required fields are marked with *.",
+        "description": "Training / Session Description",
         "personalInformation": "Personal Information",
         "firstName": "First Name",
         "firstNamePlaceholder": "Enter first name",
@@ -1450,6 +1460,8 @@
           "positionRequired": "Position is required.",
           "employeeIdRequired": "Employee ID is required.",
           "employeeIdInvalid": "Employee ID must be 3 letters followed by 5 digits (e.g. ADM00001).",
+          "nationalIdRequired": "National ID is required.",
+          "nationalIdInvalid": "20 digits only required",
           "genderRequired": "Gender is required.",
           "dobRequired": "Date of Birth is required.",
           "usernameRequired": "Username is required.",
@@ -2188,14 +2200,43 @@
       "observation": "Observation",
       "template": "Develop Intervention Plan",
       "participants": "Participants",
+      "sessions-support": "Sessions & Support",
       "project": "Project",
       "home": "Home"
     },
     "menu": {
       "home": "Home",
       "dashboard": "Dashboard",
+      "sessionsSupport": "Sessions & Support",
       "myProfile": "My Profile",
       "serviceProviders": "Service Providers"
+    },
+    "sessionsSupport": {
+      "subtitle": "Browse sessions, additional services, and assets available in your province and site",
+      "createSession": "Create A Session",
+      "requestSupport": "Request New Support",
+      "sessionsFound": "sessions found",
+      "mySessionCard": {
+        "assignParticipants": "Assign Participants",
+        "manageSession": "Manage Session",
+        "participants": "participants"
+      },
+      "mySessionsDescription": "Sessions created and conducted by you.",
+      "emptyState": {
+        "title": "No history yet",
+        "description": "Completed support will appear here"
+      },
+      "alerts": {
+        "assignSuccess": "{{count}} participant(s) assigned to session successfully."
+      }
+    },
+    "createSession": {
+      "title": "Create a Session",
+      "badge": "Training Session"
+    },
+    "requestSession": {
+      "title": "Request a Session",
+      "badge": "Training Session"
     }
   },
   "template": {
@@ -2382,5 +2423,302 @@
     "taskConflictReasonTimestamp": "Online task was updated after the offline download.",
     "taskConflictReasonEvidence": "Online evidence differs from the offline evidence.",
     "taskConflictReasonMultiple": "Multiple differences detected."
+  },
+  "schemaformrenderer": {
+    "file" : {
+      "fileSize" : "Max {{ size }} MB"
+    }
+  },
+  "supportProvider": {
+    "header": {
+      "gblPartnerPlatform": "GBL Partner Platform"
+    },
+    "menu": {
+      "dashboard": "Dashboard",
+      "mySupportOfferings": "My Support Offerings",
+      "requests": "Requests",
+      "materialsLibrary": "Materials Library",
+      "profile": "Profile"
+    },
+    "pageTitle": {
+      "dashboard": "Dashboard",
+      "dashboard1": "Dashboard",
+      "opportunities": "My Support Offerings",
+      "create-opportunity": "Create New Support",
+      "create-training-session": "Create Training Session",
+      "create-additional-service": "Create Additional Service",
+      "create-asset": "Create Asset",
+      "requests": "Support Requests",
+      "materials": "Template & Resource Library",
+      "profile": "Organisation Profile"
+    },
+    "supportOfferings": {
+      "title": "My Support Offerings",
+      "subtitle": "Manage all published support — training sessions, services, and assets",
+      "createNew": "Create New",
+      "tabs": {
+        "trainingsAndSessions": "Trainings & Sessions",
+        "additionalServices": "Additional Services",
+        "assets": "Assets"
+      },
+      "filters": {
+        "allStatuses": "All Statuses",
+        "allProvinces": "All Provinces",
+        "allSites": "All Sites"
+      },
+      "statusOptions": {
+        "allStatuses": "All Statuses",
+        "upcoming": "Upcoming",
+        "inProgress": "In progress",
+        "completed": "Completed",
+        "draft": "Draft"
+      },
+      "cards": {
+        "hideDetails": "Hide Details",
+        "viewDetails": "View Details",
+        "requestedBy": "Requested by: {{name}}",
+        "copySession": "Copy Session",
+        "copyOffering": "Copy Offering",
+        "viewRequests": "View Requests",
+        "complete": "Complete",
+        "sessionComplete": "Session Complete",
+        "virtualLink": "Virtual Link",
+        "location": "Location",
+        "attendance": "Attendance",
+        "confirmAttendance": "Confirm Attendance",
+        "expectedParticipants": "Expected Participants",
+        "confirmedPresent": "Confirmed Present",
+        "notConfirmed": "Not confirmed",
+        "sessionMaterials": "Session Materials",
+        "uploadMaterial": "Upload Material",
+        "sessionNotes": "Session Notes",
+        "completionNotes": "Completion Notes",
+        "sector": "Sector: {{sector}}",
+        "value": "Value: {{value}}",
+        "locationLabel": "Location: {{location}}",
+        "hub": "Hub: {{hub}}",
+        "alerts": {
+          "draftSaved": "Support offering saved as draft!",
+          "supportPublished": "Support published successfully!",
+          "sessionSaved": "Session saved successfully!",
+          "supportCopied": "Support copied successfully!",
+          "sessionCompleted": "Session marked as completed successfully!",
+          "materialUploaded": "Material uploaded successfully!",
+          "downloading": "Downloading {{name}}...",
+          "navigatingRequests": "Navigating to support requests...",
+          "offeringCopied": "Offering copied successfully!",
+          "offeringCompleted": "Offering marked as complete!"
+        }
+      },
+      "modal": {
+        "headerTitle": "Confirm Attendance",
+        "markedPresentCount": "{{count}} of {{total}} participants marked present",
+        "markAll": "Mark all",
+        "clearAll": "Clear all",
+        "skipAndMarkComplete": "Skip & Mark Complete",
+        "confirmAndComplete": "Confirm & Complete"
+      },
+      "buttonTexts": {
+        "publishSupport": "Publish support",
+        "loadMoreSessions": "Load More Sessions"
+      }
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Overview of your impact and activities",
+      "createSupportBtn": "Create Support for Participants"
+    },
+    "createSupport": {
+      "title": "Create New Support",
+      "subtitle": "Choose the type of support you want to create",
+      "changeType": "Change type",
+      "training": {
+        "title": "Create Training Session"
+      },
+      "additionalService": {
+        "title": "Create Additional Service"
+      },
+      "asset": {
+        "title": "Create Asset"
+      },
+      "cards": {
+        "training": {
+          "title": "Trainings & Sessions",
+          "description": "Structured learning sessions with a schedule, objectives, and participant capacity."
+        },
+        "additionalServices": {
+          "title": "Additional Services",
+          "description": "Advisory, legal, healthcare, or specialist services for participants."
+        },
+        "assets": {
+          "title": "Assets",
+          "description": "Cash, in-kind, or voucher support for livelihood activities."
+        }
+      },
+      "errors": {
+        "saveFailed": "Something went wrong while saving. Please try again.",
+        "incompleteWarning": "Please Complete your Profile before proceeding."
+      }
+    },
+    "supportRequests": {
+      "buttonTexts": {
+        "cancel": "Cancel",
+        "sendRequest": "Send Request",
+        "confirmDecline": "Confirm Decline",
+        "confirmSchedule": "Confirm & Schedule",
+        "requestInfo": "Request Info",
+        "decline": "Decline",
+        "acceptSchedule": "Accept & Schedule",
+        "acceptRequest": "Accept Request",
+        "viewFullDetails": "View Full Details"
+      },
+      "titles": {
+        "header": "Support Requests",
+        "subheader": "Review and respond to requests from Coaches",
+        "viewDetails": "View Details",
+        "requestDetails": "Request Details",
+        "requestInfo": "Request More Information",
+        "decline": "Decline Request",
+        "acceptSchedule": "Accept & Schedule Training",
+        "coachInformation": "Coach Information"
+      },
+      "declineReasons": {
+        "capacity": "Capacity / Resource Constraints",
+        "outsideScope": "Outside Scope of Service",
+        "scheduleConflict": "Schedule Conflict",
+        "other": "Other / Custom Reason"
+      },
+      "durationOptions": {
+        "1hour": "1 hour",
+        "1_5hours": "1.5 hours",
+        "2hours": "2 hours",
+        "3hours": "3 hours",
+        "fullDay": "Full Day (4+ hours)"
+      },
+      "labels": {
+        "request": "Request:",
+        "coach": "Coach",
+        "yourQuestion": "Your Question or Request",
+        "selectReason": "Select Reason",
+        "reasonDetails": "Reason Details",
+        "date": "Date",
+        "time": "Time",
+        "duration": "Duration",
+        "locationVenue": "Location / Venue",
+        "meetingLink": "Meeting Link (if online)",
+        "notesForCoach": "Notes for Coach (optional)",
+        "participants": "Participants",
+        "requestedDate": "Requested Date",
+        "preferredDate": "Preferred Date",
+        "preferredTime": "Preferred Time",
+        "preferredLocation": "Preferred Location",
+        "province": "Province",
+        "category": "Category",
+        "requestJustification": "Request Justification",
+        "participantDetails": "Participant Details",
+        "specialRequirements": "Special Requirements"
+      },
+      "placeholders": {
+        "requestInfo": "What additional information do you need from the Coach?",
+        "declineReason": "Choose a preset reason or write your own",
+        "declineDetails": "Provide additional context or details for the Coach...",
+        "location": "e.g. Online via Zoom or BRAC Hub Room 1",
+        "meetingLink": "https://...",
+        "notes": "Any additional information or instructions...",
+        "search": "Search requests..."
+      },
+      "hints": {
+        "requestInfo": "The Coach will receive this message and can respond with the requested information",
+        "decline": "This feedback will be shared with the Coach"
+      },
+      "fallbacks": {
+        "date": "03/25/2024",
+        "time": "09:00 AM",
+        "location": "Online via Zoom",
+        "meetingLink": "https://meet.example.com/sp-session",
+        "notAvailable": "N/A"
+      },
+      "cardBadges": {
+        "overdue": "Overdue",
+        "days": "days"
+      },
+      "tabs": {
+        "sessions": "Sessions & Trainings",
+        "additional_services": "Additional Services",
+        "assets": "Assets",
+        "declined": "Declined",
+        "pending": "Pending",
+        "overdue": "Overdue"
+      }
+    },
+    "materialsLibrary": {
+      "title": "Template & Resource Library",
+      "subtitle": "Standalone content repository of all workbooks, guides, templates, and manuals uploaded for support offerings.",
+      "uploadResource": "Upload Resource",
+      "stats": {
+        "totalResources": "Total Resources",
+        "pdfDocuments": "PDFs & Documents",
+        "templatesDecks": "Templates & Decks",
+        "totalDownloads": "Total Downloads"
+      },
+      "filters": {
+        "searchPlaceholder": "Search resources, templates, or linked sessions...",
+        "allCategories": "All Categories",
+        "allFormats": "All Formats"
+      },
+      "categories": {
+        "financialLiteracy": "Financial Literacy",
+        "businessManagement": "Business Management",
+        "assetEquipment": "Asset & Equipment Support",
+        "legalCompliance": "Legal & Compliance"
+      },
+      "formats": {
+        "pdf": "PDF Document",
+        "template": "Templates & Decks",
+        "video": "Video Guide"
+      },
+      "card": {
+        "linked": "Linked: {{offering}}",
+        "uploaded": "Uploaded {{date}}",
+        "downloads": "{{count}} downloads",
+        "preview": "Preview",
+        "download": "Download",
+        "delete": "Delete"
+      },
+      "uploadModal": {
+        "title": "Upload Resource Material",
+        "labelTitle": "Title",
+        "labelDescription": "Description",
+        "labelCategory": "Category",
+        "labelFormatType": "Format Type",
+        "labelFileName": "File Name (Optional)",
+        "labelAssociatedOffering": "Associated Support Offering (Optional)",
+        "placeholderTitle": "e.g. Micro-Enterprise Accounting Guide",
+        "placeholderDescription": "Describe the material contents and how it helps coaches/participants...",
+        "placeholderFileName": "e.g. accounting-guide.pdf",
+        "placeholderAssociatedOffering": "e.g. Financial Literacy Workshop",
+        "cancel": "Cancel",
+        "addLibrary": "Add to Library",
+        "successMsg": "Resource uploaded successfully!",
+        "errorMsg": "Failed to upload resource. Please fill all required fields."
+      },
+      "previewModal": {
+        "title": "Category & Purpose",
+        "associatedOffering": "Associated Support Offering",
+        "fileName": "File Name",
+        "fileSize": "File Size",
+        "uploadDate": "Upload Date",
+        "downloads": "Downloads",
+        "close": "Close",
+        "downloadFile": "Download File"
+      },
+      "deleteModal": {
+        "title": "Confirm Delete",
+        "description": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "successMsg": "Resource deleted successfully!"
+      }
+    }
   }
 }

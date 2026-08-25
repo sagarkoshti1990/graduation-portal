@@ -29,11 +29,12 @@ export const API_ENDPOINTS = {
   USERS_LIST: `${prefix}/user/v1/account/search`,  // Search users for user management
   DEACTIVATE_USER: `user/v1/admin/deactivateUser`,
   ORG_ADMIN_UPDATE_USER: `${prefix}/user/v1/org-admin/updateUser`,
+  UPDATE_USER: `${prefix}/user/v1/user/update`,
   CREATE_USER: `${prefix}/user/v1/tenant/accountCreate`,
   GET_SIGNED_URL: `${prefix}/user/v1/cloud-services/file/getSignedUrl`,
   BULK_USER_CREATE: `${prefix}/user/v1/tenant/bulkUserCreate`,
   PROGRAM_USERS_SEARCH: `${prefix}/project/v1/programUsers/search`, // Search program users (LCs, participants, etc.),
-  UPDATE_ENTITY:`${prefix}/project/v1/programUsers/updateEntityProfile`,
+  UPDATE_ENTITY: `${prefix}/project/v1/programUsers/updateEntityProfile`,
   GENERATE_CERTIFICATE: (projectId: string) => `${prefix}/project/v1/userProjects/update/${projectId}`,
   PROJECT_DETAILS: (projectId: string) => `${prefix}/project/v1/userProjects/details/${projectId}`,
 };

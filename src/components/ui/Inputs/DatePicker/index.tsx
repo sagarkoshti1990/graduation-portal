@@ -1,10 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { Pressable, Platform } from 'react-native';
-import { Input, InputField, Box, HStack } from '@ui';
+import { Input, InputField, Box, HStack, Text, Modal } from '@ui';
 import { LucideIcon } from '@ui';
 import { useLanguage } from '@contexts/LanguageContext';
 import Calendar from './Calendar';
-import { datePickerStyles } from './Styles';
+import { datePickerStyles, buildTheme, mergeStyle } from './Styles';
+import type {
+  DatePickerMode,
+  DatePickerColor,
+  DatePickerTheme,
+  DatePickerStyles,
+} from './Styles';
+import { parseDateValue, formatDate, getMonthNames, getDayNames } from './utils';
 
 // For web portal (similar to SelectPortal)
 let ReactDOM: any = null;
@@ -12,28 +19,153 @@ if (Platform.OS === 'web') {
   ReactDOM = require('react-dom');
 }
 
-interface DatePickerProps {
-  value?: string; // Date value in YYYY-MM-DD format
-  onChange: (date: string) => void;
+// Web popup positioning: same viewport-clamping approach already used by
+// Select's dropdown (top/bottom flip + horizontal clamp + maxHeight cap).
+// Width is known per mode (matches Styles.ts's `getContainerSizeStyle`);
+// height is content-driven, so it starts as a generous estimate and gets
+// corrected against the real rendered size the moment the popup mounts.
+const POPUP_WIDTH_BY_MODE: Record<DatePickerMode, number> = {
+  date: 300,
+  time: 300,
+  datetime: 460,
+};
+const POPUP_HEIGHT_ESTIMATE = 420;
+const POSITION_MARGIN = 8;
+const POSITION_GAP = 8;
+
+const resolveDom = (node: unknown): HTMLElement | null => {
+  if (!node) return null;
+  const inner = (node as any)._node || (node as any).current || node;
+  return inner && typeof (inner as any).getBoundingClientRect === 'function'
+    ? (inner as HTMLElement)
+    : null;
+};
+
+/**
+ * "Latest ref" wrapper — returns a permanently-stable function identity that
+ * always calls whatever `fn` was passed on the most recent render. Lets
+ * `Calendar` (already `React.memo`'d, along with everything under it) skip
+ * re-rendering when a caller-supplied callback prop (e.g. `onChange`) isn't
+ * itself stable, without needing that caller to change anything.
+ */
+function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
+  ref.current = fn;
+  return useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
+}
+
+// Module-level singleton: every DatePicker instance shares this import, so a
+// plain Map here coordinates across independent instances with no new props,
+// Context, or architecture — only one popup stays open across the whole app.
+const openPickers = new Map<string, () => void>();
+
+const closeOtherPickers = (exceptId: string) => {
+  openPickers.forEach((close, id) => {
+    if (id !== exceptId) close();
+  });
+};
+
+export type { DatePickerMode, DatePickerColor, DatePickerTheme, DatePickerStyles };
+
+export interface RenderDayParams {
+  date: Date;
+  isSelected: boolean;
+  isToday: boolean;
+  isCurrentMonth: boolean;
+  isDisabled: boolean;
+  onPress: () => void;
+}
+
+export interface RenderHeaderParams {
+  monthLabel: string;
+  yearLabel: string;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onPrevYear: () => void;
+  onNextYear: () => void;
+  onToggleMonthDropdown: () => void;
+  onToggleYearDropdown: () => void;
+}
+
+export interface RenderFooterParams {
+  onToday: () => void;
+  onClear: () => void;
+  onCancel: () => void;
+  onDone: () => void;
+  labels: { today: string; now: string; clear: string; cancel: string; done: string };
+}
+
+export interface RenderInputParams {
+  value: string;
+  displayValue: string;
+  isOpen: boolean;
+  isDisabled: boolean;
+  onPress: () => void;
+}
+
+export interface DatePickerProps {
+  mode?: DatePickerMode;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
   placeholder?: string;
   maximumDate?: Date;
   minimumDate?: Date;
-  isOpen?: boolean; // Controlled open state
-  onOpenChange?: (isOpen: boolean) => void; // Callback when open state changes
-  iconSize?: number; // Size of the calendar icon
+  isDisabled?: boolean;
   isReadOnly?: boolean;
-  [key: string]: any; // Allow additional props for styling
+  isInvalid?: boolean;
+  errorMessage?: string;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  hourFormat?: 12 | 24;
+  displayFormat?: string;
+  apiFormat?: string;
+  // Alias for `apiFormat` — the value committed via `onChange`. Independent of
+  // `displayFormat`, which only controls what's shown in the input/trigger.
+  valueFormat?: string;
+  // 'popup' (default): floating calendar, existing behavior. 'modal': same
+  // calendar content rendered inside the shared centered `<Modal>` (already
+  // used natively) instead of the web floating popup.
+  popupMode?: 'popup' | 'modal';
+  locale?: string;
+  color?: DatePickerColor;
+  theme?: Partial<DatePickerTheme>;
+  styles?: DatePickerStyles;
+  renderInput?: (params: RenderInputParams) => React.ReactNode;
+  renderHeader?: (params: RenderHeaderParams) => React.ReactNode;
+  renderFooter?: (params: RenderFooterParams) => React.ReactNode;
+  renderDay?: (params: RenderDayParams) => React.ReactNode;
+  // Legacy props kept for backward compatibility
+  iconSize?: number;
+  disabled?: boolean;
+  // Passthrough to the underlying Input (existing behavior)
+  [key: string]: any;
 }
+
+const DEFAULT_API_FORMATS: Record<DatePickerMode, string> = {
+  date: 'YYYY-MM-DD',
+  time: 'HH:mm',
+  datetime: 'YYYY-MM-DDTHH:mm:ss',
+};
+
+const getDefaultDisplayFormat = (mode: DatePickerMode, hourFormat: 12 | 24): string => {
+  const timeFormat = hourFormat === 24 ? 'HH:mm' : 'hh:mm A';
+  if (mode === 'date') return 'DD/MM/YYYY';
+  if (mode === 'time') return timeFormat;
+  return `DD/MM/YYYY ${timeFormat}`;
+};
 
 /**
  * DatePicker Component
- * Custom calendar component that works on all platforms (Web, iOS, Android)
- * Uses Gluestack UI components for consistent styling
- * UI matches reference design with month/year navigation, date grid, and Clear/Today buttons
- * Calendar opens below the input field without backdrop
+ * Reusable date / time / datetime picker that works on all platforms (Web, iOS, Android).
+ * Uses Gluestack UI components for consistent styling.
+ * Calendar opens below the input field without backdrop (web) / with a full-screen
+ * dismiss backdrop (native).
  */
 const DatePicker: React.FC<DatePickerProps> = ({
+  mode = 'date',
   value,
+  defaultValue,
   onChange,
   placeholder,
   maximumDate,
@@ -44,15 +176,35 @@ const DatePicker: React.FC<DatePickerProps> = ({
   isDisabled,
   disabled,
   isReadOnly = false,
+  isInvalid,
+  errorMessage,
+  hourFormat = 12,
+  displayFormat,
+  apiFormat,
+  valueFormat,
+  popupMode = 'popup',
+  locale,
+  color,
+  theme: themeOverride,
+  styles,
+  renderInput,
+  renderHeader,
+  renderFooter,
+  renderDay,
   ...inputProps
 }) => {
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const [internalShowPicker, setInternalShowPicker] = useState(false);
   const calendarIdRef = useRef(`calendar-${Math.random().toString(36).substr(2, 9)}`);
-  
+
   // Use controlled state if provided, otherwise use internal state
   const showPicker = controlledIsOpen !== undefined ? controlledIsOpen : internalShowPicker;
-  
+
+  // Native always presents via the shared `<Modal>` already; on web, only
+  // `popupMode="modal"` opts into it instead of the default floating popup.
+  const usesModalContainer = popupMode === 'modal' || Platform.OS !== 'web';
+  const usesWebFloatingPopup = Platform.OS === 'web' && !usesModalContainer;
+
   const setShowPicker = (newValue: boolean) => {
     if (controlledIsOpen !== undefined && onOpenChange) {
       onOpenChange(newValue);
@@ -61,98 +213,197 @@ const DatePicker: React.FC<DatePickerProps> = ({
     }
   };
 
+  const closePicker = () => {
+    setShowPicker(false);
+    if (onOpenChange) onOpenChange(false);
+  };
+
+  // Always call through this ref so the registry below invokes the LATEST
+  // closePicker (which closes over the current controlledIsOpen/onOpenChange),
+  // never a stale one captured when this instance first opened.
+  const closePickerRef = useRef(closePicker);
+  closePickerRef.current = closePicker;
+
+  // Opening this picker closes any other DatePicker popup currently open
+  // anywhere on the page — only one stays open at a time.
+  useEffect(() => {
+    const id = calendarIdRef.current;
+    if (showPicker) {
+      closeOtherPickers(id);
+      openPickers.set(id, () => closePickerRef.current());
+    }
+    return () => {
+      openPickers.delete(id);
+    };
+  }, [showPicker]);
+
+  const inputRef = useRef<any>(null);
+  const calendarPopupRef = useRef<any>(null);
+  const [calendarPosition, setCalendarPosition] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    maxHeight?: number;
+  }>({ top: 0, left: 0 });
+
+  // Starts as a generous estimate and is corrected against the real rendered
+  // popup height once it mounts (see the layout effect below) — persists
+  // across opens so later opens already start from a good guess.
+  const popupHeightRef = useRef(POPUP_HEIGHT_ESTIMATE);
+
+  const computePosition = () => {
+    if (Platform.OS !== 'web') return { top: 0, left: 0 };
+    const domElement = resolveDom(inputRef.current);
+    if (!domElement) return { top: 0, left: 0 };
+
+    const rect = domElement.getBoundingClientRect();
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const popupWidth = POPUP_WIDTH_BY_MODE[mode];
+    const popupHeight = popupHeightRef.current;
+
+    const availableBelow = Math.max(
+      0,
+      viewportHeight - rect.bottom - POSITION_MARGIN - POSITION_GAP,
+    );
+    const availableAbove = Math.max(0, rect.top - POSITION_MARGIN - POSITION_GAP);
+
+    const openUp = availableBelow < popupHeight && availableAbove > availableBelow;
+    const availableHeight = openUp ? availableAbove : availableBelow;
+    const maxHeight = Math.max(160, Math.min(popupHeight, availableHeight || popupHeight));
+
+    const left = Math.min(
+      Math.max(rect.left, POSITION_MARGIN),
+      Math.max(POSITION_MARGIN, viewportWidth - popupWidth - POSITION_MARGIN),
+    );
+
+    return openUp
+      ? { bottom: viewportHeight - rect.top + POSITION_GAP, left, maxHeight }
+      : { top: rect.bottom + POSITION_GAP, left, maxHeight };
+  };
+
   // Sync controlled state changes
   useEffect(() => {
     if (controlledIsOpen !== undefined) {
       // If controlled, sync internal state (for position calculation, etc.)
-      if (controlledIsOpen && Platform.OS === 'web') {
-        const newPosition = calculatePosition();
-        setCalendarPosition(newPosition);
+      if (controlledIsOpen && usesWebFloatingPopup) {
+        setCalendarPosition(computePosition());
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlledIsOpen]);
-  const inputRef = useRef<any>(null);
-  const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
 
-  // Convert string value (YYYY-MM-DD) to Date object
-  const getDateFromValue = (): Date | null => {
-    if (value && typeof value === 'string' && value.trim() !== '') {
-      // Handle YYYY-MM-DD format
-      // Parse the date string properly (YYYY-MM-DD)
-      const dateParts = value.split('-');
-      if (dateParts.length === 3) {
-        const year = parseInt(dateParts[0], 10);
-        const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
-        const day = parseInt(dateParts[2], 10);
-        const date = new Date(year, month, day);
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-      // Fallback: try standard Date parsing
-      const date = new Date(value);
-      if (!isNaN(date.getTime())) {
-        return date;
+  // Corrects the estimated position against the popup's real rendered size —
+  // runs synchronously before paint, so a wrong first guess never flashes.
+  useLayoutEffect(() => {
+    if (!usesWebFloatingPopup || !showPicker) return;
+    const popupDom = resolveDom(calendarPopupRef.current);
+    if (popupDom) {
+      const popupRect = popupDom.getBoundingClientRect();
+      if (popupRect.height && Math.abs(popupRect.height - popupHeightRef.current) > 1) {
+        popupHeightRef.current = popupRect.height;
+        setCalendarPosition(computePosition());
       }
     }
-    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPicker]);
+
+  // ---- controlled/uncontrolled value ----
+  const isControlled = value !== undefined;
+  const [internalValue, setInternalValue] = useState<string | undefined>(defaultValue);
+  const currentValue = isControlled ? value : internalValue;
+
+  const emitChange = (newValue: string) => {
+    if (!isControlled) setInternalValue(newValue);
+    onChange?.(newValue);
   };
 
-  // Convert Date object to YYYY-MM-DD string (for API/storage)
-  const formatDateToString = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // ---- formats / locale / theme ----
+  const effectiveApiFormat = apiFormat ?? valueFormat ?? DEFAULT_API_FORMATS[mode];
+  const effectiveDisplayFormat = displayFormat ?? getDefaultDisplayFormat(mode, hourFormat);
+  const effectiveLocale = locale ?? currentLanguage;
 
-  // Format date for display (user-friendly format)
-  const formatDateForDisplay = (date: Date): string => {
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
+  // const monthNames = useMemo(() => getMonthNames(effectiveLocale, 'long'), [effectiveLocale]);
+  const monthNamesShort = useMemo(() => getMonthNames(effectiveLocale, 'short'), [effectiveLocale]);
+  const dayNames = useMemo(() => getDayNames(effectiveLocale, 'short'), [effectiveLocale]);
 
-  // Handle date selection from calendar
-  const handleDateSelect = (date: Date) => {
-    const formattedDate = formatDateToString(date);
-    // Call onChange to update parent component
-    onChange(formattedDate);
-    setShowPicker(false);
-    // Also notify parent if controlled
-    if (onOpenChange) {
-      onOpenChange(false);
-    }
-  };
+  const resolvedTheme = useMemo(() => buildTheme(color, themeOverride), [color, themeOverride]);
 
-  // Calculate position synchronously when opening
-  const calculatePosition = () => {
-    if (Platform.OS === 'web' && inputRef.current) {
-      const inputElement = inputRef.current;
-      // Try to get the actual DOM element
-      const domElement = (inputElement as any)?._node || 
-                       (inputElement as any)?.current || 
-                       inputElement;
-      
-      if (domElement && typeof domElement.getBoundingClientRect === 'function') {
-        const rect = domElement.getBoundingClientRect();
-        return {
-          top: rect.bottom + window.scrollY + 8, // 8px margin
-          left: rect.left + window.scrollX,
-        };
-      }
-    }
-    return { top: 0, left: 0 };
-  };
+  const labels = useMemo(
+    () => ({
+      today: t('datePicker.today'),
+      now: t('datePicker.now'),
+      clear: t('common.clear'),
+      cancel: t('common.cancel'),
+      done: t('datePicker.done'),
+    }),
+    [t],
+  );
 
-  // Update position on scroll/resize (web only)
+  const selectedDate = useMemo(
+    () => parseDateValue(currentValue, effectiveApiFormat, monthNamesShort),
+    [currentValue, effectiveApiFormat, monthNamesShort],
+  );
+
+  // Snapshot the value whenever the popup opens, so Cancel can revert to it.
+  const openSnapshotRef = useRef<Date | null>(null);
   useEffect(() => {
-    if (Platform.OS === 'web' && showPicker) {
+    if (showPicker) {
+      openSnapshotRef.current = selectedDate;
+    }
+    // Only snapshot on the open transition, not on every value change while open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPicker]);
+
+  const handleCalendarChange = (date: Date) => {
+    emitChange(formatDate(date, effectiveApiFormat, monthNamesShort));
+  };
+
+  const handleClear = () => {
+    emitChange('');
+    closePicker();
+  };
+
+  const handleCancel = () => {
+    const snapshot = openSnapshotRef.current;
+    const revertValue = snapshot ? formatDate(snapshot, effectiveApiFormat, monthNamesShort) : '';
+    // Only emit if the picker's live selection actually diverged from what was
+    // open — cancelling without touching anything shouldn't re-notify the parent.
+    if (revertValue !== (currentValue ?? '')) {
+      emitChange(revertValue);
+    }
+    closePicker();
+  };
+
+  // Permanently-stable identities for everything passed to `<Calendar>` (already
+  // `React.memo`'d end-to-end) so a parent re-render that doesn't actually change
+  // any of this data — e.g. the user typing in an unrelated field elsewhere in the
+  // form — doesn't cascade into recomputing/re-rendering the whole calendar tree.
+  const stableHandleCalendarChange = useStableCallback(handleCalendarChange);
+  const stableClosePicker = useStableCallback(closePicker);
+  const stableHandleClear = useStableCallback(handleClear);
+  const stableHandleCancel = useStableCallback(handleCancel);
+
+  // `selectedDate` is already memoized; only the `|| new Date()` fallback was
+  // creating a fresh object every render when nothing's selected yet.
+  const calendarValue = useMemo(() => selectedDate || new Date(), [selectedDate]);
+
+  // Guards against a caller re-creating an equal-but-referentially-new Date
+  // every render (common when `maximumDate`/`minimumDate` are computed inline,
+  // e.g. `new Date()` in a validation-driven expression) — compares by value
+  // instead of identity so that doesn't defeat memoization downstream.
+  const maximumDateTime = maximumDate?.getTime();
+  const minimumDateTime = minimumDate?.getTime();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableMaximumDate = useMemo(() => maximumDate, [maximumDateTime]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableMinimumDate = useMemo(() => minimumDate, [minimumDateTime]);
+
+  // Update position on scroll/resize (web floating popup only)
+  useEffect(() => {
+    if (usesWebFloatingPopup && showPicker) {
       const updatePosition = () => {
-        const newPosition = calculatePosition();
-        setCalendarPosition(newPosition);
+        setCalendarPosition(computePosition());
       };
 
       updatePosition();
@@ -164,140 +415,204 @@ const DatePicker: React.FC<DatePickerProps> = ({
         window.removeEventListener('resize', updatePosition);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPicker]);
 
-  // Handle click outside to close (all platforms)
+  // Handle click outside / Escape to close (web floating popup only — the
+  // shared `<Modal>` used for native and `popupMode="modal"` already has its
+  // own overlay-click/Escape handling).
   useEffect(() => {
     if (showPicker) {
-      if (Platform.OS === 'web') {
+      if (usesWebFloatingPopup) {
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
           const target = event.target as HTMLElement;
           if (!target) return;
-          
-          // Find calendar element using unique ID
-          const calendarElement = document.querySelector(`[data-calendar-container="${calendarIdRef.current}"]`);
-          
-          // Check if click is inside calendar - if so, don't close
+
+          // Resolve the popup DOM node from the ref instead of a `data-*` query
+          // to ensure inside clicks don't incorrectly close the calendar.
+          const popupNode =
+            (calendarPopupRef.current as any)?._node ||
+            (calendarPopupRef.current as any)?.current ||
+            calendarPopupRef.current;
+
+          // Check if click is inside the popup - if so, don't close
           // (Date selection will be handled by the Calendar component's onPress)
-          if (calendarElement && calendarElement.contains(target)) {
-            return; // Don't close if clicking inside calendar
+          if (popupNode && typeof popupNode.contains === 'function' && popupNode.contains(target)) {
+            return; // Don't close if clicking inside the popup
           }
-          
-          // Close if click is outside calendar
-          setShowPicker(false);
-          // Also notify parent if controlled
-          if (onOpenChange) {
-            onOpenChange(false);
+
+          // Close on outside click
+          closePicker();
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+          if (event.key === 'Escape') {
+            closePicker();
           }
         };
 
-        // Use a longer delay and bubble phase to allow date selection to complete first
+        // Capture phase: react-native-web's Pressable (the trigger button,
+        // or any other button elsewhere on the page) can stop propagation
+        // before a click bubbles up to `document`, which silently defeated
+        // this listener for clicks on any button — only truly empty/backdrop
+        // space would close the popup. Capture fires before that can happen.
+        // The `contains(target)` check above still protects in-popup date
+        // selection either way, so this doesn't affect that.
         const timeoutId = setTimeout(() => {
-          // Use bubble phase (false) instead of capture (true) to let date selection fire first
-          document.addEventListener('click', handleClickOutside, false);
-          document.addEventListener('touchend', handleClickOutside, false);
+          document.addEventListener('click', handleClickOutside, true);
+          document.addEventListener('touchend', handleClickOutside, true);
+          document.addEventListener('keydown', handleKeyDown, true);
         }, 300);
 
         return () => {
           clearTimeout(timeoutId);
-          document.removeEventListener('click', handleClickOutside, false);
-          document.removeEventListener('touchend', handleClickOutside, false);
+          document.removeEventListener('click', handleClickOutside, true);
+          document.removeEventListener('touchend', handleClickOutside, true);
+          document.removeEventListener('keydown', handleKeyDown, true);
         };
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPicker]);
 
   // Handle toggle with position calculation
   const handleToggle = () => {
     if (isDisabled || disabled || isReadOnly) return;
     const newState = !showPicker;
-    if (newState && Platform.OS === 'web') {
+    if (newState && usesWebFloatingPopup) {
       // Calculate position before showing
-      const newPosition = calculatePosition();
-      setCalendarPosition(newPosition);
+      setCalendarPosition(computePosition());
     }
     setShowPicker(newState);
   };
 
-  // Get display value - show formatted date if value exists, otherwise placeholder
-  const displayValue = React.useMemo(() => {
-    // Check if value is a valid non-empty string
-    if (value && typeof value === 'string' && value.trim() !== '') {
-      const date = getDateFromValue();
-      if (date && !isNaN(date.getTime())) {
-        const formatted = formatDateForDisplay(date);
-        return formatted;
-      }
+  // Get display value - show formatted value if one exists, otherwise placeholder
+  const displayValue = useMemo(() => {
+    if (selectedDate) {
+      return formatDate(selectedDate, effectiveDisplayFormat, monthNamesShort);
     }
-    return placeholder || t('common.selectOption');
-  }, [value, placeholder, t]);
+    if (placeholder) return placeholder;
+    if (mode === 'time') return t('datePicker.selectTime');
+    if (mode === 'datetime') return t('datePicker.selectDateTime');
+    return t('common.selectOption');
+  }, [selectedDate, effectiveDisplayFormat, monthNamesShort, placeholder, mode, t]);
+
+  // Modal title (native only) — reuses the same locale keys as the trigger's
+  // own empty-state placeholder text.
+  const modalTitle =
+    mode === 'time'
+      ? t('datePicker.selectTime')
+      : mode === 'datetime'
+      ? t('datePicker.selectDateTime')
+      : t('datePicker.selectDate');
+
+  const calendarElement = (
+    <Calendar
+      mode={mode}
+      value={calendarValue}
+      onChange={stableHandleCalendarChange}
+      onClose={stableClosePicker}
+      onClear={stableHandleClear}
+      onCancel={stableHandleCancel}
+      maximumDate={stableMaximumDate}
+      minimumDate={stableMinimumDate}
+      calendarId={calendarIdRef.current}
+      hourFormat={hourFormat}
+      theme={resolvedTheme}
+      styles={styles}
+      monthNames={monthNamesShort}
+      monthNamesShort={monthNamesShort}
+      dayNames={dayNames}
+      labels={labels}
+      renderHeader={renderHeader}
+      renderFooter={renderFooter}
+      renderDay={renderDay}
+    />
+  );
 
   const calendarContentStyle = datePickerStyles.getCalendarContentStyle(Platform.OS, calendarPosition);
-  const calendarContent = showPicker ? (
-    <Box
-      {...(calendarContentStyle as any)}
-            data-calendar-container={Platform.OS === 'web' ? calendarIdRef.current : undefined}
-    >
-      <Calendar
-        value={getDateFromValue() || new Date()}
-        onChange={handleDateSelect}
-        onClose={() => setShowPicker(false)}
-        maximumDate={maximumDate}
-        minimumDate={minimumDate}
-        calendarId={calendarIdRef.current}
-      />
-    </Box>
-  ) : null;
+  const webCalendarContent =
+    usesWebFloatingPopup && showPicker ? (
+      <Box
+        ref={calendarPopupRef}
+        {...mergeStyle(calendarContentStyle as any, styles?.popup)}
+        data-calendar-container={calendarIdRef.current}
+      >
+        {calendarElement}
+      </Box>
+    ) : null;
 
   return (
     <>
-      <Box 
-        {...datePickerStyles.containerBox}
+      <Box
+        {...mergeStyle(datePickerStyles.containerBox, styles?.container)}
         ref={inputRef}
         style={datePickerStyles.getContainerBoxStyle(Platform.OS) as any}
       >
-        <Pressable onPress={handleToggle} disabled={isDisabled || disabled || isReadOnly}>
-          <Box {...datePickerStyles.inputContainer} data-date-input={Platform.OS === 'web'}>
-            <Input pointerEvents="none" isDisabled={isDisabled || disabled} isReadOnly={isReadOnly} {...inputProps}>
-              <HStack {...datePickerStyles.inputHStack}>
-                <LucideIcon name="Calendar" size={iconSize} color="$textMutedForeground" />
-                <InputField
-                  placeholder={placeholder}
-                  value={displayValue}
-                  editable={false}
-                  flex={1}
-                />
-                <LucideIcon name="ChevronDown" size={16} color="$textMutedForeground" />
-              </HStack>
-            </Input>
-          </Box>
-        </Pressable>
-
-        {Platform.OS !== 'web' && (
-          <>
-            {/* Full-screen backdrop for native - closes calendar on press */}
-            {showPicker && (
-              <Pressable
-                style={{
-                  position: 'absolute' as any,
-                  top: -1000,
-                  left: -1000,
-                  right: -1000,
-                  bottom: -1000,
-                  zIndex: 99998,
-                }}
-                onPress={() => setShowPicker(false)}
-              />
-            )}
-            {calendarContent}
-          </>
+        {renderInput ? (
+          renderInput({
+            value: currentValue || '',
+            displayValue,
+            isOpen: showPicker,
+            isDisabled: !!(isDisabled || disabled || isReadOnly),
+            onPress: handleToggle,
+          })
+        ) : (
+          <Pressable
+            onPress={handleToggle}
+            disabled={isDisabled || disabled || isReadOnly}
+            accessibilityRole="button"
+            accessibilityLabel={displayValue}
+          >
+            <Box {...mergeStyle(datePickerStyles.inputContainer, styles?.input)} data-date-input={Platform.OS === 'web'}>
+              <Input
+                pointerEvents="none"
+                isDisabled={isDisabled || disabled}
+                isReadOnly={isReadOnly}
+                isInvalid={isInvalid}
+                {...inputProps}
+              >
+                <HStack {...datePickerStyles.inputHStack}>
+                  <LucideIcon name="Calendar" size={iconSize} color={resolvedTheme.muted} />
+                  <InputField
+                    placeholder={placeholder}
+                    value={displayValue}
+                    editable={false}
+                    flex={1}
+                  />
+                  <LucideIcon
+                    name={isReadOnly ? 'Lock' : 'ChevronDown'}
+                    size={16}
+                    color={resolvedTheme.muted}
+                  />
+                </HStack>
+              </Input>
+            </Box>
+          </Pressable>
         )}
+
+        {errorMessage ? <Text {...datePickerStyles.errorText}>{errorMessage}</Text> : null}
       </Box>
 
-      {/* Portal for web - renders at document.body level to overlap all elements */}
-      {Platform.OS === 'web' && ReactDOM && calendarContent
-        ? ReactDOM.createPortal(calendarContent, document.body)
+      {/* Web popup mode: portal the popup to document.body so it overlaps everything else. */}
+      {usesWebFloatingPopup && ReactDOM && webCalendarContent
+        ? ReactDOM.createPortal(webCalendarContent, document.body)
         : null}
+
+      {/* Native, and web with popupMode="modal": the same shared centered
+          Modal — reliable touch handling/overlay dismissal instead of an
+          absolutely-positioned popup, reusing this app's existing Modal. */}
+      {usesModalContainer && (
+        <Modal
+          isOpen={showPicker}
+          onClose={stableClosePicker}
+          headerTitle={modalTitle}
+          size="md"
+          contentProps={styles?.popup as any}
+        >
+          {calendarElement}
+        </Modal>
+      )}
     </>
   );
 };

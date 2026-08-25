@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { VStack, HStack, Button, ButtonText, Modal, Text } from '@ui';
 import { useAlert } from '@components/ui';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
-import { CREATE_USER_FORM_SCHEMA } from '@constants/CREATE_USER_FORM_SCHEMA';
+import { CREATE_USER_FORM_SCHEMA, INPUT_STYLE } from '@constants/CREATE_USER_FORM_SCHEMA';
 import SchemaFormRenderer, { validateSchema, } from '@components/SchemaFormRenderer';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import { getSitesByProvince, updateOrgAdminUser, } from '../../services/usersService';
@@ -49,6 +49,26 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const editSchema = useMemo(
+    () =>
+      CREATE_USER_FORM_SCHEMA.map(section => {
+        const { hint, ...sectionWithoutHint } = section;
+        return {
+          ...sectionWithoutHint,
+          ...(mode === 'edit' && { hint }),
+          rows: section.rows.map(row => ({
+            ...row,
+            fields: row.fields.map(field =>
+              field.name === 'roleId'
+                ? { ...field, disabled: mode === 'edit' }
+                : field
+            ),
+          })),
+        };
+      }),
+    [mode],
+  );
 
   const getEntityId = (value: any): string => {
     if (!value) return '';
@@ -200,6 +220,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     const siteId = getFieldIdVal('siteId');
     const location = getFieldVal('location');
 
+    const roleTitle = (() => {
+      if (!roleId) return '';
+      const matchedRole = roles.find((r: any) => r.id.toString() === roleId);
+      return (matchedRole?.title || '').toLowerCase();
+    })();
+
     return {
       name,
       email,
@@ -218,6 +244,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       provinceId,
       siteId,
       location,
+      isParticipant: roleTitle === 'user' ? 'true' : 'false',
     };
   };
 
@@ -299,16 +326,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         }
       }
 
+      if (name === 'roleId') {
+        const selectedRole = roles.find((r: any) => r.id.toString() === value);
+        const roleTitle = (selectedRole?.title || '').toLowerCase();
+        updated.isParticipant = roleTitle === 'user' ? 'true' : 'false';
+      }
+
       return updated;
     });
 
-    if (errors[name]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[name];
-        return next;
-      });
-    }
+    setErrors(prev => {
+      const next = { ...prev, [name]: '' };
+      if (name === 'roleId') {
+        next.provinceId = '';
+        next.siteId = '';
+      }
+      return next;
+    });
   };
 
   const handleSubmit = async () => {
@@ -377,7 +411,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     //   </VStack>
     // }
     >
-      <VStack space="md" width="100%">
+      <VStack space="md" width="100%" px="$1">
         {/* Content */}
         {profileLoading ? (
           <Text {...TYPOGRAPHY.bodySmall} color="$textMutedForeground" py="$4">
@@ -386,7 +420,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         ) : (
           <VStack space="lg" alignItems="stretch">
             <SchemaFormRenderer
-              schema={CREATE_USER_FORM_SCHEMA}
+              schema={editSchema}
               values={values}
               errors={errors}
               onFieldChange={handleFieldChange}
@@ -395,6 +429,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               mode={mode}
               isMobile={isMobile}
               t={t}
+              _input={INPUT_STYLE}
             />
           </VStack>
         )}

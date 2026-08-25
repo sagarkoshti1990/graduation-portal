@@ -60,6 +60,7 @@ export const styles = {
   roleColors: {
     'BRAC admin': '$error600' as const,
     Supervisor: '$primary500' as const,
+    mentor: '$warning500' as const,
     'Linkage Champion': '$textMutedForeground' as const,
     Participant: '$white' as const,
   },
@@ -197,41 +198,5 @@ export const styles = {
     transform: [{ translateY: -12 }],
     padding: 4,
     zIndex: 1,
-  },
-
-  // Create User Modal Styles
-  createUserFormInput: {
-    variant: 'outline' as const,
-    size: 'sm' as const,
-    bg: '#e8f0f9ff' as const, // Very light grayish blue
-    borderRadius: '$md' as const,
-    borderWidth: 1,
-    borderColor: 'transparent' as const,
-    px: '$2' as const,
-    py: 0,
-    boxShadow: '0 0 6px 1px rgba(0, 0, 0, 0.08)' as const,
-    '$web-boxShadow': '0 0 6px 1px rgba(0, 0, 0, 0.08)' as const,
-    '$focus': {
-      borderColor: '#833247ff' as const,
-      borderWidth: 1 as const,
-      boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const,
-      '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const,
-    } as any,
-  },
-  createUserFormSelect: {
-    variant: 'outline' as const,
-    size: 'sm' as const,
-    bg: '#e8f0f9ff' as const, // Very light grayish blue
-    borderRadius: '$md' as const,
-    borderWidth: 1,
-    borderColor: 'transparent' as const,
-    boxShadow: '0 0 6px 1px rgba(0, 0, 0, 0.08)' as const,
-    '$web-boxShadow': '0 0 6px 1px rgba(0, 0, 0, 0.08)' as const,
-    '$focus': {
-      borderColor: '#833247ff' as const,
-      borderWidth: 1 as const,
-      boxShadow: '0 0 0 2px rgba(131, 50, 71, 0.2)' as const,
-      '$web-boxShadow': '0 0 0 2px rgba(131, 50, 71, 0.2)' as const,
-    } as any,
   },
 } as const;

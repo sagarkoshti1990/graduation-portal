@@ -13,6 +13,7 @@
     "filter": "تصفية",
     "filters": "المرشحات",
     "clearFilters": "مسح المرشحات",
+    "clear": "مسح",
     "submit": "إرسال",
     "back": "رجوع",
     "next": "التالي",
@@ -22,10 +23,19 @@
     "offline": "وضع عدم الاتصال",
     "online": "متصل",
     "selectOption": "اختر خياراً",
+    "selectAll": "تحديد الكل",
     "placeholder": "البحث عن المستخدمين والقوالب والسجلات...",
     "actions": "الإجراءات",
     "noDataFound": "لم يتم العثور على بيانات",
     "optional": "(اختياري)"
+  },
+  "datePicker": {
+    "today": "اليوم",
+    "now": "الآن",
+    "done": "تم",
+    "selectDate": "اختر التاريخ",
+    "selectTime": "اختر الوقت",
+    "selectDateTime": "اختر التاريخ والوقت"
   },
   "navigation": {
     "menu": "القائمة",
