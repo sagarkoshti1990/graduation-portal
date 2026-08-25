@@ -5,7 +5,8 @@ export const filterStyles = {
     borderWidth: 1,
     borderColor: '$borderColor' as const,
     borderRadius: '$xl' as const,
-    p: '$6' as const,
+    p: '$4' as const,
+    "$md-p": '$6' as const,
     width: '$full' as const,
   },
   titleContainer: {
@@ -34,7 +35,7 @@ export const filterStyles = {
     flex: 1,
     minWidth: '100%' as const,
     $md: {
-      minWidth: 240,
+      minWidth: 150,
      // maxWidth: 240,
     },
   },

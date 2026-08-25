@@ -100,7 +100,7 @@ const ToastContent = ({
               <LucideIcon name={icon.name} size={16} color={icon.color} />
               <VStack space="xs" flex={1}>
                 <ToastDescription>{t(description)}</ToastDescription>
-                {subDescription && (
+                {!!subDescription && (
                   <ToastDescription color="$textLight500" fontSize={10} lineHeight={10}>{t(subDescription)}</ToastDescription>
                 )}
               </VStack>

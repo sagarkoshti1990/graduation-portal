@@ -63,6 +63,21 @@ type ParticipantDetailRouteProp = RouteProp<{
   params: ParticipantDetailRouteParams;
 }>;
 
+/**
+ * Content comparison for solution lists (rather than reference equality), so
+ * repeated fetches that resolve to the same data don't trigger a state update.
+ * Solutions are plain JSON API data, so a stringified comparison is sufficient.
+ */
+const areSolutionsEqual = (a: any[], b: any[]): boolean => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+};
+
 export default function ParticipantDetail() {
   const route = useRoute<ParticipantDetailRouteProp>();
   const { user, setNavbarData } = useAuth();
@@ -86,6 +101,7 @@ export default function ParticipantDetail() {
     undefined,
   );
   const isFetchingRef = useRef(false);
+  const isFetchingSolutionsRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
   const [projectData, setProjectData] = useState<ProjectData | undefined>(undefined);
   const [projectUnavailableOffline, setProjectUnavailableOffline] = useState(false);
@@ -224,6 +240,15 @@ export default function ParticipantDetail() {
 
   useEffect(() => {
     const fetchSolutions = async () => {
+      // Guards against overlapping calls: a participant/status update can
+      // re-run this effect (participant reference changes) while a previous
+      // fetch is still in flight, which previously caused two concurrent
+      // fetches to both resolve and call setSolutions with the same data.
+      if (isFetchingSolutionsRef.current) {
+        return;
+      }
+      isFetchingSolutionsRef.current = true;
+      try {
       // When offline, load solutions from the per-participant downloaded mapping.
       // The global targeted-solutions cache may be empty; the participant mapping
       // is always populated during download and has the correct solutionId/keyword data.
@@ -233,16 +258,15 @@ export default function ParticipantDetail() {
             PARTICIPANT_KEYS.solutions(authUserId ?? '', participantId),
           );
           if (stored?.length) {
-            setSolutions(
-              stored.map(e => ({
-                _id: e.observationId,
-                id: e.observationId,
-                solutionId: e.solutionId,
-                keywords: [e.keyword],
-                name: e.keyword,
-                description: '',
-              })),
-            );
+            const offlineSolutions = stored.map(e => ({
+              _id: e.observationId,
+              id: e.observationId,
+              solutionId: e.solutionId,
+              keywords: [e.keyword],
+              name: e.keyword,
+              description: '',
+            }));
+            setSolutions(prev => (areSolutionsEqual(prev, offlineSolutions) ? prev : offlineSolutions));
           }
         }
         return;
@@ -282,7 +306,7 @@ export default function ParticipantDetail() {
         }
       }
 
-      setSolutions(solutionsWithEntityStatus);
+      setSolutions(prev => (areSolutionsEqual(prev, solutionsWithEntityStatus) ? prev : solutionsWithEntityStatus));
 
       if (setRefComponent) {
       setRefComponent({bottom :
@@ -295,6 +319,9 @@ export default function ParticipantDetail() {
             canAccessCoachObservations={isdminPanalAccess}
           />
         ) : null})
+      }
+      } finally {
+        isFetchingSolutionsRef.current = false;
       }
     }
     if (setRefComponent && participant && participantId && authUserId && solutions.length === 0 && (!participant?.idpProjectId || (participant?.idpProjectId && updatedProgress !== undefined))) {

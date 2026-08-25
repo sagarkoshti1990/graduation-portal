@@ -395,7 +395,6 @@ export const resetPassword = async (
   params: ResetPasswordRequest
 ): Promise<ResetPasswordResponse> => {
   try {
-    console.log('Reset password called for user:', params.username);
     // TODO: Replace this with actual API call when endpoint is available
     // Example:
     // const response = await api.post<ResetPasswordResponse>(
@@ -413,7 +412,6 @@ export const resetPassword = async (
         updatedAt: new Date().toISOString(),
       },
     };
-    console.log('Password reset successful (static response)');
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     return staticResponse;
@@ -602,5 +600,23 @@ export const getCountryCodesList = async (): Promise<ProvinceEntity[]> => {
   } catch (error) {
     console.error('Error fetching country codes list:', error);
     return [];
+  }
+};
+
+/**
+ * Update user profile
+ *
+ * API: PATCH /api/user/v1/user/update
+ * Body: { "name": "New Name", ... }
+ */
+export const updateUser = async (
+  _userId: string | number,
+  payload: any
+): Promise<any> => {
+  try {
+    const response = await api.patch(API_ENDPOINTS.UPDATE_USER, payload);
+    return response.data?.result ?? response.data;
+  } catch (error: any) {
+    throw error;
   }
 };

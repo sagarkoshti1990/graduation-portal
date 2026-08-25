@@ -9,6 +9,8 @@ import {
   Award,
   BarChart,
   BookOpen,
+  Bell,
+  Box,
   Briefcase,
   Building2,
   Calendar,
@@ -49,6 +51,8 @@ import {
   Info,
   Key,
   LayoutDashboard,
+  LifeBuoy,
+  HelpCircle,
   LoaderCircle,
   Link2,
   ListChecks,
@@ -59,6 +63,7 @@ import {
   Menu,
   MoreVertical,
   Paperclip,
+  Package,
   Pencil,
   Phone,
   Plus,
@@ -84,7 +89,11 @@ import {
   X,
   XCircle,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Copy,
+  CircleCheckBig,
+  Video,
+  Wrench
 } from 'lucide-react-native';
 import { theme } from '@config/theme';
 
@@ -111,7 +120,10 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   Award,
   BarChart,
   BookOpen,
+  Bell,
+  Box,
   Briefcase,
+  Building: Building2,
   Building2,
   Calendar,
   Camera,
@@ -152,6 +164,8 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   Info,
   Key,
   LayoutDashboard,
+  LifeBuoy,
+  HelpCircle,
   LoaderCircle,
   Link2,
   ListChecks,
@@ -162,6 +176,7 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   Menu,
   MoreVertical,
   Paperclip,
+  Package,
   Pencil,
   Phone,
   Plus,
@@ -187,7 +202,11 @@ const ICONS: Record<string, React.ComponentType<any>> = {
   X,
   XCircle,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Copy,
+  CircleCheckBig,
+  Video,
+  Wrench
 };
 
 /**

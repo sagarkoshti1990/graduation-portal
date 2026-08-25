@@ -25,6 +25,9 @@ import {
   Box,
   HStack,
   Text,
+  Checkbox,
+  CheckboxIndicator,
+  CheckboxIcon,
 } from '@gluestack-ui/themed';
 import { LucideIcon } from '@ui';
 import { getSelectTriggerStyles } from './Styles';
@@ -60,8 +63,12 @@ type DropdownPosition = {
 
 type SelectProps = {
   options: RawOption[];
-  value: string;
-  onChange: (value: string, label: string) => void;
+  value: string | string[];
+  // Kept as `any` (not a strict `string | string[]` union) so every existing
+  // single-select call site's narrower callback (e.g. `(value: string) => void`)
+  // stays assignable without touching each of those unrelated screens — only
+  // this component's own internals need to actually handle both shapes.
+  onChange: (value: any, label: any) => void;
   placeholder?: string;
   bg?: string;
   borderColor?: string;
@@ -69,6 +76,10 @@ type SelectProps = {
   borderRadius?: string | number;
   disabled?: boolean;
   isReadOnly?: boolean;
+  /** Opt-in multi-select mode: `value`/`onChange` become array-valued, a checkbox
+   * appears beside every option, and picking one doesn't close the dropdown. */
+  multiple?: boolean;
+  isInvalid?: boolean;
 };
 
 const DROPDOWN_Z = 100000;
@@ -199,24 +210,61 @@ function WebSelect({
   borderRadius = 10,
   disabled = false,
   isReadOnly = false,
+  multiple = false,
+  isInvalid = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
     [options],
   );
 
-  const valueKey = String(value ?? '');
+  const valueArray = useMemo(
+    () => (multiple && Array.isArray(value) ? value : []),
+    [multiple, value],
+  );
+
+  const valueKey = multiple ? '' : String((value as string) ?? '');
 
   const selectedOption =
     normalizedOptions.find(
       opt => opt.value === valueKey,
     );
 
-  const displayValue =
-    selectedOption?.nativeName ||
+  const displayValue = multiple
+    ? valueArray.length > 0
+      ? `${valueArray.length} Selected`
+      : ''
+    : selectedOption?.nativeName ||
     selectedOption?.name ||
     selectedOption?.value ||
     '';
+
+  const toggleMultiValue = (optionValue: string) => {
+    const exists = valueArray.includes(optionValue);
+    const next = exists
+      ? valueArray.filter(v => v !== optionValue)
+      : [...valueArray, optionValue];
+    const labels = next.map(v => {
+      const opt = normalizedOptions.find(o => o.value === v);
+      return opt?.nativeName || opt?.name || '';
+    });
+    onChange(next, labels);
+  };
+
+  const isAllSelected =
+    multiple &&
+    normalizedOptions.length > 0 &&
+    valueArray.length === normalizedOptions.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      onChange([], []);
+      return;
+    }
+    const allValues = normalizedOptions.map(o => o.value);
+    const allLabels = normalizedOptions.map(o => o.nativeName || o.name || '');
+    onChange(allValues, allLabels);
+  };
 
   const localizedPlaceholder =
     placeholder ??
@@ -224,6 +272,11 @@ function WebSelect({
       'common.selectOption',
       'Select an option',
     );
+
+  const localizedSelectAll = i18n.t(
+    'common.selectAll',
+    'Select All',
+  );
 
   const writingDirection =
     I18nManager.isRTL ? 'rtl' : 'ltr';
@@ -410,97 +463,166 @@ function WebSelect({
           zIndex: DROPDOWN_Z - 1,
         }}
       />
-    <Box
-      id={`select-list-${listId}`}
-      bg="$white"
-      borderWidth={1}
-      borderColor="$borderColor"
-      style={{
-        position: 'fixed',
-        top: pos.top,
-        bottom: pos.bottom,
-        left: pos.left,
-        width: pos.width,
-        zIndex: DROPDOWN_Z,
-        maxHeight: pos.maxHeight,
-        borderRadius: 10,
-        overflow: 'hidden',
-        boxShadow:
-          '0 4px 16px rgba(0,0,0,0.12)',
-      }}
-    >
-      <ScrollView
-        nestedScrollEnabled
+      <Box
+        id={`select-list-${listId}`}
+        bg="$white"
+        borderWidth={1}
+        borderColor="$borderColor"
         style={{
+          position: 'fixed',
+          top: pos.top,
+          bottom: pos.bottom,
+          left: pos.left,
+          width: pos.width,
+          zIndex: DROPDOWN_Z,
           maxHeight: pos.maxHeight,
+          borderRadius: 10,
+          overflow: 'hidden',
+          boxShadow:
+            '0 4px 16px rgba(0,0,0,0.12)',
         }}
       >
-        {normalizedOptions.map(
-          (option, index) => {
-            const label =
-              option.nativeName ||
-              option.name ||
-              option.value;
-
-            const isSelected =
-              option.value === valueKey;
-
-            return (
-              <Pressable
-                key={
-                  option.value ??
-                  index.toString()
-                }
-                onPress={() => {
-                  emitChange(
-                    option.value,
-                  );
-
-                  setOpen(false);
-                }}
+        <ScrollView
+          nestedScrollEnabled
+          style={{
+            maxHeight: pos.maxHeight,
+          }}
+        >
+          {multiple && (
+            <Pressable onPress={toggleSelectAll}>
+              <HStack
+                alignItems="center"
+                justifyContent="space-between"
+                py="$2.5"
+                px="$3"
+                borderBottomWidth={1}
+                borderColor="$borderColor"
               >
-                <HStack
-                  alignItems="center"
-                  justifyContent="space-between"
-                  py="$2.5"
-                  px="$3"
-                  bg={
-                    isSelected
-                      ? '$background50'
-                      : 'transparent'
-                  }
+                <Text
+                  flex={1}
+                  fontSize="$sm"
+                  fontFamily="Inter"
+                  fontWeight="$medium"
+                  color="$textForeground"
+                  style={{ writingDirection }}
                 >
-                  <Text
-                    flex={1}
-                    fontSize="$sm"
-                    fontFamily="Inter"
-                    color="$textForeground"
-                    style={{
-                      writingDirection,
-                    }}
-                  >
-                    {label}
-                  </Text>
+                  {localizedSelectAll}
+                </Text>
 
-                  {isSelected ? (
-                    <LucideIcon
-                      name="Check"
-                      size={18}
+                <Checkbox
+                  value="__select_all__"
+                  isChecked={isAllSelected}
+                  onChange={() => { }}
+                  mr="$2"
+                  size="sm"
+                  aria-label={localizedSelectAll}
+                >
+                  <CheckboxIndicator
+                    borderColor={isAllSelected ? '$primary500' : '$textMuted'}
+                    bg={isAllSelected ? '$primary500' : '$white'}
+                  >
+                    <CheckboxIcon color="$white">
+                      <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                    </CheckboxIcon>
+                  </CheckboxIndicator>
+                </Checkbox>
+              </HStack>
+            </Pressable>
+          )}
+
+          {normalizedOptions.map(
+            (option, index) => {
+              const label =
+                option.nativeName ||
+                option.name ||
+                option.value;
+
+              const isSelected = multiple
+                ? valueArray.includes(option.value)
+                : option.value === valueKey;
+
+              return (
+                <Pressable
+                  key={
+                    option.value ??
+                    index.toString()
+                  }
+                  onPress={() => {
+                    if (multiple) {
+                      toggleMultiValue(option.value);
+                    } else {
+                      emitChange(
+                        option.value,
+                      );
+
+                      setOpen(false);
+                    }
+                  }}
+                >
+                  <HStack
+                    alignItems="center"
+                    justifyContent="space-between"
+                    py="$2.5"
+                    px="$3"
+                    bg={
+                      isSelected
+                        ? '$background50'
+                        : 'transparent'
+                    }
+                  >
+
+                    <Text
+                      flex={1}
+                      fontSize="$sm"
+                      fontFamily="Inter"
                       color="$textForeground"
-                    />
-                  ) : (
-                    <Box
-                      w="$4"
-                      h="$4"
-                    />
-                  )}
-                </HStack>
-              </Pressable>
-            );
-          },
-        )}
-      </ScrollView>
-    </Box>
+                      style={{
+                        writingDirection,
+                      }}
+                    >
+                      {label}
+                    </Text>
+
+                    {multiple && (
+                      <Checkbox
+                        value={option.value}
+                        isChecked={isSelected}
+                        onChange={() => { }}
+                        mr="$2"
+                        size="sm"
+                        aria-label={label}
+                      >
+                        <CheckboxIndicator
+                          borderColor={isSelected ? '$primary500' : '$textMuted'}
+                          bg={isSelected ? '$primary500' : '$white'}
+                        >
+                          <CheckboxIcon color="$white">
+                            <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                          </CheckboxIcon>
+                        </CheckboxIndicator>
+                      </Checkbox>
+                    )}
+
+                    {!multiple &&
+                      (isSelected ? (
+                        <LucideIcon
+                          name="Check"
+                          size={18}
+                          color="$textForeground"
+                        />
+                      ) : (
+                        <Box
+                          w="$4"
+                          h="$4"
+                        />
+                      ))}
+                  </HStack>
+                </Pressable>
+              );
+            },
+          )}
+        </ScrollView>
+      </Box>
     </>
   ) : null;
 
@@ -516,6 +638,10 @@ function WebSelect({
             !(disabled || isReadOnly) &&
             setOpen(prev => !prev)
           }
+          {...(isInvalid && {
+            borderWidth: 1,
+            borderColor: '$red500',
+          })}
         >
           <HStack
             {...triggerStyles}
@@ -586,23 +712,59 @@ function NativeSelect({
   borderRadius = 10,
   disabled = false,
   isReadOnly = false,
+  multiple = false,
 }: SelectProps) {
   const normalizedOptions = useMemo(
     () => normalizeOptions(options),
     [options],
   );
 
-  const valueKey = String(value ?? '');
+  const valueArray = useMemo(
+    () => (multiple && Array.isArray(value) ? value : []),
+    [multiple, value],
+  );
+
+  const valueKey = multiple ? '' : String((value as string) ?? '');
 
   const selectedOption =
     normalizedOptions.find(
       item => item.value === valueKey,
     );
 
-  const displayValue =
-    selectedOption?.nativeName ||
+  const displayValue = multiple
+    ? valueArray.length > 0
+      ? `${valueArray.length} Selected`
+      : ''
+    : selectedOption?.nativeName ||
     selectedOption?.name ||
     '';
+
+  const toggleMultiValue = (optionValue: string) => {
+    const exists = valueArray.includes(optionValue);
+    const next = exists
+      ? valueArray.filter(v => v !== optionValue)
+      : [...valueArray, optionValue];
+    const labels = next.map(v => {
+      const opt = normalizedOptions.find(o => o.value === v);
+      return opt?.nativeName || opt?.name || '';
+    });
+    onChange(next, labels);
+  };
+
+  const isAllSelected =
+    multiple &&
+    normalizedOptions.length > 0 &&
+    valueArray.length === normalizedOptions.length;
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      onChange([], []);
+      return;
+    }
+    const allValues = normalizedOptions.map(o => o.value);
+    const allLabels = normalizedOptions.map(o => o.nativeName || o.name || '');
+    onChange(allValues, allLabels);
+  };
 
   const localizedPlaceholder =
     placeholder ??
@@ -610,6 +772,11 @@ function NativeSelect({
       'common.selectOption',
       'Select an option',
     );
+
+  const localizedSelectAll = i18n.t(
+    'common.selectAll',
+    'Select All',
+  );
 
   const writingDirection =
     I18nManager.isRTL ? 'rtl' : 'ltr';
@@ -692,22 +859,22 @@ function NativeSelect({
     const availableBelow = Math.max(
       0,
       viewportBottom -
-        y -
-        height -
-        VIEWPORT_MARGIN -
-        DROPDOWN_GAP,
+      y -
+      height -
+      VIEWPORT_MARGIN -
+      DROPDOWN_GAP,
     );
 
     const availableAbove = Math.max(
       0,
       y -
-        VIEWPORT_MARGIN -
-        DROPDOWN_GAP,
+      VIEWPORT_MARGIN -
+      DROPDOWN_GAP,
     );
 
     const shouldOpenUp =
       availableBelow <
-        DEFAULT_DROPDOWN_MAX_HEIGHT &&
+      DEFAULT_DROPDOWN_MAX_HEIGHT &&
       availableAbove > availableBelow;
 
     const availableHeight =
@@ -720,7 +887,7 @@ function NativeSelect({
       Math.max(
         0,
         viewportWidth -
-          VIEWPORT_MARGIN * 2,
+        VIEWPORT_MARGIN * 2,
       ),
     );
 
@@ -729,8 +896,8 @@ function NativeSelect({
       Math.max(
         VIEWPORT_MARGIN,
         viewportWidth -
-          adjustedWidth -
-          VIEWPORT_MARGIN,
+        adjustedWidth -
+        VIEWPORT_MARGIN,
       ),
     );
 
@@ -749,18 +916,18 @@ function NativeSelect({
 
     const adjustedTop = shouldOpenUp
       ? Math.max(
-          VIEWPORT_MARGIN,
-          y - DROPDOWN_GAP - menuHeight,
-        )
+        VIEWPORT_MARGIN,
+        y - DROPDOWN_GAP - menuHeight,
+      )
       : Math.min(
-          y + height + DROPDOWN_GAP,
-          Math.max(
-            VIEWPORT_MARGIN,
-            viewportBottom -
-              VIEWPORT_MARGIN -
-              menuHeight,
-          ),
-        );
+        y + height + DROPDOWN_GAP,
+        Math.max(
+          VIEWPORT_MARGIN,
+          viewportBottom -
+          VIEWPORT_MARGIN -
+          menuHeight,
+        ),
+      );
 
     setDropdownLayout({
       top: adjustedTop,
@@ -820,6 +987,11 @@ function NativeSelect({
   const handleSelect = (
     selectedValue: string,
   ) => {
+    if (multiple) {
+      toggleMultiValue(selectedValue);
+      return;
+    }
+
     const option = normalizedOptions.find(
       item => item.value === selectedValue,
     );
@@ -968,6 +1140,49 @@ function NativeSelect({
                     false
                   }
                 >
+                  {multiple && (
+                    <Pressable onPress={toggleSelectAll}>
+                      <HStack
+                        px="$3"
+                        py="$3"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        bg="$white"
+                        borderBottomWidth={1}
+                        borderColor="$borderColor"
+                      >
+                        <Checkbox
+                          value="__select_all__"
+                          isChecked={isAllSelected}
+                          onChange={() => { }}
+                          mr="$2"
+                          size="sm"
+                          aria-label={localizedSelectAll}
+                        >
+                          <CheckboxIndicator
+                            borderColor={isAllSelected ? '$primary500' : '$textMuted'}
+                            bg={isAllSelected ? '$primary500' : '$white'}
+                          >
+                            <CheckboxIcon color="$white">
+                              <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                            </CheckboxIcon>
+                          </CheckboxIndicator>
+                        </Checkbox>
+
+                        <Text
+                          flex={1}
+                          fontSize="$sm"
+                          fontFamily="Inter"
+                          fontWeight="$medium"
+                          color="$textForeground"
+                          style={{ writingDirection }}
+                        >
+                          {localizedSelectAll}
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  )}
+
                   {normalizedOptions.map(
                     (
                       option,
@@ -978,9 +1193,9 @@ function NativeSelect({
                         option.name ||
                         option.value;
 
-                      const isSelected =
-                        option.value ===
-                        valueKey;
+                      const isSelected = multiple
+                        ? valueArray.includes(option.value)
+                        : option.value === valueKey;
 
                       return (
                         <Pressable
@@ -1002,6 +1217,26 @@ function NativeSelect({
                                 : '$white'
                             }
                           >
+                            {multiple && (
+                              <Checkbox
+                                value={option.value}
+                                isChecked={isSelected}
+                                onChange={() => { }}
+                                mr="$2"
+                                size="sm"
+                                aria-label={label}
+                              >
+                                <CheckboxIndicator
+                                  borderColor={isSelected ? '$primary500' : '$textMuted'}
+                                  bg={isSelected ? '$primary500' : '$white'}
+                                >
+                                  <CheckboxIcon color="$white">
+                                    <LucideIcon name="Check" size={12} color="$white" strokeWidth={3} />
+                                  </CheckboxIcon>
+                                </CheckboxIndicator>
+                              </Checkbox>
+                            )}
+
                             <Text
                               flex={1}
                               fontSize="$sm"
@@ -1014,7 +1249,7 @@ function NativeSelect({
                               {label}
                             </Text>
 
-                            {isSelected ? (
+                            {!multiple && isSelected ? (
                               <LucideIcon
                                 name="Check"
                                 size={18}
