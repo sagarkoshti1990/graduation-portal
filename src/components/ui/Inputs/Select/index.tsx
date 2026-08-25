@@ -61,6 +61,11 @@ type DropdownPosition = {
   maxHeight: number;
 };
 
+type OptionConfig = {
+  value: string;
+  label: string;
+};
+
 type SelectProps = {
   options: RawOption[];
   value: string | string[];
@@ -80,6 +85,7 @@ type SelectProps = {
    * appears beside every option, and picking one doesn't close the dropdown. */
   multiple?: boolean;
   isInvalid?: boolean;
+  optionConfig?: OptionConfig
 };
 
 const DROPDOWN_Z = 100000;
@@ -100,71 +106,77 @@ const SELECT_SIZE_HEIGHT: Record<
 };
 
 function normalizeOptions(
-  options: RawOption[],
+  options: unknown[],
+  config?: OptionConfig,
 ): Option[] {
-  return options.map(
-    (
-      e: RawOption,
-      index: number,
-    ) => {
+  return options.map((e, index) => {
+    // If value/label mapping is provided
+    if (
+      config &&
+      typeof e === "object" &&
+      e !== null
+    ) {
+      const obj = e as Record<string, unknown>;
+
+      const rawValue = obj[config.value];
+      const rawLabel = obj[config.label];
+
+      return {
+        value:
+          rawValue === null
+            ? "__NULL_VALUE__"
+            : String(rawValue ?? ""),
+        name:
+          rawLabel === null || rawLabel === undefined
+            ? String(rawValue ?? "")
+            : String(rawLabel),
+      };
+    }
+
+    // String option
+    if (typeof e === "string") {
+      return {
+        value: e,
+        name: e,
+      };
+    }
+
+    // Existing Option format
+    if (
+      typeof e === "object" &&
+      e !== null &&
+      "value" in e
+    ) {
+      const obj = e as Record<string, unknown>;
+
       if (
-        typeof e === 'object' &&
-        'value' in e &&
-        typeof e.value === 'string' &&
-        ('name' in e ||
-          'nativeName' in e)
+        typeof obj.value === "string" &&
+        ("name" in obj || "nativeName" in obj)
       ) {
         return e as Option;
       }
 
-      if (typeof e === 'string') {
-        return {
-          value: e,
-          name: e,
-        };
-      }
+      const optionValue =
+        obj.value === null
+          ? "__NULL_VALUE__"
+          : String(obj.value ?? "");
 
-      if (
-        typeof e === 'object' &&
-        e !== null
-      ) {
-        let optionValue: string;
-
-        let optionName: string;
-
-        if (
-          'value' in e &&
-          e.value !== undefined
-        ) {
-          optionValue =
-            e.value === null
-              ? '__NULL_VALUE__'
-              : String(e.value);
-        } else {
-          optionValue = '';
-        }
-
-        optionName =
-          ('label' in e
-            ? e.label
-            : undefined) ??
-          ('name' in e
-            ? e.name
-            : undefined) ??
-          optionValue;
-
-        return {
-          value: optionValue,
-          name: optionName,
-        };
-      }
+      const optionName =
+        obj.label ??
+        obj.name ??
+        optionValue;
 
       return {
-        value: String(index),
-        name: 'Unknown',
+        value: optionValue,
+        name: String(optionName),
       };
-    },
-  );
+    }
+
+    return {
+      value: String(index),
+      name: "Unknown",
+    };
+  });
 }
 
 function resolveRefToDom(
@@ -212,10 +224,11 @@ function WebSelect({
   isReadOnly = false,
   multiple = false,
   isInvalid = false,
+  optionConfig,
 }: SelectProps) {
   const normalizedOptions = useMemo(
-    () => normalizeOptions(options),
-    [options],
+    () => normalizeOptions(options,optionConfig),
+    [options,optionConfig],
   );
 
   const valueArray = useMemo(
@@ -713,10 +726,11 @@ function NativeSelect({
   disabled = false,
   isReadOnly = false,
   multiple = false,
+  optionConfig
 }: SelectProps) {
   const normalizedOptions = useMemo(
-    () => normalizeOptions(options),
-    [options],
+    () => normalizeOptions(options,optionConfig),
+    [options,optionConfig],
   );
 
   const valueArray = useMemo(

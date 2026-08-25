@@ -243,12 +243,12 @@ export class FileUploadError extends Error {
 function isVisible(
   visibleWhen: { flag: string } | undefined,
   values: Record<string, string>,
-  optionsMap: OptionsMap,
+  optionsMap?: OptionsMap,
 ): boolean {
   if (!visibleWhen?.flag) return true;
   if (visibleWhen.flag === 'isSupervisorOrLC') {
     const roleId = values.roleId || '';
-    const selectedRole = optionsMap.roles?.find((r: any) => r.value === roleId);
+    const selectedRole = optionsMap?.roles?.find((r: any) => r.value === roleId);
     const roleLabel = (selectedRole?.label || '').toLowerCase();
     return [
       'supervisor',
@@ -430,7 +430,7 @@ function getFieldError(
 function validateField(
   field: FormField,
   values: Record<string, string>,
-  optionsMap: OptionsMap,
+  optionsMap: OptionsMap = {},
   errors: Record<string, string>,
 ): void {
   if (field.type === FORM_FIELD_TYPES.GROUP && Array.isArray(field.fields)) {
@@ -609,7 +609,7 @@ function applyRule(
 export function validateSchema(
   schema: FormSection[],
   values: Record<string, string>,
-  optionsMap: OptionsMap,
+  optionsMap?: OptionsMap,
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   validateNodes(schema, values, optionsMap, errors);
@@ -754,7 +754,7 @@ export async function resolveFileUploads(
 function validateNodes(
   nodes: FormSection[] | undefined,
   values: Record<string, string>,
-  optionsMap: OptionsMap,
+  optionsMap: OptionsMap = {},
   errors: Record<string, string>,
 ): void {
   nodes?.forEach(node => {

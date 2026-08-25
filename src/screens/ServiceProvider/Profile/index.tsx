@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,14 +15,9 @@ import {
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
-import SchemaFormRenderer, { validateSchema, resolveFileUploads, FileUploadError, } from '@components/SchemaFormRenderer';
+import SchemaFormRenderer, { validateSchema, resolveFileUploads } from '@components/SchemaFormRenderer';
 import { useAuth } from '@contexts/AuthContext';
 import { getUserProfile } from '../../../services/authenticationService';
-import {
-  updateUser,
-  getProvincesList,
-  getSitesByProvince,
-} from '../../../services/usersService';
 import {
   getProviderTypeOptions,
   getMentoringProfile,
@@ -64,9 +59,9 @@ const OrganizationProfile = (): React.JSX.Element => {
   // Options map state for select fields
   const [providerTypeOptions, setProviderTypeOptions] = useState<{ value: string; label: string }[]>([]);
 
-  const optionsMap = {
+  const optionsMap = useMemo(() => ({
     organizationTypes: providerTypeOptions,
-  };
+  }),[providerTypeOptions]);
 
   // Fetches dynamic options & logged-in user's organization profile on mount.
   useEffect(() => {
@@ -75,11 +70,7 @@ const OrganizationProfile = (): React.JSX.Element => {
       try {
         const res: any = await getProviderTypeOptions();
         if (res && res.length > 0) {
-          const formatted = res.map((item: any) => ({
-            value: item.value,
-            label: item.label
-          }));
-          setProviderTypeOptions(formatted);
+          setProviderTypeOptions(res);
         }
       } catch (err) {
         console.error('Error fetching provider_type options:', err);
@@ -271,8 +262,8 @@ const OrganizationProfile = (): React.JSX.Element => {
 const handleSave = async () => {
   // Validate the three schemas
   const basicErrors = validateSchema(BASIC_INFO_SCHEMA, values, optionsMap);
-  const contactErrors = validateSchema(CONTACT_PERSON_SCHEMA, values, optionsMap);
-  const docErrors = validateSchema(DOCUMENTS_SCHEMA, values, optionsMap);
+  const contactErrors = validateSchema(CONTACT_PERSON_SCHEMA, values);
+  const docErrors = validateSchema(DOCUMENTS_SCHEMA, values);
 
   const allErrors = {
     ...basicErrors,
@@ -546,7 +537,6 @@ try {
               values={values}
               errors={errors}
               onFieldChange={handleFieldChange}
-              optionsMap={optionsMap}
               disabled={saving}
               mode={mode}
               t={t as any}
@@ -622,7 +612,6 @@ try {
               values={values}
               errors={errors}
               onFieldChange={handleFieldChange}
-              optionsMap={optionsMap}
               disabled={saving}
               uploadService={handleUpload}
               mode={mode}

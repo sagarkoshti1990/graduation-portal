@@ -1,9 +1,27 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { VStack, HStack, Text, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
 import { getProvincesList, getSitesByProvince } from '../../../../services/usersService';
 import styles from '../styles';
+
+function groupByParentExternalId(
+  parents: any[],
+  items: any[],
+): Record<string, any[]> {
+  return parents.reduce<Record<string, any[]>>(
+    (result, parent) => {
+      result[parent.externalId] = items.filter((item) =>
+        item.externalId.startsWith(`${parent.externalId}-`)
+      );
+      result[parent._id] = items.filter((item) =>
+        item.externalId.startsWith(`${parent.externalId}-`)
+      );
+      return result;
+    },
+    {},
+  );
+}
 
 export interface CoverageItem {
   provinceId: string;
@@ -27,34 +45,41 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 }) => {
   const [provinces, setProvinces] = useState<any[]>([]);
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>('');
+  const [allSites, setAllSites] = useState<Record<string, any[]>>({});
   const [sites, setSites] = useState<any[]>([]);
   const [selectedSiteIds, setSelectedSiteIds] = useState<string[]>([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingSites, setLoadingSites] = useState(false);
+  const [editingProvinceId, setEditingProvinceId] = useState<string | null>(null);
 
   // Fetch provinces list on mount
   useEffect(() => {
-    setLoadingProvinces(true);
-    getProvincesList()
-      .then(res => {
-        setProvinces(res || []);
-      })
-      .catch(err => console.error('Error fetching provinces in coverage:', err))
-      .finally(() => setLoadingProvinces(false));
+    const init = async () => {
+      setLoadingProvinces(true);
+      try {
+        const [resPro, resSite] = await Promise.all([getProvincesList(),getSitesByProvince()]);
+        setProvinces(resPro || []);
+        const data = groupByParentExternalId(resPro,resSite?.result?.data);
+        setAllSites(data || {})
+      } catch(err) {
+        console.error('Error fetching provinces in coverage:', err)
+      } finally {
+        setLoadingProvinces(false)
+      };
+    }
+    init();
   }, []);
 
   // Fetch sites when province selection changes
   useEffect(() => {
-    if (!selectedProvinceId) {
-      setSites([]);
-      setSelectedSiteIds([]);
-      return;
-    }
-    setLoadingSites(true);
-    getSitesByProvince({ provinceId: selectedProvinceId, page: 1, limit: 100 })
-      .then(res => {
-        const sitesList = res.result?.data || [];
-        setSites(sitesList);
+    const init = async () => {
+      if (!selectedProvinceId) {
+        setSites([]);
+        setSelectedSiteIds([]);
+        return;
+      }
+      setLoadingSites(true);
+      try{
 
         // Check if this province is already in value to pre-populate selected sites
         const selectedProvince = provinces.find(
@@ -62,6 +87,9 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
         );
         const resolvedProvinceId = selectedProvince?._id || selectedProvince?.id || selectedProvinceId;
         const provinceName = selectedProvince?.name || selectedProvince?.metaInformation?.name || '';
+
+        const sitesList = allSites?.[selectedProvince?.externalId] || [];
+        setSites(sitesList);
 
         const existing = value.find(
           item =>
@@ -84,10 +112,14 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
         } else {
           setSelectedSiteIds([]);
         }
-      })
-      .catch(err => console.error('Error fetching sites in coverage:', err))
-      .finally(() => setLoadingSites(false));
-  }, [selectedProvinceId, provinces, value]);
+      } catch(err) {
+        console.error('Error fetching sites in coverage:', err)
+      } finally {
+        setLoadingSites(false);
+      }
+    }
+    init();
+  }, [selectedProvinceId, provinces, value, allSites]);
 
   // Options mapping
   const provinceOptions = useMemo(() => {
@@ -115,13 +147,6 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
       }));
   }, [provinces, value, selectedProvinceId]);
 
-  const siteOptions = useMemo(() => {
-    return sites.map((s: any) => ({
-      value: s._id || s.id || '',
-      label: s.name || s.metaInformation?.name || '',
-    }));
-  }, [sites]);
-
   const handleSiteChange = (selectedValues: string[]) => {
     if (selectedValues.includes('Select All')) {
       const regularOptions = sites.map((s: any) => s._id || s.id || '');
@@ -135,8 +160,6 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
       setSelectedSiteIds(selectedValues);
     }
   };
-
-  const [editingProvinceId, setEditingProvinceId] = useState<string | null>(null);
 
   const handleEditCard = (item: CoverageItem) => {
     setEditingProvinceId(item.provinceId);
@@ -207,7 +230,13 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
     }
   };
 
-  const isEdit = mode === 'edit';
+  const getSitesLabel = useCallback(() => {
+    
+  },[])
+
+  const isEdit = useMemo(() => {
+    return mode === 'edit';
+  }, [mode]);
 
   return (
     <VStack {...styles.coverageContainer}>
@@ -260,13 +289,14 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
               </HStack>
 
               {/* Site Names List */}
-              <HStack {...styles.siteBadgeContainer}>
+              <SelectedSites siteIds={item.siteIds} parent={item.provinceId} allSites={allSites} />
+              {/* <HStack {...styles.siteBadgeContainer}>
                 {(item.siteNames && item.siteNames.length > 0 ? item.siteNames : item.siteIds).map((siteName, idx) => (
                   <Badge key={idx} {...styles.greyBadge}>
                     <BadgeText {...styles.greyBadgeText}>{siteName}</BadgeText>
                   </Badge>
                 ))}
-              </HStack>
+              </HStack> */}
             </VStack>
           </Pressable>
         ))}
@@ -301,7 +331,8 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
                 <Text {...styles.redAsteriskSmall}> *</Text>
               </HStack>
               <Select
-                options={siteOptions}
+                options={sites}
+                optionConfig={{value:"_id", label:"name"}}
                 value={selectedSiteIds}
                 onChange={handleSiteChange}
                 placeholder={t('profile.selectSitesPlaceholder', selectedProvinceId ? 'Select site' : 'Select province first')}
@@ -328,3 +359,38 @@ export const ProvinceCoverage: React.FC<ProvinceCoverageProps> = ({
 };
 
 export default ProvinceCoverage;
+
+const SelectedSites = ({
+  siteIds,
+  parent,
+  allSites,
+}: {
+  siteIds: string[];
+  parent: string;
+  allSites: Record<
+    string,
+    {
+      _id: string;
+      externalId: string;
+      name: string;
+    }[]
+  >;
+}) => {
+  const selectedSites = useMemo(() => {
+    const sites = allSites[parent] ?? [];
+
+    return sites.filter((site) => siteIds.includes(site._id));
+  }, [allSites, parent, siteIds]);
+
+  return (
+    <HStack {...styles.siteBadgeContainer}>
+      {selectedSites.map((site) => (
+        <Badge key={site._id} {...styles.greyBadge}>
+          <BadgeText {...styles.greyBadgeText}>
+            {site.name}
+          </BadgeText>
+        </Badge>
+      ))}
+    </HStack>
+  );
+};

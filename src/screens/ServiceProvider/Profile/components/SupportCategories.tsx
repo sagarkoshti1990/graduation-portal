@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { VStack, HStack, Text, Box, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable, Input, InputField } from '@ui';
+import { VStack, HStack, Text, Button, ButtonText, ButtonIcon, Badge, BadgeText, Pressable } from '@ui';
 import { LucideIcon } from '@ui/index';
 import Select from '@components/ui/Inputs/Select';
-import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import styles from '../styles';
 import {
   getSupportCategories,
@@ -13,49 +12,48 @@ import {
   getImmediateAttentionOptions,
   getAssetTypesOptions,
 } from '../../../../services/mentoringService';
-
 import { SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 
-// Sub-option entries can be plain ids (freshly selected from the <Select>) or
-// full { value, label } option objects (as returned by the mentoring API).
-export type OptionValue = string | { value: string; label: string };
+  // Sub-option entries can be plain ids (freshly selected from the <Select>) or
+  // full { value, label } option objects (as returned by the mentoring API).
+  export type OptionValue = string | { value: string; label: string };
 
-export interface SupportCategoryItem {
-  id: string;
-  categoryName: string;
-  trainingData?: {
-    socialEmpowerment: OptionValue[];
-    financialInclusion: OptionValue[];
-    livelihoods: OptionValue[];
+  export interface SupportCategoryItem {
+    id: string;
+    categoryName: string;
+    trainingData?: {
+      socialEmpowerment: OptionValue[];
+      financialInclusion: OptionValue[];
+      livelihoods: OptionValue[];
+    };
+    linkageData?: {
+      specialAttention: OptionValue[];
+      immediateAttention: OptionValue[];
+    };
+    assetsData?: {
+      assetTypes: OptionValue[];
+    };
+    othersData?: string;
+  }
+
+  interface SupportCategoriesProps {
+    value: SupportCategoryItem[];
+    onChange: (value: SupportCategoryItem[]) => void;
+    mode: 'preview' | 'edit';
+    t: any;
+  }
+
+  export const isTrainingCategory = (cat?: string) => {
+    return cat === SUPPORT_CATEGORIES.TRAINING;
   };
-  linkageData?: {
-    specialAttention: OptionValue[];
-    immediateAttention: OptionValue[];
+
+  export const isLinkageCategory = (cat?: string) => {
+    return cat === SUPPORT_CATEGORIES.ADDITIONAL_SERVICE;
   };
-  assetsData?: {
-    assetTypes: OptionValue[];
+
+  export const isAssetCategory = (cat?: string) => {
+    return cat === SUPPORT_CATEGORIES.ASSET;
   };
-  othersData?: string;
-}
-
-interface SupportCategoriesProps {
-  value: SupportCategoryItem[];
-  onChange: (value: SupportCategoryItem[]) => void;
-  mode: 'preview' | 'edit';
-  t: any;
-}
-
-export const isTrainingCategory = (cat?: string) => {
-  return cat === SUPPORT_CATEGORIES.TRAINING;
-};
-
-export const isLinkageCategory = (cat?: string) => {
-  return cat === SUPPORT_CATEGORIES.ADDITIONAL_SERVICE;
-};
-
-export const isAssetCategory = (cat?: string) => {
-  return cat === SUPPORT_CATEGORIES.ASSET;
-};
 
   // Dynamic Options fetched directly from API/DB, grouped into a single state object
   type OptionItem = { value: string; label: string };
@@ -68,7 +66,7 @@ export const isAssetCategory = (cat?: string) => {
     immediateAttentionOpts: OptionItem[];
     assetTypesOpts: OptionItem[];
   }
-  
+
 export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   value = [],
   onChange,
@@ -76,18 +74,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
   t,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-
-  const initialOptionsState: CategoryOptionsState = {
-    categoryOpts: [],
-    socialEmpowermentOpts: [],
-    financialInclusionOpts: [],
-    livelihoodsOpts: [],
-    specialAttentionOpts: [],
-    immediateAttentionOpts: [],
-    assetTypesOpts: [],
-  };
-
-  const [optionsState, setOptionsState] = useState<CategoryOptionsState>(initialOptionsState);
+  const [optionsState, setOptionsState] = useState<CategoryOptionsState | null>();
 
   // Tracks which option groups have already been fetched, so we never re-fetch the same group twice
   const fetchedGroupsRef = useRef<{ category: boolean; training: boolean; linkage: boolean; asset: boolean }>({
@@ -108,7 +95,7 @@ export const SupportCategories: React.FC<SupportCategoriesProps> = ({
         if (!isMounted) return;
         fetchedGroupsRef.current.category = true;
         setOptionsState(prev => ({
-          ...prev,
+          ...(prev || {}),
           categoryOpts: catRes || [],
         }));
       } catch (err) {
