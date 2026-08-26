@@ -24,6 +24,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   onIdpCreation,
   onProgressChange,
   onTaskCompletionChange,
+  onProjectDataChange,
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -57,7 +58,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   // triggering action (task update, custom task create/update/delete) has
   // actually succeeded (see ProjectContext.tsx's fireOnTaskUpdate), so it's
   // safe to treat this as "an online action just succeeded" below.
-  const handleTaskUpdate = async (task: Task) => {
+  const handleTaskUpdate = async (task: Task, project?: ProjectData) => {
     if (task.metaInformation?.addedToPlan) {
       setAddedTasks(prev => new Set(prev).add(task._id));
     } else {
@@ -66,6 +67,17 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
         next.delete(task._id);
         return next;
       });
+    }
+
+    // ProjectContext's own state (what ProjectPlayer renders from) is ephemeral —
+    // it's lost whenever this component unmounts, which happens on every
+    // Intervention Plan <-> Assessment tab switch. Sync the just-succeeded
+    // update into the project data owned by the parent screen so it survives
+    // that remount instead of the stale pre-update data winning.
+    if (project) {
+      const sortedTasks = sortTasksWithChildren(project.tasks);
+      setProjectSortData({ ...project, tasks: sortedTasks });
+      onProjectDataChange?.(project);
     }
 
     if (isOffline) return; // nothing to refresh from — the server wasn't touched

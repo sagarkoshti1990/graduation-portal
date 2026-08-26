@@ -89,7 +89,8 @@ export interface ProjectContextValue {
   addedToPlanTasks: Record<string, boolean>;
   setTaskAddedToPlan: (taskId: string, added: boolean) => void;
   setTasksAddedToPlan: (taskIds: string[], added: boolean) => void;
-  onTaskUpdate?: (task: Task) => void;
+  /** `project` is the full updated project tree, when available, so callers can sync it into an outer source of truth without a re-fetch. */
+  onTaskUpdate?: (task: Task, project?: ProjectData) => void;
 }
 
 export interface ProjectProviderProps {
@@ -97,7 +98,7 @@ export interface ProjectProviderProps {
   config: ProjectPlayerConfig;
   initialData: ProjectData | null;
   oldProjectData: ProjectData | null;
-  onTaskUpdate?: (task: Task) => void;
+  onTaskUpdate?: (task: Task, project?: ProjectData) => void;
   offlineKeyPrefix?: string;
   /** Participant ID (offline registry key) — enables offline cache updates after online task operations. */
   participantId?: string;
@@ -179,7 +180,7 @@ export interface ProjectPlayerProps {
   config: ProjectPlayerConfig;
   data?: ProjectPlayerData;
   projectData?: any; // as per mock data json
-  onTaskUpdate?: (task: Task) => void;
+  onTaskUpdate?: (task: Task, project?: ProjectData) => void;
   onTaskCompletionChange?: (areAllCompleted: boolean) => void; // Callback when task completion status changes
   onProgressChange?: (progress: number) => void; // Callback for progress updates
   getProjectData?: (projectData: ProjectData) => void;

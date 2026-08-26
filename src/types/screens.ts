@@ -62,6 +62,8 @@ export interface InterventionPlanProps {
   onIdpCreation?: (projectId?: string) => void;
   onProgressChange?: (progress: number) => void;
   onTaskCompletionChange?: (areAllCompleted: boolean) => void;
+  /** Called with the latest full project/task tree after a task action succeeds, so the caller can keep its own project data (the source InterventionPlan re-initializes from on remount) in sync. */
+  onProjectDataChange?: (project: ProjectData) => void;
 }
 
 export interface TemplateData {
