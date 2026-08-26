@@ -683,12 +683,14 @@ async function syncFormEdits(
 // ---------------------------------------------------------------------------
 
 /**
- * After a successful task-edit sync, merges the uploaded attachment URLs
- * (from the now-patched projectEdits) back into the cached project so the
- * local cache reflects the server state without needing a fresh API fetch.
+ * After a successful task-edit sync, merges the synced fields (including the
+ * uploaded attachment URLs from the now-patched projectEdits) back into the
+ * cached project so the local cache reflects the server state without
+ * needing a fresh API fetch.
  *
- * Only `status` and `attachments` are merged — structural fields always come
- * from the cached project (mirrors the rule in dataService.applyEditMapToTasks).
+ * Only `status`, `attachments`, `name`, `description` and `serviceProvider`
+ * are merged — structural fields always come from the cached project
+ * (mirrors the rule in dataService.applyEditMapToTasks).
  */
 async function applyEditsToCachedProject(
   userId: string,
@@ -716,7 +718,10 @@ async function applyEditsToCachedProject(
       const edit = editMap.get(task._id);
       const status = edit?.status ?? task.status;
       const attachments = edit?.attachments !== undefined ? edit.attachments : task.attachments;
-      const merged = { ...task, status, attachments };
+      const name = edit?.name !== undefined ? edit.name : task.name;
+      const description = edit?.description !== undefined ? edit.description : task.description;
+      const serviceProvider = edit?.serviceProvider !== undefined ? edit.serviceProvider : task.serviceProvider;
+      const merged = { ...task, status, attachments, name, description, serviceProvider };
       if (merged.tasks?.length)    merged.tasks    = applyToTasks(merged.tasks);
       if (merged.children?.length) merged.children = applyToTasks(merged.children);
       return merged;

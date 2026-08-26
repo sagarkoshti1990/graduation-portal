@@ -267,23 +267,27 @@ function buildEditMap(editedTasks: any[]): Map<string, any> {
 }
 
 /**
- * Applies completion state from projectEdits onto the project's task tree.
+ * Applies pending edits from projectEdits onto the project's task tree.
  *
  * Rules:
- *  - ONLY `status` and `attachments` are taken from the edit record.
- *    Structural fields (name, type, description, dependencies, etc.) always
- *    come from the cached project — never from projectEdits.
- *  - Default status for every task comes from PARTICIPANT_KEYS.project.
- *    projectEdits overrides status only when an edit record exists for that task.
+ *  - ONLY `status`, `attachments`, `name`, `description` and `serviceProvider`
+ *    are taken from the edit record — the fields a task completion or a
+ *    custom-task edit can actually change. Other structural fields (type,
+ *    dependencies, etc.) always come from the cached project — never from
+ *    projectEdits.
+ *  - Defaults for every field come from PARTICIPANT_KEYS.project.
+ *    projectEdits overrides a field only when the edit record defines it.
  */
 function applyEditMapToTasks(tasks: any[], editMap: Map<string, any>): any[] {
   return tasks.map(task => {
     const edit = editMap.get(task._id);
-    // Edit wins; otherwise keep the status already in the cached project.
+    // Edit wins; otherwise keep the value already in the cached project.
     const status: string = edit?.status ?? task.status;
-    // Attachments: use edit value when present, otherwise preserve project value.
     const attachments = edit?.attachments !== undefined ? edit.attachments : task.attachments;
-    const merged = { ...task, status, attachments };
+    const name = edit?.name !== undefined ? edit.name : task.name;
+    const description = edit?.description !== undefined ? edit.description : task.description;
+    const serviceProvider = edit?.serviceProvider !== undefined ? edit.serviceProvider : task.serviceProvider;
+    const merged = { ...task, status, attachments, name, description, serviceProvider };
     if (merged.tasks?.length) merged.tasks = applyEditMapToTasks(merged.tasks, editMap);
     if (merged.children?.length) merged.children = applyEditMapToTasks(merged.children, editMap);
     return merged;
