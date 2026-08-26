@@ -7,7 +7,7 @@
  *
  * Usage:
  *   <SchemaFormRenderer
- *     schema={CREATE_USER_FORM_SCHEMA}
+ *     schema={FORM_SCHEMA}
  *     values={values}
  *     errors={errors}
  *     onFieldChange={handleChange}
@@ -1481,6 +1481,7 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
   if (field.type === FORM_FIELD_TYPES.DATE || field.type === FORM_FIELD_TYPES.Time || field.type === FORM_FIELD_TYPES.DateTime) {
     // Internal display value: stored as YYYY-MM-DD, displayed as YYYY-MM-DD
     const displayValue = value ? value : '';
+    const [type, format] = field?.displayFormat?.split("@") || []
 
     return (
       <Box zIndex={field.zIndex ?? 999}>
@@ -1491,6 +1492,8 @@ const FieldRenderer: React.FC<FieldRendererProps> = ({
             borderWidth: 1,
             borderColor: '$red500',
           })}
+          valueFormat={field?.valueFormat || null}
+          displayFormat={type === "dateFormat" ? format : null}
           mode={field.type}
           placeholder={placeholder || 'YYYY-MM-DD'}
           value={displayValue}
@@ -1875,7 +1878,7 @@ const SectionNode: React.FC<{ node: FormSection; ctx: NodeRenderContext }> = mem
 // Engages only when the ENTIRE root schema is made of 2+ `tab` nodes (a genuine
 // step wizard). Mixed/single-tab/no-tab schemas fall through to the plain
 // recursive rendering above, unchanged — this keeps every existing screen
-// (CREATE_USER_FORM_SCHEMA, etc.) byte-for-byte backward compatible.
+// (FORM_SCHEMA, etc.) byte-for-byte backward compatible.
 
 /**
  * Step indicator built on the same `@gluestack-ui/themed` Tabs primitives as the

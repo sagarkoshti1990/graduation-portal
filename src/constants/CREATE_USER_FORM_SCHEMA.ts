@@ -363,11 +363,11 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             name: 'organisationId',
             type: 'select',
             required: true,
-            label: { key: 'organisation', fallback: 'Organisation' },
-            placeholder: { key: 'organisationPlaceholder', fallback: 'Select organisation' },
+            label: { key: 'organization', fallback: 'Organization' },
+            placeholder: { key: 'organizationPlaceholder', fallback: 'Select organization' },
             optionsSource: 'organisations',
             validation: [
-              { rule: 'required', message: { key: 'errors.organisationRequired', fallback: 'Organisation is required' } },
+              { rule: 'required', message: { key: 'errors.organizationRequired', fallback: 'Organization is required' } },
             ],
           },
           {
