@@ -714,19 +714,21 @@ const closeProfileModal = useCallback(() => {
       </Modal>
 
       {/* Edit User Modal */}
-      <UserProfileModal
-        isOpen={!!selectedUser}
-        onClose={closeProfileModal}
-        onSuccess={() => {
-          closeProfileModal();
-          setRefetchKey(k => k + 1);
-        }}
-        user={selectedUser}
-        isMobile={isMobile}
-        t={t}
-        mode={profileMode}
-        onEdit={() => setProfileMode('edit')}
-      />
+      {!!selectedUser &&
+        <UserProfileModal
+          isOpen={!!selectedUser}
+          onClose={closeProfileModal}
+          onSuccess={() => {
+            closeProfileModal();
+            setRefetchKey(k => k + 1);
+          }}
+          user={selectedUser}
+          isMobile={isMobile}
+          t={t}
+          mode={profileMode}
+          onEdit={() => setProfileMode('edit')}
+        />
+      }
 
       {/* Reset Password Modal */}
       <Modal
@@ -898,16 +900,18 @@ const closeProfileModal = useCallback(() => {
 
 
       {/* Create New User Modal */}
-      <CreateUserForm
-        isOpen={isCreateUserModalOpen}
-        onClose={closeCreateUserModal}
-        onSuccess={() => {
-          setIsCreateUserModalOpen(false);
-          setRefetchKey(k => k + 1);
-        }}
-        isMobile={isMobile}
-        t={t}
-      />
+      {isCreateUserModalOpen && 
+        <CreateUserForm
+          isOpen={isCreateUserModalOpen}
+          onClose={closeCreateUserModal}
+          onSuccess={() => {
+            setIsCreateUserModalOpen(false);
+            setRefetchKey(k => k + 1);
+          }}
+          isMobile={isMobile}
+          t={t}
+        />
+      }
 
       {/* Hidden File Input for CSV Upload - triggers native file picker on "Upload CSV" click */}
       {Platform.OS === 'web' && (

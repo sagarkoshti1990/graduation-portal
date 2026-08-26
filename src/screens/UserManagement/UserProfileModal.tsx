@@ -109,7 +109,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         if (val.value === 'other') {
           return val.label != null ? String(val.label) : '';
         }
-        const res = val.metaInformation?.name ?? val.name ?? val.label ?? val.value ?? val.id ?? val._id;
+        const res = val.value ?? val.metaInformation?.name ?? val.name ?? val.label ?? val.id ?? val._id;
         return res != null ? String(res) : '';
       }
       return String(val);
@@ -207,14 +207,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     const dob = getFieldVal('dob');
 
     const employee_id = getFieldVal('employee_id');
-    let organisationId = getFieldVal('organisationId');
-    if (!organisationId) {
-      const userOrgs = (user as any)?.user_organizations || (userProfile as any)?.user_organizations || [];
-      const org = userOrgs?.[0]?.organization || userOrgs?.[0]?.organisation;
-      if (org) {
-        organisationId = org.name || org.title || org.label || '';
-      }
-    }
+    let organisationId = getFieldVal('organization');
     const positionId = getFieldIdVal('positionId');
     const provinceId = getFieldIdVal('provinceId');
     const siteId = getFieldIdVal('siteId');
@@ -427,7 +420,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               optionsMap={optionsMap}
               disabled={isSubmitting}
               mode={mode}
-              isMobile={isMobile}
               t={t}
               _input={INPUT_STYLE}
             />
