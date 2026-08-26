@@ -503,6 +503,7 @@ export default function ParticipantDetail() {
               participantProfile={participant}
               onTaskCompletionChange={setAreAllTasksCompleted}
               projectData={projectData}
+              onProjectDataChange={setProjectData}
               projectUnavailableOffline={projectUnavailableOffline}
               {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
@@ -565,6 +566,7 @@ export default function ParticipantDetail() {
                     onIdpCreation={handleIdpCreated}
                     onProgressChange={handleProgressChange}
                     projectData={projectData}
+                    onProjectDataChange={setProjectData}
                     projectUnavailableOffline={projectUnavailableOffline}
                     {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />

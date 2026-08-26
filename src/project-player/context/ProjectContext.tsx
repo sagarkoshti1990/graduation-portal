@@ -339,7 +339,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       const fireOnTaskUpdate = () => {
         if (onTaskUpdate && updatedTaskObj) {
           const taskForCallback = updatedTaskObj;
-          setTimeout(() => { if (mountedRef.current) onTaskUpdate(taskForCallback); });
+          setTimeout(() => { if (mountedRef.current) onTaskUpdate(taskForCallback, project); });
         }
       };
 
@@ -433,13 +433,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
 
     const currentProjectId = prev._id;
     const needsApi = !!(pillar.children?.length && currentProjectId);
+    const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
 
     // Fires onTaskUpdate only once the relevant branch has actually succeeded (or,
     // when there's no API call at all, immediately — nothing to race against). Mirrors
     // updateTask's timing so a server-refresh consumer never races an in-flight update.
     const fireOnTaskUpdate = () => {
       if (onTaskUpdate) {
-        setTimeout(() => { if (mountedRef.current) onTaskUpdate(task); });
+        setTimeout(() => { if (mountedRef.current) onTaskUpdate(task, updatedProject); });
       }
     };
 
@@ -462,7 +463,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
           offlineKeyPrefix,
         );
         if (participantId && offlineKeyPrefix) {
-          const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
           updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
         }
         fireOnTaskUpdate();
@@ -481,7 +481,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         }
         // After online success, reflect the new task in the offline snapshot.
         if (participantId && offlineKeyPrefix && currentProjectId) {
-          const updatedProject = mergeTaskIntoProject(prev, pillarId, task);
           updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
         }
         fireOnTaskUpdate();
@@ -490,10 +489,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       fireOnTaskUpdate();
     }
 
-    setProjectData(p => {
-      if (!p) return null;
-      return mergeTaskIntoProject(p, pillarId, task);
-    });
+    setProjectData(updatedProject);
   }, [participantId, offlineKeyPrefix, onTaskUpdate]);
 
   const deleteTask = useCallback(
@@ -511,13 +507,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         parentId &&
         isEditMode
       );
+      const updatedProject = removeTaskFromProject(prev, taskId);
 
       // Fires onTaskUpdate only once the relevant branch has actually succeeded (or,
       // when there's no API call at all, immediately — nothing to race against). Mirrors
       // updateTask's timing so a server-refresh consumer never races an in-flight update.
       const fireOnTaskUpdate = () => {
         if (onTaskUpdate) {
-          setTimeout(() => { if (mountedRef.current) onTaskUpdate(deletedTask); });
+          setTimeout(() => { if (mountedRef.current) onTaskUpdate(deletedTask, updatedProject); });
         }
       };
 
@@ -540,7 +537,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
             offlineKeyPrefix,
           );
           if (participantId && offlineKeyPrefix) {
-            const updatedProject = removeTaskFromProject(prev, taskId);
             updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
           }
           fireOnTaskUpdate();
@@ -559,7 +555,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
           }
           // After online success, reflect the deletion in the offline snapshot.
           if (participantId && offlineKeyPrefix && currentProjectId) {
-            const updatedProject = removeTaskFromProject(prev, taskId);
             updateOfflineProject(offlineKeyPrefix, participantId, currentProjectId, updatedProject).catch(() => {});
           }
           fireOnTaskUpdate();
@@ -568,10 +563,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
         fireOnTaskUpdate();
       }
 
-      setProjectData(p => {
-        if (!p) return null;
-        return removeTaskFromProject(p, taskId);
-      });
+      setProjectData(updatedProject);
     },
     [isEditMode, participantId, offlineKeyPrefix, onTaskUpdate],
   );
