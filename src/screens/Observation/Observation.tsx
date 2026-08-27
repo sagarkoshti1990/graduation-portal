@@ -146,7 +146,7 @@ const Observation: React.FC = () => {
             alternatePhoneCode,
             email: ud?.email ?? newData?.email,
             gender: newData?.userDetails?.gender?.label || "",
-            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-") : ""
+            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-") : newData?.dob?.label ? newData?.dob?.label.split("_").reverse().join("-") : "-"
           }, formatCountryCode);
           setUserData(preFillData);
         }
