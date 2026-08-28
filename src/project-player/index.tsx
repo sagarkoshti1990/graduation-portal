@@ -129,7 +129,12 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
         onTaskCompletionChange={onTaskCompletionChange}
         onProgressChange={onProgressChange}
       />
-      <ProjectComponent />
+      {config.isLoading === false
+        ? <ProjectComponent />
+        : <Box flex={1} alignItems="center" justifyContent="center">
+          <Spinner size="large" />
+        </Box>
+      }
     </ProjectProvider>
   );
 };

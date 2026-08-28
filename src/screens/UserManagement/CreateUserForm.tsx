@@ -121,7 +121,6 @@ export const CreateUserForm = React.memo<CreateUserFormProps>(({
       if (error?.statusCode === 406 || error?.statusCode === 422) {
         type = 'warning';
       }
-      //console.log(error?.data, error?.error, error?.statusCode, "errorssagarold")
       showAlert(type, errMsg, { placement: 'bottom' });
       setErrors({
         ...errors,
@@ -134,7 +133,7 @@ export const CreateUserForm = React.memo<CreateUserFormProps>(({
       setIsSubmitting(false);
     }
   }, [values, optionsMap, roles, showAlert, t, onSuccess]);
-  //console.log(errors, "errorssagar")
+  
   const firstNameRef = useRef<any>(null);
 
   useEffect(() => {

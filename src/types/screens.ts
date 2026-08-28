@@ -66,6 +66,7 @@ export interface InterventionPlanProps {
   onProjectDataChange?: (project: ProjectData) => void;
   allowEditTaskIds?: string [];
   showAddCustomTask?: boolean;
+  isLoading?: boolean;
 }
 
 export interface TemplateData {
@@ -95,8 +96,8 @@ export interface ParticipantHeaderProps {
   onStatusUpdate?: (newStatus: string) => void;
   projectData?: ProjectData | null;
   onParticipantRefresh?: () => Promise<string | undefined> | string | undefined;
-  solutions?: any[];
   isHideSecondButton?: Boolean;
+  endLineConfigData?: any;
 }
 
 export type SubCategory = {

@@ -119,6 +119,7 @@ export interface ProjectProviderProps {
 // ============================================
 
 export interface ProjectPlayerConfig {
+  isLoading?: boolean;
   mode: 'preview' | 'edit' | 'read-only';
   solutionId?: string;
   projectId?: string;

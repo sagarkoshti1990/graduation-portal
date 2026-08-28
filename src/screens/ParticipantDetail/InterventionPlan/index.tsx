@@ -27,7 +27,8 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
   onTaskCompletionChange,
   onProjectDataChange,
   allowEditTaskIds,
-  showAddCustomTask
+  showAddCustomTask,
+  isLoading
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -265,7 +266,7 @@ const InterventionPlan: React.FC<InterventionPlanProps> = ({
     return (
       <Box flex={1} mt="$1">
         <ProjectPlayer
-          config={mode ? {...config,mode} : config}
+          config={mode ? {...config,mode,isLoading} : {...config,isLoading}}
           allowEditTaskIds={allowEditTaskIds}
           showAddCustomTask={showAddCustomTask}
           data={projectPlayerData}
@@ -290,7 +291,8 @@ export default memo(
         nextProps.participantProfile?.status &&
       prevProps.projectData === nextProps.projectData &&
       prevProps.projectUnavailableOffline === nextProps.projectUnavailableOffline &&
-      prevProps.mode === nextProps.mode
+      prevProps.mode === nextProps.mode &&
+      prevProps.isLoading === nextProps.isLoading
     );
   },
 );

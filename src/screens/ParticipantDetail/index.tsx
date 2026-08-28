@@ -28,8 +28,7 @@ import type {
 import { Loader } from '@ui';
 import {
   ENTITY_STATUS,
-  // GRADUATION_READINESS_PROGRESS_THRESHOLD,
-  // GRADUATION_READINESS_PROGRESS_THRESHOLD,
+  GRADUATION_READINESS_PROGRESS_THRESHOLD,
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, useIsdminPanalAccess, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
@@ -66,7 +65,9 @@ type ParticipantDetailRouteProp = RouteProp<{
 type EndLineConfigType = {
   allowEditTaskIds?: string[];
   showAddCustomTask?: boolean;
-  mode?: string
+  mode?: string;
+  solution?: any;
+  isLoading: boolean
 }
 
 /**
@@ -312,20 +313,6 @@ export default function ParticipantDetail() {
             setChallenges({challengeNotes,successNotes});
           }
         }
-        const endLineSolution = solutionsWithEntityStatus.find(item => item?.keywords?.includes(ENDLINE_KEYWORD))
-        if( (endLineSolution?.entity?.submissionsCount === 1 && endLineSolution?.entity?.status === ENTITY_STATUS.COMPLETED) || endLineSolution?.entity?.submissionsCount > 1 ) {
-          setEndLineConfigData(pre => {
-            const allowEditTaskIds : string[] = getCustomTaskIds(projectData?.tasks || [])
-            return {
-              ...pre,
-              allowEditTaskIds,
-              ...(allowEditTaskIds.length > 0 ? {showAddCustomTask:Boolean(allowEditTaskIds)} : {}),
-              mode: MODE.readOnlyMode?.mode
-            }
-          })
-        } else {
-          setEndLineConfigData({});
-        }
       }
 
       setSolutions(prev => (areSolutionsEqual(prev, solutionsWithEntityStatus) ? prev : solutionsWithEntityStatus));
@@ -346,6 +333,7 @@ export default function ParticipantDetail() {
         isFetchingSolutionsRef.current = false;
       }
     }
+
     if (setRefComponent && projectData && participant && participantId && authUserId && solutions.length === 0) {
       fetchSolutions();
     // } else if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
@@ -356,7 +344,33 @@ export default function ParticipantDetail() {
     //     fetchSolutions();
     //   }
     }
-  }, [setRefComponent, projectData, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCreatorId]);
+    
+  }, [setRefComponent, projectData, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCreatorId]);
+
+  useEffect(() => {
+    const init = () => {
+      const endLineSolution = solutions.find(item => item?.keywords?.includes(ENDLINE_KEYWORD))
+      if( endLineSolution?.entity?.submissionsCount > 0 && endLineSolution?.entity?.submissionsCount <= 2 && (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) ) {
+        setEndLineConfigData(pre => {
+          const allowEditTaskIds : string[] = getCustomTaskIds(projectData?.tasks || [])
+          return {
+            ...pre,
+            allowEditTaskIds,
+            ...(allowEditTaskIds.length > 0 ? {showAddCustomTask:Boolean(allowEditTaskIds)} : {}),
+            mode: MODE.readOnlyMode?.mode,
+            solution:endLineSolution,
+            isLoading: false
+          }
+        })
+      } else {
+        setEndLineConfigData({isLoading: updatedProgress === undefined});
+      }
+    }
+    
+    if(solutions?.length && (projectData?.tasks || [])?.length > 0) {
+      init()
+    }
+  },[updatedProgress, solutions, projectData?.tasks])
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
@@ -405,7 +419,7 @@ export default function ParticipantDetail() {
   }
   , []);
   
-  if (isLoading || endLineConfigData === undefined ) {
+  if (isLoading) {
     return <Loader fullScreen message="Loading participant details..." />;
   }
 
@@ -442,7 +456,7 @@ export default function ParticipantDetail() {
         projectData={projectData}
         // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
-        solutions={solutions}
+        endLineConfigData={endLineConfigData}
         isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || isdminPanalAccess))}
       />
 
