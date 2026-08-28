@@ -43,6 +43,7 @@ const ProjectComponent = React.memo(() => {
     mode,
     config,
     addedToPlanTasks,
+    showAddCustomTask,
   } =
     useProjectContext();
   const { t } = useLanguage();
@@ -72,8 +73,11 @@ const ProjectComponent = React.memo(() => {
   const hasChildren = !!projectData?.children?.length || projectData?.tasks?.some(task => !!task.children?.length);
   const isEditMode =
     mode === 'edit' && config.showAddCustomTaskButton !== false;
-  // Only show progress bar and +Add Custom Task for projects with pillars (Intervention Plan), not flat tasks (Onboarding)
-  const showPillarFeatures = isEditMode && hasChildren;
+  // Only show progress bar and +Add Custom Task for projects with pillars (Intervention Plan), not flat tasks (Onboarding).
+  // showAddCustomTask, when explicitly set, overrides the mode-based default so the button
+  // can be shown/hidden independently of config.mode (e.g. kept visible in read-only mode).
+  const showPillarFeatures =
+    hasChildren && (showAddCustomTask === undefined ? isEditMode : showAddCustomTask);
   const shouldShowSubmitButton = config.showSubmitButton && mode === 'preview';
 
   const onSubmitInterventionPlan = useCallback(async () => {

@@ -78,7 +78,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   const participantId = (route.params as any)?.id;
 
   const { isReadOnly, isPreview, isEdit, isInterventionPlanEditMode } =
-    useTaskPermissions(isChildOfProject);
+    useTaskPermissions(isChildOfProject, task._id);
 
   const {
     isCompleted, isObservationTask, isEvidenceRequired,

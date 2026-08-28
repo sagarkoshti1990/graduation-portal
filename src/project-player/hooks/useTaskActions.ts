@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Platform } from 'react-native';
 import { useProjectStable } from '../context/ProjectContext';
+import { PROJECT_MODES } from '../../constants/app.constant';
 import { Attachment, TaskStatus } from '../types/project.types';
 import { uploadFiles } from '../services/projectPlayerService';
 import dataService from '../../../src/services/dataService';
@@ -120,6 +121,7 @@ export const useTaskActions = () => {
   const {
     updateTask,
     mode,
+    allowEditTaskIds,
     setTaskAddedToPlan,
     setTasksAddedToPlan,
     projectDataRef,
@@ -128,6 +130,14 @@ export const useTaskActions = () => {
   const userId = user?.id ?? '';
 
   const canEdit = mode === 'edit';
+
+  // A task explicitly allowed via allowEditTaskIds stays actionable even in
+  // read-only mode — every other task keeps the existing mode-based behavior.
+  const canEditTask = useCallback(
+    (taskId?: string) =>
+      canEdit || (mode === PROJECT_MODES.READ_ONLY && !!taskId && !!allowEditTaskIds?.includes(taskId)),
+    [canEdit, mode, allowEditTaskIds],
+  );
 
   const handleStatusChange = useCallback(
     async (
@@ -144,7 +154,7 @@ export const useTaskActions = () => {
     ) => {
       // Read participantId at call time from the ref (stable, no subscription).
       const participantId = (projectDataRef.current as any)?.entityInformation?.externalId as string | undefined;
-      if (!canEdit || !participantId) return;
+      if (!canEditTask(taskId) || !participantId) return;
 
       const isFileAction = files1 !== undefined || excludedFiles !== undefined;
       // Assign each file a unique generated name while preserving the original
@@ -240,23 +250,23 @@ export const useTaskActions = () => {
         return { success: false, data: undefined };
       }
     },
-    [canEdit, updateTask, projectDataRef],
+    [canEditTask, updateTask, projectDataRef],
   );
 
   const handleFileUpload = useCallback(
     (taskId: string, files: File[]) => {
-      if (!canEdit) return;
+      if (!canEditTask(taskId)) return;
       console.log('Upload files:', taskId, files);
     },
-    [canEdit],
+    [canEditTask],
   );
 
   const handleOpenForm = useCallback(
     (taskId: string) => {
-      if (!canEdit) return;
+      if (!canEditTask(taskId)) return;
       console.log('Open form:', taskId);
     },
-    [canEdit],
+    [canEditTask],
   );
 
   const handleAddToPlan = useCallback(

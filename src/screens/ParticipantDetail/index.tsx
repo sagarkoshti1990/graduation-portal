@@ -28,18 +28,18 @@ import type {
 import { Loader } from '@ui';
 import {
   ENTITY_STATUS,
-  GRADUATION_READINESS_PROGRESS_THRESHOLD,
+  // GRADUATION_READINESS_PROGRESS_THRESHOLD,
   // GRADUATION_READINESS_PROGRESS_THRESHOLD,
   PARTICIPANT_DETAILS_TABS, STATUS, USER_STATUS } from '@constants/app.constant';
 import { useAuth, useIsdminPanalAccess, User } from '@contexts/AuthContext';
 import DownloadFormsCard from './ParticipantHeader/DownloadFormsCard';
 import { ProjectData } from '../../project-player/types';
 import logger from '@utils/logger';
-import { FILTER_KEYWORDS, INDIVIDUAL_CHECKIN_KEYWORD } from '@constants/LOG_VISIT_CARDS';
+import { ENDLINE_KEYWORD, FILTER_KEYWORDS, INDIVIDUAL_CHECKIN_KEYWORD } from '@constants/LOG_VISIT_CARDS';
 import { getObservationSubmissions, getTargetedSolutions } from '../../services/solutionService';
 import LogVisitModulePopup from './LogVisitModulePopup';
 import { useGlobal } from '@contexts/GlobalContext';
-import { getAnswerData } from '@utils/helper';
+import { getAnswerData, getCustomTaskIds } from '@utils/helper';
 import { PARTICIPANT_DETAIL_CHALLENGE_NOTES_ANSWER_ITEMS } from '@constants/GET_ANSWER_DATA';
 import { MODE } from '@constants/PROJECTDATA';
 import TargetingCriteriaCard from './ParticipantHeader/TargetingCriteriaCard';
@@ -62,6 +62,12 @@ type ParticipantDetailRouteParams = {
 type ParticipantDetailRouteProp = RouteProp<{
   params: ParticipantDetailRouteParams;
 }>;
+
+type EndLineConfigType = {
+  allowEditTaskIds?: string[];
+  showAddCustomTask?: boolean;
+  mode?: string
+}
 
 /**
  * Content comparison for solution lists (rather than reference equality), so
@@ -100,6 +106,8 @@ export default function ParticipantDetail() {
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
     undefined,
   );
+  const [endLineConfigData, setEndLineConfigData] = useState<EndLineConfigType>()
+
   const isFetchingRef = useRef(false);
   const isFetchingSolutionsRef = useRef(false);
   const [isOfflineUnavailable, setIsOfflineUnavailable] = useState(false);
@@ -274,12 +282,12 @@ export default function ParticipantDetail() {
 
       let keywordsString = `${FILTER_KEYWORDS.PARTICIPANT_LOG_VISIT.join(',')}`;
 
-      if(participant?.status === STATUS.IN_PROGRESS && updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
-        keywordsString += `,${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')}`;
-      }
+      // if(participant?.status === STATUS.IN_PROGRESS && updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) {
+      //   keywordsString += `,${FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.join(',')}`;
+      // }
 
       if(participant?.status === STATUS.IN_PROGRESS) {
-        keywordsString += `,${FILTER_KEYWORDS.LOG_VISIT.join(',')}`;
+        keywordsString += `,${FILTER_KEYWORDS.DEFAULT_SOLUTIONS.join(',')}`;
       }
 
       const solutionsData = await getTargetedSolutions({
@@ -304,6 +312,20 @@ export default function ParticipantDetail() {
             setChallenges({challengeNotes,successNotes});
           }
         }
+        const endLineSolution = solutionsWithEntityStatus.find(item => item?.keywords?.includes(ENDLINE_KEYWORD))
+        if( (endLineSolution?.entity?.submissionsCount === 1 && endLineSolution?.entity?.status === ENTITY_STATUS.COMPLETED) || endLineSolution?.entity?.submissionsCount > 1 ) {
+          setEndLineConfigData(pre => {
+            const allowEditTaskIds : string[] = getCustomTaskIds(projectData?.tasks || [])
+            return {
+              ...pre,
+              allowEditTaskIds,
+              ...(allowEditTaskIds.length > 0 ? {showAddCustomTask:Boolean(allowEditTaskIds)} : {}),
+              mode: MODE.readOnlyMode?.mode
+            }
+          })
+        } else {
+          setEndLineConfigData({});
+        }
       }
 
       setSolutions(prev => (areSolutionsEqual(prev, solutionsWithEntityStatus) ? prev : solutionsWithEntityStatus));
@@ -324,22 +346,22 @@ export default function ParticipantDetail() {
         isFetchingSolutionsRef.current = false;
       }
     }
-    if (setRefComponent && participant && participantId && authUserId && solutions.length === 0 && (!participant?.idpProjectId || (participant?.idpProjectId && updatedProgress !== undefined))) {
+    if (setRefComponent && projectData && participant && participantId && authUserId && solutions.length === 0) {
       fetchSolutions();
-    } else if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
-      const bool = solutions.find((item:any) =>
-        item.keywords.some((key:any) => FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.includes(key))
-      )
-      if(!bool?._id) {
-        fetchSolutions();
-      }
+    // } else if(updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD && solutions.length > 0) {
+    //   const bool = solutions.find((item:any) =>
+    //     item.keywords.some((key:any) => FILTER_KEYWORDS.PROGRAM_COMPLETED_ONLY.includes(key))
+    //   )
+    //   if(!bool?._id) {
+    //     fetchSolutions();
+    //   }
     }
-  }, [setRefComponent, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCreatorId]);
+  }, [setRefComponent, projectData, updatedProgress, participant, participantId, solutions, authUserId, isdminPanalAccess, resolvedCreatorId]);
 
   const handleProgressChange = async (progress: number) => {
     setUpdatedProgress(progress);
   };
-
+  
   const handleParticipantAddressSaved = useCallback(
     (patch: { location: string; email?: string }) => {
       setParticipant((prev: User | undefined) =>
@@ -383,7 +405,7 @@ export default function ParticipantDetail() {
   }
   , []);
   
-  if (isLoading) {
+  if (isLoading || endLineConfigData === undefined ) {
     return <Loader fullScreen message="Loading participant details..." />;
   }
 
@@ -568,6 +590,7 @@ export default function ParticipantDetail() {
                     projectData={projectData}
                     onProjectDataChange={setProjectData}
                     projectUnavailableOffline={projectUnavailableOffline}
+                    {...endLineConfigData}
                     {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>

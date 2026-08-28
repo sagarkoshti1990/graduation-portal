@@ -78,6 +78,10 @@ export interface ProjectContextValue {
   error: Error | null;
   mode: 'preview' | 'edit' | 'read-only';
   config: ProjectPlayerConfig; // Full config object
+  /** Task `_id`s that remain editable even when `mode === 'read-only'`. */
+  allowEditTaskIds?: string[];
+  /** Explicit override for the Add Custom Task button's visibility, independent of `mode`. */
+  showAddCustomTask?: boolean;
 
   // Actions
   updateTask: (taskId:string, participantId:string ,updates: Partial<Task>) => Promise<void>;
@@ -104,6 +108,10 @@ export interface ProjectProviderProps {
   participantId?: string;
   /** Resumed accept/reject decisions from a pending offline IDP draft, seeded instead of starting empty. */
   initialAddedToPlanTasks?: Record<string, boolean>;
+  /** Task `_id`s that remain editable even when `config.mode === 'read-only'`. */
+  allowEditTaskIds?: string[];
+  /** Explicit override for the Add Custom Task button's visibility, independent of `config.mode`. */
+  showAddCustomTask?: boolean;
 }
 
 // ============================================
@@ -184,6 +192,10 @@ export interface ProjectPlayerProps {
   onTaskCompletionChange?: (areAllCompleted: boolean) => void; // Callback when task completion status changes
   onProgressChange?: (progress: number) => void; // Callback for progress updates
   getProjectData?: (projectData: ProjectData) => void;
+  /** Task `_id`s that remain editable even when `config.mode === 'read-only'`. All other tasks stay read-only. */
+  allowEditTaskIds?: string[];
+  /** Explicit override for the Add Custom Task button's visibility, independent of `config.mode`. Omit to preserve existing mode-based behavior. */
+  showAddCustomTask?: boolean;
 }
 
 // ============================================

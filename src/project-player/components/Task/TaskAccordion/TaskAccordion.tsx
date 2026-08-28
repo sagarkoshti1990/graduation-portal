@@ -71,12 +71,12 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
   onToggleExpand,
 }) => {
   const { t } = useLanguage();
-  const { mode,config, projectDataRef } = useProjectStable();
+  const { mode,config, projectDataRef, allowEditTaskIds } = useProjectStable();
   const { isWeb, isMobile } = usePlatform();
 
   const projectContext = useMemo(
-    () => ({ mode, config, projectDataRef }),
-    [mode, config, projectDataRef],
+    () => ({ mode, config, projectDataRef, allowEditTaskIds }),
+    [mode, config, projectDataRef, allowEditTaskIds],
   );
 
   const isPreview = mode === 'preview';

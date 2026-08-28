@@ -35,15 +35,15 @@ const ProjectContent = memo<ProjectContentProps>(({
   setIsModalOpen,
 }) => {
   const { projectData,oldProjectData, mode, config } = useProjectContext();
-  const { projectDataRef } = useProjectStable();
+  const { projectDataRef, allowEditTaskIds } = useProjectStable();
   const { t } = useLanguage();
   const isPreviewMode = useMemo(() => mode === PLAYER_MODE.PREVIEW, [mode]);
 
   // Pass the actual ref (not live projectData) so task-level components read
   // it at action time via .current instead of subscribing to every update.
   const projectContext = useMemo(
-    () => ({ mode, config, projectDataRef }),
-    [mode, config, projectDataRef],
+    () => ({ mode, config, projectDataRef, allowEditTaskIds }),
+    [mode, config, projectDataRef, allowEditTaskIds],
   );
 
   const pillars = useMemo(() => {

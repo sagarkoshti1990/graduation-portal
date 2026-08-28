@@ -26,13 +26,18 @@ const TaskListRenderer: React.FC<TaskListRendererProps> = ({
   parentIndex,
   index,
 }) => {
-  const { mode } = projectContext;
+  const { mode, allowEditTaskIds } = projectContext;
 
   const variant = useMemo<RenderVariant>(() => {
-    if (mode === PROJECT_MODES.READ_ONLY) return 'readonly';
-    if (task.isCustomTask && mode === PROJECT_MODES.EDIT) return 'custom';
+    // A task explicitly allowed via allowEditTaskIds is rendered through the
+    // same path as an edit-mode task, even while the project is read-only.
+    const isAllowedException =
+      mode === PROJECT_MODES.READ_ONLY && !!allowEditTaskIds?.includes(task._id);
+    const effectiveMode = isAllowedException ? PROJECT_MODES.EDIT : mode;
+    if (effectiveMode === PROJECT_MODES.READ_ONLY) return 'readonly';
+    if (task.isCustomTask && effectiveMode === PROJECT_MODES.EDIT) return 'custom';
     return 'simple';
-  }, [mode, task.isCustomTask]);
+  }, [mode, task.isCustomTask, task._id, allowEditTaskIds]);
 
   const commonProps = { task, isLastTask, isChildOfProject, isOnboardingTask, parentIndex, index, projectContext };
 
