@@ -377,7 +377,9 @@ export const mapFormValuesToPayload = (
     }
   }
   if (values.location && values.location.trim()) {
-    payload.location = values.location;
+    payload.location = values.location.trim();
+  } else {
+    payload.location = null;
   }
   if (values.nationalId && values.nationalId.trim()) {
     payload.national_id = Number(values.nationalId);
