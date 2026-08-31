@@ -65,11 +65,7 @@ const LogVisit: React.FC<LogVisitProps> = ({ id: propId, onClose }) => {
         ]);
         
         const { userDetails, ...rest } = response?.result?.data?.[0]
-        const participantData = {
-          ...(userDetails || {}),
-          ...rest,
-          name: userDetails?.name || rest.name || '',
-        }
+        const participantData = { ...(userDetails || {}), ...rest }
         if (participantData) {
           setParticipant(participantData);
           setNavbarData({

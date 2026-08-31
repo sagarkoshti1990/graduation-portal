@@ -106,12 +106,7 @@ const Observation: React.FC = () => {
               const fallbackData = userDataResponse?.result?.data?.[0];
               if (fallbackData) {
                 const { userDetails: ud, ...rest } = fallbackData;
-                const mapped = {
-                  ...(ud || {}),
-                  ...rest,
-                  name: ud?.name || rest.name || '',
-                  accountUserStatus: ud?.status,
-                };
+                const mapped = { ...(ud || {}), ...rest, accountUserStatus: ud?.status };
                 setParticipant(mapped as ParticipantData);
                 setNavbarData({ subtitle: mapped?.name });
                 const alternatePhoneCode = ud?.alternate_phone_code ?? ud?.phone_code;

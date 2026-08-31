@@ -89,11 +89,7 @@ const DevelopInterventionPlan: React.FC = () => {
         try {
           const response = await getParticipantsList({ entityId: participantId, userId: user?.id })
           const { userDetails, ...rest } = response?.result?.data?.[0]
-          const participantData = {
-            ...(userDetails || {}),
-            ...rest,
-            name: userDetails?.name || rest.name || '',
-          }
+          const participantData = { ...(userDetails || {}), ...rest }
           setParticipant(participantData);
           setNavbarData({
             subtitle: participantData?.name,
