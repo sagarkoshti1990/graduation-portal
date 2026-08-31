@@ -34,30 +34,30 @@ import { CARD_STATUS } from '@constants/app.constant';
 /** Higher number = further along the program journey. */
 export const PARTICIPANT_STATUS_PRIORITY: Record<string, number> = {
   NOT_ONBOARDED: 1,
-  ONBOARDED:     2,
-  IN_PROGRESS:   3,
-  COMPLETED:     4,
-  GRADUATED:     4,
+  ONBOARDED: 2,
+  IN_PROGRESS: 3,
+  COMPLETED: 4,
+  GRADUATED: 4,
 };
 
 /** Higher number = more complete. draft / started / in-progress all rank as 2. */
 export const PROJECT_TASK_STATUS_PRIORITY: Record<string, number> = {
-  notStarted:    1,
+  notStarted: 1,
   'not-started': 1,
-  draft:         2,
-  started:       2,
+  draft: 2,
+  started: 2,
   'in-progress': 2,
-  completed:     3,
-  submitted:     3,
+  completed: 3,
+  submitted: 3,
 };
 
 /** Observation statuses — DRAFT sits between STARTED and COMPLETED. */
 export const OBSERVATION_STATUS_PRIORITY: Record<string, number> = {
-  notStarted:    1,
+  notStarted: 1,
   'not-started': 1,
-  started:       2,
-  draft:         3,
-  completed:     4,
+  started: 2,
+  draft: 3,
+  completed: 4,
 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export interface ParticipantValidationPlan {
 /** In-memory cache shared across all participants during one Global Sync session. */
 export interface SyncValidationCache {
   participants: Map<string, any>;
-  projects:     Map<string, any>;
+  projects: Map<string, any>;
   /** Key pattern: `${observationId}:${entityId}` → full submissions list for that observation. */
   observations: Map<string, any[]>;
 }
@@ -162,7 +162,7 @@ export interface SyncValidationCache {
 export function createSyncValidationCache(): SyncValidationCache {
   return {
     participants: new Map(),
-    projects:     new Map(),
+    projects: new Map(),
     observations: new Map(),
   };
 }
@@ -197,7 +197,7 @@ function hasTimestampConflict(
   offlineUpdatedAt: string | undefined,
   onlineUpdatedAt: string | undefined,
 ): boolean {
-  
+
   if (!onlineUpdatedAt) return false;
   const onlineMs = new Date(onlineUpdatedAt).getTime();
 
@@ -446,10 +446,10 @@ function buildOnlineTaskMap(project: any): Map<string, any> {
     for (const t of tasks ?? []) {
       map.set(t._id, t);
       if (t.children?.length) traverse(t.children);
-      if (t.tasks?.length)    traverse(t.tasks);
+      if (t.tasks?.length) traverse(t.tasks);
     }
   }
-  traverse(project?.tasks    ?? []);
+  traverse(project?.tasks ?? []);
   traverse(project?.children ?? []);
   return map;
 }
@@ -496,10 +496,14 @@ export async function runValidationForParticipant(
   const onlineParticipantRaw = await fetchParticipantOnline(participantId, userId, cache);
   if (onlineParticipantRaw) {
     const { userDetails, ...rest } = onlineParticipantRaw;
-    const onlineParticipant = { ...(userDetails ?? {}), ...rest };
+    const onlineParticipant = {
+      ...(userDetails ?? {}),
+      ...rest,
+      name: userDetails?.name || rest.name || '',
+    };
 
     const offlinePri = getPriority(PARTICIPANT_STATUS_PRIORITY, offlineParticipant?.status);
-    const onlinePri  = getPriority(PARTICIPANT_STATUS_PRIORITY, onlineParticipant.status);
+    const onlinePri = getPriority(PARTICIPANT_STATUS_PRIORITY, onlineParticipant.status);
 
     if (onlinePri > offlinePri) {
       plan.participantBlocked = true;
@@ -562,7 +566,7 @@ export async function runValidationForParticipant(
     }
 
     const offlineProjPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, offlineProject.status);
-    const onlineProjPri  = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineProject.status);
+    const onlineProjPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineProject.status);
 
     if (onlineProjPri > offlineProjPri) {
       plan.projectBlocked = true;
@@ -605,7 +609,7 @@ export async function runValidationForParticipant(
         // Rule 1: online task status is ahead of what the user edited offline
         const editStatus = editTask.status ?? offlineSnapshotTask?.status ?? '';
         const offlineTaskPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, editStatus);
-        const onlineTaskPri  = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineTask.status ?? '');
+        const onlineTaskPri = getPriority(PROJECT_TASK_STATUS_PRIORITY, onlineTask.status ?? '');
         const statusConflict = onlineTaskPri > offlineTaskPri;
 
         // Rule 2: online task was modified after the offline download
@@ -622,16 +626,16 @@ export async function runValidationForParticipant(
 
         // Build evidence comparison for the conflict dialog
         const offlineAtts: any[] = editTask.attachments ?? offlineSnapshotTask?.attachments ?? [];
-        const onlineAtts: any[]  = onlineTask.attachments ?? [];
+        const onlineAtts: any[] = onlineTask.attachments ?? [];
         const offlineNames = offlineAtts.map((a: any) => a.originalName ?? a.name ?? '');
-        const onlineNames  = onlineAtts.map((a: any) => a.originalName ?? a.name ?? '');
+        const onlineNames = onlineAtts.map((a: any) => a.originalName ?? a.name ?? '');
         const evidenceDiffers =
           offlineAtts.length !== onlineAtts.length ||
           offlineNames.some((f: string) => !onlineNames.includes(f));
 
         const conflictReasons: TaskConflictDetails['conflictReasons'] = [];
-        if (statusConflict)  conflictReasons.push('status-ahead');
-        if (tsConflict)      conflictReasons.push('timestamp-conflict');
+        if (statusConflict) conflictReasons.push('status-ahead');
+        if (tsConflict) conflictReasons.push('timestamp-conflict');
         if (evidenceDiffers) conflictReasons.push('evidence-differs');
 
         plan.taskResults.push({
@@ -720,7 +724,7 @@ export async function runValidationForParticipant(
     }
 
     const offlineObsPri = getPriority(OBSERVATION_STATUS_PRIORITY, editData?.status === "submit" ? CARD_STATUS.COMPLETED : formData.status);
-    const onlineObsPri  = getPriority(OBSERVATION_STATUS_PRIORITY, onlineObsStatus);
+    const onlineObsPri = getPriority(OBSERVATION_STATUS_PRIORITY, onlineObsStatus);
 
     if (onlineObsPri > offlineObsPri) {
       // Rule 2: online is ahead but NOT completed (Rule 1 handles completed).
@@ -748,18 +752,18 @@ export async function runValidationForParticipant(
     // validation plan entirely — never synced, never shown in a dialog, and
     // left in the pending queue forever (reported as "stuck in Remaining").
     // if (onlineObsPri === offlineObsPri) {
-      // if (hasTimestampConflict(formData.downloadedAt ?? downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
-      //   plan.formResults.push({
-      //     formId,
-      //     outcome: 'conflict',
-      //     submissionId: formData.submissionId,
-      //     conflictSubType: 'timestamp',
-      //     conflictDetails: await buildObservationConflictDetails(
-      //       formData, editData, onlineObsStatus, onlineUpdatedAt, 'timestamp',
-      //     ),
-      //   });
-      //   continue;
-      // }
+    // if (hasTimestampConflict(formData.downloadedAt ?? downloadedAt, formData.updatedAt, onlineUpdatedAt)) {
+    //   plan.formResults.push({
+    //     formId,
+    //     outcome: 'conflict',
+    //     submissionId: formData.submissionId,
+    //     conflictSubType: 'timestamp',
+    //     conflictDetails: await buildObservationConflictDetails(
+    //       formData, editData, onlineObsStatus, onlineUpdatedAt, 'timestamp',
+    //     ),
+    //   });
+    //   continue;
+    // }
     // }
 
     plan.formResults.push({ formId, outcome: 'allowed' });

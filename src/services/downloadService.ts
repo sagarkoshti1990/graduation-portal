@@ -273,6 +273,7 @@ async function fetchAndStoreParticipant(participantId: string, lcUserId: string)
   const mappedParticipant = {
     ...(userDetails || {}),
     ...rest,
+    name: userDetails?.name || rest.name || '',
     accountUserStatus: userDetails?.status,
   };
 

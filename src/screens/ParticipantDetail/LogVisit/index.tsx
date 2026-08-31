@@ -61,7 +61,11 @@ const LogVisit: React.FC = () => {
         if (route.params?.id) {
           const response = await getParticipantsList({ entityId: route.params?.id, userId: user?.id as string });
           const { userDetails, ...rest } = response?.result?.data?.[0]
-          const participantData = { ...(userDetails || {}), ...rest }
+          const participantData = {
+            ...(userDetails || {}),
+            ...rest,
+            name: userDetails?.name || rest.name || '',
+          }
           setParticipant(participantData as ParticipantData);
           setNavbarData({
             subtitle: participantData?.name,

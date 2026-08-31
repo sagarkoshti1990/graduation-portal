@@ -192,7 +192,11 @@ export async function getParticipantList(
 
   try {
     const response = await getParticipantsList(params);
-    const participants = response.result?.data ?? [];
+    const rawParticipants = response.result?.data ?? [];
+    const participants = rawParticipants.map((p: any) => ({
+      ...p,
+      name: p.userDetails?.name || p.name || '',
+    }));
     const overview = response.result?.overview ?? null;
     const total = response.total ?? 0;
     const result: ParticipantListResult = { participants, total, overview, fromCache: false };
@@ -223,6 +227,7 @@ export async function getParticipantDetails(
       const participantData = {
         ...(userDetails || {}),
         ...rest,
+        name: userDetails?.name || rest.name || '',
         accountUserStatus: userDetails?.status,
       };
       await offlineStorage

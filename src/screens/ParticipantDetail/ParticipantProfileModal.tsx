@@ -70,7 +70,12 @@ function ParticipantProfileModalInner({
     const init = async () => {
       const response = await getParticipantsList({ entityId: participantId, userId })
       const { userDetails, ...rest } = response?.result?.data?.[0]
-      let participantData = { ...(userDetails || {}), ...rest, accountUserStatus: userDetails?.status }
+      let participantData = {
+        ...(userDetails || {}),
+        ...rest,
+        name: userDetails?.name || rest.name || '',
+        accountUserStatus: userDetails?.status,
+      }
       setParticipant(participantData);
        setEditedAddress({
         email: participantData?.email || '',
