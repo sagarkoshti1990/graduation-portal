@@ -17,6 +17,7 @@ import {
   CheckboxIndicator,
   CheckboxIcon,
   CheckIcon,
+  CheckboxLabel,
 } from '@ui';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import SearchBar from '@components/SearchBar';
@@ -469,16 +470,12 @@ const ParticipantsList: React.FC = () => {
             {isSelectionMode && (
               <HStack {...styles.searchFilterHStack} flexWrap="wrap">
                 <HStack {...styles.searchFilterHStackSub}>
-                  <Pressable onPress={toggleSelectAllOnPage} p="$2">
-                    <HStack space="xs" alignItems="center">
-                      <Checkbox onChange={toggleSelectAllOnPage} isChecked={allOnPageSelected} value="select-all-on-page">
-                        <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
-                          <CheckboxIcon as={CheckIcon} color="$modalBackground" />
-                        </CheckboxIndicator>
-                      </Checkbox>
-                      <Text fontSize="$sm" color="$textPrimary">{t('participants.selectAllOnPage')}</Text>
-                    </HStack>
-                  </Pressable>
+                  <Checkbox onChange={toggleSelectAllOnPage} isChecked={allOnPageSelected} value="select-all-on-page" p="$2">
+                    <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
+                      <CheckboxIcon as={CheckIcon} color="$modalBackground" />
+                    </CheckboxIndicator>
+                    <CheckboxLabel fontSize="$sm" color="$textPrimary" pl="$3">{t('participants.selectAllOnPage')}</CheckboxLabel>
+                  </Checkbox>
 
                   <Text fontSize="$sm" color="$textMutedForeground">
                     {t('participants.selectedCount', { count: selectedParticipants.size, max: MAX_BULK_OFFLINE_DOWNLOAD })}
