@@ -471,7 +471,7 @@ const ParticipantsList: React.FC = () => {
                 <HStack {...styles.searchFilterHStackSub}>
                   <Pressable onPress={toggleSelectAllOnPage} p="$2">
                     <HStack space="xs" alignItems="center">
-                      <Checkbox isChecked={allOnPageSelected} value="select-all-on-page">
+                      <Checkbox onChange={toggleSelectAllOnPage} isChecked={allOnPageSelected} value="select-all-on-page">
                         <CheckboxIndicator borderWidth={1} borderColor="$textForeground">
                           <CheckboxIcon as={CheckIcon} color="$modalBackground" />
                         </CheckboxIndicator>
