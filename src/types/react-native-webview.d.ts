@@ -21,6 +21,8 @@ declare module 'react-native-webview' {
     allowsInlineMediaPlayback?: boolean;
     mediaPlaybackRequiresUserAction?: boolean;
     ref?: any;
+    allowFileAccessFromFileURLs?: boolean;
+    allowUniversalAccessFromFileURLs?: boolean;
   }
 
   export class WebView extends Component<WebViewProps> {}

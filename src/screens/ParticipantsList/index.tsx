@@ -40,10 +40,12 @@ import { STORAGE_KEYS } from '@constants/STORAGE_KEYS';
 import offlineStorage from '../../services/offlineStorage';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import BulkDownloadModal from '@components/BulkDownloadModal';
+import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 
 
 const canParticipantOffline = (participant:Participant) => {
-  return ALLOWOFFLINESTATUS.includes(participant.status as string) && participant?.onBoardedProjectId && participant?.userDetails?.status === USER_STATUS.ACTIVE
+  const inReq = participant?.pendingChangeRequest?.some(req => req.status === "PENDING" && req.action === "PROGRAM_USER_DROPPING_OUT")
+  return ALLOWOFFLINESTATUS.includes(participant.status as string) && !inReq && participant?.onBoardedProjectId && participant?.userDetails?.status === USER_STATUS.ACTIVE
 }
 
 // Status value type (values of STATUS object) - used for API filter + comparisons
@@ -486,13 +488,12 @@ const ParticipantsList: React.FC = () => {
                 </HStack>
                 <HStack {...styles.searchFilterHStackButton}>
                   <Button
-                    variant="solid"
+                    flex={3}
                     isDisabled={selectedParticipants.size === 0}
                     onPress={() => setIsBulkDownloadModalOpen(true)}
-                    {...styles.searchFilterHStackButtonSub}
                   >
-                    <ButtonIcon as={LucideIcon} name="Download" mr="$2" />
-                    <ButtonText>
+                    <ButtonIcon as={LucideIcon} name="Download" />
+                    <ButtonText {...TYPOGRAPHY.label}>
                       {t('participants.downloadSelected', { count: selectedParticipants.size })}
                     </ButtonText>
                   </Button>
@@ -502,7 +503,7 @@ const ParticipantsList: React.FC = () => {
                     {...styles.searchFilterHStackButtonSub}
                     onPress={handleCancelSelection}
                    >
-                    <ButtonText>{t('participants.cancelSelection')}</ButtonText>
+                    <ButtonText {...TYPOGRAPHY.label}>{t('participants.cancelSelection')}</ButtonText>
                   </Button>
                 </HStack>
               </HStack>

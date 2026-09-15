@@ -15,6 +15,7 @@ export interface Participant {
   accountUserStatus?: string;
   phone_code?: string;
   phone?: string;
+  pendingChangeRequest?: { status: string, action: string } []
 }
 
 export type StatusCount = {

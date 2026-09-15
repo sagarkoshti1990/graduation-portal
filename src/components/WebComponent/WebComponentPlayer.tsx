@@ -284,6 +284,8 @@ const WebComponentPlayer = React.memo(
           mixedContentMode="always"
           allowsInlineMediaPlayback={true}
           mediaPlaybackRequiresUserAction={false}
+          allowFileAccessFromFileURLs={true}
+          allowUniversalAccessFromFileURLs={true}
         />
       </View>
     );
