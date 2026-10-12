@@ -65,6 +65,12 @@ const matchesOfferingType = (item: any, expectedType: string): boolean => {
   const itemType = rawType && typeof rawType === 'object' ? rawType.value : rawType;
   return !itemType || itemType === expectedType || (expectedType === SUPPORT_OFFERING_TYPE_VALUES.TRAINING_SESSION && itemType === 'training_session');
 };
+// Public/group requests stay REQUESTED in the backend when a provider declines; only rejected_requestees changes
+const getRequestStatus = (item: any): string => {
+  const status = item.status || REQUEST_STATUS.REQUESTED;
+  const isDeclinedByProvider = status === REQUEST_STATUS.REQUESTED && item.rejected_requestees?.length > 0;
+  return isDeclinedByProvider ? REQUEST_STATUS.DECLINED : status;
+};
 
 const SessionsSupportScreen: React.FC = () => {
   const { t } = useLanguage();
@@ -532,7 +538,7 @@ const SessionsSupportScreen: React.FC = () => {
               return {
                 ...item,
                 title: item.title || session.title || 'Untitled Request',
-                status: item.status || REQUEST_STATUS.REQUESTED,
+                status: getRequestStatus(item),
                 start_date: item.start_date || session.start_date,
                 end_date: item.end_date || session.end_date,
                 delivery_mode: item.delivery_mode || session.delivery_mode,
@@ -561,7 +567,7 @@ const SessionsSupportScreen: React.FC = () => {
               return {
                 ...item,
                 title: item.title || session.title || 'Untitled Request',
-                status: item.status || REQUEST_STATUS.REQUESTED,
+                status: getRequestStatus(item),
                 start_date: item.start_date || session.start_date,
                 end_date: item.end_date || session.end_date,
                 seats_limit: item.seats_limit || session.seats_limit || item.max_participants || session.max_participants,
@@ -592,7 +598,7 @@ const SessionsSupportScreen: React.FC = () => {
             return {
               ...item,
               title: item.title || session.title || 'Untitled Request',
-              status: item.status || REQUEST_STATUS.REQUESTED,
+              status: getRequestStatus(item),
               start_date: item.start_date || session.start_date,
               end_date: item.end_date || session.end_date,
               delivery_mode: item.delivery_mode || session.delivery_mode,
@@ -620,7 +626,7 @@ const SessionsSupportScreen: React.FC = () => {
               return {
                 ...item,
                 title: item.title || session.title || 'Untitled Request',
-                status: item.status || REQUEST_STATUS.REQUESTED,
+                status: getRequestStatus(item),
                 start_date: item.start_date || session.start_date,
                 end_date: item.end_date || session.end_date,
                 delivery_mode: item.delivery_mode || session.delivery_mode,

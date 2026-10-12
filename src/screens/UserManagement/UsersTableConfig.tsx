@@ -12,7 +12,7 @@ import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
 import { StatusBadge as StatusBadge1 } from '../ParticipantsList/StatusBadge';
 import { USER_STATUS } from '@constants/app.constant';
-import { PARTICIPANT } from '@constants/ROLES';
+import { PARTICIPANT_ROLES } from '@constants/ROLES';
 
 /**
  * Helper function to extract role label from user object
@@ -72,7 +72,7 @@ export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
 const StatusBadge: React.FC<{ status?: string, user?: any, roles: any[] }> = ({ status, user, roles }) => {
   const isActive = user?.userDetails?.status?.toLowerCase() === 'active';
   const arr = [USER_STATUS.ACTIVE];
-  const isParticipant = PARTICIPANT.find((item: string) => roles.find(subItem => item === subItem?.role?.title))
+  const isParticipant = PARTICIPANT_ROLES.find((item: string) => roles.find(subItem => item === subItem?.role?.title))
 
   if (isParticipant && arr.includes(user?.userDetails?.status)) {
     return <StatusBadge1 {...{ status, user }} />

@@ -64,7 +64,7 @@ export default function AcceptAndScheduleModal({
     time: '',
     duration: DURATION_OPTIONS[2].value,
     delivery_mode: 'online',
-    capacity: '15',
+    capacity: '',
     location: '',
     meetingLink: '',
     notes: '',
@@ -166,12 +166,9 @@ export default function AcceptAndScheduleModal({
       time: time || moment().format('HH:mm'),
       duration: DURATION_OPTIONS[2].value,
       delivery_mode: item.raw?.delivery_mode || 'online',
-      capacity: String(item.participants || '15'),
-      location: item.location && item.location !== '-' ? item.location : item.raw?.location || '',
-      meetingLink:
-        item.raw?.meeting_info?.link ||
-        item.raw?.meta?.meeting_info?.link ||
-        t(`${BASE_PATH}.fallbacks.meetingLink`),
+      capacity: '',
+      location: '',
+      meetingLink: '',
       notes: '',
     });
 
