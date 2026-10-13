@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import { Box, HStack, VStack, Text, Button, ButtonText, Avatar, AvatarFallbackText } from '@ui';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
@@ -22,12 +22,20 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
   const { isMobile } = usePlatform();
   const [profileData, setProfileData] = useState<any>(null);
 
-  const fieldGroupStyle = isMobile
-    ? { ...participantProfileModalStyles.fieldGroup, ...participantProfileModalStyles.fieldGroupMobile }
-    : participantProfileModalStyles.fieldGroup;
-  const labelRowStyle = isMobile
-    ? { ...participantProfileModalStyles.labelRow, ...participantProfileModalStyles.labelRowMobile }
-    : participantProfileModalStyles.labelRow;
+  const fieldGroupStyle = useMemo(
+    () =>
+      isMobile
+        ? { ...participantProfileModalStyles.fieldGroup, ...participantProfileModalStyles.fieldGroupMobile }
+        : participantProfileModalStyles.fieldGroup,
+    [isMobile],
+  );
+  const labelRowStyle = useMemo(
+    () =>
+      isMobile
+        ? { ...participantProfileModalStyles.labelRow, ...participantProfileModalStyles.labelRowMobile }
+        : participantProfileModalStyles.labelRow,
+    [isMobile],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
