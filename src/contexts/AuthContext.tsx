@@ -300,9 +300,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setIsLoggedIn(true);
 
         // Fire-and-forget: warm the IDP library cache for offline use.
-        syncLibraryMasterData().catch(err =>
-          logger.warn('AuthContext: failed to sync library master data on login', err),
-        );
+        // Participants never open the Template screen, so skip it for them.
+        if (determinedRole?.toLowerCase() !== 'participant') {
+          syncLibraryMasterData().catch(err =>
+            logger.warn('AuthContext: failed to sync library master data on login', err),
+          );
+        }
 
         const message = isAdmin
           ? t('auth.userLoggedInSuccessfullyAdmin')

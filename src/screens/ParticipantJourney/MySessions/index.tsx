@@ -7,7 +7,6 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMenteeSessions } from '../../../services/participantJourneyService';
 import { getProvincesList } from '../../../services/usersService';
-import dataService from '../../../services/dataService';
 import {
   MY_SESSIONS_FILTER_OPTIONS,
   MY_SESSIONS_TABS,
@@ -70,34 +69,31 @@ const MySessionsScreen: React.FC = () => {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [provinceMap, setProvinceMap] = useState<Record<string, string>>({});
   const provinceMapRef = React.useRef<Record<string, string>>({});
-  const [currentStatus, setCurrentStatus] = useState<string | undefined>(user?.status);
-  const [accountUserStatus, setAccountUserStatus] = useState<string | undefined>((user as any)?.accountUserStatus);
+  const currentStatus: string | undefined = user?.status;
+  const accountUserStatus: string | undefined = (user as any)?.accountUserStatus;
+  // Mapped sessions per `${tab}|${filter}`, so switching tabs reuses earlier responses.
+  // Cleared on blur so re-entering the screen loads fresh data once.
+  const sessionsCacheRef = React.useRef<Record<string, SessionItem[]>>({});
 
   useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-
-      const participantId = (user as any)?.externalId || (user as any)?.userId || user?.id || '';
-      const authUserId = user?.id || '';
-      if (participantId && authUserId) {
-        dataService.getParticipantDetails(participantId, authUserId)
-          .then(res => {
-            if (!isMounted) return;
-            if (res?.data?.status) setCurrentStatus(res.data.status);
-            if (res?.data?.accountUserStatus) setAccountUserStatus(res.data.accountUserStatus);
-          })
-          .catch(() => { });
-      }
-
-      return () => {
-        isMounted = false;
-      };
+    useCallback(() => () => {
+      sessionsCacheRef.current = {};
     }, [])
   );
 
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
+
+      const cacheKey = `${activeTab}|${selectedFilter}`;
+      const cached = sessionsCacheRef.current[cacheKey];
+      if (cached) {
+        setSessions(cached);
+        setIsLoading(false);
+        return () => {
+          isMounted = false;
+        };
+      }
 
       const fetchSessionData = async () => {
         setIsLoading(true);
@@ -231,6 +227,7 @@ const MySessionsScreen: React.FC = () => {
             };
           });
 
+          sessionsCacheRef.current[cacheKey] = mappedSessions;
           setSessions(mappedSessions);
         } catch (err: any) {
           console.error('Failed to fetch sessions data:', err);
