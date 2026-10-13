@@ -162,10 +162,9 @@ export const MyRequests: React.FC<MyRequestsProps> = ({
                 onPress={() => {
                   const requestId = item.id || item._id;
                   if (requestId) {
-                    const normalizedStatus = (item.status || '').toLowerCase();
-                    const isOverridden = normalizedStatus.includes('complete') || normalizedStatus.includes('decline');
+                    const isCompleted = (item.status || '').toLowerCase().includes('complete');
                     // @ts-ignore
-                    navigation.navigate('request-details', { requestId, ...(isOverridden ? { statusOverride: item.status } : {}) });
+                    navigation.navigate('request-details', { requestId, ...(isCompleted ? { statusOverride: item.status } : {}) });
                   }
                 }}
               >
