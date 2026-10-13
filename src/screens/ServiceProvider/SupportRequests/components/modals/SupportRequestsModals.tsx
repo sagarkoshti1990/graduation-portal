@@ -74,7 +74,6 @@ export default function SupportRequestsModals({
           requestId: selectedItem.id,
           support_offering_type: SUPPORT_OFFERING_TYPE_BY_TAB[selectedItem?.type],
           ...data,
-          recommended_for: data?.recommended_for?.length ? data.recommended_for : ['user'],
         });
         onClose();
         onSuccess?.();
