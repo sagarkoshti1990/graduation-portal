@@ -1,4 +1,7 @@
 export const participantProfileModalStyles = {
+  mobileContent: {
+    width: '90%' as const,
+  },
   headerSection: {
     bg: '$bgSidebar' as const,
     borderRadius: '$xl' as const,
@@ -23,11 +26,17 @@ export const participantProfileModalStyles = {
   fieldGroup: {
     space: 'xs' as const,
   },
+  fieldGroupMobile: {
+    space: 'sm' as const,
+  },
   labelRow: {
     space: 'xs' as const,
     alignItems: 'center' as const,
     flexDirection: 'row' as const,
     mb: '$1' as const,
+  },
+  labelRowMobile: {
+    space: 'sm' as const,
   },
   fieldLabel: {
     fontSize: '$sm' as const,

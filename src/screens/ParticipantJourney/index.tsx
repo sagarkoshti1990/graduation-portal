@@ -17,8 +17,9 @@ const IconBadge: React.FC<{
   name: string;
   bg: string;
   color: string;
-}> = ({ name, bg, color }) => (
-  <Box {...participantJourneyStyles.iconBadge} bg={bg}>
+  containerProps?: Record<string, any>;
+}> = ({ name, bg, color, containerProps }) => (
+  <Box {...participantJourneyStyles.iconBadge} {...containerProps} bg={bg}>
     <LucideIcon name={name} size={16} color={color} strokeWidth={2} />
   </Box>
 );
@@ -158,7 +159,12 @@ const ParticipantJourneyPortal: React.FC = () => {
 
     return (
       <VStack {...participantJourneyStyles.linkCardContent}>
-        <IconBadge name={card.icon} bg={card.iconBg} color={card.iconColor} />
+        <IconBadge
+          name={card.icon}
+          bg={card.iconBg}
+          color={card.iconColor}
+          containerProps={participantJourneyStyles.linkIconBadge}
+        />
         <VStack {...participantJourneyStyles.textContainer}>
           <Text {...participantJourneyStyles.cardTitle}>{t(card.title)}</Text>
           <Text {...participantJourneyStyles.cardDescription}>

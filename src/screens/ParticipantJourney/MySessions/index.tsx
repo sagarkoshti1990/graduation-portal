@@ -89,6 +89,16 @@ const MySessionsScreen: React.FC = () => {
           .catch(() => { });
       }
 
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
       const fetchSessionData = async () => {
         setIsLoading(true);
         try {
@@ -112,9 +122,15 @@ const MySessionsScreen: React.FC = () => {
             }
           }
 
-          const params = selectedFilter && selectedFilter !== 'all'
+          // Each tab calls only its own endpoint: scheduled -> /mentees/sessions, attended/missed -> scoped by menteeId
+          const scopeParams = activeTab === 'scheduled'
+            ? {}
+            : { menteeId: user?.id, scope: activeTab };
+          const filterParams = selectedFilter && selectedFilter !== 'all'
             ? { support_offering_type: selectedFilter }
-            : undefined;
+            : {};
+          const requestParams = { ...scopeParams, ...filterParams };
+          const params = Object.keys(requestParams).length ? requestParams : undefined;
           const menteeRes = await getMenteeSessions(params);
           if (!isMounted) return;
           const menteeRaw = menteeRes?.result?.data || menteeRes?.result || menteeRes?.data || menteeRes || [];
@@ -125,7 +141,10 @@ const MySessionsScreen: React.FC = () => {
 
             const rawStatus = (item.status || '').toLowerCase();
             let status: 'scheduled' | 'attended' | 'missed' = 'scheduled';
-            if (rawStatus === 'completed' || rawStatus === 'attended') {
+            if (activeTab !== 'scheduled') {
+              // Scoped API already returns only this tab's sessions
+              status = activeTab;
+            } else if (rawStatus === 'completed' || rawStatus === 'attended') {
               status = 'attended';
             } else if (rawStatus === 'missed') {
               status = 'missed';
@@ -230,7 +249,7 @@ const MySessionsScreen: React.FC = () => {
       return () => {
         isMounted = false;
       };
-    }, [selectedFilter])
+    }, [selectedFilter, activeTab, user?.id])
   );
 
   const handleBackToHome = () => {
