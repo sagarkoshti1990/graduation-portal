@@ -282,3 +282,63 @@ export function buildTrainingFormOptionsMap({
     recurringOptions: [...RECURRING_OPTIONS],
   };
 }
+
+type DraftDefault = string | ((values: any, optionsMap: any) => any);
+
+export interface DraftConfig {
+  requiredFields: string[];
+  defaults: Record<string, DraftDefault>;
+}
+
+const DATE_TIME_FORMAT = 'YYYY-MM-DDTHH:mm:ss';
+
+const isEmptyValue = (val: any) =>
+  val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
+
+// Fills only the fields the user left empty, in order, so later defaults can use earlier ones
+export function applyDraftDefaults(formValues: any, defaults: Record<string, DraftDefault>, optionsMap: any = {}): any {
+  return Object.entries(defaults).reduce((next, [name, fallback]) => {
+    if (!isEmptyValue(next[name])) return next;
+    const value = typeof fallback === 'function' ? fallback(next, optionsMap) : fallback;
+    return { ...next, [name]: value };
+  }, { ...formValues });
+}
+
+const getSelectedSiteLabels = (values: any, optionsMap: any) => {
+  const selectedSites: string[] = Array.isArray(values.sites) ? values.sites : [values.sites].filter(Boolean);
+  return (optionsMap.sites || [])
+    .filter((site: any) => selectedSites.includes(site.value))
+    .map((site: any) => site.label)
+    .join(', ');
+};
+
+// Save Draft only requires `requiredFields`; `defaults` fill the rest so the backend accepts the draft
+export const TRAINING_DRAFT_CONFIG: DraftConfig = {
+  requiredFields: ['provinces', 'sites', 'categories', 'idp_training_task', 'sessionTypeOther'],
+  defaults: {
+    description: (values) => (values.idp_training_task === 'custom' ? values.sessionTypeOther : values.title),
+    recommended_for: 'user',
+    certificate_provided: 'false',
+    seats_limit: '10',
+    delivery_mode: 'offline',
+    location: (values, optionsMap) => (values.delivery_mode === 'online' ? '' : getSelectedSiteLabels(values, optionsMap)),
+    start_date: () => moment().format(DATE_TIME_FORMAT),
+    end_date: (values) => moment(values.start_date).add(1, 'hour').format(DATE_TIME_FORMAT),
+  },
+};
+
+export const ADDITIONAL_SERVICE_DRAFT_CONFIG: DraftConfig = {
+  requiredFields: ['provinces', 'sites', 'categories', 'title'],
+  defaults: {
+    description: (values) => values.title,
+  },
+};
+
+export const ASSET_DRAFT_CONFIG: DraftConfig = {
+  requiredFields: ['province', 'site', 'assetType', 'livelihoodCategory', 'assetTitle'],
+  defaults: {
+    assetDescription: (values) => values.assetTitle,
+    estimatedValue: '0',
+    availableQuantity: '10',
+  },
+};
