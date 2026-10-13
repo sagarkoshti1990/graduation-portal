@@ -29,7 +29,7 @@ import {
   BUTTON_LOADING_STATE,
 } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { ROLE_NAMES } from '@constants/ROLES';
-import { uploadService, valueMapping, requestSessionPayloadMapping } from '@utils/supportProvider';
+import { uploadService, valueMapping, requestSessionPayloadMapping, applyDraftDefaults, ADDITIONAL_SERVICE_DRAFT_CONFIG } from '@utils/supportProvider';
 import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
 import NotFound from '@components/NotFound';
 
@@ -128,8 +128,9 @@ const App = (): React.JSX.Element => {
     }
   };
 
-  const handleSave = async (formValues: any, isDraft: boolean) => {
+  const handleSave = async (submittedValues: any, isDraft: boolean) => {
     try {
+      const formValues = isDraft && !isLc ? applyDraftDefaults(submittedValues, ADDITIONAL_SERVICE_DRAFT_CONFIG.defaults) : submittedValues;
       setValues(formValues);
       setLodingButton(isDraft ? BUTTON_LOADING_STATE.SAVE_DRAFT : BUTTON_LOADING_STATE.SUBMIT);
 
@@ -234,6 +235,7 @@ const App = (): React.JSX.Element => {
             onFieldChange={handleFieldChange}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
+            draftRequiredFields={isLc ? undefined : ADDITIONAL_SERVICE_DRAFT_CONFIG.requiredFields}
             uploadService={uploadService}
           />
         </Card>

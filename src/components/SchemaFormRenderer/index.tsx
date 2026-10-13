@@ -174,8 +174,10 @@ export interface SchemaFormRendererProps {
    * single/no-tab schemas keep managing their own submit button externally, unchanged.
    */
   onSubmit?: (values: Record<string, any>) => void | Promise<void>;
-  /** Called when the user clicks Save Draft (multi-step schemas only); no validation is run first */
+  /** Called when the user clicks Save Draft (multi-step schemas only); only `draftRequiredFields` are validated first */
   onSaveDraft?: (values: Record<string, any>) => void | Promise<void>;
+  /** Fields validated before Save Draft; when omitted, Save Draft runs no validation */
+  draftRequiredFields?: string[];
   /** Disables the Previous/Continue/Save Draft/Submit footer buttons while a request is in flight */
   isSubmitting?: boolean;
   /**
@@ -2326,6 +2328,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   firstNameRef,
   onSubmit,
   onSaveDraft,
+  draftRequiredFields,
   isSubmitting = false,
   _input,
   uploadService,
@@ -2604,8 +2607,24 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   });
 
   const handleSaveDraft = useStableCallback(async () => {
-    // No validation here by design — Save Draft only differs from Submit by
-    // skipping it; the upload step itself is identical.
+    // Only the caller's draft fields are validated; the upload step is identical to Submit
+    if (draftRequiredFields?.length) {
+      const { errors: allErrors, issues: allIssues, visited } =
+        collectValidationForRoots(schema, schema, values, optionsMap, t);
+      const draftErrors = Object.fromEntries(
+        Object.entries(allErrors).filter(([name]) => draftRequiredFields.includes(name)),
+      );
+      const draftIssues = allIssues.filter(issue => draftRequiredFields.includes(issue.fieldName));
+
+      applyValidationResult(draftErrors, visited);
+
+      if (draftIssues.length > 0) {
+        setPopupIssues(draftIssues);
+        setIsPopupOpen(true);
+        return;
+      }
+    }
+
     let resolvedValues = values;
     try {
       resolvedValues = await resolveFileUploads(schema, values, uploadService);

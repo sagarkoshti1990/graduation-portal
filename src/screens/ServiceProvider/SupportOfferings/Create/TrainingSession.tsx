@@ -20,7 +20,7 @@ import {
   MentoringOption,
 } from '../../../../services/mentoringService';
 import NotFound from '@components/NotFound';
-import { uploadService, valueMapping } from '@utils/supportProvider';
+import { uploadService, valueMapping, applyDraftDefaults, TRAINING_DRAFT_CONFIG } from '@utils/supportProvider';
 import { FORM_MODE, SESSION_STATUS, SUPPORT_CATEGORIES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import logger from '@utils/logger';
 import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
@@ -142,8 +142,9 @@ const App = (): React.JSX.Element => {
     []
   );
 
-  const handleSave = async (formValues: any, isDraft: boolean) => {
+  const handleSave = async (submittedValues: any, isDraft: boolean) => {
     try {
+      const formValues = isDraft ? applyDraftDefaults(submittedValues, TRAINING_DRAFT_CONFIG.defaults, optionsMap) : submittedValues;
       setValues(formValues);
       setLodingButton(isDraft ? "saveDraft" : "submit")
       const payload: any = valueMapping({ ...formValues, isDraft }, false, optionsMap);
@@ -242,6 +243,7 @@ const App = (): React.JSX.Element => {
             onFieldChange={handleFieldChange}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
+            draftRequiredFields={TRAINING_DRAFT_CONFIG.requiredFields}
             lodingButton={lodingButton}
             uploadService={uploadService}
             saveDraftButtonProps={{ _icon: { color: "$textForeground" } }}

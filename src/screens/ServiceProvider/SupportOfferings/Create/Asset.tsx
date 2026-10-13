@@ -10,7 +10,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
 import { requestSession, getLivelihoodsOptions, getAssetTypesOptions, createSession } from '../../../../services/mentoringService';
-import { requestAssetPayloadMapping, uploadService } from '@utils/supportProvider';
+import { requestAssetPayloadMapping, uploadService, applyDraftDefaults, ASSET_DRAFT_CONFIG } from '@utils/supportProvider';
 import { useProfileCompletion } from '@hooks';
 import NotFound from '@components/NotFound';
 import {
@@ -161,8 +161,9 @@ const App = (): React.JSX.Element => {
     [hideFileds, totalFundBreakdownText, totalFundAvailableText],
   );
 
-  const handleSave = useCallback(async (formValues: any, isDraft: boolean) => {
+  const handleSave = useCallback(async (submittedValues: any, isDraft: boolean) => {
     try {
+      const formValues = isDraft && !isLc ? applyDraftDefaults(submittedValues, ASSET_DRAFT_CONFIG.defaults) : submittedValues;
       setIsSubmitting(true);
       setValues(formValues);
 
@@ -267,6 +268,7 @@ const App = (): React.JSX.Element => {
             onFieldChange={handleFieldChange}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
+            draftRequiredFields={isLc ? undefined : ASSET_DRAFT_CONFIG.requiredFields}
             isSubmitting={isSubmitting}
             uploadService={uploadService}
           />
