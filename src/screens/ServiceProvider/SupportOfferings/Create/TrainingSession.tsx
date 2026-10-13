@@ -53,6 +53,8 @@ const App = (): React.JSX.Element => {
   const { isCardAllowed, allowedSubOptions, allowedProvinces, allowedSites, isProfileLoading } = useProfileCompletion();
   const isAllowed = isLc || Boolean(isCardAllowed(SUPPORT_CATEGORIES.TRAINING));
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<string>('');
+  const isDraftSession = sessionStatus.toUpperCase() === SESSION_STATUS.DRAFT;
 
   const { optionsMap } = useTrainingFormOptions({
     values,
@@ -97,6 +99,7 @@ const App = (): React.JSX.Element => {
         const rawData = rawResponse?.result;
         originalResourcesRef.current = Array.isArray(rawData?.resources) ? rawData.resources : [];
         if (rawData) {
+          setSessionStatus(String(rawData.status?.value ?? rawData.status ?? ''));
           const formattedValues: any = valueMapping(rawData, true, {}, 'training'); // Reverse mapping to form values
           // A copy must be scheduled fresh - don't carry over the original session's date/time
           if (modeType === FORM_MODE.COPY) {
@@ -120,6 +123,7 @@ const App = (): React.JSX.Element => {
       return () => {
         setIsLoading(true);
         setValues({});
+        setSessionStatus('');
       };
     }, [init])
   );
@@ -248,7 +252,7 @@ const App = (): React.JSX.Element => {
             submitButtonProps={{ bg: "green", icon: "Check", _icon: { color: "$white" } }}
             submitButtonText={t("supportProvider.supportOfferings.buttonTexts.publishSupport")}
             customButton={
-              modeType === FORM_MODE.EDIT ? (
+              modeType === FORM_MODE.EDIT && isDraftSession ? (
                 <Button variant="outlineghost" onPress={() => setShowDiscardModal(true)} isDisabled={!!lodingButton}>
                   <ButtonIcon as={LucideIcon} name="X" />
                   <ButtonText>{t('supportProvider.createSupport.training.discard', 'Discard Draft')}</ButtonText>
