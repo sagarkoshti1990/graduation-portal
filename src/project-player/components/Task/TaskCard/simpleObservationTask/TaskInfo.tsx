@@ -5,6 +5,8 @@ import {
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import { ROLE_NAMES } from '@constants/ROLES';
+import { useAuth } from '@contexts/AuthContext';
 import { taskCardStyles } from '../styles';
 import { taskAccordionStyles } from '../../TaskAccordion/styles';
 import type { Task } from '../../../../types/project.types';
@@ -69,6 +71,9 @@ const TaskInfo = memo<TaskInfoProps>(({
   doneText, toDoText, evidenceRequiredText, completeFormText, uploadEvidenceText,
   fileText, filesText, sessionBadgeText, sessionStatus,
 }) => {
+  const { user } = useAuth();
+  // Participant Journey (participant viewing their own IDP): no file UI on tasks.
+  const isParticipantView = user?.role === ROLE_NAMES.PARTICIPANT;
   const textStyle = showCheckbox ? { textDecorationLine: 'none' as const, opacity: isCompleted ? 0.6 : 1 } : {};
   const titleTypography = showAsCard ? TYPOGRAPHY.h4 : TYPOGRAPHY.h3;
 
@@ -135,7 +140,7 @@ const TaskInfo = memo<TaskInfoProps>(({
                 <Text {...taskAccordionStyles.actionRequiredText}>{evidenceRequiredText}</Text>
               </Box>
             )}
-            {isReadOnly && task.attachments && task.attachments.length > 0 && (
+            {isReadOnly && !isParticipantView && task.attachments && task.attachments.length > 0 && (
               <Button variant={'outlineghost' as any} px="$2" height="$6" onPress={handleOpenPreviewModal}>
                 <ButtonIcon as={LucideIcon} name="Paperclip" size={taskCardStyles.fileCountIcon.size} />
                 <ButtonText {...taskCardStyles.fileCountText}>

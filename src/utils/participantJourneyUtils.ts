@@ -80,8 +80,10 @@ export const calculateSessionDuration = (item: any) => {
 export const getDeliveryMode = (item: any) => {
   if (!item) return '';
   const meta = item.meta || item.metaInformation || {};
-  const mode = meta.delivery_mode || meta.deliveryMode || item.delivery_mode || item.deliveryMode || item.mode || item.format || '';
-  if (!mode) return '';
+  const rawMode = meta.delivery_mode || meta.deliveryMode || item.delivery_mode || item.deliveryMode || item.mode || item.format || '';
+  // API may return delivery_mode as an object ({ id, label, value }) instead of a plain string
+  const mode = typeof rawMode === 'object' ? rawMode?.label || rawMode?.value || rawMode?.name || '' : rawMode;
+  if (!mode || typeof mode === 'object') return '';
   const trimmed = String(mode).trim();
   if (/^offline$/i.test(trimmed)) return 'Offline';
   if (/^online$/i.test(trimmed)) return 'Online';

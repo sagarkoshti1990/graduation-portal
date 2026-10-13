@@ -106,10 +106,14 @@ const IdpProgressScreen: React.FC = () => {
     navigation.navigate('participant-portal');
   };
 
+  const participantStatus = participantProfile?.status || user?.status;
   const statusMessage = getParticipantStatusMessage(
-    participantProfile?.status || user?.status,
+    participantStatus,
     participantProfile?.accountUserStatus || (user as any)?.accountUserStatus,
   );
+  const normalizedStatus = (participantStatus || '').toString().trim().toUpperCase().replace(/\s+/g, '_');
+  // Dropout participants see only the status message — no IDP progress content.
+  const isDropout = normalizedStatus === STATUS.DROPOUT || normalizedStatus === 'DROPOUT';
 
   return (
     <Box {...idpProgressStyles.page}>
@@ -147,6 +151,13 @@ const IdpProgressScreen: React.FC = () => {
 
       <Box {...idpProgressStyles.contentArea}>
         <Container {...idpProgressStyles.container}>
+          {isDropout ? (
+            <VStack {...idpProgressStyles.content}>
+              <Text color="$warning700" fontSize="$md" fontWeight="$medium">
+                This participant is Dropout.
+              </Text>
+            </VStack>
+          ) : (
           <VStack {...idpProgressStyles.content}>
             {statusMessage && (
               <Text color="$warning700" fontSize="$sm" fontWeight="$medium" mb="$2">
@@ -214,6 +225,7 @@ const IdpProgressScreen: React.FC = () => {
               )}
             </Box>
           </VStack>
+          )}
         </Container>
       </Box>
     </Box>
