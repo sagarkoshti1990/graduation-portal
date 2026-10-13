@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, VStack, HStack, Text, Heading, Pressable } from '@gluestack-ui/themed';
 import { Container, LucideIcon, Loader, useAlert } from '@ui';
 import Select from '@components/ui/Inputs/Select';
+import PaginationControls from '@components/DataTable/PaginationControls';
 import { useAuth } from '@contexts/AuthContext';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -70,15 +71,19 @@ const MySessionsScreen: React.FC = () => {
   const [isBackHovered, setIsBackHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [total, setTotal] = useState(0);
   const [provinceMap, setProvinceMap] = useState<Record<string, string>>({});
   const provinceMapRef = React.useRef<Record<string, string>>({});
   const currentStatus: string | undefined = user?.status;
   const accountUserStatus: string | undefined = (user as any)?.accountUserStatus;
   const [participantProfile, setParticipantProfile] = useState<any>(null);
   const [isParticipantProfileLoaded, setIsParticipantProfileLoaded] = useState(false);
-  // Mapped sessions per `${tab}|${filter}`, so switching tabs reuses earlier responses.
+  // Mapped sessions and total per `${tab}|${filter}|${page}|${limit}`, so switching tabs reuses earlier responses.
   // Cleared on blur so re-entering the screen loads fresh data once.
-  const sessionsCacheRef = React.useRef<Record<string, SessionItem[]>>({});
+  const sessionsCacheRef = React.useRef<Record<string, { sessions: SessionItem[]; total: number }>>({});
 
   useEffect(() => {
     const participantId = (user as any)?.externalId || (user as any)?.userId || user?.id || '';
@@ -113,10 +118,11 @@ const MySessionsScreen: React.FC = () => {
     useCallback(() => {
       let isMounted = true;
 
-      const cacheKey = `${activeTab}|${selectedFilter}`;
+      const cacheKey = `${activeTab}|${selectedFilter}|${page}|${limit}`;
       const cached = sessionsCacheRef.current[cacheKey];
       if (cached) {
-        setSessions(cached);
+        setSessions(cached.sessions);
+        setTotal(cached.total);
         setIsLoading(false);
         return () => {
           isMounted = false;
@@ -153,12 +159,12 @@ const MySessionsScreen: React.FC = () => {
           const filterParams = selectedFilter && selectedFilter !== 'all'
             ? { support_offering_type: selectedFilter }
             : {};
-          const requestParams = { ...scopeParams, ...filterParams };
-          const params = Object.keys(requestParams).length ? requestParams : undefined;
-          const menteeRes = await getMenteeSessions(params);
+          const requestParams = { ...scopeParams, ...filterParams, page, limit };
+          const menteeRes = await getMenteeSessions(requestParams);
           if (!isMounted) return;
           const menteeRaw = menteeRes?.result?.data || menteeRes?.result || menteeRes?.data || menteeRes || [];
           const menteeSessions = Array.isArray(menteeRaw) ? menteeRaw : [];
+          const totalCount = Number(menteeRes?.result?.count ?? menteeRes?.count ?? menteeSessions.length) || 0;
 
           const mappedSessions: SessionItem[] = menteeSessions.map((item: any, index: number) => {
             const itemId = String(item._id || item.id || item.sessionId || index);
@@ -255,8 +261,9 @@ const MySessionsScreen: React.FC = () => {
             };
           });
 
-          sessionsCacheRef.current[cacheKey] = mappedSessions;
+          sessionsCacheRef.current[cacheKey] = { sessions: mappedSessions, total: totalCount };
           setSessions(mappedSessions);
+          setTotal(totalCount);
         } catch (err: any) {
           console.error('Failed to fetch sessions data:', err);
           const msg = err?.response?.data?.message || err?.message;
@@ -274,7 +281,7 @@ const MySessionsScreen: React.FC = () => {
       return () => {
         isMounted = false;
       };
-    }, [selectedFilter, activeTab, user?.id])
+    }, [selectedFilter, activeTab, page, limit, user?.id])
   );
 
   const handleBackToHome = () => {
@@ -371,7 +378,10 @@ const MySessionsScreen: React.FC = () => {
                           {...(isActive
                             ? mySessionsStyles.tabItemActive
                             : mySessionsStyles.tabItemInactive)}
-                          onPress={() => setActiveTab(tab.key)}
+                          onPress={() => {
+                            setActiveTab(tab.key);
+                            setPage(1);
+                          }}
                         >
                           <Text
                             {...mySessionsStyles.tabText}
@@ -390,7 +400,10 @@ const MySessionsScreen: React.FC = () => {
                     <Select
                       options={filterOptions}
                       value={selectedFilter}
-                      onChange={(val: string) => setSelectedFilter(val)}
+                      onChange={(val: string) => {
+                        setSelectedFilter(val);
+                        setPage(1);
+                      }}
                       size="sm"
                     />
                   </Box>
@@ -405,9 +418,11 @@ const MySessionsScreen: React.FC = () => {
                     </Text>
                   </Box>
                 ) : (
+                  <>
                   <Box {...mySessionsStyles.cardsGrid}>
                     {filteredSessions.map(session => {
                       const modeIconName = getModeIcon(session.mode);
+                      const isHovered = hoveredSessionId === session.id;
 
                       return (
                         <Pressable
@@ -418,8 +433,15 @@ const MySessionsScreen: React.FC = () => {
                             navigation.navigate('session-details', { sessionId: session.id });
                           }}
                           accessibilityRole="button"
+                          {...(isWeb && {
+                            onHoverIn: () => setHoveredSessionId(session.id),
+                            onHoverOut: () => setHoveredSessionId(null),
+                          })}
                         >
-                          <Box {...mySessionsStyles.cardBox}>
+                          <Box
+                            {...mySessionsStyles.cardBox}
+                            {...(isHovered ? mySessionsStyles.cardBoxHover : {})}
+                          >
                             <HStack {...mySessionsStyles.cardHeader}>
                               <Heading {...mySessionsStyles.cardTitle}>
                                 {session.title}
@@ -509,6 +531,27 @@ const MySessionsScreen: React.FC = () => {
                       );
                     })}
                   </Box>
+                  {/* Keep the footer mounted whenever there are sessions so the Limit selector stays reachable */}
+                  {total > 0 && (
+                    <PaginationControls
+                      currentPage={page}
+                      totalPages={Math.max(1, Math.ceil(total / limit))}
+                      pageSize={limit}
+                      totalItems={total}
+                      startIndex={limit * (page - 1)}
+                      endIndex={page * limit}
+                      onPageChange={(num) => setPage(num)}
+                      onPageSizeChange={(num) => {
+                        setPage(1);
+                        setLimit(num);
+                      }}
+                      config={{
+                        pageSizeOptions: [5, 10, 20, 30],
+                        showPageSizeSelector: true,
+                      }}
+                    />
+                  )}
+                  </>
                 )}
               </>
             )}

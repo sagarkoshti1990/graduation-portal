@@ -127,13 +127,11 @@ export const mySessionsStyles = {
   cardPressable: {
     width: '$full' as const,
     '$md-width': 'calc((100% - 32px) / 3)' as const,
-    minHeight: 150 as const,
     borderRadius: '$xl' as const,
   },
   cardBox: {
     width: '$full' as const,
     height: '$full' as const,
-    minHeight: 150 as const,
     bg: '$white' as const,
     borderWidth: 1 as const,
     borderColor: '$inputBorder' as const,
@@ -146,15 +144,16 @@ export const mySessionsStyles = {
     shadowRadius: 0,
     elevation: 0 as const,
     '$web-boxShadow': 'none' as const,
-    ':hover': {
-      borderColor: '$borderLight300' as const,
-      shadowColor: '$shadowColor' as const,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 16,
-      elevation: 5 as const,
-      '$web-boxShadow': '0 4px 20px rgba(0, 0, 0, 0.12)' as const,
-    },
+  },
+  // Applied via the Pressable's hover state; a ':hover' on this inner Box never activates
+  cardBoxHover: {
+    borderColor: '$borderLight300' as const,
+    shadowColor: '$shadowColor' as const,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3 as const,
+    '$web-boxShadow': '0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a' as const,
   },
   cardHeader: {
     flexDirection: 'row' as const,
