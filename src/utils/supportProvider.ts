@@ -1,4 +1,4 @@
-import { LC_ROLES, PARTICIPANT_ROLES } from '@constants/ROLES';
+import { LC_ROLES, PARTICIPANT } from '@constants/ROLES';
 import { CERTIFICATE_OPTIONS, RECURRING_OPTIONS, SUPPORT_CATEGORIES, SUPPORT_OFFERING_TYPE_VALUES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import moment from 'moment';
 import { uploadFiles } from '../project-player/services/projectPlayerService';
@@ -24,7 +24,7 @@ export function valueMapping(
       );
       let isLcRole = tempArray.some((item: string) => LC_ROLES.includes(item));
       let isParticipantRole = tempArray.some((item: string) =>
-        PARTICIPANT_ROLES.includes(item),
+        PARTICIPANT.includes(item),
       );
       if (isLcRole && isParticipantRole) {
         recommended_for = 'both';
