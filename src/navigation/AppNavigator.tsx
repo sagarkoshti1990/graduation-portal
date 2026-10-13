@@ -359,8 +359,11 @@ const AppNavigator: React.FC = () => {
   // Navigate to main screen when user logs in successfully
   useEffect(() => {
     if (isLoggedIn && accessPages.length > 0 && navigationRef.isReady()) {
-      // Check current route to avoid unnecessary navigation
-      const currentRoute = navigationRef.getCurrentRoute();
+      // Check the root-level route (getCurrentRoute() returns the nested leaf, e.g.
+      // 'participant-portal', which would force a reset that remounts 'main' and
+      // re-fires every landing-screen API call)
+      const rootState = navigationRef.getRootState();
+      const currentRoute = rootState?.routes?.[rootState.index ?? 0];
       if (currentRoute?.name !== 'main') {
         // Small delay to ensure navigation stack is updated after navigationKey change
         const timer = setTimeout(() => {

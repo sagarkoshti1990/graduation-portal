@@ -13,7 +13,11 @@ import { theme } from '@config/theme';
 import { idpProgressStyles, overallProgressCardStyles } from './Styles';
 import { participantHeaderStyles } from '../../ParticipantDetail/ParticipantHeader/Styles';
 import { isWeb } from '@utils/platform';
-import { getParticipantStatusMessage } from '@utils/participantJourneyUtils';
+import {
+  getParticipantStatusBadgeKey,
+  isRestrictedParticipantStatus,
+} from '@utils/participantJourneyUtils';
+import { participantJourneyStyles } from '../Styles';
 
 const IdpProgressScreen: React.FC = () => {
   const { user } = useAuth();
@@ -106,10 +110,13 @@ const IdpProgressScreen: React.FC = () => {
     navigation.navigate('participant-portal');
   };
 
-  const statusMessage = getParticipantStatusMessage(
-    participantProfile?.status || user?.status,
+  const participantStatus = participantProfile?.status || user?.status;
+  const statusBadgeKey = getParticipantStatusBadgeKey(
+    participantStatus,
     participantProfile?.accountUserStatus || (user as any)?.accountUserStatus,
+    participantProfile?.pendingChangeRequest,
   );
+  const isContentRestricted = isRestrictedParticipantStatus(statusBadgeKey);
 
   return (
     <Box {...idpProgressStyles.page}>
@@ -141,6 +148,11 @@ const IdpProgressScreen: React.FC = () => {
             <Heading {...idpProgressStyles.title}>
               {t('participantJourney.cards.idpProgress')}
             </Heading>
+            {statusBadgeKey && (
+              <Box {...participantJourneyStyles.statusBadge}>
+                <Text {...participantJourneyStyles.statusBadgeText}>{t(statusBadgeKey)}</Text>
+              </Box>
+            )}
           </HStack>
         </Container>
       </Box>
@@ -148,71 +160,69 @@ const IdpProgressScreen: React.FC = () => {
       <Box {...idpProgressStyles.contentArea}>
         <Container {...idpProgressStyles.container}>
           <VStack {...idpProgressStyles.content}>
-            {statusMessage && (
-              <Text color="$warning700" fontSize="$sm" fontWeight="$medium" mb="$2">
-                {statusMessage}
-              </Text>
-            )}
+            {!isContentRestricted && (
+              <>
+                <Text {...idpProgressStyles.subtitle}>
+                  {t('participantJourney.idpProgressSubtitle')}
+                </Text>
 
-            <Text {...idpProgressStyles.subtitle}>
-              {t('participantJourney.idpProgressSubtitle')}
-            </Text>
+                {!isLoading && projectData && (
+                  <Box {...overallProgressCardStyles.cardBox}>
+                    <VStack space="xs">
+                      <HStack justifyContent="space-between" alignItems="center">
+                        <Text
+                          fontSize="$md"
+                          fontWeight="$bold"
+                          color="$textDark900"
+                        >
+                          {t('participants.overallProgress', 'Overall Progress')}
+                        </Text>
+                        <Text
+                          fontSize="$xl"
+                          fontWeight="$bold"
+                          color="$progressBarFillColor"
+                        >
+                          {progressValue}%
+                        </Text>
+                      </HStack>
 
-            {!isLoading && projectData && (
-              <Box {...overallProgressCardStyles.cardBox}>
-                <VStack space="xs">
-                  <HStack justifyContent="space-between" alignItems="center">
-                    <Text
-                      fontSize="$md"
-                      fontWeight="$bold"
-                      color="$textDark900"
-                    >
-                      {t('participants.overallProgress', 'Overall Progress')}
-                    </Text>
-                    <Text
-                      fontSize="$xl"
-                      fontWeight="$bold"
-                      color="$progressBarFillColor"
-                    >
-                      {progressValue}%
-                    </Text>
-                  </HStack>
+                      {totalChildTasks > 0 && (
+                        <Text
+                          fontSize="$sm"
+                          color="$textMutedForeground"
+                        >
+                          {completedChildTasks} of {totalChildTasks} {t('participantJourney.activitiesCompleted', 'activities completed')}
+                        </Text>
+                      )}
 
-                  {totalChildTasks > 0 && (
-                    <Text
-                      fontSize="$sm"
-                      color="$textMutedForeground"
-                    >
-                      {completedChildTasks} of {totalChildTasks} {t('participantJourney.activitiesCompleted', 'activities completed')}
-                    </Text>
-                  )}
-
-                  <Box {...participantHeaderStyles.progressBarContainer} mt="$2">
-                    <Progress
-                      value={progressValue}
-                      {...participantHeaderStyles.progressBarBackground}
-                    >
-                      <ProgressFilledTrack {...participantHeaderStyles.progressBarFill} />
-                    </Progress>
+                      <Box {...participantHeaderStyles.progressBarContainer} mt="$2">
+                        <Progress
+                          value={progressValue}
+                          {...participantHeaderStyles.progressBarBackground}
+                        >
+                          <ProgressFilledTrack {...participantHeaderStyles.progressBarFill} />
+                        </Progress>
+                      </Box>
+                    </VStack>
                   </Box>
-                </VStack>
-              </Box>
-            )}
+                )}
 
-            <Box {...idpProgressStyles.idpContent}>
-              {isLoading ? (
-                <Loader />
-              ) : !projectData ? (
-                <Text>{t('projectPlayer.failToLoad')}</Text>
-              ) : (
-                <InterventionPlan
-                  mode={MODE.readOnlyMode?.mode}
-                  projectData={projectData}
-                  participantProfile={participantProfile || { status: STATUS.IN_PROGRESS }}
-                  onProgressChange={setOverallProgress}
-                />
-              )}
-            </Box>
+                <Box {...idpProgressStyles.idpContent}>
+                  {isLoading ? (
+                    <Loader />
+                  ) : !projectData ? (
+                    <Text>{t('projectPlayer.failToLoad')}</Text>
+                  ) : (
+                    <InterventionPlan
+                      mode={MODE.readOnlyMode?.mode}
+                      projectData={projectData}
+                      participantProfile={participantProfile || { status: STATUS.IN_PROGRESS }}
+                      onProgressChange={setOverallProgress}
+                    />
+                  )}
+                </Box>
+              </>
+            )}
           </VStack>
         </Container>
       </Box>

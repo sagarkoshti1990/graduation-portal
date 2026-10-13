@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import { Box, HStack, VStack, Text, Button, ButtonText, Avatar, AvatarFallbackText } from '@ui';
 import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
@@ -9,6 +9,7 @@ import moment from 'moment';
 import { getUserProfile } from '../../services/authenticationService';
 import { stylesHeader, participantAvatarWebStyle } from './Styles';
 import { participantProfileModalStyles } from './ParticipantProfileModal.Styles';
+import { usePlatform } from '@utils/platform';
 
 interface ParticipantProfileModalProps {
   isOpen: boolean;
@@ -18,7 +19,23 @@ interface ParticipantProfileModalProps {
 const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isMobile } = usePlatform();
   const [profileData, setProfileData] = useState<any>(null);
+
+  const fieldGroupStyle = useMemo(
+    () =>
+      isMobile
+        ? { ...participantProfileModalStyles.fieldGroup, ...participantProfileModalStyles.fieldGroupMobile }
+        : participantProfileModalStyles.fieldGroup,
+    [isMobile],
+  );
+  const labelRowStyle = useMemo(
+    () =>
+      isMobile
+        ? { ...participantProfileModalStyles.labelRow, ...participantProfileModalStyles.labelRowMobile }
+        : participantProfileModalStyles.labelRow,
+    [isMobile],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -107,6 +124,7 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
       headerTitle=""
       size="md"
       bodyProps={{ pt: '$0', pb: '$0' }}
+      contentProps={isMobile ? participantProfileModalStyles.mobileContent : undefined}
       footerContent={
         <HStack {...participantProfileModalStyles.footerContainer}>
           <Button
@@ -144,8 +162,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
         </HStack>
 
         {/* Fields list */}
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="Phone" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.phoneNumber') || 'Phone Number'}
@@ -158,8 +176,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
           </Box>
         </VStack>
 
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="Mail" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.email') || 'Email Address'}
@@ -172,8 +190,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
           </Box>
         </VStack>
 
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="Calendar" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.dob') || 'Date of Birth'}
@@ -186,8 +204,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
           </Box>
         </VStack>
 
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="MapPin" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.address') || 'Address'}
@@ -200,8 +218,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
           </Box>
         </VStack>
 
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="MapPin" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.addressFields.province') || 'Province'}
@@ -214,8 +232,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
           </Box>
         </VStack>
 
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="MapPin" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.addressFields.site') || 'Site'}
@@ -228,8 +246,8 @@ const ParticipantProfileModal: React.FC<ParticipantProfileModalProps> = ({ isOpe
           </Box>
         </VStack>
 
-        <VStack {...participantProfileModalStyles.fieldGroup}>
-          <HStack {...participantProfileModalStyles.labelRow}>
+        <VStack {...fieldGroupStyle}>
+          <HStack {...labelRowStyle}>
             <LucideIcon name="UserCheck" size={16} color={theme.tokens.colors.textMutedForeground} />
             <Text {...participantProfileModalStyles.fieldLabel}>
               {t('common.profileFields.emergencyContact') || 'Emergency Contact'}
