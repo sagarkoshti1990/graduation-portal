@@ -11,7 +11,7 @@ import dataService from '../../services/dataService';
 import { getUserProfile } from '../../services/authenticationService';
 import { participantJourneyStyles } from './Styles';
 import { isWeb } from '@utils/platform';
-import { getParticipantStatusMessage } from '@utils/participantJourneyUtils';
+import { getParticipantStatusBadgeKey } from '@utils/participantJourneyUtils';
 
 const IconBadge: React.FC<{
   name: string;
@@ -53,6 +53,7 @@ const ParticipantJourneyPortal: React.FC = () => {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState<string | undefined>(user?.status);
   const [accountUserStatus, setAccountUserStatus] = useState<string | undefined>((user as any)?.accountUserStatus);
+  const [pendingChangeRequest, setPendingChangeRequest] = useState<any[]>([]);
   const [coachDetails, setCoachDetails] = useState<{ name?: string; contact?: string }>({
     name: user?.coachName,
     contact: formatCoachContact(user?.coachContact),
@@ -86,6 +87,7 @@ const ParticipantJourneyPortal: React.FC = () => {
           if (pData?.accountUserStatus) {
             setAccountUserStatus(pData.accountUserStatus);
           }
+          setPendingChangeRequest(Array.isArray(pData?.pendingChangeRequest) ? pData.pendingChangeRequest : []);
           const coachId = pData?.hierarchy?.['0'] || pData?.hierarchy?.[0];
           if (coachId) {
             try {
@@ -123,7 +125,7 @@ const ParticipantJourneyPortal: React.FC = () => {
     normalizedStatus === USER_STATUS.INACTIVE ||
     normalizedAccountStatus === USER_STATUS.INACTIVE;
 
-  const statusMessage = getParticipantStatusMessage(currentStatus, accountUserStatus);
+  const statusBadgeKey = getParticipantStatusBadgeKey(currentStatus, accountUserStatus, pendingChangeRequest);
 
   const handleCardPress = (card: any) => {
     if (card.variant === 'link' && card.navigationUrl) {
@@ -183,16 +185,20 @@ const ParticipantJourneyPortal: React.FC = () => {
             <Heading {...participantJourneyStyles.title}>
               {t('participantJourney.title')}
             </Heading>
-            <Text {...participantJourneyStyles.welcome}>
-              {user?.name
-                ? t('participantJourney.welcomeBackNamed', { name: user.name })
-                : t('participantJourney.welcomeBack')}
-            </Text>
-            {statusMessage && (
-              <Text color="$warning700" fontSize="$sm" fontWeight="$medium" mt="$1">
-                {statusMessage}
+            <HStack {...participantJourneyStyles.welcomeRow}>
+              <Text {...participantJourneyStyles.welcome}>
+                {user?.name
+                  ? t('participantJourney.welcomeBackNamed', { name: user.name })
+                  : t('participantJourney.welcomeBack')}
               </Text>
-            )}
+              {statusBadgeKey && (
+                <Box {...participantJourneyStyles.statusBadge}>
+                  <Text {...participantJourneyStyles.statusBadgeText}>
+                    {t(statusBadgeKey)}
+                  </Text>
+                </Box>
+              )}
+            </HStack>
           </VStack>
 
           <Box {...participantJourneyStyles.cardsGrid}>

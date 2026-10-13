@@ -34,6 +34,23 @@ export const participantJourneyStyles = {
     fontWeight: '$normal' as const,
     lineHeight: '$sm' as const,
   },
+  welcomeRow: {
+    alignItems: 'center' as const,
+    flexWrap: 'wrap' as const,
+  },
+  statusBadge: {
+    bg: '$bgDestructive' as const,
+    borderRadius: '$xl' as const,
+    px: '$2' as const,
+    py: '$0.5' as const,
+    ml: '$2' as const,
+  },
+  statusBadgeText: {
+    fontSize: '$xs' as const,
+    fontWeight: '$medium' as const,
+    color: '$white' as const,
+    lineHeight: '$xs' as const,
+  },
   cardsGrid: {
     flexDirection: 'column' as const,
     '$md-flexDirection': 'row' as const,

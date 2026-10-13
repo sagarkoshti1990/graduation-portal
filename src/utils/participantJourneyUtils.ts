@@ -126,18 +126,49 @@ export const resolveProvinceNames = (rawProvinceData: any, provinceMap: Record<s
   return resolvedNames.join(', ');
 };
 
-export const getParticipantStatusMessage = (status?: string, accountStatus?: string): string | null => {
+/**
+ * Returns the translation key for the participant status badge shown in the participant portal headers.
+ */
+export const getParticipantStatusBadgeKey = (
+  status?: string,
+  accountStatus?: string,
+  pendingChangeRequest?: any[],
+): string | null => {
   const normStatus = (status || '').toString().trim().toUpperCase().replace(/\s+/g, '_');
   const normAccount = (accountStatus || '').toString().trim().toUpperCase().replace(/\s+/g, '_');
 
+  const isDropoutRequestSentForApproval = Array.isArray(pendingChangeRequest) && pendingChangeRequest.some(
+    (request: any) => request?.action === 'PROGRAM_USER_DROPPING_OUT' && request?.status === 'PENDING'
+  );
+  if (isDropoutRequestSentForApproval) {
+    return 'participantDetail.header.dropoutUnderReview';
+  }
   if (normAccount === 'INACTIVE' || normStatus === 'INACTIVE' || normStatus === 'DEACTIVATED') {
-    return 'This participant is Deactivated.';
+    return 'participantDetail.header.inactiveAccount';
   }
   if (normStatus === 'NOT_ELIGIBLE') {
-    return 'This participant is Not Eligible.';
+    return 'participantDetail.header.notEligible';
   }
   if (normStatus === 'DROPOUT' || normStatus === 'DROPPED_OUT') {
-    return 'This participant is Dropout.';
+    return 'participantDetail.header.droppedOut';
+  }
+  if (normStatus === 'NOT_ONBOARDED') {
+    return 'participants.notEnrolled';
+  }
+  if (normStatus === 'ONBOARDED') {
+    return 'participants.enrolled';
   }
   return null;
 };
+
+// Statuses for which IDP progress and My Sessions content is hidden in the participant portal.
+const RESTRICTED_STATUS_BADGE_KEYS = [
+  'participantDetail.header.dropoutUnderReview',
+  'participantDetail.header.inactiveAccount',
+  'participantDetail.header.notEligible',
+  'participantDetail.header.droppedOut',
+  'participants.notEnrolled',
+];
+
+export const isRestrictedParticipantStatus = (statusBadgeKey?: string | null): boolean =>
+  !!statusBadgeKey && RESTRICTED_STATUS_BADGE_KEYS.includes(statusBadgeKey);
