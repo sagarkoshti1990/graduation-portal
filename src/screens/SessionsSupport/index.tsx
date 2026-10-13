@@ -442,11 +442,6 @@ const SessionsSupportScreen: React.FC = () => {
     };
   }, [filters.pillar]);
 
-  // Reset page when tab or filters change
-  useEffect(() => {
-    setPage(1);
-  }, [activeTab, filters.search, filters.status, filters.province, filters.site, filters.pillar, filters.type, filters.format]);
-
   // Reset page and filters when active sub-tab changes
   useEffect(() => {
     setPage(1);
@@ -455,16 +450,19 @@ const SessionsSupportScreen: React.FC = () => {
   }, [activeSubTab]);
 
   // Filters that mean the same request ('' vs undefined, "All ..." vs unset) must not re-trigger the fetch
-  const noAll = (value: any, all: string) => (!value || value === all ? '' : value);
-  const filterKey = JSON.stringify([
-    filters[FILTER_FIELDS.SEARCH] || '',
-    filters[FILTER_FIELDS.STATUS] || '',
-    noAll(filters[FILTER_FIELDS.PROVINCE], FILTER_ALL.ALL_PROVINCES),
-    noAll(filters[FILTER_FIELDS.SITE], FILTER_ALL.ALL_SITES),
-    noAll(filters[FILTER_FIELDS.PILLAR], FILTER_ALL.ALL_PILLARS),
-    noAll(filters[FILTER_FIELDS.TYPE], FILTER_ALL.ALL_TYPES),
-    filters[FILTER_FIELDS.FORMAT] || '',
-  ]);
+  const ALL_FILTER_VALUES: string[] = Object.values(FILTER_ALL);
+  const isUnsetFilter = (value: any) => !value || ALL_FILTER_VALUES.includes(value);
+  const filterKey = JSON.stringify(
+    Object.keys(filters)
+      .sort()
+      .filter((key) => !isUnsetFilter(filters[key]))
+      .map((key) => [key, filters[key]]),
+  );
+
+  // Reset page when tab or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, filterKey]);
 
   // Fetch listing data
   useEffect(() => {
@@ -497,10 +495,19 @@ const SessionsSupportScreen: React.FC = () => {
 
         // Filters only apply to the Browse sub-tab of each main tab; other sub-tabs list everything unfiltered
         if (activeSubTab === SUPPORT_OFFERING_SUB_TABS.BROWSE_SESSIONS) {
-          params.search = filters[FILTER_FIELDS.SEARCH];
-          params.status = filters[FILTER_FIELDS.STATUS];
+          // Any filter not handled below is passed through under its own name, so new filters need no change here
+          const specialFilters: string[] = [
+            FILTER_FIELDS.PROVINCE,
+            FILTER_FIELDS.SITE,
+            FILTER_FIELDS.PILLAR,
+            FILTER_FIELDS.TYPE,
+          ];
+          Object.keys(filters).forEach((key) => {
+            if (!specialFilters.includes(key) && !isUnsetFilter(filters[key])) {
+              params[key] = filters[key];
+            }
+          });
           params.idp_training_task = idpTrainingTask;
-          params.format = filters[FILTER_FIELDS.FORMAT];
 
           // Browse defaults to the user's own provinces
           if (hasSelectedProvince) {
