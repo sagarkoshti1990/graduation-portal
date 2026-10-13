@@ -79,9 +79,8 @@ const SessionsSupportScreen: React.FC = () => {
   const { showAlert } = useAlert();
   const { user } = useAuth() || {};
   const { allowedProvinces, allowedSites, isProfileLoading } = useProfileCompletion();
-  // org_admin / tenant_admin operate on a single province: lock it and limit sites to their profile
+  // org_admin / tenant_admin operate on a single province: limit sites to their profile
   const isProvinceLocked = (user?.role === 'org_admin' || user?.role === 'tenant_admin') && allowedProvinces.length > 0;
-  const lockedProvinceId = isProvinceLocked ? allowedProvinces[0] : undefined;
 
   const handleAssignSessionClick = (item: any) => {
     setSelectedSession(item);
@@ -295,9 +294,11 @@ const SessionsSupportScreen: React.FC = () => {
               label: p.metaInformation?.name || p.name || p.title || p.label,
               value: p._id || p.id || p.value,
             }));
-            const dynamicProvinces = isProvinceLocked
+            // Users only see (and browse) the provinces they are part of
+            const userProvinces = allowedProvinces.length > 0
               ? mappedProvinces.filter((p: any) => allowedProvinces.includes(p.value))
-              : [{ label: 'All Provinces', value: FILTER_ALL.ALL_PROVINCES }, ...mappedProvinces];
+              : mappedProvinces;
+            const dynamicProvinces = [{ label: 'All Provinces', value: FILTER_ALL.ALL_PROVINCES }, ...userProvinces];
             setProvinceOptions(dynamicProvinces);
           }
 
@@ -332,15 +333,22 @@ const SessionsSupportScreen: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [isProfileLoading, isProvinceLocked]);
+  }, [isProfileLoading, allowedProvinces]);
+
+  // A user with a single province gets its sites without having to pick it first
+  const selectedProvince = filters[FILTER_FIELDS.PROVINCE];
+  const hasSelectedProvince = !!selectedProvince && selectedProvince !== FILTER_ALL.ALL_PROVINCES;
+  const effectiveProvince: string | undefined = hasSelectedProvince
+    ? selectedProvince
+    : allowedProvinces.length === 1 ? allowedProvinces[0] : undefined;
 
   // Fetch dynamic sites based on selected province filter
   useEffect(() => {
     let isMounted = true;
     const fetchSitesData = async () => {
-      const selectedProv = filters[FILTER_FIELDS.PROVINCE];
+      const selectedProv = effectiveProvince;
 
-      if (!selectedProv || selectedProv === FILTER_ALL.ALL_PROVINCES) {
+      if (!selectedProv) {
         if (isMounted) {
           setSiteOptions(DEFAULT_SITE_OPTIONS);
         }
@@ -393,7 +401,7 @@ const SessionsSupportScreen: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [filters.province, provincesList, isProvinceLocked, allowedSites]);
+  }, [effectiveProvince, provincesList, isProvinceLocked, allowedSites]);
 
   // Fetch dynamic types based on selected pillar filter
   useEffect(() => {
@@ -434,17 +442,27 @@ const SessionsSupportScreen: React.FC = () => {
     };
   }, [filters.pillar]);
 
-  // Reset page when tab or filters change
-  useEffect(() => {
-    setPage(1);
-  }, [activeTab, filters.search, filters.status, filters.province, filters.site, filters.pillar, filters.type, filters.format]);
-
   // Reset page and filters when active sub-tab changes
   useEffect(() => {
     setPage(1);
     setFilters({});
     setItems([]);
   }, [activeSubTab]);
+
+  // Filters that mean the same request ('' vs undefined, "All ..." vs unset) must not re-trigger the fetch
+  const ALL_FILTER_VALUES: string[] = Object.values(FILTER_ALL);
+  const isUnsetFilter = (value: any) => !value || ALL_FILTER_VALUES.includes(value);
+  const filterKey = JSON.stringify(
+    Object.keys(filters)
+      .sort()
+      .filter((key) => !isUnsetFilter(filters[key]))
+      .map((key) => [key, filters[key]]),
+  );
+
+  // Reset page when tab or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, filterKey]);
 
   // Fetch listing data
   useEffect(() => {
@@ -456,6 +474,8 @@ const SessionsSupportScreen: React.FC = () => {
     ) {
       return;
     }
+    // Browse is scoped to the user's provinces, so wait for the profile instead of fetching unscoped first
+    if (isProfileLoading) return;
     let isMounted = true;
     const fetchData = async () => {
       try {
@@ -471,22 +491,34 @@ const SessionsSupportScreen: React.FC = () => {
           idpTrainingTask = pillarTypeValues.includes(selectedType) ? selectedType : pillarTypeValues.join(',');
         }
 
-        const params: any = {
-          page,
-          limit,
-          search: filters[FILTER_FIELDS.SEARCH],
-          status: filters[FILTER_FIELDS.STATUS],
-          idp_training_task: idpTrainingTask,
-          format: filters[FILTER_FIELDS.FORMAT],
-          isSessionsSupport: true,
-        };
+        const params: any = { page, limit, isSessionsSupport: true };
 
-        if (filters[FILTER_FIELDS.PROVINCE] && filters[FILTER_FIELDS.PROVINCE] !== FILTER_ALL.ALL_PROVINCES) {
-          params.provinces = filters[FILTER_FIELDS.PROVINCE];
-        }
+        // Filters only apply to the Browse sub-tab of each main tab; other sub-tabs list everything unfiltered
+        if (activeSubTab === SUPPORT_OFFERING_SUB_TABS.BROWSE_SESSIONS) {
+          // Any filter not handled below is passed through under its own name, so new filters need no change here
+          const specialFilters: string[] = [
+            FILTER_FIELDS.PROVINCE,
+            FILTER_FIELDS.SITE,
+            FILTER_FIELDS.PILLAR,
+            FILTER_FIELDS.TYPE,
+          ];
+          Object.keys(filters).forEach((key) => {
+            if (!specialFilters.includes(key) && !isUnsetFilter(filters[key])) {
+              params[key] = filters[key];
+            }
+          });
+          params.idp_training_task = idpTrainingTask;
 
-        if (filters[FILTER_FIELDS.SITE] && filters[FILTER_FIELDS.SITE] !== FILTER_ALL.ALL_SITES) {
-          params.sites = filters[FILTER_FIELDS.SITE];
+          // Browse defaults to the user's own provinces
+          if (hasSelectedProvince) {
+            params.provinces = selectedProvince;
+          } else if (allowedProvinces.length > 0) {
+            params.provinces = allowedProvinces.join(',');
+          }
+
+          if (filters[FILTER_FIELDS.SITE] && filters[FILTER_FIELDS.SITE] !== FILTER_ALL.ALL_SITES) {
+            params.sites = filters[FILTER_FIELDS.SITE];
+          }
         }
 
         let fetchedData: any[] = [];
@@ -667,7 +699,7 @@ const SessionsSupportScreen: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [activeTab, activeSubTab, filters.search, filters.status, filters.province, filters.site, filters.pillar, filters.type, typeOptions, filters.format, page, limit, refreshRequests]);
+  }, [activeTab, activeSubTab, filterKey, typeOptions, page, limit, refreshRequests, allowedProvinces.join(','), isProfileLoading]);
 
   const handleSelectOption = (route: string) => {
     setIsDropdownOpen(false);
@@ -809,9 +841,7 @@ const SessionsSupportScreen: React.FC = () => {
                 typeOptions={typeOptions}
                 statusOptions={statusOptions}
                 formatOptions={formatOptions}
-                hideProvince={isProvinceLocked}
-                initialValue={lockedProvinceId ? { [FILTER_FIELDS.PROVINCE]: lockedProvinceId } : undefined}
-                shouldDisableSite={!filters[FILTER_FIELDS.PROVINCE] || filters[FILTER_FIELDS.PROVINCE] === FILTER_ALL.ALL_PROVINCES}
+                shouldDisableSite={!effectiveProvince}
                 shouldDisableType={!filters[FILTER_FIELDS.PILLAR] || filters[FILTER_FIELDS.PILLAR] === FILTER_ALL.ALL_PILLARS}
               />
               <Text {...styles.sessionsFoundText}>

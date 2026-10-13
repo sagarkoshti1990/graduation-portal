@@ -57,6 +57,7 @@ export interface AcceptAndSchedulePayload {
   title?: string;
   description?: string;
   targetAudience?: string;
+  recommended_for?: string[];
   date: string;
   time: string;
   duration: string;
@@ -393,6 +394,7 @@ export const acceptAndScheduleSupportRequest = async (
     delivery_mode: payload.delivery_mode || (isAsset ? 'offline' : 'online'),
     can_be_copied: false,
     certificate_provided: false,
+    recommended_for: payload.recommended_for?.length ? payload.recommended_for : ['user'],
     ...(isAsset
       ? {
           agenda: payload.description || payload.title || '',
