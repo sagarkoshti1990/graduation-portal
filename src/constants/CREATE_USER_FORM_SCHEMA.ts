@@ -69,10 +69,10 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               },
               {
                 rule: 'pattern',
-                value: '^[A-Z][a-z]*(?: [A-Z][a-z]*)*$',
+                value: '^[A-Za-z]+(?: [A-Za-z]+)*$',
                 message: {
                   key: 'errors.nameFormat',
-                  fallback: 'Name must start with a capital letter; numbers and symbols are not allowed',
+                  fallback: 'Name may contain only letters and spaces; no digits or punctuation',
                 },
               },
             ]
