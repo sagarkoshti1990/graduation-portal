@@ -113,6 +113,18 @@ const OrganizationProfile = (): React.JSX.Element => {
           profile = res || {};
         }
 
+        // Mentoring profile/read strips `phone` and the login user's phone is still encrypted,
+        // so the decrypted number is taken from the user service profile
+        let decryptedPhone = profile?.phone || '';
+        if (!decryptedPhone) {
+          try {
+            const userServiceProfile = await getUserProfile(user.id);
+            decryptedPhone = userServiceProfile?.phone || '';
+          } catch (pErr) {
+            console.warn('User profile phone fetch error:', pErr);
+          }
+        }
+
         // Don't overwrite unsaved changes while editing
         if (mode === 'edit') {
           return;
@@ -149,7 +161,7 @@ const OrganizationProfile = (): React.JSX.Element => {
           organizationType: orgType[0] || '',
           contactPersonName: getField('name') || user?.name || '',
           contactEmail: getField('email') || user?.email || '',
-          contactPhone: getField('phone') || user?.phone || '',
+          contactPhone: decryptedPhone,
           phone_code:
             getField('phone_code') ||
             getField('phoneCode') ||
