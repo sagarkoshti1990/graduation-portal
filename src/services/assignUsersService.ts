@@ -270,16 +270,16 @@ export const assignLCsToSupervisor = async (params: {
       userRolesToEntityTypeMap,
     };
     
-    // Additional headers (static for now)
-    const headers = {
-      // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
-      'admin-access-token': process.env.ADMIN_ACCESS_TOKEN,
-      // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
-      'tenantId': process.env.TENANT_CODE_NAME,
-      // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
-      'orgId': process.env.ORG_ID,
-    }
-    const response = await api.post<any>(endpoint, requestBody, {headers});
+    // // Additional headers (static for now)
+    // const headers = {
+    //   // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
+    //   'admin-access-token': process.env.ADMIN_ACCESS_TOKEN,
+    //   // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
+    //   'tenantId': process.env.TENANT_CODE_NAME,
+    //   // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
+    //   'orgId': process.env.ORG_ID,
+    // }
+    const response = await api.post<any>(endpoint, requestBody);
     // Check if HTTP response status is 200 (success)
     if (response.status !== 200) {
       throw new Error(`API request failed with status ${response.status}`);
@@ -349,13 +349,7 @@ export const assignParticipantsToLC = async (params: {
     // @ts-ignore - process.env is injected by webpack DefinePlugin on web, available in React Native
     const orgId = process.env.ORG_ID;
 
-    const response = await api.post<any>(endpoint, requestBody, {
-      headers: {
-        'admin-access-token': adminAccessToken,
-        'tenantId': tenantId,
-        'orgId': orgId,
-      },
-    });
+    const response = await api.post<any>(endpoint, requestBody);
     
     // Check if HTTP response status is 200 (success)
     if (response.status !== 200) {

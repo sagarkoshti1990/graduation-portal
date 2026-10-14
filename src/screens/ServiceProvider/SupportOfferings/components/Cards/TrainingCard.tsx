@@ -18,7 +18,6 @@ import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 import { completeTrainingSession, getSessionEnrolledParticipants } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
-import { getEnrolledMentees } from '../../../../../services/mentoringService';
 // import { uploadFiles } from '../../../../../project-player/services/projectPlayerService';
 // import { openFilePicker } from '../../../../../project-player/components/Task/FileEvidence/file-picker';
 import type { MaterialItem, TrainingSessionItem, ParticipantAttendanceItem } from '../../../../../types/supportOfferingsTypes';
@@ -27,6 +26,7 @@ import openExternalLink from '@utils/openExternalLink';
 import styles from '../../styles';
 import { FORM_MODE, SESSION_STATUS, SESSION_STATUS_LABEL } from '@constants/SUPPORT_PROVIDER_CARDS';
 import { useSessionStatus, useRequesterInfo } from '@hooks/useSessionStatus';
+import { useSessionAttendance } from '@hooks/useSessionAttendance';
 import { openDownload } from "@utils/helper";
 
 const getDeliveryMode = (item: TrainingSessionItem): 'offline' | 'online' | 'hybrid' => {
@@ -187,12 +187,6 @@ const Card: React.FC<CardProps> = ({
   const [files, setFiles] = useState<MaterialItem[] | null>(null);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
-  // Real enrolled participants, fetched on demand when the Complete/Confirm Attendance modal is
-  // opened - `item.participantList` is never populated anywhere, so relying on it silently fell
-  // back to fabricated placeholder names that could never actually be marked complete.
-  const [enrolledParticipants, setEnrolledParticipants] = useState<ParticipantAttendanceItem[] | null>(null);
-  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
-
   const deliveryMode = getDeliveryMode(item);
   const deliveryBadge = getDeliveryBadge(deliveryMode);
 
@@ -256,6 +250,16 @@ const Card: React.FC<CardProps> = ({
   const expectedParticipants = item.seats_limit || (item as any).max_participants || 0;
   const seatsRemaining = item.seats_remaining ?? expectedParticipants;
   const confirmedPresent = expectedParticipants > 0 ? Math.max(0, expectedParticipants - seatsRemaining) : 0;
+  const hasAssignedParticipants = confirmedPresent > 0;
+  // Session time is over (whether or not it was already marked complete)
+  const hasEnded = !footer && derivedStatusTag === SESSION_STATUS_LABEL.COMPLETED;
+  const { participants: enrolledParticipants, isLoading: isLoadingParticipants, ensureLoaded, applyPresent } =
+    useSessionAttendance(item.id);
+  // Counts come from the sessions list API; fall back to the assigned count when absent
+  const enrolledCount = (item as any).enrolled_mentees_count ?? confirmedPresent;
+  const presentCount = (item as any).present_mentees_count ?? 0;
+  // Stays visible until at least one attendee is marked present
+  const canConfirmAttendance = hasEnded && enrolledCount > 0 && presentCount <= 0;
   const spotsText = expectedParticipants > 0 ? ` (${seatsRemaining} spots)` : '';
 
   // Editing is only allowed for draft sessions, or upcoming sessions that have
@@ -292,22 +296,7 @@ const Card: React.FC<CardProps> = ({
 
   const handleOpenCompleteModal = async () => {
     setIsCompleteModalOpen(true);
-    if (enrolledParticipants || isLoadingParticipants) return;
-
-    setIsLoadingParticipants(true);
-    try {
-      const mentees = await getEnrolledMentees(item.id);
-      setEnrolledParticipants(
-        (mentees || []).map((mentee: any) => ({
-          id: String(mentee.id),
-          name: mentee.name || '',
-          lcName: mentee.organization?.name || '',
-          isPresent: !!mentee.is_attended,
-        }))
-      );
-    } finally {
-      setIsLoadingParticipants(false);
-    }
+    await ensureLoaded();
   };
 
   /*
@@ -328,15 +317,14 @@ const Card: React.FC<CardProps> = ({
       const hasMarkedAttendance = selectedParticipantIds.length > 0;
 
       // Keep the cached list in sync so reopening the modal shows the saved attendance
-      setEnrolledParticipants((prev) =>
-        prev ? prev.map((p) => ({ ...p, isPresent: selectedParticipantIds.includes(p.id) })) : prev
-      );
+      applyPresent(selectedParticipantIds);
 
       setItem((prev) => {
         const prevLimit = prev.seats_limit || 0;
         return {
           ...prev,
           status: SESSION_STATUS.COMPLETED,
+          present_mentees_count: selectedParticipantIds.length,
           seats_remaining: hasMarkedAttendance
             ? Math.max(0, prevLimit - selectedParticipantIds.length)
             : prev.seats_remaining,
@@ -490,7 +478,7 @@ const Card: React.FC<CardProps> = ({
                 </Button>
               )}
 
-              {isExpired && expectedParticipants > 0 && (
+              {canConfirmAttendance && (
                 <Button variant={'outlineghost' as any}  {...styles.outlineActionBtn} onPress={handleOpenCompleteModal}  >
                   {/* @ts-ignore */}
                   <ButtonText {...styles.outlineActionBtnText}>
@@ -554,7 +542,7 @@ const Card: React.FC<CardProps> = ({
                   {t('supportProvider.supportOfferings.cards.attendance', 'Attendance')}
                 </Text>
 
-                {isExpired && expectedParticipants > 0 && (
+                {canConfirmAttendance && (
                   <Button variant="solid"  {...styles.confirmAttendanceBtn} onPress={handleOpenCompleteModal}  >
                     <ButtonIcon as={LucideIcon} name="Check" {...styles.cardWhiteIconProps} />
                     <ButtonText {...(styles.confirmAttendanceBtnText as any)}>
@@ -570,7 +558,7 @@ const Card: React.FC<CardProps> = ({
                     <Text {...styles.attendanceLabelText}>
                       {t('supportProvider.supportOfferings.cards.expectedParticipants', 'Expected Participants')}
                     </Text>
-                    <Text {...styles.cardValueBoldText}>{expectedParticipants}</Text>
+                    <Text {...styles.cardValueBoldText}>{enrolledCount}</Text>
                   </VStack>
 
                   <VStack {...styles.attendanceItemVStack}>
@@ -578,9 +566,9 @@ const Card: React.FC<CardProps> = ({
                       {t('supportProvider.supportOfferings.cards.confirmedPresent', 'Confirmed Present')}
                     </Text>
 
-                    {confirmedPresent > 0 ? (
+                    {presentCount > 0 ? (
                       <HStack {...styles.badgeContentHStack}>
-                        <Text {...styles.cardSuccessBoldText}>{confirmedPresent}</Text>
+                        <Text {...styles.cardSuccessBoldText}>{presentCount}</Text>
                         <LucideIcon name="CheckCircle" {...styles.cardSuccessIconProps} />
                       </HStack>
                     ) : (
