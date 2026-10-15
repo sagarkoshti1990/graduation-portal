@@ -86,7 +86,7 @@ const Card: React.FC<CardProps> = ({ item, provinces, sites, footer }) => {
         : undefined,
     [seatsLimit, seatsRemaining]
   );
-  const requestsCount = (item as any)?.enrolled_mentees_count ?? assignedCount;
+  const participantsDisplay = `${assignedCount ?? 0} / ${seatsLimit ?? 0} participants`;
 
   const { requesterName, requesterOrgName } = useRequesterInfo(item as any);
 
@@ -151,9 +151,7 @@ const Card: React.FC<CardProps> = ({ item, provinces, sites, footer }) => {
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="Users" {...styles.cardMetaIconProps} />
             <Text {...styles.cardMetaSmText}>
-              {requestsCount !== undefined
-                ? t('supportProvider.supportOfferings.cards.requestsCount', '{{count}} requests / spots', { count: requestsCount })
-                : '-'}
+              {participantsDisplay}
             </Text>
           </HStack>
         </HStack>
