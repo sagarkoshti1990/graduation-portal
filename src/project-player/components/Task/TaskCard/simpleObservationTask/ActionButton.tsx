@@ -97,7 +97,7 @@ const ActionButton = memo<ActionButtonProps>(({
   }
 
   return (
-    <Button onPress={handleTaskClick} isDisabled={isStatusUpdating || (!isObservationTask && !!isCompleted)}
+    <Button onPress={handleTaskClick} isDisabled={isStatusUpdating}
       size={isWeb ? (showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
       variant={"outlineghost" as any} $web-cursor={isEdit || isReadOnly ? 'pointer' : undefined}>
       <ButtonIcon name={isObservationTask && isCompleted ? "Eye" :actionIconName} size={16} as={LucideIcon} />

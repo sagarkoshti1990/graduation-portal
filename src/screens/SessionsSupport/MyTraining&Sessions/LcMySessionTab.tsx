@@ -1,9 +1,12 @@
-import React from 'react';
-import { Box, HStack, VStack, Text, Button, ButtonText, Badge, BadgeText, Spinner, LucideIcon } from '@ui';
+import React, { useState } from 'react';
+import { Box, HStack, VStack, Text, Button, ButtonText, Badge, BadgeText, Spinner, LucideIcon, useAlert } from '@ui';
 import moment from 'moment';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useSessionStatus, deriveStatusLabel } from '@hooks/useSessionStatus';
 import { SESSION_STATUS, SESSION_STATUS_LABEL } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { useSessionAttendance } from '@hooks/useSessionAttendance';
+import { completeTrainingSession } from '../../../services/SupportOfferingsServices/supportOfferingsService';
+import SessionCompleteModal from '../../ServiceProvider/SupportOfferings/components/modals/SessionCompleteModal';
 import styles from '../styles';
 
 interface LcMySessionTabProps {
@@ -62,7 +65,7 @@ export const getStatusColors = (status: string) => {
 };
 
 const LcMySessionTab: React.FC<LcMySessionTabProps> = ({
-  item,
+  item: listItem,
   isFirst,
   onAssignParticipants,
   onEditSession,
@@ -72,6 +75,13 @@ const LcMySessionTab: React.FC<LcMySessionTabProps> = ({
   hideSchedule = false,
 }) => {
   const { t } = useLanguage();
+  const { showAlert } = useAlert();
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  // The list item is not refetched after completing, so the card tracks the completion itself
+  const [markedPresentCount, setMarkedPresentCount] = useState<number | null>(null);
+  const item = markedPresentCount !== null
+    ? { ...listItem, status: SESSION_STATUS.COMPLETED, present_mentees_count: markedPresentCount }
+    : listItem;
   const { statusTag: derivedStatusLabel } = useSessionStatus(item);
   const statusLabel = hideSchedule ? derivedStatusLabel : getSessionBadgeLabel(item);
   const isExpired = statusLabel === SESSION_STATUS_LABEL.EXPIRED;
@@ -135,6 +145,36 @@ const LcMySessionTab: React.FC<LcMySessionTabProps> = ({
   const maxParticipants = item.seats_limit || item.max_participants || 0;
   const seatsRemaining = item.seats_remaining ?? maxParticipants;
   const assignedCount = maxParticipants - seatsRemaining;
+
+  // Session time is over (Expired, or already marked Completed)
+  const hasEnded = deriveStatusLabel(item) === SESSION_STATUS_LABEL.COMPLETED;
+  const sessionId = item.id || item._id;
+  const { participants: enrolledParticipants, isLoading: isLoadingParticipants, ensureLoaded, applyPresent } =
+    useSessionAttendance(sessionId);
+  // Counts come from the sessions list API; fall back to the assigned count when absent
+  const enrolledCount = item.enrolled_mentees_count ?? assignedCount;
+  const presentCount = item.present_mentees_count ?? 0;
+  // Stays visible until at least one attendee is marked present
+  const canConfirmAttendance = hasEnded && enrolledCount > 0 && presentCount <= 0;
+
+  const handleOpenCompleteModal = async () => {
+    setIsCompleteModalOpen(true);
+    await ensureLoaded();
+  };
+
+  const handleConfirmComplete = async (selectedIds: string[]) => {
+    if (!sessionId) return;
+    try {
+      await completeTrainingSession(sessionId, { mentees: selectedIds });
+    } catch (error) {
+      console.error('Error completing session via API:', error);
+      showAlert('error', 'Failed to complete session. Please try again.');
+      throw error;
+    }
+    applyPresent(selectedIds);
+    setMarkedPresentCount(selectedIds.length);
+    showAlert('success', t('supportProvider.supportOfferings.cards.alerts.sessionCompleted'));
+  };
 
   // Editing is only allowed for upcoming sessions that have no participants assigned yet.
   const canEditSession = statusLabel === 'Upcoming' && assignedCount <= 0;
@@ -204,15 +244,31 @@ const LcMySessionTab: React.FC<LcMySessionTabProps> = ({
                 </Text>
               </HStack>
             )}
+            {hasEnded && (
+              <HStack {...styles.mySessionCardMetaItem}>
+                <LucideIcon name="CheckCircle" size={12} color="$textSecondary" />
+                <Text {...styles.mySessionCardMetaText}>
+                  {t('supportProvider.supportOfferings.cards.confirmedPresent', 'Confirmed Present')}: {presentCount} / {enrolledCount}
+                </Text>
+              </HStack>
+            )}
           </HStack>
 
           {/* FOOTER: Action Buttons */}
           <HStack {...styles.mySessionCardFooter}>
             {/* Only shown when an assign handler is passed (History renders these cards read-only) */}
-            {onAssignParticipants && (
+            {onAssignParticipants && !hasEnded && (
               <Button variant="outlineghost" {...styles.mySessionCardAssignBtn} onPress={() => onAssignParticipants(item)}>
                 <ButtonText {...styles.mySessionCardAssignBtnText}>
                   {t('lc.sessionsSupport.mySessionCard.assignParticipants')}
+                </ButtonText>
+              </Button>
+            )}
+
+            {canConfirmAttendance && (
+              <Button {...styles.mySessionCardManageBtn} variant="solid" onPress={handleOpenCompleteModal}>
+                <ButtonText {...styles.mySessionCardManageBtnText}>
+                  {t('supportProvider.supportOfferings.cards.confirmAttendance', 'Confirm Attendance')}
                 </ButtonText>
               </Button>
             )}
@@ -232,6 +288,16 @@ const LcMySessionTab: React.FC<LcMySessionTabProps> = ({
           </HStack>
         </VStack>
       </Box>
+
+      <SessionCompleteModal
+        isOpen={isCompleteModalOpen}
+        onClose={() => setIsCompleteModalOpen(false)}
+        sessionTitle={item.title || ''}
+        expectedParticipantsCount={maxParticipants}
+        initialParticipants={enrolledParticipants ?? undefined}
+        isLoadingParticipants={isLoadingParticipants}
+        onConfirmComplete={handleConfirmComplete}
+      />
 
       {isShowLoadMore && (
         <Box alignItems="center" mt="$4" width="100%">
