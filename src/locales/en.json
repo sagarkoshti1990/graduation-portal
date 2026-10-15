@@ -1269,7 +1269,16 @@
       "userStoryGblLcGuide": "GBL Coach Guide",
       "csvImportTemplates": "CSV Import Templates",
       "passwordManagementPolicy": "Password Management Policy",
-      "profileFieldEditPermissions": "Profile Field Edit Permissions"
+      "profileFieldEditPermissions": "Profile Field Edit Permissions",
+      "dashboards": "Dashboards",
+      "participants": "Participants",
+      "supportProviders": "Support Providers",
+      "coachProgress": "Coach Progress",
+      "formsAndSurveysManagement": "Forms and Surveys Management",
+      "lmsManagement": "LMS Management",
+      "contentLibrary": "Content Library",
+      "courseCreation": "Course Creation",
+      "certificates": "Certificates"
     },
     "userManagementDescription": "Manage all users across your organization with unified controls and bulk operations.",
     "assignUsersDescription": "Assign Coaches to Supervisors and Participants to Coaches",
@@ -2562,6 +2571,8 @@
     },
     "menu": {
       "home": "Home",
+      "myLearningProgress": "My Learning Progress",
+      "coachLearningDashboard": "Learning Dashboard",
       "dashboard": "Dashboard",
       "myParticipants": "My Participants",
       "sessionsSupport": "Sessions & Support",

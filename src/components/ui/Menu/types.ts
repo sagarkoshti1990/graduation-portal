@@ -21,9 +21,9 @@ export interface MenuItemData {
   showDividerAfter?: boolean; // Render divider after this menu item
   route?: string; // Navigation route name for menu items that navigate
   href?: string; // External URL for menu items that open outside the app
-  isComingSoon?: boolean; // Render coming soon badge if true
+  openHrefType?: '_self' | '_blank'; // Open in a new tab _blank, _self Default is _blank;
+  isComingSoon?: boolean;
 }
-
 export interface CustomMenuProps {
   items: MenuItemData[];
   placement?:

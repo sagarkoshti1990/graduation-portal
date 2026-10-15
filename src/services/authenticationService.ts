@@ -184,6 +184,7 @@ export const login = async (
     // Save user data to offline storage (will be overwritten by AuthContext with mapped user)
     if (user) {
       await offlineStorage.create(STORAGE_KEYS.AUTH_USER, user);
+      await offlineStorage.create(STORAGE_KEYS.USERID, user.id);
       logger.info('User data saved to storage');
     }
 
