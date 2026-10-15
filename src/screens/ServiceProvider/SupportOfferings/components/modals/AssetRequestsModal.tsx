@@ -137,6 +137,7 @@ export default function AssetRequestsModal({
       );
       showAlert('success', t(`${BASE_PATH}.allDeclined`, 'All requests declined successfully.'));
       await fetchRequests();
+      onClose();
     } catch (error) {
       showAlert('error', t(`${BASE_PATH}.declineFailed`, 'Failed to decline request(s). Please try again.'));
     } finally {
@@ -200,6 +201,7 @@ export default function AssetRequestsModal({
         showAlert('error', t(`${BASE_PATH}.approveFailed`, 'Failed to approve request(s). Please try again.'));
       }
       await fetchRequests();
+      if (failedCount === 0) onClose();
     } finally {
       setIsApprovingAll(false);
     }

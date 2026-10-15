@@ -980,6 +980,17 @@ function collectValidationForRoots(
   return { errors, issues, visited };
 }
 
+/** Errors map and popup issues for a whole schema, for forms that run their own submit button. */
+export function getValidationIssues(
+  schema: FormSection[],
+  values: Record<string, any>,
+  optionsMap: OptionsMap,
+  t: (key: string, fallback?: string) => string,
+): { errors: Record<string, string>; issues: ValidationIssue[] } {
+  const { errors, issues } = collectValidationForRoots(schema, schema, values, optionsMap, t);
+  return { errors, issues };
+}
+
 // ─── Required-Field Progress (current step / active tab) ──────────────────────
 //
 // Counts only visible, required, editable fields — mirrors the same skip
@@ -2207,7 +2218,7 @@ const StepFooter: React.FC<{
  * (no custom validation style is introduced). Clicking an item lets the
  * caller navigate to, scroll to, and focus/highlight that field.
  */
-const ValidationPopup: React.FC<{
+export const ValidationPopup: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   issues: ValidationIssue[];
