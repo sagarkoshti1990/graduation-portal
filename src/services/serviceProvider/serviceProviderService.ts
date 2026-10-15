@@ -426,7 +426,7 @@ export const acceptAndScheduleSupportRequest = async (
     }
 
     if (payload.capacity) {
-      body.seats = Number(payload.capacity);
+      body.seats_limit = Number(payload.capacity);
     }
   }
 
