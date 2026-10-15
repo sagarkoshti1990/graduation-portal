@@ -110,7 +110,11 @@ const Card: React.FC<AdditionalServiceCardItemProps> = ({ item, provinces, sites
     .filter(Boolean)
     .join(', ');
 
-  const requestsCount = item.requests ?? item.participants_count ?? item.seats_limit ?? undefined;
+  const requestsCount =
+    item.enrolled_mentees_count ??
+    (item.seats_limit !== undefined && item.seats_remaining !== undefined
+      ? Math.max(0, Number(item.seats_limit || 0) - Number(item.seats_remaining || 0))
+      : undefined);
 
   const handleViewDetails = () => {
     (navigation as any).navigate('session-details', { sessionId: item.id });

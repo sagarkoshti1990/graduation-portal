@@ -331,6 +331,7 @@ export const ADDITIONAL_SERVICE_DRAFT_CONFIG: DraftConfig = {
   requiredFields: ['provinces', 'sites', 'categories', 'title'],
   defaults: {
     description: (values) => values.title,
+    seats_limit: '10',
   },
 };
 
