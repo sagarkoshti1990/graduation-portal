@@ -4,7 +4,8 @@ import Modal from '@components/ui/Modal';
 import LucideIcon from '@components/ui/LucideIcon';
 import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
-import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
+import SchemaFormRenderer, { getValidationIssues, ValidationPopup } from '@components/SchemaFormRenderer';
+import type { ValidationIssue } from '@components/SchemaFormRenderer';
 import { ACCEPT_AND_SCHEDULE_FORM_SCHEMA, DURATION_OPTIONS } from '@constants/ACCEPT_AND_SCHEDULE_FORM_SCHEMA';
 import { getProvincesList, getSitesByProvince } from '../../../../../services/usersService';
 import { getSessionCategories, getDeliveryModes } from '../../../../../services/mentoringService';
@@ -50,6 +51,7 @@ export default function AcceptAndScheduleModal({
   const [categories, setCategories] = useState<any[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [popupIssues, setPopupIssues] = useState<ValidationIssue[]>([]);
 
   const coachName = item?.coach || '';
   const hubName = item?.hub && item.hub !== '-' ? ` (${item.hub} Hub)` : '';
@@ -224,9 +226,10 @@ export default function AcceptAndScheduleModal({
   );
 
   function handleConfirmAndSchedule() {
-    const validationErrors = validateSchema(ACCEPT_AND_SCHEDULE_FORM_SCHEMA, values, optionsMap);
-    if (Object.keys(validationErrors).length > 0) {
+    const { errors: validationErrors, issues } = getValidationIssues(ACCEPT_AND_SCHEDULE_FORM_SCHEMA, values, optionsMap, t);
+    if (issues.length > 0) {
       setErrors(validationErrors);
+      setPopupIssues(issues);
       return;
     }
 
@@ -344,6 +347,14 @@ export default function AcceptAndScheduleModal({
           t={t}
         />
       </Box>
+
+      <ValidationPopup
+        isOpen={popupIssues.length > 0}
+        onClose={() => setPopupIssues([])}
+        issues={popupIssues}
+        onSelectIssue={() => setPopupIssues([])}
+        t={t}
+      />
     </Modal>
   );
 }
