@@ -28,6 +28,7 @@ import {
 import { useLanguage } from '@contexts/LanguageContext';
 import { useIsTenantAdmin } from '@contexts/AuthContext';
 import openExternalLink from '@utils/openExternalLink';
+import hardRedirect from '@utils/hardRedirect';
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -116,6 +117,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <Pressable
         key={item.key}
         onPress={() => {
+          if (item.redirectUrl) {
+            void hardRedirect(item.redirectUrl);
+            return;
+          }
           if (item.href) {
             void openExternalLink(item.href);
             return;
@@ -154,6 +159,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <Box key={item.key}>
         <Pressable
           onPress={() => {
+            if (item.redirectUrl) {
+              void hardRedirect(item.redirectUrl);
+              if (isMobile) {
+                handleClose();
+              }
+              return;
+            }
             if (item.href) {
               void openExternalLink(item.href);
               if (isMobile) {

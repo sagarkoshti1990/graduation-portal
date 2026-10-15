@@ -48,6 +48,28 @@ export const LC_MENU_OPTIONS: MenuItemData[] = [
     route: 'welcome', // Navigation route for home menu item
   },
   {
+    key: 'myLearningProgress',
+    label: 'lc.menu.myLearningProgress',
+    textValue: 'myLearningProgress',
+    iconName: 'TrendingUp', // Matches icon used for this feature in WELCOME_CARDS
+    iconSizeValue: 16,
+    iconColor: '$textForegroundColor',
+    showDividerAfter: false,
+    openHrefType:"_self",
+    href: '/lms-learner/my-space', // Matches WELCOME_CARDS navigationUrl for this feature
+  },
+  {
+    key: 'coachLearningDashboard',
+    label: 'lc.menu.coachLearningDashboard',
+    textValue: 'coachLearningDashboard',
+    iconName: 'LayoutDashboard',
+    iconSizeValue: 16,
+    iconColor: '$textForegroundColor',
+    showDividerAfter: false,
+    openHrefType:"_self",
+    href: '/lms-learner/coach-learning-dashboard'
+  },
+  {
     key: 'dashboard',
     label: 'lc.menu.dashboard',
     textValue: 'dashboard',
