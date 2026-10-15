@@ -110,8 +110,13 @@ const App = (): React.JSX.Element => {
     values,
     provinces,
     pillers,
-    // LC has no SP profile coverage, so skip profile-based filtering for LC
-    ...(isLc ? {} : { allowedSubOptions, allowedProvinces, allowedSites }),
+    // LC has no SP sub-option coverage, but province/site are still restricted to the LC's own profile
+    ...(isLc
+      ? {
+          allowedProvinces: allowedProvinces.length > 0 ? allowedProvinces : undefined,
+          allowedSites: allowedSites.length > 0 ? allowedSites : undefined,
+        }
+      : { allowedSubOptions, allowedProvinces, allowedSites }),
   });
 
   const hideFileds = [
