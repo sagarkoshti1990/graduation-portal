@@ -54,6 +54,7 @@ export interface AcceptAndSchedulePayload {
   province?: string;
   sites?: string[];
   category?: string;
+  idp_training_task?: string;
   title?: string;
   description?: string;
   targetAudience?: string;
@@ -423,6 +424,10 @@ export const acceptAndScheduleSupportRequest = async (
   } else {
     if (payload.targetAudience) {
       body.learning_objectives = payload.targetAudience;
+    }
+
+    if (payload.idp_training_task) {
+      body.idp_training_task = payload.idp_training_task;
     }
 
     if (payload.capacity) {

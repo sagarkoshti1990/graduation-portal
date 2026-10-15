@@ -21,6 +21,7 @@ export interface AcceptAndScheduleModalProps {
     province: string;
     sites: string[];
     category: string;
+    idp_training_task: string;
     title: string;
     description: string;
     targetAudience: string;
@@ -57,6 +58,7 @@ export default function AcceptAndScheduleModal({
     province: '',
     sites: [] as string[],
     category: '',
+    idp_training_task: '',
     title: '',
     description: '',
     targetAudience: '',
@@ -158,7 +160,8 @@ export default function AcceptAndScheduleModal({
     setValues({
       province: item.raw?.meta?.provinces?.[0] || item.raw?.meta?.province || '',
       sites: requestedSites,
-      category: item.raw?.categories?.[0] || item.raw?.category || '',
+      category: item.raw?.meta?.categories?.[0] || '',
+      idp_training_task: item.raw?.meta?.idp_training_task || item.raw?.idp_training_task || '',
       title: item.title || '',
       description: item.raw?.description || item.justification || '',
       targetAudience: item.raw?.targetAudience || '',
