@@ -110,6 +110,7 @@ const App = (): React.JSX.Element => {
       attr: 'site',
       placeholder: 'All Sites',
       data: siteOptions,
+      dependencyAttr: 'province',
     },
   ];
 
