@@ -203,7 +203,7 @@ const Card: React.FC<CardProps> = ({ item, provinces, sites, footer }) => {
             )}
 
             {/* NON-DRAFT: View Requests (a draft is not published, so it has no requests or attendance yet) */}
-            {!isDraft && (
+            {!isDraft && !isCancelled && (
               <Button
                 variant="solid" {...styles.detailsBtn}
                 onPress={() => setIsRequestsModalOpen(true)}
