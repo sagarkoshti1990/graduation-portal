@@ -141,6 +141,8 @@ export interface FormField {
   toggleVisibility?: boolean;
   visibilityToggleGroup?: string;
   validation?: ValidationRule[];
+  /** Validate this field on every change and show/clear its inline error right away */
+  validateOnChange?: boolean;
   placeholderWhenReady?: { key: string; fallback?: string };
   fields?: FormField[];
   isReadOnly?: boolean;

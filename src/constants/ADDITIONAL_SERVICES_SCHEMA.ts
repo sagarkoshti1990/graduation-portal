@@ -154,12 +154,21 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                   label: { key: 'numberOfParticipants', fallback: 'Number of Participants' },
                   placeholder: { key: 'numberOfParticipantsPlaceholder', fallback: 'Number of participants who can avail this service, e.g. 20' },
                   inputProps: { keyboardType: 'numeric' },
+                  validateOnChange: true,
                   validation: [
                     {
                       rule: 'required',
                       message: {
                         key: 'errors.numberOfParticipantsRequired',
                         fallback: 'Number of participants is required',
+                      },
+                    },
+                    {
+                      rule: 'pattern',
+                      value: '^[1-9][0-9]*$',
+                      message: {
+                        key: 'errors.numberOfParticipantsInvalid',
+                        fallback: 'Please enter a valid number',
                       },
                     },
                   ],

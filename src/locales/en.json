@@ -1636,6 +1636,7 @@
         "errors": {
           "provinceRequired": "Province is required",
           "numberOfParticipantsRequired": "Number of participants is required",
+          "numberOfParticipantsInvalid": "Please enter a valid number",
           "siteRequired": "Site is required",
           "assetTypeRequired": "Asset type is required",
           "livelihoodCategoryRequired": "Livelihood category is required",

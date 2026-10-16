@@ -172,6 +172,14 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
                         fallback: 'Estimated asset value is required',
                       },
                     },
+                    {
+                      rule: 'pattern',
+                      value: '^[0-9]+(\\.[0-9]{1,2})?$',
+                      message: {
+                        key: 'errors.numberOfParticipantsInvalid',
+                        fallback: 'Please enter a valid number',
+                      },
+                    },
                   ],
                 }]),
                 ...(hideFileds.includes('availableQuantity') ? [] : [{
@@ -191,6 +199,14 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
                       message: {
                         key: 'errors.availableQuantityRequired',
                         fallback: 'Available quantity is required',
+                      },
+                    },
+                    {
+                      rule: 'pattern',
+                      value: '^[1-9][0-9]*$',
+                      message: {
+                        key: 'errors.numberOfParticipantsInvalid',
+                        fallback: 'Please enter a valid number',
                       },
                     },
                   ],

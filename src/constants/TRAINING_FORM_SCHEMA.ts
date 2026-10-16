@@ -242,6 +242,14 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                       fallback: 'Maximum capacity is required',
                     },
                   },
+                  {
+                    rule: 'pattern',
+                    value: '^[1-9][0-9]*$',
+                    message: {
+                      key: 'errors.numberOfParticipantsInvalid',
+                      fallback: 'Please enter a valid number',
+                    },
+                  },
                 ],
               }]),
               ...(hideFileds.includes('can_be_copied') ? [] : [{
