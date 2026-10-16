@@ -43,7 +43,7 @@ export default function AdditionalServiceCompletionModal({
           id: String(mentee.id),
           name: mentee.name || '',
           lcName: mentee.organization?.name || '',
-          isPresent: !!mentee.is_attended,
+          isPresent: !!(mentee.is_attended ?? mentee.joined_at),
         })),
       );
     } catch (error) {
@@ -83,6 +83,9 @@ export default function AdditionalServiceCompletionModal({
       isLoadingParticipants={isLoading}
       onConfirmComplete={handleConfirmComplete}
       onCancel={onClose}
+      isReadOnly={
+        String(service.status || '').toLowerCase() === 'completed' || participants.some((p) => p.isPresent)
+      }
       title={t(`${BASE_PATH}.title`)}
       headerBadge={
         <Badge bg="$primary100" borderRadius="$full" px="$2.5" py="$0.5" alignSelf="flex-start">
