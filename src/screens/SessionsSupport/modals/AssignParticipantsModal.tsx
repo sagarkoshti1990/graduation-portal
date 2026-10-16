@@ -4,7 +4,7 @@ import Modal from '@components/ui/Modal';
 import { theme } from '@config/theme';
 import { VStack, HStack, Text, Button, ButtonText, Pressable, LucideIcon, Box, Input, InputField, InputSlot, } from '@ui';
 import { STATUS as PARTICIPANT_DISPLAY_STATUS } from '@constants/PARTICIPANTS_LIST';
-import { STATUS } from '@constants/app.constant';
+import { STATUS, USER_STATUS } from '@constants/app.constant';
 import { getStatusColors } from '../../ParticipantsList/StatusBadge';
 import { getInitials } from '@utils/helper';
 import { useAuth } from '@contexts/AuthContext';
@@ -124,7 +124,12 @@ export default function AssignParticipantsModal({
           apiTotal = response?.total ?? response?.count ?? apiTotal;
           lastPageFetched = page;
 
-          const eligible = fetchedList.filter((p) => !enrolledIdsRef.current.has(String(p.userId)));
+          // Skip participants already in the session and deactivated accounts
+          const eligible = fetchedList.filter(
+            (p) =>
+              !enrolledIdsRef.current.has(String(p.userId)) &&
+              p.userDetails?.status !== USER_STATUS.INACTIVE,
+          );
           accumulated = accumulated.concat(eligible);
 
           const isLastRawPage = fetchedList.length < PAGE_SIZE;
