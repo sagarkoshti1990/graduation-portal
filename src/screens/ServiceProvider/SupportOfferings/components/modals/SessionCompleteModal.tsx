@@ -38,6 +38,8 @@ interface SessionCompleteModalProps {
   cancelButtonText?: string;
   confirmButtonText?: string;
   onCancel?: () => void;
+  /** Saved attendance is final: nothing can be ticked, unticked or confirmed */
+  isReadOnly?: boolean;
 }
 
 // Stable reference so an omitted `initialParticipants` prop doesn't create a new
@@ -59,6 +61,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
   cancelButtonText,
   confirmButtonText,
   onCancel,
+  isReadOnly = false,
 }) => {
   const { t } = useLanguage();
   const [participants, setParticipants] = useState<ParticipantAttendanceItem[]>(initialParticipants);
@@ -73,6 +76,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
   const markedPresentCount = participants.filter((p) => p.isPresent).length;
 
   const handleToggleParticipant = (id: string) => {
+    if (isReadOnly) return;
     setParticipants((prev) =>
       prev.map((p) => (p.id === id ? { ...p, isPresent: !p.isPresent } : p))
     );
@@ -100,7 +104,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
     initialParticipants.length > 0 &&
     initialParticipants.every((p) => p.isPresent) &&
     markedPresentCount === participants.length;
-  const isConfirmDisabled = hasNoParticipants || markedPresentCount === 0 || isAllAlreadyPresent;
+  const isConfirmDisabled = isReadOnly || hasNoParticipants || markedPresentCount === 0 || isAllAlreadyPresent;
 
   // Waits for the save so the modal only closes on success; on failure the caller shows the error and the user can retry
   const submitCompletion = async (selectedIds: string[]) => {
@@ -202,6 +206,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
             })}
           </Text>
 
+          {!isReadOnly && (
           <HStack {...styles.modalActionsHStack}>
             <Pressable onPress={handleMarkAll}>
               <Text {...styles.modalMarkAllText}>
@@ -217,6 +222,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
               </Text>
             </Pressable>
           </HStack>
+          )}
         </HStack>
 
         {/* Participants List */}
@@ -235,6 +241,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
                 <Pressable
                   key={p.id}
                   onPress={() => handleToggleParticipant(p.id)}
+                  disabled={isReadOnly}
                   {...styles.modalParticipantCard}
                 >
                   <HStack {...styles.modalParticipantInnerHStack} justifyContent="space-between">
@@ -243,6 +250,7 @@ const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
                         size="md"
                         value={p.id}
                         isChecked={p.isPresent}
+                        isDisabled={isReadOnly}
                         onChange={() => handleToggleParticipant(p.id)}
                       >
                         <CheckboxIndicator {...styles.modalCheckboxIndicator(p.isPresent)}>
