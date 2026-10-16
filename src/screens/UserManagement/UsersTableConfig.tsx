@@ -12,7 +12,7 @@ import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
 import { StatusBadge as StatusBadge1 } from '../ParticipantsList/StatusBadge';
 import { USER_STATUS } from '@constants/app.constant';
-import { PARTICIPANT_ROLES } from '@constants/ROLES';
+import { ADMIN_ROLES, PARTICIPANT_ROLES } from '@constants/ROLES';
 
 /**
  * Helper function to extract role label from user object
@@ -216,7 +216,7 @@ const ActionsColumn: React.FC<{
 }> = ({ user, onViewProfile, onEdit, onResetPassword, onDeactivate }) => {
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = ADMIN_ROLES.includes(currentUser?.role || '');
   const navigation = useNavigation();
 
   // Check if the target user has Admin role
