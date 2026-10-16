@@ -64,6 +64,7 @@ export interface AcceptAndSchedulePayload {
   duration: string;
   delivery_mode?: string;
   capacity?: string;
+  estimatedValue?: string;
   location: string;
   meetingLink?: string;
   notes?: string;
@@ -418,9 +419,14 @@ export const acceptAndScheduleSupportRequest = async (
   }
 
   if (isAsset) {
+    // Available Quantity is the asset's seat limit, same as when an asset is created
     if (payload.capacity) {
-      body.meta = { quantity: Number(payload.capacity) };
+      body.seats_limit = Number(payload.capacity);
     }
+    body.meta = {
+      ...(payload.capacity ? { quantity: Number(payload.capacity) } : {}),
+      ...(payload.estimatedValue ? { estimated_value: payload.estimatedValue } : {}),
+    };
   } else {
     if (payload.targetAudience) {
       body.learning_objectives = payload.targetAudience;

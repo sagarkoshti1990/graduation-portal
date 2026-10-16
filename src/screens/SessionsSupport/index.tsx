@@ -32,8 +32,7 @@ import { getTrainingSessions, getAdditionalServices, getAssets, mapToAssetItem }
 import { getRequestSessionsList, requestorAssignMenteesToSession, getMyRequestsList } from '../../services/SessionSupportServices/sessionRequestorService';
 import type { ProvinceEntity } from '@app-types/Users';
 import type { AssetItem } from '../../types/supportOfferingsTypes';
-import { getSessionCategories, getDeliveryModes, getSessionTypesByPillar, requestSession } from '../../services/mentoringService';
-import { requestAssetPayloadMapping } from '@utils/supportProvider';
+import { getSessionCategories, getDeliveryModes, getSessionTypesByPillar } from '../../services/mentoringService';
 import { DEFAULT_FORMAT_OPTIONS, DEFAULT_PILLAR_OPTIONS, DEFAULT_TYPE_OPTIONS } from '../../constants/REQUESTOR_CONSTANTS';
 import { STATUS_OPTIONS as SP_STATUS_OPTIONS } from '../ServiceProvider/SupportOfferings';
 import { RequestorFilter } from './RequestorFilter';
@@ -92,22 +91,12 @@ const SessionsSupportScreen: React.FC = () => {
     setIsRequestAssetModalOpen(true);
   };
 
+  // Assets are sessions too, so participants are enrolled directly like Training/Additional Services
   const handleConfirmAssetRequest = async (selectedIds: string[]): Promise<boolean> => {
     if (!selectedAsset) return false;
+    const assetId = selectedAsset.id;
     try {
-      const payload = requestAssetPayloadMapping({
-        assetTitle: selectedAsset.title,
-        assetDescription: selectedAsset.description,
-        assetType: selectedAsset.type,
-        livelihoodCategory: selectedAsset.sector,
-        estimatedValue: selectedAsset.estimatedValuePerParticipant,
-        availableQuantity: selectedIds.length,
-        provinces: selectedAsset.province,
-        sites: selectedAsset.siteKey,
-        requestees: selectedIds,
-        isDraft: false,
-      });
-      await requestSession(payload);
+      await requestorAssignMenteesToSession(assetId, selectedIds);
       showAlert(
         'success',
         t(
@@ -115,6 +104,15 @@ const SessionsSupportScreen: React.FC = () => {
           { count: selectedIds.length, defaultValue: `Asset request submitted for ${selectedIds.length} participant(s).` }
         )
       );
+
+      // Decrement seats_remaining locally so reopening the modal enforces the updated limit
+      const decrementSeats = (asset: any) => {
+        if (asset.id !== assetId) return asset;
+        const currentRemaining = asset.seats_remaining ?? asset.seats_limit ?? 0;
+        return { ...asset, seats_remaining: Math.max(0, currentRemaining - selectedIds.length) };
+      };
+      setSelectedAsset((prev) => (prev ? decrementSeats(prev) : prev));
+      setItems((prev) => prev.map(decrementSeats));
       return true;
     } catch (err: any) {
       console.error('Error requesting asset:', err);
@@ -978,6 +976,7 @@ const SessionsSupportScreen: React.FC = () => {
         session={selectedAsset}
         onConfirm={handleConfirmAssetRequest}
         skipEnrolledCheck
+        maxSelectable={selectedAsset?.seats_remaining}
         title={t('lc.sessionsSupport.requestAssetModal.title', 'Request Asset for Participants')}
         description={t(
           'lc.sessionsSupport.requestAssetModal.description',

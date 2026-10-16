@@ -6,7 +6,11 @@ import modalStyles from '../../styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import SchemaFormRenderer, { getValidationIssues, ValidationPopup } from '@components/SchemaFormRenderer';
 import type { ValidationIssue } from '@components/SchemaFormRenderer';
-import { ACCEPT_AND_SCHEDULE_FORM_SCHEMA, DURATION_OPTIONS } from '@constants/ACCEPT_AND_SCHEDULE_FORM_SCHEMA';
+import {
+  ACCEPT_AND_SCHEDULE_FORM_SCHEMA,
+  ACCEPT_ASSET_REQUEST_FORM_SCHEMA,
+  DURATION_OPTIONS,
+} from '@constants/ACCEPT_AND_SCHEDULE_FORM_SCHEMA';
 import { getProvincesList, getSitesByProvince } from '../../../../../services/usersService';
 import { getSessionCategories, getDeliveryModes } from '../../../../../services/mentoringService';
 // import { useNavigation } from '@react-navigation/native';
@@ -52,6 +56,9 @@ export default function AcceptAndScheduleModal({
   const [deliveryModes, setDeliveryModes] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [popupIssues, setPopupIssues] = useState<ValidationIssue[]>([]);
+
+  const isAsset = item?.type === 'assets';
+  const formSchema = isAsset ? ACCEPT_ASSET_REQUEST_FORM_SCHEMA : ACCEPT_AND_SCHEDULE_FORM_SCHEMA;
 
   const coachName = item?.coach || '';
   const hubName = item?.hub && item.hub !== '-' ? ` (${item.hub} Hub)` : '';
@@ -170,8 +177,9 @@ export default function AcceptAndScheduleModal({
       date: date || moment().format('YYYY-MM-DD'),
       time: time || moment().format('HH:mm'),
       duration: DURATION_OPTIONS[2].value,
-      delivery_mode: item.raw?.delivery_mode || 'online',
-      capacity: '',
+      delivery_mode: item?.type === 'assets' ? 'offline' : item.raw?.delivery_mode || 'online',
+      capacity: item?.type === 'assets' && item.raw?.meta?.quantity ? String(item.raw.meta.quantity) : '',
+      estimatedValue: item.raw?.meta?.estimatedValue ? String(item.raw.meta.estimatedValue) : '',
       location: '',
       meetingLink: '',
       notes: '',
@@ -217,6 +225,7 @@ export default function AcceptAndScheduleModal({
         value: m.value || m._id || m.id,
         label: m.label || m.name || m.title || m.value,
       })),
+      assetFormatOptions: [{ value: 'offline', label: t(`${BASE_PATH}.labels.offline`, 'Offline') }],
       durationOptions: DURATION_OPTIONS.map(opt => ({
         value: opt.value,
         label: t(opt.label) || opt.value,
@@ -226,7 +235,9 @@ export default function AcceptAndScheduleModal({
   );
 
   function handleConfirmAndSchedule() {
-    const { errors: validationErrors, issues } = getValidationIssues(ACCEPT_AND_SCHEDULE_FORM_SCHEMA, values, optionsMap, t);
+    // Assets are always offline, even if the locked field's state was never filled
+    const submitValues = isAsset ? { ...values, delivery_mode: 'offline' } : values;
+    const { errors: validationErrors, issues } = getValidationIssues(formSchema, submitValues, optionsMap, t);
     if (issues.length > 0) {
       setErrors(validationErrors);
       setPopupIssues(issues);
@@ -234,7 +245,7 @@ export default function AcceptAndScheduleModal({
     }
 
     setErrors({});
-    onSubmit?.({ ...values, requestId: item?.id } as any);
+    onSubmit?.({ ...submitValues, requestId: item?.id } as any);
     onClose();
   }
 
@@ -267,7 +278,9 @@ export default function AcceptAndScheduleModal({
             </Text>
           </Box>
           <Text {...modalStyles.acceptScheduleTitleText}>
-            {t(`${BASE_PATH}.titles.acceptSchedule`, 'Accept & Schedule Training')}
+            {isAsset
+              ? t(`${BASE_PATH}.titles.acceptAssetRequest`, 'Accept Asset Request')
+              : t(`${BASE_PATH}.titles.acceptSchedule`, 'Accept & Schedule Training')}
           </Text>
         </HStack>
       }
@@ -339,8 +352,8 @@ export default function AcceptAndScheduleModal({
       bodyProps={{ p: 0 }}>
       <Box px="$6" py="$2">
         <SchemaFormRenderer
-          schema={ACCEPT_AND_SCHEDULE_FORM_SCHEMA}
-          values={values}
+          schema={formSchema}
+          values={isAsset ? { ...values, delivery_mode: 'offline' } : values}
           errors={errors}
           optionsMap={optionsMap}
           onFieldChange={handleFieldChange}

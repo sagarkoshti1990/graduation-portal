@@ -130,7 +130,6 @@ const ASSET_STATUS_LABEL: Record<string, AssetItem['status']> = {
 export const mapToAssetItem = (raw: any): AssetItem => {
   const assetType = Array.isArray(raw.asset_types) ? raw.asset_types[0] : raw.asset_types;
   const estimatedValue = raw.estimated_value ?? raw.meta?.estimated_value;
-  const availableQuantity = raw.available_quantity ?? raw.meta?.available_quantity;
 
   return {
     id: raw.id ?? raw._id,
@@ -153,7 +152,7 @@ export const mapToAssetItem = (raw: any): AssetItem => {
     can_be_copied: raw.can_be_copied,
     meeting_info: raw.meeting_info,
     meeting_info_details: raw.meeting_info_details,
-    quantity: availableQuantity !== undefined && availableQuantity !== null ? Number(availableQuantity) : undefined,
+    quantity: raw.seats_limit !== undefined && raw.seats_limit !== null ? Number(raw.seats_limit) : undefined,
     estimatedValuePerParticipant: estimatedValue !== undefined && estimatedValue !== null ? Number(estimatedValue) : undefined,
   };
 };
