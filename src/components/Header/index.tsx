@@ -39,6 +39,7 @@ import { profileStyles, LCProfileStyles } from '@components/ui/Modal/Styles';
 import { MenuItemData } from '@components/ui/Menu';
 import { getUserProfile } from '../../services/authenticationService';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import { ROLE_DISPLAY_LABELS } from '@constants/ROLES';
 import openExternalLink from '@utils/openExternalLink';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
 import { UserProfileModal } from '../../screens/UserManagement/UserProfileModal';
@@ -290,7 +291,7 @@ const Header: React.FC<{
                         </Text>
                         <HStack {...stylesHeader.userRoleContainer}>
                           <Text {...stylesHeader.userRoleText}>
-                            {user?.role || ''}
+                            {(user?.role && ROLE_DISPLAY_LABELS[user.role]) || user?.role || ''}
                           </Text>
                         </HStack>
                       </VStack>
