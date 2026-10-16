@@ -17,6 +17,15 @@ export const ROLE_NAMES = {
   USER: 'user',
 }
 
+// Display names for role titles
+export const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  tenant_admin: 'Supervisor',
+  org_admin: 'Linkage Champion',
+  mentor: 'Support Provider',
+  user: 'Participant',
+};
+
 // Entity Type
 export const ENTITY_TYPE = {
   PARTICIPANT: 'participant',
