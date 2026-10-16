@@ -79,6 +79,7 @@ const Card: React.FC<CardProps> = ({ item: initialItem, provinces, sites, onView
 
   const statusColors = getStatusColors(item.status);
   const isUpcoming = item.status === 'Upcoming';
+  const isCancelled = String(item.status || '').toLowerCase() === 'cancelled';
 
   const { siteNames, locationValue } = getLocationValue(item, provinces, sites);
   const { requesterOrgName } = useRequesterInfo(item as any);
@@ -215,15 +216,17 @@ const Card: React.FC<CardProps> = ({ item: initialItem, provinces, sites, onView
               </Button>
             )}
 
-            <Button
-              variant="solid" {...styles.detailsBtn}
-              onPress={() => (onViewRequests ? onViewRequests(item) : setIsRequestsModalOpen(true))}
-            >
-              {/* @ts-ignore */}
-              <ButtonText {...styles.detailsBtnText}>
-                {t('supportProvider.supportOfferings.cards.viewRequests')}
-              </ButtonText>
-            </Button>
+            {!isCancelled && (
+              <Button
+                variant="solid" {...styles.detailsBtn}
+                onPress={() => (onViewRequests ? onViewRequests(item) : setIsRequestsModalOpen(true))}
+              >
+                {/* @ts-ignore */}
+                <ButtonText {...styles.detailsBtnText}>
+                  {t('supportProvider.supportOfferings.cards.viewRequests')}
+                </ButtonText>
+              </Button>
+            )}
           </HStack>
         </HStack>
       </VStack>
