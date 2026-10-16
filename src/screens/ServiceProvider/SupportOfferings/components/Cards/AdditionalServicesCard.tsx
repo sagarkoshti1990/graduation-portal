@@ -77,13 +77,6 @@ const Card: React.FC<CardProps> = ({ item, provinces, sites, footer }) => {
     (e: any) => (item as any)?.sites?.includes(getOptionId(e)) || (item as any)?.meta?.sites?.includes(getOptionId(e))
   )?.map((e: any) => getOptionLabel(e)).join(', ');
 
-  const requestsCount =
-    (item as any)?.requests ??
-    (item as any)?.seats_limit ??
-    (item as any)?.meta?.requests ??
-    undefined;
-
-  // requestsCount falls back to capacity (seats_limit), so the cancel warning uses the actually assigned count
   const seatsLimit = (item as any)?.seats_limit;
   const seatsRemaining = (item as any)?.seats_remaining;
   const assignedCount = useMemo(
@@ -93,6 +86,7 @@ const Card: React.FC<CardProps> = ({ item, provinces, sites, footer }) => {
         : undefined,
     [seatsLimit, seatsRemaining]
   );
+  const participantsDisplay = `${assignedCount ?? 0} / ${seatsLimit ?? 0} participants`;
 
   const { requesterName, requesterOrgName } = useRequesterInfo(item as any);
 
@@ -157,9 +151,7 @@ const Card: React.FC<CardProps> = ({ item, provinces, sites, footer }) => {
           <HStack {...styles.trainingMetaItemHStack}>
             <LucideIcon name="Users" {...styles.cardMetaIconProps} />
             <Text {...styles.cardMetaSmText}>
-              {requestsCount !== undefined
-                ? t('supportProvider.supportOfferings.cards.requestsCount', '{{count}} requests / spots', { count: requestsCount })
-                : '-'}
+              {participantsDisplay}
             </Text>
           </HStack>
         </HStack>

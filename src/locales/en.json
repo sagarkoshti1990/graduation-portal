@@ -1508,6 +1508,8 @@
         "certificateProvided": "Certificate Provided",
         "maxCapacity": "Maximum Capacity",
         "maxCapacityPlaceholder": "e.g. 20",
+        "numberOfParticipants": "Number of participants who can avail this service",
+        "numberOfParticipantsPlaceholder": "Number of participants who can avail this service",
         "recurringSession": "Recurring Session",
         "scheduleFormat": "Schedule & Format",
         "scheduleDetails": "Schedule & Format",
@@ -1633,6 +1635,7 @@
         "error": "Failed to create user.",
         "errors": {
           "provinceRequired": "Province is required",
+          "numberOfParticipantsRequired": "Number of participants is required",
           "siteRequired": "Site is required",
           "assetTypeRequired": "Asset type is required",
           "livelihoodCategoryRequired": "Livelihood category is required",

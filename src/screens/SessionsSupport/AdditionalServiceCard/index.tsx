@@ -110,7 +110,9 @@ const Card: React.FC<AdditionalServiceCardItemProps> = ({ item, provinces, sites
     .filter(Boolean)
     .join(', ');
 
-  const requestsCount = item.requests ?? item.participants_count ?? item.seats_limit ?? undefined;
+  const maxParticipants = item.seats_limit || 0;
+  const seatsRemaining = item.seats_remaining ?? maxParticipants;
+  const assignedCount = Math.max(0, maxParticipants - seatsRemaining);
 
   const handleViewDetails = () => {
     (navigation as any).navigate('session-details', { sessionId: item.id });
@@ -163,11 +165,11 @@ const Card: React.FC<AdditionalServiceCardItemProps> = ({ item, provinces, sites
             </HStack>
           ) : null}
 
-          {requestsCount !== undefined ? (
+          {maxParticipants > 0 ? (
             <HStack {...soStyles.metaItemHStack}>
               <LucideIcon name="Users" {...soStyles.cardMetaIconProps} />
               <Text {...soStyles.cardMetaSmText}>
-                {t('supportProvider.supportOfferings.cards.requestsCount', { count: requestsCount })}
+                {assignedCount} / {maxParticipants} {t('lc.sessionsSupport.mySessionCard.participants')}
               </Text>
             </HStack>
           ) : null}

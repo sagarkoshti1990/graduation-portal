@@ -145,6 +145,27 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                 }]),
               ] as FormField[],
             },
+            ...(hideFileds.includes('seats_limit') ? [] : [{
+              fields: [
+                {
+                  name: 'seats_limit',
+                  type: 'text',
+                  required: true,
+                  label: { key: 'numberOfParticipants', fallback: 'Number of Participants' },
+                  placeholder: { key: 'numberOfParticipantsPlaceholder', fallback: 'Number of participants who can avail this service, e.g. 20' },
+                  inputProps: { keyboardType: 'numeric' },
+                  validation: [
+                    {
+                      rule: 'required',
+                      message: {
+                        key: 'errors.numberOfParticipantsRequired',
+                        fallback: 'Number of participants is required',
+                      },
+                    },
+                  ],
+                },
+              ] as FormField[],
+            }]),
           ],
         },
         {
@@ -416,6 +437,15 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
+                ...(hideFileds.includes('seats_limit') ? [] : [{
+                  fields: [
+                    {
+                      name: 'seats_limit',
+                      type: 'view',
+                      label: { key: 'numberOfParticipants', fallback: 'Number of Participants' },
+                    },
+                  ] as FormField[],
+                }]),
                 ...(hideFileds.includes('location') ? [] : [{
                   fields: [
                     {
@@ -437,6 +467,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
 };
 
 export const REQUEST_ADDITIONAL_SERVICE_HIDE_FIELDS: string[] = [
+  'seats_limit',
   'location',
   'learning_objectives',
   'resources',
