@@ -2325,10 +2325,13 @@ function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
   return useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
 }
 
+// Stable default so the errors-sync effect doesn't run (and wipe revealed errors) on every render
+const EMPTY_ERRORS: Record<string, string> = {};
+
 const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   schema,
   values = {},
-  errors = {},
+  errors = EMPTY_ERRORS,
   onFieldChange: onFieldChangeProp = (...e) => {
     console.log(e);
   },
