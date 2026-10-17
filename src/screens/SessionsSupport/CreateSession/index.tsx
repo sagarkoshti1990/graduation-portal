@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Card, Container, HStack, Loader, Text, VStack, useAlert } from '@ui';
 import PageHeader from '@components/PageHeader';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -17,7 +17,7 @@ import {
   MentoringOption,
 } from '../../../services/mentoringService';
 import { valueMapping } from '@utils/supportProvider';
-import { CERTIFICATE_OPTIONS, RECURRING_OPTIONS, FORM_MODE } from '@constants/SUPPORT_PROVIDER_CARDS';
+import { CERTIFICATE_OPTIONS, RECURRING_OPTIONS, FORM_MODE, SESSION_STATUS } from '@constants/SUPPORT_PROVIDER_CARDS';
 
 const DELIVERY_MODE_ICONS: Record<string, string> = {
   offline: 'MapPin',
@@ -40,6 +40,8 @@ const CreateSessionScreen = (): React.JSX.Element => {
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
+  // Saved start time in edit mode, so the min lead time check only runs when it is changed
+  const originalStartDateRef = useRef<string | undefined>(undefined);
 
   const { allowedProvinces, allowedSites, isProfileLoading } = useProfileCompletion();
 
@@ -77,6 +79,9 @@ const CreateSessionScreen = (): React.JSX.Element => {
           const rawData = rawResponse?.result;
           if (rawData) {
             const formattedValues: any = valueMapping(rawData, true, {}, 'training');
+            // Drafts carry an auto-filled start time, so they must always pass the lead time check on publish
+            const isDraft = String(rawData.status?.value ?? rawData.status ?? '').toUpperCase() === SESSION_STATUS.DRAFT;
+            originalStartDateRef.current = isDraft ? undefined : formattedValues.start_date;
             setValues(formattedValues);
           }
         }
@@ -185,7 +190,7 @@ const CreateSessionScreen = (): React.JSX.Element => {
       <Container py="$6">
         <Card borderRadius="$2xl" bg="$white">
           <SchemaFormRenderer
-            schema={TRAINING_FORM_SCHEMA(CREATE_SESSION_HIDE_FIELDS)}
+            schema={TRAINING_FORM_SCHEMA(CREATE_SESSION_HIDE_FIELDS, originalStartDateRef.current)}
             optionsMap={optionsMap}
             values={values}
             t={t}

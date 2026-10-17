@@ -108,7 +108,9 @@ const App = (): React.JSX.Element => {
             formattedValues.start_date = '';
             formattedValues.end_date = '';
           }
-          originalStartDateRef.current = modeType === FORM_MODE.EDIT ? formattedValues.start_date : undefined;
+          // Drafts carry an auto-filled start time, so they must always pass the lead time check on publish
+          const isDraft = String(rawData.status?.value ?? rawData.status ?? '').toUpperCase() === SESSION_STATUS.DRAFT;
+          originalStartDateRef.current = modeType === FORM_MODE.EDIT && !isDraft ? formattedValues.start_date : undefined;
           setValues(formattedValues);
         }
       }
@@ -127,6 +129,7 @@ const App = (): React.JSX.Element => {
         setIsLoading(true);
         setValues({});
         setSessionStatus('');
+        originalStartDateRef.current = undefined;
       };
     }, [init])
   );
