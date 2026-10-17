@@ -1,6 +1,10 @@
 import type { FormSection } from '@components/SchemaFormRenderer/type';
 
-export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
+// Minimum minutes between now and a session's start time, configurable via .env
+// @ts-ignore - process.env is injected by webpack DefinePlugin on web
+export const SESSION_MIN_LEAD_MINUTES = Number(process.env.SESSION_MIN_LEAD_MINUTES);
+
+export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = [], originalStartDate?: string) => ([
   // ─── Tab 1: Session Details ───────────────────────────────────────────────
   {
     type: 'tab',
@@ -355,6 +359,14 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                     message: {
                       key: 'errors.dateNotInPast',
                       fallback: 'Past dates are not allowed.',
+                    },
+                  },
+                  {
+                    rule: 'minLeadTime',
+                    value: { minutes: SESSION_MIN_LEAD_MINUTES, ignoreValue: originalStartDate },
+                    message: {
+                      key: 'errors.sessionMinLeadTime',
+                      fallback: `Session must start at least ${SESSION_MIN_LEAD_MINUTES} minutes from now.`,
                     },
                   },
                   {

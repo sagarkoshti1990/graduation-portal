@@ -7,6 +7,12 @@ export interface FieldCompareValue {
   operator: '<' | '<=' | '>' | '>=' | '==';
 }
 
+/** `minLeadTime` payload: datetime must be at least `minutes` from now; `ignoreValue` (an unchanged saved value) is not checked. */
+export interface MinLeadTimeValue {
+  minutes: number;
+  ignoreValue?: string;
+}
+
 export interface ValidationRule {
   rule:
   | 'required'
@@ -22,14 +28,15 @@ export interface ValidationRule {
   | 'fileSize'
   | 'dateCompare'
   | 'timeCompare'
-  | 'minAge';
+  | 'minAge'
+  | 'minLeadTime';
   /**
    * Numeric/string payload depending on rule (minLength value, pattern string,
    * field name); `fileType` takes a string array of allowed MIME types;
    * `fileSize` takes a max size in MB; `dateCompare`/`timeCompare` take a
    * `{field, operator}` pair naming the other field to compare against.
    */
-  value?: number | string | string[] | FieldCompareValue;
+  value?: number | string | string[] | FieldCompareValue | MinLeadTimeValue;
   message: { key: string; fallback?: string };
 }
 

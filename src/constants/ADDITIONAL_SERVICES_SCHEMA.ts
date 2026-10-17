@@ -1,6 +1,7 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
+import { SESSION_MIN_LEAD_MINUTES } from './TRAINING_FORM_SCHEMA';
 
-export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
+export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = [], originalStartDate?: string): FormSection[] => {
   const allTabs: FormSection[] = [
     // ─── Tab 1: Service Details ───────────────────────────────────────────────
     {
@@ -199,6 +200,14 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                       message: {
                         key: 'errors.dateNotInPast',
                         fallback: 'Past dates are not allowed.',
+                      },
+                    },
+                    {
+                      rule: 'minLeadTime',
+                      value: { minutes: SESSION_MIN_LEAD_MINUTES, ignoreValue: originalStartDate },
+                      message: {
+                        key: 'errors.sessionMinLeadTime',
+                        fallback: `Start date must be at least ${SESSION_MIN_LEAD_MINUTES} minutes from now.`,
                       },
                     },
                     {

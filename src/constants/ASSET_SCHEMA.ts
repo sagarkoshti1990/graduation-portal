@@ -1,4 +1,5 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
+import { SESSION_MIN_LEAD_MINUTES } from './TRAINING_FORM_SCHEMA';
 
 export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
   const allTabs: FormSection[] = [
@@ -262,6 +263,14 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
                       message: {
                         key: 'errors.dateNotInPast',
                         fallback: 'Past dates are not allowed.',
+                      },
+                    },
+                    {
+                      rule: 'minLeadTime',
+                      value: { minutes: SESSION_MIN_LEAD_MINUTES },
+                      message: {
+                        key: 'errors.sessionMinLeadTime',
+                        fallback: `Start date must be at least ${SESSION_MIN_LEAD_MINUTES} minutes from now.`,
                       },
                     },
                     {
