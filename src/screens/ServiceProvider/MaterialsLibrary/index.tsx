@@ -16,7 +16,7 @@ import { getMaterialsList, MaterialItem, MATERIAL_FORMATS } from '../../../servi
 import {
   getSessionCategories,
   getAdditionalServiceCategories,
-  getLivelihoodsOptions,
+  getLivelihoodCategoriesOptions,
   MentoringOption,
 } from '../../../services/mentoringService';
 
@@ -58,7 +58,8 @@ const MaterialsLibraryScreen = (): React.JSX.Element => {
     Promise.all([
       getSessionCategories().catch(() => []),
       getAdditionalServiceCategories().catch(() => []),
-      getLivelihoodsOptions().catch(() => []),
+      // Asset filter uses livelihood_categories; 'livelihoods' holds training types, not asset categories
+      getLivelihoodCategoriesOptions().catch(() => []),
     ]).then(([pillars, services, livelihoods]) => {
       const seen = new Set<string>();
       setCategories(
