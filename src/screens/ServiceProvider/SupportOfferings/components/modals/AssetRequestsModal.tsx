@@ -17,13 +17,17 @@ import {
 } from '@ui';
 import { theme } from '@config/theme';
 import { useLanguage } from '@contexts/LanguageContext';
-import {
-  getSupportRequests,
-  declineSupportRequest,
-  acceptAndScheduleSupportRequest,
-  SupportRequestItem,
-} from '../../../../../services/serviceProvider/serviceProviderService';
+// Request-based flow disabled: LCs now enroll participants directly into the asset session
+// import {
+//   getSupportRequests,
+//   declineSupportRequest,
+//   acceptAndScheduleSupportRequest,
+//   SupportRequestItem,
+// } from '../../../../../services/serviceProvider/serviceProviderService';
 import { getParticipantProfile } from '../../../../../services/participantService';
+import { getEnrolledMentees } from '../../../../../services/mentoringService';
+import { completeTrainingSession } from '../../../../../services/SupportOfferingsServices/supportOfferingsService';
+import { removeMenteesFromSession } from '../../../../../services/SessionSupportServices/sessionRequestorService';
 import type { AssetItem } from '../../../../../types/supportOfferingsTypes';
 import DeclineModal from '../../../SupportRequests/components/modals/DeclineModal';
 import styles from '../../styles';
@@ -36,10 +40,17 @@ interface AssetRequestsModalProps {
   asset: AssetItem | null;
 }
 
+interface EnrolledParticipant {
+  id: string;
+  name: string;
+  coachId: string;
+  enrolledDate: string;
+  isApproved: boolean;
+}
+
 interface CoachGroup {
-  coach: string;
-  hub?: string;
-  items: SupportRequestItem[];
+  coachId: string;
+  items: EnrolledParticipant[];
 }
 
 export default function AssetRequestsModal({
@@ -51,30 +62,21 @@ export default function AssetRequestsModal({
   const { showAlert } = useAlert();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [items, setItems] = useState<SupportRequestItem[]>([]);
+  const [items, setItems] = useState<EnrolledParticipant[]>([]);
   const [isDeclineAllOpen, setIsDeclineAllOpen] = useState(false);
   const [isApprovingAll, setIsApprovingAll] = useState(false);
-  const [requesteeNamesByItemId, setRequesteeNamesByItemId] = useState<Record<string, string[]>>({});
+  const [coachNamesById, setCoachNamesById] = useState<Record<string, string>>({});
 
-  // `requestees` on the raw list item is just an array of participant user ids (no names) - resolve
-  // each id to a display name via the same per-user profile lookup the rest of the app uses, and
-  // cache results across items/coaches since the same participant can appear in multiple requests.
+  // Coach (LC) names are resolved from the enrolling user's id and cached across opens
   const profileCacheRef = useRef<Record<string, string>>({});
 
-  const fetchRequesteeNames = async (list: SupportRequestItem[]) => {
-    const idsByItem: Record<string, string[]> = {};
-    const uniqueIds = new Set<string>();
-    list.forEach((item) => {
-      const ids: string[] = Array.isArray(item.raw?.requestees) ? item.raw.requestees.map(String) : [];
-      idsByItem[String(item.id)] = ids;
-      ids.forEach((id) => {
-        if (!profileCacheRef.current[id]) uniqueIds.add(id);
-      });
-    });
+  const fetchCoachNames = async (list: EnrolledParticipant[]) => {
+    const uniqueIds = Array.from(new Set(list.map((item) => item.coachId).filter(Boolean)))
+      .filter((id) => !profileCacheRef.current[id]);
 
-    if (uniqueIds.size > 0) {
+    if (uniqueIds.length > 0) {
       const results = await Promise.allSettled(
-        Array.from(uniqueIds).map(async (id) => ({ id, profile: await getParticipantProfile(id) })),
+        uniqueIds.map(async (id) => ({ id, profile: await getParticipantProfile(id) })),
       );
       results.forEach((r) => {
         if (r.status === 'fulfilled' && r.value.profile?.name) {
@@ -82,29 +84,24 @@ export default function AssetRequestsModal({
         }
       });
     }
-
-    const namesById: Record<string, string[]> = {};
-    Object.entries(idsByItem).forEach(([itemId, ids]) => {
-      const names = ids.map((id) => profileCacheRef.current[id]).filter(Boolean) as string[];
-      if (names.length > 0) namesById[itemId] = names;
-    });
-    if (Object.keys(namesById).length > 0) {
-      setRequesteeNamesByItemId((prev) => ({ ...prev, ...namesById }));
-    }
+    setCoachNamesById({ ...profileCacheRef.current });
   };
 
+  // Participants enrolled into this asset by LCs; a participant is "approved" once their attendance is marked
   const fetchRequests = useCallback(async () => {
-    if (!asset) return;
+    if (!asset?.id) return;
     setIsLoading(true);
     try {
-      const res = await getSupportRequests({ tab: 'assets' });
-      const list = res?.data || [];
-      // /requestSessions/list isn't scoped to a single asset offering, so requests for this
-      // card are matched by title - the only field shared between AssetItem and SupportRequestItem.
-      const filtered = list.filter((r) => (r.title || '').trim() === (asset.title || '').trim());
-      setItems(filtered);
-      setRequesteeNamesByItemId({});
-      fetchRequesteeNames(filtered);
+      const mentees = await getEnrolledMentees(asset.id);
+      const list: EnrolledParticipant[] = (mentees || []).map((mentee: any) => ({
+        id: String(mentee.id),
+        name: mentee.name || String(mentee.id),
+        coachId: mentee.enrolled_by ? String(mentee.enrolled_by) : '',
+        enrolledDate: mentee.enrolled_at ? moment(mentee.enrolled_at).format('YYYY/MM/DD') : '-',
+        isApproved: !!mentee.joined_at,
+      }));
+      setItems(list);
+      fetchCoachNames(list);
     } catch (error) {
       showAlert('error', t(`${BASE_PATH}.fetchFailed`, 'Failed to load asset requests. Please try again.'));
     } finally {
@@ -114,7 +111,7 @@ export default function AssetRequestsModal({
     // dependency list avoids re-triggering the effect below on every render (which was
     // hammering the API into 429s).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asset?.title]);
+  }, [asset?.id]);
 
   useEffect(() => {
     if (isOpen) fetchRequests();
@@ -123,13 +120,46 @@ export default function AssetRequestsModal({
   const groups = useMemo<CoachGroup[]>(() => {
     const map = new Map<string, CoachGroup>();
     items.forEach((item) => {
-      const key = item.coach || '-';
-      if (!map.has(key)) map.set(key, { coach: item.coach, hub: item.hub, items: [] });
+      const key = item.coachId || '-';
+      if (!map.has(key)) map.set(key, { coachId: key, items: [] });
       map.get(key)!.items.push(item);
     });
     return Array.from(map.values());
   }, [items]);
 
+  const pendingIds = useMemo(() => items.filter((item) => !item.isApproved).map((item) => item.id), [items]);
+
+  // Decline removes the pending participants from the asset so their seats free up
+  const handleDeclineAllSubmit = async (_reason: string, _details: string) => {
+    try {
+      await removeMenteesFromSession(asset!.id, pendingIds);
+      showAlert('success', t(`${BASE_PATH}.allDeclined`, 'All requests declined successfully.'));
+      await fetchRequests();
+      onClose();
+    } catch (error) {
+      showAlert('error', t(`${BASE_PATH}.declineFailed`, 'Failed to decline request(s). Please try again.'));
+    } finally {
+      setIsDeclineAllOpen(false);
+    }
+  };
+
+  // Approve marks attendance for the pending participants, same as Confirm Attendance on a training
+  const handleApproveAll = async () => {
+    if (pendingIds.length === 0) return;
+    setIsApprovingAll(true);
+    try {
+      await completeTrainingSession(asset!.id, { mentees: pendingIds });
+      showAlert('success', t(`${BASE_PATH}.allApproved`, 'All requests approved successfully.'));
+      await fetchRequests();
+      onClose();
+    } catch (error) {
+      showAlert('error', t(`${BASE_PATH}.approveFailed`, 'Failed to approve request(s). Please try again.'));
+    } finally {
+      setIsApprovingAll(false);
+    }
+  };
+
+  /* Request-based handlers disabled: LCs now enroll participants directly into the asset session
   const handleDeclineAllSubmit = async (reason: string, details: string) => {
     try {
       await Promise.all(
@@ -145,9 +175,6 @@ export default function AssetRequestsModal({
     }
   };
 
-  // "Approve All" has no per-request review step, so it can't collect real schedule details -
-  // fill the accept API's required fields with sensible defaults derived from the asset/request
-  // itself (today's date, a 2-hour window, the request's own province/site/category).
   const buildSilentApprovePayload = (item: SupportRequestItem) => {
     const now = moment();
     const province = item.raw?.meta?.provinces?.[0] || item.raw?.meta?.province || item.raw?.provinces?.[0] || '';
@@ -206,8 +233,11 @@ export default function AssetRequestsModal({
       setIsApprovingAll(false);
     }
   };
+  */
 
   if (!asset) return null;
+
+  const isActionDisabled = pendingIds.length === 0 || isLoading || isApprovingAll;
 
   return (
     <>
@@ -261,8 +291,8 @@ export default function AssetRequestsModal({
                 bg="$success600"
                 $hover-bg="$success600"
                 onPress={handleApproveAll}
-                disabled={items.length === 0 || isLoading || isApprovingAll}
-                opacity={items.length === 0 || isLoading || isApprovingAll ? 0.5 : 1}
+                disabled={isActionDisabled}
+                opacity={isActionDisabled ? 0.5 : 1}
               >
                 <ButtonIcon as={LucideIcon} name="Check" size={12} color={theme.tokens.colors.modalBackground} />
                 <ButtonText fontSize="$xs" color="$white" ml="$1">
@@ -274,8 +304,8 @@ export default function AssetRequestsModal({
                 // @ts-ignore
                 variant="outlineghost"
                 onPress={() => setIsDeclineAllOpen(true)}
-                disabled={items.length === 0 || isLoading || isApprovingAll}
-                opacity={items.length === 0 || isLoading || isApprovingAll ? 0.5 : 1}
+                disabled={isActionDisabled}
+                opacity={isActionDisabled ? 0.5 : 1}
               >
                 <ButtonIcon as={LucideIcon} name="X" size={12} color={theme.tokens.colors.error600} />
                 <ButtonText fontSize="$xs" color="$error600" ml="$1">
@@ -297,69 +327,61 @@ export default function AssetRequestsModal({
             </Box>
           ) : (
             groups.map((group) => (
-              <Box key={group.coach} borderWidth={1} borderColor="$borderColor" borderRadius="$lg" overflow="hidden">
+              <Box key={group.coachId} borderWidth={1} borderColor="$borderColor" borderRadius="$lg" overflow="hidden">
                 <HStack bg="$backgroundMuted" px="$4" py="$3" justifyContent="space-between" alignItems="center">
                   <HStack space="xs" alignItems="center" flexWrap="wrap">
                     <Text fontWeight="$bold" fontSize="$sm" color="$textPrimary">
-                      {t(`${BASE_PATH}.coachLabel`, { defaultValue: 'Coach: {{name}}', name: group.coach })}
+                      {t(`${BASE_PATH}.coachLabel`, {
+                        defaultValue: 'Coach: {{name}}',
+                        name: coachNamesById[group.coachId] || group.coachId,
+                      })}
                     </Text>
-                    {group.hub && group.hub !== '-' ? (
-                      <>
-                        <Text color="$textMuted">•</Text>
-                        <Text fontSize="$sm" color="$textSecondary">
-                          {group.hub}
-                        </Text>
-                      </>
-                    ) : null}
                   </HStack>
                   <Badge bg="$white" borderWidth={1} borderColor="$borderColor" borderRadius="$full" px="$2.5" py="$0.5">
                     <BadgeText fontSize="$xs" color="$textPrimary">
                       {t(`${BASE_PATH}.participantsCount`, {
                         defaultValue: '{{count}} participant(s)',
-                        count: group.items.reduce((sum, i) => sum + (i.participants || 0), 0),
+                        count: group.items.length,
                       })}
                     </BadgeText>
                   </Badge>
                 </HStack>
 
                 <VStack>
-                  {group.items.map((item) => {
-                    const names = requesteeNamesByItemId[String(item.id)];
-                    // One request record can bundle several requestees - show each by name when
-                    // resolved, falling back to a single count row when names aren't available yet.
-                    const rows = names?.length ? names : [null];
-
-                    return (
-                      <VStack key={item.id} borderTopWidth={1} borderTopColor="$borderColor">
-                        {rows.map((name, idx) => (
-                          <HStack
-                            key={name || idx}
-                            px="$4"
-                            py="$2.5"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            borderTopWidth={idx > 0 ? 1 : 0}
-                            borderTopColor="$borderColor"
-                          >
-                            <VStack space="xs">
-                              <Text fontWeight="$semibold" fontSize="$xs" color="$textPrimary">
-                                {name || t(`${BASE_PATH}.participantsCount`, { defaultValue: '{{count}} participant(s)', count: item.participants || 1 })}
-                              </Text>
-                              <Text fontSize="$2xs" color="$textMuted">
-                                {t(`${BASE_PATH}.requestedOn`, { defaultValue: 'Requested: {{date}}', date: item.requestedDate })}
-                              </Text>
-                            </VStack>
-
-                            <Badge bg="$observationTaskBg" borderColor="#fde68a" borderWidth={1} borderRadius="$full" px="$2" py="$0.5">
-                              <BadgeText color="$warningIconColor" fontSize="$2xs">
-                                {t(`${BASE_PATH}.pendingApproval`, 'Pending Approval')}
-                              </BadgeText>
-                            </Badge>
-                          </HStack>
-                        ))}
+                  {group.items.map((item) => (
+                    <HStack
+                      key={item.id}
+                      px="$4"
+                      py="$2.5"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      borderTopWidth={1}
+                      borderTopColor="$borderColor"
+                    >
+                      <VStack space="xs">
+                        <Text fontWeight="$semibold" fontSize="$xs" color="$textPrimary">
+                          {item.name}
+                        </Text>
+                        <Text fontSize="$2xs" color="$textMuted">
+                          {t(`${BASE_PATH}.requestedOn`, { defaultValue: 'Requested: {{date}}', date: item.enrolledDate })}
+                        </Text>
                       </VStack>
-                    );
-                  })}
+
+                      {item.isApproved ? (
+                        <Badge bg="$success50" borderColor="#a7f3d0" borderWidth={1} borderRadius="$full" px="$2" py="$0.5">
+                          <BadgeText color="$success600" fontSize="$2xs">
+                            {t(`${BASE_PATH}.approved`, 'Approved')}
+                          </BadgeText>
+                        </Badge>
+                      ) : (
+                        <Badge bg="$observationTaskBg" borderColor="#fde68a" borderWidth={1} borderRadius="$full" px="$2" py="$0.5">
+                          <BadgeText color="$warningIconColor" fontSize="$2xs">
+                            {t(`${BASE_PATH}.pendingApproval`, 'Pending Approval')}
+                          </BadgeText>
+                        </Badge>
+                      )}
+                    </HStack>
+                  ))}
                 </VStack>
               </Box>
             ))

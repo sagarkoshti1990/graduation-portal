@@ -7,7 +7,7 @@ const mapMentees = (mentees: any[]): ParticipantAttendanceItem[] =>
     id: String(mentee.id),
     name: mentee.name || '',
     lcName: mentee.organization?.name || '',
-    isPresent: !!mentee.is_attended,
+    isPresent: !!(mentee.is_attended ?? mentee.joined_at),
   }));
 
 /**

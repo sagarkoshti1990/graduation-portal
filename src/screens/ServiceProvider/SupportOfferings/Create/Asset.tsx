@@ -195,10 +195,9 @@ const App = (): React.JSX.Element => {
           // livelihoods: formValues.livelihoodCategory || '',
           livelihood_categories: formValues.livelihoodCategory || '',
           estimated_value: formValues.estimatedValue,
-          available_quantity: formValues.availableQuantity,
+          seats_limit: formValues.availableQuantity ? Number(formValues.availableQuantity) : undefined,
           meta: {
             estimated_value: formValues.estimatedValue,
-            available_quantity: formValues.availableQuantity,
           },
           resources: formValues.assetDocuments,
           provinces: formValues.province ? [formValues.province] : [],
