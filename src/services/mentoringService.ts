@@ -257,6 +257,13 @@ export const getLivelihoodsOptions = async (): Promise<MentoringOption[]> => {
 };
 
 /**
+ * Get Asset livelihood categories (Agriculture, Mining, ...) - separate from the Livelihoods training types
+ */
+export const getLivelihoodCategoriesOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.LIVELIHOOD_CATEGORIES });
+};
+
+/**
  * Get Special Attention tags options
  */
 export const getSpecialAttentionOptions = async (): Promise<MentoringOption[]> => {

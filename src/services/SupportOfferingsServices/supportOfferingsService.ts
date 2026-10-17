@@ -130,6 +130,8 @@ const ASSET_STATUS_LABEL: Record<string, AssetItem['status']> = {
 export const mapToAssetItem = (raw: any): AssetItem => {
   const assetType = Array.isArray(raw.asset_types) ? raw.asset_types[0] : raw.asset_types;
   const estimatedValue = raw.estimated_value ?? raw.meta?.estimated_value;
+  // New assets store the category in livelihood_categories, older ones in livelihoods
+  const livelihoodCategory = raw.livelihood_categories ?? raw.livelihoods;
 
   return {
     id: raw.id ?? raw._id,
@@ -137,9 +139,9 @@ export const mapToAssetItem = (raw: any): AssetItem => {
     status: ASSET_STATUS_LABEL[String(raw.status).toUpperCase()] || raw.status,
     type: typeof assetType === 'object' ? assetType?.label ?? assetType?.value : assetType,
     description: raw.description,
-    sector: Array.isArray(raw.livelihoods)
-      ? raw.livelihoods.map((l: any) => (typeof l === 'object' ? l?.label ?? l?.value ?? l?.name : l)).join(', ')
-      : (typeof raw.livelihoods === 'object' ? raw.livelihoods?.label ?? raw.livelihoods?.value : raw.livelihoods),
+    sector: Array.isArray(livelihoodCategory)
+      ? livelihoodCategory.map((l: any) => (typeof l === 'object' ? l?.label ?? l?.value ?? l?.name : l)).join(', ')
+      : (typeof livelihoodCategory === 'object' ? livelihoodCategory?.label ?? livelihoodCategory?.value : livelihoodCategory),
     value: estimatedValue ? `R ${estimatedValue} / participant` : undefined,
     province: Array.isArray(raw.provinces) ? raw.provinces[0] : raw.provinces,
     siteKey: Array.isArray(raw.sites) ? raw.sites[0] : raw.sites,
