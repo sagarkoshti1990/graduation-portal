@@ -61,6 +61,7 @@ import {
   type DisabledWhenCondition,
   type Hint,
   type FieldCompareValue,
+  type MinLeadTimeValue,
   FORM_FIELD_TYPES,
 } from './type';
 import { formatFileSize } from '../../project-player/utils/taskUtils';
@@ -581,6 +582,17 @@ function applyRule(
       const other = parseComparableDate(String(otherRaw));
       if (!current || !other) break;
       if (!compareByOperator(current.getTime(), other.getTime(), config.operator)) return msg;
+      break;
+    }
+
+    // Datetime must be at least `minutes` ahead of now; an unchanged saved value (edit mode) is skipped
+    case 'minLeadTime': {
+      if (!val) break;
+      const config = rule.value as MinLeadTimeValue | undefined;
+      if (!config?.minutes) break;
+      if (config.ignoreValue && val === config.ignoreValue) break;
+      const start = parseComparableDate(val);
+      if (start && start.getTime() < Date.now() + config.minutes * 60 * 1000) return msg;
       break;
     }
 
