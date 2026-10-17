@@ -3064,6 +3064,7 @@
         "requestInfo": "Request More Information",
         "decline": "Decline Request",
         "acceptSchedule": "Accept & Schedule Training",
+        "acceptAssetRequest": "Accept Asset Request",
         "coachInformation": "Coach Information"
       },
       "declineReasons": {
