@@ -127,7 +127,7 @@ export const ADDITIONAL_SERVICE_FORM_FIELDS = {
   PROVINCES: 'provinces',
   SITES: 'sites',
   CATEGORIES: 'categories',
-  IDP_ADDITIONAL_SERVICES_TASKS: 'idp_additional_services_tasks',
+  IDP_ADDITIONAL_SERVICES_TASKS: 'idp_tasks',
 } as const;
 
 export const SUPPORT_PROVIDER_ROUTES = {
@@ -213,7 +213,7 @@ export const OFFERING_QUERY_PARAM_KEYS = {
   PILLAR: 'pillar',
   TYPE: 'type',
   DELIVERY_MODE: 'delivery_mode',
-  IDP_TRAINING_TASK: 'idp_training_task',
+  IDP_TASKS: 'idp_tasks',
 } as const;
 
 export const OFFERING_FILTER_ALL_OPTIONS = {

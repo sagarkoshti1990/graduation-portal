@@ -5,6 +5,111 @@ import { uploadFiles } from '../project-player/services/projectPlayerService';
 
 export type SupportOfferingFormType = 'training' | 'additional_service' | 'asset' | string;
 
+// ---------- shared helpers ----------
+
+const firstOf = (val: any) => (Array.isArray(val) ? val[0] : val);
+const unwrap = (item: any) => item?.value ?? item;
+const toArray = (val: any): any[] => (Array.isArray(val) ? val : val ? [val] : []);
+
+// ---------- API -> form (edit / copy) ----------
+
+// Collapses the stored recommended_for list into the form's single value
+const toRecommendedForValue = (list: any): string => {
+  const roles = toArray(list).map(unwrap);
+  const isLc = roles.some((r: string) => LC_ROLES.includes(r));
+  const isParticipant = roles.some((r: string) => PARTICIPANT_ROLES.includes(r));
+  if (isLc && isParticipant) return 'both';
+  if (isLc) return 'org_admin';
+  if (isParticipant) return 'user';
+  return '';
+};
+
+// API returns unix seconds; the datetime field expects 'YYYY-MM-DDTHH:mm:ss'
+const toDateTimeValue = (val: any): string => {
+  if (!val) return '';
+  const num = Number(val);
+  const m = Number.isNaN(num) ? moment(val) : moment(num > 1e12 ? num : num * 1000);
+  return m.isValid() ? m.format('YYYY-MM-DDTHH:mm:ss') : '';
+};
+
+function mapApiToFormValues(data: any, formType: SupportOfferingFormType): any {
+  // Stored as idp_tasks: string[]; Training's select is single-value, Additional Services is multi
+  const tasks = toArray(data?.idp_tasks).map(unwrap).filter(Boolean);
+  const isTraining = formType === SUPPORT_CATEGORIES.TRAINING;
+  const isCustomTask = isTraining && tasks[0] === 'custom';
+  return {
+    title: data?.title,
+    provinces: firstOf(data?.provinces) || '',
+    sites: toArray(data?.sites).filter(Boolean).map(String),
+    categories: firstOf(data?.categories) || '',
+    idp_tasks: isTraining ? (tasks[0] ?? '') : tasks,
+    sessionTypeOther: isCustomTask ? data?.title : '',
+    description: data?.description,
+    learning_objectives: data?.learning_objectives,
+    recommended_for: toRecommendedForValue(data.recommended_for),
+    certificate_provided: `${data.certificate_provided}`,
+    can_be_copied: `${data.can_be_copied}`,
+    seats_limit: data?.seats_limit,
+    max_capacity: data.seats_limit,
+    resources: data?.resources,
+    start_date: toDateTimeValue(data?.start_date),
+    end_date: toDateTimeValue(data?.end_date),
+    delivery_mode: unwrap(data?.delivery_mode) || '',
+    location: data?.meeting_info?.location ?? data?.location ?? '',
+    meeting_link: data?.meeting_info?.link ?? data?.meeting_link ?? '',
+  };
+}
+
+// ---------- form -> API (create / update) ----------
+
+const toRecommendedForPayload = (value: any, formType: SupportOfferingFormType): string[] => {
+  if (formType === SUPPORT_CATEGORIES.ADDITIONAL_SERVICE || formType === SUPPORT_CATEGORIES.ASSET) return ['user'];
+  if (Array.isArray(value)) return value;
+  if (value === 'both') return ['org_admin', 'user'];
+  return value ? [value] : [];
+};
+
+// Training keeps dates optional; other types default to now .. now + 2 years
+const toDatePayload = (formValues: any, formType: SupportOfferingFormType) => {
+  const isTraining = formType === SUPPORT_CATEGORIES.TRAINING;
+  const toUnix = (val: any, fallback: () => moment.Moment) =>
+    val ? moment(val).unix() : isTraining ? undefined : fallback().unix();
+  return {
+    start_date: toUnix(formValues.start_date, () => moment()),
+    end_date: toUnix(formValues.end_date, () => moment().add(4, 'years')),
+  };
+};
+
+// idp_tasks is always string[]; Asset has no task picker so it uses the id from .env
+export const toIdpTasksPayload = (value: any, formType?: SupportOfferingFormType): string[] =>
+  formType === SUPPORT_CATEGORIES.ASSET
+    ? [process.env.ASSET_IDP_TASK_ID].filter(Boolean) as string[]
+    : toArray(value).map(unwrap).filter(Boolean);
+
+function mapFormToPayload(formValues: any, formType: SupportOfferingFormType): any {
+  return {
+    ...formValues,
+    title: toArray(formValues?.idp_tasks)[0] === 'custom' ? formValues?.sessionTypeOther : formValues?.title,
+    idp_tasks: toIdpTasksPayload(formValues?.idp_tasks, formType),
+    categories: [formValues.categories],
+    provinces: [formValues.provinces],
+    delivery_mode: formValues.delivery_mode || 'offline',
+    recommended_for: toRecommendedForPayload(formValues.recommended_for, formType),
+    ...toDatePayload(formValues, formType),
+    certificate_provided: formValues.certificate_provided === 'true',
+    can_be_copied: formValues.can_be_copied === 'true',
+    session_type: 'Public',
+    status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
+    meeting_info: {
+      link: formValues?.meeting_link,
+      location: formValues?.location,
+    },
+    support_offering_type: formType,
+  };
+}
+
+// isReverseMapping = true: API response -> form values (edit / copy)
+// isReverseMapping = false: form values -> API payload (create / update)
 export function valueMapping(
   formValues: any,
   isReverseMapping: boolean = false,
@@ -12,126 +117,9 @@ export function valueMapping(
   formType: SupportOfferingFormType = SUPPORT_CATEGORIES.TRAINING,
 ): any {
   const effectiveFormType: SupportOfferingFormType = formType || SUPPORT_CATEGORIES.TRAINING;
-
-  if (isReverseMapping) {
-    let recommended_for = '';
-    if (
-      formValues.recommended_for &&
-      Array.isArray(formValues.recommended_for)
-    ) {
-      let tempArray = formValues.recommended_for.map(
-        (item: any) => item?.value ?? item,
-      );
-      let isLcRole = tempArray.some((item: string) => LC_ROLES.includes(item));
-      let isParticipantRole = tempArray.some((item: string) =>
-        PARTICIPANT_ROLES.includes(item),
-      );
-      if (isLcRole && isParticipantRole) {
-        recommended_for = 'both';
-      } else if (isLcRole) {
-        recommended_for = 'org_admin';
-      } else if (isParticipantRole) {
-        recommended_for = 'user';
-      }
-    }
-
-    const rawProvinces = formValues?.provinces;
-    const provinceVal = Array.isArray(rawProvinces) ? rawProvinces[0] : rawProvinces;
-
-    const rawSites = formValues?.sites;
-    const sitesVal: string[] = Array.isArray(rawSites)
-      ? rawSites.filter(Boolean)
-      : (rawSites ? [String(rawSites)] : []);
-
-    const rawCategories = formValues?.categories;
-    const categoryVal = Array.isArray(rawCategories) ? rawCategories[0] : rawCategories;
-
-    // API returns unix seconds; the datetime field expects 'YYYY-MM-DDTHH:mm:ss'
-    const toDateTimeValue = (val: any) => {
-      if (!val) return '';
-      const num = Number(val);
-      const m = Number.isNaN(num) ? moment(val) : moment(num > 1e12 ? num : num * 1000);
-      return m.isValid() ? m.format('YYYY-MM-DDTHH:mm:ss') : '';
-    };
-    const rawDeliveryMode = formValues?.delivery_mode;
-    const deliveryModeVal = typeof rawDeliveryMode === 'object' ? rawDeliveryMode?.value : rawDeliveryMode;
-
-    // Details API may return entity values as { value, label } objects
-    const rawServiceTasks = formValues?.idp_additional_services_tasks;
-    const serviceTasksVal: string[] = (Array.isArray(rawServiceTasks) ? rawServiceTasks : rawServiceTasks ? [rawServiceTasks] : [])
-      .map((item: any) => item?.value ?? item)
-      .filter(Boolean);
-
-    return {
-      title: formValues?.title,
-      provinces: provinceVal || '',
-      sites: sitesVal,
-      categories: categoryVal || '',
-      idp_training_task: formValues.idp_training_task,
-      idp_additional_services_tasks: serviceTasksVal,
-      sessionTypeOther: formValues.idp_training_task === "custom" ? formValues?.title : "",
-      description: formValues?.description,
-      learning_objectives: formValues?.learning_objectives,
-      recommended_for,
-      certificate_provided: `${formValues.certificate_provided}`,
-      seats_limit: formValues?.seats_limit,
-      can_be_copied: `${formValues.can_be_copied}`,
-      max_capacity: formValues.seats_limit,
-      resources: formValues?.resources,
-      start_date: toDateTimeValue(formValues?.start_date),
-      end_date: toDateTimeValue(formValues?.end_date),
-      delivery_mode: deliveryModeVal || '',
-      location: formValues?.meeting_info?.location ?? formValues?.location ?? '',
-      meeting_link: formValues?.meeting_info?.link ?? formValues?.meeting_link ?? '',
-    };
-  }
-
-  const { province, site, ...restFormValues } = formValues;
-
-  let recommendedForPayload: string[] = [];
-  if (effectiveFormType === SUPPORT_CATEGORIES.ADDITIONAL_SERVICE || effectiveFormType === SUPPORT_CATEGORIES.ASSET) {
-    recommendedForPayload = ['user'];
-  } else if (Array.isArray(formValues.recommended_for)) {
-    recommendedForPayload = formValues.recommended_for;
-  } else if (formValues.recommended_for === 'both') {
-    recommendedForPayload = ['org_admin', 'user'];
-  } else if (formValues.recommended_for) {
-    recommendedForPayload = [formValues.recommended_for];
-  }
-
-  let startDate, endDate;
-  if (effectiveFormType === SUPPORT_CATEGORIES.TRAINING) {
-    startDate = formValues.start_date ? moment(formValues.start_date).unix() : undefined;
-    endDate = formValues.end_date ? moment(formValues.end_date).unix() : undefined;
-  } else {
-    startDate = formValues.start_date ? moment(formValues.start_date).unix() : moment().unix();
-    endDate = formValues.end_date ? moment(formValues.end_date).unix() : moment().add(2, 'years').unix();
-  }
-
-  return {
-    ...formValues,
-    title:
-      formValues?.idp_training_task === 'custom'
-        ? formValues?.sessionTypeOther
-        : formValues?.title,
-    categories: [formValues.categories],
-    delivery_mode: formValues.delivery_mode || 'offline',
-    provinces: [formValues.provinces],
-    sites: formValues.sites,
-    recommended_for: recommendedForPayload,
-    start_date: startDate,
-    end_date: endDate,
-    certificate_provided: formValues.certificate_provided === "true",
-    can_be_copied: formValues.can_be_copied === "true",
-    session_type: 'Public',
-    status: formValues.isDraft ? 'DRAFT' : 'PUBLISHED',
-    seats_limit: formValues.seats_limit,
-    meeting_info: {
-      link: formValues?.meeting_link,
-      location: formValues?.location,
-    },
-    support_offering_type: effectiveFormType
-  };
+  return isReverseMapping
+    ? mapApiToFormValues(formValues, effectiveFormType)
+    : mapFormToPayload(formValues, effectiveFormType);
 }
 
 export function requestSessionPayloadMapping(formValues: any, optionMap: any = {}): any {
@@ -144,7 +132,7 @@ export function requestSessionPayloadMapping(formValues: any, optionMap: any = {
     provinces: Array.isArray(resolvedProvince) ? resolvedProvince : [resolvedProvince],
     sites: Array.isArray(resolvedSites) ? resolvedSites : (resolvedSites ? [resolvedSites] : []),
     categories: [formValues.categories],
-    idp_training_task: formValues.idp_training_task,
+    idp_tasks: toIdpTasksPayload(formValues.idp_tasks),
     description: formValues.description,
     learning_objectives: formValues.learning_objectives,
     start_date: (formValues.start_date ? moment(formValues.start_date) : moment()).unix(),
@@ -153,7 +141,7 @@ export function requestSessionPayloadMapping(formValues: any, optionMap: any = {
       : (formValues.start_date ? moment(formValues.start_date) : moment()).add(30, 'minutes')
     ).unix(),
     title:
-      formValues.idp_training_task === 'custom'
+      toArray(formValues.idp_tasks)[0] === 'custom'
         ? formValues.sessionTypeOther
         : formValues.title,
     agenda: formValues.description,
@@ -203,6 +191,7 @@ export function requestAssetPayloadMapping(formValues: any): any {
     // The shared request-session API requires these regardless of offering type, even though
     // they don't really apply to a physical asset - reuse the closest Asset-form equivalent.
     categories: formValues.livelihoodCategory ? [formValues.livelihoodCategory] : [],
+    idp_tasks: toIdpTasksPayload(null, SUPPORT_CATEGORIES.ASSET),
     delivery_mode: 'offline',
     meeting_info: {
       link: '',
@@ -314,9 +303,9 @@ const getSelectedSiteLabels = (values: any, optionsMap: any) => {
 
 // Save Draft only requires `requiredFields`; `defaults` fill the rest so the backend accepts the draft
 export const TRAINING_DRAFT_CONFIG: DraftConfig = {
-  requiredFields: ['provinces', 'sites', 'categories', 'idp_training_task', 'sessionTypeOther'],
+  requiredFields: ['provinces', 'sites', 'categories', 'idp_tasks', 'sessionTypeOther'],
   defaults: {
-    description: (values) => (values.idp_training_task === 'custom' ? values.sessionTypeOther : values.title),
+    description: (values) => (values.idp_tasks === 'custom' ? values.sessionTypeOther : values.title),
     recommended_for: 'user',
     certificate_provided: 'false',
     seats_limit: '10',

@@ -1,6 +1,6 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
 
-export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
+export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = []): FormSection[] => {
   const allTabs: FormSection[] = [
     // ─── Tab 1: Service Details ───────────────────────────────────────────────
     {
@@ -26,7 +26,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
           rows: [
             {
               fields: [
-                ...(hideFileds.includes('provinces') ? [] : [{
+                ...(hideFields.includes('provinces') ? [] : [{
                   name: 'provinces',
                   type: 'select',
                   required: true,
@@ -43,7 +43,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ],
                 }]),
-                ...(hideFileds.includes('sites') ? [] : [{
+                ...(hideFields.includes('sites') ? [] : [{
                   name: 'sites',
                   type: 'multiselect',
                   required: true,
@@ -70,7 +70,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
             },
             {
               fields: [
-                ...(hideFileds.includes('categories') ? [] : [{
+                ...(hideFields.includes('categories') ? [] : [{
                   name: 'categories',
                   type: 'pillselect',
                   required: true,
@@ -90,8 +90,8 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
             },
             {
               fields: [
-                ...(hideFileds.includes('idp_additional_services_tasks') ? [] : [{
-                  name: 'idp_additional_services_tasks',
+                ...(hideFields.includes('idp_tasks') ? [] : [{
+                  name: 'idp_tasks',
                   type: 'pillmultiselect',
                   label: { key: 'servicesCategory', fallback: 'Tags' },
                   optionsSource: 'sessionTypes',
@@ -104,7 +104,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
             },
             {
               fields: [
-                ...(hideFileds.includes('title') ? [] : [{
+                ...(hideFields.includes('title') ? [] : [{
                   name: 'title',
                   type: 'text',
                   required: true,
@@ -124,7 +124,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
             },
             {
               fields: [
-                ...(hideFileds.includes('description') ? [] : [{
+                ...(hideFields.includes('description') ? [] : [{
                   name: 'description',
                   type: 'textarea',
                   required: true,
@@ -145,7 +145,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                 }]),
               ] as FormField[],
             },
-            ...(hideFileds.includes('seats_limit') ? [] : [{
+            ...(hideFields.includes('seats_limit') ? [] : [{
               fields: [
                 {
                   name: 'seats_limit',
@@ -187,7 +187,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
           rows: [
             {
               fields: [
-                ...(hideFileds.includes('start_date') ? [] : [{
+                ...(hideFields.includes('start_date') ? [] : [{
                   name: 'start_date',
                   type: 'datetime',
                   required: false,
@@ -218,7 +218,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
             },
             {
               fields: [
-                ...(hideFileds.includes('end_date') ? [] : [{
+                ...(hideFields.includes('end_date') ? [] : [{
                   name: 'end_date',
                   type: 'datetime',
                   required: false,
@@ -247,7 +247,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                 }]),
               ] as FormField[],
             },
-            ...(hideFileds.includes('location') ? [] : [{
+            ...(hideFields.includes('location') ? [] : [{
               fields: [
                 {
                   name: 'location',
@@ -258,7 +258,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                 },
               ] as FormField[],
             }]),
-            ...(hideFileds.includes('learning_objectives') ? [] : [{
+            ...(hideFields.includes('learning_objectives') ? [] : [{
               fields: [
                 {
                   name: 'learning_objectives',
@@ -269,7 +269,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                 },
               ] as FormField[],
             }]),
-            ...(hideFileds.includes('resources') ? [] : [{
+            ...(hideFields.includes('resources') ? [] : [{
               fields: [
                 {
                   name: 'resources',
@@ -365,7 +365,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                 fallback: 'Service Details',
               },
               rows: [
-                ...(hideFileds.includes('provinces') ? [] : [{
+                ...(hideFields.includes('provinces') ? [] : [{
                   fields: [
                     {
                       type: 'view',
@@ -378,7 +378,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('sites') ? [] : [{
+                ...(hideFields.includes('sites') ? [] : [{
                   fields: [
                     {
                       type: 'view',
@@ -391,7 +391,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('categories') ? [] : [{
+                ...(hideFields.includes('categories') ? [] : [{
                   fields: [
                     {
                       type: 'view',
@@ -404,11 +404,11 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('idp_additional_services_tasks') ? [] : [{
+                ...(hideFields.includes('idp_tasks') ? [] : [{
                   fields: [
                     {
                       type: 'view',
-                      name: 'idp_additional_services_tasks',
+                      name: 'idp_tasks',
                       optionsSource: 'sessionTypes',
                       label: {
                         key: 'servicesCategory',
@@ -417,7 +417,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('title') ? [] : [{
+                ...(hideFields.includes('title') ? [] : [{
                   fields: [
                     {
                       name: 'title',
@@ -426,7 +426,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('start_date') ? [] : [{
+                ...(hideFields.includes('start_date') ? [] : [{
                   fields: [
                     {
                       name: 'start_date',
@@ -436,7 +436,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('end_date') ? [] : [{
+                ...(hideFields.includes('end_date') ? [] : [{
                   fields: [
                     {
                       name: 'end_date',
@@ -446,7 +446,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('seats_limit') ? [] : [{
+                ...(hideFields.includes('seats_limit') ? [] : [{
                   fields: [
                     {
                       name: 'seats_limit',
@@ -455,7 +455,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFileds: string[] = []): FormSecti
                     },
                   ] as FormField[],
                 }]),
-                ...(hideFileds.includes('location') ? [] : [{
+                ...(hideFields.includes('location') ? [] : [{
                   fields: [
                     {
                       name: 'location',

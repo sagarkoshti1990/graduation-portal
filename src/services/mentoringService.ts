@@ -346,3 +346,17 @@ export const getResourcesList = async (): Promise<any> => {
     throw error;
   }
 };
+
+/**
+ * Record the units a provider commits to for a support type.
+ * Endpoint: POST /mentoring/v1/org-admin/updateMentorExtension
+ */
+export const updateMentorExtension = async (payload : {}): Promise<void> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.ORG_ADMIN_UPDATE_MENTOR_EXTENSION, payload);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating mentoring profile:', error);
+    throw error;
+  }
+};

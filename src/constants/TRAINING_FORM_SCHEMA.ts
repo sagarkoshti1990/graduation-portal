@@ -1,6 +1,6 @@
 import type { FormSection } from '@components/SchemaFormRenderer/type';
 
-export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
+export const TRAINING_SESSION_SCHEMA = (hideFields: string[] = []) => ([
   // ─── Tab 1: Session Details ───────────────────────────────────────────────
   {
     type: 'tab',
@@ -25,7 +25,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
         rows: [
           {
             fields: [
-              ...(hideFileds.includes('provinces') ? [] : [{
+              ...(hideFields.includes('provinces') ? [] : [{
                 name: 'provinces',
                 type: 'select',
                 required: true,
@@ -42,7 +42,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                   },
                 ],
               }]),
-              ...(hideFileds.includes('sites') ? [] : [{
+              ...(hideFields.includes('sites') ? [] : [{
                 name: 'sites',
                 type: 'multiselect',
                 required: true,
@@ -69,7 +69,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('categories') ? [] : [{
+              ...(hideFields.includes('categories') ? [] : [{
                 name: 'categories',
                 type: 'pillselect',
                 required: true,
@@ -89,8 +89,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('idp_training_task') ? [] : [{
-                name: 'idp_training_task',
+              ...(hideFields.includes('idp_tasks') ? [] : [{
+                name: 'idp_tasks',
                 type: 'select',
                 required: true,
                 label: {
@@ -115,7 +115,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('sessionTypeOther') ? [] : [{
+              ...(hideFields.includes('sessionTypeOther') ? [] : [{
                 name: 'sessionTypeOther',
                 type: 'text',
                 required: true,
@@ -125,7 +125,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                 },
                 placeholder: { key: 'sessionTypePlaceholder', fallback: 'Describe this session...' },
                 visibleIf: [
-                  { name: 'idp_training_task', value: 'custom', operator: '===' },
+                  { name: 'idp_tasks', value: 'custom', operator: '===' },
                 ],
                 validation: [
                   {
@@ -141,7 +141,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('description') ? [] : [{
+              ...(hideFields.includes('description') ? [] : [{
                 name: 'description',
                 type: 'textarea',
                 required: true,
@@ -167,7 +167,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('learning_objectives') ? [] : [{
+              ...(hideFields.includes('learning_objectives') ? [] : [{
                 name: 'learning_objectives',
                 type: 'textarea',
                 required: false,
@@ -184,7 +184,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('recommended_for') ? [] : [{
+              ...(hideFields.includes('recommended_for') ? [] : [{
                 name: 'recommended_for',
                 type: 'pillselect',
                 required: true,
@@ -204,7 +204,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('certificate_provided') ? [] : [{
+              ...(hideFields.includes('certificate_provided') ? [] : [{
                 name: 'certificate_provided',
                 type: 'pillselect',
                 required: true,
@@ -227,7 +227,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('seats_limit') ? [] : [{
+              ...(hideFields.includes('seats_limit') ? [] : [{
                 name: 'seats_limit',
                 type: 'text',
                 required: true,
@@ -252,7 +252,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
                   },
                 ],
               }]),
-              ...(hideFileds.includes('can_be_copied') ? [] : [{
+              ...(hideFields.includes('can_be_copied') ? [] : [{
                 name: 'can_be_copied',
                 type: 'select',
                 required: false,
@@ -267,7 +267,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('resources') ? [] : [{
+              ...(hideFields.includes('resources') ? [] : [{
                 name: 'resources',
                 type: 'file',
                 multiple: true,
@@ -336,7 +336,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
         rows: [
           {
             fields: [
-              ...(hideFileds.includes('start_date') ? [] : [{
+              ...(hideFields.includes('start_date') ? [] : [{
                 name: 'start_date',
                 type: 'datetime',
                 required: true,
@@ -374,7 +374,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('end_date') ? [] : [{
+              ...(hideFields.includes('end_date') ? [] : [{
                 name: 'end_date',
                 type: 'datetime',
                 required: true,
@@ -412,7 +412,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('delivery_mode') ? [] : [{
+              ...(hideFields.includes('delivery_mode') ? [] : [{
                 name: 'delivery_mode',
                 type: 'pillselect',
                 required: true,
@@ -432,7 +432,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('location') ? [] : [{
+              ...(hideFields.includes('location') ? [] : [{
                 name: 'location',
                 type: 'text',
                 required: true,
@@ -455,7 +455,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
           },
           {
             fields: [
-              ...(hideFileds.includes('meeting_link') ? [] : [{
+              ...(hideFields.includes('meeting_link') ? [] : [{
                 name: 'meeting_link',
                 type: 'text',
                 required: true,
@@ -529,7 +529,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
             rows: [
               {
                 fields: [
-                  ...(hideFileds.includes('provinces') ? [] : [{
+                  ...(hideFields.includes('provinces') ? [] : [{
                     name: 'provinces',
                     type: 'view',
                     label: { key: 'province', fallback: 'Province' },
@@ -539,7 +539,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('sites') ? [] : [{
+                  ...(hideFields.includes('sites') ? [] : [{
                     name: 'sites',
                     type: 'view',
                     label: { key: 'site', fallback: 'Site' },
@@ -549,7 +549,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('categories') ? [] : [{
+                  ...(hideFields.includes('categories') ? [] : [{
                     name: 'categories',
                     type: 'view',
                     required: true,
@@ -560,8 +560,8 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('idp_training_task') ? [] : [{
-                    name: 'idp_training_task',
+                  ...(hideFields.includes('idp_tasks') ? [] : [{
+                    name: 'idp_tasks',
                     type: 'view',
                     required: true,
                     label: {
@@ -574,7 +574,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('recommended_for') ? [] : [{
+                  ...(hideFields.includes('recommended_for') ? [] : [{
                     name: 'recommended_for',
                     type: 'view',
                     required: true,
@@ -585,7 +585,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('can_be_copied') ? [] : [{
+                  ...(hideFields.includes('can_be_copied') ? [] : [{
                     name: 'can_be_copied',
                     type: 'view',
                     label: {
@@ -598,7 +598,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('certificate_provided') ? [] : [{
+                  ...(hideFields.includes('certificate_provided') ? [] : [{
                     name: 'certificate_provided',
                     type: 'view',
                     label: {
@@ -611,7 +611,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('seats_limit') ? [] : [{
+                  ...(hideFields.includes('seats_limit') ? [] : [{
                     name: 'seats_limit',
                     type: 'view',
                     label: { key: 'maxCapacity', fallback: 'Maximum Capacity' },
@@ -630,7 +630,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
             rows: [
               {
                 fields: [
-                  ...(hideFileds.includes('start_date') ? [] : [{
+                  ...(hideFields.includes('start_date') ? [] : [{
                     type: 'view',
                     name: 'start_date',
                     displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
@@ -643,7 +643,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('end_date') ? [] : [{
+                  ...(hideFields.includes('end_date') ? [] : [{
                     type: 'view',
                     name: 'end_date',
                     displayFormat: 'dateFormat@DD-MM-YYYY hh:mm A',
@@ -656,7 +656,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('delivery_mode') ? [] : [{
+                  ...(hideFields.includes('delivery_mode') ? [] : [{
                     type: 'view',
                     name: 'delivery_mode',
                     label: {
@@ -668,7 +668,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('location') ? [] : [{
+                  ...(hideFields.includes('location') ? [] : [{
                     type: 'view',
                     name: 'location',
                     label: {
@@ -683,7 +683,7 @@ export const TRAINING_SESSION_SCHEMA = (hideFileds: string[] = []) => ([
               },
               {
                 fields: [
-                  ...(hideFileds.includes('meeting_link') ? [] : [{
+                  ...(hideFields.includes('meeting_link') ? [] : [{
                     type: 'view',
                     name: 'meeting_link',
                     label: {
@@ -727,10 +727,10 @@ export const CREATE_SESSION_HIDE_FIELDS: string[] = [
 ];
 
 export const schema = (
-  { role, hideFileds }: { role?: string; hideFileds?: string[] } = {}
+  { role, hideFields }: { role?: string; hideFields?: string[] } = {}
 ): FormSection[] => {
-  if (hideFileds) {
-    return TRAINING_SESSION_SCHEMA(hideFileds);
+  if (hideFields) {
+    return TRAINING_SESSION_SCHEMA(hideFields);
   }
 
   if (role === 'request') {

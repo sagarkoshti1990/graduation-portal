@@ -26,7 +26,7 @@ export interface AcceptAndScheduleModalProps {
     province: string;
     sites: string[];
     category: string;
-    idp_training_task: string;
+    idp_tasks: string[];
     title: string;
     description: string;
     targetAudience: string;
@@ -67,7 +67,7 @@ export default function AcceptAndScheduleModal({
     province: '',
     sites: [] as string[],
     category: '',
-    idp_training_task: '',
+    idp_tasks: [] as string[],
     title: '',
     description: '',
     targetAudience: '',
@@ -166,11 +166,17 @@ export default function AcceptAndScheduleModal({
       ? item.raw.meta.sites
       : (item.raw?.meta?.site ? [item.raw.meta.site] : []);
 
+    // Requests store idp_tasks as string[] (top-level or under meta); the accept API requires it
+    const rawTasks = item.raw?.idp_tasks ?? item.raw?.meta?.idp_tasks ?? [];
+    const requestedTasks: string[] = (Array.isArray(rawTasks) ? rawTasks : [rawTasks])
+      .map((task: any) => task?.value ?? task)
+      .filter(Boolean);
+
     setValues({
       province: item.raw?.meta?.provinces?.[0] || item.raw?.meta?.province || '',
       sites: requestedSites,
       category: item.raw?.meta?.categories?.[0] || '',
-      idp_training_task: item.raw?.meta?.idp_training_task || item.raw?.idp_training_task || '',
+      idp_tasks: requestedTasks,
       title: item.title || '',
       description: item.raw?.description || item.justification || '',
       targetAudience: item.raw?.targetAudience || '',
