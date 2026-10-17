@@ -157,7 +157,7 @@ const OrganizationProfile = (): React.JSX.Element => {
         orgType = orgType.map((type: any) => (typeof type === 'object' ? type?.value : type)).filter(Boolean);
 
         const mapped = {
-          name: getField('about') || getField('name') || user?.name || '',
+          name: getField('provider_name') || '',
           organizationType: orgType[0] || '',
           contactPersonName: getField('name') || user?.name || '',
           contactEmail: getField('email') || user?.email || '',
@@ -402,7 +402,7 @@ try {
 
   const payload = {
     name: values.contactPersonName,
-    about: values.name,
+    provider_name: values.name,
     email: values.contactEmail,
     phone: values.contactPhone,
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',

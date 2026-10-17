@@ -257,7 +257,8 @@
       "template": "Develop Intervention Plan",
       "participants": "Participants",
       "project": "Project",
-      "review-requests": "Review Requests"
+      "review-requests": "Review Requests",
+      "support-provider-dashboard": "Support Provider Dashboard"
     },
     "home": "Home",
     "dashboard": "Dashboards",
@@ -1256,6 +1257,7 @@
       "userManagement": "User Management",
       "assignUsers": "Assign Users",
       "reviewRequests": "Review Requests",
+      "supportProviderDashboard": "Support Provider Dashboard",
       "templateManagement": "Template Management",
       "auditLog": "Audit Log",
       "uploadUsers": "Upload Users",
@@ -1280,6 +1282,7 @@
       "courseCreation": "Course Creation",
       "certificates": "Certificates"
     },
+    "supportProviderDashboardDescription": "Track support needed, approved and delivered across provinces and providers",
     "userManagementDescription": "Manage all users across your organization with unified controls and bulk operations.",
     "assignUsersDescription": "Assign Coaches to Supervisors and Participants to Coaches",
     "reviewRequestsDescription": "Review and decide on pathway switch and dropout requests submitted for your organization",

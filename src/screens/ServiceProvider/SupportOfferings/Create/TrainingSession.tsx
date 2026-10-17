@@ -134,10 +134,10 @@ const App = (): React.JSX.Element => {
         const next = { ...prev, [name]: value };
         if (name === 'provinces') next.sites = '';
         if (name === 'categories') {
-          next.idp_training_task = '';
+          next.idp_tasks = '';
           next.title = '';
         }
-        if (name === 'idp_training_task') {
+        if (name === 'idp_tasks') {
           next.title = other?.label;
         }
         return next;
