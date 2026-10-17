@@ -9,7 +9,7 @@ import type { FormSection, FormField } from '@components/SchemaFormRenderer/type
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
-import { requestSession, getLivelihoodsOptions, getAssetTypesOptions, createSession } from '../../../../services/mentoringService';
+import { requestSession, getLivelihoodCategoriesOptions, getAssetTypesOptions, createSession } from '../../../../services/mentoringService';
 import { requestAssetPayloadMapping, uploadService, applyDraftDefaults, ASSET_DRAFT_CONFIG } from '@utils/supportProvider';
 import { useProfileCompletion } from '@hooks';
 import NotFound from '@components/NotFound';
@@ -85,7 +85,8 @@ const App = (): React.JSX.Element => {
   }, [values[FORM_FIELDS.PROVINCE]]);
 
   useEffect(() => {
-    getLivelihoodsOptions()
+    // Asset categories have their own list; 'livelihoods' holds the Livelihoods training types
+    getLivelihoodCategoriesOptions()
       .then((res) => setLivelihoodCats(res || []))
       .catch((err: any) => {
         console.warn('Failed to fetch livelihood categories:', err);
@@ -190,7 +191,9 @@ const App = (): React.JSX.Element => {
           title: formValues.assetTitle,
           description: formValues.assetDescription,
           asset_types: formValues.assetType ? [formValues.assetType] : [],
-          livelihoods: formValues.livelihoodCategory || '',
+          // Old key stored the category under the Livelihoods training types, moved to livelihood_categories
+          // livelihoods: formValues.livelihoodCategory || '',
+          livelihood_categories: formValues.livelihoodCategory || '',
           estimated_value: formValues.estimatedValue,
           seats_limit: formValues.availableQuantity ? Number(formValues.availableQuantity) : undefined,
           meta: {
@@ -232,7 +235,7 @@ const App = (): React.JSX.Element => {
       navigation.goBack();
     } else {
       // @ts-ignore
-      navigation.navigate(ROUTES.CREATE_OPPORTUNITY);
+      navigation.navigate(isLc ? ROUTES.SESSIONS_SUPPORT : ROUTES.CREATE_OPPORTUNITY);
     }
   }
 

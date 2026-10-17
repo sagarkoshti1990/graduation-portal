@@ -61,6 +61,7 @@ export const MENTORING_ENTITY_TYPES = {
   SOCIAL_EMPOWERMENT: 'social_empowerment',
   FINANCIAL_INCLUSION: 'financial_inclusion',
   LIVELIHOODS: 'livelihoods',
+  LIVELIHOOD_CATEGORIES: 'livelihood_categories',
   SPECIAL_ATTENTION: 'special_attention',
   IMMEDIATE_ATTENTION: 'immediate_attention',
   ASSET_TYPES: 'asset_types',
