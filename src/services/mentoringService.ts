@@ -257,6 +257,13 @@ export const getLivelihoodsOptions = async (): Promise<MentoringOption[]> => {
 };
 
 /**
+ * Get Asset livelihood categories (Agriculture, Mining, ...) - separate from the Livelihoods training types
+ */
+export const getLivelihoodCategoriesOptions = async (): Promise<MentoringOption[]> => {
+  return getMentoringEntities({ value: MENTORING_ENTITY_TYPES.LIVELIHOOD_CATEGORIES });
+};
+
+/**
  * Get Special Attention tags options
  */
 export const getSpecialAttentionOptions = async (): Promise<MentoringOption[]> => {
@@ -336,6 +343,20 @@ export const getResourcesList = async (): Promise<any> => {
     return response.data;
   } catch (error: any) {
     console.error('Error fetching resources list:', error);
+    throw error;
+  }
+};
+
+/**
+ * Record the units a provider commits to for a support type.
+ * Endpoint: POST /mentoring/v1/org-admin/updateMentorExtension
+ */
+export const updateMentorExtension = async (payload : {}): Promise<void> => {
+  try {
+    const response = await api.post(API_ENDPOINTS.ORG_ADMIN_UPDATE_MENTOR_EXTENSION, payload);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating mentoring profile:', error);
     throw error;
   }
 };

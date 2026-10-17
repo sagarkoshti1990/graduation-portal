@@ -127,6 +127,18 @@ export const getParticipants = async (
 };
 
 /**
+ * Remove (unenroll) Mentees/Participants from a Session, freeing their seats
+ * Endpoint: POST /mentoring/v1/sessions/removeMentees/:sessionId
+ */
+export const removeMenteesFromSession = async (
+  sessionId: string | number,
+  menteeIds: string[]
+): Promise<any> => {
+  const response = await api.post(API_ENDPOINTS.REMOVE_SESSION_MENTEES(sessionId), { mentees: menteeIds });
+  return response.data;
+};
+
+/**
  * Assign Mentees/Participants to Session by the Requestor
  * Endpoint: POST /mentoring/v1/sessions/addMentees/:sessionId
  *

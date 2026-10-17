@@ -329,3 +329,141 @@ export const ACCEPT_AND_SCHEDULE_FORM_SCHEMA: FormSection[] = [
     ],
   },
 ];
+
+// Assets reuse the session details section; schedule/duration/capacity are replaced by value and quantity
+export const ACCEPT_ASSET_REQUEST_FORM_SCHEMA: FormSection[] = [
+  ACCEPT_AND_SCHEDULE_FORM_SCHEMA[0],
+  {
+    type: 'section',
+    id: 'scheduleFormatCapacity',
+    ...ACCEPT_AND_SCHEDULE_FORM_SECTION_STYLES,
+    title: {
+      key: 'supportProvider.supportRequests.titles.scheduleFormat',
+      fallback: 'Schedule, Format & Capacity',
+    },
+    icon: 'Calendar',
+    rows: [
+      {
+        fields: [
+          {
+            name: 'estimatedValue',
+            type: 'text',
+            required: true,
+            label: {
+              key: 'supportProvider.supportRequests.labels.estimatedValue',
+              fallback: 'Estimated Asset Value per Participant (Rands)',
+            },
+            placeholder: {
+              key: 'supportProvider.supportRequests.placeholders.estimatedValue',
+              fallback: 'R 0.00',
+            },
+            inputProps: {
+              keyboardType: 'numeric',
+            },
+            validation: [
+              {
+                rule: 'required',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.estimatedValueRequired',
+                  fallback: 'Estimated asset value is required',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[0-9]+(\\.[0-9]{1,2})?$',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.invalidNumber',
+                  fallback: 'Please enter a valid number',
+                },
+              },
+            ],
+          },
+          {
+            name: 'capacity',
+            type: 'text',
+            required: true,
+            label: {
+              key: 'supportProvider.supportRequests.labels.availableQuantity',
+              fallback: 'Available Quantity',
+            },
+            placeholder: {
+              key: 'supportProvider.supportRequests.placeholders.availableQuantity',
+              fallback: 'e.g. 50',
+            },
+            inputProps: {
+              keyboardType: 'numeric',
+            },
+            validation: [
+              {
+                rule: 'required',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.availableQuantityRequired',
+                  fallback: 'Available quantity is required',
+                },
+              },
+              {
+                rule: 'pattern',
+                value: '^[1-9][0-9]*$',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.invalidNumber',
+                  fallback: 'Please enter a valid number',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        fields: [
+          {
+            name: 'delivery_mode',
+            type: 'select',
+            required: true,
+            label: {
+              key: 'supportProvider.supportRequests.labels.deliveryFormat',
+              fallback: 'Delivery Format',
+            },
+            placeholder: {
+              key: 'supportProvider.supportRequests.labels.offline',
+              fallback: 'Offline',
+            },
+            optionsSource: 'assetFormatOptions',
+            // Assets are always delivered offline
+            disabled: true,
+            validation: [
+              {
+                rule: 'required',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.deliveryFormatRequired',
+                  fallback: 'Delivery format is required',
+                },
+              },
+            ],
+          },
+          {
+            name: 'location',
+            type: 'text',
+            required: true,
+            label: {
+              key: 'supportProvider.supportRequests.labels.venueLocation',
+              fallback: 'Venue Location',
+            },
+            placeholder: {
+              key: 'supportProvider.supportRequests.placeholders.location',
+              fallback: 'e.g. BRAC Hub Room 1',
+            },
+            validation: [
+              {
+                rule: 'required',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.locationRequired',
+                  fallback: 'Venue location is required',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+];

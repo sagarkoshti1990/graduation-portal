@@ -75,6 +75,12 @@ export const MAIN_MENU_ITEMS: SidebarMenuItem[] = [
     icon: 'ClipboardCheck', // Lucide icon name
     route: 'review-requests',
   },
+  {
+    key: 'support-provider-dashboard',
+    label: 'admin.menu.supportProviderDashboard',
+    icon: 'ChartColumn', // Lucide icon name
+    route: 'support-provider-dashboard',
+  },
   // {
   //   key: 'template-management',
   //   label: 'admin.menu.templateManagement',

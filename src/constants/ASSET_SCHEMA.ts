@@ -1,7 +1,7 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
 import { SESSION_MIN_LEAD_MINUTES } from './TRAINING_FORM_SCHEMA';
 
-export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
+export const ASSET_SCHEMA = (hideFields: string[] = []): FormSection[] => {
   const allTabs: FormSection[] = [
     // ─── Tab 1: Asset Details ──────────────────────────────────────────────────
     {
@@ -27,7 +27,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
           rows: [
             {
               fields: [
-                ...(hideFileds.includes('province') ? [] : [{
+                ...(hideFields.includes('province') ? [] : [{
                   name: 'province',
                   type: 'select',
                   required: true,
@@ -44,7 +44,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
                     },
                   ],
                 }]),
-                ...(hideFileds.includes('site') ? [] : [{
+                ...(hideFields.includes('site') ? [] : [{
                   name: 'site',
                   type: 'multiselect',
                   required: true,
@@ -71,7 +71,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
             {
               fields: [
-                ...(hideFileds.includes('assetType') ? [] : [{
+                ...(hideFields.includes('assetType') ? [] : [{
                   name: 'assetType',
                   type: 'pillselect',
                   required: true,
@@ -91,7 +91,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
             {
               fields: [
-                ...(hideFileds.includes('livelihoodCategory') ? [] : [{
+                ...(hideFields.includes('livelihoodCategory') ? [] : [{
                   name: 'livelihoodCategory',
                   type: 'select',
                   required: true,
@@ -112,7 +112,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
             {
               fields: [
-                ...(hideFileds.includes('assetTitle') ? [] : [{
+                ...(hideFields.includes('assetTitle') ? [] : [{
                   name: 'assetTitle',
                   type: 'text',
                   required: true,
@@ -132,7 +132,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
             {
               fields: [
-                ...(hideFileds.includes('assetDescription') ? [] : [{
+                ...(hideFields.includes('assetDescription') ? [] : [{
                   name: 'assetDescription',
                   type: 'textarea',
                   required: true,
@@ -154,7 +154,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
             {
               fields: [
-                ...(hideFileds.includes('estimatedValue') ? [] : [{
+                ...(hideFields.includes('estimatedValue') ? [] : [{
                   name: 'estimatedValue',
                   type: 'text',
                   required: true,
@@ -183,7 +183,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
                     },
                   ],
                 }]),
-                ...(hideFileds.includes('availableQuantity') ? [] : [{
+                ...(hideFields.includes('availableQuantity') ? [] : [{
                   name: 'availableQuantity',
                   type: 'text',
                   required: true,
@@ -251,7 +251,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
           rows: [
             {
               fields: [
-                ...(hideFileds.includes('startDate') ? [] : [{
+                ...(hideFields.includes('startDate') ? [] : [{
                   name: 'startDate',
                   type: 'datetime',
                   required: false,
@@ -290,7 +290,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
             {
               fields: [
-                ...(hideFileds.includes('endDate') ? [] : [{
+                ...(hideFields.includes('endDate') ? [] : [{
                   name: 'endDate',
                   type: 'datetime',
                   required: false,
@@ -321,7 +321,7 @@ export const ASSET_SCHEMA = (hideFileds: string[] = []): FormSection[] => {
             },
           ],
         },
-        ...(hideFileds.includes('assetDocuments') ? [] : [{
+        ...(hideFields.includes('assetDocuments') ? [] : [{
           type: 'section',
           id: 'assetDocuments',
           rows: [

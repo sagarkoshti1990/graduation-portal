@@ -50,6 +50,7 @@ const AuditLogScreen = lazyScreen(() => import('../screens/AuditLog'));
 const AssignUsersScreen = lazyScreen(() => import('../screens/AssignUsers'));
 const ReviewRequestsScreen = lazyScreen(() => import('../screens/ReviewRequests'));
 const AdminDashboard = lazyScreen(() => import('../screens/AdminDashboard'));
+const SupportProviderDashboard = lazyScreen(() => import('../screens/SupportProviderDashboard'));
 const ProfilePermissions = lazyScreen(() => import('../screens/ProfilePermissions'));
 const ForgotPasswordScreen = lazyScreen(() => import('../screens/Auth/ForgotPasswordScreen'));
 const ParticipantJourneyScreen = lazyScreen(() => import('../screens/ParticipantJourney'));
@@ -121,6 +122,7 @@ const getAccessPages = (
           component: UserManagementScreen,
         },
         { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        { name: 'support-provider-dashboard', path: '/support-provider-dashboard', component: SupportProviderDashboard },
         {
           name: 'template-management',
           path: '/template-managemnt',
@@ -163,6 +165,7 @@ const getAccessPages = (
           component: UserManagementScreen,
         },
         { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        { name: 'support-provider-dashboard', path: '/support-provider-dashboard', component: SupportProviderDashboard },
         {
           name: 'assign-users',
           path: '/assign-users',

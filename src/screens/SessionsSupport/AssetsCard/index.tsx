@@ -27,7 +27,7 @@ interface AssetsCardItemProps {
 const Card: React.FC<AssetsCardItemProps> = ({ item, onRequestAsset }) => {
   const { t } = useLanguage();
 
-  const availableQuantity = item.quantity ?? item.seats_remaining;
+  const availableQuantity = item.seats_remaining ?? item.quantity;
   const isAvailable = availableQuantity === undefined || availableQuantity > 0;
   const statusColors = isAvailable
     ? { bg: '$success50', text: '$success600', icon: 'CheckCircle' }

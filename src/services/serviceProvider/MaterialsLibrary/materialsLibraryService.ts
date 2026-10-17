@@ -3,6 +3,7 @@ import {
   getSessionCategories,
   getAdditionalServiceCategories,
   getLivelihoodsOptions,
+  getLivelihoodCategoriesOptions,
   MentoringOption,
 } from '../../mentoringService';
 
@@ -73,24 +74,32 @@ export const getMaterialsList = async (
   try {
     // A resource's category is its linked session's category (Pillar for trainings, service category
     // for additional services, livelihood category for assets); the entity lists turn values into labels.
-    const [apiRes, sessionCategories, serviceCategories, livelihoods] = await Promise.all([
+    // livelihoods is kept only to label older assets saved before livelihood_categories existed
+    const [apiRes, sessionCategories, serviceCategories, livelihoods, livelihoodCategories] = await Promise.all([
       getResourcesList(),
       getSessionCategories().catch(() => [] as MentoringOption[]),
       getAdditionalServiceCategories().catch(() => [] as MentoringOption[]),
       getLivelihoodsOptions().catch(() => [] as MentoringOption[]),
+      getLivelihoodCategoriesOptions().catch(() => [] as MentoringOption[]),
     ]);
     const rawResources = apiRes?.result || [];
     const categoryLabels = new Map<string, string>(
-      [...(sessionCategories || []), ...(serviceCategories || []), ...(livelihoods || [])].map((c) => [c.value, c.label]),
+      [
+        ...(sessionCategories || []),
+        ...(serviceCategories || []),
+        ...(livelihoods || []),
+        ...(livelihoodCategories || []),
+      ].map((c) => [c.value, c.label]),
     );
 
     if (Array.isArray(rawResources) && rawResources.length > 0) {
       items = rawResources.map((resource: any) => {
         const fileName = resource.name || `resource-${resource.id}`;
         const session = resource.session || {};
-        // Asset sessions always have categories ['asset']; their real category is meta.livelihoods
+        // Asset sessions always have categories ['asset']; their real category is meta.livelihood_categories (older ones: meta.livelihoods)
         const isAsset = session.meta?.support_offering_type === 'asset' || session.categories?.[0] === 'asset';
-        const categoryValue: string = (isAsset ? session.meta?.livelihoods : session.categories?.[0]) || '';
+        const assetCategory = session.meta?.livelihood_categories ?? session.meta?.livelihoods;
+        const categoryValue: string = (isAsset ? assetCategory : session.categories?.[0]) || '';
 
         return {
           id: String(resource.id),

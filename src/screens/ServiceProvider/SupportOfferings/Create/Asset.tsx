@@ -9,8 +9,8 @@ import type { FormSection, FormField } from '@components/SchemaFormRenderer/type
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import { getSitesByProvince, getProvincesList } from '../../../../services/usersService';
-import { requestSession, getLivelihoodsOptions, getAssetTypesOptions, createSession } from '../../../../services/mentoringService';
-import { requestAssetPayloadMapping, uploadService, applyDraftDefaults, ASSET_DRAFT_CONFIG } from '@utils/supportProvider';
+import { requestSession, getLivelihoodCategoriesOptions, getAssetTypesOptions, createSession } from '../../../../services/mentoringService';
+import { requestAssetPayloadMapping, toIdpTasksPayload, uploadService, applyDraftDefaults, ASSET_DRAFT_CONFIG } from '@utils/supportProvider';
 import { useProfileCompletion } from '@hooks';
 import NotFound from '@components/NotFound';
 import {
@@ -44,7 +44,7 @@ const App = (): React.JSX.Element => {
   const { user } = useAuth() || {};
   const isLc = user?.role === ROLE_NAMES.LC;
 
-  const hideFileds = [
+  const hideFields = [
     ...(isLc ? REQUEST_ASSET_HIDE_FIELDS : []),
   ];
 
@@ -85,7 +85,8 @@ const App = (): React.JSX.Element => {
   }, [values[FORM_FIELDS.PROVINCE]]);
 
   useEffect(() => {
-    getLivelihoodsOptions()
+    // Asset categories have their own list; 'livelihoods' holds the Livelihoods training types
+    getLivelihoodCategoriesOptions()
       .then((res) => setLivelihoodCats(res || []))
       .catch((err: any) => {
         console.warn('Failed to fetch livelihood categories:', err);
@@ -151,14 +152,14 @@ const App = (): React.JSX.Element => {
   }, [values.estimatedValue, values.availableQuantity]);
 
   const schema = useMemo(
-    () => patchField(ASSET_FORM_SCHEMA(hideFileds), 'totalFundBreakdown', (field) => ({
+    () => patchField(ASSET_FORM_SCHEMA(hideFields), 'totalFundBreakdown', (field) => ({
       ...field,
       subTitle: { ...field.subTitle, fallback: totalFundBreakdownText },
       badge: field.badge
         ? { ...field.badge, value: { ...field.badge.value, fallback: totalFundAvailableText } }
         : field.badge,
     })),
-    [hideFileds, totalFundBreakdownText, totalFundAvailableText],
+    [hideFields, totalFundBreakdownText, totalFundAvailableText],
   );
 
   const handleSave = useCallback(async (submittedValues: any, isDraft: boolean) => {
@@ -187,15 +188,17 @@ const App = (): React.JSX.Element => {
         const payload = {
           support_offering_type: SUPPORT_CATEGORIES.ASSET,
           categories: [SUPPORT_CATEGORIES.ASSET],
+          idp_tasks: toIdpTasksPayload(null, SUPPORT_CATEGORIES.ASSET),
           title: formValues.assetTitle,
           description: formValues.assetDescription,
           asset_types: formValues.assetType ? [formValues.assetType] : [],
-          livelihoods: formValues.livelihoodCategory || '',
+          // Old key stored the category under the Livelihoods training types, moved to livelihood_categories
+          // livelihoods: formValues.livelihoodCategory || '',
+          livelihood_categories: formValues.livelihoodCategory || '',
           estimated_value: formValues.estimatedValue,
-          available_quantity: formValues.availableQuantity,
+          seats_limit: formValues.availableQuantity ? Number(formValues.availableQuantity) : undefined,
           meta: {
             estimated_value: formValues.estimatedValue,
-            available_quantity: formValues.availableQuantity,
           },
           resources: formValues.assetDocuments,
           provinces: formValues.province ? [formValues.province] : [],
@@ -233,7 +236,7 @@ const App = (): React.JSX.Element => {
       navigation.goBack();
     } else {
       // @ts-ignore
-      navigation.navigate(ROUTES.CREATE_OPPORTUNITY);
+      navigation.navigate(isLc ? ROUTES.SESSIONS_SUPPORT : ROUTES.CREATE_OPPORTUNITY);
     }
   }
 

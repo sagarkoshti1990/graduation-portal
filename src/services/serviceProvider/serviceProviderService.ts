@@ -2,6 +2,7 @@ import moment from 'moment';
 import api from '../api';
 import { API_ENDPOINTS } from '../apiEndpoints';
 import { getProvincesList, getAllSites } from '../usersService';
+import { toIdpTasksPayload } from '../../utils/supportProvider';
 import {
   SUPPORT_REQUEST_TABS,
   SUPPORT_OFFERING_TYPE_VALUES,
@@ -54,7 +55,7 @@ export interface AcceptAndSchedulePayload {
   province?: string;
   sites?: string[];
   category?: string;
-  idp_training_task?: string;
+  idp_tasks?: string[];
   title?: string;
   description?: string;
   targetAudience?: string;
@@ -64,6 +65,7 @@ export interface AcceptAndSchedulePayload {
   duration: string;
   delivery_mode?: string;
   capacity?: string;
+  estimatedValue?: string;
   location: string;
   meetingLink?: string;
   notes?: string;
@@ -417,17 +419,24 @@ export const acceptAndScheduleSupportRequest = async (
     body.categories = [payload.category];
   }
 
+  // Required by the accept API for every offering type; Assets fall back to the id from .env
+  const idpTasks = payload.idp_tasks?.length ? payload.idp_tasks : toIdpTasksPayload(null, payload.support_offering_type);
+  if (idpTasks.length) {
+    body.idp_tasks = idpTasks;
+  }
+
   if (isAsset) {
+    // Available Quantity is the asset's seat limit, same as when an asset is created
     if (payload.capacity) {
-      body.meta = { quantity: Number(payload.capacity) };
+      body.seats_limit = Number(payload.capacity);
     }
+    body.meta = {
+      ...(payload.capacity ? { quantity: Number(payload.capacity) } : {}),
+      ...(payload.estimatedValue ? { estimated_value: payload.estimatedValue } : {}),
+    };
   } else {
     if (payload.targetAudience) {
       body.learning_objectives = payload.targetAudience;
-    }
-
-    if (payload.idp_training_task) {
-      body.idp_training_task = payload.idp_training_task;
     }
 
     if (payload.capacity) {

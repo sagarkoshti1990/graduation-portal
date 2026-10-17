@@ -61,6 +61,11 @@ export const API_ENDPOINTS = {
   REQUEST_SESSIONS_GET_DETAILS: `${prefix}/mentoring/v1/requestSessions/getDetails`,
   REQUEST_SESSIONS_UPDATE: `${prefix}/mentoring/v1/requestSessions/update`,
   REQUESTOR_ASSIGN_MENTEES: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/addMentees/${sessionId}`,
+  REMOVE_SESSION_MENTEES: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/removeMentees/${sessionId}`,
+  SUPPORT_DASHBOARD: `${prefix}/mentoring/v1/support-dashboard/data`,
+  SUPPORT_DASHBOARD_HISTORY: `${prefix}/mentoring/v1/support-dashboard/history`,
+  ORG_ADMIN_UPDATE_MENTOR_EXTENSION: `${prefix}/mentoring/v1/org-admin/updateMentorExtension`,
+  MENTORS_LIST: `${prefix}/mentoring/v1/users/list`,
   RESOURCES_LIST: `${prefix}/mentoring/v1/resources/list`,
   RESOURCE_DELETE: (resourceId: string | number, sessionId: string | number) =>
     `${prefix}/mentoring/v1/resources/delete/${resourceId}?sessionId=${sessionId}`,

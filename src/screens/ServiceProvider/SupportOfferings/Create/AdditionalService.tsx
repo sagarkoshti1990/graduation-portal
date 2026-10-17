@@ -125,7 +125,7 @@ const App = (): React.JSX.Element => {
       : { allowedSubOptions, allowedProvinces, allowedSites }),
   });
 
-  const hideFileds = [
+  const hideFields = [
     ...(sessionTypes.length === 0 ? [FORM_FIELDS.IDP_ADDITIONAL_SERVICES_TASKS] : []),
     ...(isLc ? REQUEST_ADDITIONAL_SERVICE_HIDE_FIELDS : []),
   ];
@@ -239,7 +239,7 @@ const App = (): React.JSX.Element => {
       <Container {...styles.container}>
         <Card borderRadius={"$2xl"} bg="$white">
           <SchemaFormRenderer
-            schema={ADDITIONAL_SERVICES_FORM_SCHEMA(hideFileds, originalStartDateRef.current)}
+            schema={ADDITIONAL_SERVICES_FORM_SCHEMA(hideFields, originalStartDateRef.current)}
             optionsMap={optionsMap}
             values={values}
             t={t}
