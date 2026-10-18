@@ -57,6 +57,8 @@ const App = (): React.JSX.Element => {
   // Resources as loaded in edit mode - needed to work out which ones the user removed
 
   const originalResourcesRef = useRef<any[]>([]);
+  // Saved start time in edit mode, so the min lead time check only runs when it is changed
+  const originalStartDateRef = useRef<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [lodingButton, setLodingButton] = useState<false | typeof BUTTON_LOADING_STATE[keyof typeof BUTTON_LOADING_STATE]>(false);
 
@@ -88,6 +90,9 @@ const App = (): React.JSX.Element => {
             formattedValues.start_date = '';
             formattedValues.end_date = '';
           }
+          // Drafts carry an auto-filled start time, so they must always pass the lead time check on publish
+          const isDraft = String(rawData.status?.value ?? rawData.status ?? '').toUpperCase() === SESSION_STATUS.DRAFT;
+          originalStartDateRef.current = modeType === FORM_MODE.EDIT && !isDraft ? formattedValues.start_date : undefined;
           setValues(formattedValues);
         }
       }
@@ -105,6 +110,7 @@ const App = (): React.JSX.Element => {
       return () => {
         setIsLoading(true);
         setValues({});
+        originalStartDateRef.current = undefined;
       };
     }, [init])
   );
@@ -236,7 +242,7 @@ const App = (): React.JSX.Element => {
       <Container {...styles.container}>
         <Card borderRadius="$2xl" bg={isLc ? "transparent" : "$white"} p={isLc ? "$0" : undefined} shadowOpacity={isLc ? 0 : undefined} elevation={isLc ? 0 : undefined}>
           <SchemaFormRenderer
-            schema={ADDITIONAL_SERVICES_FORM_SCHEMA(hideFields)}
+            schema={ADDITIONAL_SERVICES_FORM_SCHEMA(hideFields, originalStartDateRef.current)}
             optionsMap={optionsMap}
             values={values}
             t={t}
