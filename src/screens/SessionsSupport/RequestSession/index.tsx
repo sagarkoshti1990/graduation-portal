@@ -25,6 +25,9 @@ const DELIVERY_MODE_ICONS: Record<string, string> = {
   hybrid: 'Users',
 };
 
+// White card applies only to the form body, not the progress bar or step tabs
+const FORM_CARD_PROPS = { bg: '$white', borderRadius: '$2xl', p: '$6' };
+
 const RequestSessionScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
@@ -135,7 +138,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
     return <Loader fullScreen message="Loading..." />;
   }
 
-  const headerTitle = (
+  const headerBadge = (
     <HStack {...styles.headerTitleHStack}>
       <Text {...styles.headerSubTitleText}>
         {t('lc.requestSession.title')}
@@ -151,18 +154,20 @@ const RequestSessionScreen = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <PageHeader
-        title={headerTitle}
+        rightSection={headerBadge}
         backButtonText={t('supportProvider.createSupport.changeType', 'Change Type')}
         onBackPress={handleBackPress}
       />
       <Container py="$6">
-        <Card borderRadius="$2xl" bg="$white">
+        <Card borderRadius="$2xl" bg="transparent" p="$0" shadowOpacity={0} elevation={0}>
           <SchemaFormRenderer
             schema={TRAINING_FORM_SCHEMA(REQUEST_SESSION_HIDE_FIELDS)}
             optionsMap={optionsMap}
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            disableStepNavigation
+            _formContainer={FORM_CARD_PROPS}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             uploadService={async (file) => {

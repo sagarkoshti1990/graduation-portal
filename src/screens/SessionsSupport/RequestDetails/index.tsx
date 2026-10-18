@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import PageHeader from '@components/PageHeader';
 import moment from 'moment';
 import openExternalLink from '@utils/openExternalLink';
-import { getMyRequestsList } from '../../../services/SessionSupportServices/sessionRequestorService';
+import { getRequestSessionDetails } from '../../../services/serviceProvider/serviceProviderService';
 import { getProvincesList } from '../../../services/usersService';
 import styles from './styles';
 import sessionStyles from '../styles';
@@ -97,12 +97,12 @@ export const RequestDetailsScreen: React.FC = () => {
       try {
         setLoading(true);
         const [res, provincesData] = await Promise.all([
-          getMyRequestsList({ page: 1, limit: 100 }),
+          getRequestSessionDetails(requestId),
           getProvincesList().catch(() => [])
         ]);
         if (isMounted) {
-          const rawList = Array.isArray(res) ? res : (res?.result?.data || res?.result || res?.data || []);
-          const found = rawList.find((item: any) => String(item.id || item._id) === String(requestId));
+          // getDetails returns a single request record (possibly wrapped in `data`)
+          const found = res?.data && !res.session && !res.session_details ? res.data : res;
           if (found) {
             setRequestItem(found);
             const sessionObj = found.session || found.session_details || {};

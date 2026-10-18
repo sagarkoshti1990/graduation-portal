@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack, useAlert, Loader } from '@ui';
+import { Box, Card, Container, HStack, Text, VStack, useAlert, Loader } from '@ui';
 import styles from '../styles';
+import lcStyles from '../../../SessionsSupport/styles';
+import PageHeader from '@components/PageHeader';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
@@ -36,6 +38,9 @@ const patchField = (schema: FormSection[], fieldName: string, patcher: (field: F
     })),
     children: node.children ? patchField(node.children, fieldName, patcher) : node.children,
   }));
+
+// White card applies only to the form body, not the progress bar or step tabs
+const FORM_CARD_PROPS = { bg: '$white', borderRadius: '$2xl', p: '$6' };
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -254,21 +259,44 @@ const App = (): React.JSX.Element => {
     );
   }
 
+  const lcHeaderBadge = (
+    <HStack {...lcStyles.headerTitleHStack}>
+      <Text {...lcStyles.headerSubTitleText}>
+        {t('lc.requestAsset.title')}
+      </Text>
+      <Box {...lcStyles.headerBadgeBox}>
+        <Text {...lcStyles.headerBadgeText}>
+          {t('lc.requestAsset.badge')}
+        </Text>
+      </Box>
+    </HStack>
+  );
+
   return (
     <VStack flex={1}>
-      <SPTitleHeader
-        title={t('supportProvider.createSupport.asset.title')}
-        backButtonText={t('supportProvider.createSupport.changeType')}
-        onNavigateBack={handleBackPress}
-      />
+      {isLc ? (
+        <PageHeader
+          rightSection={lcHeaderBadge}
+          backButtonText={t('supportProvider.createSupport.changeType')}
+          onBackPress={handleBackPress}
+        />
+      ) : (
+        <SPTitleHeader
+          title={t('supportProvider.createSupport.asset.title')}
+          backButtonText={t('supportProvider.createSupport.changeType')}
+          onNavigateBack={handleBackPress}
+        />
+      )}
       <Container {...styles.container}>
-        <Card borderRadius={"$2xl"} bg="$white">
+        <Card borderRadius="$2xl" bg={isLc ? "transparent" : "$white"} p={isLc ? "$0" : undefined} shadowOpacity={isLc ? 0 : undefined} elevation={isLc ? 0 : undefined}>
           <SchemaFormRenderer
             schema={schema}
             optionsMap={optionsMap}
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            disableStepNavigation={isLc}
+            _formContainer={isLc ? FORM_CARD_PROPS : undefined}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             draftRequiredFields={isLc ? undefined : ASSET_DRAFT_CONFIG.requiredFields}

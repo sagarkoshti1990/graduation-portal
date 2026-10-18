@@ -33,6 +33,9 @@ import { uploadService, valueMapping, requestSessionPayloadMapping, applyDraftDe
 import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
 import NotFound from '@components/NotFound';
 
+// White card applies only to the form body, not the progress bar or step tabs
+const FORM_CARD_PROPS = { bg: '$white', borderRadius: '$2xl', p: '$6' };
+
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute<any>();
@@ -202,7 +205,7 @@ const App = (): React.JSX.Element => {
     );
   }
 
-  const lcHeaderTitle = (
+  const lcHeaderBadge = (
     <HStack {...lcStyles.headerTitleHStack}>
       <Text {...lcStyles.headerSubTitleText}>
         {t('lc.requestAdditionalService.title')}
@@ -219,7 +222,7 @@ const App = (): React.JSX.Element => {
     <VStack flex={1}>
       {isLc ? (
         <PageHeader
-          title={lcHeaderTitle as any}
+          rightSection={lcHeaderBadge}
           backButtonText={t('supportProvider.createSupport.changeType')}
           onBackPress={handleBackPress}
         />
@@ -231,13 +234,15 @@ const App = (): React.JSX.Element => {
         />
       )}
       <Container {...styles.container}>
-        <Card borderRadius={"$2xl"} bg="$white">
+        <Card borderRadius="$2xl" bg={isLc ? "transparent" : "$white"} p={isLc ? "$0" : undefined} shadowOpacity={isLc ? 0 : undefined} elevation={isLc ? 0 : undefined}>
           <SchemaFormRenderer
             schema={ADDITIONAL_SERVICES_FORM_SCHEMA(hideFields)}
             optionsMap={optionsMap}
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            disableStepNavigation={isLc}
+            _formContainer={isLc ? FORM_CARD_PROPS : undefined}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             draftRequiredFields={isLc ? undefined : ADDITIONAL_SERVICE_DRAFT_CONFIG.requiredFields}

@@ -2696,6 +2696,10 @@
     "requestAdditionalService": {
       "title": "Request Additional Service",
       "badge": "Service"
+    },
+    "requestAsset": {
+      "title": "Request Asset",
+      "badge": "Asset"
     }
   },
   "template": {
