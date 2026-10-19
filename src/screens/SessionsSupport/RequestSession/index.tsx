@@ -12,6 +12,7 @@ import {
   getRecommendedFor,
   getSessionTypesByPillar,
   getDeliveryModes,
+  getLivelihoodCategoriesOptions,
   requestSession,
   MentoringOption,
 } from '../../../services/mentoringService';
@@ -35,6 +36,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
+  const [livelihoodCategories, setLivelihoodCategories] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
@@ -48,6 +50,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
     pillers,
     targetAudience,
     deliveryModes,
+    livelihoodCategories,
     deliveryModeIcons: DELIVERY_MODE_ICONS,
     allowedProvinces: allowedProvinces.length > 0 ? allowedProvinces : undefined,
     allowedSites: allowedSites.length > 0 ? allowedSites : undefined,
@@ -61,14 +64,16 @@ const RequestSessionScreen = (): React.JSX.Element => {
           getSessionCategories(),
           getRecommendedFor(),
           getDeliveryModes(),
+          getLivelihoodCategoriesOptions(),
         ]);
 
-        const [resProvinces, resCategories, resTarget, resDeliveryModes] = results;
+        const [resProvinces, resCategories, resTarget, resDeliveryModes, resLivelihood] = results;
 
         setProvinces(resProvinces.status === 'fulfilled' ? resProvinces.value || [] : []);
         setPillers(resCategories.status === 'fulfilled' ? resCategories.value || [] : []);
         setTargetAudience(resTarget.status === 'fulfilled' ? resTarget.value || [] : []);
         setDeliveryModes(resDeliveryModes.status === 'fulfilled' ? resDeliveryModes.value || [] : []);
+        setLivelihoodCategories(resLivelihood.status === 'fulfilled' ? resLivelihood.value || [] : []);
       } catch (error: any) {
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
       } finally {
@@ -89,10 +94,12 @@ const RequestSessionScreen = (): React.JSX.Element => {
         }
         if (name === 'categories') {
           next.idp_tasks = '';
+          next.livelihoodCategory = '';
           next.title = '';
         }
         if (name === 'idp_tasks') {
           next.title = other?.label;
+          next.livelihoodCategory = '';
         }
         return next;
       });

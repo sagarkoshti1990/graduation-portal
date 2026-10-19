@@ -13,6 +13,7 @@ import {
   getSessionCategories,
   getRecommendedFor,
   getDeliveryModes,
+  getLivelihoodCategoriesOptions,
   createSession,
   updateSessionWithResources,
   getSessionDetails,
@@ -44,6 +45,7 @@ const App = (): React.JSX.Element => {
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
+  const [livelihoodCategories, setLivelihoodCategories] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   // Resources as loaded in edit mode - needed to work out which ones the user removed
   const originalResourcesRef = useRef<any[]>([]);
@@ -64,6 +66,7 @@ const App = (): React.JSX.Element => {
     pillers,
     targetAudience,
     deliveryModes,
+    livelihoodCategories,
     deliveryModeIcons: DELIVERY_MODE_ICONS,
     allowedSubOptions,
     allowedProvinces,
@@ -84,16 +87,18 @@ const App = (): React.JSX.Element => {
 
   const init = useCallback(async () => {
     try {
-      const [result, getCategories, getTarget, getDeliveryModeOptions] = await Promise.all([
+      const [result, getCategories, getTarget, getDeliveryModeOptions, getLivelihoodOptions] = await Promise.all([
         getProvincesList(),
         getSessionCategories(),
         getRecommendedFor(),
         getDeliveryModes(),
+        getLivelihoodCategoriesOptions(),
       ]);
       setProvinces(result);
       setPillers(getCategories);
       setTargetAudience(getTarget);
       setDeliveryModes(getDeliveryModeOptions);
+      setLivelihoodCategories(getLivelihoodOptions);
 
       // Fetch session data via getSessionDetails API when in Copy or Edit mode
       if (sessionId && (modeType === FORM_MODE.COPY || modeType === FORM_MODE.EDIT)) {
@@ -141,10 +146,12 @@ const App = (): React.JSX.Element => {
         if (name === 'provinces') next.sites = '';
         if (name === 'categories') {
           next.idp_tasks = '';
+          next.livelihoodCategory = '';
           next.title = '';
         }
         if (name === 'idp_tasks') {
           next.title = other?.label;
+          next.livelihoodCategory = '';
         }
         return next;
       });

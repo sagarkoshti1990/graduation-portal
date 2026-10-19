@@ -156,16 +156,34 @@ const App = (): React.JSX.Element => {
     return `R ${totalFund.toLocaleString()}`;
   }, [values.estimatedValue, values.availableQuantity]);
 
-  const schema = useMemo(
-    () => patchField(ASSET_FORM_SCHEMA(hideFields), 'totalFundBreakdown', (field) => ({
+  const schema = useMemo(() => {
+    const withFund = patchField(ASSET_FORM_SCHEMA(hideFields), 'totalFundBreakdown', (field) => ({
       ...field,
       subTitle: { ...field.subTitle, fallback: totalFundBreakdownText },
       badge: field.badge
         ? { ...field.badge, value: { ...field.badge.value, fallback: totalFundAvailableText } }
         : field.badge,
-    })),
-    [hideFields, totalFundBreakdownText, totalFundAvailableText],
-  );
+    }));
+    if (!isLc) return withFund;
+    // The request page asks for the total asset value (not per participant) and an optional quantity
+    const withValue = patchField(withFund, 'estimatedValue', (field) =>
+      field.label?.key === 'estimatedValue'
+        ? { ...field, label: { key: 'estimatedValueRequest', fallback: 'Estimated Asset Value (Rands)' } }
+        : field);
+    return patchField(withValue, 'availableQuantity', (field) =>
+      field.type === 'text'
+        ? {
+          ...field,
+          required: false,
+          label: { key: 'quantityRequest', fallback: 'Quantity' },
+          subTitle: {
+            key: 'supportProvider.assetForm.step1.quantityRequestSubTitle',
+            fallback: 'Total number of participants / units requiring funds for this asset',
+          },
+          validation: field.validation?.filter((rule) => rule.rule !== 'required'),
+        }
+        : field);
+  }, [hideFields, totalFundBreakdownText, totalFundAvailableText, isLc]);
 
   const handleSave = useCallback(async (submittedValues: any, isDraft: boolean) => {
     try {
@@ -288,7 +306,7 @@ const App = (): React.JSX.Element => {
         />
       )}
       <Container {...styles.container}>
-        <Card borderRadius="$2xl" bg={isLc ? "transparent" : "$white"} p={isLc ? "$0" : undefined} shadowOpacity={isLc ? 0 : undefined} elevation={isLc ? 0 : undefined}>
+        <Card borderRadius="$2xl" bg="transparent" p="$0" shadowOpacity={0} elevation={0}>
           <SchemaFormRenderer
             schema={schema}
             optionsMap={optionsMap}
@@ -296,7 +314,7 @@ const App = (): React.JSX.Element => {
             t={t}
             onFieldChange={handleFieldChange}
             disableStepNavigation={isLc}
-            _formContainer={isLc ? FORM_CARD_PROPS : undefined}
+            _formContainer={FORM_CARD_PROPS}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             draftRequiredFields={isLc ? undefined : ASSET_DRAFT_CONFIG.requiredFields}

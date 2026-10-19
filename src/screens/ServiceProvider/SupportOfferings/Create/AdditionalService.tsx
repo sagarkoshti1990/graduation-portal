@@ -240,7 +240,7 @@ const App = (): React.JSX.Element => {
         />
       )}
       <Container {...styles.container}>
-        <Card borderRadius="$2xl" bg={isLc ? "transparent" : "$white"} p={isLc ? "$0" : undefined} shadowOpacity={isLc ? 0 : undefined} elevation={isLc ? 0 : undefined}>
+        <Card borderRadius="$2xl" bg="transparent" p="$0" shadowOpacity={0} elevation={0}>
           <SchemaFormRenderer
             schema={ADDITIONAL_SERVICES_FORM_SCHEMA(hideFields, originalStartDateRef.current)}
             optionsMap={optionsMap}
@@ -248,7 +248,7 @@ const App = (): React.JSX.Element => {
             t={t}
             onFieldChange={handleFieldChange}
             disableStepNavigation={isLc}
-            _formContainer={isLc ? FORM_CARD_PROPS : undefined}
+            _formContainer={FORM_CARD_PROPS}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             draftRequiredFields={isLc ? undefined : ADDITIONAL_SERVICE_DRAFT_CONFIG.requiredFields}

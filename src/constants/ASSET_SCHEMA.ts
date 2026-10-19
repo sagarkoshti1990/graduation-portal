@@ -1,6 +1,9 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
 import { SESSION_MIN_LEAD_MINUTES } from './TRAINING_FORM_SCHEMA';
 
+// Strips the card border/padding so a nested section blends into its parent card
+const PLAIN_SECTION = { borderWidth: 0, p: '$0' };
+
 export const ASSET_SCHEMA = (hideFields: string[] = []): FormSection[] => {
   const allTabs: FormSection[] = [
     // ─── Tab 1: Asset Details ──────────────────────────────────────────────────
@@ -240,7 +243,8 @@ export const ASSET_SCHEMA = (hideFields: string[] = []): FormSection[] => {
               ] as FormField[],
             },
           ],
-        },
+          // Nested sections render without their own card chrome, so the tab reads as one form
+          children: [
         {
           type: 'section',
           id: 'availability',
@@ -248,6 +252,8 @@ export const ASSET_SCHEMA = (hideFields: string[] = []): FormSection[] => {
             key: 'supportProvider.assetForm.step1.availabilityTitle',
             fallback: 'Availability (optional)',
           },
+          _container: PLAIN_SECTION,
+          _title: { fontSize: '$md', lineHeight: '$md', fontWeight: '$normal' },
           rows: [
             {
               fields: [
@@ -324,6 +330,7 @@ export const ASSET_SCHEMA = (hideFields: string[] = []): FormSection[] => {
         ...(hideFields.includes('assetDocuments') ? [] : [{
           type: 'section',
           id: 'assetDocuments',
+          _container: PLAIN_SECTION,
           rows: [
             {
               fields: [
@@ -372,6 +379,8 @@ export const ASSET_SCHEMA = (hideFields: string[] = []): FormSection[] => {
             },
           ],
         } as FormSection]),
+          ],
+        },
       ],
     },
 

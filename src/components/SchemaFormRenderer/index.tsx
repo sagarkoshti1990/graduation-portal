@@ -298,6 +298,9 @@ function evaluateVisibleIfCondition(
       return String(raw) === String(condition.value);
     case '!=':
       return String(raw) !== String(condition.value);
+    case 'in':
+      return (Array.isArray(condition.value) ? condition.value : [condition.value])
+        .some(v => String(v).toLowerCase() === String(raw).toLowerCase());
     case '>':
       return Number(raw) > Number(condition.value);
     case '<':

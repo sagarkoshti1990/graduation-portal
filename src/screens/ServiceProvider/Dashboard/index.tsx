@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, ButtonIcon, ButtonText, Container, LucideIcon, VStack } from '@ui';
 import styles from './styles';
-import DashboardContent from './components/DashboardContent';
+import SupportProviderDashboard from '../../SupportProviderDashboard';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
 import { useLanguage } from '@contexts/LanguageContext';
@@ -13,19 +13,19 @@ const App = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <SPTitleHeader
-        title={t('supportProvider.dashboard.title', 'Dashboard')}
-        subTitle={t('supportProvider.dashboard.subtitle', 'Overview of your impact and activities')}
+        title={t('supportProvider.dashboard.title', 'Support Provider Dashboard')}
+        subTitle={t('supportProvider.dashboard.subtitle', 'Overview of your support commitments, intervention fulfillment tracking & performance portfolio')}
         rightSection={
           <Button
             onPress={() => navigation.navigate('create-opportunity' as never)}
           >
             <ButtonIcon as={LucideIcon} name={'Plus'} />
-            <ButtonText>{t('supportProvider.dashboard.createSupportBtn', 'Create Support for Participants')}</ButtonText>
+            <ButtonText>{t('supportProvider.dashboard.createSupportBtn', 'Create Support Intervention')}</ButtonText>
           </Button>
         }
       />
       <Container {...styles.container}>
-        <DashboardContent />
+        <SupportProviderDashboard variant="mentor" />
       </Container>
     </VStack>
   );
