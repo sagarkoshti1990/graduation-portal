@@ -5,8 +5,10 @@ import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import { FormField, FORM_FIELD_TYPES } from '@components/SchemaFormRenderer/type';
 import SchemaFormRenderer, { validateSchema } from '@components/SchemaFormRenderer';
 import { createUser, getSitesByProvince } from '../../services/usersService';
+import { updateMentorExtension } from '../../services/mentoringService';
 import { useUserManagementFilters } from '@constants/USER_MANAGEMENT';
 import type { AdminUserManagementData } from '@app-types/Users';
+import { ROLE_NAMES } from '@constants/ROLES';
 import { CREATE_USER_FORM_SCHEMA, INPUT_STYLE } from '@constants/CREATE_USER_FORM_SCHEMA';
 
 interface CreateUserFormProps {
@@ -122,7 +124,20 @@ export const CreateUserForm = React.memo<CreateUserFormProps>(({
       // @ts-ignore - process.env is injected by webpack DefinePlugin on web
       payload.password = process.env.DEFAULT_USER_PASSWORD || 'Password@1234';
 
-      await createUser(payload);
+      const createRes = await createUser(payload);
+      try {
+        await syncMentorExtension(createRes, payload, values);
+      } catch (mentorError: any) {
+        // User exists at this point, so close the form and refresh the list instead of letting a retry hit a duplicate
+        showAlert(
+          'warning',
+          t('admin.users.createUser.mentorProfileError') ||
+            `User created successfully, but creating the mentoring profile failed${mentorError?.message ? `: ${mentorError.message}` : '.'}`,
+          { placement: 'bottom' },
+        );
+        onSuccess();
+        return;
+      }
       showAlert('success', t('admin.users.createUser.success') || 'User created successfully.', { placement: 'bottom' });
       onSuccess();
     } catch (error: any) {
@@ -343,6 +358,47 @@ export const mapFiltersToOptionsMap = (params: {
   };
 };
 
+/**
+ * Creates the mentor extension for newly created org_admin / user role users.
+ * org_admin users are flagged as mentors.
+ */
+const syncMentorExtension = async (
+  createRes: any,
+  payload: any,
+  values: Record<string, string>,
+) => {
+  const roleList = String(payload.roles || '').toLowerCase().split(',');
+  const isOrgAdmin = roleList.includes(ROLE_NAMES.ORG_ADMIN);
+  if (!isOrgAdmin && !roleList.includes(ROLE_NAMES.USER)) return;
+
+  const user = createRes?.result?.user;
+  if (!user?.id) return;
+
+  // Backend reads mentor fields from the top level of the body
+  await updateMentorExtension({
+    user_id: String(user.id),
+    skipValidation: true,
+    forceCreate: true,
+    name: payload.name,
+    username: payload.username,
+    email: payload.email,
+    phone: payload.phone,
+    // meta: {
+    //   provinces: values.provinceId ? [values.provinceId] : [],
+    //   sites: values.siteId ? [values.siteId] : [],
+    // },
+    provinces: values.provinceId ? [values.provinceId] : [],
+    sites: values.siteId ? [values.siteId] : [],
+    is_mentor: isOrgAdmin,
+    mentor_visibility: 'CURRENT',
+    mentee_visibility: 'CURRENT',
+    external_session_visibility: 'CURRENT',
+    external_mentor_visibility: 'CURRENT',
+    external_mentee_visibility: 'CURRENT',
+    visible_to_organizations: (user.organizations || []).map((o: any) => o.id),
+  });
+};
+
 export const mapFormValuesToPayload = (
   values: Record<string, string>,
   roles: any[],
@@ -359,7 +415,8 @@ export const mapFormValuesToPayload = (
     name: values.name?.trim(),
     username: values.username?.trim(),
     email: values.email?.trim(),
-    roles: roleTitle,
+    // org_admin users are also added to the mentor list
+    roles: roleTitle.toLowerCase() === ROLE_NAMES.ORG_ADMIN ? `${roleTitle},mentor` : roleTitle,
   };
 
   if (values.dob && values.dob.trim()) {
