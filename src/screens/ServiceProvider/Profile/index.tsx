@@ -406,15 +406,13 @@ try {
 
   const payload = {
     name: values.contactPersonName,
-    // Not a user_extensions column, so the backend dropped it at top level; it is saved inside meta below
-    // provider_name: values.name,
+    provider_name: values.name,
     email: values.contactEmail,
     phone: values.contactPhone,
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
     // Single select in UI, but backend still stores provider_type as an array
     provider_type: values.organizationType ? [values.organizationType] : [],
     meta: {
-      provider_name: values.name,
       provinces,
       sites,
       categories,
