@@ -5,7 +5,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import PageHeader from '@components/PageHeader';
 import moment from 'moment';
 import openExternalLink from '@utils/openExternalLink';
-import { getMyRequestsList } from '../../../services/SessionSupportServices/sessionRequestorService';
+import { getSessionCategories, getLivelihoodCategoriesOptions, getRecommendedFor } from '../../../services/mentoringService';
+import { getRequestSessionDetails } from '../../../services/serviceProvider/serviceProviderService';
 import { getProvincesList } from '../../../services/usersService';
 import styles from './styles';
 import sessionStyles from '../styles';
@@ -76,6 +77,16 @@ const formatDate = (val: any) => {
   return m ? m.format('YYYY-MM-DD') : '-';
 };
 
+// getDetails returns the session fields inside `meta` (plus title/agenda/dates at the top level) and no nested `session`
+const getSessionObj = (item: any) =>
+  item?.session || item?.session_details || {
+    ...(item?.meta || {}),
+    title: item?.title,
+    description: item?.agenda,
+    start_date: item?.start_date,
+    end_date: item?.end_date,
+  };
+
 export const RequestDetailsScreen: React.FC = () => {
   const { t } = useLanguage();
   const navigation = useNavigation();
@@ -86,6 +97,22 @@ export const RequestDetailsScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [requestItem, setRequestItem] = useState<any>(null);
   const [mappedSessionDetails, setMappedSessionDetails] = useState<any>(null);
+  const [pillarOptions, setPillarOptions] = useState<any[]>([]);
+  const [livelihoodOptions, setLivelihoodOptions] = useState<any[]>([]);
+  const [recommendedForOptions, setRecommendedForOptions] = useState<any[]>([]);
+
+  // Entity lists used to turn the stored category values into labels
+  useEffect(() => {
+    Promise.all([
+      getSessionCategories().catch(() => []),
+      getLivelihoodCategoriesOptions().catch(() => []),
+      getRecommendedFor().catch(() => []),
+    ]).then(([pillars, livelihoods, recommendedFor]) => {
+      setPillarOptions(pillars || []);
+      setLivelihoodOptions(livelihoods || []);
+      setRecommendedForOptions(recommendedFor || []);
+    });
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,15 +124,15 @@ export const RequestDetailsScreen: React.FC = () => {
       try {
         setLoading(true);
         const [res, provincesData] = await Promise.all([
-          getMyRequestsList({ page: 1, limit: 100 }),
+          getRequestSessionDetails(requestId),
           getProvincesList().catch(() => [])
         ]);
         if (isMounted) {
-          const rawList = Array.isArray(res) ? res : (res?.result?.data || res?.result || res?.data || []);
-          const found = rawList.find((item: any) => String(item.id || item._id) === String(requestId));
+          // getDetails returns a single request record (possibly wrapped in `data`)
+          const found = res?.data && !res.session && !res.session_details ? res.data : res;
           if (found) {
             setRequestItem(found);
-            const sessionObj = found.session || found.session_details || {};
+            const sessionObj = getSessionObj(found);
             const rawProv = sessionObj.provinces?.[0] || sessionObj?.meta?.provinces?.[0];
             const foundProvince = provincesData?.find((e: any) => e._id === rawProv || e.externalId === rawProv || e.name === rawProv);
             const provinceName = foundProvince ? foundProvince.name : (rawProv || '');
@@ -235,18 +262,39 @@ export const RequestDetailsScreen: React.FC = () => {
     );
   }
 
-  const sessionObj = requestItem.session || requestItem.session_details || {};
+  const sessionObj = getSessionObj(requestItem);
   const statusStyle = getStatusBadgeStyles(statusOverride || requestItem.status, t);
   const requestedDateStr = formatDate(requestItem.created_at || requestItem.createdAt || requestItem.requested_at);
   const mentorName = requestItem.mentor_name || sessionObj.mentor_name || requestItem.mentorName || '-';
 
-  const notesText = sessionObj.description || requestItem.description || requestItem.agenda || '';
+  const notesText = sessionObj.meta?.extra_information || '';
   const extraInformation: string = requestItem.meta?.extra_information || '';
 
-  const pillar = displayValue(sessionObj.category || requestItem.category || requestItem.pillar);
+  // Stored categories hold the pillar (session_categories) and, optionally, a livelihood category (livelihood_categories)
+  const storedCategories: any[] = [
+    requestItem.categories,
+    requestItem.meta?.categories,
+    sessionObj.categories,
+    sessionObj.meta?.categories,
+  ].find((c) => Array.isArray(c) && c.length) || [];
+  const findLabel = (options: any[], raw: any) => {
+    const val = String(typeof raw === 'object' ? raw?.value ?? raw?.label : raw).toLowerCase();
+    return options.find((o) => String(o.value).toLowerCase() === val)?.label;
+  };
+  const pillarLabel = storedCategories.map((c) => findLabel(pillarOptions, c)).find(Boolean);
+  const livelihoodLabel = storedCategories.map((c) => findLabel(livelihoodOptions, c)).find(Boolean);
+  const pillar = pillarLabel || displayValue(storedCategories[0] || sessionObj.category || requestItem.category || requestItem.pillar);
   const trainingArea = displayValue(sessionObj.title || requestItem.title || requestItem.training_session);
   const description = displayValue(sessionObj.description || requestItem.description || requestItem.agenda);
-  const targetAudience = displayValue(sessionObj.recommended_for || requestItem.target_audience || t('lc.sessionsSupport.requestDetails.participant', 'Participant'));
+  const recommendedFor: any[] = Array.isArray(sessionObj.recommended_for)
+    ? sessionObj.recommended_for
+    : sessionObj.recommended_for ? [sessionObj.recommended_for] : [];
+  const recommendedForKeys = recommendedFor.map((r) => String(r).toLowerCase());
+  const targetAudience = recommendedFor.length
+    ? (recommendedForKeys.length === 2 && recommendedForKeys.includes('user') && recommendedForKeys.includes('coach')
+      ? 'Coach, User'
+      : recommendedFor.map((r) => findLabel(recommendedForOptions, r) || displayValue(r)).join(', '))
+    : displayValue(requestItem.target_audience || t('lc.sessionsSupport.requestDetails.participant', 'Participant'));
 
   const hasCertificate = sessionObj.certificate_provided || requestItem.certificate_provided;
   const certificate = hasCertificate ? t('lc.sessionsSupport.requestDetails.yes', 'Yes') : t('lc.sessionsSupport.requestDetails.no', 'No');
@@ -383,6 +431,15 @@ export const RequestDetailsScreen: React.FC = () => {
                     </Text>
                     <Text {...styles.infoRowValue}>{pillar}</Text>
                   </Box>
+
+                  {!!livelihoodLabel && (
+                    <Box {...styles.infoRow}>
+                      <Text {...styles.infoRowLabel}>
+                        {t('lc.sessionsSupport.requestDetails.livelihoodCategoryLabel', 'Category of Livelihoods')}
+                      </Text>
+                      <Text {...styles.infoRowValue}>{livelihoodLabel}</Text>
+                    </Box>
+                  )}
 
                   <Box {...styles.infoRow}>
                     <Text {...styles.infoRowLabel}>

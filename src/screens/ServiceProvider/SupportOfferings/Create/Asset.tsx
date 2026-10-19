@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, Container, VStack, useAlert, Loader } from '@ui';
+import { Box, Card, Container, HStack, Text, VStack, useAlert, Loader } from '@ui';
 import styles from '../styles';
+import lcStyles from '../../../SessionsSupport/styles';
+import PageHeader from '@components/PageHeader';
 import SPTitleHeader from '@components/Header/SPTitleHeader';
 import { useNavigation } from '@react-navigation/native';
 import SchemaFormRenderer from '@components/SchemaFormRenderer';
@@ -36,6 +38,9 @@ const patchField = (schema: FormSection[], fieldName: string, patcher: (field: F
     })),
     children: node.children ? patchField(node.children, fieldName, patcher) : node.children,
   }));
+
+// White card applies only to the form body, not the progress bar or step tabs
+const FORM_CARD_PROPS = { bg: '$white', borderRadius: '$2xl', p: '$6' };
 
 const App = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -151,16 +156,34 @@ const App = (): React.JSX.Element => {
     return `R ${totalFund.toLocaleString()}`;
   }, [values.estimatedValue, values.availableQuantity]);
 
-  const schema = useMemo(
-    () => patchField(ASSET_FORM_SCHEMA(hideFields), 'totalFundBreakdown', (field) => ({
+  const schema = useMemo(() => {
+    const withFund = patchField(ASSET_FORM_SCHEMA(hideFields), 'totalFundBreakdown', (field) => ({
       ...field,
       subTitle: { ...field.subTitle, fallback: totalFundBreakdownText },
       badge: field.badge
         ? { ...field.badge, value: { ...field.badge.value, fallback: totalFundAvailableText } }
         : field.badge,
-    })),
-    [hideFields, totalFundBreakdownText, totalFundAvailableText],
-  );
+    }));
+    if (!isLc) return withFund;
+    // The request page asks for the total asset value (not per participant) and an optional quantity
+    const withValue = patchField(withFund, 'estimatedValue', (field) =>
+      field.label?.key === 'estimatedValue'
+        ? { ...field, label: { key: 'estimatedValueRequest', fallback: 'Estimated Asset Value (Rands)' } }
+        : field);
+    return patchField(withValue, 'availableQuantity', (field) =>
+      field.type === 'text'
+        ? {
+          ...field,
+          required: false,
+          label: { key: 'quantityRequest', fallback: 'Quantity' },
+          subTitle: {
+            key: 'supportProvider.assetForm.step1.quantityRequestSubTitle',
+            fallback: 'Total number of participants / units requiring funds for this asset',
+          },
+          validation: field.validation?.filter((rule) => rule.rule !== 'required'),
+        }
+        : field);
+  }, [hideFields, totalFundBreakdownText, totalFundAvailableText, isLc]);
 
   const handleSave = useCallback(async (submittedValues: any, isDraft: boolean) => {
     try {
@@ -254,21 +277,44 @@ const App = (): React.JSX.Element => {
     );
   }
 
+  const lcHeaderBadge = (
+    <HStack {...lcStyles.headerTitleHStack}>
+      <Text {...lcStyles.headerSubTitleText}>
+        {t('lc.requestAsset.title')}
+      </Text>
+      <Box {...lcStyles.headerBadgeBox}>
+        <Text {...lcStyles.headerBadgeText}>
+          {t('lc.requestAsset.badge')}
+        </Text>
+      </Box>
+    </HStack>
+  );
+
   return (
     <VStack flex={1}>
-      <SPTitleHeader
-        title={t('supportProvider.createSupport.asset.title')}
-        backButtonText={t('supportProvider.createSupport.changeType')}
-        onNavigateBack={handleBackPress}
-      />
+      {isLc ? (
+        <PageHeader
+          rightSection={lcHeaderBadge}
+          backButtonText={t('supportProvider.createSupport.changeType')}
+          onBackPress={handleBackPress}
+        />
+      ) : (
+        <SPTitleHeader
+          title={t('supportProvider.createSupport.asset.title')}
+          backButtonText={t('supportProvider.createSupport.changeType')}
+          onNavigateBack={handleBackPress}
+        />
+      )}
       <Container {...styles.container}>
-        <Card borderRadius={"$2xl"} bg="$white">
+        <Card borderRadius="$2xl" bg="transparent" p="$0" shadowOpacity={0} elevation={0}>
           <SchemaFormRenderer
             schema={schema}
             optionsMap={optionsMap}
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            disableStepNavigation={isLc}
+            _formContainer={FORM_CARD_PROPS}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             draftRequiredFields={isLc ? undefined : ASSET_DRAFT_CONFIG.requiredFields}

@@ -1492,9 +1492,11 @@
         "assetDescription": "Asset Description",
         "assetDescriptionPlaceholder": "Describe this asset, its purpose, and how it benefits the recipient...",
         "estimatedValue": "Estimated Asset Value per Participant (Rands)",
+        "estimatedValueRequest": "Estimated Asset Value (Rands)",
         "estimatedValuePlaceholder": "R 0.00",
         "estimatedValueReview": "Estimated Value per Participant",
         "availableQuantity": "Available Quantity",
+        "quantityRequest": "Quantity",
         "availableQuantityPlaceholder": "e.g. 50",
         "quantity": "Quantity (optional)",
         "quantityPlaceholder": "e.g. 10",
@@ -1558,6 +1560,7 @@
               "livelihoodCategorySubTitle": "Select all applicable livelihood categories for this asset support",
               "estimatedValueSubTitle": "Monetary value allocated per individual participant (1:1 ratio)",
               "availableQuantitySubTitle": "Total number of participants / units funded for this asset",
+              "quantityRequestSubTitle": "Total number of participants / units requiring funds for this asset",
               "availabilityTitle": "Availability (optional)",
               "resourceContent": "Resource Content / Asset Documents",
               "resourceUploadSub": "Upload PDF or Word specification documents (Max 10 MB per file)",
@@ -2654,6 +2657,7 @@
         "infoRequestedLabel": "Information Requested by Provider",
         "infoRequestedBadge": "Info requested",
         "pillarLabel": "Pillar",
+        "livelihoodCategoryLabel": "Category of Livelihoods",
         "trainingSessionLabel": "Training / Session",
         "descriptionLabel": "Description",
         "targetAudienceLabel": "Target Audience",
@@ -2696,6 +2700,10 @@
     "requestAdditionalService": {
       "title": "Request Additional Service",
       "badge": "Service"
+    },
+    "requestAsset": {
+      "title": "Request Asset",
+      "badge": "Asset"
     }
   },
   "template": {

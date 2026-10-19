@@ -12,6 +12,7 @@ import {
   getRecommendedFor,
   getSessionTypesByPillar,
   getDeliveryModes,
+  getLivelihoodCategoriesOptions,
   requestSession,
   MentoringOption,
 } from '../../../services/mentoringService';
@@ -25,6 +26,9 @@ const DELIVERY_MODE_ICONS: Record<string, string> = {
   hybrid: 'Users',
 };
 
+// White card applies only to the form body, not the progress bar or step tabs
+const FORM_CARD_PROPS = { bg: '$white', borderRadius: '$2xl', p: '$6' };
+
 const RequestSessionScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const { t } = useLanguage();
@@ -32,6 +36,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
   const [pillers, setPillers] = useState<MentoringOption[]>([]);
   const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
   const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
+  const [livelihoodCategories, setLivelihoodCategories] = useState<MentoringOption[]>([]);
   const [values, setValues] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert } = useAlert();
@@ -45,6 +50,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
     pillers,
     targetAudience,
     deliveryModes,
+    livelihoodCategories,
     deliveryModeIcons: DELIVERY_MODE_ICONS,
     allowedProvinces: allowedProvinces.length > 0 ? allowedProvinces : undefined,
     allowedSites: allowedSites.length > 0 ? allowedSites : undefined,
@@ -58,14 +64,16 @@ const RequestSessionScreen = (): React.JSX.Element => {
           getSessionCategories(),
           getRecommendedFor(),
           getDeliveryModes(),
+          getLivelihoodCategoriesOptions(),
         ]);
 
-        const [resProvinces, resCategories, resTarget, resDeliveryModes] = results;
+        const [resProvinces, resCategories, resTarget, resDeliveryModes, resLivelihood] = results;
 
         setProvinces(resProvinces.status === 'fulfilled' ? resProvinces.value || [] : []);
         setPillers(resCategories.status === 'fulfilled' ? resCategories.value || [] : []);
         setTargetAudience(resTarget.status === 'fulfilled' ? resTarget.value || [] : []);
         setDeliveryModes(resDeliveryModes.status === 'fulfilled' ? resDeliveryModes.value || [] : []);
+        setLivelihoodCategories(resLivelihood.status === 'fulfilled' ? resLivelihood.value || [] : []);
       } catch (error: any) {
         showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
       } finally {
@@ -86,10 +94,12 @@ const RequestSessionScreen = (): React.JSX.Element => {
         }
         if (name === 'categories') {
           next.idp_tasks = '';
+          next.livelihoodCategory = '';
           next.title = '';
         }
         if (name === 'idp_tasks') {
           next.title = other?.label;
+          next.livelihoodCategory = '';
         }
         return next;
       });
@@ -135,7 +145,7 @@ const RequestSessionScreen = (): React.JSX.Element => {
     return <Loader fullScreen message="Loading..." />;
   }
 
-  const headerTitle = (
+  const headerBadge = (
     <HStack {...styles.headerTitleHStack}>
       <Text {...styles.headerSubTitleText}>
         {t('lc.requestSession.title')}
@@ -151,18 +161,20 @@ const RequestSessionScreen = (): React.JSX.Element => {
   return (
     <VStack flex={1}>
       <PageHeader
-        title={headerTitle}
+        rightSection={headerBadge}
         backButtonText={t('supportProvider.createSupport.changeType', 'Change Type')}
         onBackPress={handleBackPress}
       />
       <Container py="$6">
-        <Card borderRadius="$2xl" bg="$white">
+        <Card borderRadius="$2xl" bg="transparent" p="$0" shadowOpacity={0} elevation={0}>
           <SchemaFormRenderer
             schema={TRAINING_FORM_SCHEMA(REQUEST_SESSION_HIDE_FIELDS)}
             optionsMap={optionsMap}
             values={values}
             t={t}
             onFieldChange={handleFieldChange}
+            disableStepNavigation
+            _formContainer={FORM_CARD_PROPS}
             onSubmit={(formValues) => handleSave(formValues, false)}
             onSaveDraft={(formValues) => handleSave(formValues, true)}
             uploadService={async (file) => {

@@ -13,6 +13,7 @@ interface UseTrainingFormOptionsParams {
   allowedSubOptions?: Record<string, string[]>;
   allowedProvinces?: string[];
   allowedSites?: string[];
+  livelihoodCategories?: MentoringOption[];
 }
 
 export function useTrainingFormOptions({
@@ -25,6 +26,7 @@ export function useTrainingFormOptions({
   allowedSubOptions,
   allowedProvinces,
   allowedSites,
+  livelihoodCategories = [],
 }: UseTrainingFormOptionsParams) {
   const [sessionTypes, setSessionTypes] = useState<MentoringOption[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -97,8 +99,9 @@ export function useTrainingFormOptions({
       targetAudience,
       deliveryModes,
       deliveryModeIcons,
+      livelihoodCategories,
     });
-  }, [filteredProvinces, filteredSites, filteredPillers, sessionTypes, targetAudience, deliveryModes, deliveryModeIcons]);
+  }, [filteredProvinces, filteredSites, filteredPillers, sessionTypes, targetAudience, deliveryModes, deliveryModeIcons, livelihoodCategories]);
 
   return {
     sessionTypes,

@@ -2,6 +2,7 @@ import { LC_ROLES, PARTICIPANT_ROLES } from '@constants/ROLES';
 import { CERTIFICATE_OPTIONS, RECURRING_OPTIONS, SUPPORT_CATEGORIES, SUPPORT_OFFERING_TYPE_VALUES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import moment from 'moment';
 import { uploadFiles } from '../project-player/services/projectPlayerService';
+import { LIVELIHOOD_CATEGORY_TASK_IDS } from '@constants/TRAINING_FORM_SCHEMA';
 
 export type SupportOfferingFormType = 'training' | 'additional_service' | 'asset' | string;
 
@@ -10,6 +11,13 @@ export type SupportOfferingFormType = 'training' | 'additional_service' | 'asset
 const firstOf = (val: any) => (Array.isArray(val) ? val[0] : val);
 const unwrap = (item: any) => item?.value ?? item;
 const toArray = (val: any): any[] => (Array.isArray(val) ? val : val ? [val] : []);
+
+const requiresLivelihoodCategory = (idpTasks: any): boolean =>
+  toArray(idpTasks)
+    .map(unwrap)
+    .some((task: any) =>
+      LIVELIHOOD_CATEGORY_TASK_IDS.some((id) => id.toLowerCase() === String(task).toLowerCase()),
+    );
 
 // ---------- API -> form (edit / copy) ----------
 
@@ -42,6 +50,8 @@ function mapApiToFormValues(data: any, formType: SupportOfferingFormType): any {
     provinces: firstOf(data?.provinces) || '',
     sites: toArray(data?.sites).filter(Boolean).map(String),
     categories: firstOf(data?.categories) || '',
+    // 2nd category, when present, is the livelihood category (see requiresLivelihoodCategory)
+    livelihoodCategory: isTraining && requiresLivelihoodCategory(tasks) ? (toArray(data?.categories)[1] ?? '') : '',
     idp_tasks: isTraining ? (tasks[0] ?? '') : tasks,
     sessionTypeOther: isCustomTask ? data?.title : '',
     description: data?.description,
@@ -91,7 +101,12 @@ function mapFormToPayload(formValues: any, formType: SupportOfferingFormType): a
     ...formValues,
     title: toArray(formValues?.idp_tasks)[0] === 'custom' ? formValues?.sessionTypeOther : formValues?.title,
     idp_tasks: toIdpTasksPayload(formValues?.idp_tasks, formType),
-    categories: [formValues.categories],
+    categories: [
+      formValues.categories,
+      ...(formType === SUPPORT_CATEGORIES.TRAINING && requiresLivelihoodCategory(formValues?.idp_tasks) && formValues.livelihoodCategory
+        ? [formValues.livelihoodCategory]
+        : []),
+    ],
     provinces: [formValues.provinces],
     delivery_mode: formValues.delivery_mode || 'offline',
     recommended_for: toRecommendedForPayload(formValues.recommended_for, formType),
@@ -131,7 +146,12 @@ export function requestSessionPayloadMapping(formValues: any, optionMap: any = {
     support_offering_type: formValues.support_offering_type || SUPPORT_OFFERING_TYPE_VALUES.TRAINING_SESSION,
     provinces: Array.isArray(resolvedProvince) ? resolvedProvince : [resolvedProvince],
     sites: Array.isArray(resolvedSites) ? resolvedSites : (resolvedSites ? [resolvedSites] : []),
-    categories: [formValues.categories],
+    categories: [
+      formValues.categories,
+      ...(requiresLivelihoodCategory(formValues.idp_tasks) && formValues.livelihoodCategory
+        ? [formValues.livelihoodCategory]
+        : []),
+    ],
     idp_tasks: toIdpTasksPayload(formValues.idp_tasks),
     description: formValues.description,
     learning_objectives: formValues.learning_objectives,
@@ -235,6 +255,7 @@ interface TrainingFormOptionsMapParams {
   targetAudience?: any[];
   deliveryModes?: any[];
   deliveryModeIcons?: Record<string, string>;
+  livelihoodCategories?: any[];
 }
 
 /**
@@ -249,6 +270,7 @@ export function buildTrainingFormOptionsMap({
   targetAudience = [],
   deliveryModes = [],
   deliveryModeIcons = {},
+  livelihoodCategories = [],
 }: TrainingFormOptionsMapParams): Record<string, { value: string; label: string }[]> {
   return {
     provinces: provinces.map((province: any) => ({
@@ -261,6 +283,7 @@ export function buildTrainingFormOptionsMap({
     })),
     pillars: pillers,
     sessionTypes: sessionTypes,
+    livelihoodCategories,
     targetAudienceOptions: targetAudience,
     formatOptions: (Array.isArray(deliveryModes) ? deliveryModes : []).map((mode: any) => ({
       value: mode.value,

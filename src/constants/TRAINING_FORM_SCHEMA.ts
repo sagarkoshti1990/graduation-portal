@@ -119,6 +119,30 @@ export const TRAINING_SESSION_SCHEMA = (hideFields: string[] = [], originalStart
           },
           {
             fields: [
+              ...(hideFields.includes('livelihoodCategory') ? [] : [{
+                name: 'livelihoodCategory',
+                type: 'select',
+                required: true,
+                label: { key: 'livelihoodCategory', fallback: 'Category of Livelihoods' },
+                placeholder: { key: 'livelihoodCategoryPlaceholder', fallback: 'Select livelihood category' },
+                optionsSource: 'livelihoodCategories',
+                visibleIf: [
+                  { name: 'idp_tasks', value: LIVELIHOOD_CATEGORY_TASK_IDS, operator: 'in' },
+                ],
+                validation: [
+                  {
+                    rule: 'required',
+                    message: {
+                      key: 'errors.livelihoodCategoryRequired',
+                      fallback: 'Category of livelihoods is required',
+                    },
+                  },
+                ],
+              }]),
+            ],
+          },
+          {
+            fields: [
               ...(hideFields.includes('sessionTypeOther') ? [] : [{
                 name: 'sessionTypeOther',
                 type: 'text',
@@ -719,6 +743,12 @@ export const TRAINING_SESSION_SCHEMA = (hideFields: string[] = [], originalStart
 // ─── Field visibility presets ────────────────────────────────────────────────
 // "Request a Session" flow only needs the core fields; everything else is
 // filled in / managed elsewhere, so we hide it from that form.
+// Session types (idp_tasks) that additionally require a livelihood category
+export const LIVELIHOOD_CATEGORY_TASK_IDS: string[] = [
+  process.env.EMPLOYMENT_LIVELIHOOD_TASK_ID,
+  process.env.ENTREPRENEURSHIP_LIVELIHOOD_TASK_ID,
+].filter(Boolean) as string[];
+
 export const REQUEST_SESSION_HIDE_FIELDS: string[] = [
   'recommended_for',
   'certificate_provided',

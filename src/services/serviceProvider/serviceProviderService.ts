@@ -394,7 +394,7 @@ export const acceptAndScheduleSupportRequest = async (
     title: payload.title || '',
     start_date: startDate,
     end_date: endDate,
-    delivery_mode: payload.delivery_mode || (isAsset ? 'offline' : 'online'),
+    delivery_mode: isAsset ? 'offline' : (payload.delivery_mode || 'online'),
     can_be_copied: false,
     certificate_provided: false,
     recommended_for: payload.recommended_for?.length ? payload.recommended_for : ['user'],
@@ -402,7 +402,8 @@ export const acceptAndScheduleSupportRequest = async (
       ? {
           agenda: payload.description || payload.title || '',
           description: payload.description || payload.title || '',
-          meeting_info: { link: '', location: payload.location || '' },
+          // Assets have no venue: delivery_mode is always offline and meeting_info stays empty
+          meeting_info: {},
         }
       : { description: payload.description || '', meeting_info: { link: payload.meetingLink || '' } }),
   };

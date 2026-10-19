@@ -1,6 +1,9 @@
 import type { FormField, FormSection } from '@components/SchemaFormRenderer/type';
 import { SESSION_MIN_LEAD_MINUTES } from './TRAINING_FORM_SCHEMA';
 
+// Strips the card border/padding so a nested section blends into its parent card
+const PLAIN_SECTION = { borderWidth: 0, p: '$0' };
+
 export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalStartDate?: string): FormSection[] => {
   const allTabs: FormSection[] = [
     // ─── Tab 1: Service Details ───────────────────────────────────────────────
@@ -94,7 +97,7 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalSt
                 ...(hideFields.includes('idp_tasks') ? [] : [{
                   name: 'idp_tasks',
                   type: 'pillmultiselect',
-                  label: { key: 'servicesCategory', fallback: 'Tags' },
+                  label: { key: 'tags', fallback: 'Tags' },
                   optionsSource: 'sessionTypes',
                   dependsOn: 'categories',
                   visibleIf: [
@@ -177,7 +180,9 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalSt
               ] as FormField[],
             }]),
           ],
-        },
+          children: [
+        // Nested sections render without their own card chrome, so the tab reads as one form:
+        // details -> "Service Availability" (start/end dates) -> remaining fields
         {
           type: 'section',
           id: 'serviceAvailability',
@@ -185,6 +190,8 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalSt
             key: 'supportProvider.additionalServicesForm.step1.availabilityTitle',
             fallback: 'Service Availability',
           },
+          _container: PLAIN_SECTION,
+          _title: { fontSize: '$md', lineHeight: '$md', fontWeight: '$normal' },
           rows: [
             {
               fields: [
@@ -211,7 +218,8 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalSt
                       },
                     },
                     {
-                      rule: "dateCompare",
+                      rule: "dateCompa'\
+                    re",
                       value: {
                         field: "end_date",
                         operator: "<="
@@ -256,6 +264,13 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalSt
                 }]),
               ] as FormField[],
             },
+          ],
+        },
+        {
+          type: 'section',
+          id: 'serviceOtherDetails',
+          _container: PLAIN_SECTION,
+          rows: [
             ...(hideFields.includes('location') ? [] : [{
               fields: [
                 {
@@ -323,6 +338,8 @@ export const ADDITIONAL_SERVICES_SCHEMA = (hideFields: string[] = [], originalSt
                 },
               ] as FormField[],
             }]),
+          ],
+        },
           ],
         },
       ],

@@ -54,7 +54,7 @@ export interface DisabledWhenCondition {
 }
 
 /** Comparison operator supported by a field's `visibleIf` conditions. */
-export type VisibleIfOperator = '===' | '!=' | '>' | '<' | '>=' | '<=';
+export type VisibleIfOperator = '===' | '!=' | 'in' | '>' | '<' | '>=' | '<=';
 
 /**
  * A single condition evaluated against another field's current value.

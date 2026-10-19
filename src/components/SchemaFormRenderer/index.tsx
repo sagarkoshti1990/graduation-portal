@@ -194,6 +194,10 @@ export interface SchemaFormRendererProps {
    * as-is (existing behavior, unchanged).
    */
   uploadService?: (file: FileAsset) => Promise<string>;
+  /** Multi-step only: props for the wrapper around the active step's form body (excludes progress, step tabs and footer buttons), e.g. a white card background */
+  _formContainer?: any;
+  /** Multi-step only: when true, the step tabs are not clickable; users move via Previous/Continue only */
+  disableStepNavigation?: boolean;
   // ── Internal footer (multi-step schemas only) — visibility/text/props overrides ──
   /**
    * Optional, fully caller-controlled element rendered in the footer immediately
@@ -294,6 +298,9 @@ function evaluateVisibleIfCondition(
       return String(raw) === String(condition.value);
     case '!=':
       return String(raw) !== String(condition.value);
+    case 'in':
+      return (Array.isArray(condition.value) ? condition.value : [condition.value])
+        .some(v => String(v).toLowerCase() === String(raw).toLowerCase());
     case '>':
       return Number(raw) > Number(condition.value);
     case '<':
@@ -2033,8 +2040,11 @@ const StepHeader: React.FC<{
   tabs: FormSection[];
   activeStepIndex: number;
   onSelectStep: (index: number) => void;
+  /** Locks forward jumps: only steps up to `maxReachedStep` stay clickable */
+  disabled?: boolean;
+  maxReachedStep?: number;
   t: (key: string, fallback?: string) => string;
-}> = memo(({ tabs, activeStepIndex, onSelectStep, t }) => {
+}> = memo(({ tabs, activeStepIndex, onSelectStep, disabled, maxReachedStep = 0, t }) => {
   const activeTabId = tabs[activeStepIndex]?.id;
 
   return (
@@ -2048,11 +2058,14 @@ const StepHeader: React.FC<{
       <TabsTabList flexWrap="wrap" borderRadius={0}>
         {tabs.map((tab, index) => {
           const isActive = index === activeStepIndex;
+          const isLocked = !!disabled && index > maxReachedStep;
           return (
             <TabsTab
               key={tab.id}
               value={tab.id}
-              onPress={() => onSelectStep(index)}
+              onPress={() => !isLocked && onSelectStep(index)}
+              disabled={isLocked}
+              style={isLocked ? ({ cursor: 'not-allowed' } as any) : undefined}
               paddingHorizontal="$6"
               paddingVertical="$3"
               borderBottomWidth={3}
@@ -2097,8 +2110,6 @@ const StepProgress: React.FC<{
     <VStack
       space="xs"
       width="100%"
-      borderBottomWidth={1}
-      borderBottomColor="$borderColor"
       pb="$3"
     >
       <HStack justifyContent="space-between" alignItems="center">
@@ -2358,6 +2369,8 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   isSubmitting = false,
   _input,
   uploadService,
+  disableStepNavigation,
+  _formContainer,
   customButton,
   showPreviousButton,
   showContinueButton,
@@ -2400,6 +2413,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
   const isMultiStep = rootTabs.length > 1 && rootTabs.length === schema.length;
 
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  // Highest step reached via a validated Continue; with `disableStepNavigation`
+  // only steps up to here stay clickable, so users can revisit completed tabs.
+  const [maxReachedStep, setMaxReachedStep] = useState(0);
   const safeStepIndex = Math.min(
     activeStepIndex,
     Math.max(rootTabs.length - 1, 0),
@@ -2580,7 +2596,9 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
     applyValidationResult(stepErrors, visited);
 
     if (stepIssues.length === 0) {
-      setActiveStepIndex(i => Math.min(i + 1, rootTabs.length - 1));
+      const nextStep = Math.min(safeStepIndex + 1, rootTabs.length - 1);
+      setActiveStepIndex(nextStep);
+      setMaxReachedStep(m => Math.max(m, nextStep));
     } else {
       setPopupIssues(stepIssues);
       setIsPopupOpen(true);
@@ -2765,10 +2783,13 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
             tabs={rootTabs}
             activeStepIndex={safeStepIndex}
             onSelectStep={handleSelectStep}
+            disabled={disableStepNavigation}
+            maxReachedStep={maxReachedStep}
             t={t}
           />
         </VStack>
 
+        <VStack space="md" width="100%" {..._formContainer}>
         {!!stepSubTitleText && (
           <Text {...TYPOGRAPHY.caption} color="$textMutedForeground">
             {stepSubTitleText}
@@ -2778,6 +2799,7 @@ const SchemaFormRenderer: React.FC<SchemaFormRendererProps> = ({
         {!!activeTab?.hint && <HintDisplay hint={activeTab.hint} t={t} />}
 
         <RenderNodes nodes={activeTab?.children} ctx={stepCtx} />
+        </VStack>
 
         <StepFooter
           isFirstStep={safeStepIndex === 0}

@@ -413,57 +413,6 @@ export const ACCEPT_ASSET_REQUEST_FORM_SCHEMA: FormSection[] = [
           },
         ],
       },
-      {
-        fields: [
-          {
-            name: 'delivery_mode',
-            type: 'select',
-            required: true,
-            label: {
-              key: 'supportProvider.supportRequests.labels.deliveryFormat',
-              fallback: 'Delivery Format',
-            },
-            placeholder: {
-              key: 'supportProvider.supportRequests.labels.offline',
-              fallback: 'Offline',
-            },
-            optionsSource: 'assetFormatOptions',
-            // Assets are always delivered offline
-            disabled: true,
-            validation: [
-              {
-                rule: 'required',
-                message: {
-                  key: 'supportProvider.supportRequests.errors.deliveryFormatRequired',
-                  fallback: 'Delivery format is required',
-                },
-              },
-            ],
-          },
-          {
-            name: 'location',
-            type: 'text',
-            required: true,
-            label: {
-              key: 'supportProvider.supportRequests.labels.venueLocation',
-              fallback: 'Venue Location',
-            },
-            placeholder: {
-              key: 'supportProvider.supportRequests.placeholders.location',
-              fallback: 'e.g. BRAC Hub Room 1',
-            },
-            validation: [
-              {
-                rule: 'required',
-                message: {
-                  key: 'supportProvider.supportRequests.errors.locationRequired',
-                  fallback: 'Venue location is required',
-                },
-              },
-            ],
-          },
-        ],
-      },
     ],
   },
 ];
