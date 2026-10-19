@@ -318,8 +318,6 @@ export const sessionsSupportStyles = {
   assignParticipantsContentVStack: {
     space: 'md' as const,
     width: '100%' as const,
-    pt: '$1',
-    px: '$0.5',
   },
   assignParticipantsSearchInput: {
     variant: 'outline' as const,

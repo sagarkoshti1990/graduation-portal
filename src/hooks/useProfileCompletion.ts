@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@contexts/AuthContext';
 import { getUserProfile } from '../services/authenticationService';
 import { getMentoringProfile } from '../services/mentoringService';
-import { MENTORING_ENTITY_TYPES, SP_PROFILE_FIELDS } from '@constants/SP_MENU_OPTIONS';
+import { MENTORING_ENTITY_TYPES } from '@constants/SP_MENU_OPTIONS';
 
 // Get Pillers Sub Options
 const SUB_OPTION_GROUPS = [
@@ -63,30 +63,18 @@ export const useProfileCompletion = () => {
             .map((entry: any) => (entry && typeof entry === 'object' ? entry._id || entry.id || entry.value : entry))
             .filter(Boolean);
         };
-        // SP profiles save under sp_provinces / sp_sites / sp_categories now; older ones and LC profiles use the plain keys
-        const provinceIds = toIdList(
-          profileData[SP_PROFILE_FIELDS.provinces], meta[SP_PROFILE_FIELDS.provinces],
-          profileData.provinces, meta.provinces, profileData.province, meta.province,
-        );
-        const siteIds = toIdList(
-          profileData[SP_PROFILE_FIELDS.sites], meta[SP_PROFILE_FIELDS.sites],
-          profileData.sites, meta.sites, profileData.site, meta.site,
-        );
+        const provinceIds = toIdList(profileData.provinces, meta.provinces, profileData.province, meta.province);
+        const siteIds = toIdList(profileData.sites, meta.sites, profileData.site, meta.site);
 
         // Extract categories
         let cats: string[] = [];
-        const rawCats = [profileData[SP_PROFILE_FIELDS.categories], meta[SP_PROFILE_FIELDS.categories], profileData.categories]
-          .find((c) => Array.isArray(c) && c.length > 0);
-        if (rawCats) {
-          cats = rawCats;
+        if (Array.isArray(profileData.categories) && profileData.categories.length > 0) {
+          cats = profileData.categories;
         }
 
         const subOptions: Record<string, string[]> = {};
         SUB_OPTION_GROUPS.forEach((group) => {
-          // Newer profiles save under sp_* keys, older ones under the Session entity type keys
-          const spKey = SP_PROFILE_FIELDS[group as keyof typeof SP_PROFILE_FIELDS];
-          const spRaw = spKey ? profileData[spKey] ?? meta[spKey] : undefined;
-          const raw = spRaw ?? profileData[group] ?? meta[group];
+          const raw = profileData[group] ?? meta[group];
           subOptions[group] = Array.isArray(raw) ? raw.map(toId) : [];
         });
 
