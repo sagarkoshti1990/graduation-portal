@@ -178,8 +178,8 @@ const OrganizationProfile = (): React.JSX.Element => {
           ),
         };
 
-        const rawProvinces = getField('provinces', []);
-        const rawSites = getField('sites', []);
+        const rawProvinces = getSpField('provinces');
+        const rawSites = getSpField('sites');
         const rawCov = getField('provinceCoverage', null);
         const rawCat = getField(
           'supportCategories',
@@ -223,7 +223,7 @@ const OrganizationProfile = (): React.JSX.Element => {
         }
 
         if (!Array.isArray(cat) || cat.length === 0) {
-          const rawCategories = getField('categories', []);
+          const rawCategories = getSpField('categories');
           if (Array.isArray(rawCategories) && rawCategories.length > 0) {
             cat = rawCategories.map((cName: string) => {
               const item: any = {
@@ -356,53 +356,22 @@ try {
     ),
   );
 
-  const livelihoods = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.trainingData?.livelihoods)
-        .filter(Boolean),
-    ),
-  );
+  // Backend validates these as string arrays; profile read can return entity values as { label, value }
+  const toValues = (list: any[]): string[] =>
+    Array.from(
+      new Set(
+        list
+          .map(v => (v && typeof v === 'object' ? v.value : v))
+          .filter(Boolean),
+      ),
+    );
 
-  const social_empowerment = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.trainingData?.socialEmpowerment)
-        .filter(Boolean),
-    ),
-  );
-
-  const financial_inclusion = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.trainingData?.financialInclusion)
-        .filter(Boolean),
-    ),
-  );
-
-  const special_attention = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.linkageData?.specialAttention)
-        .filter(Boolean),
-    ),
-  );
-
-  const immediate_attention = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.linkageData?.immediateAttention)
-        .filter(Boolean),
-    ),
-  );
-
-  const asset_types = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.assetsData?.assetTypes)
-        .filter(Boolean),
-    ),
-  );
+  const livelihoods = toValues(supportCategories.flatMap(item => item.trainingData?.livelihoods || []));
+  const social_empowerment = toValues(supportCategories.flatMap(item => item.trainingData?.socialEmpowerment || []));
+  const financial_inclusion = toValues(supportCategories.flatMap(item => item.trainingData?.financialInclusion || []));
+  const special_attention = toValues(supportCategories.flatMap(item => item.linkageData?.specialAttention || []));
+  const immediate_attention = toValues(supportCategories.flatMap(item => item.linkageData?.immediateAttention || []));
+  const asset_types = toValues(supportCategories.flatMap(item => item.assetsData?.assetTypes || []));
 
   const payload = {
     name: values.contactPersonName,
@@ -412,26 +381,17 @@ try {
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
     // Single select in UI, but backend still stores provider_type as an array
     provider_type: values.organizationType ? [values.organizationType] : [],
-    meta: {
-      provinces,
-      sites,
-      categories,
-      // Old keys clashed with the Session entity types, so reports couldn't read them; saved under sp_* now
-      // livelihoods,
-      // social_empowerment,
-      // financial_inclusion,
-      // special_attention,
-      // immediate_attention,
-      [SP_PROFILE_FIELDS.livelihoods]: livelihoods,
-      [SP_PROFILE_FIELDS.social_empowerment]: social_empowerment,
-      [SP_PROFILE_FIELDS.financial_inclusion]: financial_inclusion,
-      [SP_PROFILE_FIELDS.special_attention]: special_attention,
-      [SP_PROFILE_FIELDS.immediate_attention]: immediate_attention,
-      asset_types,
-      // organizationType: values.organizationType,
-      agreementMoU: resolvedValues.agreementMoU,
-      organisationCredentials: resolvedValues.organisationCredentials,
-    },
+    [SP_PROFILE_FIELDS.provinces]: provinces,
+    [SP_PROFILE_FIELDS.sites]: sites,
+    [SP_PROFILE_FIELDS.categories]: categories,
+    [SP_PROFILE_FIELDS.livelihoods]: livelihoods,
+    [SP_PROFILE_FIELDS.social_empowerment]: social_empowerment,
+    [SP_PROFILE_FIELDS.financial_inclusion]: financial_inclusion,
+    [SP_PROFILE_FIELDS.special_attention]: special_attention,
+    [SP_PROFILE_FIELDS.immediate_attention]: immediate_attention,
+    asset_types,
+    agreementMoU: resolvedValues.agreementMoU || '',
+    organisationCredentials: resolvedValues.organisationCredentials || '',
   };
   try {
     if (profileExists) {

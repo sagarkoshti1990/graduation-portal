@@ -75,4 +75,7 @@ export const SP_PROFILE_FIELDS = {
   [MENTORING_ENTITY_TYPES.LIVELIHOODS]: 'sp_livelihoods',
   [MENTORING_ENTITY_TYPES.SPECIAL_ATTENTION]: 'sp_special_attention',
   [MENTORING_ENTITY_TYPES.IMMEDIATE_ATTENTION]: 'sp_immediate_attention',
+  provinces: 'sp_provinces',
+  sites: 'sp_sites',
+  categories: 'sp_categories',
 } as const;

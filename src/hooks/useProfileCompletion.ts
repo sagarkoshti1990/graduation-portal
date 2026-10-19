@@ -63,13 +63,22 @@ export const useProfileCompletion = () => {
             .map((entry: any) => (entry && typeof entry === 'object' ? entry._id || entry.id || entry.value : entry))
             .filter(Boolean);
         };
-        const provinceIds = toIdList(profileData.provinces, meta.provinces, profileData.province, meta.province);
-        const siteIds = toIdList(profileData.sites, meta.sites, profileData.site, meta.site);
+        // SP profiles save under sp_provinces / sp_sites / sp_categories now; older ones and LC profiles use the plain keys
+        const provinceIds = toIdList(
+          profileData[SP_PROFILE_FIELDS.provinces], meta[SP_PROFILE_FIELDS.provinces],
+          profileData.provinces, meta.provinces, profileData.province, meta.province,
+        );
+        const siteIds = toIdList(
+          profileData[SP_PROFILE_FIELDS.sites], meta[SP_PROFILE_FIELDS.sites],
+          profileData.sites, meta.sites, profileData.site, meta.site,
+        );
 
         // Extract categories
         let cats: string[] = [];
-        if (Array.isArray(profileData.categories) && profileData.categories.length > 0) {
-          cats = profileData.categories;
+        const rawCats = [profileData[SP_PROFILE_FIELDS.categories], meta[SP_PROFILE_FIELDS.categories], profileData.categories]
+          .find((c) => Array.isArray(c) && c.length > 0);
+        if (rawCats) {
+          cats = rawCats;
         }
 
         const subOptions: Record<string, string[]> = {};
