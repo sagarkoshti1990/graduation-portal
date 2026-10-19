@@ -67,3 +67,12 @@ export const MENTORING_ENTITY_TYPES = {
   ASSET_TYPES: 'asset_types',
   PROVIDER_TYPE: 'provider_type',
 } as const;
+
+// SP profile saves its picks under these UserExtension entity types (needed by reports), not the Session ones above
+export const SP_PROFILE_FIELDS = {
+  [MENTORING_ENTITY_TYPES.SOCIAL_EMPOWERMENT]: 'sp_social_empowerment',
+  [MENTORING_ENTITY_TYPES.FINANCIAL_INCLUSION]: 'sp_financial_inclusion',
+  [MENTORING_ENTITY_TYPES.LIVELIHOODS]: 'sp_livelihoods',
+  [MENTORING_ENTITY_TYPES.SPECIAL_ATTENTION]: 'sp_special_attention',
+  [MENTORING_ENTITY_TYPES.IMMEDIATE_ATTENTION]: 'sp_immediate_attention',
+} as const;

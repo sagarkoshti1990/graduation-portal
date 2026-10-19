@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@contexts/AuthContext';
 import { getUserProfile } from '../services/authenticationService';
 import { getMentoringProfile } from '../services/mentoringService';
-import { MENTORING_ENTITY_TYPES } from '@constants/SP_MENU_OPTIONS';
+import { MENTORING_ENTITY_TYPES, SP_PROFILE_FIELDS } from '@constants/SP_MENU_OPTIONS';
 
 // Get Pillers Sub Options
 const SUB_OPTION_GROUPS = [
@@ -74,7 +74,10 @@ export const useProfileCompletion = () => {
 
         const subOptions: Record<string, string[]> = {};
         SUB_OPTION_GROUPS.forEach((group) => {
-          const raw = profileData[group] ?? meta[group];
+          // Newer profiles save under sp_* keys, older ones under the Session entity type keys
+          const spKey = SP_PROFILE_FIELDS[group as keyof typeof SP_PROFILE_FIELDS];
+          const spRaw = spKey ? profileData[spKey] ?? meta[spKey] : undefined;
+          const raw = spRaw ?? profileData[group] ?? meta[group];
           subOptions[group] = Array.isArray(raw) ? raw.map(toId) : [];
         });
 
