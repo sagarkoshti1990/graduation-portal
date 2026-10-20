@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useLanguage } from '@contexts/LanguageContext';
 import { useAuth } from '@contexts/AuthContext';
 import LayoutWrapper from '@layout/LayoutWrapper';
+import { MENTOR_ROLES } from '@constants/ROLES';
 
 const Stack = createStackNavigator();
 
@@ -22,7 +23,7 @@ const createScreenWithLayout = (
     };
 
     // For LC role screens, pass title if needed
-    if (user?.role?.toLowerCase() === 'lc' && pageName === 'home') {
+    if (user?.role?.toLowerCase() === 'org_admin' && pageName === 'home') {
       layoutProps.title = t('settings.selectLanguage');
     }
 
@@ -41,10 +42,17 @@ const createScreenWithLayout = (
   return ScreenWithLayout;
 };
 
-function titleNamespaceForRole(role?: string): 'admin' | 'lc' {
+function titleNamespaceForRole(role?: string): 'admin' | 'lc' | "supportProvider" | 'participantJourney' {
   const r = role?.toLowerCase();
-  if (r === 'admin' || r === 'supervisor') {
+  if (r === 'admin' || r === 'tenant_admin') {
     return 'admin';
+  }
+  if (MENTOR_ROLES.includes(r || "")) {
+    return 'supportProvider';
+  }
+
+  if (r === 'participant') {
+    return 'participantJourney';
   }
   return 'lc';
 }
@@ -71,7 +79,7 @@ const AccessBaseNavigator: React.FC<{
       })),
     [accessPages],
   );
-
+  
   return (
     <Stack.Navigator
       initialRouteName={accessPages[0].name}

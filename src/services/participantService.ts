@@ -237,6 +237,25 @@ export const updateEntityDetails = async ({
   }
 };
 
+export const requestChange = async (
+  reqBody: {
+    requestees: string[];
+    entityId: string;
+    action: 'PROGRAM_USER_DROPPING_OUT' | 'USER_PROJECT_TEMPLATE_CHANGE';
+    changePayload: any;
+    programId: string;
+  },
+): Promise<{ data: any; message?: string; error?: string }> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  try {
+    const response = await api.post(API_ENDPOINTS.REQUEST_CHANGE, reqBody);
+
+    return { data: response.data.result, message: response.data.message };
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const createOrUpdateProgramUserMapping = async ({
   userId,
   programId,

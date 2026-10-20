@@ -98,8 +98,26 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
   const isExpanded = showAccordionWrapper ? localExpanded : !!isExpandedProp;
   const toggleExpanded = showAccordionWrapper ? toggleLocalExpanded : (onToggleExpand ?? (() => {}));
 
-  // For Edit/Read-Only modes: Show as Card (always expanded)
+  // For Edit/Read-Only modes: Show as Card (always expanded), unless the parent
+  // owns the expand state (showAccordionWrapper=false) — then it is collapsible.
   if (!isPreview) {
+    const isCollapsible = !showAccordionWrapper;
+    const withChevron = (node: React.ReactNode) =>
+      isCollapsible ? (
+        <HStack alignItems="center" space="sm">
+          <Box flex={1}>{node}</Box>
+          <LucideIcon
+            name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
+            size={20}
+            color={theme.tokens.colors.textSecondary}
+          />
+        </HStack>
+      ) : (
+        node
+      );
+    const withToggle = (node: React.ReactNode) =>
+      isCollapsible ? <Pressable onPress={toggleExpanded}>{node}</Pressable> : node;
+
     // Calculate pillar progress percentage
     const validChildren =
       task.children?.filter(child => !child.isDeleted) || [];
@@ -116,9 +134,13 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
       <Box {...taskAccordionStyles.container} marginBottom="$4">
        <Card {...taskAccordionStyles.card} p={0} overflow="hidden">
          {/* Card Header with Progress on right */}
-         <Box {...taskAccordionStyles.cardHeader}>
+         {withToggle(
+         <Box
+           {...taskAccordionStyles.cardHeader}
+           {...(isCollapsible && !isExpanded && { borderBottomWidth: 0 })}
+         >
            <Box {...taskAccordionStyles.cardHeaderInner} paddingVertical="$3">
-            {isMobile ? (
+            {withChevron(isMobile ? (
               <VStack space="sm">
                 <HStack {...taskAccordionStyles.pillarHeaderRow}>
                   <LucideIcon
@@ -186,11 +208,13 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
                   </Box>
                 </HStack>
               </HStack>
-            )}
+            ))}
             </Box>
-          </Box>
+          </Box>,
+         )}
 
-          {/* Card Content - Always visible (no accordion) */}
+          {/* Card Content - Always visible unless collapsed by the parent */}
+          {(!isCollapsible || isExpanded) && (
           <Box
             {...taskAccordionStyles.cardContent}
           >
@@ -211,6 +235,7 @@ const TaskAccordion = React.memo<TaskAccordionProps>(({
               )}
             </VStack>
           </Box>
+          )}
         </Card>
       </Box>
     );

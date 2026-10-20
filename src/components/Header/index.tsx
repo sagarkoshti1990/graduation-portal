@@ -39,8 +39,11 @@ import { profileStyles, LCProfileStyles } from '@components/ui/Modal/Styles';
 import { MenuItemData } from '@components/ui/Menu';
 import { getUserProfile } from '../../services/authenticationService';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import { ROLE_DISPLAY_LABELS } from '@constants/ROLES';
 import openExternalLink from '@utils/openExternalLink';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import { UserProfileModal } from '../../screens/UserManagement/UserProfileModal';
+import type { AdminUserManagementData } from '@app-types/Users';
 
 /**
  * Header Component - Enhanced for LC Layout Support
@@ -93,6 +96,8 @@ const Header: React.FC<{
   const { showAlert } = useAlert();
   const { pendingBreakdown } = useOfflineSync();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showAdminProfileModal, setShowAdminProfileModal] = useState(false);
+  const [adminProfileModalMode, setAdminProfileModalMode] = useState<'edit' | 'preview'>('preview');
 
   const openMyProfile = async () => {
     try {
@@ -113,6 +118,9 @@ const Header: React.FC<{
     logger.log('Menu selected:', key);
     if (key === 'myProfile') {
       await openMyProfile();
+    } else if (key === 'profile') {
+      setAdminProfileModalMode('preview');
+      setShowAdminProfileModal(true);
     } else if (key === 'logout') {
       if (pendingBreakdown.total > 0) {
         setShowLogoutConfirm(true);
@@ -239,14 +247,14 @@ const Header: React.FC<{
         {/* Right: Notifications, Language & Theme */}
         <HStack {...stylesHeader.rightActionsContainer}>
           {/* Notifications */}
-          {showNotification && (
+          {/* {showNotification && (
             <Pressable position="relative">
               <Icon as={BellIcon} {...stylesHeader.notificationIcon} />
               <Badge {...stylesHeader.notificationBadge}>
                 <Text {...stylesHeader.notificationBadgeText}>3</Text>
               </Badge>
             </Pressable>
-          )}
+          )} */}
           {showLanguage && <LanguageSelector />}
           {showTheme && (
             <Icon
@@ -283,7 +291,7 @@ const Header: React.FC<{
                         </Text>
                         <HStack {...stylesHeader.userRoleContainer}>
                           <Text {...stylesHeader.userRoleText}>
-                            {user?.role || ''}
+                            {(user?.role && ROLE_DISPLAY_LABELS[user.role]) || user?.role || ''}
                           </Text>
                         </HStack>
                       </VStack>
@@ -462,6 +470,20 @@ const Header: React.FC<{
           </Box>
         </VStack>
       </Modal>
+
+      {/* Admin/Tenant Admin "Profile" menu — reuses the same modal used for "View Profile" in User Management */}
+      {showAdminProfileModal && (
+        <UserProfileModal
+          isOpen={showAdminProfileModal}
+          onClose={() => setShowAdminProfileModal(false)}
+          onSuccess={() => setShowAdminProfileModal(false)}
+          user={user as unknown as AdminUserManagementData}
+          isMobile={isMobile}
+          t={t}
+          mode={adminProfileModalMode}
+          onEdit={() => setAdminProfileModalMode('edit')}
+        />
+      )}
 
       <Modal
         isOpen={showLogoutConfirm}

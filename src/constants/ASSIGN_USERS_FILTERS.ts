@@ -196,13 +196,16 @@ export const useSiteFilterOptions = (
 /**
  * Hook to get participant filter options (Province and Site)
  * Similar to useSiteFilterOptions but for participants
- * 
+ *
  * @param selectedProvinceId - Province ID selected in filter
+ * @param enabled - Whether the underlying province/site data should be fetched
+ * @param lockProvince - When true, disables the province select (e.g. tenant_admin locked to own province)
  * @returns Object containing filter configuration
  */
 export const useParticipantFilterOptions = (
   selectedProvinceId?: string,
-  enabled = true
+  enabled = true,
+  lockProvince = false
 ): {
   filters: ReadonlyArray<FilterConfig>;
   sites: SiteEntity[];
@@ -280,6 +283,7 @@ export const useParticipantFilterOptions = (
           attr: 'filterByProvince',
           type: 'select' as const,
           data: provinceFilterOptions,
+          disabled: lockProvince,
         },
         {
           nameKey: 'admin.filters.site',
@@ -291,7 +295,7 @@ export const useParticipantFilterOptions = (
       ],
       sites,
     };
-  }, [provinces, sites, selectedProvinceId]);
+  }, [provinces, sites, selectedProvinceId, lockProvince]);
 };
 
 // NOTE: Participant filters are now provided by `useParticipantFilterOptions`.

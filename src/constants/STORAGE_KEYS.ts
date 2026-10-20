@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   AUTH_TOKEN: '@auth_token',
   /** Authentication user storage key */
   AUTH_USER: '@auth_user',
+  /** Authentication user id storage key */
+  USERID:"userId",
   /** Authentication refresh token storage key */
   AUTH_REFRESH_TOKEN: '@auth_refresh_token',
   /** Remember Me preference storage key */

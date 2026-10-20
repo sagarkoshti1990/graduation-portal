@@ -30,6 +30,8 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTaskPermissions } from '../hooks/useTaskPermissions';
 import { useTaskStatus } from '../hooks/useTaskStatus';
+import { useTaskSessionStatus } from '../hooks/useTaskSessionStatus';
+import { SUPPORT_OFFERING_TYPE_VALUES } from '@constants/SUPPORT_PROVIDER_CARDS';
 import {
   getActionIconName,
   getUploadConfig,
@@ -37,6 +39,7 @@ import {
 import { filterNewFiles, buildOnboardingFileUpdate } from '../utils/taskTransformers';
 import type { Task } from '../../../../types/project.types';
 import MainContent from './MainContent';
+import ScheduleInterventionModal from '../../ScheduleInterventionModal';
 import { getComparableFileKey } from '../../FileEvidence/FileUploadModal';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,11 +89,24 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     isAddedToPlan, isRejected, isSyncTaskId,
   } = useTaskStatus(task, isOnboardingTask);
 
+  // Session / training tasks are `simple` tasks mapped to a support offering.
+  const supportOfferingType: string | undefined = task.metaInformation?.support_offering_type;
+  const isSessionTask =
+    !isObservationTask &&
+    !!supportOfferingType &&
+    (Object.values(SUPPORT_OFFERING_TYPE_VALUES) as string[]).includes(supportOfferingType);
+  const sessionStatus = useTaskSessionStatus(
+    participantId,
+    task.metaInformation?.sessionId,
+    isSessionTask,
+  );
+
   // ── Local state ──────────────────────────────────────────────────────────
   const handleTitlePressRef = useRef<((args: { checkFirstTaskComplete?: any }) => void) | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean | {name:string,fun: ((data:{checkFirstTaskComplete: boolean}) => Promise<void>)}>(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
 
   // ── Derived values ────────────────────────────────────────────────────────
@@ -162,6 +178,16 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
 
   const handleTaskClick = useCallback(async ({checkFirstTaskComplete}:{checkFirstTaskComplete:boolean}) => {
     if(!handleCheckFirstTaskComplete(checkFirstTaskComplete === false ? false : handleTaskClick)) return;
+    if (isSessionTask) {
+      if (!isEdit || isCompleted) return;
+      if (supportOfferingType === SUPPORT_OFFERING_TYPE_VALUES.TRAINING_SESSION) {
+        setShowScheduleModal(true);
+      } else {
+        // @ts-ignore
+        navigation.navigate('sessions-support');
+      }
+      return;
+    }
     if (!isObservationTask) {
       if (!isEdit) return;
       setShowUploadModal(true);
@@ -194,7 +220,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
     } finally {
       setIsStatusUpdating(false);
     }
-  }, [isEdit, isReadOnly, isObservationTask, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating,handleCheckFirstTaskComplete]);
+  }, [isEdit, isReadOnly, isObservationTask, isSessionTask, isCompleted, supportOfferingType, task._id, task.solutionDetails, participantId, projectDataRef, navigation, showAlert, t, setIsStatusUpdating,handleCheckFirstTaskComplete]);
 
   const handleCheckboxChange = useCallback(async (checked: boolean, checkFirstTaskComplete?: any) => {
     if (!isEdit) return;
@@ -261,6 +287,7 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
   const handleCloseUploadModal = useCallback(() => setShowUploadModal(false), []);
   const handleClosePreviewModal = useCallback(() => setShowPreviewModal(false), []);
   const handleOpenPreviewModal = useCallback(() => setShowPreviewModal(true), []);
+  const handleCloseScheduleModal = useCallback(() => setShowScheduleModal(false), []);
   const handleUploadMethodSelect = useCallback((method: any) => logger.info('Upload method:', method), []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -296,6 +323,8 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         handleAcceptTask={handleAcceptTask}
         handleRejectTask={handleRejectTask}
         isSyncTaskId={isSyncTaskId}
+        isSessionTask={isSessionTask}
+        sessionStatus={sessionStatus}
         t={t}
         extraActions={extraActions}
       />
@@ -309,6 +338,11 @@ const SimpleObservationTask: React.FC<SimpleObservationTaskProps> = ({
         maxFileSize={config.maxFileSize}
         onUpload={handleUploadMethodSelect}
         onConfirm={handleUploadConfirm}
+      />
+      <ScheduleInterventionModal
+        isOpen={showScheduleModal}
+        onClose={handleCloseScheduleModal}
+        taskName={task?.name}
       />
       <EvidencePreviewModal
         isOpen={showPreviewModal} onClose={handleClosePreviewModal}

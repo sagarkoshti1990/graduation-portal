@@ -81,6 +81,8 @@ export const theme = {
       success100: '#dcfce7',
       success300: '#7bf1a8',
       success700: '#008236',
+      amber300: '#ffd230',
+      amber700: '#bb4d00',
       bgSecondary: '#f0f2f5',
       badgeColor: '#64748b',
       hoverBorder: '#C593A0',

@@ -1,0 +1,206 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Box, Card, Container, HStack, Loader, Text, VStack, useAlert } from '@ui';
+import PageHeader from '@components/PageHeader';
+import { useNavigation } from '@react-navigation/native';
+import SchemaFormRenderer from '@components/SchemaFormRenderer';
+import { TRAINING_FORM_SCHEMA, REQUEST_SESSION_HIDE_FIELDS } from '@constants/TRAINING_FORM_SCHEMA';
+import { useLanguage } from '@contexts/LanguageContext';
+import { getSitesByProvince, getProvincesList } from '../../../services/usersService';
+import { uploadFiles } from '../../../project-player/services/projectPlayerService';
+import {
+  getSessionCategories,
+  getRecommendedFor,
+  getSessionTypesByPillar,
+  getDeliveryModes,
+  getLivelihoodCategoriesOptions,
+  requestSession,
+  MentoringOption,
+} from '../../../services/mentoringService';
+import { requestSessionPayloadMapping } from '@utils/supportProvider';
+import { useTrainingFormOptions, useProfileCompletion } from '@hooks';
+import styles from '../styles';
+
+const DELIVERY_MODE_ICONS: Record<string, string> = {
+  offline: 'MapPin',
+  online: 'Video',
+  hybrid: 'Users',
+};
+
+// White card applies only to the form body, not the progress bar or step tabs
+const FORM_CARD_PROPS = { bg: '$white', borderRadius: '$2xl', p: '$6' };
+
+const RequestSessionScreen = (): React.JSX.Element => {
+  const navigation = useNavigation();
+  const { t } = useLanguage();
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [pillers, setPillers] = useState<MentoringOption[]>([]);
+  const [targetAudience, setTargetAudience] = useState<MentoringOption[]>([]);
+  const [deliveryModes, setDeliveryModes] = useState<MentoringOption[]>([]);
+  const [livelihoodCategories, setLivelihoodCategories] = useState<MentoringOption[]>([]);
+  const [values, setValues] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const { showAlert } = useAlert();
+
+  const { allowedProvinces, allowedSites } = useProfileCompletion();
+
+  // Restrict province/site to the LC's own profile; an empty list means no restriction on that level
+  const { optionsMap } = useTrainingFormOptions({
+    values,
+    provinces,
+    pillers,
+    targetAudience,
+    deliveryModes,
+    livelihoodCategories,
+    deliveryModeIcons: DELIVERY_MODE_ICONS,
+    allowedProvinces: allowedProvinces.length > 0 ? allowedProvinces : undefined,
+    allowedSites: allowedSites.length > 0 ? allowedSites : undefined,
+  });
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const results = await Promise.allSettled([
+          getProvincesList(),
+          getSessionCategories(),
+          getRecommendedFor(),
+          getDeliveryModes(),
+          getLivelihoodCategoriesOptions(),
+        ]);
+
+        const [resProvinces, resCategories, resTarget, resDeliveryModes, resLivelihood] = results;
+
+        setProvinces(resProvinces.status === 'fulfilled' ? resProvinces.value || [] : []);
+        setPillers(resCategories.status === 'fulfilled' ? resCategories.value || [] : []);
+        setTargetAudience(resTarget.status === 'fulfilled' ? resTarget.value || [] : []);
+        setDeliveryModes(resDeliveryModes.status === 'fulfilled' ? resDeliveryModes.value || [] : []);
+        setLivelihoodCategories(resLivelihood.status === 'fulfilled' ? resLivelihood.value || [] : []);
+      } catch (error: any) {
+        showAlert('error', error?.message || 'Failed to load form options. Please refresh and try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
+  }, []);
+
+  const handleFieldChange = useCallback(
+    (name: string, value: string, other?: any) => {
+      setValues((prev: Record<string, any>) => {
+        const next = { ...prev, [name]: value };
+        if (name === 'provinces') {
+          next.provinces = value;
+          next.sites = [];
+        }
+        if (name === 'categories') {
+          next.idp_tasks = '';
+          next.livelihoodCategory = '';
+          next.title = '';
+        }
+        if (name === 'idp_tasks') {
+          next.title = other?.label;
+          next.livelihoodCategory = '';
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleSave = async (formValues: any, isDraft: boolean) => {
+    try {
+      setValues(formValues);
+
+      const payload: any = requestSessionPayloadMapping(
+        { ...formValues, isDraft },
+        optionsMap
+      );
+
+      await requestSession(payload);
+
+      const successMsg = isDraft
+        ? t('supportProvider.createSupport.training.alerts.draftSaved', 'Draft saved successfully!')
+        : t('supportProvider.createSupport.training.alerts.sessionSaved', 'Training session saved successfully!');
+
+      showAlert('success', successMsg);
+      navigation.navigate('sessions-support' as never);
+    } catch (error: any) {
+      const errMsg =
+        error?.data?.message ||
+        error?.message ||
+        t('supportProvider.createSupport.training.errors.saveFailed', 'Something went wrong while saving. Please try again.');
+      showAlert('error', errMsg);
+    }
+  };
+
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('sessions-support' as never);
+    }
+  };
+
+  if (isLoading) {
+    return <Loader fullScreen message="Loading..." />;
+  }
+
+  const headerBadge = (
+    <HStack {...styles.headerTitleHStack}>
+      <Text {...styles.headerSubTitleText}>
+        {t('lc.requestSession.title')}
+      </Text>
+      <Box {...styles.headerBadgeBox}>
+        <Text {...styles.headerBadgeText}>
+          {t('lc.requestSession.badge')}
+        </Text>
+      </Box>
+    </HStack>
+  );
+
+  return (
+    <VStack flex={1}>
+      <PageHeader
+        rightSection={headerBadge}
+        backButtonText={t('supportProvider.createSupport.changeType', 'Change Type')}
+        onBackPress={handleBackPress}
+      />
+      <Container py="$6">
+        <Card borderRadius="$2xl" bg="transparent" p="$0" shadowOpacity={0} elevation={0}>
+          <SchemaFormRenderer
+            schema={TRAINING_FORM_SCHEMA(REQUEST_SESSION_HIDE_FIELDS)}
+            optionsMap={optionsMap}
+            values={values}
+            t={t}
+            onFieldChange={handleFieldChange}
+            disableStepNavigation
+            _formContainer={FORM_CARD_PROPS}
+            onSubmit={(formValues) => handleSave(formValues, false)}
+            onSaveDraft={(formValues) => handleSave(formValues, true)}
+            uploadService={async (file) => {
+              const entityId = `trainingSession-${Date.now()}`;
+              const uploaded = await uploadFiles(entityId, [
+                { ...file, size: file.size ?? 0 },
+              ] as any);
+              const url = uploaded?.data?.[0]?.url;
+              if (!url) {
+                throw new Error(`Failed to upload file: ${file.name}`);
+              }
+              const data = uploaded?.data?.[0];
+              const [f, s] = data?.type.split('/');
+              return {
+                name: data?.name,
+                link: data?.url,
+                sourcePath: data?.sourcePath,
+                type: s || f,
+                size: data?.size,
+              };
+            }}
+          />
+        </Card>
+      </Container>
+    </VStack>
+  );
+};
+
+export default RequestSessionScreen;

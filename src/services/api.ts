@@ -162,7 +162,7 @@ const api: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json, text/plain, */*',
     // @ts-ignore - process.env is injected by webpack DefinePlugin on web
-    'internal-access-token': process.env.INTERNAL_ACCESS_TOKEN || '',
+    // 'internal-access-token': process.env.INTERNAL_ACCESS_TOKEN || '',
     // @ts-ignore - process.env is injected by webpack DefinePlugin on web
     ...(!isAndroid ? {} : { origin: process.env.ORIGIN || '' }),
   },
@@ -198,37 +198,38 @@ api.interceptors.request.use(
 
         // Add token to Authorization header if available
         if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
+          //config.headers.Authorization = `Bearer ${token}`;
           config.headers['x-auth-token'] = token;
         }
       }
 
       // Add internal-access-token header if available - Required for entity-management API endpoints
       const internalAccessToken = await offlineStorage.read<string>(INTERNAL_ACCESS_TOKEN_KEY);
-      if (internalAccessToken && config.headers) {
-        config.headers['internal-access-token'] = internalAccessToken;
-      }
+      // if (internalAccessToken && config.headers) {
+      //   config.headers['internal-access-token'] = internalAccessToken;
+      // }
 
       // Add organization code header if available (from stored user data)
       const userData = await offlineStorage.read<any>(STORAGE_KEYS.AUTH_USER);
       const orgCode = userData?.organizations?.[0]?.code;
       if (orgCode && config.headers) {
         config.headers['orgId'] = orgCode;           // Required by accountCreate & other endpoints
-        config.headers['organization'] = orgCode;    // Keep for backward compatibility
+        //config.headers['organization'] = orgCode;    // Keep for backward compatibility
       }
 
       // Add tenant code headers if available (from stored user data)
       const tenantCode = userData?.tenant_code;
       if (tenantCode && config.headers) {
         config.headers['tenantid'] = tenantCode;      // Required by accountCreate
-        config.headers['x-tenant-code'] = tenantCode; // Required by accountCreate
-        config.headers['tenant'] = tenantCode;        // Keep for backward compatibility
+        //config.headers['tenant'] = tenantCode;        // Keep for backward compatibility
       }
       // Log request details (optional - can be removed in production)
       // logger.info(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
       //   headers: config.headers,
       //   data: config.data,
       // });
+
+      config.headers['timeZone'] = Intl.DateTimeFormat().resolvedOptions().timeZone
 
       return config;
     } catch (error) {

@@ -85,6 +85,8 @@ export interface ProjectContextValue {
 
   // Actions
   updateTask: (taskId:string, participantId:string ,updates: Partial<Task>) => Promise<void>;
+  /** Applies several task updates locally and persists them in ONE project-update request. */
+  updateTasks: (items: { taskId: string; updates: Partial<Task> }[], participantId: string) => Promise<void>;
   updateProjectInfo: (updates: Partial<ProjectData>) => void;
   addTask: (pillarId: string, task: Task) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;

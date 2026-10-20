@@ -32,7 +32,7 @@ import ObservationContent from '../Observation/ObservationContent';
 import CheckInsListContent from '../ParticipantDetail/Check-ins-list/CheckInsListContent';
 import { getTargetedSolutions } from '../../services/solutionService';
 import { FILTER_KEYWORDS } from '@constants/LOG_VISIT_CARDS';
-import { updateEntityDetails } from '../../services/participantService';
+import { updateEntityDetails, requestChange } from '../../services/participantService';
 import { STATUS, USER_STATUS, ALLOWOFFLINESTATUS } from '@constants/app.constant';
 import { removeOfflineDataIfIneligible } from '../../services/offlineCacheUpdateService';
 import Select from '@components/ui/Inputs/Select';
@@ -181,6 +181,11 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           )
         }
 
+        // If dropout request is pending approval, hide dropout and add-log actions
+        if (isDropoutRequestSentForApproval) {
+          filterMenuItems = filterMenuItems.filter(e => e.key !== 'dropout' && e.key !== 'log-visit');
+        }
+
         const isParticipantDataOffline = await isParticipantOffline(`${user?.id}`, participant.userId);
         
         setMenuItemsWithDownload([
@@ -259,16 +264,29 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     async (userEntityId: string, finalReason: string) => {
       setDropoutLoading(true);
       try {
-        await updateEntityDetails({
-          userId: `${user?.id}`,
-          entityId: userEntityId,
-          entityUpdates: {
-            status: STATUS.DROPOUT,
-            dropoutReason: finalReason,
-          },
-        });
-
-        showAlert('success', t('actions.dropoutSuccess'));
+        if (user?.role === 'org_admin') {
+          const response = await requestChange({
+            requestees: [String(participant.hierarchy[1])],
+            entityId: userEntityId,
+            action: 'PROGRAM_USER_DROPPING_OUT',
+            changePayload: {
+              status: STATUS.DROPOUT,
+              dropoutReason: finalReason,
+            },
+            programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+          });
+          showAlert('success', t('actions.dropoutSentForApproval', { name: participant.name }));
+        } else {
+          await updateEntityDetails({
+            userId: `${user?.id}`,
+            entityId: userEntityId,
+            entityUpdates: {
+              status: STATUS.DROPOUT,
+              dropoutReason: finalReason,
+            },
+          });
+          showAlert('success', t('actions.dropoutSuccess'));
+        }
 
         // Close modal and reset state
         setSelectedDropoutReason('');
@@ -290,7 +308,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
         pendingDropoutRef.current = null;
       }
     },
-    [participant.userId, user?.id, showAlert, t, onDropoutSuccess],
+    [participant.userId, user?.id, user?.role, showAlert, t, onDropoutSuccess],
   );
 
   const handleDropoutConfirm = useCallback(async () => {
@@ -397,6 +415,8 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
     setSelectedSolutionId(submission.solutionId);
     setSelectedSubmissionNumber(submission.submissionNumber);
   };
+
+  const isDropoutRequestSentForApproval = participant?.pendingChangeRequest?.some(req => req.status === "PENDING" && req.action === "PROGRAM_USER_DROPPING_OUT")
   // Check if participant is Graduated or Dropout - hide menu for these statuses
   const isReadOnlyStatus =
     participant?.status === STATUS.GRADUATED ||
@@ -418,15 +438,17 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
           refreshKey={badgeRefreshKey}
         />
 
+
+
         {/* @ts-ignore: Back Button */}
         <Button
           // @ts-ignore: variant outlineghost
           variant={isMobile ? 'outlineghost' : 'ghost'}
           flex={1}
-          onPress={isNotEligible ? () => setIsProfileModalOpen(true) : isNotOnboarded ? handleLogVisit : handleViewDetails}
+          onPress={isDropoutRequestSentForApproval ? handleViewDetails : isNotEligible ? () => setIsProfileModalOpen(true) : isNotOnboarded ? handleLogVisit : handleViewDetails}
           size="sm"
         >
-          {isNotOnboarded && !isNotEligible && (
+          {isNotOnboarded && !isNotEligible && !isDropoutRequestSentForApproval && (
             <LucideIcon
               name="ClipboardCheck"
               size={20}
@@ -439,7 +461,7 @@ export const ActionColumn: React.FC<ActionColumnProps> = ({
             color="$primary500"
             fontWeight="$medium"
           >
-            {t(isNotEligible ? 'admin.users.actionMenu.viewProfile' : isNotOnboarded ? 'actions.logVisit' : 'actions.viewDetails')}
+            {t(isDropoutRequestSentForApproval ? 'actions.viewDetails' : isNotEligible ? 'admin.users.actionMenu.viewProfile' : isNotOnboarded ? 'actions.logVisit' : 'actions.viewDetails')}
           </ButtonText>
         </Button>
         {!isReadOnlyStatus && menuItemsWithDownload.length > 0 && (

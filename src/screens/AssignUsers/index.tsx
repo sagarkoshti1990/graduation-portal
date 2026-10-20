@@ -19,7 +19,7 @@ import { AssignUsersStyles } from './Styles';
 import { theme } from '@config/theme';
 import { getLinkageChampions, assignLCsToSupervisor, getMappedLCsForSupervisor, getParticipants, assignParticipantsToLC, getMappedParticipantsForLC, getSupervisorsByProvince } from '../../services/assignUsersService';
 import { getInitials } from '@utils/helper';
-import { useIsSupervisor, useAuth } from '../../contexts/AuthContext';
+import { useIsTenantAdmin, useAuth } from '../../contexts/AuthContext';
 
 // Type declaration for process.env (injected by webpack DefinePlugin on web, available in React Native)
 declare const process:
@@ -33,7 +33,7 @@ declare const process:
 const AssignUsersScreen = () => {
  const { t } = useLanguage();
  const { user } = useAuth();
- const isSupervisor = useIsSupervisor();
+ const isSupervisor = useIsTenantAdmin();
  type AssignTab = 'LC_TO_SUPERVISOR' | 'PARTICIPANT_TO_LC';
 
  // Supervisors default to PARTICIPANT_TO_LC, others default to LC_TO_SUPERVISOR
@@ -103,12 +103,31 @@ const [participantsRefreshKey, setParticipantsRefreshKey] = useState(0);
 const shouldLoadParticipantFilters =
   activeTab === 'PARTICIPANT_TO_LC' && !!selectedLcId;
 
+ // tenant_admin (Supervisor) is locked to their own province when assigning participants to LCs
+ const supervisorOwnProvinceId = (user as any)?.province?.value || '';
+
  // Get dynamic participant filter options (Province and Site)
+ // Only lock the province filter when the supervisor/tenant_admin actually
+ // has a province set on their profile - otherwise leave it enabled so they
+ // can browse/see participants across all provinces.
  const { filters: participantProvinceSiteFilters } = useParticipantFilterOptions(
    participantFilterValues.filterByProvince,
-   shouldLoadParticipantFilters
+   shouldLoadParticipantFilters,
+   isSupervisor && !!supervisorOwnProvinceId
  );
  const AssignParticipantFilterOptions = [ParticipantSearchFilter, ...participantProvinceSiteFilters];
+
+ // Auto-select the tenant_admin's own province and keep it locked while on this tab
+ useEffect(() => {
+   if (
+     isSupervisor &&
+     activeTab === 'PARTICIPANT_TO_LC' &&
+     supervisorOwnProvinceId &&
+     participantFilterValues.filterByProvince !== supervisorOwnProvinceId
+   ) {
+     setParticipantFilterValues((prev) => ({ ...prev, filterByProvince: supervisorOwnProvinceId }));
+   }
+ }, [isSupervisor, activeTab, supervisorOwnProvinceId, participantFilterValues.filterByProvince]);
 
 useEffect(() => {
   setParticipantsPage(1);
@@ -1057,6 +1076,7 @@ return (
               filterOptions={AssignParticipantFilterOptions}
               onChange={(values) => setParticipantFilterValues(values)}
               selectedValues={{ ...participantFilterValues, selectedLc }}
+              initialFilterValue={isSupervisor && supervisorOwnProvinceId ? { filterByProvince: supervisorOwnProvinceId } : undefined}
               showLcList={true}
               isParticipantList={true}
               isLoading={isLoadingParticipants}

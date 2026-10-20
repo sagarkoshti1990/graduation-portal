@@ -5,7 +5,10 @@
       "name": "Name",
       "id": "ID",
       "contact": "Contact",
-      "email": "Email",
+      "phoneNumber": "Phone Number",
+      "email": "Email Address",
+      "dob": "Date of Birth",
+      "emergencyContact": "Emergency Contact",
       "address": "Address",
       "addressFields": {
         "street": "Street Address",
@@ -21,6 +24,8 @@
     "logout": "Logout",
     "userGuide": "User Guide",
     "reportFeedback": "Report / Feedback",
+    "downloadApk": "Download APK",
+    "install": "Install",
     "loading": "Loading...",
     "save": "Save",
     "saving": "Saving...",
@@ -82,6 +87,20 @@
       "completed": "Completed"
     },
     "viewForm": "View Form",
+    "schedule": "Schedule",
+    "update": "Update",
+    "attended": "Attended",
+    "scheduled": "Scheduled",
+    "missed": "Missed",
+    "scheduleIntervention": "Schedule intervention",
+    "whoWillConduct": "Who will be conducting \"{{taskName}}\"?",
+    "whoWillConductGeneric": "Who will be conducting this intervention?",
+    "conductMyself": "Myself",
+    "conductMyselfDesc": "I will conduct this intervention personally",
+    "conductSupportProvider": "Support Provider",
+    "conductSupportProviderDesc": "A support provider will deliver this intervention",
+    "cancel": "Cancel",
+    "close": "Close",
     "completeForm": "Complete Form",
     "uploadFile": "Upload File",
     "upload": "Upload",
@@ -195,7 +214,8 @@
     "unableToLoadObservation": "Could not load observation details.",
     "SingleUploadMessage": "Selecting a new file replaces the existing one.",
     "allowedFileTypes": "Allowed file types :",
-    "remainingUploads": "Remaining uploads :"
+    "remainingUploads": "Remaining uploads :",
+    "IdpUpdateSentForApproval": "Your request to update the intervention plan for {{name}} has been sent for approval."
   },
   "navigation": {
     "menu": "Menu",
@@ -236,7 +256,9 @@
       "observation": "Observation",
       "template": "Develop Intervention Plan",
       "participants": "Participants",
-      "project": "Project"
+      "project": "Project",
+      "review-requests": "Review Requests",
+      "support-provider-dashboard": "Support Provider Dashboard"
     },
     "home": "Home",
     "dashboard": "Dashboards",
@@ -1234,6 +1256,8 @@
     "menu": {
       "userManagement": "User Management",
       "assignUsers": "Assign Users",
+      "reviewRequests": "Review Requests",
+      "supportProviderDashboard": "Support Provider Dashboard",
       "templateManagement": "Template Management",
       "auditLog": "Audit Log",
       "uploadUsers": "Upload Users",
@@ -1247,10 +1271,21 @@
       "userStoryGblLcGuide": "GBL Coach Guide",
       "csvImportTemplates": "CSV Import Templates",
       "passwordManagementPolicy": "Password Management Policy",
-      "profileFieldEditPermissions": "Profile Field Edit Permissions"
+      "profileFieldEditPermissions": "Profile Field Edit Permissions",
+      "dashboards": "Dashboards",
+      "participants": "Participants",
+      "supportProviders": "Support Providers",
+      "coachProgress": "Coach Progress",
+      "formsAndSurveysManagement": "Forms and Surveys Management",
+      "lmsManagement": "LMS Management",
+      "contentLibrary": "Content Library",
+      "courseCreation": "Course Creation",
+      "certificates": "Certificates"
     },
+    "supportProviderDashboardDescription": "Track support needed, approved and delivered across provinces and providers",
     "userManagementDescription": "Manage all users across your organization with unified controls and bulk operations.",
     "assignUsersDescription": "Assign Coaches to Supervisors and Participants to Coaches",
+    "reviewRequestsDescription": "Review and decide on pathway switch and dropout requests submitted for your organization",
     "actions": {
       "bulkUploadCSV": "Bulk Upload (CSV)",
       "createUser": "Create User",
@@ -1407,6 +1442,7 @@
       "createUser": {
         "title": "Create New User",
         "description": "Training / Session Description",
+        "descriptionPlaceholder": "Describe this session...",
         "personalInformation": "Personal Information",
         "firstName": "First Name",
         "firstNamePlaceholder": "Enter first name",
@@ -1431,6 +1467,138 @@
         "site": "Site",
         "sitePlaceholder": "Select province first",
         "sitePlaceholderReady": "Select site",
+        "servicesCategory": "Services Category",
+        "servicesCategoryReview": "Category",
+        "servicesTags": "Tags",
+        "servicesTitle": "Services Title",
+        "servicesTitleReview": "Title",
+        "servicesTitlePlaceholder": "Name of this service...",
+        "servicesDescription": "Services Description",
+        "servicesDescriptionPlaceholder": "Describe what this service provides and who it benefits...",
+        "serviceLocation": "Location where service is provided",
+        "serviceLocationReview": "Location",
+        "serviceLocationPlaceholder": "Address or indicate 'Online / Remote'...",
+        "eligibilityCriteria": "Eligibility Criteria",
+        "eligibilityCriteriaPlaceholder": "Who can access this service? Any specific requirements?",
+        "startDate": "Start Date",
+        "startDatePlaceholder": "DD/MM/YYYY HH:MM",
+        "endDate": "End Date",
+        "endDatePlaceholder": "DD/MM/YYYY HH:MM",
+        "assetType": "Asset Type",
+        "livelihoodCategory": "Category of Livelihoods",
+        "livelihoodCategoryPlaceholder": "Select livelihood category",
+        "assetTitle": "Asset Title",
+        "assetTitlePlaceholder": "Name of this asset...",
+        "assetDescription": "Asset Description",
+        "assetDescriptionPlaceholder": "Describe this asset, its purpose, and how it benefits the recipient...",
+        "estimatedValue": "Estimated Asset Value per Participant (Rands)",
+        "estimatedValueRequest": "Estimated Asset Value (Rands)",
+        "estimatedValuePlaceholder": "R 0.00",
+        "estimatedValueReview": "Estimated Value per Participant",
+        "availableQuantity": "Available Quantity",
+        "quantityRequest": "Quantity",
+        "availableQuantityPlaceholder": "e.g. 50",
+        "quantity": "Quantity (optional)",
+        "quantityPlaceholder": "e.g. 10",
+        "trainingDetails": "Training Session Details",
+        "trainingDetailsSubTitle": "Fields marked * are required",
+        "pillar": "Pillar",
+        "idp_training_task": "Training / Session Type",
+        "idp_training_taskPlaceholder": "Select session type",
+        "sessionType": "Please specify",
+        "sessionTypePlaceholder": "Describe this session...",
+        "learningObjectives": "Learning Objectives",
+        "learningObjectivesPlaceholder": "List the key learning outcomes, one per line...",
+        "targetAudience": "Target Audience",
+        "certificateProvided": "Certificate Provided",
+        "maxCapacity": "Maximum Capacity",
+        "maxCapacityPlaceholder": "e.g. 20",
+        "numberOfParticipants": "Number of participants who can avail this service",
+        "numberOfParticipantsPlaceholder": "Number of participants who can avail this service",
+        "recurringSession": "Recurring Session",
+        "scheduleFormat": "Schedule & Format",
+        "scheduleDetails": "Schedule & Format",
+        "scheduleDetailsSubTitle": "Set when and how the session will be delivered",
+        "start_date": "Start Date & Time",
+        "start_datePlaceholder": "dd-mm-yyyy hh:mm",
+        "end_date": "End Date & Time",
+        "end_datePlaceholder": "dd-mm-yyyy hh:mm",
+        "formatType": "Type",
+        "location": "Venue Location",
+        "locationPlaceholder": "Venue name and address...",
+        "meetingLink": "Meeting Link",
+        "meetingLinkPlaceholder": "https://...",
+        "review": "Review & Publish",
+        "supportProvider": {
+          "trainingSession": {
+            "step1": {
+              "resourceContent": "Resource Content",
+              "resourceUploadSub": "Upload PDF or DOC training materials",
+              "uploadPrompt": "Click to upload PDF / DOC"
+            },
+            "step3": {
+              "title": "Review & Publish",
+              "sessionDetailsTitle": "Session Details",
+              "infoTitle": "Before you publish:",
+              "infoBullet1": "This support will be visible to all Coaches in the GBL network",
+              "infoBullet2": "Coaches can submit requests on behalf of participants",
+              "infoBullet3": "You'll receive notifications when requests are submitted",
+              "scheduleTitle": "Schedule",
+              "startLabel": "Start Date & Time",
+              "endLabel": "End Date & Time",
+              "formatLabel": "Format"
+            }
+          },
+          "assetForm": {
+            "tabs": {
+              "assetDetails": "Asset Details",
+              "review": "Review & Publish"
+            },
+            "step1": {
+              "title": "Asset Details",
+              "subTitle": "Fields marked * are required",
+              "livelihoodCategorySubTitle": "Select all applicable livelihood categories for this asset support",
+              "estimatedValueSubTitle": "Monetary value allocated per individual participant (1:1 ratio)",
+              "availableQuantitySubTitle": "Total number of participants / units funded for this asset",
+              "quantityRequestSubTitle": "Total number of participants / units requiring funds for this asset",
+              "availabilityTitle": "Availability (optional)",
+              "resourceContent": "Resource Content / Asset Documents",
+              "resourceUploadSub": "Upload PDF or Word specification documents (Max 10 MB per file)",
+              "uploadPrompt": "Click to browse or upload PDF / Word documents"
+            },
+            "step2": {
+              "title": "Review & Publish",
+              "infoTitle": "Before you publish:",
+              "infoBullet1": "This support will be visible to all Coaches in the GBL network",
+              "infoBullet2": "Coaches can submit requests on behalf of participants",
+              "infoBullet3": "You'll receive notifications when requests are submitted",
+              "assetDetailsTitle": "Asset Details"
+            }
+          },
+          "additionalServicesForm": {
+            "tabs": {
+              "serviceDetails": "Service Details",
+              "review": "Review & Publish",
+              "sessionDetails": "Session Details"
+            },
+            "step1": {
+              "title": "Additional Service Details",
+              "subTitle": "Fields marked * are required",
+              "availabilityTitle": "Service Availability",
+              "resourceContent": "Resource Content / Documents",
+              "resourceUploadSub": "Upload PDF or Word service materials or guidelines (Max 10 MB per file)",
+              "uploadPrompt": "Click to browse or upload PDF / Word documents"
+            },
+            "step2": {
+              "title": "Review & Publish",
+              "infoTitle": "Before you publish:",
+              "infoBullet1": "This support will be visible to all Coaches in the GBL network",
+              "infoBullet2": "Coaches can submit requests on behalf of participants",
+              "infoBullet3": "You'll receive notifications when requests are submitted",
+              "serviceDetailsTitle": "Service Details"
+            }
+          }
+        },
         "passwordNote": "A temporary password will be generated and sent to the user's email address. The user will be required to change their password on first login.",
         "additionalInformation": "Additional Information",
         "organisation": "Organisation",
@@ -1470,7 +1638,19 @@
           "passwordComplexity": "Password must contain at least one uppercase, one lowercase, one number and one special character."
         },
         "success": "User created successfully.",
-        "error": "Failed to create user."
+        "error": "Failed to create user.",
+        "errors": {
+          "provinceRequired": "Province is required",
+          "numberOfParticipantsRequired": "Number of participants is required",
+          "numberOfParticipantsInvalid": "Please enter a valid number",
+          "siteRequired": "Site is required",
+          "assetTypeRequired": "Asset type is required",
+          "livelihoodCategoryRequired": "Livelihood category is required",
+          "assetTitleRequired": "Asset title is required",
+          "assetDescriptionRequired": "Asset description is required",
+          "estimatedValueRequired": "Estimated asset value is required",
+          "availableQuantityRequired": "Available quantity is required"
+        }
       }
     },
     "stats": {
@@ -1527,6 +1707,43 @@
         "assigned": "Assigned",
         "unassigned": "Unassigned"
       }
+    },
+    "reviewRequests": {
+      "tabs": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "declined": "Declined"
+      },
+      "filters": {
+        "type": "Request Type",
+        "pathwaySwitch": "Pathway Switch",
+        "dropoutRequest": "Dropout Request"
+      },
+      "table": {
+        "participant": "Participant",
+        "type": "Type",
+        "change": "Change",
+        "province": "Province",
+        "site": "Site",
+        "requestor": "Requestor",
+        "submitted": "Submitted",
+        "status": "Status",
+        "actions": "Actions",
+        "noRequests": "No requests found"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "approveSuccess": "Request approved successfully.",
+      "rejectSuccess": "Request rejected successfully.",
+      "decisionError": "Could not update the request. Try again.",
+      "accessDenied": "You do not have permission to view this page."
     },
     "bulkOperations": {
       "title": "Bulk Operations & CSV Templates",
@@ -1812,7 +2029,7 @@
     "pleaseEnterBothEmailAndPassword": "Enter email and password.",
     "invalidEmailOrPassword": "Email or password is incorrect. Try again.",
     "anErrorOccurredDuringLogin": "Something went wrong. Try logging in again.",
-    "lcLogin": "Login as Coach / Supervisor",
+    "lcLogin": "Login",
     "lcLoginNative": "Login as Coach",
     "testAccounts": "Test Accounts:",
     "welcomeToYourAccount": "Welcome To Your Account",
@@ -1933,7 +2150,8 @@
       "proceed": "Proceed",
       "notEligible": "Not Eligible",
       "confirmNotEligible": "Participant Not Eligible",
-      "confirmNotEligibleSubtitle": "Are you sure that this participant does not meet the Targeting Criteria and is not Eligible for onboarding?"
+      "confirmNotEligibleSubtitle": "Are you sure that this participant does not meet the Targeting Criteria and is not Eligible for onboarding?",
+      "dropoutUnderReview": "Dropout Request Under Review"
     },
     "profileModal": {
       "title": "Participant Profile",
@@ -1958,7 +2176,23 @@
     },
     "tabs": {
       "interventionPlan": "Intervention Plan",
-      "assessmentSurveys": "Assessment Surveys"
+      "assessmentSurveys": "Assessment Surveys",
+      "attendedSessions": "Attended Sessions"
+    },
+    "attendedSessions": {
+      "title": "Sessions",
+      "sectionTitle": "Attended Sessions",
+      "missedSectionTitle": "Missed Sessions",
+      "attended": "Attended",
+      "missed": "Missed",
+      "serviceProvider": "Service Provider",
+      "noSessionsTitle": "No Sessions Found",
+      "noMissedSessionsTitle": "No Missed Sessions",
+      "noSessionsDescription": "Sessions this participant has attended will appear here.",
+      "noAttendedTitle": "No attended sessions",
+      "noMissedTitle": "No missed sessions",
+      "noAttended": "Scheduled sessions that {{name}} attended will appear here",
+      "noMissed": "Scheduled sessions that {{name}} missed will appear here"
     },
     "interventionPlan": {
       "noPlanAssigned": "No Intervention Plan Assigned",
@@ -2083,6 +2317,7 @@
     },
     "dropoutHint": "This will change the participant's status to \"Dropped Out\" and log the action in their history.",
     "dropoutSuccess": "Participant marked as dropout.",
+    "dropoutSentForApproval": "Your request to mark {{name}} as dropout has been sent for approval.",
     "dropoutError": "Could not mark participant as dropout. Try again.",
     "offlineDataFoundTitle": "Offline Data Found",
     "offlineDataFoundMessage": "This participant has offline downloaded data.",
@@ -2200,34 +2435,258 @@
       "observation": "Observation",
       "template": "Develop Intervention Plan",
       "participants": "Participants",
-      "sessions-support": "Sessions & Support",
+      "sessions-support": "Support & Interventions",
       "project": "Project",
-      "home": "Home"
+      "home": "Home",
+      "download-apk": "Download APK"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Coach performance and graduation readiness overview",
+      "totalCaseload": "Total Caseload",
+      "activeParticipants": "Active Participants",
+      "graduated": "Graduated",
+      "averageProgress": "Average Progress",
+      "tasksOverview": "Tasks Overview",
+      "totalTasks": "Total Tasks",
+      "completedTasks": "Completed Tasks",
+      "recentActivity": "Recent Activity (30 days)",
+      "enrollmentStatus": "Enrollment Status",
+      "enrollment": {
+        "notEnrolled": "Not Enrolled",
+        "onboarded": "Onboarded",
+        "inProgress": "In Progress",
+        "completed": "Completed"
+      },
+      "rawDataTitle": "Raw Reporting Data",
+      "rawDataDescription": "Unprocessed response from the BRAC reporting API",
+      "rawDataEmpty": "No raw data available",
+      "fetchError": "Failed to load reporting data. Please try again.",
+      "missingCoachId": "Unable to determine your coach ID. Please log in again.",
+      "refresh": "Refresh",
+      "copyJson": "Copy JSON",
+      "copySuccess": "Raw data copied to clipboard",
+      "copyUnavailable": "Copying is not available on this device",
+      "clearAllRawData": "Clear All Raw Data",
+      "clearing": "Clearing...",
+      "clearAllConfirmDescription": "This permanently deletes all stored raw reporting data",
+      "clearAllConfirmBody": "Are you sure you want to remove all raw reporting data? This action cannot be undone.",
+      "clearSuccess": "All raw reporting data has been removed",
+      "clearError": "Failed to clear raw reporting data. Please try again.",
+      "comingSoon": "Coming Soon",
+      "performanceActivityReport": "Performance & Activity Report",
+      "performanceActivityReportSubtitle": "Key field metrics achieved by the coach",
+      "participantsOnboarded": "Participants Onboarded",
+      "participantsOnboardedSubtitle": "Currently onboarded",
+      "idpsDeveloped": "IDPs Developed",
+      "idpsDevelopedSubtitle": "Intervention plans set",
+      "individualCheckins": "Individual Check-ins",
+      "individualCheckinsSubtitle": "Visits logged",
+      "groupCheckins": "Group Check-ins",
+      "groupCheckinsSubtitle": "Sessions completed",
+      "midlineSurveys": "Midline Surveys",
+      "endlineSurveys": "Endline Surveys",
+      "surveysCompleted": "Surveys completed",
+      "bigPushFacilitated": "Big Push Facilitated",
+      "bigPushFacilitatedSubtitle": "Asset grants distributed",
+      "bigPushValue": "Big Push Value",
+      "bigPushValueSubtitle": "Total grant worth",
+      "interventionsScheduled": "Interventions Scheduled",
+      "interventionsScheduledSubtitle": "Planned milestones",
+      "interventionsCompleted": "Interventions Completed",
+      "interventionsCompletedSubtitle": "Milestones met",
+      "slowClimbers": "Slow Climbers",
+      "slowClimbersSubtitle": "Active (Progress < 50%)",
+      "fastClimbers": "Fast Climbers",
+      "fastClimbersSubtitle": "Active (Progress ≥ 50%)",
+      "tabs": {
+        "overview": "Overview",
+        "outcomes": "Outcomes",
+        "graduationCriteria": "Graduation Criteria"
+      },
+      "outcomes": {
+        "title": "Individual Outcome Indicators",
+        "description": "Select a participant below to view their individual outcome trends based on survey responses and assessment data.",
+        "viewingDataFor": "Viewing outcome indicators for:",
+        "selectParticipant": "Select participant...",
+        "searchParticipants": "Search participants...",
+        "noParticipantsFound": "No participant found.",
+        "emptyState": "Select a participant above to view their outcome indicators.",
+        "fetchError": "Failed to load outcome indicators. Please try again.",
+        "noData": "No data available.",
+        "notEnoughTrendData": "Not enough data points to plot a trend yet.",
+        "showRawData": "Show raw response",
+        "hideRawData": "Hide raw response",
+        "incomeTrend": "Income Trend Over Time",
+        "incomeTrendSubtitle": "Monthly income progression",
+        "savingsTrend": "Savings Trend Over Time",
+        "savingsTrendSubtitle": "Monthly savings progression",
+        "incomeSourcesBreakdown": "Income Sources Breakdown",
+        "incomeSourcesBreakdownSubtitle": "Current month income by source",
+        "selfEfficacyProgress": "Self-Efficacy Progress",
+        "selfEfficacyProgressSubtitle": "Score progression over program",
+        "agencyAndControl": "Sense of Agency & Control",
+        "agencyAndControlSubtitle": "Participant self-assessment",
+        "feelsInControl": "Feels in control of their life",
+        "buildingControl": "Building sense of control",
+        "metrics": {
+          "currentMonthlyIncome": "Current Monthly Income",
+          "currentSavings": "Current Savings",
+          "igaStatus": "IGA Status",
+          "igaActive": "Active",
+          "igaInactive": "No IGA",
+          "selfEfficacyScore": "Self-Efficacy Score",
+          "savingsFrequency": "Savings Frequency",
+          "savingsLocation": "Savings Location",
+          "recordKeeping": "Record Keeping",
+          "debtStatus": "Debt Status",
+          "noDebt": "No debt"
+        }
+      },
+      "graduation": {
+        "coachWorkload": "Coach Workload",
+        "readyToGraduate": "Ready to Graduate",
+        "nearReady": "Near Ready",
+        "notReady": "Not Ready",
+        "overallRate": "Overall Program Graduation Rate",
+        "overallRateSubtitle": "({{graduated}} out of {{totalExits}} exited participants graduated)",
+        "exitDistribution": "Program Exit Distribution",
+        "exitDistributionSubtitle": "Breakdown across 3 exit categories",
+        "exitGraduated": "Graduated",
+        "exitBelowThreshold": "Completed Below Threshold",
+        "exitDroppedOff": "Dropped Off",
+        "totalExits": "Total Program Exits",
+        "timeline": "Graduation Rate Timeline",
+        "timelineSubtitle": "Tracking trends for Graduated, Below Threshold, and Dropped Off participants",
+        "noTimelineData": "No timeline data yet.",
+        "timelineNotRendered": "Timeline data is available but not yet visualized here.",
+        "achieved": "Achieved",
+        "onTrack": "On Track",
+        "atRisk": "At Risk",
+        "notComputable": "Not Computable",
+        "indicatorsTitle": "Graduation Indicators",
+        "indicatorsSubtitle": "12 indicators across 4 pillars",
+        "allPillars": "All Pillars",
+        "individualReadiness": "Individual Graduation Readiness",
+        "emptyState": "Select a participant above to view their individual graduation checklist.",
+        "fetchOverviewError": "Failed to load graduation overview. Please try again.",
+        "fetchReadinessError": "Failed to load graduation readiness. Please try again.",
+        "criteriaTitle": "Graduation Criteria",
+        "criteriaSubtitle": "12 indicators across 4 pillars · Track participant's progress toward graduation",
+        "gateNotMet": "Graduation gate not met — blocked by:",
+        "pillarSummaryFormat": "{{achieved}} achieved · {{onTrack}} on track · {{atRisk}} at risk",
+        "toAchieve": "To Achieve:",
+        "pathwayOnly": "{{pathway}} pathway only"
+      }
     },
     "menu": {
       "home": "Home",
+      "myLearningProgress": "My Learning Progress",
+      "coachLearningDashboard": "Learning Dashboard",
       "dashboard": "Dashboard",
+      "myParticipants": "My Participants",
       "sessionsSupport": "Sessions & Support",
       "myProfile": "My Profile",
       "serviceProviders": "Service Providers"
     },
     "sessionsSupport": {
-      "subtitle": "Browse sessions, additional services, and assets available in your province and site",
+      "subtitle": "Browse trainings and sessions, additional services, and assets available in your province and site",
       "createSession": "Create A Session",
       "requestSupport": "Request New Support",
       "sessionsFound": "sessions found",
+      "tabs": {
+        "browseSessions": "Browse Trainings & Sessions",
+        "myRequests": "My Requests",
+        "mySessions": "My Trainings & Sessions",
+        "browseServices": "Browse Services",
+        "myServices": "My Requests",
+        "browseAssets": "Browse Assets",
+        "myAssets": "My Requests",
+        "history": "History"
+      },
       "mySessionCard": {
         "assignParticipants": "Assign Participants",
-        "manageSession": "Manage Session",
+        "editSession": "Edit Session",
         "participants": "participants"
       },
       "mySessionsDescription": "Sessions created and conducted by you.",
-      "emptyState": {
-        "title": "No history yet",
-        "description": "Completed support will appear here"
+      "assignParticipantsModal": {
+        "eligibleParticipants": "eligible participants",
+        "selected": "selected",
+        "clear": "Clear",
+        "assignSession": "Assign Session",
+        "cancel": "Cancel",
+        "noResultsFound": "No results found",
+        "assignButtonText": "Assign ({{count}})"
       },
       "alerts": {
         "assignSuccess": "{{count}} participant(s) assigned to session successfully."
+      },
+      "sessionDetails": {
+        "aboutThisSession": "About This Session",
+        "learningObjectives": "Learning Objectives",
+        "assignParticipants": "Assign Participants",
+        "assignSubtitle": "Select participants from your active caseload to assign them to this session.",
+        "dateTime": "Date & Time",
+        "duration": "Duration",
+        "format": "Format",
+        "capacity": "Capacity",
+        "spotsRemaining": "spots remaining",
+        "providedBy": "Provided by:",
+        "backToSessions": "Back to Sessions",
+        "selectParticipants": "Select participants from your active caseload to assign them to this session.",
+        "enrolled": "enrolled",
+        "durationValueHours": "{{count}} hours",
+        "durationValueMinutes": "{{count}} minutes",
+        "durationValueHoursMinutes": "{{hours}} hours {{minutes}} minutes",
+        "durationValueDays": "{{count}} days",
+        "durationValueDaysHours": "{{days}} days {{hours}} hours",
+        "durationValueDaysMinutes": "{{days}} days {{minutes}} minutes",
+        "durationValueDaysHoursMinutes": "{{days}} days {{hours}} hours {{minutes}} minutes"
+      },
+      "requestDetails": {
+        "title": "Request Details",
+        "idLabel": "ID: {{id}}",
+        "statusLabel": "STATUS",
+        "requestedOnLabel": "REQUESTED ON",
+        "typeLabel": "Type",
+        "providerLabel": "Provider",
+        "titleLabel": "Title",
+        "notesUpdatesLabel": "Notes / Updates",
+        "submittedInfoLabel": "Submitted Information",
+        "infoRequestedLabel": "Information Requested by Provider",
+        "infoRequestedBadge": "Info requested",
+        "pillarLabel": "Pillar",
+        "livelihoodCategoryLabel": "Category of Livelihoods",
+        "trainingSessionLabel": "Training / Session",
+        "descriptionLabel": "Description",
+        "targetAudienceLabel": "Target Audience",
+        "certificateProvidedLabel": "Certificate Provided",
+        "maxCapacityLabel": "Max Capacity",
+        "startDateLabel": "Start Date & Time",
+        "endDateLabel": "End Date & Time",
+        "formatLabel": "Format",
+        "venueLabel": "Venue",
+        "sessionType": "Session",
+        "notFound": "Request not found.",
+        "statusAccepted": "Accepted",
+        "statusDeclined": "Declined",
+        "statusRequested": "Requested",
+        "statusCompleted": "Completed",
+        "yes": "Yes",
+        "no": "No",
+        "participant": "Participant",
+        "dateTimeFormat": "{{date}} at {{time}}"
+      },
+      "confirmAssignment": {
+        "title": "Confirm Assignment",
+        "subtitle": "You are about to assign the following participants to this session:",
+        "participantsCount": "{{count}} Participants:",
+        "cancel": "Cancel",
+        "confirm": "Confirm Assignment",
+        "inPerson": "In-person",
+        "online": "Online",
+        "hybrid": "Hybrid"
       }
     },
     "createSession": {
@@ -2237,6 +2696,14 @@
     "requestSession": {
       "title": "Request a Session",
       "badge": "Training Session"
+    },
+    "requestAdditionalService": {
+      "title": "Request Additional Service",
+      "badge": "Service"
+    },
+    "requestAsset": {
+      "title": "Request Asset",
+      "badge": "Asset"
     }
   },
   "template": {
@@ -2425,8 +2892,8 @@
     "taskConflictReasonMultiple": "Multiple differences detected."
   },
   "schemaformrenderer": {
-    "file" : {
-      "fileSize" : "Max {{ size }} MB"
+    "file": {
+      "fileSize": "Max {{ size }} MB"
     }
   },
   "supportProvider": {
@@ -2435,7 +2902,7 @@
     },
     "menu": {
       "dashboard": "Dashboard",
-      "mySupportOfferings": "My Support Offerings",
+      "mySupportOfferings": "My Support Interventions",
       "requests": "Requests",
       "materialsLibrary": "Materials Library",
       "profile": "Profile"
@@ -2443,7 +2910,7 @@
     "pageTitle": {
       "dashboard": "Dashboard",
       "dashboard1": "Dashboard",
-      "opportunities": "My Support Offerings",
+      "opportunities": "My Support Interventions",
       "create-opportunity": "Create New Support",
       "create-training-session": "Create Training Session",
       "create-additional-service": "Create Additional Service",
@@ -2453,9 +2920,9 @@
       "profile": "Organisation Profile"
     },
     "supportOfferings": {
-      "title": "My Support Offerings",
+      "title": "My Support Interventions",
       "subtitle": "Manage all published support — training sessions, services, and assets",
-      "createNew": "Create New",
+      "createNew": "Create Support Intervention",
       "tabs": {
         "trainingsAndSessions": "Trainings & Sessions",
         "additionalServices": "Additional Services",
@@ -2476,9 +2943,15 @@
       "cards": {
         "hideDetails": "Hide Details",
         "viewDetails": "View Details",
+        "providedBy": "Provided by:",
+        "bothAudience": "Both",
         "requestedBy": "Requested by: {{name}}",
+        "requestedByPrefix": "Requested by: ",
+        "requestsCount": "{{count}} requests / spots",
         "copySession": "Copy Session",
         "copyOffering": "Copy Offering",
+        "copyIntervention": "Copy Intervention",
+        "cancel": "Cancel",
         "viewRequests": "View Requests",
         "complete": "Complete",
         "sessionComplete": "Session Complete",
@@ -2507,7 +2980,8 @@
           "downloading": "Downloading {{name}}...",
           "navigatingRequests": "Navigating to support requests...",
           "offeringCopied": "Offering copied successfully!",
-          "offeringCompleted": "Offering marked as complete!"
+          "offeringCompleted": "Offering marked as complete!",
+          "offeringCancelled": "Intervention cancelled successfully!"
         }
       },
       "modal": {
@@ -2521,19 +2995,34 @@
       "buttonTexts": {
         "publishSupport": "Publish support",
         "loadMoreSessions": "Load More Sessions"
+      },
+      "additionalServiceCompletionModal": {
+        "title": "Service Completion & Attendance",
+        "badge": "Additional Service",
+        "requestedBy": "Requested by {{name}}{{org}}",
+        "confirmButton": "Confirm & Save Completion",
+        "fetchFailed": "Failed to load participants. Please try again.",
+        "saved": "Completion status saved.",
+        "completeFailed": "Failed to save completion. Please try again."
       }
     },
     "dashboard": {
-      "title": "Dashboard",
-      "subtitle": "Overview of your impact and activities",
-      "createSupportBtn": "Create Support for Participants"
+      "title": "Support Provider Dashboard",
+      "subtitle": "Overview of your organization's support commitments, intervention fulfillment tracking & performance portfolio",
+      "createSupportBtn": "Create Support Intervention"
     },
     "createSupport": {
       "title": "Create New Support",
       "subtitle": "Choose the type of support you want to create",
       "changeType": "Change type",
       "training": {
-        "title": "Create Training Session"
+        "title": "Create Training Session",
+        "discardMessage": "Are you sure you want to discard this session draft?",
+        "discard": "Discard Draft",
+        "alerts": {
+          "draftSaved": "Draft saved successfully!",
+          "sessionSaved": "Session saved successfully!"
+        }
       },
       "additionalService": {
         "title": "Create Additional Service"
@@ -2557,8 +3046,14 @@
       },
       "errors": {
         "saveFailed": "Something went wrong while saving. Please try again.",
-        "incompleteWarning": "Please Complete your Profile before proceeding."
+        "incompleteWarning": "Please Complete your Profile before proceeding.",
+        "featureUnderDevelopment": "Asset offering creation is currently not available.",
+        "categoryNotOffered": "This support category is not part of your offered categories. Please update your profile to enable it."
       }
+    },
+    "assetForm": {
+      "requestSuccessMessage": "Asset request saved successfully!",
+      "draftSuccessMessage": "Asset draft saved successfully!"
     },
     "supportRequests": {
       "buttonTexts": {
@@ -2580,6 +3075,8 @@
         "requestInfo": "Request More Information",
         "decline": "Decline Request",
         "acceptSchedule": "Accept & Schedule Training",
+        "acceptAssetRequest": "Accept Asset Request",
+        "acceptScheduleService": "Accept & Schedule Service",
         "coachInformation": "Coach Information"
       },
       "declineReasons": {
@@ -2653,11 +3150,11 @@
     },
     "materialsLibrary": {
       "title": "Template & Resource Library",
-      "subtitle": "Standalone content repository of all workbooks, guides, templates, and manuals uploaded for support offerings.",
+      "subtitle": "Standalone content repository of all workbooks, guides, templates, and manuals uploaded for support interventions.",
       "uploadResource": "Upload Resource",
       "stats": {
         "totalResources": "Total Resources",
-        "pdfDocuments": "PDFs & Documents",
+        "pdfDocuments": "PDFs & Word Documents",
         "templatesDecks": "Templates & Decks",
         "totalDownloads": "Total Downloads"
       },
@@ -2674,8 +3171,7 @@
       },
       "formats": {
         "pdf": "PDF Document",
-        "template": "Templates & Decks",
-        "video": "Video Guide"
+        "word": "Word Document"
       },
       "card": {
         "linked": "Linked: {{offering}}",
@@ -2683,7 +3179,8 @@
         "downloads": "{{count}} downloads",
         "preview": "Preview",
         "download": "Download",
-        "delete": "Delete"
+        "delete": "Delete",
+        "fileNotAvailable": "File is not available for download."
       },
       "uploadModal": {
         "title": "Upload Resource Material",
@@ -2700,7 +3197,8 @@
         "cancel": "Cancel",
         "addLibrary": "Add to Library",
         "successMsg": "Resource uploaded successfully!",
-        "errorMsg": "Failed to upload resource. Please fill all required fields."
+        "errorMsg": "Failed to upload resource. Please fill all required fields.",
+        "invalidFileType": "Only PDF (.pdf) or Word (.doc, .docx) files are allowed, and the file must match the selected format."
       },
       "previewModal": {
         "title": "Category & Purpose",
@@ -2719,6 +3217,86 @@
         "cancel": "Cancel",
         "successMsg": "Resource deleted successfully!"
       }
+    }
+  },
+  "downloadApk": {
+    "appName": "Download APK Application",
+    "description": "Download the GBL Coach mobile application to log field visits, manage cases, and track progress on Android.",
+    "downloadButton": "Download APK",
+    "defaultDownloadButton": "Download APK",
+    "readyStatus": "100% Ready",
+    "scanWithPhone": "Scan with Phone",
+    "hideQr": "Hide QR",
+    "copyDirectLink": "Copy Direct Link",
+    "linkCopied": "Direct link copied to clipboard",
+    "pointCamera": "Point camera to download directly",
+    "installationGuide": "Installation Guide for Android",
+    "step1Title": "1. Download:",
+    "step1Desc": "Download the APK file to your device.",
+    "step2Title": "2. Open File:",
+    "step2Desc": "Open the downloaded APK file.",
+    "step3Title": "3. Allow Permission:",
+    "step3Desc": "If prompted, allow installation from this source in Settings.",
+    "step4Title": "4. Install & Launch:",
+    "step4Desc": "Install the application and open it.",
+    "setupRequired": "Setup Required",
+    "unconfiguredTitle": "Mobile App Setup in Progress",
+    "unconfiguredDescription": "The download URL has not been configured yet. Please contact your administrator or continue in web browser.",
+    "noticeTitle": "Notice:",
+    "noticeMessage": "Download URL is not configured. Please contact your administrator.",
+    "continueInBrowser": "Continue in Web Browser",
+    "demoLabel": "DEMO:",
+    "demoReady": "Ready",
+    "demoUnconfigured": "Unconfigured",
+    "close": "Close",
+    "urlNotConfigured": "Download URL is not configured. Please contact your administrator."
+  },
+  "participantJourney": {
+    "title": "Participant Portal",
+    "welcomeBack": "Welcome back!",
+    "welcomeBackNamed": "Welcome back, {{name}}!",
+    "backToSessions": "Back to Sessions",
+    "idpProgressSubtitle": "Track your progress across the four core pillars of the graduation programme.",
+    "sessionsSubtitle": "View your upcoming sessions and review your attendance history.",
+    "noSessions": "No sessions found.",
+    "pageTitle": {
+      "participant-portal": "Participant Portal",
+      "idp-progress": "My Progress",
+      "my-sessions": "My Sessions & Services",
+      "my-graduation": "My Graduation"
+    },
+    "tabs": {
+      "scheduled": "Scheduled",
+      "attended": "Attended",
+      "missed": "Missed"
+    },
+    "sessionFilters": {
+      "all": "All",
+      "trainingsAndSessions": "Trainings & Sessions",
+      "additionalServices": "Additional Services"
+    },
+    "menu": {
+      "home": "Home",
+      "myProfile": "My Profile"
+    },
+    "graduation": {
+      "criteriaTitle": "Graduation Criteria",
+      "criteriaSubtitle": "12 indicators across 4 pillars · Track participant's progress toward graduation",
+      "achieved": "Achieved",
+      "onTrack": "On Track",
+      "atRisk": "At Risk",
+      "toAchieve": "To Achieve:",
+      "graduationReadiness": "Graduation Readiness:"
+    },
+    "cards": {
+      "idpProgress": "My Progress",
+      "idpProgressDescription": "View your tasks and progress",
+      "sessions": "My Sessions & Services",
+      "sessionsDescription": "View scheduled and missed sessions",
+      "graduation": "My Graduation",
+      "graduationDescription": "View graduation criteria",
+      "coachName": "Coach Name",
+      "contact": "Contact"
     }
   }
 }

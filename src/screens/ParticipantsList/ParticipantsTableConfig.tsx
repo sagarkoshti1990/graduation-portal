@@ -114,11 +114,28 @@ const allParticipantsColumns: ColumnDef<Participant>[] = [
     key: 'name',
     label: 'participants.name',
     flex: 1.5,
-    render: participant => (
-      <Text {...TYPOGRAPHY.h4} color="$textForeground" lineHeight="$sm">
-        {participant.name} 
-      </Text>
-    ),
+    render: participant => {
+        const { t } = useLanguage();
+      // Check if request to drop out is sent for approval
+      const isDropoutRequestSentForApproval = Boolean(
+        (participant as any)?.pendingChangeRequest?.some(
+          (request: any) => request.action === 'PROGRAM_USER_DROPPING_OUT' && request.status === 'PENDING'
+        )
+      );
+
+      return (
+        <VStack space="xs">
+          <Text {...TYPOGRAPHY.h4} color="$textForeground" lineHeight="$sm">
+            {participant.name}
+          </Text>
+          {isDropoutRequestSentForApproval && (
+            <Text {...TYPOGRAPHY.bodySmall} color="$warning600" fontSize="$xs">
+              {t('participantDetail.header.dropoutUnderReview')}
+            </Text>
+          )}
+        </VStack>
+      );
+    },
     mobileConfig: {
       leftRank: 1, // Top left position
       showLabel: false, // Hide label on mobile

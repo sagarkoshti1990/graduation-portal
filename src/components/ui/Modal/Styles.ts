@@ -235,3 +235,70 @@ export const LCProfileStyles = {
     opacity: 0.8,
   },
 };
+
+/**
+ * Participant Profile Specific Styles
+ */
+export const participantProfileStyles = {
+  bodyProps: {
+    pt: '$0' as const,
+    pb: '$0' as const,
+  },
+  headerAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: '$full' as const,
+    bg: 'rgba(139, 40, 66, 0.15)' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  headerName: {
+    fontSize: '$lg' as const,
+    fontWeight: '$bold' as const,
+    color: '$textDark900' as const,
+  },
+  headerId: {
+    fontSize: '$sm' as const,
+    color: '$textDark600' as const,
+  },
+  fieldLabel: {
+    fontSize: '$sm' as const,
+    fontWeight: '$medium' as const,
+    color: '$textDark900' as const,
+  },
+  fieldValueBox: {
+    bg: '$bgSidebar' as const,
+    py: '$2.5' as const,
+    px: '$4' as const,
+    minHeight: 44,
+    borderRadius: '$md' as const,
+    justifyContent: 'center' as const,
+    width: '$full' as const,
+  },
+  fieldValueText: {
+    fontSize: '$sm' as const,
+    color: '$textDark900' as const,
+    fontWeight: '$normal' as const,
+  },
+  footerContainer: {
+    justifyContent: 'flex-end' as const,
+    width: 'calc(100% + 48px)' as const,
+    marginHorizontal: '-$6' as const,
+    paddingHorizontal: '$6' as const,
+    paddingTop: '$4' as const,
+    borderTopWidth: 1 as const,
+    borderTopColor: '$borderLight200' as const,
+  },
+  closeButton: {
+    variant: 'outline' as const,
+    size: 'sm' as const,
+    borderColor: '$inputBorder' as const,
+    borderRadius: '$md' as const,
+    px: '$5' as const,
+  },
+  closeButtonText: {
+    color: '$textDark900' as const,
+    fontWeight: '$medium' as const,
+  },
+} as const;
+

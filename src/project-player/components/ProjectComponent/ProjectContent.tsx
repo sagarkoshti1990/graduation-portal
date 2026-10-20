@@ -15,11 +15,14 @@ import {
 import { useProjectContext, useProjectStable } from '../../context/ProjectContext';
 import ProjectInfoCard from './ProjectInfoCard';
 import TaskComponent from './TaskComponent';
-import AddCustomTaskModal from '../Task/AddCustomTaskModal';
+// import AddCustomTaskModal from '../Task/AddCustomTaskModal';
+import ScheduleInterventionModal from '../Task/ScheduleInterventionModal';
 import { projectComponentStyles } from './Styles';
 import { useLanguage } from '@contexts/LanguageContext';
 import { LucideIcon } from '@ui';
 import { PLAYER_MODE } from '@constants/app.constant';
+import { ROLE_NAMES } from '@constants/ROLES';
+import { useAuth } from '@contexts/AuthContext';
 
 interface ProjectContentProps {
   hasChildren: boolean;
@@ -37,6 +40,9 @@ const ProjectContent = memo<ProjectContentProps>(({
   const { projectData,oldProjectData, mode, config } = useProjectContext();
   const { projectDataRef, allowEditTaskIds } = useProjectStable();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  // Participants only reach the player via Participant Journey (/idp-progress).
+  const isParticipantView = user?.role === ROLE_NAMES.PARTICIPANT;
   const isPreviewMode = useMemo(() => mode === PLAYER_MODE.PREVIEW, [mode]);
 
   // Pass the actual ref (not live projectData) so task-level components read
@@ -77,8 +83,9 @@ const ProjectContent = memo<ProjectContentProps>(({
   // Accordion's type="single" behavior — that component was a candidate
   // trigger for a native Fabric/Yoga crash on this screen, RN 0.82,
   // facebook/react-native#52349).
+  // Participant Journey (non-preview): only the first pillar is open initially.
   const [expandedPillarId, setExpandedPillarId] = useState<string | undefined>(
-    () => socialProtectionPillarIds[0],
+    () => (isParticipantView && !isPreviewMode ? pillars[0]?._id : socialProtectionPillarIds[0]),
   );
 
   // Stable per-pillar toggle callbacks — only recreated when `pillars` itself
@@ -144,9 +151,23 @@ const ProjectContent = memo<ProjectContentProps>(({
         </VStack>
       ) : (
         pillars.map((task,index) => (
-          <TaskComponent key={task._id} task={task} parentIndex={index} isChildOfProject={true} projectContext={projectContext}/>
+          <TaskComponent
+            key={task._id}
+            task={task}
+            parentIndex={index}
+            isChildOfProject={true}
+            projectContext={projectContext}
+            {...(isParticipantView && {
+              showAccordionWrapper: false,
+              isExpanded: expandedPillarId === task._id,
+              onToggleExpand: toggleHandlersByPillarId[task._id],
+            })}
+          />
         ))
       )}
+
+      {/* Shared by the top "Add Custom Task" button (ProjectComponent) and the one below. */}
+      <ScheduleInterventionModal isOpen={isModalOpen} onClose={handleCloseModal} />
 
       {showPillarFeatures && (
         <Box>
@@ -155,11 +176,11 @@ const ProjectContent = memo<ProjectContentProps>(({
             <ButtonIcon as={LucideIcon} name="Plus" />
             <ButtonText>{t('projectPlayer.addCustomTask')}</ButtonText>
           </Button>
-          <AddCustomTaskModal
+          {/* <AddCustomTaskModal
             isOpen={isModalOpen}
             onClose={handleCloseModal}
             mode="add"
-          />
+          /> */}
         </Box>
       )}
     </VStack>

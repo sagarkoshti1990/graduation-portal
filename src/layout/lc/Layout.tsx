@@ -11,6 +11,7 @@ import logger from '@utils/logger';
 import { useGlobal } from '@contexts/GlobalContext';
 import { Modal, HStack, Text, Button, ButtonText } from '@ui';
 import { useOfflineSync } from '@contexts/OfflineSyncContext';
+import DownloadApkModal from '../../screens/DownloadApk';
 
 /**
  * LC Layout Component - Enhanced Header Integration
@@ -36,6 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
   const {refComponent} = useGlobal()
   const { pendingBreakdown } = useOfflineSync();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDownloadApkModal, setShowDownloadApkModal] = useState(false);
 
   // Set document title for web - memoize to avoid recalculation
   const pageTitle = useMemo(() =>
@@ -54,6 +56,11 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
       } else {
         logout();
       }
+      return;
+    }
+
+    if (key === 'download-apk') {
+      setShowDownloadApkModal(true);
       return;
     }
 
@@ -119,6 +126,13 @@ const Layout: React.FC<LayoutProps> = ({ title, children, disableScroll, pageNam
           </Button>
         </HStack>
       </Modal>
+
+      {showDownloadApkModal && (
+        <DownloadApkModal
+          isOpen={showDownloadApkModal}
+          onClose={() => setShowDownloadApkModal(false)}
+        />
+      )}
     </>
   );
 };

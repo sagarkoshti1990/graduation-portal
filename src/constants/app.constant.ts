@@ -110,6 +110,7 @@ export const PARTICIPANT_COLUMN_KEYS = {
 export const PARTICIPANT_DETAILS_TABS = {
   INTERVENTION_PLAN: 'intervention-plan',
   ASSESSMENTS_SURVEYS: 'assessment-surveys',
+  ATTENDED_SESSIONS: 'attended-sessions',
 };
 
 /**

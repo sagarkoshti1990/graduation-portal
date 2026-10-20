@@ -7,6 +7,7 @@ import dataService from '../../services/dataService';
 import { useAuth, useIsdminPanalAccess } from '@contexts/AuthContext';
 import { ParticipantData } from '@app-types/participant';
 import { buildObservationPrefillData } from '@constants/OBSERVATION_PREFILL';
+import moment from 'moment';
 
 const DEFAULT_COUNTRY_CODE = 27;
 
@@ -53,11 +54,11 @@ const Observation: React.FC = () => {
   const [userData, setUserData] = useState<any>(null);
   const [participant, setParticipant] = useState<ParticipantData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
-  const {user, setNavbarData} = useAuth();
+  const { user, setNavbarData } = useAuth();
   const isAdminPanalAccess = useIsdminPanalAccess();
   const { showAlert } = useAlert();
   const handleBackPress = () => {
-      // @ts-ignore
+    // @ts-ignore
     if (routeParams?.redirectUrl) {
       // @ts-ignore
       navigation.navigate(routeParams.redirectUrl);
@@ -86,8 +87,8 @@ const Observation: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if(user?.id == id) {
-          setParticipant({...user, userId: user?.id, name: user?.name, contact: user?.phone, address: user?.address, status: user?.status} as ParticipantData);
+        if (user?.id == id) {
+          setParticipant({ ...user, userId: user?.id, name: user?.name, contact: user?.phone, address: user?.address, status: user?.status } as ParticipantData);
           setNavbarData({
             subtitle: user?.name,
           });
@@ -102,7 +103,7 @@ const Observation: React.FC = () => {
             // Online fallback in case the offline cache has no data and
             // dataService.getParticipantDetails returned null
             try {
-              const userDataResponse = await getParticipantsList({userId:user?.id as string,entityId:id});
+              const userDataResponse = await getParticipantsList({ userId: user?.id as string, entityId: id });
               const fallbackData = userDataResponse?.result?.data?.[0];
               if (fallbackData) {
                 const { userDetails: ud, ...rest } = fallbackData;
@@ -110,6 +111,7 @@ const Observation: React.FC = () => {
                 setParticipant(mapped as ParticipantData);
                 setNavbarData({ subtitle: mapped?.name });
                 const alternatePhoneCode = ud?.alternate_phone_code ?? ud?.phone_code;
+                const alternatePhone = ud?.alternate_phone ?? ud?.alternative_phone ?? ud?.alt_phone ?? mapped?.alternate_phone ?? mapped?.alternative_phone ?? mapped?.alt_phone;
                 setUserData(buildObservationPrefillData({
                   facilitatorName: user?.name,
                   provinceLabel: user?.province?.label,
@@ -120,6 +122,9 @@ const Observation: React.FC = () => {
                   phone: ud?.phone,
                   alternatePhoneCode,
                   email: ud?.email,
+                  alternatePhone,
+                  gender: ud?.gender,
+                  dob: ud?.dob
                 }, formatCountryCode));
               }
             } catch { /* ignore — participant stays undefined */ }
@@ -135,6 +140,11 @@ const Observation: React.FC = () => {
           const alternatePhoneCode =
             ud?.alternate_phone_code ?? ud?.phone_code ??
             newData?.alternate_phone_code ?? newData?.phone_code;
+          const alternatePhone =
+            ud?.alternative_phone?.label ??
+            newData?.alternative_phone?.label ??
+            '';
+
           const preFillData = buildObservationPrefillData({
             facilitatorName: user?.name,
             provinceLabel: user?.province?.label,
@@ -144,9 +154,10 @@ const Observation: React.FC = () => {
             phoneCode: ud?.phone_code ?? newData?.phone_code,
             phone: ud?.phone ?? newData?.phone,
             alternatePhoneCode,
+            alternatePhone,
             email: ud?.email ?? newData?.email,
-            gender: newData?.userDetails?.gender?.label || "",
-            dob: newData?.userDetails?.dob?.label ? newData.userDetails.dob.label.split("_").reverse().join("-") : newData?.dob?.label ? newData?.dob?.label.split("_").reverse().join("-") : "-"
+            gender: ud?.gender?.label || newData?.gender?.label || newData?.userDetails?.gender?.label || '',
+            dob: ud?.dob?.label ? moment(ud.dob.label, 'YYYY_MM_DD').format('YYYY-MM-DD') : newData?.dob?.label ? moment(newData?.dob?.label, 'YYYY_MM_DD').format('YYYY-MM-DD') : "-"
           }, formatCountryCode);
           setUserData(preFillData);
         }
@@ -167,8 +178,8 @@ const Observation: React.FC = () => {
       setIsLoading(true);
       setNavbarData(null);
     };
-  }, [id,user, setNavbarData]);
-  
+  }, [id, user, setNavbarData]);
+
   if (isLoading) {
     return <Loader fullScreen message="Loading observation..." />;
   }

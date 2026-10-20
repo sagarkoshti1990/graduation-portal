@@ -5,6 +5,8 @@ import {
 } from '@ui';
 import { LucideIcon } from '@ui/index';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
+import { ROLE_NAMES } from '@constants/ROLES';
+import { useAuth } from '@contexts/AuthContext';
 import { taskCardStyles } from '../styles';
 import { taskAccordionStyles } from '../../TaskAccordion/styles';
 import type { Task } from '../../../../types/project.types';
@@ -57,6 +59,8 @@ export interface TaskInfoProps {
   handleTaskClick: () => void; handleTitlePress: (canChangePathway?: any) => void; handleOpenPreviewModal: () => void;
   doneText: string; toDoText: string; evidenceRequiredText: string;
   completeFormText: string; uploadEvidenceText: string; fileText: string; filesText: string;
+  sessionBadgeText?: string;
+  sessionStatus?: 'attended' | 'scheduled' | 'missed' | null;
 }
 
 const TaskInfo = memo<TaskInfoProps>(({
@@ -65,8 +69,11 @@ const TaskInfo = memo<TaskInfoProps>(({
   isManualToggleDisabled, isStatusUpdating,
   handleTaskClick, handleTitlePress, handleOpenPreviewModal,
   doneText, toDoText, evidenceRequiredText, completeFormText, uploadEvidenceText,
-  fileText, filesText,
+  fileText, filesText, sessionBadgeText, sessionStatus,
 }) => {
+  const { user } = useAuth();
+  // Participant Journey (participant viewing their own IDP): no file UI on tasks.
+  const isParticipantView = user?.role === ROLE_NAMES.PARTICIPANT;
   const textStyle = showCheckbox ? { textDecorationLine: 'none' as const, opacity: isCompleted ? 0.6 : 1 } : {};
   const titleTypography = showAsCard ? TYPOGRAPHY.h4 : TYPOGRAPHY.h3;
 
@@ -81,6 +88,14 @@ const TaskInfo = memo<TaskInfoProps>(({
   const evidenceRequiredBadge = isEvidenceRequired && showAsCard && isInterventionPlanEditMode ? (
     <Box {...taskAccordionStyles.actionRequiredBadge}>
       <Text {...taskAccordionStyles.actionRequiredText}>{evidenceRequiredText || 'Evidence Required'}</Text>
+    </Box>
+  ) : null;
+
+  const sessionColors = sessionStatus ? taskCardStyles.sessionBadge[sessionStatus] : undefined;
+  const sessionBadge = sessionBadgeText && sessionColors ? (
+    <Box {...taskCardStyles.statusBadge} {...taskCardStyles.statusBadgeDone}
+      borderColor={sessionColors.borderColor} minWidth={50} justifyContent="center">
+      <Text {...taskCardStyles.statusBadgeDoneText} color={sessionColors.textColor}>{sessionBadgeText}</Text>
     </Box>
   ) : null;
 
@@ -111,7 +126,7 @@ const TaskInfo = memo<TaskInfoProps>(({
       {isPreview ? (
         <HStack space="sm" alignItems="center" flexWrap="wrap">
           <Text {...titleTypography} color="$textPrimary" {...textStyle} style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}>{task?.name}</Text>
-          {taskBadge}{evidenceRequiredBadge}
+          {taskBadge}{evidenceRequiredBadge}{sessionBadge}
         </HStack>
       ) : isReadOnly ? (
         <>
@@ -119,13 +134,13 @@ const TaskInfo = memo<TaskInfoProps>(({
             <Text {...titleTypography} color="$textPrimary" {...textStyle} fontWeight={(titleTypography as any).fontWeight} style={isWeb ? (taskCardStyles.webTextWrap as any) : undefined}>{task.name}</Text>
           </ContentWrapper>
           <HStack space="sm" alignItems="center" flexWrap="wrap">
-            {statusBadge}{taskBadge}{evidenceRequiredBadge}
+            {statusBadge}{sessionBadge}{taskBadge}{evidenceRequiredBadge}
             {isReadOnly && isEvidenceRequired && (
               <Box {...taskAccordionStyles.actionRequiredBadge}>
                 <Text {...taskAccordionStyles.actionRequiredText}>{evidenceRequiredText}</Text>
               </Box>
             )}
-            {isReadOnly && task.attachments && task.attachments.length > 0 && (
+            {isReadOnly && !isParticipantView && task.attachments && task.attachments.length > 0 && (
               <Button variant={'outlineghost' as any} px="$2" height="$6" onPress={handleOpenPreviewModal}>
                 <ButtonIcon as={LucideIcon} name="Paperclip" size={taskCardStyles.fileCountIcon.size} />
                 <ButtonText {...taskCardStyles.fileCountText}>
@@ -143,7 +158,7 @@ const TaskInfo = memo<TaskInfoProps>(({
             </Pressable>
           </ContentWrapper>
           <HStack space="sm" alignItems="center" flexWrap="wrap">
-            {statusBadge}{taskBadge}{evidenceRequiredBadge}
+            {statusBadge}{sessionBadge}{taskBadge}{evidenceRequiredBadge}
             {isInterventionPlanEditMode && task.attachments && task.attachments.length > 0 && (
               <Button variant={"outlineghost" as any} px="$2" height="$6" onPress={handleOpenPreviewModal}>
                 <ButtonIcon as={LucideIcon} name="Paperclip" size={taskCardStyles.fileCountIcon.size} />

@@ -430,6 +430,76 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
     [onTaskUpdate, isTaskEditable, offlineKeyPrefix, participantId],
   );
 
+  /**
+   * Batch variant of updateTask: all updates are applied to local state together and sent as a
+   * single payload (`tasks: [...]`). Child tasks are grouped under their parent, matching the
+   * shape updateTask builds for one child.
+   */
+  const updateTasks = useCallback(
+    async (
+      items: { taskId: string; updates: Partial<Task> }[],
+      callerParticipantId: string,
+    ): Promise<void> => {
+      const current = projectDataRef.current;
+      const currentProjectId = current?._id;
+      if (!current || !currentProjectId || items.length === 0) return;
+
+      let project: ProjectData = current;
+      const applied: Task[] = [];
+      const topLevel: Record<string, unknown>[] = [];
+      const byParent = new Map<string, Record<string, unknown>>();
+
+      items.forEach(({ taskId, updates }) => {
+        const res = updateTaskStatus({ taskId, data: project, updatedData: updates });
+        if (!res.task) return;
+        project = res.project;
+        applied.push(res.task);
+
+        const entry = { _id: taskId, name: (res.task as any).name, ...updates };
+        const parentId = (res.task as any).parentId as string | undefined;
+        if (parentId && isEditMode) {
+          let group = byParent.get(parentId);
+          if (!group) {
+            const parent = (current.tasks || []).find(t => t._id === parentId);
+            group = { _id: parentId, name: parent?.name, children: [] };
+            byParent.set(parentId, group);
+          }
+          (group.children as unknown[]).push(entry);
+        } else {
+          topLevel.push(entry);
+        }
+      });
+
+      if (applied.length === 0) return;
+      setProjectData(project);
+
+      const payloadTask = { tasks: [...topLevel, ...byParent.values()] };
+      const fireOnTaskUpdate = () => {
+        if (!onTaskUpdate) return;
+        setTimeout(() => {
+          if (mountedRef.current) applied.forEach(t => onTaskUpdate(t, project));
+        });
+      };
+
+      if (dataService.isNetworkOffline()) {
+        await dataService.saveTaskEdit(callerParticipantId, currentProjectId, payloadTask, offlineKeyPrefix);
+        fireOnTaskUpdate();
+        return;
+      }
+
+      const result = await updateTaskAPI(currentProjectId, payloadTask);
+      if (isApiErrorResult(result)) {
+        throw new Error(result.error || 'Failed to update tasks');
+      }
+      const pid = callerParticipantId || participantId;
+      if (pid && offlineKeyPrefix) {
+        updateOfflineProject(offlineKeyPrefix, pid, currentProjectId, project).catch(() => {});
+      }
+      fireOnTaskUpdate();
+    },
+    [onTaskUpdate, isEditMode, offlineKeyPrefix, participantId],
+  );
+
   const updateProjectInfo = useCallback((updates: Partial<ProjectData>) => {
     setProjectData(prev => (prev ? { ...prev, ...updates } : null));
   }, []);
@@ -621,6 +691,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       allowEditTaskIds,
       showAddCustomTask,
       updateTask,
+      updateTasks,
       updateProjectInfo,
       addTask,
       deleteTask,
@@ -640,6 +711,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({
       allowEditTaskIds,
       showAddCustomTask,
       updateTask,
+      updateTasks,
       updateProjectInfo,
       addTask,
       deleteTask,
@@ -726,6 +798,7 @@ export const useProjectContext = (): ProjectContextValue => {
     allowEditTaskIds:          stable.allowEditTaskIds,
     showAddCustomTask:         stable.showAddCustomTask,
     updateTask:                stable.updateTask,
+    updateTasks:               stable.updateTasks,
     updateProjectInfo:         stable.updateProjectInfo,
     addTask:                   stable.addTask,
     deleteTask:                stable.deleteTask,

@@ -16,7 +16,8 @@ import { styles } from './Styles';
 import { CreateUserForm } from './CreateUserForm';
 import { UserProfileModal } from './UserProfileModal';
 import { deactivateUser, getUsersList, resetPassword } from '../../services/usersService';
-import { getParticipants } from '../../services/assignUsersService';
+import { getParticipants, getMappedLCsForSupervisor } from '../../services/assignUsersService';
+import { useAuth, useIsTenantAdmin } from '../../contexts/AuthContext';
 import type { 
   // UserSearchParams,
    Role
@@ -106,12 +107,27 @@ const UserManagementScreen = () => {
   const { t } = useLanguage();
   const { isMobile } = usePlatform();
   const { showAlert } = useAlert();
+  const { user: currentUser } = useAuth();
+  const isTenantAdmin = useIsTenantAdmin();
+  console.log('isTenantAdmin', isTenantAdmin);
+  // tenant_admin is locked to their own province in User Management, when one is set on
+  // their profile. If no province is set, the filter stays enabled/unlocked so they can
+  // see all participants across provinces.
+  const tenantAdminOwnProvinceId = (currentUser as any)?.province?.value || '';
+  const shouldLockProvince = isTenantAdmin && !!tenantAdminOwnProvinceId;
+  console.log('shouldLockProvince', shouldLockProvince);
 
   // API state management
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  // For tenant_admin, default the role filter to "org_admin" (Coach) instead of "All Roles",
+  // and preselect their own province when one is set.
+  const [filters, setFilters] = useState<Record<string, any>>(() =>
+    isTenantAdmin
+      ? { role: 'org_admin', ...(tenantAdminOwnProvinceId ? { province: tenantAdminOwnProvinceId } : {}) }
+      : {}
+  );
 
   // Use custom hook for filter management - handles all API calls for roles, provinces
-  const { filters: filterOptions, roles } = useUserManagementFilters(filters);
+  const { filters: filterOptions, roles } = useUserManagementFilters(filters, shouldLockProvince);
   // const [displayUsers, setDisplayUsers] = useState<AdminUserManagementData[]>([]);
   const [users, setUsers] = useState<AdminUserManagementData[]>([]);
   /** Program-user search rows keyed by user id; applied async after the main user list loads. */
@@ -306,72 +322,99 @@ const closeProfileModal = useCallback(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        // Determine type parameter based on role filter
-        // When "All Roles" is selected, use all role titles from API
-        let apiType: string;
-        if (filters.role && filters.role !== 'all-roles') {
-          // Filter value is already the role title (not label), so use it directly
-          apiType = filters.role;
+        // @ts-ignore - process.env from DefinePlugin
+        const programId = process.env.GLOBAL_LC_PROGRAM_ID;
+
+        let usersData: any[];
+        let apiTotalCount: number;
+
+        if (isTenantAdmin && filters.role === 'org_admin') {
+          // tenant_admin: scope the Coach (org_admin) list to LCs assigned directly to them,
+          // instead of the tenant-wide account/search flow.
+          const supervisorUserId = String(currentUser?.id || (currentUser as any)?._id || '');
+          const entitiesResponse = supervisorUserId && programId
+            ? await getMappedLCsForSupervisor({
+              userId: supervisorUserId,
+              programId,
+              type: 'org_admin',
+              page: currentPage,
+              limit: (pageSize as number) || PAGE_SIZE_OPTIONS[1],
+              search: filters.search || '',
+            })
+            : { result: { data: [], count: 0 } };
+
+          const entities = entitiesResponse.result?.data || [];
+          usersData = entities.map((entity: any) => ({
+            ...entity.userDetails,
+            id: entity.userDetails?.id ?? entity.userId,
+            entityStatus: entity.status,
+          }));
+          apiTotalCount = entitiesResponse.result?.total ?? entitiesResponse.result?.count ?? usersData.length;
         } else {
-          // Build type parameter from all active roles fetched from API
-          // Extract unique role titles from roles array
-          const allRoleTitles = roles
-            .map((role: Role) => role.title)
-            .filter((title: string | undefined): title is string => !!title)
-            .filter((title: string, index: number, self: string[]) => self.indexOf(title) === index); // Remove duplicates
+          // Determine type parameter based on role filter
+          // When "All Roles" is selected, use all role titles from API
+          let apiType: string;
+          if (filters.role && filters.role !== 'all-roles') {
+            // Filter value is already the role title (not label), so use it directly
+            apiType = filters.role;
+          } else {
+            // Build type parameter from all active roles fetched from API
+            // Extract unique role titles from roles array
+            const allRoleTitles = roles
+              .map((role: Role) => role.title)
+              .filter((title: string | undefined): title is string => !!title)
+              .filter((title: string, index: number, self: string[]) => self.indexOf(title) === index); // Remove duplicates
 
-          // Use all role titles from API, or 'all' if no roles available
-          apiType = allRoleTitles.length > 0 ? allRoleTitles.join(',') : 'all';
+            // Use all role titles from API, or 'all' if no roles available
+            apiType = allRoleTitles.length > 0 ? allRoleTitles.join(',') : 'all';
+          }
+
+          const apiParams: any = {
+            tenant_code: 'brac',
+            type: apiType,
+            page: currentPage,
+            limit: pageSize,
+          };
+
+          // Add search parameter if present
+          if (filters.search) {
+            apiParams.search = filters.search;
+          }
+
+          // Add status parameter if present - map to API format (Active -> ACTIVE, Deactivated -> INACTIVE)
+          if (filters.status && filters.status !== 'all-status') {
+            apiParams.status = mapStatusLabelToAPI(filters.status);
+          }
+
+          // Add role parameter if present
+          if (filters.role && filters.role !== 'all-roles') {
+            apiParams.role = filters.role;
+          }
+
+          // Add province parameter if present
+          if (filters.province && filters.province !== 'all-provinces') {
+            apiParams.province = filters.province;
+          }
+
+          // Add site parameter if present
+          if (filters.site && filters.site !== 'all-sites') {
+            apiParams.site = filters.site;
+          }
+
+          const response = await getUsersList(apiParams);
+
+          // Get raw API data
+          usersData = response.result?.data || [];
+
+          // Get total count from API response (if available), otherwise use data length
+          apiTotalCount = response.result?.count ?? usersData.length;
         }
-
-        const apiParams: any = {
-          tenant_code: 'brac',
-          type: apiType,
-          page: currentPage,
-          limit: pageSize,
-        };
-
-        // Add search parameter if present
-        if (filters.search) {
-          apiParams.search = filters.search;
-        }
-
-        // Add status parameter if present - map to API format (Active -> ACTIVE, Deactivated -> INACTIVE)
-        if (filters.status && filters.status !== 'all-status') {
-          apiParams.status = mapStatusLabelToAPI(filters.status);
-        }
-
-        // Add role parameter if present
-        if (filters.role && filters.role !== 'all-roles') {
-          apiParams.role = filters.role;
-        }
-
-        // Add province parameter if present
-        if (filters.province && filters.province !== 'all-provinces') {
-          apiParams.province = filters.province;
-        }
-
-        // Add site parameter if present
-        if (filters.site && filters.site !== 'all-sites') {
-          apiParams.site = filters.site;
-        }
-
-        const response = await getUsersList(apiParams);
-
-
-        // Get raw API data
-        const usersData = response.result?.data || [];
-
-        // Get total count from API response (if available), otherwise use data length
-        const apiTotalCount = response.result?.count ?? usersData.length;
 
         setProgramParticipantByUserId({});
         //setDisplayUsers(usersData);
         setUsers(usersData);
         setTotalCount(apiTotalCount);
 
-        // @ts-ignore - process.env from DefinePlugin
-        const programId = process.env.GLOBAL_LC_PROGRAM_ID;
         const userIds = usersData.map((u: any) => u.id).filter((id: any) => id != null && id !== '');
 
         if (programId && userIds.length > 0 && pageSize) {
@@ -403,7 +446,7 @@ const closeProfileModal = useCallback(() => {
       fetchUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, roles.length, currentPage, pageSize, refetchKey]); // Depend on filters, roles, currentPage, and pageSize
+  }, [filters, roles.length, currentPage, pageSize, refetchKey, isTenantAdmin, currentUser?.id]); // Depend on filters, roles, currentPage, and pageSize
 
   // Handle filter changes
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
@@ -543,6 +586,11 @@ const closeProfileModal = useCallback(() => {
       <FilterButton
         data={filterOptions}
         onFilterChange={handleFilterChange}
+        initialValue={
+          isTenantAdmin
+            ? { role: 'org_admin', ...(tenantAdminOwnProvinceId ? { province: tenantAdminOwnProvinceId } : {}) }
+            : undefined
+        }
       />
 
       {/* Table Header with Title, Count, and Export Button */}

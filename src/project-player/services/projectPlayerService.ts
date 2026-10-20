@@ -291,6 +291,25 @@ export const updateInterventionPlan = async (
   }
 };
 
+export const requestChange = async (
+  reqBody: {
+    requestees: string[];
+    entityId: string;
+    action: 'PROGRAM_USER_DROPPING_OUT' | 'USER_PROJECT_TEMPLATE_CHANGE';
+    changePayload: any;
+    programId: string;
+  },
+): Promise<ApiResponse<any> & { message?: string }> => {
+  if (isNetworkOffline()) return { data: null, error: 'offline' };
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.REQUEST_CHANGE, reqBody);
+
+    return { data: response.data.result, message: response.data.message };
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const getSolutionDetails = async (
   solutionId: string,
   taskId: string,

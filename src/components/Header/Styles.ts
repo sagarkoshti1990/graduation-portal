@@ -129,3 +129,9 @@ export const stylesHeader = {
     justifyContent: 'center' as const,
   },
 } as const;
+
+export const participantAvatarWebStyle = {
+  backgroundImage:
+    'linear-gradient(135deg, rgb(139, 40, 66) 0%, rgb(218, 165, 178) 100%)',
+};
+

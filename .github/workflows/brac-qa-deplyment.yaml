@@ -14,19 +14,27 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
+
     steps:
+      # ============================================================
+      # Checkout
+      # ============================================================
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # ============================================================
+      # Create .env
+      # ============================================================
       - name: Create .env for Docker build
         run: |
           echo "${{ secrets.QA_ENV_BRAC }}" > .env
-          ls -ltra
 
-      # =========================
+      # ============================================================
       # AWS Authentication
-      # =========================
+      # ============================================================
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,26 +42,46 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # =========================
+      # ============================================================
       # Login to Amazon ECR
-      # =========================
+      # ============================================================
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      # =========================
-      # Build & Push Docker Image
-      # =========================
-      - name: Build and Push Docker Image to ECR
-        uses: docker/build-push-action@v5
+      # ============================================================
+      # Setup QEMU for multi-architecture builds
+      # ============================================================
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # ============================================================
+      # Setup Docker Buildx
+      # ============================================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ============================================================
+      # Build & Push Multi-Architecture Docker Image
+      # ============================================================
+      - name: Build and Push Multi-Architecture Docker Image
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+
+          # Build both AMD64 and ARM64 images
+          platforms: linux/amd64,linux/arm64
+
           tags: |
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
 
-      # =========================
+          # Optional but recommended for faster future builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ============================================================
       # Deploy on QA Server
-      # =========================
+      # ============================================================
       - name: Deploy Stack to QA
         uses: appleboy/ssh-action@master
         with:
@@ -61,6 +89,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.PORT }}
+
           script: |
             set -e
 
@@ -75,15 +104,17 @@ jobs:
               mv .env .env-bkp
             fi
 
-            # Write env safely (MULTILINE SAFE)
+            # Write environment file
             cat << 'EOF' > .env
             ${{ secrets.QA_ENV_BRAC }}
             EOF
 
+            # Login to Amazon ECR
             aws ecr get-login-password --region ${AWS_REGION} \
               | docker login \
                 --username AWS \
                 --password-stdin \
                 ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
+            # Deploy requested image tag
             ./deploy.sh ${{ env.TAG }}

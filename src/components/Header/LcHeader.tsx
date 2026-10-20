@@ -19,6 +19,7 @@ import Menu from '@components/ui/Menu';
 import LucideIcon from '@components/ui/LucideIcon';
 import { stylesHeader } from './Styles';
 import openExternalLink from '@utils/openExternalLink';
+import hardRedirect from '@utils/hardRedirect';
 
 const LcProfileModal = lazy(() => import('./LcProfileModal'));
 const lcAvatarWebStyle = {
@@ -71,8 +72,13 @@ const LcHeader: React.FC<LcHeaderProps> = ({
       return;
     }
 
+    if (typeof selectedItem?.href === "string"  && selectedItem?.openHrefType === "_self") {
+      await hardRedirect(selectedItem.href);
+      return;
+    }
+
     if (selectedItem?.href) {
-      await openExternalLink(selectedItem.href);
+      await openExternalLink(selectedItem.href, (selectedItem?.openHrefType || "_blank"));
       return;
     }
 

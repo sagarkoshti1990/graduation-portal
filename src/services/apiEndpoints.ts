@@ -23,11 +23,14 @@ export const API_ENDPOINTS = {
   GET_ENTITY_DETAILS: (id: string) =>
     `${prefix}/entity-management/v1/entities/details/${id}`,
   UPDATE_ENTITY_DETAILS: `${prefix}/project/v1/programUsers/createOrUpdate`,
+  REQUEST_CHANGE: `${prefix}/project/v1/changeRequests/requestChange`,
+  CHANGE_REQUESTS_LIST: `${prefix}/project/v1/changeRequests/list`,
+  CHANGE_REQUESTS_DECISION: `${prefix}/project/v1/changeRequests/decision`,
   USER_ROLES_LIST: `${prefix}/user/v1/user-role/list`,  // Fetch available user roles for dynamic filter
   ENTITY_TYPES_LIST: `${prefix}/entity-management/v1/entityTypes/list`,  // Fetch entity types (province, district, etc.)
   ENTITIES_BY_TYPE: `${prefix}/entity-management/v1/entities/listByEntityType`,  // Fetch entities by type (e.g., provinces)
   USERS_LIST: `${prefix}/user/v1/account/search`,  // Search users for user management
-  DEACTIVATE_USER: `user/v1/admin/deactivateUser`,
+  DEACTIVATE_USER: `${prefix}/user/v1/admin/deactivateUser`,
   ORG_ADMIN_UPDATE_USER: `${prefix}/user/v1/org-admin/updateUser`,
   UPDATE_USER: `${prefix}/user/v1/user/update`,
   CREATE_USER: `${prefix}/user/v1/tenant/accountCreate`,
@@ -37,4 +40,36 @@ export const API_ENDPOINTS = {
   UPDATE_ENTITY: `${prefix}/project/v1/programUsers/updateEntityProfile`,
   GENERATE_CERTIFICATE: (projectId: string) => `${prefix}/project/v1/userProjects/update/${projectId}`,
   PROJECT_DETAILS: (projectId: string) => `${prefix}/project/v1/userProjects/details/${projectId}`,
+  SUPPORT_OFFERINGS_COMPLETE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/completed/${sessionId}`,
+  SUPPORT_OFFERINGS_SESSIONS: `${prefix}/mentoring/v1/mentors/createdSessions`,
+  MENTORING_READ_ENTITY_TYPE: `${prefix}/mentoring/v1/entity-type/read`,
+  MENTORING_PROFILE_READ: `${prefix}/mentoring/v1/profile/read`,
+  MENTORING_PROFILE_CREATE: `${prefix}/mentoring/v1/profile/create`,
+  MENTORING_PROFILE_UPDATE: `${prefix}/mentoring/v1/profile/update`,
+  MENTORING_CREATE_SESSION: `${prefix}/mentoring/v1/sessions/update?notifyUser=false`,
+  MENTORING_UPDATE_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/update/${sessionId}`,
+  MENTORING_CANCEL_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/mentors/cancel/${sessionId}`,
+  MENTORING_DETAILS_SESSION: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/details/${sessionId}?get_mentees=true`,
+  MENTORING_ENROLLED_MENTEES: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/enrolledMentees/${sessionId}`,
+  USER_SESSIONS_LIST: `${prefix}/mentoring/v1/sessions/list`,
+  // Session requests raised against a Service Provider's mentoring sessions.
+  // status query param must be one or more of REQUESTED, ACCEPTED, REJECTED, EXPIRED
+  REQUEST_SESSIONS_LIST: `${prefix}/mentoring/v1/requestSessions/list`,
+  REQUEST_SESSION_CREATE: `${prefix}/mentoring/v1/requestSessions/create`,
+  REQUEST_SESSIONS_ACCEPT: `${prefix}/mentoring/v1/requestSessions/accept?SkipValidation=true`,
+  SP_REQUEST_SESSIONS_REJECT: `${prefix}/mentoring/v1/requestSessions/reject`,
+  REQUEST_SESSIONS_GET_DETAILS: `${prefix}/mentoring/v1/requestSessions/getDetails`,
+  REQUEST_SESSIONS_UPDATE: `${prefix}/mentoring/v1/requestSessions/update`,
+  REQUESTOR_ASSIGN_MENTEES: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/addMentees/${sessionId}`,
+  REMOVE_SESSION_MENTEES: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/removeMentees/${sessionId}`,
+  SUPPORT_DASHBOARD: `${prefix}/mentoring/v1/support-dashboard/data`,
+  SUPPORT_DASHBOARD_HISTORY: `${prefix}/mentoring/v1/support-dashboard/history`,
+  ORG_ADMIN_UPDATE_MENTOR_EXTENSION: `${prefix}/mentoring/v1/org-admin/updateMentorExtension`,
+  MENTORS_LIST: `${prefix}/mentoring/v1/users/list`,
+  RESOURCES_LIST: `${prefix}/mentoring/v1/resources/list`,
+  RESOURCE_DELETE: (resourceId: string | number, sessionId: string | number) =>
+    `${prefix}/mentoring/v1/resources/delete/${resourceId}?sessionId=${sessionId}`,
+  SESSION_ENROLLED_MENTEES: (sessionId: string | number) => `${prefix}/mentoring/v1/sessions/enrolledMentees/${sessionId}`,
+  SESSION_MENTEES_SESSIONS: `${prefix}/mentoring/v1/mentees/sessions`,
+  SESSION_DETAILS: (sessionId: string) => `${prefix}/mentoring/v1/sessions/details/${sessionId}`,
 };

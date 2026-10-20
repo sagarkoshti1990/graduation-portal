@@ -131,4 +131,5 @@ export interface ParticipantProgressCardProps {
   graduationDate?: string;
   accountUserStatus?: string;
   participantName?: string;
+  pendingChangeRequest?: any[];
 }

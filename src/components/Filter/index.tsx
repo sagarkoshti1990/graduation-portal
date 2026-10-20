@@ -17,6 +17,7 @@ interface FilterButtonProps {
   hideTitleHeader?: boolean; // Hide top Filter title & icon header row
   _container?: any; // Custom container styling overrides
   _input?: any; // Custom input field styling overrides
+  initialValue?: Record<string, any>; // Pre-seed filter values (e.g. a locked default for a specific role)
 }
 
 export default function FilterButton({
@@ -27,11 +28,21 @@ export default function FilterButton({
   hideTitleHeader = false,
   _container,
   _input,
+  initialValue,
 
   // disabled prop is passed via data items - Used for district filter when no province selected
 }: FilterButtonProps) {
   const { t } = useLanguage();
-  const [value, setValue] = React.useState<any>({});
+  const [value, setValue] = React.useState<any>(initialValue || {});
+  // initialValue may not be known synchronously on first render (e.g. depends on
+  // async auth/context data) — apply it once it becomes available.
+  const appliedInitialValueRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!appliedInitialValueRef.current && initialValue && Object.keys(initialValue).length > 0) {
+      appliedInitialValueRef.current = true;
+      setValue((prev: any) => ({ ...initialValue, ...prev }));
+    }
+  }, [initialValue]);
   const [openDatePicker, setOpenDatePicker] = React.useState<string | null>(null);
   const [searchKey, setSearchKey] = React.useState('');
   const isInitialSearchRef = React.useRef(true);
@@ -120,7 +131,11 @@ export default function FilterButton({
   const [clearCount, setClearCount] = React.useState(0);
 
   const handleClearFilters = () => {
-    const clearedValue = {};
+    // Reset to initialValue (e.g. a tenant_admin's locked role/province defaults)
+    // rather than a blank object, so any locked/default filters are restored
+    // instead of wiped. Anything not present in initialValue (search, site,
+    // status, etc.) is dropped, i.e. cleared.
+    const clearedValue = initialValue || {};
     setValue(clearedValue);
     // Clear search key
     setSearchKey('');
@@ -130,8 +145,7 @@ export default function FilterButton({
     if (searchItem) {
       setClearCount(prev => prev + 1);
     }
-    // Notify parent component when filters are cleared
-    // onchange?.(clearedValue);
+    // Parent is notified via the value-change effect above.
   };
 
   // Render right section content
@@ -178,9 +192,10 @@ export default function FilterButton({
         setValue((prev: any) => {
           const updated = { ...prev };
           delete updated[item.attr];
+          (item.resetOnChange || []).forEach((k: string) => delete updated[k]);
           // Clear any paginated-select fields that depend on this attr
           (data || []).forEach((d: any) => {
-            if (d.type === 'paginated-select' && d.dependencyAttr === item.attr) {
+            if (d.dependencyAttr === item.attr) {
               delete updated[d.attr];
               delete updated[`${d.attr}_label`];
               delete updated[`${d.attr}_item`];
@@ -192,9 +207,10 @@ export default function FilterButton({
         // Otherwise store the selected value (including string "null")
         setValue((prev: any) => {
           const updated = { ...prev, [item.attr]: v };
+          (item.resetOnChange || []).forEach((k: string) => delete updated[k]);
           // Clear any paginated-select fields that depend on this attr
           (data || []).forEach((d: any) => {
-            if (d.type === 'paginated-select' && d.dependencyAttr === item.attr) {
+            if (d.dependencyAttr === item.attr) {
               delete updated[d.attr];
               delete updated[`${d.attr}_label`];
               delete updated[`${d.attr}_item`];

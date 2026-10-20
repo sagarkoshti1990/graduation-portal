@@ -7,7 +7,6 @@ export default {
   input : {
     bg:"$white",
     borderRadius: 10 as const,
-    borderWidth: 1,
     borderColor: '$borderColor' as const,
   },
   select : {

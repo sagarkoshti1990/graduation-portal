@@ -7,6 +7,12 @@ export interface FieldCompareValue {
   operator: '<' | '<=' | '>' | '>=' | '==';
 }
 
+/** `minLeadTime` payload: datetime must be at least `minutes` from now; `ignoreValue` (an unchanged saved value) is not checked. */
+export interface MinLeadTimeValue {
+  minutes: number;
+  ignoreValue?: string;
+}
+
 export interface ValidationRule {
   rule:
   | 'required'
@@ -22,15 +28,16 @@ export interface ValidationRule {
   | 'fileSize'
   | 'dateCompare'
   | 'timeCompare'
-  | 'minAge';
+  | 'minAge'
+  | 'minLeadTime';
   /**
    * Numeric/string payload depending on rule (minLength value, pattern string,
    * field name); `fileType` takes a string array of allowed MIME types;
    * `fileSize` takes a max size in MB; `dateCompare`/`timeCompare` take a
    * `{field, operator}` pair naming the other field to compare against.
    */
-  value?: number | string | string[] | FieldCompareValue;
-  message: { key: string; fallback: string };
+  value?: number | string | string[] | FieldCompareValue | MinLeadTimeValue;
+  message: { key: string; fallback?: string };
 }
 
 export interface VisibleWhenFlag {
@@ -47,7 +54,7 @@ export interface DisabledWhenCondition {
 }
 
 /** Comparison operator supported by a field's `visibleIf` conditions. */
-export type VisibleIfOperator = '===' | '!=' | '>' | '<' | '>=' | '<=';
+export type VisibleIfOperator = '===' | '!=' | 'in' | '>' | '<' | '>=' | '<=';
 
 /**
  * A single condition evaluated against another field's current value.
@@ -65,14 +72,14 @@ export type HintSeverity = 'info' | 'warning' | 'danger' | 'success';
 
 export interface HintBullet {
   key?: string;
-  fallback: string;
+  fallback?: string;
 }
 
 export interface HintObject {
   type?: HintSeverity;
   /** Lucide icon name; falls back to a default icon for `type` when omitted */
   icon?: string;
-  title?: { key?: string; fallback: string };
+  title?: { key?: string; fallback?: string };
   bullets?: HintBullet[];
   _icon?: any;
   _title?: any;
@@ -110,9 +117,9 @@ export type FormFieldType = typeof FORM_FIELD_TYPES[keyof typeof FORM_FIELD_TYPE
 export interface FormField {
   name?: string;
   type: FormFieldType;
-  label: { key: string; fallback: string };
+  label: { key: string; fallback?: string };
   required?: boolean;
-  placeholder?: { key?: string; fallback: string };
+  placeholder?: { key?: string; fallback?: string };
   /** Plain string for most fields; `string[]` for multiselect/pillmultiselect defaults */
   defaultValue?: string | string[];
   /** When present and the flag resolves to false, this field is hidden */
@@ -141,21 +148,30 @@ export interface FormField {
   toggleVisibility?: boolean;
   visibilityToggleGroup?: string;
   validation?: ValidationRule[];
-  placeholderWhenReady?: { key: string; fallback: string };
+  /** Validate this field on every change and show/clear its inline error right away */
+  validateOnChange?: boolean;
+  placeholderWhenReady?: { key: string; fallback?: string };
   fields?: FormField[];
   isReadOnly?: boolean;
   /** Field is rendered only when every condition here evaluates to true (AND logic) */
   visibleIf?: VisibleIfCondition[];
   /** Small helper text rendered under the field (currently used by `file` fields) */
-  subLabel?: { key?: string; fallback: string };
+  subLabel?: { key?: string; fallback?: string };
   /** Renders an "(optional)" tag next to the label (currently used by `file` fields) */
   showOptionalTag?: boolean;
   /** `file` fields only: allow selecting/storing more than one file (stored as an array). Default/undefined = single file, unchanged from before. */
   multiple?: boolean;
   /** Rendered below the label, above the input, using the standard helper-text typography */
-  subTitle?: { key?: string; fallback: string };
+  subTitle?: { key?: string; fallback?: string };
   /** Informational message rendered above the input — simple string or a severity banner */
   hint?: Hint;
+  /** `note` fields only: 'success' renders the highlighted banner-with-badge layout instead of the plain info box */
+  variant?: 'success';
+  /** `note` fields only, paired with `variant: 'success'`: a value badge shown on the right of the banner */
+  badge?: {
+    label: { key: string; fallback?: string };
+    value: { key: string; fallback?: string };
+  };
   /**
    * UI-only prop overrides, merged (never replacing) over the corresponding
    * element's default props in `FieldContainer`. `_input` is distinct from
@@ -166,6 +182,7 @@ export interface FormField {
   _title?: any;
   _subTitle?: any;
   _input?: any;
+  _pill?: any;
 }
 
 export interface FormRow {
@@ -184,11 +201,11 @@ export interface FormSection {
   type: string;
   /** Lucide icon name */
   icon?: string;
-  title?: { key: string; fallback: string };
+  title?: { key: string; fallback?: string };
   /** Alternate to `title` accepted for tab/section nodes */
-  label?: { key?: string; fallback: string };
+  label?: { key?: string; fallback?: string };
   /** Larger page-level heading, distinct from the compact card-header `title` */
-  subTitle?: { key?: string; fallback: string };
+  subTitle?: { key?: string; fallback?: string };
   /** Informational message rendered below the title/subTitle — simple string or a severity banner */
   hint?: Hint;
   children?: FormSection[]

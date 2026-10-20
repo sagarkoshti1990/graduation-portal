@@ -25,7 +25,7 @@ const lazyScreen = (
   loader: () => Promise<{ default: ScreenComponent }>,
 ): ScreenComponent => lazy(loader) as unknown as ScreenComponent;
 
-const HomeScreen = lazyScreen(() => import('../screens/Home'));
+const LcDashboardScreen = lazyScreen(() => import('../screens/LcDashboard'));
 const UserManagementScreen = lazyScreen(() => import('../screens/UserManagement'));
 const SelectLanguageScreen = lazyScreen(() => import('../screens/Language/Index'));
 const WelcomePage = lazyScreen(() => import('../screens/Welcome'));
@@ -38,14 +38,37 @@ const LogVisit = lazyScreen(() => import('../screens/ParticipantDetail/LogVisit'
 const Observation = lazyScreen(() => import('../screens/Observation/Observation'));
 const TemplateScreen = lazyScreen(() => import('../screens/Template'));
 const CheckInsList = lazyScreen(() => import('../screens/ParticipantDetail/Check-ins-list'));
+const SessionsSupportScreen = lazyScreen(() => import('../screens/SessionsSupport'));
+const RequestSupportSessionScreen = lazyScreen(() => import('../screens/SessionsSupport/RequestSession'));
+const CreateSupportSessionScreen = lazyScreen(() => import('../screens/SessionsSupport/CreateSession'));
+const SessionDetailsScreen = lazyScreen(() => import('../screens/SessionsSupport/SessionDetails'));
+const RequestDetailsScreen = lazyScreen(() => import('../screens/SessionsSupport/RequestDetails'));
 const TemplateManagementScreen = lazyScreen(() => import('../screens/TemplateManagement'));
 const CsvImportTemplates = lazyScreen(() => import('../screens/CsvImportTemplates'));
 const PasswordPolicy = lazyScreen(() => import('../screens/PasswordPolicy'));
 const AuditLogScreen = lazyScreen(() => import('../screens/AuditLog'));
 const AssignUsersScreen = lazyScreen(() => import('../screens/AssignUsers'));
+const ReviewRequestsScreen = lazyScreen(() => import('../screens/ReviewRequests'));
 const AdminDashboard = lazyScreen(() => import('../screens/AdminDashboard'));
+const SupportProviderDashboard = lazyScreen(() => import('../screens/SupportProviderDashboard'));
 const ProfilePermissions = lazyScreen(() => import('../screens/ProfilePermissions'));
 const ForgotPasswordScreen = lazyScreen(() => import('../screens/Auth/ForgotPasswordScreen'));
+const ParticipantJourneyScreen = lazyScreen(() => import('../screens/ParticipantJourney'));
+const IdpProgressScreen = lazyScreen(() => import('../screens/ParticipantJourney/IdpProgress'));
+const MySessionsScreen = lazyScreen(() => import('../screens/ParticipantJourney/MySessions'));
+const ParticipantSessionDetailsScreen = lazyScreen(() => import('../screens/ParticipantJourney/SessionDetails'));
+const MyGraduation = lazyScreen(() => import('../screens/ParticipantJourney/MyGraduation'));
+
+// Service provider UI components
+const SPDashboardScreen = lazyScreen(() => import('../screens/ServiceProvider/Dashboard'));
+const SPSupportOfferingsScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings'));
+const SPSupportOfferingsCreateScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create'));
+const SPCreateTrainingSessionScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create/TrainingSession'));
+const SPCreateAdditionalServiceScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create/AdditionalService'));
+const SPCreateAssetScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportOfferings/Create/Asset'));
+const SPSupportRequestsScreen = lazyScreen(() => import('../screens/ServiceProvider/SupportRequests'));
+const SPMaterialsScreen = lazyScreen(() => import('../screens/ServiceProvider/MaterialsLibrary'));
+const SPProfileScreen = lazyScreen(() => import('../screens/ServiceProvider/Profile'));
 
 const spinnerHeight = (isWebPlatform ? '$100vh' : '$full') as any;
 
@@ -92,13 +115,14 @@ const getAccessPages = (
   switch (role) {
     case 'admin':
       return [
-        // { name: 'home', path: '/', component: HomeScreen },
+        // { name: 'home', path: '/', component: LcDashboardScreen },
         {
           name: 'user-management',
           path: '/',
           component: UserManagementScreen,
         },
         { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        { name: 'support-provider-dashboard', path: '/support-provider-dashboard', component: SupportProviderDashboard },
         {
           name: 'template-management',
           path: '/template-managemnt',
@@ -109,7 +133,7 @@ const getAccessPages = (
           path: '/csv-templates',
           component: CsvImportTemplates,
         },
-       {
+        {
           name: 'ProfilePermissions',
           path: '/profile-permissions',
           component: ProfilePermissions,
@@ -133,7 +157,7 @@ const getAccessPages = (
         { name: 'check-ins-list', path: '/participants/:id/check-ins-list/:solutionId?', component: CheckInsList },
         { name: 'observation', path: '/participants/:id/observation/:solutionId/:submissionNumber?', component: Observation },
       ];
-    case 'supervisor':
+    case 'tenant_admin':
       return [
         {
           name: 'user-management',
@@ -141,10 +165,16 @@ const getAccessPages = (
           component: UserManagementScreen,
         },
         { name: 'admin-dashboard', path: '/admin-dashboard', component: AdminDashboard },
+        { name: 'support-provider-dashboard', path: '/support-provider-dashboard', component: SupportProviderDashboard },
         {
           name: 'assign-users',
           path: '/assign-users',
           component: AssignUsersScreen,
+        },
+        {
+          name: 'review-requests',
+          path: '/review-requests',
+          component: ReviewRequestsScreen,
         },
         {
           name: 'csv-templates',
@@ -165,18 +195,48 @@ const getAccessPages = (
         { name: 'check-ins-list', path: '/participants/:id/check-ins-list/:solutionId?', component: CheckInsList },
         { name: 'observation', path: '/participants/:id/observation/:solutionId/:submissionNumber?', component: Observation },
       ];
-    case 'lc':
+    case 'mentor':
+      return [
+        { name: 'dashboard1', path: "/", component: SPDashboardScreen },
+        { name: 'dashboard', path: "/dashboard", component: SPDashboardScreen },
+        { name: 'opportunities', path: "/opportunities", component: SPSupportOfferingsScreen },
+        { name: 'create-opportunity', path: "/opportunities/create", component: SPSupportOfferingsCreateScreen },
+        { name: 'form-training-session', path: "/opportunities/training-session/:type/:id?", component: SPCreateTrainingSessionScreen },
+        { name: 'create-additional-service', path: "/opportunities/create-additional-service", component: SPCreateAdditionalServiceScreen },
+        { name: 'create-asset', path: "/opportunities/create-asset", component: SPCreateAssetScreen },
+        { name: 'requests', path: "/requests", component: SPSupportRequestsScreen },
+        { name: 'materials', path: "/materials", component: SPMaterialsScreen },
+        { name: 'profile', path: "/profile", component: SPProfileScreen },
+      ];
+    case 'org_admin':
       return [
         { name: 'welcome', component: WelcomePage },
         { name: 'select-language', component: SelectLanguageScreen },
-        { name: 'dashboard', component: HomeScreen },
+        { name: 'dashboard', component: LcDashboardScreen },
         { name: 'participant-detail', path: '/participants/:id', component: ParticipantDetail },
         { name: 'log-visit', path: '/participants/:id/log-visit', component: LogVisit },
         { name: 'check-ins-list', path: '/participants/:id/check-ins-list/:solutionId?', component: CheckInsList },
         { name: 'observation', path: '/participants/:id/observation/:solutionId/:submissionNumber?', component: Observation },
         { name: 'template', path: '/participants/:id/template/:projectId?', component: TemplateScreen },
         { name: 'participants', component: ParticipantsList },
+        { name: 'sessions-support', path: '/sessions-support', component: SessionsSupportScreen },
+        { name: 'sessions-support/request', path: '/sessions-support/request', component: RequestSupportSessionScreen },
+        { name: 'sessions-support/request-additional-service', path: '/sessions-support/request-additional-service', component: SPCreateAdditionalServiceScreen },
+        { name: 'sessions-support/request-asset', path: '/sessions-support/request-asset', component: SPCreateAssetScreen },
+        { name: 'create-asset', path: '/opportunities/create-asset', component: SPCreateAssetScreen },
+        { name: 'sessions-support/create', path: '/sessions-support/create', component: CreateSupportSessionScreen },
+        { name: 'sessions-support-create-session', path: '/sessions-support/:type/:id', component: CreateSupportSessionScreen },
+        { name: 'session-details', path: '/sessions-support/:sessionId', component: SessionDetailsScreen },
+        { name: 'request-details', path: '/sessions-support/:requestId', component: RequestDetailsScreen },
         { name: 'project', path: '/project', component: ProjectPlayer },
+      ];
+    case 'participant':
+      return [
+        { name: 'participant-portal', path: '/', component: ParticipantJourneyScreen },
+        { name: 'idp-progress', path: '/idp-progress', component: IdpProgressScreen },
+        { name: 'my-sessions', path: '/my-sessions', component: MySessionsScreen },
+        { name: 'session-details', path: '/sessions-details/:sessionId', component: ParticipantSessionDetailsScreen },
+        { name: 'my-graduation', path: '/my-graduation', component: MyGraduation },
       ];
     default:
       return []; // Always return an array even if empty
@@ -302,8 +362,11 @@ const AppNavigator: React.FC = () => {
   // Navigate to main screen when user logs in successfully
   useEffect(() => {
     if (isLoggedIn && accessPages.length > 0 && navigationRef.isReady()) {
-      // Check current route to avoid unnecessary navigation
-      const currentRoute = navigationRef.getCurrentRoute();
+      // Check the root-level route (getCurrentRoute() returns the nested leaf, e.g.
+      // 'participant-portal', which would force a reset that remounts 'main' and
+      // re-fires every landing-screen API call)
+      const rootState = navigationRef.getRootState();
+      const currentRoute = rootState?.routes?.[rootState.index ?? 0];
       if (currentRoute?.name !== 'main') {
         // Small delay to ensure navigation stack is updated after navigationKey change
         const timer = setTimeout(() => {

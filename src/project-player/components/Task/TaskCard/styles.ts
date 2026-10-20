@@ -248,6 +248,13 @@ export const taskCardStyles = {
     fontWeight: '$semibold',
   },
 
+  // Session task tags (Scheduled / Attended / Missed)
+  sessionBadge: {
+    scheduled: { borderColor: '$blue300', textColor: '$blue700' },
+    attended: { borderColor: '$success300', textColor: '$success700' },
+    missed: { borderColor: '$amber300', textColor: '$amber700' },
+  },
+
   // File Count Tag
   fileCountTag: {
     paddingHorizontal: '$2',

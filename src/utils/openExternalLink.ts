@@ -11,7 +11,7 @@ declare const process:
 
 const ABSOLUTE_URL_PATTERN = /^[a-zA-Z][a-zA-Z\d+\-.]*:/;
 
-const resolveExternalLink = (href: string) => {
+export const resolveExternalLink = (href: string) => {
   if (ABSOLUTE_URL_PATTERN.test(href)) {
     return href;
   }
@@ -27,13 +27,19 @@ const resolveExternalLink = (href: string) => {
 
   return new URL(href, origin).toString();
 };
-
-const openExternalLink = async (href: string) => {
+const openExternalLink = async (
+  href: string,
+  target: '_self' | '_blank' | undefined = '_blank',
+) => {
   const resolvedHref = resolveExternalLink(href);
 
   try {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(resolvedHref, '_blank', 'noopener,noreferrer');
+      window.open(
+        resolvedHref,
+        target ?? '_blank',
+        target === '_blank' ? 'noopener,noreferrer' : undefined,
+      );
       return;
     }
 

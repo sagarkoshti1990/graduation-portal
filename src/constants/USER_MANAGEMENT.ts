@@ -16,7 +16,7 @@ import {
   ensureEntityTypes,
 } from '../services/usersService';
 import type { Role, ProvinceEntity, SiteEntity } from '@app-types/Users';
-import { useIsSupervisor } from '../contexts/AuthContext';
+import { useIsTenantAdmin } from '../contexts/AuthContext';
 
 export type PaginatedSelectFetchParams = {
   page: number;
@@ -79,9 +79,9 @@ export const mapStatusLabelToAPI = (statusLabel: string): string => {
  * Custom hook to manage user management filters with API integration
  * Fetches roles and provinces from API and builds filter options dynamically
  */
-export const useUserManagementFilters = (filters: Record<string, any>) => {
-  // Check if user is a supervisor using the reusable hook
-  const isSupervisor = useIsSupervisor();
+export const useUserManagementFilters = (filters: Record<string, any>, lockProvince = false) => {
+  // Check if user is a tenant_admin using the reusable hook
+  const isTenantAdmin = useIsTenantAdmin();
 
   // State for API data
   const [roles, setRoles] = useState<Role[]>([]);
@@ -105,19 +105,11 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
         // Filter only ACTIVE roles for the dropdown
         let activeRoles = allRoles.filter((role: Role) => role.status === 'ACTIVE');
 
-        // If logged-in user is Supervisor, exclude "BRAC admin" and "Supervisor" roles
-        // Check role label (what's displayed in dropdown) to filter out these roles
-        if (isSupervisor) {
-          activeRoles = activeRoles.filter((role: Role) => {
-            const roleLabel = role.label?.toLowerCase() || '';
-
-            // Exclude "BRAC admin" and "Supervisor" roles based on label
-            // These are the display labels shown in the dropdown
-            const isBRACAdmin = roleLabel === 'brac admin' || roleLabel.includes('brac admin');
-            const isSupervisorRole = roleLabel === 'supervisor';
-
-            return !isBRACAdmin && !isSupervisorRole;
-          });
+        // If logged-in user is tenant_admin, only show "org_admin" (Coach) and "user" (Participant) roles
+        if (isTenantAdmin) {
+          activeRoles = activeRoles.filter(
+            (role: Role) => role.title === 'org_admin' || role.title === 'user'
+          );
         }
 
         setRoles(activeRoles);
@@ -144,7 +136,7 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
     };
 
     fetchInitialData();
-  }, [isSupervisor]);
+  }, [isTenantAdmin]);
 
   // Fetch sites when province filter changes
   useEffect(() => {
@@ -178,13 +170,20 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
   // Build dynamic filter options with API data
   const filterOptions = useMemo(() => {
     // Build role filter from API roles
-    const roleFilterOptions = [
-      { labelKey: 'admin.filters.allRoles', value: 'all-roles' },
-      ...roles.map((role: Role) => ({
-        label: role.label, // Display label in dropdown
-        value: role.title, // Use title as value for filtering (unique identifier)
-      })),
-    ];
+    // tenant_admin only manages Coaches/Participants directly, so there's no
+    // combined "All Roles" option for them - they must pick one specific role.
+    const roleFilterOptions = isTenantAdmin
+      ? roles.map((role: Role) => ({
+          label: role.label,
+          value: role.title,
+        }))
+      : [
+          { labelKey: 'admin.filters.allRoles', value: 'all-roles' },
+          ...roles.map((role: Role) => ({
+            label: role.label, // Display label in dropdown
+            value: role.title, // Use title as value for filtering (unique identifier)
+          })),
+        ];
 
     // Build province filter from API provinces
     const provinceFilterOptions = [
@@ -210,6 +209,13 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
       })),
     ];
 
+    // Linkage Champions (org_admin) are managed irrespective of
+    // province/site (the LC fetch path already ignores both), so hide
+    // those filters entirely when that role is selected to avoid a
+    // confusing no-op control. They remain shown as-is for Participants
+    // (and any other role).
+    const isLcRoleSelected = filters.role === 'org_admin';
+
     return [
       {
         nameKey: 'common.search',
@@ -234,21 +240,26 @@ export const useUserManagementFilters = (filters: Record<string, any>) => {
           { labelKey: 'admin.filters.deactivated', value: 'Deactivated' },
         ],
       },
-      {
-        nameKey: 'admin.filters.province',
-        attr: 'province',
-        type: 'select' as const,
-        data: provinceFilterOptions,
-      },
-      {
-        nameKey: 'admin.filters.site',
-        attr: 'site',
-        type: 'select' as const,
-        data: siteFilterOptions,
-        disabled: shouldDisableSiteFilter, // Disable until province is selected
-      },
+      ...(isLcRoleSelected
+        ? []
+        : [
+            {
+              nameKey: 'admin.filters.province',
+              attr: 'province',
+              type: 'select' as const,
+              data: provinceFilterOptions,
+              disabled: lockProvince, // Locked to the tenant_admin's own province, when set
+            },
+            {
+              nameKey: 'admin.filters.site',
+              attr: 'site',
+              type: 'select' as const,
+              data: siteFilterOptions,
+              disabled: shouldDisableSiteFilter, // Disable until province is selected
+            },
+          ]),
     ];
-  }, [roles, provinces, sites, filters.province]);
+  }, [roles, provinces, sites, filters.province, filters.role, lockProvince, isTenantAdmin]);
 
   return {
     filters: filterOptions,

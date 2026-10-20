@@ -166,7 +166,6 @@
     "supervisors": "المشرفون",
     "activeSupervisors": "المشرفون النشطون"
   },
-
   "welcome": {
     "welcomeBack": "مرحبًا بعودتك",
     "chooseOptionBelowToGetStarted": "اختر أحد الخيارات أدناه للبدء",
@@ -202,5 +201,47 @@
     "dropout": "انسحاب",
     "confirmDropout": "تأكيد الانسحاب",
     "dropoutMessage": "هل أنت متأكد من رغبتك في وضع {{name}} كمنسحب؟ يمكن التراجع عن هذا الإجراء لاحقًا."
+  },
+  "participantJourney": {
+    "title": "بوابة المشارك",
+    "welcomeBack": "مرحبًا بعودتك!",
+    "welcomeBackNamed": "مرحبًا بعودتك، {{name}}!",
+    "idpProgressSubtitle": "تتبع تقدمك عبر المحاور الأربعة الأساسية لبرنامج التخرج.",
+    "sessionsSubtitle": "عرض جلساتك القادمة ومراجعة سجل الحضور الخاص بك.",
+    "noSessions": "لم يتم العثور على جلسات.",
+    "pageTitle": {
+      "participant-portal": "بوابة المشارك",
+      "idp-progress": "تقدم خطة التنمية الفردية",
+      "my-sessions": "جلساتي",
+      "my-graduation": "تخرجي"
+    },
+    "tabs": {
+      "scheduled": "المجدولة",
+      "attended": "المحضورة",
+      "missed": "الفائتة"
+    },
+    "menu": {
+      "home": "الرئيسية",
+      "myProfile": "ملفي الشخصي"
+    },
+    "graduation": {
+      "criteriaTitle": "معايير التخرج",
+      "criteriaSubtitle": "12 مؤشراً عبر 4 محاور · تتبع تقدم المشارك نحو التخرج",
+      "achieved": "تم الإنجاز",
+      "onTrack": "على المسار الصحيح",
+      "atRisk": "في خطر",
+      "toAchieve": "للتحقيق:",
+      "graduationReadiness": "جاهزية التخرج:"
+    },
+    "cards": {
+      "idpProgress": "تقدم خطة التنمية الفردية",
+      "idpProgressDescription": "عرض مهامك وتقدمك",
+      "sessions": "جلساتي",
+      "sessionsDescription": "عرض الجلسات المجدولة والفائتة",
+      "graduation": "تخرجي",
+      "graduationDescription": "عرض معايير التخرج",
+      "coachName": "اسم المدرب",
+      "contact": "جهة الاتصال"
+    }
   }
 }

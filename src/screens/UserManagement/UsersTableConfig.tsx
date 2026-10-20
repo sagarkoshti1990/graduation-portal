@@ -12,7 +12,7 @@ import { styles } from './Styles';
 import { useAuth } from '@contexts/AuthContext';
 import { StatusBadge as StatusBadge1 } from '../ParticipantsList/StatusBadge';
 import { USER_STATUS } from '@constants/app.constant';
-import { PARTICIPANT } from '@constants/ROLES';
+import { ADMIN_ROLES, PARTICIPANT_ROLES } from '@constants/ROLES';
 
 /**
  * Helper function to extract role label from user object
@@ -60,7 +60,7 @@ export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
         {...(isParticipant ? styles.roleBadgeParticipantColor : styles.roleBadgeText)}
 
       >
-        {role}
+        {String(role ?? '-')}
       </Text>
     </HStack>
   );
@@ -72,8 +72,8 @@ export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
 const StatusBadge: React.FC<{ status?: string, user?: any, roles: any[] }> = ({ status, user, roles }) => {
   const isActive = user?.userDetails?.status?.toLowerCase() === 'active';
   const arr = [USER_STATUS.ACTIVE];
-  const isParticipant = PARTICIPANT.find((item: string) => roles.find(subItem => item === subItem?.role?.title))
-
+  const isParticipant = PARTICIPANT_ROLES.find((item: string) => roles.find(subItem => item === subItem?.role?.title))
+  
   if (isParticipant && arr.includes(user?.userDetails?.status)) {
     return <StatusBadge1 {...{ status, user }} />
   }
@@ -216,7 +216,7 @@ const ActionsColumn: React.FC<{
 }> = ({ user, onViewProfile, onEdit, onResetPassword, onDeactivate }) => {
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'Admin';
+  const isAdmin = ADMIN_ROLES.includes(currentUser?.role || '');
   const navigation = useNavigation();
 
   // Check if the target user has Admin role
@@ -306,7 +306,7 @@ export const getUsersColumns = (handlers?: {
       flex: 1.5,
       render: (user) => (
         <Text {...TYPOGRAPHY.paragraph} {...styles.nameText}>
-          {user.id}
+          {String(user.id ?? '-')}
         </Text>
       ),
       mobileConfig: {
@@ -320,7 +320,7 @@ export const getUsersColumns = (handlers?: {
       flex: 1.5,
       render: (user) => (
         <Text {...TYPOGRAPHY.paragraph} {...styles.nameText}>
-          {user.name}
+          {String(user.name ?? '-')}
         </Text>
       ),
       mobileConfig: {
@@ -334,7 +334,7 @@ export const getUsersColumns = (handlers?: {
       flex: 2.5,
       render: (user) => (
         <Text {...TYPOGRAPHY.paragraph} {...styles.emailText} width={"100%"}>
-          {user.email}
+          {String(user.email ?? '-')}
         </Text>
       ),
       mobileConfig: {
@@ -353,8 +353,8 @@ export const getUsersColumns = (handlers?: {
 
         return (
           <HStack space="xs" flexWrap="wrap">
-            {roles.map((roleLabel: string, index: number) => (
-              <RoleBadge key={`${roleLabel}-${index}`} role={roleLabel} />
+            {roles.map((roleLabel: any, index: number) => (
+              <RoleBadge key={`${String(roleLabel)}-${index}`} role={String(roleLabel ?? '-')} />
             ))}
           </HStack>
         );
@@ -380,7 +380,7 @@ export const getUsersColumns = (handlers?: {
       flex: 1.2,
       render: (user: any) => (
         <Text {...TYPOGRAPHY.paragraph} {...styles.provinceText}>
-          {user?.province?.label || '-'}
+          {String((user?.province && (user?.province?.label ?? user?.province)) ?? '-')}
         </Text>
       ),
       mobileConfig: {
@@ -394,7 +394,7 @@ export const getUsersColumns = (handlers?: {
       flex: 1.2,
       render: (user: any) => (
         <Text {...TYPOGRAPHY.paragraph} {...styles.districtText}>
-          {user?.site?.label || user?.site || '-'}
+          {String((user?.site && (user?.site?.label ?? user?.site)) ?? '-')}
         </Text>
       ),
       mobileConfig: {

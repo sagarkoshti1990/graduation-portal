@@ -8,10 +8,11 @@ const OBSERVATION_PREFILL_FIELD_IDS = {
   COUNTRY_CODE: 'phone_code',
   CELL_PHONE_NUMBER: 'phone',
   ALTERNATE_COUNTRY_CODE: 'alt_phone_code',
+  ALTERNATE_CELL_PHONE_NUMBER: 'alt_phone',
   EMAIL_ADDRESS: 'email',
   VISIT_DATE: 'visit_date',
-  GENDER:"gender",
-  DOB:"dob"
+  GENDER: "gender",
+  DOB: "dob"
 } as const;
 
 type ObservationPrefillParams = {
@@ -23,9 +24,10 @@ type ObservationPrefillParams = {
   phoneCode?: string;
   phone?: string;
   alternatePhoneCode?: string;
+  alternatePhone?: string;
   email?: string;
-  gender?:string;
-  dob?:string;
+  gender?: string;
+  dob?: string;
 };
 
 export const buildObservationPrefillData = ({
@@ -37,6 +39,7 @@ export const buildObservationPrefillData = ({
   phoneCode,
   phone,
   alternatePhoneCode,
+  alternatePhone,
   email,
   gender,
   dob
@@ -50,6 +53,7 @@ export const buildObservationPrefillData = ({
   [OBSERVATION_PREFILL_FIELD_IDS.COUNTRY_CODE]: { value: formatCountryCode(phoneCode), readonly: false }, // "Country Code"
   [OBSERVATION_PREFILL_FIELD_IDS.CELL_PHONE_NUMBER]: { value: phone, readonly: false }, // "What is your cell phone number?"
   [OBSERVATION_PREFILL_FIELD_IDS.ALTERNATE_COUNTRY_CODE]: { value: formatCountryCode(alternatePhoneCode), readonly: false }, // "Country Code (For alternative number)"
+  [OBSERVATION_PREFILL_FIELD_IDS.ALTERNATE_CELL_PHONE_NUMBER]: { value: alternatePhone, readonly: false }, // "What is your alternative cell phone number?"
   [OBSERVATION_PREFILL_FIELD_IDS.EMAIL_ADDRESS]: { value: email, readonly: false }, // "And what is your email address?"
   [OBSERVATION_PREFILL_FIELD_IDS.VISIT_DATE]: { value: new Date().toISOString().split('T')[0], readonly: false }, // "Visit Date"
   [OBSERVATION_PREFILL_FIELD_IDS.GENDER]: { value: gender, readonly: false }, // "What is your gender?"

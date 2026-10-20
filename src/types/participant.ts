@@ -1,6 +1,7 @@
 import { CARD_STATUS, USER_STATUS } from '@constants/app.constant';
 import { ValueOf } from 'react-native-gesture-handler/lib/typescript/typeUtils';
 import { User } from '@contexts/AuthContext';
+import type { ChangeRequestRecord } from '../services/changeRequestsService';
 
 /**
  * Participant Status Types
@@ -37,6 +38,7 @@ export interface ParticipantData extends User {
   progress?: number;
   graduationProgress?: number;
   graduationDate?: string | Date;
+  pendingChangeRequest?: ChangeRequestRecord[];
   [key: string]: any; // Allow additional properties for flexibility
 }
 

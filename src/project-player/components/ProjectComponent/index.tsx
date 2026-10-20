@@ -17,7 +17,7 @@ import { useLanguage } from '@contexts/LanguageContext';
 import { TYPOGRAPHY } from '@constants/TYPOGRAPHY';
 import Container from '@ui/Container';
 import { LucideIcon, Modal, useAlert } from '@ui';
-import { submitInterventionPlan, updateInterventionPlan } from '../../services/projectPlayerService';
+import { submitInterventionPlan, updateInterventionPlan, requestChange } from '../../services/projectPlayerService';
 import { PLAYER_MODE } from '@constants/app.constant';
 import { isNetworkOffline } from '@utils/networkStatus';
 import offlineStorage from '../../../services/offlineStorage';
@@ -208,16 +208,35 @@ const ProjectComponent = React.memo(() => {
           .catch(() => {});
 
       if (isReplace) {
-        const response = await updateInterventionPlan(oldProjectData._id, reqBody);
-        if(!response.error) {
-          const newProjectId = response?.data?.projectId
-          await clearPendingDraft();
-          if (config.onSubmitInterventionPlan) {
-            config.onSubmitInterventionPlan(newProjectId);
+        if (user?.role === 'org_admin') {
+          const response = await requestChange({
+            requestees: [config.profileInfo?.hierarchy?.['1'] || ''],
+            entityId: config.profileInfo?.entityId || userId,
+            action: 'USER_PROJECT_TEMPLATE_CHANGE',
+            changePayload: { ...reqBody, projectId: oldProjectData._id },
+            programId: process.env.GLOBAL_LC_PROGRAM_ID as string,
+          });
+          if (!response.error) {
+            await clearPendingDraft();
+            if (config.onSubmitInterventionPlan) {
+              config.onSubmitInterventionPlan(oldProjectData._id);
+            }
+            showAlert('success', t('projectPlayer.IdpUpdateSentForApproval', { name: config.profileInfo?.name }));
+          } else {
+            showAlert('error', response.error || t('projectPlayer.error.submitFailed'));
           }
-          showAlert('success', t('template.IdpCreationSuccess'));
         } else {
-          showAlert('error',response.error || t('projectPlayer.error.submitFailed'));
+          const response = await updateInterventionPlan(oldProjectData._id, reqBody);
+          if(!response.error) {
+            const newProjectId = response?.data?.projectId
+            await clearPendingDraft();
+            if (config.onSubmitInterventionPlan) {
+              config.onSubmitInterventionPlan(newProjectId);
+            }
+            showAlert('success', t('template.IdpCreationSuccess'));
+          } else {
+            showAlert('error',response.error || t('projectPlayer.error.submitFailed'));
+          }
         }
       } else {
         // Call API to submit intervention plan
@@ -240,7 +259,7 @@ const ProjectComponent = React.memo(() => {
     } finally {
       setIsSubmittingInterventionPlan(false);
     }
-  }, [projectData, oldProjectData, config, addedToPlanTasks, deletableTaskIds, showAlert, t, user?.id]);
+  }, [projectData, oldProjectData, config, addedToPlanTasks, deletableTaskIds, showAlert, t, user?.id, user?.role]);
 
   if (!projectData) {
     return null;

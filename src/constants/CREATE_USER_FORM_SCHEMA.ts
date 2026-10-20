@@ -69,10 +69,10 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
               },
               {
                 rule: 'pattern',
-                value: '^[A-Z][a-z]*(?: [A-Z][a-z]*)*$',
+                value: '^[A-Za-z]+(?: [A-Za-z]+)*$',
                 message: {
                   key: 'errors.nameFormat',
-                  fallback: 'Name must start with a capital letter; numbers and symbols are not allowed',
+                  fallback: 'Name may contain only letters and spaces; no digits or punctuation',
                 },
               },
             ]
@@ -178,6 +178,43 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       {
         fields: [
           {
+            name: 'gender',
+            type: 'select',
+            required: true,
+            label: { key: 'gender', fallback: 'Gender' },
+            placeholder: { fallback: 'Select gender' },
+            optionsSource: 'genders',
+            validation: [
+              { rule: 'required', message: { key: 'errors.genderRequired', fallback: 'Gender is required' } },
+            ],
+          },
+          {
+            name: 'dob',
+            type: 'date',
+            required: true,
+            zIndex: 999,
+            label: { key: 'dob', fallback: 'DOB' },
+            placeholder: { fallback: 'DD/MM/YYYY' },
+            valueFormat: 'YYYY_MM_DD',
+            displayFormat: 'dateFormat@DD/MM/YYYY',
+            validation: [
+              { rule: 'required', message: { key: 'errors.dobRequired', fallback: 'Date of birth is required' } },
+              { rule: 'dateNotInFuture', message: { key: 'errors.dobFuture', fallback: 'Date of birth cannot be in the future' } },
+              {
+                rule: 'minAge',
+                value: 18,
+                message: {
+                  key: 'errors.dobMinAge',
+                  fallback: 'User must be at least 18 years old',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        fields: [
+          {
             type: 'group',
             name: 'phoneNumber',
             required: false,
@@ -199,12 +236,12 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 required: false,
                 label: { key: 'phoneNumber', fallback: 'Phone Number' },
                 placeholder: { key: 'phoneNumberPlaceholder', fallback: '000 000 0000' },
-                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{9,10}$',
-                    message: { key: 'errors.phoneInvalid', fallback: 'Phone number must be 9 or 10 digits' },
+                    value: '^[0-9]{9}$',
+                    message: { key: 'errors.phoneInvalid', fallback: 'Phone number must be 9 digits' },
                   },
                 ],
               },
@@ -234,12 +271,12 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
                 label: { key: 'alternativePhone', fallback: 'Alternative Phone' },
                 placeholder: { key: 'alternativePhonePlaceholder', fallback: '000 000 0000' },
                 _input: INPUT_STYLE,
-                inputProps: { keyboardType: 'phone-pad', maxLength: 10 },
+                inputProps: { keyboardType: 'phone-pad', maxLength: 9 },
                 validation: [
                   {
                     rule: 'pattern',
-                    value: '^[0-9]{9,10}$',
-                    message: { key: 'errors.altPhoneInvalid', fallback: 'Alt phone number must be 9 or 10 digits' },
+                    value: '^[0-9]{9}$',
+                    message: { key: 'errors.altPhoneInvalid', fallback: 'Alt phone number must be 9 digits' },
                   },
                 ],
               },
@@ -276,159 +313,16 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       },
     ],
   },
-
-  {
-    type: "section",
-    id: 'additionalInformation',
-    icon: 'FileText',
-    title: { key: 'additionalInformation', fallback: 'Additional Information' },
-    _title: TITLE_STYLE,
-    _container: CONTAINER_STYLE,
-    rows: [
-      {
-        fields: [
-          {
-            name: 'gender',
-            type: 'select',
-            required: true,
-            label: { key: 'gender', fallback: 'Gender' },
-            placeholder: { fallback: 'Select gender' },
-            optionsSource: 'genders',
-            validation: [
-              { rule: 'required', message: { key: 'errors.genderRequired', fallback: 'Gender is required' } },
-            ],
-          },
-          {
-            name: 'dob',
-            type: 'date',
-            required: true,
-            zIndex: 999,
-            label: { key: 'dob', fallback: 'DOB' },
-            placeholder: { fallback: 'DD/MM/YYYY' },
-            valueFormat: 'YYYY_MM_DD',
-            displayFormat: 'dateFormat@DD/MM/YYYY',
-            validation: [
-              { rule: 'required', message: { key: 'errors.dobRequired', fallback: 'Date of birth is required' } },
-              { rule: 'dateNotInFuture', message: { key: 'errors.dobFuture', fallback: 'Date of birth cannot be in the future' } },
-              {
-                rule: 'minAge',
-                value: 18,
-                message: {
-                  key: 'errors.dobMinAge',
-                  fallback: 'User must be at least 18 years old',
-                },
-              },
-            ],
-          },
-        ],
-      },
-
-      // {
-      //   visibleWhen: { flag: 'isSupervisorOrLC' },
-      //   fields: [
-      //     {
-      //       name: 'employee_id',
-      //       type: 'text',
-      //       required: true,
-      //       visibleWhen: { flag: 'isSupervisorOrLC' },
-      //       label: { key: 'employeeId', fallback: 'Employee ID' },
-      //       placeholder: {
-      //         key: 'employeeIdPlaceholder',
-      //         fallback: 'Enter Employee ID',
-      //       },
-      //       validation: [
-      //         {
-      //           rule: 'required',
-      //           message: {
-      //             key: 'errors.employeeIdRequired',
-      //             fallback: 'Employee ID is required',
-      //           },
-      //         },
-      //         {
-      //           rule: 'pattern',
-      //           value: '^[A-Z]{3}[0-9]{5}$',
-      //           message: {
-      //             key: 'errors.employeeIdInvalid',
-      //             fallback: 'Enter a valid Employee ID (e.g. ADM00001)',
-      //           },
-      //         },
-      //       ],
-      //     },
-      //   ],
-      // },
-      {
-        visibleWhen: { flag: 'isSupervisorOrLC' },
-        fields: [
-          {
-            name: 'organisationId',
-            type: 'select',
-            required: true,
-            label: { key: 'organization', fallback: 'Organization' },
-            placeholder: { key: 'organizationPlaceholder', fallback: 'Select organization' },
-            optionsSource: 'organisations',
-            validation: [
-              { rule: 'required', message: { key: 'errors.organizationRequired', fallback: 'Organization is required' } },
-            ],
-          },
-          {
-            name: 'positionId',
-            type: 'select',
-            required: true,
-            label: { key: 'position', fallback: 'Position' },
-            placeholder: { key: 'positionPlaceholder', fallback: 'Select position' },
-            optionsSource: 'positions',
-            validation: [
-              { rule: 'required', message: { key: 'errors.positionRequired', fallback: 'Position is required' } },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-
-  {
+    {
     type: "section",
     id: 'geographicAssignment',
     icon: 'MapPin',
     title: { key: 'geographicAssignment', fallback: 'Geographic Assignment' },
     _title: TITLE_STYLE,
     _container: CONTAINER_STYLE,
-    hint: {
-      type: 'info', icon: "Lock",
-      _icon: { color: "$danger500" },
-      _title: { color: "$text200" },
-      title: { fallback: 'A temporary password will be generated for the account. The user must reset this password before they can log in for the first time.' }
-    },
     rows: [
       {
         fields: [
-          {
-            name: 'provinceId',
-            type: 'select',
-            required: false,
-            label: { key: 'province', fallback: 'Province' },
-            placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
-            optionsSource: 'provinces',
-            visibleIf: [
-              { name: 'isParticipant', operator: '!=', value: 'true' }
-            ],
-            validation: [],
-          },
-          {
-            name: 'siteId',
-            type: 'select',
-            required: false,
-            dependsOn: 'provinceId',
-            disabledWhen: { field: 'provinceId', empty: true },
-            label: { key: 'site', fallback: 'Site' },
-            placeholder: { key: 'sitePlaceholder', fallback: 'Select province first' },
-            placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
-            optionsSource: 'sites',
-            visibleIf: [
-              { name: 'isParticipant', operator: '!=', value: 'true' }
-            ],
-            validation: [],
-          },
           {
             name: 'provinceId',
             type: 'select',
@@ -436,9 +330,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             label: { key: 'province', fallback: 'Province' },
             placeholder: { key: 'provincePlaceholder', fallback: 'Select province' },
             optionsSource: 'provinces',
-            visibleIf: [
-              { name: 'isParticipant', operator: '===', value: 'true' }
-            ],
             validation: [
               { rule: 'required', message: { key: 'errors.provinceRequired', fallback: 'Province is required' } },
             ],
@@ -453,9 +344,6 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
             placeholder: { key: 'sitePlaceholder', fallback: 'Select province first' },
             placeholderWhenReady: { key: 'sitePlaceholderReady', fallback: 'Select site' },
             optionsSource: 'sites',
-            visibleIf: [
-              { name: 'isParticipant', operator: '===', value: 'true' }
-            ],
             validation: [
               { rule: 'required', message: { key: 'errors.siteRequired', fallback: 'Site is required' } },
             ],
@@ -491,4 +379,41 @@ export const CREATE_USER_FORM_SCHEMA: FormSection[] = [
       },
     ],
   },
+  {
+    type: "section",
+    id: 'additionalInformation',
+    icon: 'FileText',
+    title: { key: 'additionalInformation', fallback: 'Additional Information' },
+    _title: TITLE_STYLE,
+    _container: CONTAINER_STYLE,
+    hint: {
+      type: 'info', icon: "Lock",
+      _icon: { color: "$danger500" },
+      _title: { color: "$text200" },
+      title: { fallback: 'A temporary password will be generated for the account. The user must reset this password before they can log in for the first time.' }
+    },
+    rows: [
+      {
+        visibleWhen: { flag: 'isSupervisorOrLC' },
+        fields: [
+          {
+            name: 'organisationId',
+            type: 'select',
+            required: false,
+            label: { key: 'organization', fallback: 'Organization' },
+            placeholder: { key: 'organizationPlaceholder', fallback: 'Select organization' },
+            optionsSource: 'organisations',
+          },
+          {
+            name: 'positionId',
+            type: 'select',
+            required: false,
+            label: { key: 'position', fallback: 'Position' },
+            placeholder: { key: 'positionPlaceholder', fallback: 'Select position' },
+            optionsSource: 'positions',
+          },
+        ],
+      },
+    ],
+  }
 ];

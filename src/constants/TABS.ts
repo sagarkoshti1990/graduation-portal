@@ -28,4 +28,11 @@ export const PARTICIPANT_DETAIL_TABS: TabData[] = [
     icon: 'UserCheck',
     isDisabled: false,
   },
+  {
+    key: 'attended-sessions',
+    label: 'participantDetail.tabs.attendedSessions',
+    mobileLabel: 'Sessions',
+    icon: 'Calendar',
+    isDisabled: false,
+  },
 ];

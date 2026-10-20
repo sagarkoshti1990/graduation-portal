@@ -21,6 +21,7 @@ import { PARTICIPANT_DETAIL_TABS } from '@constants/TABS';
 // import { PROVINCES } from '@constants/PARTICIPANTS_LIST';
 import InterventionPlan from './InterventionPlan';
 import AssessmentSurveys from './AssessmentSurveys';
+import AttendedSessions from './AttendedSessions';
 import type {
   ParticipantData,
   // PathwayType,
@@ -127,8 +128,24 @@ export default function ParticipantDetail() {
     : t('lc.pageTitle.participant-detail');
   useDocumentTitle(pageTitle);
 
-  const showOnboardingProject =
-    (participant?.accountUserStatus === USER_STATUS.INACTIVE && !participant?.idpProjectId)
+  let showOnboardingProject;
+
+  // If the participant has a pending dropout request
+  const isDropoutRequestSentForApproval = Boolean(
+    participant?.pendingChangeRequest?.some(
+      (request: any) => request.action === 'PROGRAM_USER_DROPPING_OUT' && request.status === 'PENDING'
+    )
+  );
+
+  // If the participant has a pending IDP request
+  const isIDPRequestSentForApproval = Boolean(
+    participant?.pendingChangeRequest?.some(
+      (request: any) => request.action === 'USER_PROJECT_TEMPLATE_CHANGE' && request.status === 'PENDING'
+    )
+  );
+
+  showOnboardingProject = (isDropoutRequestSentForApproval) ? "dropout" 
+      : (participant?.accountUserStatus === USER_STATUS.INACTIVE && !participant?.idpProjectId)
       ? "user-inactive"
       : (status === STATUS.DROPOUT && !participant?.idpProjectId)
       ? "dropout"
@@ -432,6 +449,7 @@ export default function ParticipantDetail() {
   if (!participant) {
     return <NotFound message="participantDetail.notFound.title" />;
   }
+
   return (
     <Box flex={1} bg="$accent100">
       {/* Participant Header with status-based variations */}
@@ -457,7 +475,7 @@ export default function ParticipantDetail() {
         // @ts-ignore
         onParticipantRefresh={fetchEntityDetails}
         endLineConfigData={endLineConfigData}
-        isHideSecondButton={!!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || isdminPanalAccess))}
+        isHideSecondButton={isDropoutRequestSentForApproval || !!(!participant?.onBoardedProjectId && !targetingCriteria && (showOnboardingProject !== "not_enrolled" || isdminPanalAccess))}
       />
 
       {/* Offline Data Available banner — only while online, for a participant with offline data. */}
@@ -522,7 +540,7 @@ export default function ParticipantDetail() {
       <Container px="$4" py="$6" $md-px="$6">
         {showOnboardingProject === "not_eligible" ? (
           <></>
-        ) : !participant?.onBoardedProjectId && !targetingCriteria && showOnboardingProject !== 'dropout' ?
+        ) : !participant?.onBoardedProjectId && !targetingCriteria ?
           <TargetingCriteriaCard isReadOnly={!!(showOnboardingProject !== "not_enrolled" || isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE)} user={user} participant={participant} setTargetingCriteria={handleTargetingCriteriaResponce}/>
           : showOnboardingProject ? (
           <>
@@ -541,7 +559,7 @@ export default function ParticipantDetail() {
               projectData={projectData}
               onProjectDataChange={setProjectData}
               projectUnavailableOffline={projectUnavailableOffline}
-              {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE) ? {mode:MODE.readOnlyMode?.mode}:{})}
+              {...((isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE || isDropoutRequestSentForApproval) ? {mode:MODE.readOnlyMode?.mode}:{})}
             />
           </>
         ) : (
@@ -605,7 +623,7 @@ export default function ParticipantDetail() {
                     onProjectDataChange={setProjectData}
                     projectUnavailableOffline={projectUnavailableOffline}
                     {...endLineConfigData}
-                    {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {mode:MODE.readOnlyMode?.mode}:{})}
+                    {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE || isDropoutRequestSentForApproval || isIDPRequestSentForApproval ? {mode:MODE.readOnlyMode?.mode}:{})}
                   />
                 </Box>
               )}
@@ -616,6 +634,11 @@ export default function ParticipantDetail() {
                     completionPercentage={updatedProgress || 0}
                     {...(isdminPanalAccess || participant?.accountUserStatus === USER_STATUS.INACTIVE ? {isReadOnly:true}:{})}
                   />
+                </Box>
+              )}
+              {activeTab === PARTICIPANT_DETAILS_TABS.ATTENDED_SESSIONS && (
+                <Box mt="$6">
+                  <AttendedSessions participant={participant as ParticipantData} />
                 </Box>
               )}
             </Box>

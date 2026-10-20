@@ -37,6 +37,7 @@ interface UserAvatarCardProps {
  filterOptions?: any;
  onChange?: (values: Record<string, any>) => void;
  selectedValues?: Record<string, any>;
+ initialFilterValue?: Record<string, any>; // Pre-seed FilterButton's internal state (e.g. locked defaults)
  showSelectedCard?: boolean;
  showLcList?: boolean;
  showLcListforSupervisorTeam?: boolean;
@@ -60,6 +61,7 @@ const UserAvatarCard = ({
   filterOptions,
   onChange,
   selectedValues = {},
+  initialFilterValue,
   showSelectedCard = false,
   showLcList = true,
   showLcListforSupervisorTeam = false,
@@ -376,6 +378,7 @@ const UserAvatarCard = ({
           data={filterOptions}
           showClearButton={false}
           onFilterChange={handleFilterChange}
+          initialValue={initialFilterValue}
         />
       )}
      {/* Display selected values if showSelectedCard is true and values exist */}

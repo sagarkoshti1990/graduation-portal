@@ -11,6 +11,8 @@ export interface ActionButtonProps {
   isOnboardingTask: boolean; isEdit: boolean; isObservationTask?: boolean; actionIconName: string;
   handleTaskClick: () => void; handleAcceptTask: () => void; handleRejectTask: () => void; completeFormText:string;
   buttonLabel?: string; uploadText: string; isCompleted?: boolean; isSyncTaskId?: boolean;
+  isSessionTask?: boolean; sessionStatus?: 'attended' | 'scheduled' | 'missed' | null;
+  sessionLabels?: { schedule: string; update: string; attended: string };
 }
 
 interface AcceptRejectButtonProps {
@@ -56,7 +58,8 @@ AcceptRejectButton.displayName = 'AcceptRejectButton';
 const ActionButton = memo<ActionButtonProps>(({
   showActionButton, isPreview, isOptional, isAddedToPlan, isRejected,
   isReadOnly, isStatusUpdating, isWeb, showAsCard, isOnboardingTask, isEdit, isObservationTask,
-  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText, isCompleted, isSyncTaskId,completeFormText
+  actionIconName, handleTaskClick, handleAcceptTask, handleRejectTask, buttonLabel, uploadText, isCompleted, isSyncTaskId,completeFormText,
+  isSessionTask, sessionStatus, sessionLabels,
 }) => {
   if (!showActionButton) return null;
 
@@ -74,6 +77,24 @@ const ActionButton = memo<ActionButtonProps>(({
   // In read-only mode: hide upload/non-observation actions; keep observation button
   // active so the viewer can open the form. The observation form handles its own permissions.
   if ((isReadOnly && !isObservationTask) || (isReadOnly && isObservationTask && !isCompleted)) return null;
+
+  if (isSessionTask && sessionLabels) {
+    const isAttended = sessionStatus === 'attended';
+    const label = isAttended
+      ? sessionLabels.attended
+      : sessionStatus === 'scheduled' ? sessionLabels.update : sessionLabels.schedule;
+    return (
+      <Button onPress={handleTaskClick} isDisabled={isStatusUpdating || isAttended || !!isCompleted}
+        size={isWeb ? (showAsCard || isOnboardingTask ? 'xs' : 'md') : 'xs'}
+        variant={"outlineghost" as any} $web-cursor={isEdit && !isAttended && !isCompleted ? 'pointer' : undefined}>
+        <ButtonIcon name={isAttended ? 'CheckCircle' : 'Calendar'} size={16} as={LucideIcon} />
+        <ButtonText {...TYPOGRAPHY.button} {...taskCardStyles.actionButtonText}
+          fontSize={showAsCard || isOnboardingTask || !isWeb ? '$xs' : undefined}>
+          {label}
+        </ButtonText>
+      </Button>
+    );
+  }
 
   return (
     <Button onPress={handleTaskClick} isDisabled={isStatusUpdating}

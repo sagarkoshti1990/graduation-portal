@@ -6,6 +6,8 @@ export interface SidebarMenuItem {
   route?: string;
   /** Static help URL path (web only), opens in new tab — use with `route` omitted */
   href?: string;
+  /** Hard redirect: full-page navigation to this URL in the current tab (web), or Linking.openURL on native — use instead of `href` when the destination should replace the current page rather than open a new tab */
+  redirectUrl?: string;
   children?: SidebarMenuItem[];
 }
 
@@ -31,6 +33,30 @@ export const MAIN_MENU_ITEMS: SidebarMenuItem[] = [
   //   icon: 'LayoutDashboard', // Lucide icon name
   //   route: 'admin-dashboard',
   // },
+  // Pages not built yet — no route/href set; wire these up once their screens exist
+  {
+    key: 'dashboards',
+    label: 'admin.menu.dashboards',
+    icon: 'LayoutDashboard',
+    children: [
+      // {
+      //   key: 'participants',
+      //   label: 'admin.menu.participants',
+      //   icon: 'Users',
+      // },
+      // {
+      //   key: 'support-providers',
+      //   label: 'admin.menu.supportProviders',
+      //   icon: 'Briefcase',
+      // },
+      {
+        key: 'coach-progress',
+        label: 'admin.menu.coachProgress',
+        icon: 'TrendingUp',
+        redirectUrl:"/lms-admin/Coach-Progress-Dashboard"
+      },
+    ],
+  },
   {
     key: 'user-management',
     label: 'admin.menu.userManagement',
@@ -43,6 +69,18 @@ export const MAIN_MENU_ITEMS: SidebarMenuItem[] = [
     icon: 'UserCheck', // Lucide icon name - distinct from Users icon
     route: 'assign-users',
   },
+  {
+    key: 'review-requests',
+    label: 'admin.menu.reviewRequests',
+    icon: 'ClipboardCheck', // Lucide icon name
+    route: 'review-requests',
+  },
+  {
+    key: 'support-provider-dashboard',
+    label: 'admin.menu.supportProviderDashboard',
+    icon: 'ChartColumn', // Lucide icon name
+    route: 'support-provider-dashboard',
+  },
   // {
   //   key: 'template-management',
   //   label: 'admin.menu.templateManagement',
@@ -54,6 +92,35 @@ export const MAIN_MENU_ITEMS: SidebarMenuItem[] = [
   //   label: 'admin.menu.auditLog',
   //   icon: 'Activity', // Lucide icon name for activity log
   //   route: 'audit-log',
+  // },
+  // {
+  //   key: 'forms-surveys-management',
+  //   label: 'admin.menu.formsAndSurveysManagement',
+  //   icon: 'ClipboardList',
+  // },
+  {
+    key: 'lms-management',
+    label: 'admin.menu.lmsManagement',
+    icon: 'GraduationCap',
+    children: [
+      {
+        key: 'content-library',
+        label: 'admin.menu.contentLibrary',
+        icon: 'FileText',
+        redirectUrl:"/lms-admin/lms-management/content-library"
+      },
+      {
+        key: 'course-creation',
+        label: 'admin.menu.courseCreation',
+        icon: 'BookOpen',
+        redirectUrl:"/lms-admin/lms-management/course-creation"
+      },
+    ],
+  },
+  // {
+  //   key: 'certificates',
+  //   label: 'admin.menu.certificates',
+  //   icon: 'Award',
   // },
 ];
 

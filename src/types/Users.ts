@@ -66,6 +66,7 @@ export interface UserSearchParams {
   status?: string;
   province?: string;
   site?: string;
+  userIds?: (string | number)[];
 }
 
 /**

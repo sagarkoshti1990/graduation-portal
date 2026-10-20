@@ -456,8 +456,13 @@ export const updateOrgAdminUser = async (
 ): Promise<any> => {
   try {
     const idStr = String(userId);
-    const endpoint = `${API_ENDPOINTS.ORG_ADMIN_UPDATE_USER}/${idStr}`;
-    const response = await api.post(endpoint, payload);
+    const apiPayload = {
+      updateData: payload, 
+      entityId: idStr, 
+      programId: payload?.programId || process.env.GLOBAL_LC_PROGRAM_ID
+     };
+    const endpoint = `${API_ENDPOINTS.UPDATE_ENTITY}`;
+    const response = await api.post(endpoint, apiPayload);
     return response.data?.result ?? response.data;
   } catch (error: any) {
     throw error;

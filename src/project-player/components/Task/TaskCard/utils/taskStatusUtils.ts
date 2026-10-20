@@ -73,6 +73,8 @@ export function getUploadConfig(task: Task, isOnboardingTask: boolean) {
     if (SLA_CONSENT_TASK_IDS.has(task?.referenceId)) {
       maxFiles = 1;
       allowedFileTypes = ['pdf'];
+    } else {
+      allowedFileTypes = ['pdf','png', 'jpg', 'jpeg'];
     }
   }
 
