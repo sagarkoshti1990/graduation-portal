@@ -367,7 +367,10 @@ export default function ParticipantDetail() {
   useEffect(() => {
     const init = () => {
       const endLineSolution = solutions.find(item => item?.keywords?.includes(ENDLINE_KEYWORD))
-      if( endLineSolution?.entity?.submissionsCount > 0 && endLineSolution?.entity?.submissionsCount <= 2 && (updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD) ) {
+      const isProgressReady = updatedProgress && updatedProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD;
+      const submissionsCount = isProgressReady ? (endLineSolution?.entity?.submissionsCount || 1) : 0;
+      const isSubmissionCompleted = endLineSolution?.entity?.status === ENTITY_STATUS.COMPLETED;
+      if (isProgressReady && ((submissionsCount === 1 && isSubmissionCompleted) || (submissionsCount === 2 && !isSubmissionCompleted))) {
         setEndLineConfigData(pre => {
           const allowEditTaskIds : string[] = getCustomTaskIds(projectData?.tasks || [])
           return {
@@ -379,6 +382,13 @@ export default function ParticipantDetail() {
             isLoading: false
           }
         })
+      } else if (isProgressReady && submissionsCount === 2 && isSubmissionCompleted) {
+        setEndLineConfigData(pre => ({
+          ...pre,
+          mode: MODE.readOnlyMode?.mode,
+          solution:endLineSolution,
+          isLoading: false
+        }))
       } else {
         setEndLineConfigData({isLoading: updatedProgress === undefined});
       }

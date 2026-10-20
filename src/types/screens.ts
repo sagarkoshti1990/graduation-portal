@@ -88,7 +88,6 @@ export interface TemplateData {
 export interface ParticipantHeaderProps {
   participant: Participant | User | undefined;
   pathway?: PathwayType;
-  graduationProgress?: number;
   updatedProgress?: number;
   graduationDate?: string;
   onViewProfile?: () => void;

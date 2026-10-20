@@ -66,7 +66,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   participant: participantProp,
   pathway,
   graduationDate,
-  graduationProgress: graduationProgressProp,
   onViewProfile,
   areAllTasksCompleted = false,
   onStatusUpdate,
@@ -273,9 +272,6 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
     setIsCertificateModalOpen(true);
   };
 
-  const effectiveProgress =
-    updatedProgress ?? graduationProgressProp ?? graduationProgress;
-
   useEffect(() => {
     let isMounted = true;
     isOnboardingComplete(projectData?.tasks, user?.id ?? '', participantProp?.userId ?? '')
@@ -287,6 +283,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
   }, [projectData, user?.id, participantProp?.userId]);
 
   useEffect(() => {
+    const effectiveProgress = graduationProgress ?? updatedProgress
     if (endLineConfigData?.solution) {
       setShouldShowCompletionButton(
         status === STATUS.IN_PROGRESS &&
@@ -295,12 +292,12 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
         effectiveProgress >= GRADUATION_READINESS_PROGRESS_THRESHOLD
         // && participantProp?.idpProgress?.projectStatus !== PROJECT_STATUS.SUBMITTED,
         // && (!(endLineConfigData?.solution?.entity?.submissionsCount === 1 && endLineConfigData?.solution?.entity?.status === ENTITY_STATUS.COMPLETED) || endLineConfigData?.solution?.entity?.submissionsCount === 2)
-        && (endLineConfigData?.solution?.entity?.submissionsCount > 0 && endLineConfigData?.solution?.entity?.submissionsCount <= 2)
+        && (!endLineConfigData?.solution?.entity?.submissionsCount || (endLineConfigData?.solution?.entity?.submissionsCount > 0 && endLineConfigData?.solution?.entity?.submissionsCount <= 2))
       );
     }
     // participantProp?.idpProgress?.projectStatus,
     // @ts-ignore
-  }, [effectiveProgress, participantProp?.idpProjectId, status, endLineConfigData?.solution]);
+  }, [graduationProgress, updatedProgress , participantProp?.idpProjectId, status, endLineConfigData?.solution]);
 
   const renderStatusBadge = () => {
     if (participantProp?.pendingChangeRequest?.some(req => req.status === "PENDING" && req.action === "PROGRAM_USER_DROPPING_OUT")) { 
@@ -698,7 +695,7 @@ const ParticipantHeader: React.FC<ParticipantHeaderProps> = ({
             participantName={participantProp?.name}
             accountUserStatus={participantProp?.accountUserStatus}
             status={status as ParticipantStatus}
-            graduationProgress={graduationProgressProp ?? graduationProgress}
+            graduationProgress={graduationProgress}
             updatedProgress={updatedProgress}
             graduationDate={graduationDate}
           />
