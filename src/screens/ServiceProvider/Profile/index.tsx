@@ -352,53 +352,21 @@ try {
     ),
   );
 
-  const livelihoods = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.trainingData?.livelihoods)
-        .filter(Boolean),
-    ),
-  );
+  // Selected options are stored as { value, label } objects; the API expects just the values
+  const uniqueValues = (items: any[]): string[] =>
+    Array.from(new Set(items.filter(Boolean).map(i => (typeof i === 'object' ? i.value : i)).filter(Boolean)));
 
-  const social_empowerment = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.trainingData?.socialEmpowerment)
-        .filter(Boolean),
-    ),
-  );
+  const livelihoods = uniqueValues(supportCategories.flatMap(item => item.trainingData?.livelihoods));
 
-  const financial_inclusion = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.trainingData?.financialInclusion)
-        .filter(Boolean),
-    ),
-  );
+  const social_empowerment = uniqueValues(supportCategories.flatMap(item => item.trainingData?.socialEmpowerment));
 
-  const special_attention = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.linkageData?.specialAttention)
-        .filter(Boolean),
-    ),
-  );
+  const financial_inclusion = uniqueValues(supportCategories.flatMap(item => item.trainingData?.financialInclusion));
 
-  const immediate_attention = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.linkageData?.immediateAttention)
-        .filter(Boolean),
-    ),
-  );
+  const special_attention = uniqueValues(supportCategories.flatMap(item => item.linkageData?.specialAttention));
 
-  const asset_types = Array.from(
-    new Set(
-      supportCategories
-        .flatMap(item => item.assetsData?.assetTypes)
-        .filter(Boolean),
-    ),
-  );
+  const immediate_attention = uniqueValues(supportCategories.flatMap(item => item.linkageData?.immediateAttention));
+
+  const asset_types = uniqueValues(supportCategories.flatMap(item => item.assetsData?.assetTypes));
 
   const payload = {
     name: values.contactPersonName,
@@ -408,7 +376,7 @@ try {
     phone_code: values.phone_code? values.phone_code.toString().replace('+', ''): '27',
     // Single select in UI, but backend still stores provider_type as an array
     provider_type: values.organizationType ? [values.organizationType] : [],
-    meta: {
+   // meta: {
       provinces,
       sites,
       categories,
@@ -419,9 +387,9 @@ try {
       immediate_attention,
       asset_types,
       // organizationType: values.organizationType,
-      agreementMoU: resolvedValues.agreementMoU,
-      organisationCredentials: resolvedValues.organisationCredentials,
-    },
+      //agreementMoU: resolvedValues.agreementMoU,
+      //organisationCredentials: resolvedValues.organisationCredentials,
+   // },
   };
   try {
     if (profileExists) {

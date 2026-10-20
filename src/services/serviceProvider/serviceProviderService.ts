@@ -63,6 +63,8 @@ export interface AcceptAndSchedulePayload {
   date: string;
   time: string;
   duration: string;
+  start_date?: string;
+  end_date?: string;
   delivery_mode?: string;
   capacity?: string;
   estimatedValue?: string;
@@ -377,11 +379,18 @@ export const acceptAndScheduleSupportRequest = async (
     `${payload.date} ${payload.time}`,
     'YYYY-MM-DD HH:mm'
   );
-  const startDate = startMoment.isValid() ? Math.floor(startMoment.valueOf() / 1000) : 0;
+  const isService = payload.support_offering_type === 'additional_service';
+  let startDate = startMoment.isValid() ? Math.floor(startMoment.valueOf() / 1000) : 0;
 
   // Build end_date by adding the duration in hours
   const durationHours = DURATION_HOURS[payload.duration] ?? 2;
-  const endDate = startDate + Math.round(durationHours * 3600);
+  let endDate = startDate + Math.round(durationHours * 3600);
+
+  // Additional Services carry explicit start/end date-times instead of date + time + duration
+  if (isService && payload.start_date && payload.end_date) {
+    startDate = moment(payload.start_date).unix();
+    endDate = moment(payload.end_date).unix();
+  }
 
   const isAsset = payload.support_offering_type === 'asset';
 
@@ -394,7 +403,7 @@ export const acceptAndScheduleSupportRequest = async (
     title: payload.title || '',
     start_date: startDate,
     end_date: endDate,
-    delivery_mode: isAsset ? 'offline' : (payload.delivery_mode || 'online'),
+    delivery_mode: isAsset || isService ? 'offline' : (payload.delivery_mode || 'online'),
     can_be_copied: false,
     certificate_provided: false,
     recommended_for: payload.recommended_for?.length ? payload.recommended_for : ['user'],
@@ -405,7 +414,9 @@ export const acceptAndScheduleSupportRequest = async (
           // Assets have no venue: delivery_mode is always offline and meeting_info stays empty
           meeting_info: {},
         }
-      : { description: payload.description || '', meeting_info: { link: payload.meetingLink || '' } }),
+      : isService
+        ? { description: payload.description || '', meeting_info: {} }
+        : { description: payload.description || '', meeting_info: { link: payload.meetingLink || '' } }),
   };
 
   if (payload.province) {

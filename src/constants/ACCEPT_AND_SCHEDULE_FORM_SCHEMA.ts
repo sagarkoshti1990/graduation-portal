@@ -416,3 +416,67 @@ export const ACCEPT_ASSET_REQUEST_FORM_SCHEMA: FormSection[] = [
     ],
   },
 ];
+
+// Additional Services: start/end date-times come from the request, always offline (no format, venue or link)
+export const ACCEPT_ADDITIONAL_SERVICE_FORM_SCHEMA: FormSection[] = [
+  ACCEPT_AND_SCHEDULE_FORM_SCHEMA[0],
+  {
+    type: 'section',
+    id: 'scheduleFormatCapacity',
+    ...ACCEPT_AND_SCHEDULE_FORM_SECTION_STYLES,
+    title: {
+      key: 'supportProvider.supportRequests.titles.scheduleFormat',
+      fallback: 'Schedule, Format & Capacity',
+    },
+    icon: 'Calendar',
+    rows: [
+      {
+        fields: [
+          {
+            name: 'start_date',
+            type: 'datetime',
+            required: true,
+            label: { key: 'supportProvider.supportRequests.labels.startDate', fallback: 'Start Date' },
+            placeholder: { key: 'supportProvider.supportRequests.placeholders.startDate', fallback: 'DD/MM/YYYY HH:MM' },
+            validation: [
+              {
+                rule: 'required',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.startDateRequired',
+                  fallback: 'Start date is required',
+                },
+              },
+            ],
+          },
+          {
+            name: 'end_date',
+            type: 'datetime',
+            required: true,
+            label: { key: 'supportProvider.supportRequests.labels.endDate', fallback: 'End Date' },
+            placeholder: { key: 'supportProvider.supportRequests.placeholders.endDate', fallback: 'DD/MM/YYYY HH:MM' },
+            validation: [
+              {
+                rule: 'required',
+                message: {
+                  key: 'supportProvider.supportRequests.errors.endDateRequired',
+                  fallback: 'End date is required',
+                },
+              },
+              {
+                rule: 'dateCompare',
+                value: { field: 'start_date', operator: '>=' },
+                message: {
+                  key: 'errors.dateCompareStartDate',
+                  fallback: 'End Date must be after or equal to Start Date.',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        fields: [(ACCEPT_AND_SCHEDULE_FORM_SCHEMA[1] as any).rows[1].fields[1]],
+      },
+    ],
+  },
+];
