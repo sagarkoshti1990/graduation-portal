@@ -155,11 +155,9 @@ export function requestSessionPayloadMapping(formValues: any, optionMap: any = {
     idp_tasks: toIdpTasksPayload(formValues.idp_tasks),
     description: formValues.description,
     learning_objectives: formValues.learning_objectives,
-    start_date: (formValues.start_date ? moment(formValues.start_date) : moment()).unix(),
-    end_date: (formValues.end_date
-      ? moment(formValues.end_date)
-      : (formValues.start_date ? moment(formValues.start_date) : moment()).add(30, 'minutes')
-    ).unix(),
+    // Leave dates out when not entered - the provider sets them when accepting the request
+    ...(formValues.start_date ? { start_date: moment(formValues.start_date).unix() } : {}),
+    ...(formValues.end_date ? { end_date: moment(formValues.end_date).unix() } : {}),
     title:
       toArray(formValues.idp_tasks)[0] === 'custom'
         ? formValues.sessionTypeOther
@@ -191,8 +189,8 @@ export function requestAssetPayloadMapping(formValues: any): any {
 
   // Availability is optional on the Asset form, but the shared request-session API enforces a
   // 30 minute - 24 hour window on every request - default to a valid 30 minute slot when left blank.
-  const startMoment = formValues.startDate ? moment(formValues.startDate) : moment();
-  const endMoment = formValues.endDate ? moment(formValues.endDate) : moment(startMoment).add(30, 'minutes');
+  const startMoment = formValues.startDate ? moment(formValues.startDate) : '';
+  const endMoment = formValues.endDate ? moment(formValues.endDate) : '';
 
   return {
     support_offering_type: SUPPORT_OFFERING_TYPE_VALUES.ASSET,
@@ -200,8 +198,8 @@ export function requestAssetPayloadMapping(formValues: any): any {
     sites: Array.isArray(resolvedSites) ? resolvedSites : (resolvedSites ? [resolvedSites] : []),
     title: formValues.assetTitle,
     agenda: formValues.assetDescription || formValues.assetTitle,
-    start_date: startMoment.unix(),
-    end_date: endMoment.unix(),
+    ...(formValues.start_date ? { start_date: moment(formValues.start_date).unix() } : {}),
+    ...(formValues.end_date ? { end_date: moment(formValues.end_date).unix() } : {}),
     requestees: formValues.requestees || [],
     recommended_for: formValues.recommended_for?.length ? formValues.recommended_for : ['user'],
     status: formValues.isDraft ? 'DRAFT' : 'Requested',

@@ -9,6 +9,7 @@ import type { ValidationIssue } from '@components/SchemaFormRenderer';
 import {
   ACCEPT_AND_SCHEDULE_FORM_SCHEMA,
   ACCEPT_ASSET_REQUEST_FORM_SCHEMA,
+  ACCEPT_ADDITIONAL_SERVICE_FORM_SCHEMA,
   DURATION_OPTIONS,
 } from '@constants/ACCEPT_AND_SCHEDULE_FORM_SCHEMA';
 import { getProvincesList, getSitesByProvince } from '../../../../../services/usersService';
@@ -34,6 +35,8 @@ export interface AcceptAndScheduleModalProps {
     time: string;
     duration: string;
     delivery_mode: string;
+    start_date?: string;
+    end_date?: string;
     capacity: string;
     location: string;
     meetingLink: string;
@@ -58,7 +61,12 @@ export default function AcceptAndScheduleModal({
   const [popupIssues, setPopupIssues] = useState<ValidationIssue[]>([]);
 
   const isAsset = item?.type === 'assets';
-  const formSchema = isAsset ? ACCEPT_ASSET_REQUEST_FORM_SCHEMA : ACCEPT_AND_SCHEDULE_FORM_SCHEMA;
+  const isService = item?.type === 'additional_services';
+  const formSchema = isAsset
+    ? ACCEPT_ASSET_REQUEST_FORM_SCHEMA
+    : isService
+      ? ACCEPT_ADDITIONAL_SERVICE_FORM_SCHEMA
+      : ACCEPT_AND_SCHEDULE_FORM_SCHEMA;
 
   const coachName = item?.coach || '';
   const hubName = item?.hub && item.hub !== '-' ? ` (${item.hub} Hub)` : '';
@@ -75,6 +83,8 @@ export default function AcceptAndScheduleModal({
     time: '',
     duration: DURATION_OPTIONS[2].value,
     delivery_mode: 'online',
+    start_date: '',
+    end_date: '',
     capacity: '',
     location: '',
     meetingLink: '',
@@ -172,6 +182,16 @@ export default function AcceptAndScheduleModal({
       .map((task: any) => task?.value ?? task)
       .filter(Boolean);
 
+    const toDateTime = (v: any) => {
+      if (!v) return '';
+      const n = Number(v);
+      const m = Number.isNaN(n) ? moment(v) : moment(n > 1e12 ? n : n * 1000);
+      return m.isValid() ? m.format('YYYY-MM-DDTHH:mm:ss') : '';
+    };
+    const rawEndDate = item.raw?.session?.end_date ?? item.raw?.end_date;
+    const startDateTime = toDateTime(rawStartDate) || (date ? `${date}T${time || '00:00'}:00` : '');
+    const endDateTime = toDateTime(rawEndDate);
+
     setValues({
       province: item.raw?.meta?.provinces?.[0] || item.raw?.meta?.province || '',
       sites: requestedSites,
@@ -183,7 +203,9 @@ export default function AcceptAndScheduleModal({
       date: date || moment().format('YYYY-MM-DD'),
       time: time || moment().format('HH:mm'),
       duration: DURATION_OPTIONS[2].value,
-      delivery_mode: item?.type === 'assets' ? 'offline' : item.raw?.delivery_mode || 'online',
+      delivery_mode: item?.type === 'assets' || item?.type === 'additional_services' ? 'offline' : item.raw?.delivery_mode || 'online',
+      start_date: startDateTime,
+      end_date: endDateTime,
       capacity: item?.type === 'assets' && item.raw?.meta?.quantity ? String(item.raw.meta.quantity) : '',
       estimatedValue: item.raw?.meta?.estimatedValue ? String(item.raw.meta.estimatedValue) : '',
       location: '',
@@ -241,8 +263,8 @@ export default function AcceptAndScheduleModal({
   );
 
   function handleConfirmAndSchedule() {
-    // Assets are always offline, even if the locked field's state was never filled
-    const submitValues = isAsset ? { ...values, delivery_mode: 'offline' } : values;
+    // Assets and Additional Services are always offline, even if the locked field's state was never filled
+    const submitValues = isAsset || isService ? { ...values, delivery_mode: 'offline' } : values;
     const { errors: validationErrors, issues } = getValidationIssues(formSchema, submitValues, optionsMap, t);
     if (issues.length > 0) {
       setErrors(validationErrors);
@@ -286,7 +308,9 @@ export default function AcceptAndScheduleModal({
           <Text {...modalStyles.acceptScheduleTitleText}>
             {isAsset
               ? t(`${BASE_PATH}.titles.acceptAssetRequest`, 'Accept Asset Request')
-              : t(`${BASE_PATH}.titles.acceptSchedule`, 'Accept & Schedule Training')}
+              : isService
+                ? t(`${BASE_PATH}.titles.acceptScheduleService`, 'Accept & Schedule Service')
+                : t(`${BASE_PATH}.titles.acceptSchedule`, 'Accept & Schedule Training')}
           </Text>
         </HStack>
       }
@@ -359,7 +383,7 @@ export default function AcceptAndScheduleModal({
       <Box px="$6" py="$2">
         <SchemaFormRenderer
           schema={formSchema}
-          values={isAsset ? { ...values, delivery_mode: 'offline' } : values}
+          values={isAsset || isService ? { ...values, delivery_mode: 'offline' } : values}
           errors={errors}
           optionsMap={optionsMap}
           onFieldChange={handleFieldChange}

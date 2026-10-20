@@ -210,14 +210,25 @@ const App = (): React.JSX.Element => {
       } else {
         const payload = {
           support_offering_type: SUPPORT_CATEGORIES.ASSET,
-          categories: [SUPPORT_CATEGORIES.ASSET],
+          categories: [
+            SUPPORT_CATEGORIES.ASSET,
+            ...(Array.isArray(formValues.livelihoodCategory)
+              ? formValues.livelihoodCategory
+              : formValues.livelihoodCategory
+                ? [formValues.livelihoodCategory]
+                : []),
+          ],          
           idp_tasks: toIdpTasksPayload(null, SUPPORT_CATEGORIES.ASSET),
           title: formValues.assetTitle,
           description: formValues.assetDescription,
           asset_types: formValues.assetType ? [formValues.assetType] : [],
           // Old key stored the category under the Livelihoods training types, moved to livelihood_categories
           // livelihoods: formValues.livelihoodCategory || '',
-          livelihood_categories: formValues.livelihoodCategory || '',
+          livelihood_categories: Array.isArray(formValues.livelihoodCategory)
+            ? formValues.livelihoodCategory
+            : formValues.livelihoodCategory
+              ? [formValues.livelihoodCategory]
+              : [],
           estimated_value: formValues.estimatedValue,
           seats_limit: formValues.availableQuantity ? Number(formValues.availableQuantity) : undefined,
           meta: {
