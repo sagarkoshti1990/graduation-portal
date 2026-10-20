@@ -108,7 +108,7 @@ export default function ParticipantDetail() {
   const [updatedProgress, setUpdatedProgress] = useState<number | undefined>(
     undefined,
   );
-  const [endLineConfigData, setEndLineConfigData] = useState<EndLineConfigType>()
+  const [endLineConfigData, setEndLineConfigData] = useState<EndLineConfigType>({isLoading:true})
 
   const isFetchingRef = useRef(false);
   const isFetchingSolutionsRef = useRef(false);
