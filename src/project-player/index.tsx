@@ -114,6 +114,7 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
       </Box>
     );
   }
+  
   return (
     <ProjectProvider
       config={config}
@@ -130,7 +131,7 @@ const ProjectPlayer: React.FC<ProjectPlayerProps> = ({
         onTaskCompletionChange={onTaskCompletionChange}
         onProgressChange={onProgressChange}
       />
-      {config.isLoading === false
+      {config.isLoading !== true
         ? <ProjectComponent />
         : <Box flex={1} alignItems="center" justifyContent="center">
           <Spinner size="large" />

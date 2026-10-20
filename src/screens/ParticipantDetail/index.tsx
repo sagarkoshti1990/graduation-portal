@@ -390,7 +390,7 @@ export default function ParticipantDetail() {
           isLoading: false
         }))
       } else {
-        setEndLineConfigData({isLoading: updatedProgress === undefined});
+        setEndLineConfigData({isLoading: updatedProgress === undefined,solution:endLineSolution});
       }
     }
     
